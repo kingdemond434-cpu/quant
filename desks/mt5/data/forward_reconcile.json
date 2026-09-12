@@ -1,102 +1,995 @@
 {
- "checked_at": "2026-09-04T02:35:08+00:00",
- "enrolled": 56,
+ "checked_at": "2026-09-12T12:14:31+00:00",
+ "enrolled": 69,
  "enrolment_readable": true,
- "certified_clocks": 52,
- "certified_pairs": 32,
- "identity_unfrozen": 0,
+ "certified_clocks": 61,
+ "certified_pairs": 30,
+ "identity_unfrozen": 39,
  "unreachable_certified": {
   "n": 0,
   "sources_readable": {
    "QQUANT_GATES": true,
-   "REAL_SURVIVORS": false
+   "REAL_SURVIVORS": true
   },
   "by_cause": {},
+  "spec_tuple_sides": [
+   "LONG"
+  ],
   "engine_sides": [
    "LONG"
   ],
+  "recoverable_by_threading_side": 0,
+  "engine_replay_unaskable_here": 0,
   "certificates": []
+ },
+ "family_budget": {
+  "status": "MEASURED",
+  "decides": "NOTHING -- MAX_FORWARD_SLOTS and every seat rule are unchanged; this publishes the per-family budget beside the flat cohort so tiering can be evaluated on measured cohorts",
+  "flat_cohort": {
+   "max_forward_slots": 12,
+   "m_enrolled": 69,
+   "holm_bar_rank1_at_cap": 2.64,
+   "bh_bar_rank1_at_cap": 2.64,
+   "holm_bar_rank1_at_enrolled": 3.18,
+   "bh_bar_rank1_at_enrolled": 3.18
+  },
+  "families": {
+   "correlated_core": {
+    "n_members": 6,
+    "effective_m": 6,
+    "bh_bar_rank1": 2.39,
+    "holm_bar_rank1": 2.39,
+    "floored_to_largest_declared": false
+   },
+   "overnight_gap_risk_premium": {
+    "n_members": 12,
+    "effective_m": 12,
+    "bh_bar_rank1": 2.64,
+    "holm_bar_rank1": 2.64,
+    "floored_to_largest_declared": false
+   },
+   "session_fix_liquidity": {
+    "n_members": 15,
+    "effective_m": 15,
+    "bh_bar_rank1": 2.71,
+    "holm_bar_rank1": 2.71,
+    "floored_to_largest_declared": false
+   },
+   "unclassified": {
+    "n_members": 36,
+    "effective_m": 36,
+    "bh_bar_rank1": 2.99,
+    "holm_bar_rank1": 2.99,
+    "floored_to_largest_declared": false
+   }
+  },
+  "clocks": {
+   "AUDCAD.discovered.asia#band=[0.75, 0.9]_feature=dd_24_horizon=3_side=-1": {
+    "family": "unclassified",
+    "declared_from": "discovered",
+    "declared_via": "engine",
+    "family_m": 36,
+    "bh_bar": 2.99,
+    "holm_bar": 2.99
+   },
+   "AUDCAD.discovered.asia#band=[0.9, 1.0]_feature=ext_resid_EURDKK_z_horizon=1_side=-1": {
+    "family": "unclassified",
+    "declared_from": "discovered",
+    "declared_via": "engine",
+    "family_m": 36,
+    "bh_bar": 2.99,
+    "holm_bar": 2.99
+   },
+   "AUDCAD.discovered.asia#band=[0.9, 1.0]_feature=ext_resid_EURGBP_z_horizon=1_side=-1": {
+    "family": "unclassified",
+    "declared_from": "discovered",
+    "declared_via": "engine",
+    "family_m": 36,
+    "bh_bar": 2.99,
+    "holm_bar": 2.99
+   },
+   "AUDCHF.overnight_gap_decay.asia": {
+    "family": "overnight_gap_risk_premium",
+    "declared_from": "overnight_gap_decay",
+    "declared_via": "engine",
+    "family_m": 12,
+    "bh_bar": 2.64,
+    "holm_bar": 2.64
+   },
+   "AUDNZD.discovered.asia#band=[0.75, 0.9]_feature=dd_24_horizon=1_side=-1": {
+    "family": "unclassified",
+    "declared_from": "discovered",
+    "declared_via": "engine",
+    "family_m": 36,
+    "bh_bar": 2.99,
+    "holm_bar": 2.99
+   },
+   "AUDNZD.discovered.asia#band=[0.75, 0.9]_feature=hour_horizon=6_side=-1": {
+    "family": "unclassified",
+    "declared_from": "discovered",
+    "declared_via": "engine",
+    "family_m": 36,
+    "bh_bar": 2.99,
+    "holm_bar": 2.99
+   },
+   "AUDNZD.discovered.asia#band=[0.75, 1.0]_feature=hour_horizon=6_side=-1": {
+    "family": "unclassified",
+    "declared_from": "discovered",
+    "declared_via": "engine",
+    "family_m": 36,
+    "bh_bar": 2.99,
+    "holm_bar": 2.99
+   },
+   "AUDNZD.discovered.asia#band=[0.9, 1.0]_feature=ru_48_horizon=3_side=-1": {
+    "family": "unclassified",
+    "declared_from": "discovered",
+    "declared_via": "engine",
+    "family_m": 36,
+    "bh_bar": 2.99,
+    "holm_bar": 2.99
+   },
+   "AUDNZD.discovered.asia#band=[0.9, 1.0]_feature=ru_96_horizon=1_side=-1": {
+    "family": "unclassified",
+    "declared_from": "discovered",
+    "declared_via": "engine",
+    "family_m": 36,
+    "bh_bar": 2.99,
+    "holm_bar": 2.99
+   },
+   "AUDUSD.discovered.asia#band=[0.75, 0.9]_feature=dd_12_horizon=3_side=-1": {
+    "family": "unclassified",
+    "declared_from": "discovered",
+    "declared_via": "engine",
+    "family_m": 36,
+    "bh_bar": 2.99,
+    "holm_bar": 2.99
+   },
+   "AUDUSD.discovered.asia#band=[0.75, 0.9]_feature=dd_24_horizon=1_side=-1": {
+    "family": "unclassified",
+    "declared_from": "discovered",
+    "declared_via": "engine",
+    "family_m": 36,
+    "bh_bar": 2.99,
+    "holm_bar": 2.99
+   },
+   "AUDUSD.discovered.asia#band=[0.9, 1.0]_feature=dd_240_horizon=1_side=-1": {
+    "family": "unclassified",
+    "declared_from": "discovered",
+    "declared_via": "engine",
+    "family_m": 36,
+    "bh_bar": 2.99,
+    "holm_bar": 2.99
+   },
+   "AUDUSD.discovered.asia#band=[0.9, 1.0]_feature=dd_240_horizon=6_side=-1": {
+    "family": "unclassified",
+    "declared_from": "discovered",
+    "declared_via": "engine",
+    "family_m": 36,
+    "bh_bar": 2.99,
+    "holm_bar": 2.99
+   },
+   "CADCHF.overnight_gap_decay.asia": {
+    "family": "overnight_gap_risk_premium",
+    "declared_from": "overnight_gap_decay",
+    "declared_via": "engine",
+    "family_m": 12,
+    "bh_bar": 2.64,
+    "holm_bar": 2.64
+   },
+   "CADJPY.asia": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 15,
+    "bh_bar": 2.71,
+    "holm_bar": 2.71
+   },
+   "CADJPY.asia#rr=1.5": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 15,
+    "bh_bar": 2.71,
+    "holm_bar": 2.71
+   },
+   "CADJPY.asia#rr=2.5": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 15,
+    "bh_bar": 2.71,
+    "holm_bar": 2.71
+   },
+   "CHFDKK.overnight_gap_decay.asia": {
+    "family": "overnight_gap_risk_premium",
+    "declared_from": "overnight_gap_decay",
+    "declared_via": "engine",
+    "family_m": 12,
+    "bh_bar": 2.64,
+    "holm_bar": 2.64
+   },
+   "CHFNOK.carry.asia#input_symbol=CHFNOK": {
+    "family": "correlated_core",
+    "declared_from": "carry",
+    "declared_via": "engine",
+    "family_m": 6,
+    "bh_bar": 2.39,
+    "holm_bar": 2.39
+   },
+   "EURAUD.discovered.asia#band=[0.0, 0.1]_feature=ext_residz_AUDCAD_horizon=6_side=1": {
+    "family": "unclassified",
+    "declared_from": "discovered",
+    "declared_via": "engine",
+    "family_m": 36,
+    "bh_bar": 2.99,
+    "holm_bar": 2.99
+   },
+   "EURCHF.discovered.asia#band=[0.0, 0.1]_feature=hour_horizon=6_side=1": {
+    "family": "unclassified",
+    "declared_from": "discovered",
+    "declared_via": "engine",
+    "family_m": 36,
+    "bh_bar": 2.99,
+    "holm_bar": 2.99
+   },
+   "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_12_horizon=1_side=-1": {
+    "family": "unclassified",
+    "declared_from": "discovered",
+    "declared_via": "engine",
+    "family_m": 36,
+    "bh_bar": 2.99,
+    "holm_bar": 2.99
+   },
+   "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_12_horizon=6_side=-1": {
+    "family": "unclassified",
+    "declared_from": "discovered",
+    "declared_via": "engine",
+    "family_m": 36,
+    "bh_bar": 2.99,
+    "holm_bar": 2.99
+   },
+   "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_24_horizon=1_side=-1": {
+    "family": "unclassified",
+    "declared_from": "discovered",
+    "declared_via": "engine",
+    "family_m": 36,
+    "bh_bar": 2.99,
+    "holm_bar": 2.99
+   },
+   "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_24_horizon=6_side=-1": {
+    "family": "unclassified",
+    "declared_from": "discovered",
+    "declared_via": "engine",
+    "family_m": 36,
+    "bh_bar": 2.99,
+    "holm_bar": 2.99
+   },
+   "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=hour_horizon=3_side=-1": {
+    "family": "unclassified",
+    "declared_from": "discovered",
+    "declared_via": "engine",
+    "family_m": 36,
+    "bh_bar": 2.99,
+    "holm_bar": 2.99
+   },
+   "EURCHF.discovered.asia#band=[0.9, 1.0]_feature=hour_horizon=3_side=-1": {
+    "family": "unclassified",
+    "declared_from": "discovered",
+    "declared_via": "engine",
+    "family_m": 36,
+    "bh_bar": 2.99,
+    "holm_bar": 2.99
+   },
+   "EURCHF.discovered.asia#band=[0.9, 1.0]_feature=ru_24_horizon=1_side=-1": {
+    "family": "unclassified",
+    "declared_from": "discovered",
+    "declared_via": "engine",
+    "family_m": 36,
+    "bh_bar": 2.99,
+    "holm_bar": 2.99
+   },
+   "EURGBP.discovered.asia#band=[0.1, 0.25]_feature=ru_24_horizon=3_side=1": {
+    "family": "unclassified",
+    "declared_from": "discovered",
+    "declared_via": "engine",
+    "family_m": 36,
+    "bh_bar": 2.99,
+    "holm_bar": 2.99
+   },
+   "EURGBP.discovered.asia#band=[0.75, 0.9]_feature=dd_12_horizon=3_side=-1": {
+    "family": "unclassified",
+    "declared_from": "discovered",
+    "declared_via": "engine",
+    "family_m": 36,
+    "bh_bar": 2.99,
+    "holm_bar": 2.99
+   },
+   "EURJPY.asia": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 15,
+    "bh_bar": 2.71,
+    "holm_bar": 2.71
+   },
+   "EURJPY.asia#rr=1.5": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 15,
+    "bh_bar": 2.71,
+    "holm_bar": 2.71
+   },
+   "EURJPY.asia#rr=2.5": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 15,
+    "bh_bar": 2.71,
+    "holm_bar": 2.71
+   },
+   "EURJPY.discovered.asia#band=[0.9, 1.0]_feature=dd_96_horizon=6_side=-1": {
+    "family": "unclassified",
+    "declared_from": "discovered",
+    "declared_via": "engine",
+    "family_m": 36,
+    "bh_bar": 2.99,
+    "holm_bar": 2.99
+   },
+   "EURNOK.overnight_gap_decay.asia": {
+    "family": "overnight_gap_risk_premium",
+    "declared_from": "overnight_gap_decay",
+    "declared_via": "engine",
+    "family_m": 12,
+    "bh_bar": 2.64,
+    "holm_bar": 2.64
+   },
+   "EURUSD.discovered.asia#band=[0.0, 0.1]_feature=dd_48_horizon=12_side=1": {
+    "family": "unclassified",
+    "declared_from": "discovered",
+    "declared_via": "engine",
+    "family_m": 36,
+    "bh_bar": 2.99,
+    "holm_bar": 2.99
+   },
+   "EURUSD.discovered.asia#band=[0.0, 0.1]_feature=dd_96_horizon=6_side=1": {
+    "family": "unclassified",
+    "declared_from": "discovered",
+    "declared_via": "engine",
+    "family_m": 36,
+    "bh_bar": 2.99,
+    "holm_bar": 2.99
+   },
+   "EURZAR.overnight_gap_decay.asia": {
+    "family": "overnight_gap_risk_premium",
+    "declared_from": "overnight_gap_decay",
+    "declared_via": "engine",
+    "family_m": 12,
+    "bh_bar": 2.64,
+    "holm_bar": 2.64
+   },
+   "GBPAUD.discovered.asia#band=[0.0, 0.1]_feature=ext_residz_AUDUSD_horizon=3_side=1": {
+    "family": "unclassified",
+    "declared_from": "discovered",
+    "declared_via": "engine",
+    "family_m": 36,
+    "bh_bar": 2.99,
+    "holm_bar": 2.99
+   },
+   "GBPCHF.overnight_gap_decay.asia": {
+    "family": "overnight_gap_risk_premium",
+    "declared_from": "overnight_gap_decay",
+    "declared_via": "engine",
+    "family_m": 12,
+    "bh_bar": 2.64,
+    "holm_bar": 2.64
+   },
+   "GBPJPY.asia#rr=1.5": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 15,
+    "bh_bar": 2.71,
+    "holm_bar": 2.71
+   },
+   "GBPJPY.asia#rr=2.5": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 15,
+    "bh_bar": 2.71,
+    "holm_bar": 2.71
+   },
+   "GBPMXN.overnight_gap_decay.asia": {
+    "family": "overnight_gap_risk_premium",
+    "declared_from": "overnight_gap_decay",
+    "declared_via": "engine",
+    "family_m": 12,
+    "bh_bar": 2.64,
+    "holm_bar": 2.64
+   },
+   "GBPNOK.overnight_gap_decay.asia": {
+    "family": "overnight_gap_risk_premium",
+    "declared_from": "overnight_gap_decay",
+    "declared_via": "engine",
+    "family_m": 12,
+    "bh_bar": 2.64,
+    "holm_bar": 2.64
+   },
+   "GBPSEK.overnight_gap_decay.asia": {
+    "family": "overnight_gap_risk_premium",
+    "declared_from": "overnight_gap_decay",
+    "declared_via": "engine",
+    "family_m": 12,
+    "bh_bar": 2.64,
+    "holm_bar": 2.64
+   },
+   "GBPZAR.overnight_gap_decay.asia": {
+    "family": "overnight_gap_risk_premium",
+    "declared_from": "overnight_gap_decay",
+    "declared_via": "engine",
+    "family_m": 12,
+    "bh_bar": 2.64,
+    "holm_bar": 2.64
+   },
+   "NZDCAD.discovered.asia#band=[0.9, 1.0]_feature=dd_48_horizon=3_side=-1": {
+    "family": "unclassified",
+    "declared_from": "discovered",
+    "declared_via": "engine",
+    "family_m": 36,
+    "bh_bar": 2.99,
+    "holm_bar": 2.99
+   },
+   "USDCAD.discovered.asia#band=[0.9, 1.0]_feature=ru_240_horizon=6_side=-1": {
+    "family": "unclassified",
+    "declared_from": "discovered",
+    "declared_via": "engine",
+    "family_m": 36,
+    "bh_bar": 2.99,
+    "holm_bar": 2.99
+   },
+   "USDCAD.discovered.asia#band=[0.9, 1.0]_feature=ru_96_horizon=6_side=-1": {
+    "family": "unclassified",
+    "declared_from": "discovered",
+    "declared_via": "engine",
+    "family_m": 36,
+    "bh_bar": 2.99,
+    "holm_bar": 2.99
+   },
+   "USDCHF.discovered.asia#band=[0.9, 1.0]_feature=ext_residz_AUDCAD_horizon=3_side=-1": {
+    "family": "unclassified",
+    "declared_from": "discovered",
+    "declared_via": "engine",
+    "family_m": 36,
+    "bh_bar": 2.99,
+    "holm_bar": 2.99
+   },
+   "USDCHF.discovered.asia#band=[0.9, 1.0]_feature=ru_240_horizon=6_side=-1": {
+    "family": "unclassified",
+    "declared_from": "discovered",
+    "declared_via": "engine",
+    "family_m": 36,
+    "bh_bar": 2.99,
+    "holm_bar": 2.99
+   },
+   "USDCHF.discovered.asia#band=[0.9, 1.0]_feature=ru_48_horizon=3_side=-1": {
+    "family": "unclassified",
+    "declared_from": "discovered",
+    "declared_via": "engine",
+    "family_m": 36,
+    "bh_bar": 2.99,
+    "holm_bar": 2.99
+   },
+   "USDJPY.asia": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 15,
+    "bh_bar": 2.71,
+    "holm_bar": 2.71
+   },
+   "USDJPY.asia#rr=1.5": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 15,
+    "bh_bar": 2.71,
+    "holm_bar": 2.71
+   },
+   "USDJPY.asia#rr=2.5": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 15,
+    "bh_bar": 2.71,
+    "holm_bar": 2.71
+   },
+   "USDMXN.overnight_gap_decay.asia": {
+    "family": "overnight_gap_risk_premium",
+    "declared_from": "overnight_gap_decay",
+    "declared_via": "engine",
+    "family_m": 12,
+    "bh_bar": 2.64,
+    "holm_bar": 2.64
+   },
+   "USDZAR.overnight_gap_decay.asia": {
+    "family": "overnight_gap_risk_premium",
+    "declared_from": "overnight_gap_decay",
+    "declared_via": "engine",
+    "family_m": 12,
+    "bh_bar": 2.64,
+    "holm_bar": 2.64
+   },
+   "XAUUSD.asia": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 15,
+    "bh_bar": 2.71,
+    "holm_bar": 2.71
+   },
+   "XAUUSD.asia#rr=1.5": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 15,
+    "bh_bar": 2.71,
+    "holm_bar": 2.71
+   },
+   "XAUUSD.asia#rr=1.5_wait_bars=8": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 15,
+    "bh_bar": 2.71,
+    "holm_bar": 2.71
+   },
+   "XAUUSD.asia#rr=2.5": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 15,
+    "bh_bar": 2.71,
+    "holm_bar": 2.71
+   },
+   "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY": {
+    "family": "correlated_core",
+    "declared_from": "dav_range_filter_adx",
+    "declared_via": "certificate.shadow_spec.family",
+    "family_m": 6,
+    "bh_bar": 2.39,
+    "holm_bar": 2.39
+   },
+   "quarantined_candidates": {
+    "family": "unclassified",
+    "declared_from": "quarantined_candidates",
+    "declared_via": "key",
+    "family_m": 36,
+    "bh_bar": 2.99,
+    "holm_bar": 2.99
+   },
+   "sleeves": {
+    "family": "unclassified",
+    "declared_from": "sleeves",
+    "declared_via": "key",
+    "family_m": 36,
+    "bh_bar": 2.99,
+    "holm_bar": 2.99
+   },
+   "source": {
+    "family": "unclassified",
+    "declared_from": "source",
+    "declared_via": "key",
+    "family_m": 36,
+    "bh_bar": 2.99,
+    "holm_bar": 2.99
+   },
+   "xau_m15_anti_breakout": {
+    "family": "correlated_core",
+    "declared_from": "anti_donchian_breakout",
+    "declared_via": "row.choice.family",
+    "family_m": 6,
+    "bh_bar": 2.39,
+    "holm_bar": 2.39
+   },
+   "xau_m15_anti_momentum": {
+    "family": "correlated_core",
+    "declared_from": "anti_three_bar_momentum",
+    "declared_via": "row.choice.family",
+    "family_m": 6,
+    "bh_bar": 2.39,
+    "holm_bar": 2.39
+   },
+   "xau_m5_anti_breakout_overlap": {
+    "family": "correlated_core",
+    "declared_from": "anti_donchian_breakout",
+    "declared_via": "row.choice.family",
+    "family_m": 6,
+    "bh_bar": 2.39,
+    "holm_bar": 2.39
+   },
+   "xau_m5_anti_momentum_ny": {
+    "family": "correlated_core",
+    "declared_from": "anti_three_bar_momentum",
+    "declared_via": "row.choice.family",
+    "family_m": 6,
+    "bh_bar": 2.39,
+    "holm_bar": 2.39
+   }
+  },
+  "error_budget": {
+   "n_families": 4,
+   "alpha_per_family": 0.05,
+   "global_fwer": 0.1855,
+   "why": "4 families each controlled at 5% gives a 18.5% chance of at least one false positive somewhere on the desk, against 5% under one global cohort. That is the price of partitioning and it buys unlimited seats per family. It is NOT free and it is NOT hidden"
+  },
+  "orthogonality_floor": 0.35,
+  "basis": "libs.validation.family_multiplicity (family_of / effective_m / bh_bar); UNCLASSIFIED is floored at the largest declared family"
  },
  "actions": [
   {
-   "key": "EURZAR.overnight_gap_decay.asia",
-   "action": "REVIVED_CERTIFIED",
-   "why": "retired on a key-shape inference while holding a live ten-gate certificate and an active enrolment; clock restamped FRESH so no pre-registration boundary is inherited"
+   "key": "XAUUSD.london_am",
+   "action": "IDENTITY_UNFROZEN",
+   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
   },
   {
-   "key": "USDZAR.overnight_gap_decay.asia",
-   "action": "REVIVED_CERTIFIED",
-   "why": "retired on a key-shape inference while holding a live ten-gate certificate and an active enrolment; clock restamped FRESH so no pre-registration boundary is inherited"
+   "key": "XAUUSD.london_am",
+   "action": "RETIRED_ORPHAN"
   },
   {
-   "key": "CADCHF.overnight_gap_decay.asia",
-   "action": "REVIVED_CERTIFIED",
-   "why": "retired on a key-shape inference while holding a live ten-gate certificate and an active enrolment; clock restamped FRESH so no pre-registration boundary is inherited"
+   "key": "XAUUSD.afternoon",
+   "action": "IDENTITY_UNFROZEN",
+   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
   },
   {
-   "key": "CHFDKK.overnight_gap_decay.asia",
-   "action": "REVIVED_CERTIFIED",
-   "why": "retired on a key-shape inference while holding a live ten-gate certificate and an active enrolment; clock restamped FRESH so no pre-registration boundary is inherited"
+   "key": "XAUUSD.afternoon",
+   "action": "RETIRED_ORPHAN"
   },
   {
-   "key": "CHFNOK.carry.asia#input_symbol=CHFNOK",
-   "action": "REVIVED_CERTIFIED",
-   "why": "retired on a key-shape inference while holding a live ten-gate certificate and an active enrolment; clock restamped FRESH so no pre-registration boundary is inherited"
+   "key": "USDJPY.london_am",
+   "action": "IDENTITY_UNFROZEN",
+   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
   },
   {
-   "key": "EURNOK.overnight_gap_decay.asia",
-   "action": "REVIVED_CERTIFIED",
-   "why": "retired on a key-shape inference while holding a live ten-gate certificate and an active enrolment; clock restamped FRESH so no pre-registration boundary is inherited"
+   "key": "USDJPY.london_am",
+   "action": "RETIRED_ORPHAN"
   },
   {
-   "key": "GBPCHF.overnight_gap_decay.asia",
-   "action": "REVIVED_CERTIFIED",
-   "why": "retired on a key-shape inference while holding a live ten-gate certificate and an active enrolment; clock restamped FRESH so no pre-registration boundary is inherited"
+   "key": "EURJPY.london_am",
+   "action": "IDENTITY_UNFROZEN",
+   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
   },
   {
-   "key": "GBPMXN.overnight_gap_decay.asia",
-   "action": "REVIVED_CERTIFIED",
-   "why": "retired on a key-shape inference while holding a live ten-gate certificate and an active enrolment; clock restamped FRESH so no pre-registration boundary is inherited"
+   "key": "EURJPY.london_am",
+   "action": "RETIRED_ORPHAN"
   },
   {
-   "key": "GBPNOK.overnight_gap_decay.asia",
-   "action": "REVIVED_CERTIFIED",
-   "why": "retired on a key-shape inference while holding a live ten-gate certificate and an active enrolment; clock restamped FRESH so no pre-registration boundary is inherited"
+   "key": "GBPJPY.asia",
+   "action": "IDENTITY_UNFROZEN",
+   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
   },
   {
-   "key": "GBPSEK.overnight_gap_decay.asia",
-   "action": "REVIVED_CERTIFIED",
-   "why": "retired on a key-shape inference while holding a live ten-gate certificate and an active enrolment; clock restamped FRESH so no pre-registration boundary is inherited"
+   "key": "GBPJPY.asia",
+   "action": "RETIRED_ORPHAN"
   },
   {
-   "key": "GBPZAR.overnight_gap_decay.asia",
-   "action": "REVIVED_CERTIFIED",
-   "why": "retired on a key-shape inference while holding a live ten-gate certificate and an active enrolment; clock restamped FRESH so no pre-registration boundary is inherited"
+   "key": "GBPJPY.london_am",
+   "action": "IDENTITY_UNFROZEN",
+   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
   },
   {
-   "key": "USDMXN.overnight_gap_decay.asia",
-   "action": "REVIVED_CERTIFIED",
-   "why": "retired on a key-shape inference while holding a live ten-gate certificate and an active enrolment; clock restamped FRESH so no pre-registration boundary is inherited"
+   "key": "GBPJPY.london_am",
+   "action": "RETIRED_ORPHAN"
   },
   {
-   "key": "AUDCHF.overnight_gap_decay.asia",
-   "action": "REVIVED_CERTIFIED",
-   "why": "retired on a key-shape inference while holding a live ten-gate certificate and an active enrolment; clock restamped FRESH so no pre-registration boundary is inherited"
+   "key": "CADJPY.asia.FAILED_BREAK",
+   "action": "IDENTITY_UNFROZEN",
+   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
   },
   {
-   "key": "AUDCAD.discovered.asia#band=[0.9, 1.0]_feature=ext_resid_EURGBP_z_horizon=1_side=-1",
-   "action": "REVIVED_CERTIFIED",
-   "why": "retired on a key-shape inference while holding a live ten-gate certificate and an active enrolment; clock restamped FRESH so no pre-registration boundary is inherited"
+   "key": "CADJPY.asia.FAILED_BREAK",
+   "action": "RETIRED_ORPHAN"
   },
   {
-   "key": "AUDCAD.discovered.asia#band=[0.75, 0.9]_feature=dd_24_horizon=3_side=-1",
-   "action": "REVIVED_CERTIFIED",
-   "why": "retired on a key-shape inference while holding a live ten-gate certificate and an active enrolment; clock restamped FRESH so no pre-registration boundary is inherited"
+   "key": "USDJPY.asia.FAILED_BREAK",
+   "action": "IDENTITY_UNFROZEN",
+   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
   },
   {
-   "key": "AUDCAD.discovered.asia#band=[0.9, 1.0]_feature=ext_resid_EURDKK_z_horizon=1_side=-1",
-   "action": "REVIVED_CERTIFIED",
-   "why": "retired on a key-shape inference while holding a live ten-gate certificate and an active enrolment; clock restamped FRESH so no pre-registration boundary is inherited"
+   "key": "USDJPY.asia.FAILED_BREAK",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "EURJPY.asia.FAILED_BREAK",
+   "action": "IDENTITY_UNFROZEN",
+   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
+  },
+  {
+   "key": "EURJPY.asia.FAILED_BREAK",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "EURJPY.asia.NORMAL_DAY",
+   "action": "IDENTITY_UNFROZEN",
+   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
+  },
+  {
+   "key": "EURJPY.asia.NORMAL_DAY",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "CADJPY.london_am.NORMAL_DAY",
+   "action": "IDENTITY_UNFROZEN",
+   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
+  },
+  {
+   "key": "CADJPY.london_am.NORMAL_DAY",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "USDJPY.london_am.FAILED_BREAK",
+   "action": "IDENTITY_UNFROZEN",
+   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
+  },
+  {
+   "key": "USDJPY.london_am.FAILED_BREAK",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "XAUUSD.asia.NORMAL_DAY",
+   "action": "IDENTITY_UNFROZEN",
+   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
+  },
+  {
+   "key": "XAUUSD.asia.NORMAL_DAY",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "XAUUSD.asia.FAILED_BREAK",
+   "action": "IDENTITY_UNFROZEN",
+   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
+  },
+  {
+   "key": "XAUUSD.asia.FAILED_BREAK",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "XAUUSD.london_am.NORMAL_DAY",
+   "action": "IDENTITY_UNFROZEN",
+   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
+  },
+  {
+   "key": "XAUUSD.london_am.NORMAL_DAY",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "XAUUSD.asia.MACRO_FAV",
+   "action": "IDENTITY_UNFROZEN",
+   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
+  },
+  {
+   "key": "XAUUSD.asia.MACRO_FAV",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "XAUUSD.london_am.MACRO_FAV",
+   "action": "IDENTITY_UNFROZEN",
+   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
+  },
+  {
+   "key": "XAUUSD.london_am.MACRO_FAV",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "XAUUSD.afternoon.MACRO_FAV",
+   "action": "IDENTITY_UNFROZEN",
+   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
+  },
+  {
+   "key": "XAUUSD.afternoon.MACRO_FAV",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "USDJPY.asia.MACRO_FAV",
+   "action": "IDENTITY_UNFROZEN",
+   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
+  },
+  {
+   "key": "USDJPY.asia.MACRO_FAV",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "USDJPY.london_am.MACRO_FAV",
+   "action": "IDENTITY_UNFROZEN",
+   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
+  },
+  {
+   "key": "USDJPY.london_am.MACRO_FAV",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "CADJPY.fair_value_gap",
+   "action": "IDENTITY_UNFROZEN",
+   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
+  },
+  {
+   "key": "CADJPY.fair_value_gap",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "BTCUSD.monday_gap",
+   "action": "IDENTITY_UNFROZEN",
+   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
+  },
+  {
+   "key": "BTCUSD.monday_gap",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "NZDJPY.dow_effect",
+   "action": "IDENTITY_UNFROZEN",
+   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
+  },
+  {
+   "key": "NZDJPY.dow_effect",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "GBPJPY.level_breakout",
+   "action": "IDENTITY_UNFROZEN",
+   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
+  },
+  {
+   "key": "GBPJPY.level_breakout",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "NZDJPY.fair_value_gap",
+   "action": "IDENTITY_UNFROZEN",
+   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
+  },
+  {
+   "key": "NZDJPY.fair_value_gap",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "GBPJPY.fair_value_gap",
+   "action": "IDENTITY_UNFROZEN",
+   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
+  },
+  {
+   "key": "GBPJPY.fair_value_gap",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "CADJPY.level_breakout",
+   "action": "IDENTITY_UNFROZEN",
+   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
+  },
+  {
+   "key": "CADJPY.level_breakout",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "GBPAUD.session_range_breakout",
+   "action": "IDENTITY_UNFROZEN",
+   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
+  },
+  {
+   "key": "GBPAUD.session_range_breakout",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "GBPUSD.session_range_breakout",
+   "action": "IDENTITY_UNFROZEN",
+   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
+  },
+  {
+   "key": "GBPUSD.session_range_breakout",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "BTCUSD.session_range_breakout",
+   "action": "IDENTITY_UNFROZEN",
+   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
+  },
+  {
+   "key": "BTCUSD.session_range_breakout",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "NZDJPY.session_range_breakout",
+   "action": "IDENTITY_UNFROZEN",
+   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
+  },
+  {
+   "key": "NZDJPY.session_range_breakout",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "EURGBP.discovered.asia#band=[0.75, 0.9]_feature=dd_12_horizon=3_side=-1",
+   "action": "RETIREMENT_CLEARED",
+   "why": "row is certified and running; stale retirement metadata removed so the state is unambiguous"
+  },
+  {
+   "key": "USDSGD.overnight_gap_decay.asia",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "AFG.discovered.asia#band=[0.0, 0.1]_feature=ext_lead_USDKRW_12_horizon=1_side=-1",
+   "action": "IDENTITY_UNFROZEN",
+   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
+  },
+  {
+   "key": "AFG.discovered.asia#band=[0.0, 0.1]_feature=ext_lead_USDKRW_12_horizon=1_side=-1",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "AFG.discovered.asia#band=[0.0, 0.1]_feature=ext_lead_USDPLN_12_z_horizon=1_side=-1",
+   "action": "IDENTITY_UNFROZEN",
+   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
+  },
+  {
+   "key": "AFG.discovered.asia#band=[0.0, 0.1]_feature=ext_lead_USDPLN_12_z_horizon=1_side=-1",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "AFG.discovered.asia#band=[0.9, 1.0]_feature=ext_lead_NETH25_12_horizon=1_side=-1",
+   "action": "IDENTITY_UNFROZEN",
+   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
+  },
+  {
+   "key": "AFG.discovered.asia#band=[0.9, 1.0]_feature=ext_lead_NETH25_12_horizon=1_side=-1",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "AFG.discovered.asia#band=[0.9, 1.0]_feature=ext_lead_NZDCAD_12_z_horizon=1_side=-1",
+   "action": "IDENTITY_UNFROZEN",
+   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
+  },
+  {
+   "key": "AFG.discovered.asia#band=[0.9, 1.0]_feature=ext_lead_NZDCAD_12_z_horizon=1_side=-1",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "AFG.discovered.asia#band=[0.9, 1.0]_feature=ext_lead_USDTRY_12_horizon=1_side=-1",
+   "action": "IDENTITY_UNFROZEN",
+   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
+  },
+  {
+   "key": "AFG.discovered.asia#band=[0.9, 1.0]_feature=ext_lead_USDTRY_12_horizon=1_side=-1",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "AFG.discovered.asia#band=[0.9, 1.0]_feature=ext_resid_USDMXN_z_horizon=1_side=-1",
+   "action": "IDENTITY_UNFROZEN",
+   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
+  },
+  {
+   "key": "AFG.discovered.asia#band=[0.9, 1.0]_feature=ext_resid_USDMXN_z_horizon=1_side=-1",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "AFL.discovered.asia#band=[0.9, 1.0]_feature=ext_lead_USDTRY_12_z_horizon=1_side=-1",
+   "action": "IDENTITY_UNFROZEN",
+   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
+  },
+  {
+   "key": "AFL.discovered.asia#band=[0.9, 1.0]_feature=ext_lead_USDTRY_12_z_horizon=1_side=-1",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "AFL.discovered.asia#band=[0.9, 1.0]_feature=ext_resid_USDPLN_z_horizon=1_side=-1",
+   "action": "IDENTITY_UNFROZEN",
+   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
+  },
+  {
+   "key": "AFL.discovered.asia#band=[0.9, 1.0]_feature=ext_resid_USDPLN_z_horizon=1_side=-1",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "xau_m15_anti_breakout",
+   "action": "AUTHORITY_REVOKED"
   }
  ]
 }

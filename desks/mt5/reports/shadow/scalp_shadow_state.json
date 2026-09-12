@@ -1,9 +1,9 @@
 {
-  "updated_at": "2026-09-12T11:08:08+00:00",
+  "updated_at": "2026-09-12T12:07:44+00:00",
   "certificate_lookup_error": null,
   "shadow_start": "2026-08-22T18:00:00+00:00",
   "source": {
-    "fetched_at": "2026-09-12T10:55:04+00:00",
+    "fetched_at": "2026-09-12T11:55:05+00:00",
     "source_server": "FusionMarkets-Live",
     "source_company": "Fusion Markets Pty Ltd",
     "account_trade_allowed": true,
@@ -139,8 +139,9 @@
       "matured": true,
       "source_trading_lag_hours": 0.0,
       "source_stale": false,
-      "promotion_authority": true,
-      "note": "Fusion-native forward shadow."
+      "promotion_authority": false,
+      "note": "Fusion-native forward shadow.",
+      "gate_reason": "no canonical ten-gate certificate; promotion authority REVOKED until certified. The sleeve keeps accruing forward evidence -- that costs nothing and is never wasted -- but it cannot promote. Certifying it needs a gauntlet on its own timeframe (register #134)."
     },
     "xau_m15_anti_momentum": {
       "forward_start": "2026-08-22T18:00:00+00:00",

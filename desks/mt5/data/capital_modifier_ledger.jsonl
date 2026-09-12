@@ -592,3 +592,9 @@
 {"t": "2026-09-12T11:40:51.605111+00:00", "sleeve": "CHFNOK_carry_asia", "state": "LONDON_MID", "category": "NORMAL", "multiplier": 1.2917, "n_state": 9, "mu_state": 1.116624, "mu_uncond": 0.431448, "heat": 0.0472}
 {"t": "2026-09-12T11:47:38.256430+00:00", "sleeve": "CHFNOK_carry_asia", "state": "LONDON_MID", "category": "NORMAL", "multiplier": 1.2917, "n_state": 9, "mu_state": 1.116624, "mu_uncond": 0.431448, "heat": 0.0472}
 {"t": "2026-09-12T11:52:06.188165+00:00", "sleeve": "CHFNOK_carry_asia", "state": "LONDON_MID", "category": "NORMAL", "multiplier": 1.2917, "n_state": 9, "mu_state": 1.116624, "mu_uncond": 0.431448, "heat": 0.0472}
+{"t": "2026-09-12T11:58:21.425550+00:00", "sleeve": "CHFNOK_carry_asia", "state": "LONDON_MID", "category": "NORMAL", "multiplier": 1.2917, "n_state": 9, "mu_state": 1.116624, "mu_uncond": 0.431448, "heat": 0.0472}
+{"t": "2026-09-12T12:03:48.156204+00:00", "sleeve": "CHFNOK_carry_asia", "state": "LONDON_NY_OVERLAP", "category": "NORMAL", "multiplier": 1.1048, "n_state": 2, "mu_state": 1.380642, "mu_uncond": 0.431448, "heat": 0.0472}
+{"t": "2026-09-12T12:06:41.833687+00:00", "sleeve": "CHFNOK_carry_asia", "state": "LONDON_NY_OVERLAP", "category": "NORMAL", "multiplier": 1.1048, "n_state": 2, "mu_state": 1.380642, "mu_uncond": 0.431448, "heat": 0.0472}
+{"t": "2026-09-12T12:11:15.532434+00:00", "sleeve": "CHFNOK_carry_asia", "state": "LONDON_NY_OVERLAP", "category": "NORMAL", "multiplier": 1.1048, "n_state": 2, "mu_state": 1.380642, "mu_uncond": 0.431448, "heat": 0.0472}
+{"t": "2026-09-12T12:16:18.595794+00:00", "sleeve": "CHFNOK_carry_asia", "state": "LONDON_NY_OVERLAP", "category": "NORMAL", "multiplier": 1.1048, "n_state": 2, "mu_state": 1.380642, "mu_uncond": 0.431448, "heat": 0.0472}
+{"t": "2026-09-12T12:20:42.545701+00:00", "sleeve": "CHFNOK_carry_asia", "state": "LONDON_NY_OVERLAP", "category": "NORMAL", "multiplier": 1.1048, "n_state": 2, "mu_state": 1.380642, "mu_uncond": 0.431448, "heat": 0.0472}

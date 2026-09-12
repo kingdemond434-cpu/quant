@@ -1,5 +1,5 @@
 {
- "built_at": "2026-09-12T11:14:21+00:00",
+ "built_at": "2026-09-12T12:13:48+00:00",
  "candidates": [
   {
    "genome_id": "12286c48cd59b9f8",
@@ -151,11 +151,10 @@
    "evidence": "[survivor] session_range_breakout on XAUUSD params {} selector=asia condition=None gated 2026-08-25 passed 10 gates"
   }
  ],
- "recovered_this_run": 1,
+ "recovered_this_run": 0,
  "dispositions": {
-  "REJECTED": 38,
-  "BLOCKED_SEAT_UNAVAILABLE": 8,
-  "STILL_NEEDS_EXACT_RULE_EXTRACTION": 5,
-  "RECOVERED_EXACT_RECIPE": 1
+  "STILL_NEEDS_EXACT_RULE_EXTRACTION": 3,
+  "REJECTED": 35,
+  "BLOCKED_SEAT_UNAVAILABLE": 7
  }
 }

@@ -1,26 +1,26 @@
 {
     "memory":  {
-                   "free_phys_mb":  74514,
+                   "free_phys_mb":  77565,
                    "total_commit_mb":  251842,
                    "total_phys_mb":  98298,
                    "top_commit":  [
                                       {
-                                          "pid":  16788,
+                                          "pid":  6000,
                                           "name":  "pf_allocator.py",
-                                          "commit_mb":  12535,
-                                          "rss_mb":  11146
+                                          "commit_mb":  14355,
+                                          "rss_mb":  12945
                                       },
                                       {
-                                          "pid":  13996,
-                                          "name":  "external_gauntlet.py",
-                                          "commit_mb":  7389,
-                                          "rss_mb":  5194
+                                          "pid":  3180,
+                                          "name":  "pf_allocator.py",
+                                          "commit_mb":  3900,
+                                          "rss_mb":  2502
                                       },
                                       {
                                           "pid":  6812,
                                           "name":  "terminal64.exe",
-                                          "commit_mb":  3135,
-                                          "rss_mb":  112
+                                          "commit_mb":  2129,
+                                          "rss_mb":  113
                                       },
                                       {
                                           "pid":  16804,
@@ -31,28 +31,25 @@
                                       {
                                           "pid":  13404,
                                           "name":  "pythonw.exe",
-                                          "commit_mb":  951,
-                                          "rss_mb":  249
+                                          "commit_mb":  953,
+                                          "rss_mb":  234
                                       },
                                       {
-                                          "pid":  10824,
-                                          "name":  "deepening_worker.py",
-                                          "commit_mb":  707,
-                                          "rss_mb":  118
+                                          "pid":  5676,
+                                          "name":  "macro_desk.py",
+                                          "commit_mb":  621,
+                                          "rss_mb":  46
                                       }
                                   ],
-                   "free_commit_mb":  217894
+                   "free_commit_mb":  221416
                },
     "actions":  [
                     "TASK MISSING: MT5-ShadowSync is not registered at all -- re-register from ops/ (deletion, not failure)"
                 ],
     "low_mem_strikes":  0,
-    "free_gb":  979.5,
+    "free_gb":  978.9,
     "procs":  {
-                  "external_gauntlet.13996":  {
-                                                  "cpu":  3808.984375,
-                                                  "at":  "2026-09-12T13:50:02.5466107+02:00"
-                                              }
+
               },
-    "checked_at":  "2026-09-12T11:50:08.2390789Z"
+    "checked_at":  "2026-09-12T12:20:06.4723472Z"
 }
