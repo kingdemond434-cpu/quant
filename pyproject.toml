@@ -278,6 +278,13 @@ module = [
     "pyarrow.*",
     "duckdb.*",
     "scipy.*",
+    # SCIKIT-LEARN SHIPS NO STUBS AND IS A LIVE ENTRYPOINT DEPENDENCY (added 2026-09-12).
+    # It was carried as four inline `type: ignore[import-untyped]`s, which mypy now rejects
+    # twice over: the real error is `import-not-found`, which that code does not cover, and the
+    # ignore is therefore also unused. Four inline comments arguing with the checker in two
+    # directions is the shape this override block already exists to end -- the same reasoning
+    # scipy and statsmodels are here for.
+    "sklearn.*",
     "statsmodels.*",
     "arch.*",
     "MetaTrader5.*",

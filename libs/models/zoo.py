@@ -60,7 +60,7 @@ def _standardise(x_train: np.ndarray, x_test: np.ndarray) -> tuple[np.ndarray, n
 def _fit_predict(name: str, xtr: np.ndarray, ytr: np.ndarray, xte: np.ndarray,
                  ztr: np.ndarray | None = None, zte: np.ndarray | None = None) -> np.ndarray:
     if name == "logistic":
-        from sklearn.linear_model import LogisticRegression  # type: ignore[import-untyped]
+        from sklearn.linear_model import LogisticRegression
         m = LogisticRegression(C=0.5, max_iter=500)
         m.fit(xtr, ytr)
         return np.asarray(m.predict_proba(xte)[:, 1], dtype=float)
@@ -71,13 +71,13 @@ def _fit_predict(name: str, xtr: np.ndarray, ytr: np.ndarray, xte: np.ndarray,
         raw = np.asarray(m.predict(xte), dtype=float)
         return 1.0 / (1.0 + np.exp(-4.0 * raw))
     if name == "hist_gb":
-        from sklearn.ensemble import HistGradientBoostingClassifier  # type: ignore[import-untyped]
+        from sklearn.ensemble import HistGradientBoostingClassifier
         m = HistGradientBoostingClassifier(max_depth=3, max_iter=120, learning_rate=0.05,
                                            l2_regularization=1.0, random_state=0)
         m.fit(xtr, ytr)
         return np.asarray(m.predict_proba(xte)[:, 1], dtype=float)
     if name == "mlp":
-        from sklearn.neural_network import MLPClassifier  # type: ignore[import-untyped]
+        from sklearn.neural_network import MLPClassifier
         m = MLPClassifier(hidden_layer_sizes=(16, 8), alpha=1e-2, max_iter=300,
                           random_state=0)
         m.fit(xtr, ytr)

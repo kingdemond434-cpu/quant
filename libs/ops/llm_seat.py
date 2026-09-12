@@ -360,11 +360,67 @@ def month_spend_usd(now: datetime | None = None) -> float:
 DEFAULT_FREE_DAILY_MAX = 900
 
 
+#: What the PROVIDER actually refused at, learned from its own 429 rather than assumed. The
+#: number above is a published figure for a class of account; this file is what THIS account did.
+FREE_CEILING = _ROOT / "data" / "llm_free_ceiling.json"
+
+
+def observed_free_ceiling(now: datetime | None = None) -> int | None:
+    """The request count at which the provider refused a free call TODAY, if it has.
+
+    WHY THIS EXISTS. `DEFAULT_FREE_DAILY_MAX` is 900 because that is OpenRouter's published
+    ceiling for an account that has purchased credit. Measured 2026-09-12: this account took
+    `HTTP 429 ... free-models-per-day` with the desk's own counter reading 562 calls and 338
+    budget "left". The desk therefore believed it had a third of a day's research left while
+    every further call was already being refused -- and each refusal reads, at the organ, exactly
+    like a provider outage.
+
+    A GUESSED CEILING THAT IS TOO HIGH IS WORSE THAN ONE THAT IS TOO LOW. Too low costs a few
+    unmade calls; too high means every organ after the limit spends its cadence on refusals,
+    reports errors it cannot act on, and produces nothing -- which is how a lane goes quietly
+    dark while its scheduler reports healthy. So the refusal is recorded and believed until the
+    UTC day rolls, at which point it is stale by construction and ignored.
+    """
+    stamp = (now or datetime.now(UTC)).strftime("%Y-%m-%d")
+    try:
+        doc = json.loads(FREE_CEILING.read_text("utf-8"))
+    except (OSError, ValueError):
+        return None
+    if str(doc.get("date")) != stamp:
+        return None
+    try:
+        n = int(doc.get("ceiling"))
+    except (TypeError, ValueError):
+        return None
+    return n if n >= 0 else None
+
+
+def note_free_limit_hit(detail: str, now: datetime | None = None) -> None:
+    """Record that the provider refused a FREE call, and at what count. Never raises."""
+    t = now or datetime.now(UTC)
+    row = {"date": t.strftime("%Y-%m-%d"), "ceiling": calls_today(t),
+           "observed_at": t.isoformat(timespec="seconds"), "detail": detail[:300],
+           "why": ("the provider refused a free request at this count. Until the UTC day rolls, "
+                   "free_daily_max() believes this number rather than the configured default -- "
+                   "an organ that keeps calling past a real ceiling spends its cadence on "
+                   "refusals and goes dark while its scheduler still reports healthy.")}
+    try:
+        FREE_CEILING.parent.mkdir(parents=True, exist_ok=True)
+        FREE_CEILING.write_text(json.dumps(row, indent=1), encoding="utf-8")
+    except OSError:
+        pass
+
+
 def free_daily_max() -> int:
     try:
-        return max(1, int(os.environ.get("QUANT_FREE_DAILY_MAX", DEFAULT_FREE_DAILY_MAX)))
+        configured = max(1, int(os.environ.get("QUANT_FREE_DAILY_MAX", DEFAULT_FREE_DAILY_MAX)))
     except ValueError:
-        return DEFAULT_FREE_DAILY_MAX
+        configured = DEFAULT_FREE_DAILY_MAX
+    seen = observed_free_ceiling()
+    # The MEASURED ceiling wins whenever it is lower, and only for the UTC day it was measured
+    # on. It never raises the budget: a day that happened to stop early is not evidence the
+    # provider will allow more tomorrow.
+    return min(configured, seen) if seen is not None else configured
 
 
 def calls_today(now: datetime | None = None) -> int:
@@ -400,6 +456,19 @@ def monthly_cap_usd() -> float:
         return float(raw) if raw else DEFAULT_MONTHLY_CAP_USD
     except ValueError:
         return DEFAULT_MONTHLY_CAP_USD
+
+
+#: Phrases a provider uses when the refusal is the DAY's free allowance rather than a burst.
+#: Matched on the error body, because the status code alone cannot tell "slow down for a minute"
+#: from "come back tomorrow", and treating the second as the first burns the rest of the day.
+_DAILY_FREE_MARKERS: tuple[str, ...] = (
+    "free-models-per-day", "per-day", "daily limit", "requests per day", "quota exceeded",
+)
+
+
+def _is_daily_free_refusal(err: str) -> bool:
+    low = err.lower()
+    return any(m in low for m in _DAILY_FREE_MARKERS)
 
 
 def chat(
@@ -461,6 +530,11 @@ def chat(
         req["reasoning_effort"] = effort
     body, err = _post_with_degrade(f"{s.base_url}/chat/completions", s.key, req, timeout=timeout)
     if err:
+        # A DAILY FREE-TIER REFUSAL IS EVIDENCE, NOT NOISE. Recording it teaches every later
+        # caller today's real ceiling instead of letting each one rediscover it one wasted
+        # request at a time.
+        if "429" in err and _is_daily_free_refusal(err):
+            note_free_limit_hit(err)
         return "", err
     try:
         text = str(body["choices"][0]["message"]["content"] or "")
@@ -514,6 +588,10 @@ def chat_messages(
         req["reasoning_effort"] = effort
     body, err = _post_with_degrade(f"{s.base_url}/chat/completions", s.key, req, timeout=timeout)
     if err:
+        # Same refusal, same lesson: chat_messages is the push ladder's seam and
+        # hits the identical daily ceiling.
+        if "429" in err and _is_daily_free_refusal(err):
+            note_free_limit_hit(err)
         return "", err
     try:
         text = str(body["choices"][0]["message"]["content"] or "")

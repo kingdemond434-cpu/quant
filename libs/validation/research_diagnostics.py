@@ -37,8 +37,12 @@ __all__ = [
 
 def _finite(values: Iterable[float]) -> np.ndarray:
     arr = np.asarray(tuple(values), dtype="float64")
-    # The cast was redundant once numpy typed boolean indexing: it returns ndarray already.
-    return arr[np.isfinite(arr)]
+    # NUMPY'S STUBS HAVE MOVED IN BOTH DIRECTIONS ON THIS (2026-09-12). A prior session removed
+    # a cast because boolean indexing had become typed; under the numpy installed today it is
+    # Any again, and the annotation failed. np.asarray is typed under every numpy this desk has
+    # run, so it holds whichever way the stubs move next -- and it costs nothing at runtime,
+    # since asarray returns the same object when it is already an ndarray.
+    return np.asarray(arr[np.isfinite(arr)])
 
 
 def threshold_sensitivity(

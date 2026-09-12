@@ -183,6 +183,55 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
     "MT5-MoatCapture":    ("desks/mt5/reports/MOAT_CAPTURE.json", 90,
                            "per-day capture completeness -- which SYMBOLS a short day is "
                            "missing, while a targeted re-pull can still recover them"),
+    # THE FRONTIER MEASUREMENT LANE (ops/run_frontier_audit.cmd). Five reports from one daily
+    # task. Each was built, correct, and had no caller anywhere in the tree -- the class of
+    # defect III.16 names. Each is a pure measurement: reads artifacts, writes a report, touches
+    # no ledger, no sizing and no order.
+    "MT5-FrontierAudit":  ("desks/mt5/reports/PIT_AUDIT.json", 1560,
+                           "the nine point-in-time facts, asked of EVERY data path the desk "
+                           "reads -- not only the acquired ones certify() already covers"),
+    "MT5-FrontierAudit (forward null)": (
+        "desks/mt5/reports/FORWARD_CALIBRATION.json", 1560,
+        "what fraction of PURE NOISE this forward lane would promote, drawn at the desk's own "
+        "trade counts and dispersion -- the lane's false-admission rate, measured not assumed"),
+    "MT5-FrontierAudit (orthogonality)": (
+        "desks/mt5/reports/ORTHOGONALITY.json", 1560,
+        "n_eff of the live book by linear AND tail dependence, and the pairs whose tail "
+        "coincidence is hidden behind a low Pearson"),
+    "MT5-FrontierAudit (unknown unknowns)": (
+        "desks/mt5/reports/UNKNOWN_UNKNOWNS.json", 1560,
+        "a queue of what the desk's models CANNOT explain, phrased as questions for a seat -- "
+        "the only observations carrying information about a missing ontology"),
+    "MT5-FrontierAudit (book forensics)": (
+        "desks/mt5/reports/BOOK_FORENSICS.json", 1560,
+        "where the live book's P&L actually came from, against what the book believed"),
+    "MT5-FrontierAudit (world model)": (
+        "desks/mt5/reports/WORLD_MODEL.json", 1560,
+        "nine market axes as POSTERIORS with per-axis estimator disagreement, where the regime "
+        "engine emitted one label and one confidence scalar"),
+    "MT5-FrontierAudit (representations)": (
+        "desks/mt5/reports/REPRESENTATION_DISCOVERY.json", 1560,
+        "learned representations scored head-to-head against the symbolic grammar on OOS "
+        "predictive information, with the trial count declared and magnitude split from "
+        "direction"),
+    # F6. Hourly, with the audit lane: the tree only reaches depth by being expanded, so its
+    # cadence is its reach.
+    "MT5-AuditLane (research tree)": (
+        "desks/mt5/reports/RESEARCH_TREE.json", 180,
+        "which research branch earns the next cell, by expected information gain per "
+        "cell-equivalent -- and which branches are permanently pruned on their own evidence"),
+    # F7. Daily at 00:30 UTC, right after the free budget resets -- at any other hour the panel
+    # competes for a budget the rest of the desk has already spent and seats nobody.
+    "MT5-ScientistTournament": (
+        "desks/mt5/reports/SCIENTIST_TOURNAMENT.json", 1560,
+        "ten critics on DIFFERENT evidence and different vendors, a reviewer forbidden to "
+        "resolve a dissent, and a meta-reviewer whose only job is to catch dissents that went "
+        "missing"),
+    "MT5-FrontierAudit (joint evolution)": (
+        "desks/mt5/reports/JOINT_EVOLUTION.json", 1560,
+        "whether the desk's strategy LAYERS are separable -- the share of fitness variance each "
+        "axis pair carries in its interaction alone, and what the joint genome scores against "
+        "the fixed recipe out of sample"),
 }
 
 
