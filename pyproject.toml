@@ -292,7 +292,25 @@ testpaths = ["tests"]
 # importlib mode lets same-named test files coexist across dirs (tests/features/test_registry.py
 # vs tests/factory/test_registry.py) without __init__.py churn or basename collisions.
 addopts = "-ra -q --strict-markers --import-mode=importlib"
-filterwarnings = ["error"]
+filterwarnings = [
+    "error",
+    # ONE NARROW EXEMPTION, AND IT IS NOT OUR CODE (2026-09-12). pandas 2.3.3 constructs
+    # NumPy timedeltas with the generic unit internally; numpy 2.5.3 deprecated that. The
+    # trading box runs numpy 2.5.3 and this mirror runs 2.4.6, so the SAME tree collected
+    # cleanly here and failed there with eight collection errors -- and because collection is
+    # a push gate, an upstream deprecation we did not write and cannot fix was blocking every
+    # push from the box.
+    #
+    # SCOPED TO THE EXACT MESSAGE, deliberately. Widening this to DeprecationWarning, or to a
+    # module glob, would silence the next real deprecation in our own code -- which is the
+    # whole reason `error` is the default and must stay it. The fix proper is pandas shipping
+    # a numpy-2.5-clean release; this expires the day it does, and the narrow matcher means it
+    # expires LOUDLY (an unmatched filter is itself an error) rather than lingering.
+    #
+    # Not silenced on the money path: nothing here changes runtime behaviour, only whether a
+    # third party's deprecation aborts test COLLECTION.
+    "ignore:The 'generic' unit for NumPy timedelta is deprecated:DeprecationWarning",
+]
 # A HANG MUST BE A FAILURE, NOT A WAIT.
 #
 # Until 2026-08-05 nothing in this repository bounded a test's runtime, and the consequence was
