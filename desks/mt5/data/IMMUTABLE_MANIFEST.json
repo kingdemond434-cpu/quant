@@ -1,6 +1,6 @@
 {
- "signed_utc": "2026-09-12T07:15:55.269284+00:00",
- "signed_by": "principal (explicit permission, 2026-09-12 session)",
+ "signed_utc": "2026-09-12T07:23:41.498716+00:00",
+ "signed_by": "principal (explicit permission, 2026-09-12)",
  "files": {
   "desks/mt5/scripts/external_gauntlet.py": "9639f21b562abd96",
   "desks/mt5/research/universal_gate.py": "6e23b92e9ea7ed81",
