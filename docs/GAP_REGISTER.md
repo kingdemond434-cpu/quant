@@ -1810,3 +1810,12 @@ changes, release timestamps, native explicitly charted bars and spread costs; co
 preregistered residual arm with unconditional and release-time placebo controls under the
 unchanged full-search gates, then measure OOS dependence and marginal net log-wealth contribution.
 No profitability or independence established; no new experiment counted this cycle.
+
+Runtime follow-through for `stale:issue_board`: canonical commit `ae6ca66d9` pushed;
+serving host `ubuntu-4gb-hel1-5` deployment `f48474f60`. Scheduled pull completed at
+2026-09-12T03:36:17Z; public artifact generated 03:36:15Z reports STALE, age 69881 seconds,
+with the original 08:11:34Z measurement preserved. During verification the pull exposed the
+raw remote dashboard for its full ~60-second copy phase, temporarily removing the new detector.
+Root-cause extension: stage that snapshot as input to the builder's account fallback; only the
+builder's existing atomic write publishes it. This prevents each pull from undoing the repair
+while it is still running. Added staged-account and no-raw-publication regression checks.

@@ -25,7 +25,7 @@ REMOTE=contabo-mt5
 ok=0
 
 scp -pq "$REMOTE:C:/opt/quant/web/desk_state.json" web/desk_state.json.tmp 2>/dev/null \
-  && mv web/desk_state.json.tmp web/desk_state.json && ok=1
+  && ok=1
 
 # Pull every state producer consumed by the read-only watchdog. Omitting shadow_health meant the
 # VPS could have current sleeve ledgers but keep judging yesterday's aggregate health; omitting
@@ -284,7 +284,7 @@ PY
 fi
 rm -f "$_UT" 2>/dev/null || true
 
-rm -f web/desk_state.json.tmp desks/mt5/reports/shadow/*.tmp desks/mt5/reports/*.tmp 2>/dev/null
+rm -f desks/mt5/reports/shadow/*.tmp desks/mt5/reports/*.tmp 2>/dev/null
 if [ "$ok" = "1" ]; then
   # The trading-box snapshot preserves account telemetry, but its shadow rows may retain
   # historical promotion provenance.  Rebuild the public view from the freshly pulled
@@ -293,10 +293,12 @@ if [ "$ok" = "1" ]; then
   # terminal, so this is a projection-only repair: it neither changes sleeve state nor submits
   # orders.  A failed projection is a failed pull, because serving an unsafe interpretation is
   # not a successful publication.
-  if ! .venv/bin/python scripts/build_zentech_state.py >/dev/null; then
+  if ! QUANT_DESK_PULL_SNAPSHOT=web/desk_state.json.tmp \
+      .venv/bin/python scripts/build_zentech_state.py >/dev/null; then
     echo "$(date -u +%FT%TZ) PULL FAILED -- dashboard projection rebuild failed"
     exit 1
   fi
+  rm -f web/desk_state.json.tmp
   echo "$(date -u +%FT%TZ) desk state pulled"
 else
   echo "$(date -u +%FT%TZ) PULL FAILED -- serving last good copy; the page's age field shows it"

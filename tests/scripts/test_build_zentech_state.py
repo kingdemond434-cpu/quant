@@ -93,3 +93,21 @@ def test_fresh_issue_board_has_no_synthetic_alarm(monkeypatch, tmp_path):
     assert board['freshness']['status'] == 'FRESH'
     assert board['issues'] == []
     assert board['count'] == 0
+
+
+def test_staged_pull_account_is_used_without_publishing_raw_issues(monkeypatch, tmp_path):
+    monkeypatch.setattr(module, 'ROOT', tmp_path)
+    monkeypatch.setattr(module, 'DESK', tmp_path / 'desks/mt5')
+    monkeypatch.setattr(module, '_mt5_snapshot', lambda: {})
+    monkeypatch.setenv('QUANT_DESK_PULL_SNAPSHOT', 'incoming.json')
+    (tmp_path / 'web').mkdir()
+    published = {'account': {'equity': 10}, 'issues': {'count': 99}}
+    (tmp_path / 'web/desk_state.json').write_text(json.dumps(published))
+    (tmp_path / 'incoming.json').write_text(json.dumps({
+        'account': {'equity': 607.68, 'balance': 607.68}, 'issues': {'count': 0},
+    }))
+    payload = module.build()
+    assert payload['account']['equity'] == 607.68
+    assert payload['issues']['freshness']['status'] == 'UNMEASURED'
+    assert payload['issues']['count'] == 1
+    assert json.loads((tmp_path / 'web/desk_state.json').read_text()) == published

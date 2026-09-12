@@ -943,7 +943,8 @@ def build() -> dict[str, Any]:
     # best available truth and is preserved rather than replaced.
     account = _mt5_snapshot() or _read(DESK / "data" / "account_state.json")
     if not account:
-        _pulled = _read(ROOT / "web" / "desk_state.json").get("account") or {}
+        snapshot = ROOT / os.environ.get("QUANT_DESK_PULL_SNAPSHOT", "web/desk_state.json")
+        _pulled = _read(snapshot).get("account") or {}
         account = _pulled if _number(_find(_pulled, "equity", "account_equity")) else {}
     qquant = _read(DESK / "reports" / "QQUANT_GATES.json")
     universal = _read(DESK / "reports" / "UNIVERSAL_SURVIVORS.json")
