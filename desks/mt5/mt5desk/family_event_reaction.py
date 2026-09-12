@@ -85,11 +85,27 @@ def _event_times(events: Sequence[dict[str, Any]], symbol: str, *,
     cannot place, and changes no size and no live trade.
     """
     out: list[pd.Timestamp] = []
-    for e in events or ():
+    # `for e in events or ()` WAS THE SECOND LANDMINE ON THIS PATH, and it is the same one:
+    # `events or ()` evaluates bool(events), which RAISES for any pandas Index, Series or frame
+    # rather than answering. The first guard was fixed on 2026-09-12 and this one sat four lines
+    # below it, so the sweep moved from dying on an empty DatetimeIndex to dying on a non-empty
+    # one. Iterating the object directly needs no truth value at all.
+    try:
+        iterator = iter(() if events is None else events)
+    except TypeError:
+        return []
+    for e in iterator:
+        # A ROW THAT IS NOT A MAPPING IS SKIPPED, NOT UNPACKED. Elements arrive as dicts from the
+        # event ledger, but an Index yields bare Timestamps and a Series yields scalars, and
+        # `.get` on those is an AttributeError that escapes the family exactly as the truthiness
+        # error did. This function's contract is a sequence of event MAPPINGS; anything else
+        # carries no symbol to match and no stamp to read, so it cannot contribute a time.
+        if not hasattr(e, "get"):
+            continue
         if str(e.get("symbol", "")).upper() != symbol.upper():
             continue
         raw = e.get(AT_KEY)
-        if not raw:
+        if raw is None or (isinstance(raw, str) and not raw.strip()):
             continue
         try:
             ts = pd.Timestamp(raw)
@@ -137,7 +153,26 @@ def family_event_reaction(
     "utc" for any real event source; a stamp that cannot be converted is DROPPED, because raw is
     not a conservative fallback -- it is the bug.
     """
-    if not events or mode not in MODES or side not in (1, -1) or symbol == "":
+    # EMPTINESS IS TESTED BY LENGTH, NOT BY TRUTHINESS. `events` arrives as whatever the caller
+    # holds its event stamps in, and for a pandas index `bool(obj)` RAISES rather than answering:
+    #
+    #     ValueError: The truth value of a DatetimeIndex is ambiguous
+    #
+    # which is not a rejected cell, it is an uncaught exception that took the whole sweep down.
+    # Measured 2026-09-12: MT5-Gauntlet exited 1 here, mid-docket, so the sweep produced no new
+    # certificates for an hour. It had been latent for as long as this family existed and only
+    # surfaced when never-judged cells were promoted to the front of the docket and an
+    # event_reaction cell was finally reached.
+    #
+    # `len()` answers for a list, a tuple, a dict, a Series and an Index alike, and the `is None`
+    # guard keeps the one shape that has no length at all. An input this function cannot measure
+    # is still refused -- it is refused as a verdict rather than as a crash.
+    if events is None or mode not in MODES or side not in (1, -1) or symbol == "":
+        return []
+    try:
+        if len(events) == 0:
+            return []
+    except TypeError:
         return []
     if clock not in CLOCKS:
         return []
