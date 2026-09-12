@@ -33,6 +33,21 @@ THE ROW THAT MATTERS IS `tail_lift` -- lower-tail coincidence divided by what in
 predicts. A pair at pearson 0.04 and tail_lift 4.0 is the dangerous kind: it LOOKS like breadth,
 is bought as breadth, and is not breadth when the book is under water.
 
+MEASURED ON SLEEVE RETURNS, NOT ON INSTRUMENT PRICES, and the first version of this file got that
+wrong. It read `{symbol}_H1.parquet` closes directly, which sounds equivalent and is not: two
+sleeves on the same symbol trading opposite directions have IDENTICAL instrument returns and
+OPPOSITE sleeve returns, so a price-based estimate collapses every sleeve on a symbol into one
+series and reports the book as far less diverse than it is -- or, when the directions agree,
+far more. The desk's dependence numbers have to come from the same projection the allocator
+sizes on, which is `research.portfolio_projection.build_sleeves` / `build_daily`.
+
+That provenance is FENCED: `scripts/check_moneypath_fence.py` requires this file to carry
+`research.portfolio_projection`, and the pre-commit guard's marker-strip layer restored the box's
+copy every time the rewrite tried to land -- correctly, and for a day, while the adoption blamed
+NTFS corruption. The fence was right and the rewrite was wrong. The instrument path survives only
+as an explicitly-labelled FALLBACK for when the projection yields nothing, and the artifact says
+which basis produced it rather than letting the two look alike.
+
 IT PUBLISHES, IT DOES NOT RESIZE. Nothing here feeds the allocator: a dependence estimate that
 silently shrank the book would be a growth cut with no missed-growth ledger line behind it. The
 CEO docket decides what to do with a high tail lift, on this evidence.
@@ -93,6 +108,34 @@ def _live_symbols() -> list[str]:
     return out
 
 
+def _sleeve_returns() -> Any:
+    """The book's own per-sleeve daily R matrix, from the projection the allocator sizes on.
+
+    THIS IS THE CANONICAL BASIS and the reason `check_moneypath_fence` pins
+    `research.portfolio_projection` to this file. Returns a (dates x sleeves) frame, or None when
+    the projection cannot be built here -- an absence this module REPORTS rather than papers over
+    with prices that answer a different question.
+    """
+    try:
+        import pandas as pd  # noqa: F401
+
+        # QUALIFIED: the DESK-level SUPERSEDED stub shadows the bare name under pytest (see
+        # research/allocation.py); `research.` cannot be shadowed.
+        from research.portfolio_projection import build_daily, build_sleeves
+    except ImportError:
+        return None
+    try:
+        sleeves = build_sleeves()
+        if not sleeves:
+            return None
+        daily = build_daily(sleeves)
+    except Exception:
+        # A projection that cannot be built is UNMEASURED, not zero (L1.28a). The caller falls
+        # back to the instrument basis and the artifact records that it did.
+        return None
+    return daily if getattr(daily, "shape", (0, 0))[1] >= 2 else None
+
+
 def _returns(symbol: str) -> Any:
     try:
         import numpy as np
@@ -150,24 +193,36 @@ def build() -> dict[str, Any]:
         return {"at": now.isoformat(timespec="seconds"), "status": "UNMEASURED",
                 "why": f"numpy/pandas unavailable ({exc}) -- UNMEASURED, never 'independent'"}
 
-    syms = _live_symbols()
-    series = {}
-    for s in syms:
-        r = _returns(s)
-        if r is not None:
-            series[s] = r
-    if len(series) < 2:
-        return {"at": now.isoformat(timespec="seconds"), "status": "UNMEASURED",
-                "n_symbols": len(series),
-                "why": ("fewer than two live symbols have usable history -- dependence between "
-                        "one thing and nothing is not a measurement (L1.28a)")}
-
-    frame = pd.DataFrame(series).dropna()
-    if len(frame) < 500:
-        return {"at": now.isoformat(timespec="seconds"), "status": "UNMEASURED",
-                "why": f"only {len(frame)} overlapping bars across the live symbols"}
+    # SLEEVES FIRST, ALWAYS. Instrument prices answer a different question -- see the module
+    # docstring -- and the basis that produced a number travels with it so the two can never be
+    # read as the same measurement.
+    basis = "sleeve_returns"
+    min_rows = 60                       # daily R rows; a year of trading is ~250
+    frame = _sleeve_returns()
+    if frame is None:
+        basis = "instrument_returns_FALLBACK"
+        min_rows = 500                  # hourly bars
+        series = {}
+        for s in _live_symbols():
+            r = _returns(s)
+            if r is not None:
+                series[s] = r
+        if len(series) < 2:
+            return {"at": now.isoformat(timespec="seconds"), "status": "UNMEASURED",
+                    "basis": basis, "n_symbols": len(series),
+                    "why": ("the sleeve projection yielded nothing and fewer than two live "
+                            "symbols have usable history -- dependence between one thing and "
+                            "nothing is not a measurement (L1.28a)")}
+        frame = pd.DataFrame(series)
+    frame = frame.dropna(how="all").dropna()
+    if len(frame) < min_rows or frame.shape[1] < 2:
+        return {"at": now.isoformat(timespec="seconds"), "status": "UNMEASURED", "basis": basis,
+                "why": f"only {len(frame)} overlapping row(s) across {frame.shape[1]} series "
+                       f"on the {basis} basis"}
 
     cols = list(frame.columns)
+    # `basis` is threaded into every return below rather than added at the end, because a
+    # dependence number whose provenance is optional is a dependence number nobody can audit.
     # THE COMMON FACTOR IS THE BOOK'S OWN AVERAGE MOVE. Conditioning stress on it, rather than on
     # each pair separately, asks the question the book actually faces: when the whole book is
     # having a bad bar, do these two move together?
@@ -219,6 +274,11 @@ def build() -> dict[str, Any]:
 
     return {
         "at": now.isoformat(timespec="seconds"),
+        # WHAT THE NUMBERS WERE COMPUTED ON. `sleeve_returns` is the canonical basis -- the same
+        # projection the allocator sizes against -- and `instrument_returns_FALLBACK` means the
+        # projection yielded nothing and these are PRICE dependences, which conflate every sleeve
+        # on a symbol into one series. A reader who cannot tell the two apart cannot use either.
+        "basis": basis,
         "n_symbols": n, "n_pairs": len(pairs), "bars": len(frame),
         "tail_quantile": TAIL_Q,
         "mean_abs_pearson": round(mean_pear, 4),
