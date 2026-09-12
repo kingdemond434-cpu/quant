@@ -241,6 +241,9 @@ td.name{white-space:normal; min-width:150px}
 .empty .h{font-size:13px; font-weight:600; margin-bottom:4px}
 .empty p{margin:0; font-size:12px; color:var(--ink-3); line-height:1.5}
 /* --- misc ----------------------------------------------------------------- */
+/* The promotable tally strip above the clock roster. READY is the only state
+   that asks the reader to act, so it leads and is the only green one. */
+.pillrow{display:flex; gap:6px; flex-wrap:wrap}
 .pill{
   font-family:var(--mono); font-size:9px; letter-spacing:.1em; text-transform:uppercase;
   padding:2px 7px; border-radius:4px; border:1px solid currentColor; white-space:nowrap;
@@ -651,7 +654,14 @@ function spark(series){
 }
 
 function pageClocks(){
-  const out = [], p = D.pipeline || {}, rows = p.forward_detail || [];
+  // THE ROSTER, NOT A SAMPLE OF IT. `pipeline.forward_detail` carried 14 rows while the header
+  // beside it said 89 -- so the page reported a count it could not itemise, which is the one
+  // thing a monitoring board must never do: a desk cannot be watched from a number. The full
+  // roster (shadow.clocks) is every lane including the scalp lane, which forward_detail omitted
+  // entirely. forward_detail stays as the fallback for any payload built before this landed.
+  const out = [], p = D.pipeline || {}, sh = D.shadow || {};
+  const rows = (sh.clocks && sh.clocks.length) ? sh.clocks : (p.forward_detail || []);
+  const tally = sh.by_promotable || {};
   out.push(kpis([
     ["Forward clocks", num(p.forward_clocks), "running now"],
     ["Forward obs", num(p.forward_observations), "trades that COUNT toward maturity", p.forward_observations ? "g" : "r"],
@@ -660,20 +670,39 @@ function pageClocks(){
     ["Live", num(p.live), "carrying capital", p.live ? "g" : "m"]
   ]));
   const g = el("div", "grid");
-  const c = card("Sleeves on a forward clock", "shadow lanes");
+  const c = card("Every forward clock (" + rows.length + ")", "shadow lanes, all statuses");
+  if (Object.keys(tally).length){
+    const bar = el("div", "pillrow");
+    // READY first: it is the only one of the four that asks the reader to DO something.
+    const order = ["READY", "WAITING", "NO_AUTHORITY", "HELD", "CLOSED"];
+    order.filter(k => tally[k]).forEach(k => {
+      const tone = k === "READY" ? "g" : (k === "CLOSED" ? "r" : "m");
+      bar.appendChild(el("span", "pill " + tone, k.replace("_", " ") + " " + tally[k]));
+    });
+    c.body.appendChild(bar);
+  }
   if (rows.length){
     const w = el("div", "tablewrap"), t = el("table");
-    t.innerHTML = "<thead><tr><th>Sleeve</th><th>Status</th><th class='num'>Day</th>" +
-      "<th class='num'>n</th><th class='num'>Exp R</th></tr></thead>";
+    t.innerHTML = "<thead><tr><th>Sleeve</th><th>Status</th><th>Promotable</th>" +
+      "<th class='num'>Day</th><th class='num'>n</th><th class='num'>Exp R</th>" +
+      "<th class='num'>Cum R</th><th class='num'>Max DD R</th></tr></thead>";
     const tb = el("tbody");
     rows.forEach(r => {
       const tr = el("tr");
       tr.appendChild(el("td", "name", r.name));
-      const st = el("td"); const pill = el("span", "pill " + (/PROMOTION/.test(r.status || "") ? "g" : "m"), r.status || "—");
+      const st = el("td");
+      const pill = el("span", "pill " + (/PROMOTION/.test(r.status || "") ? "g" : "m"), r.status || "—");
       st.appendChild(pill); tr.appendChild(st);
+      // PROMOTABLE IS THE COLUMN THE PRINCIPAL ASKED FOR, and it is three-way on purpose:
+      // "not yet" and "never" send the reader to completely different places.
+      const pm = String(r.promotable || "—");
+      const ptone = pm.startsWith("READY") ? "g" : (pm === "CLOSED" ? "r" : "m");
+      const pc = el("td"); pc.appendChild(el("span", "pill " + ptone, pm)); tr.appendChild(pc);
       tr.appendChild(el("td", "num", (r.days ?? "—") + " / 14"));
-      tr.appendChild(el("td", "num", num(r.n)));
+      tr.appendChild(el("td", "num", num(has(r.trades) ? r.trades : r.n)));
       tr.appendChild(el("td", "num", has(r.expectancy_r) ? r.expectancy_r.toFixed(3) : "—"));
+      tr.appendChild(el("td", "num", has(r.cum_r) ? r.cum_r.toFixed(2) : "—"));
+      tr.appendChild(el("td", "num", has(r.max_dd_r) ? r.max_dd_r.toFixed(2) : "—"));
       tb.appendChild(tr);
     });
     t.appendChild(tb); w.appendChild(t); c.body.appendChild(w);

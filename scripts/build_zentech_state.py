@@ -121,6 +121,72 @@ def _shadow_rows() -> list[dict[str, Any]]:
     return sorted(output, key=lambda row: row["expectancy_r"], reverse=True)
 
 
+def _by_promotable(rows: list[dict[str, Any]]) -> dict[str, int]:
+    """Tally by promotable state, so the header line answers the question without a scroll."""
+    out: dict[str, int] = {}
+    for r in rows:
+        key = str(r.get("promotable") or "?").split(" (")[0]
+        out[key] = out.get(key, 0) + 1
+    return dict(sorted(out.items(), key=lambda kv: -kv[1]))
+
+
+def _shadow_all_rows() -> list[dict[str, Any]]:
+    """EVERY forward clock, not just the ones currently in profit.
+
+    THE PRINCIPAL, 2026-09-12: "the dashboard doesnt show the 89 clocks trades etc names
+    promotable or not currwnt rr list... it js says 89 in forward section".
+
+    He was reading it correctly. `_shadow_rows` above filters to `exp_r > 0` -- deliberately, and
+    for a good reason: a list headed "profitable" must be literal. But it is the ONLY per-clock
+    data the payload carried, so every clock at or below zero existed on the board as a number
+    and nothing else. A desk cannot be monitored from a count: "89 clocks" cannot tell you which
+    one stopped trading, which is one trade from maturing, or which is bleeding.
+
+    So this is the ROSTER -- every clock, in or out of profit, with what it has actually done.
+    The profitable list stays exactly as it was; this sits beside it.
+    """
+    combined: list[tuple[str, dict[str, Any]]] = []
+    for path in (DESK / "reports" / "shadow" / "shadow_state.json",
+                 DESK / "reports" / "shadow" / "qquant_shadow_state.json",
+                 DESK / "reports" / "shadow" / "scalp_shadow_state.json"):
+        for key, row in _read(path).items():
+            if isinstance(row, dict) and "status" in row:
+                combined.append((key, row))
+    out = []
+    for key, row in combined:
+        exp = _number(row.get("exp_r"))
+        status = row.get("status")
+        source_authority = row.get("promotion_authority") is True
+        n = int(_number(row.get("n")) or 0)
+        days = int(_number(row.get("days_active"), row.get("days")) or 0)
+        # PROMOTABLE IS A THREE-WAY ANSWER, never a boolean, because "not yet" and "never" send
+        # the reader to completely different places. A clock still accruing its window is WAITING;
+        # one whose status is terminal is CLOSED; one with authority and a matured window is READY.
+        if _is_terminal(status):
+            promotable = "CLOSED"
+        elif not source_authority:
+            promotable = "NO_AUTHORITY"
+        elif days < 14 or n < 10:
+            promotable = f"WAITING ({days}d, n={n})"
+        elif exp is not None and exp > 0:
+            promotable = "READY"
+        else:
+            promotable = "HELD (expectancy <= 0)"
+        out.append({
+            "name": key, "status": status, "trades": n, "days": days,
+            "expectancy_r": exp, "cum_r": _number(row.get("cum_r")),
+            "max_dd_r": _number(row.get("max_dd_r")),
+            "promotable": promotable,
+            "promotion_authority": source_authority and not _is_terminal(status),
+            "gate_reason": row.get("gate_reason"),
+            "last_entry": row.get("last_entry"),
+        })
+    # Worst-first among the live ones: a board is read from the top, and the row that needs a
+    # decision is never the one that is quietly working.
+    return sorted(out, key=lambda r: (r["promotable"] == "CLOSED",
+                                      r["expectancy_r"] if r["expectancy_r"] is not None else 0.0))
+
+
 def _norm_status(status) -> str:
     """A lane's status, with the separator normalised, because the separator is not the meaning.
 
@@ -970,6 +1036,7 @@ def build() -> dict[str, Any]:
     equity = _number(_find(account, "equity", "account_equity"))
     start = _number(_find(account, "starting_capital", "initial_balance"), balance)
     profitable = _shadow_rows()
+    all_clocks = _shadow_all_rows()
     passes = [row for row in qquant.get("verdicts", [])
               if isinstance(row, dict) and row.get("passed") is True]
     candidates = []
@@ -1022,7 +1089,9 @@ def build() -> dict[str, Any]:
             "gate_failures": qquant.get("gate_fails", {}),
             "survivors": candidates,
         },
-        "shadow": {"profitable": profitable, "profitable_count": len(profitable)},
+        "shadow": {"profitable": profitable, "profitable_count": len(profitable),
+                   "clocks": all_clocks, "clock_count": len(all_clocks),
+                   "by_promotable": _by_promotable(all_clocks)},
         "execution": {
             "markout_usable": markout.get("usable") is True,
             "matched_fills": markout.get("n_matched"), "why": markout.get("why"),
