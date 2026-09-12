@@ -310,11 +310,77 @@ def convert(limit: int) -> tuple[list[dict], Counter]:
     return out, stats
 
 
+#: The gauntlet's own docket. Candidates that do not reach it are not candidates for anything.
+DOCKET = DESK / "data" / "hypotheses" / "external_survivors.json"
+
+
+def feed_docket(cands: list[dict]) -> tuple[int, int]:
+    """Merge converted candidates into the gauntlet's docket. Returns (added, docket size).
+
+    THE WIRE THAT WAS NEVER THERE (found 2026-09-12). `local_candidates.json` had exactly two
+    readers in the entire repository: this file, which writes it, and `organ_contract.py`, which
+    checks its age. NOTHING consumed it. The converter ran hourly, resolved the corpus against the
+    universe registry, wrote its candidates -- and every one of them sat in a file no organ opened.
+    Conversion yield was being debated while the output went nowhere at all, which is III.16 in its
+    purest form: built, scheduled, leaving an artifact, and unwired.
+
+    DEDUPED ON THE EXECUTABLE SPEC so the hourly cadence cannot grow the docket without bound: the
+    same (symbol, family, params) is the same test whoever proposed it.
+
+    NO PERFORMANCE IS CLAIMED. A converted row is a claim that somebody ASSERTED an edge, never
+    evidence that it exists -- so n=0 and every metric is null, and the gauntlet attaches the only
+    numbers that will ever be attached. Inventing a backtest record here would be a fabricated
+    claim wearing a survivor's shape.
+    """
+    try:
+        docket = json.loads(DOCKET.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        docket = []
+    if not isinstance(docket, list):
+        return 0, 0
+
+    def key(sym: str, fam: str, params: dict) -> str:
+        return json.dumps([sym, fam, params], sort_keys=True, default=str)
+
+    seen = {key(str(r.get("symbol") or ""), str(r.get("family") or ""), r.get("params") or {})
+            for r in docket if isinstance(r, dict)}
+    now = datetime.now(UTC).isoformat(timespec="seconds")
+    added = []
+    for c in cands:
+        sym = (c.get("symbols") or [None])[0]
+        fam = c.get("family")
+        if not sym or not fam:
+            continue
+        # The session rides as a PARAM, not as a name, so two sessions of one mechanism are two
+        # cells rather than one cell with a label the builder cannot read.
+        params = {"selector": c["selector"]} if c.get("selector") else {}
+        if key(str(sym), str(fam), params) in seen:
+            continue
+        added.append({
+            "symbol": sym, "family": fam, "params": params,
+            "n": 0, "exp_r": None, "max_dd_r": None, "t_stat": None,
+            "profit_factor": None, "win_rate": None,
+            "source": str(c.get("source") or "local_converter"),
+            "url": None, "producer": "desks/mt5/research/local_converter.py",
+            "first_seen": now, "pit_stamp": now,
+            "evidence": c.get("evidence"),
+            "why": "converted deterministically from the mined corpus; no performance claimed",
+        })
+    if added:
+        docket.extend(added)
+        tmp = DOCKET.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(docket), encoding="utf-8")
+        tmp.replace(DOCKET)
+    return len(added), len(docket)
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--limit", type=int, default=0,
                     help="rows to read; 0 = the whole corpus (the DEEPEN_LIMIT convention)")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--no-feed", action="store_true",
+                    help="write local_candidates.json but do NOT merge into the gauntlet docket")
     a = ap.parse_args(argv)
 
     cands, stats = convert(a.limit if a.limit > 0 else 10_000_000)
@@ -337,6 +403,11 @@ def main(argv: list[str] | None = None) -> int:
          "source": "desks/mt5/research/local_converter.py",
          "stats": dict(stats), "candidates": cands}, indent=1), encoding="utf-8")
     print(f"wrote {OUT}")
+    if not a.no_feed:
+        added, total = feed_docket(cands)
+        print(f"docket: +{added} new cell(s), now {total} row(s) -> {DOCKET.name}")
+        if not added:
+            print("  (every candidate already in the docket -- the feed is idempotent)")
     return 0
 
 

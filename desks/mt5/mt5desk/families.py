@@ -98,6 +98,19 @@ def get_family_func(name: str) -> Callable[..., Any] | None:
     if entry:
         fn: Callable[..., Any] | None = entry["func"]
         return fn
+    # HUNT16 IS THE THIRD POPULATION, and leaving it out left this lookup disagreeing with
+    # `executables.resolve_family`, which checks it FIRST. Measured 2026-09-12: a LIVE sleeve on
+    # `dav_range_filter_adx` read as "family has no constructor" here while the forward engine
+    # resolved it without trouble -- two lanes answering differently about whether a live sleeve
+    # can be executed at all. That is the same defect this function's docstring was written to
+    # fix, one population later: absence of a decorator is not absence of an implementation.
+    try:
+        from mt5desk.executables import hunt16_families
+        h16: Callable[..., Any] | None = hunt16_families().get(name)
+        if h16 is not None:
+            return h16
+    except Exception:
+        pass
     try:
         from mt5desk import families_orthogonal as fo
     except Exception:
