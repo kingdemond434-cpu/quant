@@ -96,6 +96,7 @@ def test_fresh_issue_board_has_no_synthetic_alarm(monkeypatch, tmp_path):
 
 
 def test_staged_pull_account_is_used_without_publishing_raw_issues(monkeypatch, tmp_path):
+    monkeypatch.setattr(module, 'OUT', tmp_path / 'web/desk_state.json')
     monkeypatch.setattr(module, 'ROOT', tmp_path)
     monkeypatch.setattr(module, 'DESK', tmp_path / 'desks/mt5')
     monkeypatch.setattr(module, '_mt5_snapshot', lambda: {})

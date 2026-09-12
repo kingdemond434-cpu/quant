@@ -1819,3 +1819,66 @@ raw remote dashboard for its full ~60-second copy phase, temporarily removing th
 Root-cause extension: stage that snapshot as input to the builder's account fallback; only the
 builder's existing atomic write publishes it. This prevents each pull from undoing the repair
 while it is still running. Added staged-account and no-raw-publication regression checks.
+
+Final measured status, 2026-09-12T03:39:26Z (same `stale:issue_board` journal):
+
+```json
+{
+  "issue_id": "stale:issue_board",
+  "status": "OPEN_UPSTREAM_SOURCE_AND_MIGRATION",
+  "publication_repair": {
+    "IMPLEMENTED": true,
+    "TESTED": {"focused_tests": 12, "release_gates": "ALL_GREEN"},
+    "CANONICALLY_MERGED": ["ae6ca66d9", "128528f74"],
+    "DEPLOYED": {"host": "ubuntu-4gb-hel1-5", "head": "448ad5caf"},
+    "RUNTIME_VERIFIED": {
+      "service": "quant-desk-pull.service",
+      "exit_code": 0,
+      "completed_at": "2026-09-12T03:39:26Z",
+      "consumer": "https://dash.quanttt.xyz/desk_state.json",
+      "artifact_generated_at": "2026-09-12T03:39:25.272422+00:00",
+      "original_issue_measurement": "2026-09-11T08:11:34+00:00",
+      "freshness_status": "STALE",
+      "source_age_seconds": 70071.272422,
+      "during_pull_publication": "prior projected snapshot retained, stale flag present",
+      "equity_eur": 607.68
+    },
+    "serving_sha256": {
+      "ops/pull_desk_state.sh": "894be588fecf08d49b6cdb4cdcd8d3920e641c83a41423bfbbf041ed0f560364",
+      "scripts/build_zentech_state.py": "9eb39bb9a294b9c228385eecd6e353205c9e2f0220c9f96854bdc09ebe0a0007"
+    }
+  },
+  "independent_experiments_run": 0,
+  "new_host_reported_census_not_validated": {
+    "research_db_artifacts": 69529,
+    "research_db_transitions": 69529,
+    "research_db_lineage_rows": 0,
+    "certificates": 67,
+    "active_shadow_rows": 85,
+    "active_rows_missing_forward_start": 0,
+    "active_rows_zero_n": 5,
+    "queue_total": 20364,
+    "queue_by_status": {
+      "DONE": 10,
+      "GAUNTLET_REJECTED": 2374,
+      "BLOCKED_CANONICAL_DOCKET_MISSING": 19,
+      "QUEUED_CANONICAL_GAUNTLET": 17749,
+      "PENDING": 212
+    }
+  },
+  "blockers": [
+    "Configured old read-only source still supplies the stale issue board",
+    "Claude new Windows cf3d907e2 and Linux e292edaba lineage not reconciled to canonical release",
+    "Other-host deployment of this publication repair not verified",
+    "Copied DB, exact certificates/parameters, old forward evidence and single executor ownership not reconciled",
+    "No new Fusion-native forward observation independently verified in this assignment",
+    "Eligible candidate backlog not drained; new-host hourly sync marker includes FAILED and TIMEOUT legs"
+  ],
+  "next_action": "Resume this issue: reconcile immutable old/new DB/certificate/forward snapshots and execution ownership, then repair failing hourly legs and adopt compatible canonical publication changes on hel8. Preserve all starts/trades; no alias cutover or authority change on reachability alone."
+}
+```
+
+New-host task census was read-only. `quant-frontier.service` on hel8 last exited 0 at
+2026-09-11T15:00:11Z (daily timer, not evidence of an hourly frontier); research_loop last exited
+0 at 2026-09-12T02:37:32Z. Hourly discovery and external pipeline were still activating, with no
+exit timestamp, so their successful completion and meaningful downstream output are UNMEASURED.
