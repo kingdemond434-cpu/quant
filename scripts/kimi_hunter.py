@@ -42,7 +42,10 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 KEYS = ROOT / "data/secrets/llm_panel.json"
 
-from libs.doctrine.constitution import OBJECTIVE_PREAMBLE  # noqa: E402
+from libs.doctrine.constitution import (  # noqa: E402
+    DATA_AXIS_MANDATE,
+    OBJECTIVE_PREAMBLE,
+)
 from libs.ops.llm_route import build_chain  # noqa: E402
 from libs.research import hunt_frontier as hf  # noqa: E402
 from libs.research.free_panel import HEAVY as _FREE_PANEL_HEAVY  # noqa: E402
@@ -86,7 +89,13 @@ MODEL = "moonshotai/kimi-k3"          # seated model; swarm-max reserved for qua
 #: NOT A QUALITY COMPROMISE HIDDEN AS RESILIENCE: every finding carries the model that produced
 #: it into the ledger, so a fallback hunt is attributable and can be re-run on the seated model
 #: later. The gate it must pass is identical either way -- fallback buys ATTEMPTS, never leniency.
-MODEL_CHAIN: tuple[str, ...] = (
+#: FREE TIER ONLY (2026-09-12, principal: "all the paid run things js run on free tiers
+#: instead"). The DEEP run used to walk the paid flagships first; it now walks the same free
+#: chain the routine run uses. This file already argued the trade and measured it -- "a free-tier
+#: hunt is worth immeasurably more than no hunt", and the gate every finding faces is identical
+#: either way, so the chain buys ATTEMPTS and never leniency. What changes is that the deep run
+#: now costs nothing, which is what makes an hourly cadence affordable at all.
+PAID_MODEL_CHAIN: tuple[str, ...] = (
     "moonshotai/kimi-k3",            # seated: the deep-forest hunter proper
     "moonshotai/kimi-k2",            # same family, previous generation
     "deepseek/deepseek-r1",          # different family: a genuinely different prior on what is
@@ -109,6 +118,9 @@ MODEL_CHAIN: tuple[str, ...] = (
 #: Every finding still carries which model produced it, so nothing here is a quality compromise
 #: hidden as economy -- it is the same fallback logic MODEL_CHAIN already uses, just made the
 #: FIRST choice instead of the last resort for the ten routine runs a week.
+#: Both the routine and the deep run use this. PAID_MODEL_CHAIN is retained,
+#: unreferenced by the default path, so re-enabling spend is one line and not a
+#: rewrite -- a policy that deletes its own alternative cannot be reversed.
 ROUTINE_MODEL_CHAIN: tuple[str, ...] = (
     "moonshotai/kimi-k2:free",
     "deepseek/deepseek-r1:free",
@@ -122,6 +134,13 @@ ROUTINE_MODEL_CHAIN: tuple[str, ...] = (
     #: sourced. The chain's order IS the policy: the mandate's seats are tried first.
     *_FREE_PANEL_HEAVY,
 )
+
+#: THE ACTIVE CHAIN. Kept under its original name because five call sites, the blocked
+#: artifact and three tests all refer to "the chain this hunter walks" by it -- renaming
+#: that would have made a POLICY change look like a refactor, and the policy is the only
+#: thing that changed: the chain is now the free one on every run.
+MODEL_CHAIN: tuple[str, ...] = ROUTINE_MODEL_CHAIN
+
 
 _COVERAGE = ROOT / "data/hunt_coverage.json"
 _VECTOR_COOLDOWN_D = 45      # a forest may be re-entered only after this long
@@ -335,14 +354,16 @@ def _providers(*, deep: bool = False) -> list[tuple[str, str, str]]:
     # model and stop; copying this logic into each would guarantee eleven slightly different
     # versions and eleven separate regressions, so the routing lives in a library they can all
     # adopt and check_llm_routing names the ones that have not.
-    chain = MODEL_CHAIN if deep else ROUTINE_MODEL_CHAIN
+    # BOTH LANES ARE FREE NOW. `deep` still selects the DEPTH of the protocol (the
+    # wave sequence and its budget); it no longer selects a paid chain.
+    chain = ROUTINE_MODEL_CHAIN
     return [(r.model, r.base_url, r.key) for r in build_chain(chain, KEYS)]
 
 
 def _ask(base, key, system, user, timeout=240.0, model: str = MODEL) -> str:
     body = json.dumps({"model": model, "max_tokens": 16000, "temperature": 1.0,
                        "messages": [{"role": "system",
-                                     "content": (OBJECTIVE_PREAMBLE + "\n"
+                                     "content": (OBJECTIVE_PREAMBLE + DATA_AXIS_MANDATE + "\n"
                                                  + _doctrine("kimi_hunter") + system)},
                                     {"role": "user", "content": user}]}).encode()
     req = urllib.request.Request(base.rstrip("/") + "/chat/completions", data=body, method="POST",
@@ -570,7 +591,7 @@ def _blocked(reason: str, attempts: list[dict] | None = None) -> None:
         "status": "BLOCKED",
         "blocker": reason,
         "attempts": attempts or [],
-        "model_chain": list(MODEL_CHAIN),
+        "model_chain": list(ROUTINE_MODEL_CHAIN),
         "waves": {}, "findings": [], "dropped": [],
         "note": ("the Deep Forest protocol and its intake gates are INTACT. This records that the "
                  "hunt could not be ATTEMPTED, which is a different fact from a hunt that found "
@@ -731,7 +752,7 @@ def main() -> None:
     OUT.write_text(json.dumps({"updated": datetime.now(tz=UTC).isoformat(),
                                "status": status,
                                "models_used": models_used,
-                               "model_chain": list(MODEL_CHAIN),
+                               "model_chain": list(ROUTINE_MODEL_CHAIN),
                                "waves_completed": sorted(transcript),
                                "attempts": attempts,
                                "territories_hunted": n_terr,

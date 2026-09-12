@@ -43,6 +43,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 from libs.doctrine.constitution import (  # noqa: E402
+    DATA_AXIS_MANDATE,
     OBJECTIVE_PREAMBLE,
     RESIDUAL_MANDATE,
     RESIDUAL_PROTOCOL,
@@ -102,7 +103,7 @@ SYSTEM = (
     # rather than for expected shift in E[log W]. It also has to be told that a hypothesis
     # whose most likely outcome is a DISPROOF is a good hypothesis, or it will only ever
     # propose things it expects to confirm, which is the lowest-information batch available.
-    OBJECTIVE_PREAMBLE + RESIDUAL_MANDATE + RESIDUAL_PROTOCOL + "\n"
+    OBJECTIVE_PREAMBLE + RESIDUAL_MANDATE + DATA_AXIS_MANDATE + RESIDUAL_PROTOCOL + "\n"
     "You are a quantitative researcher generating TESTABLE hypotheses for a trading desk whose "
     "universe is the full MT5/Fusion market -- FX majors/crosses/exotics, gold and metals, equity "
     "indices, energy, soft commodities and share CFDs; crypto only as information for an MT5 move.\n"

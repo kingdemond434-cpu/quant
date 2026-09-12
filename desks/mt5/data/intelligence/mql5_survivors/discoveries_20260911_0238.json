@@ -1,0 +1,128 @@
+[
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2304847",
+  "symbols": [
+   "AUDCAD",
+   "OSMOSE",
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-11T02:38:23+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "algo_survivor",
+   "gold"
+  ],
+  "ev_score": 298.468,
+  "growth_pct": 22081.95,
+  "weeks": 95.0,
+  "pf": 1.91,
+  "max_dd_pct": null,
+  "trades": 2983.0,
+  "win_pct": 2296.0,
+  "algo_pct": 96.0,
+  "subscribers": 21.0,
+  "author": "/en/users/datbh",
+  "author_other_signals": [
+   {
+    "sid": "2231030",
+    "title": "'MSC Gold Stable Pro' by Bui Huy Dat",
+    "growth": "1435%",
+    "curve_points": 20,
+    "curve_dd": 0.0
+   },
+   {
+    "sid": "1988269",
+    "title": "'MSC Gold Invest Pro' by Bui Huy Dat",
+    "growth": "1046%",
+    "curve_points": 20,
+    "curve_dd": -4.0
+   },
+   {
+    "sid": "2381088",
+    "title": "'MSC SuperGold IC Pro' by Bui Huy Dat",
+    "growth": "133%",
+    "curve_points": 20,
+    "curve_dd": -14.0
+   }
+  ],
+  "hour_histogram": {
+   "15": 2,
+   "08": 1,
+   "13": 2,
+   "20": 5,
+   "21": 2,
+   "09": 1,
+   "12": 2,
+   "19": 3,
+   "23": 2,
+   "14": 1,
+   "06": 2,
+   "17": 1,
+   "07": 2,
+   "05": 3,
+   "18": 2,
+   "10": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2300694",
+  "symbols": [
+   "AUDCAD",
+   "AUDNZD",
+   "BTCUSD",
+   "EURAUD",
+   "EURUSD",
+   "NZDCAD",
+   "NZDUSD",
+   "USDCAD",
+   "XAGUSD",
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-11T02:38:23+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "long_lived",
+   "algo_survivor",
+   "gold",
+   "multi_fx"
+  ],
+  "ev_score": 41.415,
+  "growth_pct": 2122.42,
+  "weeks": 198.0,
+  "pf": 1.96,
+  "max_dd_pct": null,
+  "trades": 1867.0,
+  "win_pct": 1370.0,
+  "algo_pct": 94.0,
+  "subscribers": 4.0,
+  "author": "/en/users/antonkon",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "10": 3,
+   "14": 2,
+   "19": 1,
+   "17": 1,
+   "16": 1,
+   "22": 1,
+   "05": 1,
+   "09": 1,
+   "15": 1,
+   "07": 1,
+   "23": 1,
+   "02": 1,
+   "00": 1,
+   "01": 1,
+   "12": 1
+  }
+ }
+]

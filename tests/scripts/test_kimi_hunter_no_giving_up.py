@@ -68,9 +68,16 @@ class TestAChainNeverASingleName:
         assert any(m.endswith(":free") for m in K.MODEL_CHAIN), (
             "a free tier must be present -- 'the account is unfunded' is a reason to hunt "
             "cheaper, never a reason to stop hunting")
-        free_at = min(i for i, m in enumerate(K.MODEL_CHAIN) if m.endswith(":free"))
-        paid_at = max(i for i, m in enumerate(K.MODEL_CHAIN) if not m.endswith(":free"))
-        assert free_at > paid_at, "free tiers belong at the END of the chain, not the front"
+        # FREE-LAST ONLY APPLIES WHEN BOTH TIERS ARE PRESENT (2026-09-12). The principal put the
+        # whole OpenRouter side on the free tier, so the active chain is now free end to end and
+        # `max()` over the paid routes would be an empty sequence. The invariant that mattered is
+        # kept and narrowed: a chain must never put a free route AHEAD of a paid one it still
+        # carries. An all-free chain satisfies it trivially, which is the correct reading -- there
+        # is no cheaper option being preferred over a better one, there is only one tier.
+        paid = [i for i, m in enumerate(K.MODEL_CHAIN) if not m.endswith(":free")]
+        if paid:
+            free_at = min(i for i, m in enumerate(K.MODEL_CHAIN) if m.endswith(":free"))
+            assert free_at > max(paid), "free tiers belong at the END of a mixed chain"
 
     def test_the_chain_spans_more_than_one_model_family(self) -> None:
         """Same-family fallbacks share a prior about what is under-observed, and the hunt's whole

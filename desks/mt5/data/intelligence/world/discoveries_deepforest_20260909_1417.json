@@ -1,0 +1,30 @@
+[
+ {
+  "source": "deep_forest",
+  "kind": "dataset",
+  "title": "Articles | QuantStart",
+  "url": "https://www.quantstart.com/articles/",
+  "published": "2026-09-09T14:16:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.45,
+  "lang": "en",
+  "endpoints": [
+   "https://www.quantstart.com/articles/Downloading-Historical-Intraday-US-Equities-From-DTN-IQFeed-with-Python/",
+   "https://www.quantstart.com/articles/Downloading-Historical-Futures-Data-From-Quandl/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "5f56ddf13813240c26dd",
+  "host": "www.quantstart.com",
+  "ground": "QuantStart articles",
+  "region": "us",
+  "cluster": "west",
+  "dataset_class": null,
+  "available_time": "2026-09-09T14:16:58+00:00",
+  "ingested_time": "2026-09-09T14:16:58+00:00",
+  "source_hash": "5f56ddf13813240c26dd",
+  "claims": [],
+  "n_claims": 0
+ }
+]

@@ -1,0 +1,83 @@
+[
+ {
+  "source": "deep_forest",
+  "kind": "dataset",
+  "title": "Statistics - International Cocoa Organization",
+  "url": "https://www.icco.org/statistics/",
+  "published": "2026-09-11T10:42:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.4,
+  "lang": "en",
+  "endpoints": [
+   "https://www.icco.org/pwa-manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "05d79e12028985aab4d6",
+  "host": "www.icco.org",
+  "ground": "International Cocoa Organization",
+  "region": "institutional",
+  "cluster": "institutional",
+  "dataset_class": "commodity_inventories",
+  "available_time": "2026-09-11T10:42:04+00:00",
+  "ingested_time": "2026-09-11T10:42:04+00:00",
+  "source_hash": "05d79e12028985aab4d6",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "deep_forest",
+  "kind": "dataset",
+  "title": "Trading & Shipping - International Cocoa Organization",
+  "url": "https://www.icco.org/trading-shipping/",
+  "published": "2026-09-11T10:42:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.4,
+  "lang": "en",
+  "endpoints": [
+   "https://www.icco.org/pwa-manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "cb154d9a8dfb2cf62a1f",
+  "host": "www.icco.org",
+  "ground": "International Cocoa Organization",
+  "region": "institutional",
+  "cluster": "institutional",
+  "dataset_class": "commodity_inventories",
+  "available_time": "2026-09-11T10:42:04+00:00",
+  "ingested_time": "2026-09-11T10:42:04+00:00",
+  "source_hash": "cb154d9a8dfb2cf62a1f",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "deep_forest",
+  "kind": "dataset",
+  "title": "株式投資 超入門編 マーケットにおける需給って何？ | いまから ...",
+  "url": "https://imakara.traders.co.jp/articles/2832",
+  "published": "2026-09-11T10:42:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.4,
+  "lang": "ja",
+  "endpoints": [
+   "https://imakara.traders.co.jp/series/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "acc0a123f034f370244d",
+  "host": "imakara.traders.co.jp",
+  "ground": "トレーダーズ・ウェブ / 市況",
+  "region": "jp",
+  "cluster": "jp",
+  "dataset_class": null,
+  "available_time": "2026-09-11T10:42:17+00:00",
+  "ingested_time": "2026-09-11T10:42:17+00:00",
+  "source_hash": "acc0a123f034f370244d",
+  "claims": [],
+  "n_claims": 0
+ }
+]

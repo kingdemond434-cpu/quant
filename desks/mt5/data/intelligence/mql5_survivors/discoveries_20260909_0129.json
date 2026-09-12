@@ -1,0 +1,237 @@
+[
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2378337",
+  "symbols": [
+   "AUDCAD",
+   "AUDCHF",
+   "AUDJPY",
+   "AUDNZD",
+   "AUDUSD",
+   "BTCUSD",
+   "CADCHF",
+   "CADJPY",
+   "CHFJPY",
+   "EURAUD",
+   "EURCAD",
+   "EURCHF"
+  ],
+  "found_at": "2026-09-09T01:29:23+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "new_fast_growth",
+   "algo_survivor",
+   "multi_fx"
+  ],
+  "ev_score": 1.3,
+  "growth_pct": 270.67,
+  "weeks": 12.0,
+  "pf": 1.42,
+  "max_dd_pct": null,
+  "trades": 648.0,
+  "win_pct": 373.0,
+  "algo_pct": 100.0,
+  "subscribers": 0.0,
+  "author": "/en/users/ma13ion",
+  "author_other_signals": [
+   {
+    "sid": "2357156",
+    "title": "'Farmed Hedge Yield VCopy' by Tanapisit Tepawarapruek",
+    "growth": "459%",
+    "curve_points": 20,
+    "curve_dd": -1.0
+   },
+   {
+    "sid": "2356376",
+    "title": "'Farmed Hedge Yield Copy I' by Tanapisit Tepawarapruek",
+    "growth": "473%",
+    "curve_points": 20,
+    "curve_dd": -5.0
+   },
+   {
+    "sid": "2361272",
+    "title": "'Farmed Hedge Yield Zcopy' by Tanapisit Tepawarapruek",
+    "growth": "187%",
+    "curve_points": 20,
+    "curve_dd": -6.0
+   }
+  ],
+  "hour_histogram": {
+   "01": 2,
+   "11": 1,
+   "07": 1,
+   "23": 2,
+   "15": 2,
+   "13": 2,
+   "02": 1,
+   "00": 1,
+   "22": 1,
+   "12": 1,
+   "10": 1,
+   "08": 2,
+   "06": 1,
+   "17": 1,
+   "16": 1,
+   "04": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2360005",
+  "symbols": [
+   "CHFJPY",
+   "EURUSD",
+   "LMAXMU",
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-09T01:29:23+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "algo_survivor",
+   "gold",
+   "multi_fx"
+  ],
+  "ev_score": 1.522,
+  "growth_pct": 203.85,
+  "weeks": 29.0,
+  "pf": 1.54,
+  "max_dd_pct": null,
+  "trades": 341.0,
+  "win_pct": 192.0,
+  "algo_pct": 99.0,
+  "subscribers": 0.0,
+  "author": "/en/users/snowpea",
+  "author_other_signals": [
+   {
+    "sid": "2225567",
+    "title": "'BTC ICMarkets 50 high risk' by Qi Kai Fan",
+    "growth": "838%",
+    "curve_points": 20,
+    "curve_dd": -20.0
+   },
+   {
+    "sid": "2346081",
+    "title": "'Gold combination EBC 1024' by Qi Kai Fan",
+    "growth": "128%",
+    "curve_points": 20,
+    "curve_dd": -20.0
+   },
+   {
+    "sid": "2342350",
+    "title": "'Portfolio TMGM 494' by Qi Kai Fan",
+    "growth": "412%",
+    "curve_points": 20,
+    "curve_dd": -11.0
+   }
+  ],
+  "hour_histogram": {
+   "13": 2,
+   "06": 2,
+   "19": 1,
+   "01": 2,
+   "00": 3,
+   "14": 2,
+   "02": 1,
+   "12": 1,
+   "11": 3,
+   "16": 1,
+   "20": 1,
+   "15": 1,
+   "21": 2
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2385675",
+  "symbols": [
+   "AUDCAD"
+  ],
+  "found_at": "2026-09-09T01:29:23+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "high_pf",
+   "algo_survivor"
+  ],
+  "ev_score": 1.724,
+  "growth_pct": 216.42,
+  "weeks": 33.0,
+  "pf": 2.97,
+  "max_dd_pct": null,
+  "trades": 373.0,
+  "win_pct": 275.0,
+  "algo_pct": 100.0,
+  "subscribers": 1.0,
+  "author": "/en/users/nocapfx",
+  "author_other_signals": [
+   {
+    "sid": "2367552",
+    "title": "'Night Scalper High Risk Mode' by NoCap FX",
+    "growth": "95%",
+    "curve_points": 20,
+    "curve_dd": -56.0
+   }
+  ],
+  "hour_histogram": {
+   "08": 1,
+   "09": 1,
+   "07": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2363806",
+  "symbols": [
+   "XAAUSD",
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-09T01:29:23+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "algo_survivor",
+   "gold"
+  ],
+  "ev_score": 3.181,
+  "growth_pct": 425.92,
+  "weeks": 29.0,
+  "pf": 1.25,
+  "max_dd_pct": null,
+  "trades": 273.0,
+  "win_pct": 175.0,
+  "algo_pct": 100.0,
+  "subscribers": 0.0,
+  "author": "/en/users/michael_mtl",
+  "author_other_signals": [
+   {
+    "sid": "2377533",
+    "title": "'XAAUSD Breakout System 2' by Michael Martin",
+    "growth": "-5%",
+    "curve_points": 20,
+    "curve_dd": -52.0
+   }
+  ],
+  "hour_histogram": {
+   "04": 1,
+   "14": 3,
+   "13": 5,
+   "15": 2,
+   "02": 2,
+   "01": 1,
+   "19": 2,
+   "08": 1,
+   "12": 2,
+   "18": 2
+  }
+ }
+]

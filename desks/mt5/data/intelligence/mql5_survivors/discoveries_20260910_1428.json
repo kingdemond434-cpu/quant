@@ -1,0 +1,105 @@
+[
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2306053",
+  "symbols": [
+   "BALESI",
+   "NASUSD",
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-10T14:28:08+00:00",
+  "platform": "mt4",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "high_pf",
+   "algo_survivor",
+   "gold"
+  ],
+  "ev_score": 44.283,
+  "growth_pct": 3763.36,
+  "weeks": 72.0,
+  "pf": 2.13,
+  "max_dd_pct": null,
+  "trades": 830.0,
+  "win_pct": 520.0,
+  "algo_pct": 100.0,
+  "subscribers": 27.0,
+  "author": "/en/users/kenni_siu",
+  "author_other_signals": [
+   {
+    "sid": "2383608",
+    "title": "'Kenni Daily Scalp Breakout Gold MT5' by Ken Rmah",
+    "growth": "8%",
+    "curve_points": 20,
+    "curve_dd": -50.0
+   }
+  ],
+  "hour_histogram": {
+   "22": 3,
+   "16": 1,
+   "13": 4,
+   "00": 2,
+   "18": 1,
+   "14": 2,
+   "06": 1,
+   "07": 2,
+   "23": 2,
+   "11": 1,
+   "19": 4,
+   "03": 1,
+   "02": 2,
+   "04": 5,
+   "17": 2,
+   "05": 1,
+   "10": 2,
+   "20": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2347343",
+  "symbols": [
+   "EURJPY",
+   "GBPJPY",
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-10T14:28:08+00:00",
+  "platform": "mt4",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "gold"
+  ],
+  "ev_score": 20.202,
+  "growth_pct": 2303.43,
+  "weeks": 40.0,
+  "pf": 1.41,
+  "max_dd_pct": null,
+  "trades": 247.0,
+  "win_pct": 125.0,
+  "algo_pct": 0.0,
+  "subscribers": 9.0,
+  "author": "/en/users/ludi1991",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "14": 2,
+   "10": 3,
+   "08": 2,
+   "15": 2,
+   "01": 1,
+   "03": 2,
+   "22": 1,
+   "11": 1,
+   "07": 1,
+   "05": 3,
+   "06": 1,
+   "00": 1,
+   "02": 1
+  }
+ }
+]

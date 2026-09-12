@@ -1,0 +1,12 @@
+[
+ {
+  "source": "quantconnect",
+  "kind": "fetch_error",
+  "title": "HTTPSConnectionPool(host='www.quantconnect.com', port=443): Max retries exceeded with url: /forum/discussions/1/newest (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occur",
+  "url": "",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-09T02:35:50+00:00",
+  "needs_selector_work": true
+ }
+]

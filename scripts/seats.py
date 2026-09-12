@@ -141,9 +141,16 @@ def _free_tier_active() -> bool:
     import os
     import time
 
+    # FREE IS THE DEFAULT NOW (2026-09-12, principal: "make everything free tier on openrouter").
+    # This used to probe the balance and return free only when OVERDRAWN, which meant a funded
+    # account silently spent on every one of these seats -- and they just went from daily to
+    # hourly, so the same policy at 24x the cadence would be 24x the bill. The probe is kept for
+    # the explicit opt-out path only; absence of the variable now means free rather than "ask".
     env = os.environ.get(_FREE_ENV)
-    if env is not None:
-        return env == "1"
+    if env is None:
+        return True
+    if env != "0":
+        return True
     now = time.time()
     if _FREE_CACHE.get("at", 0) + _FREE_TTL_S > now:
         return bool(_FREE_CACHE.get("free"))

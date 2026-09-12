@@ -36,9 +36,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 import urllib.error
 import urllib.request
+from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -178,6 +180,111 @@ def probe(url: str) -> dict:
         return {"reachable": False, "status": None, "why": f"{type(e).__name__}: {e}"}
 
 
+# ---------------------------------------------------------------------------------- DISCOVERY
+
+#: Hosts that publish DATA, as opposed to hosts that publish opinions about data. A mined corpus
+#: is mostly forum prose and blog posts, so a bare URL count is noise; these are the domains whose
+#: appearance in a claim usually means somebody is citing a SERIES.
+DATA_HOST_HINTS: tuple[str, ...] = (
+    "stlouisfed.org", "ecb.europa.eu", "bis.org", "imf.org", "worldbank.org", "oecd.org",
+    "eia.gov", "cftc.gov", "sec.gov", "treasury.gov", "bls.gov", "census.gov", "noaa.gov",
+    "usda.gov", "eurostat", "ons.gov.uk", "statcan.gc.ca", "stat.go.jp", "rba.gov.au",
+    "boj.or.jp", "bankofengland.co.uk", "snb.ch", "comtrade", "nasdaq.com/data",
+    "data.gov", "datahub", "opendata", "dataset", "timeseries", "stats.gov.cn", "customs.gov.cn",
+    "kaggle.com/datasets", "zenodo.org", "figshare", "dataverse", "/api/", "api.",
+)
+
+#: Phrases that name a MEASUREMENT rather than a mechanism. A claim carrying one of these is worth
+#: reading for an axis even with no URL attached, because the phrase names the series well enough
+#: that the source can be found from the name.
+AXIS_WORDS: tuple[str, ...] = (
+    "open interest", "positioning", "commitments of traders", "net long", "net short",
+    "inventories", "stockpiles", "storage report", "rig count", "shipments", "freight rate",
+    "baltic dry", "port congestion", "order book", "bid-ask", "auction", "issuance",
+    "yield curve", "term spread", "breakeven", "swap spread", "credit spread", "repo rate",
+    "funding rate", "basis", "carry", "nowcast", "surprise index", "revision", "consensus",
+    "fund flows", "etf flows", "short interest", "borrow rate", "seasonality", "harvest",
+    "drought", "crop condition", "weather anomaly", "tariff", "sanction", "export ban",
+    "quota", "production cut", "customs", "electricity demand", "pipeline flow",
+)
+
+_URL_RE = re.compile(r"https?://([A-Za-z0-9.\-]+)([^\s\"'<>\]\\)]*)")
+
+
+def discover(limit_files: int = 1200) -> dict:
+    """Read the mined corpus for DATA SOURCES rather than for strategy claims.
+
+    THE SAME CORPUS, A DIFFERENT QUESTION. `local_converter` asks each mined row "does this name a
+    mechanism I can test". This asks "does this name a MEASUREMENT I do not hold". The second
+    question has barely been asked, and it is the one whose answers raise n_eff: 204,581 rows
+    convert to 125 exposures and adding 74 conversion aliases moved that by one, because the
+    corpus is saturated in mechanisms. It is not saturated in CITATIONS.
+
+    THIS IS WHERE EVERY SEAT'S AXIS HUNTING LANDS. deepseek, kimi, the blind researcher, the
+    strategic director and the hypothesis generator all carry DATA_AXIS_MANDATE now and all donate
+    into `data/intelligence/<seat>/`, which is exactly the tree this walks. So a seat naming a
+    Chinese customs series or a Brazilian port-congestion feed shows up here as a candidate host
+    on the next hourly pass, with no per-seat plumbing.
+
+    IT PROPOSES, IT DOES NOT INGEST. A discovered host is a CANDIDATE with a count and an example,
+    written into the report for the CEO docket to rank. Nothing is probed, trusted or ingested
+    from a mention: a URL in a forum post is evidence that somebody cited a source, never evidence
+    that the source exists, is free, is dated, or binds to anything this desk trades.
+    """
+    roots = [ROOT / "data" / "intelligence", DESK / "data" / "intelligence"]
+    hosts: Counter[str] = Counter()
+    words: Counter[str] = Counter()
+    examples: dict[str, str] = {}
+    seats: Counter[str] = Counter()
+    known = {a["url"].split("/")[2].lower() for a in AXES if "://" in a["url"]}
+    n_files = 0
+
+    for root in roots:
+        if not root.exists():
+            continue
+        for p in sorted(root.rglob("*.json")) + sorted(root.rglob("*.jsonl")):
+            if n_files >= limit_files:
+                break
+            try:
+                text = p.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                continue
+            n_files += 1
+            low = text.lower()
+            for w in AXIS_WORDS:
+                c = low.count(w)
+                if c:
+                    words[w] += c
+            seat = p.parent.name
+            for m in _URL_RE.finditer(text):
+                host = m.group(1).lower()
+                path = (m.group(2) or "").lower()
+                if host in known:
+                    continue
+                if not any(h in host or h in path for h in DATA_HOST_HINTS):
+                    continue
+                hosts[host] += 1
+                seats[seat] += 1
+                examples.setdefault(host, m.group(0)[:180])
+
+    cands = [{"host": h, "mentions": n, "example": examples.get(h),
+              "status": "CANDIDATE -- cited in the corpus, never probed",
+              "next": "probe it, then bind it to the MT5 instruments it can condition"}
+             for h, n in hosts.most_common(40)]
+    return {
+        "files_scanned": n_files,
+        "n_candidate_hosts": len(cands),
+        "candidate_hosts": cands,
+        "by_seat": dict(seats.most_common(15)),
+        "axis_vocabulary_hits": dict(words.most_common(30)),
+        "why": ("the corpus is saturated in MECHANISMS and not in CITATIONS. Which MEASUREMENTS "
+                "it mentions is a different question with a different ceiling, and its answers "
+                "are the only ones that lower rho rather than approach 1/rho."),
+        "boundary": ("a mention is not a source. Nothing here is probed, ingested or trusted -- "
+                     "these are candidates for the CEO docket to rank."),
+    }
+
+
 def build(do_probe: bool) -> dict:
     rows = []
     for a in AXES:
@@ -193,6 +300,7 @@ def build(do_probe: bool) -> dict:
             unblocks.setdefault(fam, []).append(r["id"])
     return {
         "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+        "discovery": discover(),
         "n_axes": len(rows),
         "n_distinct_axis_kinds": len({r["axis"] for r in rows}),
         "n_reachable": len(reach),
@@ -225,6 +333,15 @@ def main(argv: list[str] | None = None) -> int:
         print("  families a reachable source would unblock:")
         for fam, ids in doc["families_unblocked_by_a_reachable_source"].items():
             print(f"     {fam:<22} {', '.join(ids)}")
+    d = doc.get("discovery") or {}
+    if d.get("n_candidate_hosts"):
+        print(f"  DISCOVERY: {d['n_candidate_hosts']} candidate host(s) cited across "
+              f"{d['files_scanned']} corpus file(s), none probed")
+        for c in d["candidate_hosts"][:10]:
+            print(f"     {c['mentions']:>6}x  {c['host'][:56]}")
+        top = list((d.get("axis_vocabulary_hits") or {}).items())[:6]
+        if top:
+            print("     vocabulary: " + ", ".join(f"{k} x{v}" for k, v in top))
     if not a.apply:
         print("  --apply not given; nothing written")
         return 0

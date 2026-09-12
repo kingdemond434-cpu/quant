@@ -137,10 +137,62 @@ def _orphans(limit: int = 12) -> list[str]:
     return []
 
 
+def _audit_rows() -> dict:
+    """The cold-audit intake, already classified under the standing order.
+
+    THE AUDIT IS A SOURCE OF PROPOSALS, NOT A SOURCE OF AUTHORITY. An LLM audit reads the desk
+    from outside and names bottlenecks nobody inside noticed -- that is its value, and it is real.
+    What it does NOT get is the ability to shrink the book by sounding certain. `audit_intake`
+    has already split the recommendations into the ones that raise E[log W] and the ones the
+    principal's standing order refuses on sight, and only the first kind reaches this docket.
+
+    The refusals still travel, in `refused_by_standing_order` on the docket itself, because a
+    refusal the CEO never sees is indistinguishable from an audit that never made the suggestion --
+    and the desk would then have no record of how often its own auditor argues for less.
+    """
+    try:
+        import audit_intake
+    except ImportError:
+        try:
+            from desks.mt5.research import audit_intake  # type: ignore[no-redef]
+        except ImportError:
+            return {"status": "UNAVAILABLE", "admitted": [], "refused": [],
+                    "note": "audit_intake not importable -- UNMEASURED, not clean"}
+    try:
+        return audit_intake.build()
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        return {"status": "UNAVAILABLE", "admitted": [], "refused": [],
+                "note": f"audit intake failed: {type(exc).__name__}: {exc}"}
+
+
 def propose() -> list[dict]:
     """Rank today's proposals. Each carries the experiment that would prove it and the reading
     that would refute it; a row that cannot state both is UNFALSIFIABLE and ranks last."""
     props: list[dict] = []
+
+    # 0. THE COLD AUDIT'S ADMITTED RECOMMENDATIONS. The principal's instruction of 2026-09-12: as
+    #    CEO, read the OpenRouter audits daily and implement what serves E[log W] and edge
+    #    discovery, including the bottlenecks they call out -- and never the timid half.
+    _audit = _audit_rows()
+    for i, row in enumerate(_audit.get("admitted") or []):
+        text = str(row.get("text") or "").strip()
+        if not text:
+            continue
+        props.append({
+            "id": f"audit:{Path(str(row.get('source') or 'audit')).stem}:{i:03d}",
+            "kind": "capability",
+            "adds": text[:220],
+            "needs": "implementation against this repository",
+            "why_independent": ("an outside reading of the desk: the audit sees what the desk's "
+                                "own organs cannot, because they are the thing being read"),
+            "experiment": (f"implement it and measure the named quantity -- {row.get('matched')} "
+                           f"-- before and after, against the funded book"),
+            "refuted_if": "the measured quantity does not move, or dE[log W] does not rise",
+            "cost": "medium",
+            "blocked_on": None,
+            "rank_note": f"cold audit ADMIT ({row.get('matched')})",
+            "audit_verdict_why": row.get("why"),
+        })
 
     # 1. The breadth board's own REACHABLE gaps. These are the cheapest independent bets on the
     #    desk because the family code already exists -- what is missing is an INPUT.
@@ -222,6 +274,7 @@ def propose() -> list[dict]:
 
 def build() -> dict:
     now = datetime.now(tz=UTC)
+    audit = _audit_rows()
     props = propose()
     decided = set()
     try:
@@ -237,6 +290,26 @@ def build() -> dict:
         "standing_questions": list(STANDING_QUESTIONS),
         "binding_constraint": BINDING_CONSTRAINT,
         "scout": _frontier_scout(),
+        "cold_audit": {
+            "status": audit.get("status"),
+            "sources_present": audit.get("n_sources_present"),
+            "sources_absent": audit.get("n_sources_absent"),
+            "n_admitted": len(audit.get("admitted") or []),
+            "n_refused": len(audit.get("refused") or []),
+            "note": audit.get("unmeasured_note") or audit.get("note"),
+        },
+        # REFUSALS ARE PUBLISHED, NOT DISCARDED. The principal's order is that timid
+        # recommendations, aggressiveness reductions and heat-floor criticism are never
+        # implemented -- not that they are never seen. Publishing them keeps the record of how
+        # often the desk's own auditor argues for a smaller book, which is itself a measurement:
+        # an auditor that argues for less every single day is telling you about its priors, not
+        # about your desk.
+        "refused_by_standing_order": (audit.get("refused") or [])[:40],
+        "refusal_rule": (
+            "NEVER implemented, however well argued: timid recommendations, anything that reduces "
+            "aggressiveness, and any criticism of the 20% minimum heat floor. A reduction is "
+            "ADMITTED when what it shrinks is correlation, lookahead, trial count, slippage or "
+            "latency -- those buy growth. It is REFUSED when what it shrinks is the book."),
         "n_proposals": len(props),
         "n_undecided": len(fresh),
         "proposals": props,

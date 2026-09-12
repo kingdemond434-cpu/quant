@@ -1,0 +1,12 @@
+[
+ {
+  "source": "tradingview_scripts",
+  "kind": "fetch_error",
+  "title": "HTTPSConnectionPool(host='www.tradingview.com', port=443): Max retries exceeded with url: /scripts/?script_access=open&script_type=strategies (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_W",
+  "url": "",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-09T23:30:42+00:00",
+  "needs_selector_work": true
+ }
+]

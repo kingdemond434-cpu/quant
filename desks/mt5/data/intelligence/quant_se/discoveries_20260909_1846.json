@@ -1,0 +1,457 @@
+[
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Dupire (Local Vol with Imp Vol)",
+  "url": "https://quant.stackexchange.com/questions/61661/dupire-local-vol-with-imp-vol",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-09T18:50:01+00:00",
+  "score": 3,
+  "tags": [
+   "volatility",
+   "volatility-surface",
+   "implied",
+   "local"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Backtesting: what happens to real-executed order if mine fills instead?",
+  "url": "https://quant.stackexchange.com/questions/37080/backtesting-what-happens-to-real-executed-order-if-mine-fills-instead",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-09T18:50:01+00:00",
+  "score": 5,
+  "tags": [
+   "quant-trading-strategies",
+   "backtesting",
+   "strategy"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "How is anything bespoke priced and traded?",
+  "url": "https://quant.stackexchange.com/questions/85824/how-is-anything-bespoke-priced-and-traded",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-09T18:50:01+00:00",
+  "score": 0,
+  "tags": [
+   "options"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "How to ascertain/establish certainty of a portfolio rebalancing strategy?",
+  "url": "https://quant.stackexchange.com/questions/39265/how-to-ascertain-establish-certainty-of-a-portfolio-rebalancing-strategy",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-09T18:50:01+00:00",
+  "score": 2,
+  "tags": [
+   "portfolio-optimization",
+   "portfolio",
+   "strategy",
+   "rebalancing"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "What to predict in delta-gamma hedging?",
+  "url": "https://quant.stackexchange.com/questions/79069/what-to-predict-in-delta-gamma-hedging",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-09T18:50:01+00:00",
+  "score": 0,
+  "tags": [
+   "options",
+   "delta-hedging",
+   "delta",
+   "gamma"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Reconstructing the CRR model knowing put and call prices",
+  "url": "https://quant.stackexchange.com/questions/76463/reconstructing-the-crr-model-knowing-put-and-call-prices",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-09T18:50:01+00:00",
+  "score": 0,
+  "tags": [
+   "option-pricing",
+   "european-options"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Using options theta and delta for calculating leverage over underlying?",
+  "url": "https://quant.stackexchange.com/questions/80328/using-options-theta-and-delta-for-calculating-leverage-over-underlying",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-09T18:50:01+00:00",
+  "score": 0,
+  "tags": [
+   "options",
+   "greeks",
+   "delta",
+   "leverage",
+   "theta"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Constructing Factor Mimicking Portfolios",
+  "url": "https://quant.stackexchange.com/questions/83891/constructing-factor-mimicking-portfolios",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-09T18:50:01+00:00",
+  "score": 1,
+  "tags": [
+   "factor-models",
+   "factor-investing"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Extract yield volatility from bond option prices",
+  "url": "https://quant.stackexchange.com/questions/80690/extract-yield-volatility-from-bond-option-prices",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-09T18:50:01+00:00",
+  "score": 0,
+  "tags": [
+   "options",
+   "volatility",
+   "bond"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Adjust a quality measure (Sortino Ratio) to account for Autocorrelation in Trade Returns",
+  "url": "https://quant.stackexchange.com/questions/85823/adjust-a-quality-measure-sortino-ratio-to-account-for-autocorrelation-in-trade",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-09T18:50:01+00:00",
+  "score": 0,
+  "tags": [
+   "trading",
+   "return",
+   "auto-correlation"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "How do receiving banks validate incoming DVP transfers over Fedwire Securities?",
+  "url": "https://quant.stackexchange.com/questions/85830/how-do-receiving-banks-validate-incoming-dvp-transfers-over-fedwire-securities",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-09T18:50:01+00:00",
+  "score": 1,
+  "tags": [
+   "fixed-income",
+   "market-microstructure",
+   "treasuries",
+   "settlement"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Hedging exotic options",
+  "url": "https://quant.stackexchange.com/questions/77751/hedging-exotic-options",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-09T18:50:01+00:00",
+  "score": 1,
+  "tags": [
+   "options",
+   "option-pricing",
+   "hedging",
+   "delta-hedging",
+   "asian-option"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Interpolation of term structure of implied volatility",
+  "url": "https://quant.stackexchange.com/questions/79045/interpolation-of-term-structure-of-implied-volatility",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-09T18:50:01+00:00",
+  "score": 0,
+  "tags": [
+   "implied-volatility",
+   "volatility-surface",
+   "interpolation"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Were internet related companies at the height of the dot-com bubble really overvalued from a long term persepective?",
+  "url": "https://quant.stackexchange.com/questions/85287/were-internet-related-companies-at-the-height-of-the-dot-com-bubble-really-overv",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-09T18:50:01+00:00",
+  "score": 2,
+  "tags": [
+   "equities",
+   "time-series",
+   "returns",
+   "market-data",
+   "historical-data"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Plotting Treasury Futures implied repo over time: what should the time series look like?",
+  "url": "https://quant.stackexchange.com/questions/85576/plotting-treasury-futures-implied-repo-over-time-what-should-the-time-series-lo",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-09T18:50:01+00:00",
+  "score": 0,
+  "tags": [
+   "fixed-income",
+   "bond-futures",
+   "treasuries",
+   "basis"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "what is the best academic dataset for returns of European stocks?",
+  "url": "https://quant.stackexchange.com/questions/81358/what-is-the-best-academic-dataset-for-returns-of-european-stocks",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-09T18:50:01+00:00",
+  "score": 0,
+  "tags": [
+   "data",
+   "historical-data",
+   "database"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Analytical formula for discounted exposure of a European Put on a stock in Real-World measure",
+  "url": "https://quant.stackexchange.com/questions/76175/analytical-formula-for-discounted-exposure-of-a-european-put-on-a-stock-in-real",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-09T18:50:01+00:00",
+  "score": 1,
+  "tags": [
+   "black-scholes",
+   "put",
+   "expected-value",
+   "european",
+   "real-world-measure"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Fedwire Security Service - where securities are stored?",
+  "url": "https://quant.stackexchange.com/questions/85829/fedwire-security-service-where-securities-are-stored",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-09T18:50:01+00:00",
+  "score": 1,
+  "tags": [
+   "banks",
+   "central-banking",
+   "settlement"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "QuantLib - Different accrual day count then coupon payments",
+  "url": "https://quant.stackexchange.com/questions/85822/quantlib-different-accrual-day-count-then-coupon-payments",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-09T18:50:01+00:00",
+  "score": 0,
+  "tags": [
+   "programming",
+   "fixed-income",
+   "quantlib"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "How to prove with put-call parity: return multiplier ratio of ILCD (index linked certificate deposit ) &lt; 1",
+  "url": "https://quant.stackexchange.com/questions/70664/how-to-prove-with-put-call-parity-return-multiplier-ratio-of-ilcd-index-linked",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-09T18:50:01+00:00",
+  "score": 0,
+  "tags": [
+   "put-call-parity"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Where to get historical intraday stock data?",
+  "url": "https://quant.stackexchange.com/questions/51043/where-to-get-historical-intraday-stock-data",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-09T18:50:01+00:00",
+  "score": 12,
+  "tags": [
+   "equities",
+   "data",
+   "intraday"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Where to download Earnings Conference Call transcripts?",
+  "url": "https://quant.stackexchange.com/questions/18918/where-to-download-earnings-conference-call-transcripts",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-09T18:50:01+00:00",
+  "score": 3,
+  "tags": [
+   "earnings"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "How to Determine Parameters in a Non-recombining Binomial Tree for Option Pricing",
+  "url": "https://quant.stackexchange.com/questions/76625/how-to-determine-parameters-in-a-non-recombining-binomial-tree-for-option-pricin",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-09T18:50:01+00:00",
+  "score": 0,
+  "tags": [
+   "option-pricing",
+   "binomial-tree"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Factors use during Portfolio Construction",
+  "url": "https://quant.stackexchange.com/questions/85826/factors-use-during-portfolio-construction",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-09T18:50:01+00:00",
+  "score": 0,
+  "tags": [
+   "factor-models",
+   "factor-investing"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Is realized volatility autocorrelation due to causal relationships between current realized volatility and future latent volatility?",
+  "url": "https://quant.stackexchange.com/questions/85288/is-realized-volatility-autocorrelation-due-to-causal-relationships-between-curre",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-09T18:50:01+00:00",
+  "score": 0,
+  "tags": [
+   "volatility"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Computing Intraday Volatility using mid price",
+  "url": "https://quant.stackexchange.com/questions/83738/computing-intraday-volatility-using-mid-price",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-09T18:50:01+00:00",
+  "score": 0,
+  "tags": [
+   "volatility",
+   "intraday"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Predictive Forecast (Close, 14)",
+  "url": "https://quant.stackexchange.com/questions/79006/predictive-forecast-close-14",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-09T18:50:01+00:00",
+  "score": 0,
+  "tags": [
+   "regression",
+   "forecasting",
+   "variance",
+   "prediction",
+   "price"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Bitcoin Pi Cycle - top and bottom indicator - precise definition",
+  "url": "https://quant.stackexchange.com/questions/85821/bitcoin-pi-cycle-top-and-bottom-indicator-precise-definition",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-09T18:50:01+00:00",
+  "score": -2,
+  "tags": [
+   "technical-analysis",
+   "cryptocurrency",
+   "bitcoin"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "How should correlated, regime-dependent return-path forecasts be combined into a trading consensus?",
+  "url": "https://quant.stackexchange.com/questions/85792/how-should-correlated-regime-dependent-return-path-forecasts-be-combined-into-a",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-09T18:50:01+00:00",
+  "score": 2,
+  "tags": [
+   "time-series",
+   "risk-management",
+   "statistics",
+   "machine-learning",
+   "forecasting"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Hawkes process MLE calibration diverges (\u03b2 \u2192 bound) on tick data with millisecond-tied timestamps. Is timestamp jittering the standard fix?",
+  "url": "https://quant.stackexchange.com/questions/85703/hawkes-process-mle-calibration-diverges-%ce%b2-%e2%86%92-bound-on-tick-data-with-millisecon",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-09T18:50:01+00:00",
+  "score": 1,
+  "tags": [
+   "statistics",
+   "high-frequency",
+   "market-microstructure",
+   "statistical-finance"
+  ]
+ }
+]

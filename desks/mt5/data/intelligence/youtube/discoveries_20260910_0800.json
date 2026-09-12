@@ -244,9 +244,9 @@
     ],
     "timeframes": [
       "H1",
-      "H4",
       "D1",
-      "W1"
+      "W1",
+      "H4"
     ],
     "patterns": [],
     "confidence": 0.6000000000000001

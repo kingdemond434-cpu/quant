@@ -1,0 +1,43 @@
+{
+ "source": "microstructure",
+ "generated_at": "2026-09-11T23:37:16.095195+00:00",
+ "tests_run": 151,
+ "discoveries": [
+  {
+   "source": "microstructure",
+   "kind": "microstructure",
+   "symbol": "CHFJPY",
+   "family": "spread_state",
+   "params": {
+    "mode": "spike_reversion",
+    "min_move_atr": 0.5,
+    "hold_bars": 4,
+    "spike_pct": 0.95
+   },
+   "mechanism": "the broker's own spread state: a spread spike on a moving bar is liquidity, not information; fade it",
+   "title": "CHFJPY.spread_state.spike_reversion {'mode': 'spike_reversion', 'min_move_atr': 0.5, 'hold_bars': 4, 'spike_pct': 0.95}",
+   "url": "",
+   "evidence": {
+    "n_independent": 1221,
+    "gross_per_trade": 0.00051117,
+    "net_per_trade": 0.00028721,
+    "cost_frac": 0.00022396,
+    "t_gross": 8.515,
+    "t_deflated_sweep": 6.001,
+    "n_tests_sweep": 151,
+    "screen": "family signals, forward return at own TTL, net of round trip, non-overlapping, self-deflated"
+   },
+   "event_time": null,
+   "available_time": "2026-09-11T23:37:16.088473+00:00",
+   "ingested_time": "2026-09-11T23:37:16.088473+00:00",
+   "source_version": "4e42c2c04",
+   "payload_hash": "4738e45219baa8253acf1dd9"
+  }
+ ],
+ "counts": {
+  "donated": 1,
+  "refused_unstamped": 0
+ },
+ "refusals": [],
+ "rule": "a candidate without a point-in-time stamp is refused here and counted, never written: absence of an available_time is not permission to use the row"
+}

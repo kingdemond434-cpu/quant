@@ -1,0 +1,446 @@
+[
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2304847",
+  "symbols": [
+   "AUDCAD",
+   "OSMOSE",
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-11T18:41:55+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "algo_survivor",
+   "gold"
+  ],
+  "ev_score": 298.468,
+  "growth_pct": 22081.95,
+  "weeks": 95.0,
+  "pf": 1.91,
+  "max_dd_pct": null,
+  "trades": 2983.0,
+  "win_pct": 2296.0,
+  "algo_pct": 96.0,
+  "subscribers": 22.0,
+  "author": "/en/users/datbh",
+  "author_other_signals": [
+   {
+    "sid": "2231030",
+    "title": "'MSC Gold Stable Pro' by Bui Huy Dat",
+    "growth": "1435%",
+    "curve_points": 20,
+    "curve_dd": 0.0
+   },
+   {
+    "sid": "1988269",
+    "title": "'MSC Gold Invest Pro' by Bui Huy Dat",
+    "growth": "1046%",
+    "curve_points": 20,
+    "curve_dd": -4.0
+   },
+   {
+    "sid": "2381088",
+    "title": "'MSC SuperGold IC Pro' by Bui Huy Dat",
+    "growth": "133%",
+    "curve_points": 20,
+    "curve_dd": -14.0
+   }
+  ],
+  "hour_histogram": {
+   "15": 2,
+   "08": 1,
+   "13": 2,
+   "20": 5,
+   "21": 2,
+   "09": 1,
+   "12": 2,
+   "19": 3,
+   "23": 2,
+   "14": 1,
+   "06": 2,
+   "17": 1,
+   "07": 2,
+   "05": 3,
+   "18": 2,
+   "10": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2379208",
+  "symbols": [
+   "BEFORE",
+   "BROKER"
+  ],
+  "found_at": "2026-09-11T18:41:55+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "algo_survivor"
+  ],
+  "ev_score": 46.14,
+  "growth_pct": 3719.94,
+  "weeks": 80.0,
+  "pf": 1.97,
+  "max_dd_pct": null,
+  "trades": 4112.0,
+  "win_pct": 3380.0,
+  "algo_pct": 100.0,
+  "subscribers": 66.0,
+  "author": "/en/users/mo2002",
+  "author_other_signals": [
+   {
+    "sid": "2379250",
+    "title": "'World Peace Forex Strategy 02' by Nobeyo- Sano",
+    "growth": "77%",
+    "curve_points": 20,
+    "curve_dd": 0.0
+   }
+  ],
+  "hour_histogram": {
+   "10": 3,
+   "05": 3,
+   "13": 3,
+   "08": 5,
+   "16": 2,
+   "15": 2,
+   "23": 1,
+   "21": 1,
+   "12": 2,
+   "11": 1,
+   "09": 1,
+   "17": 1,
+   "22": 6,
+   "02": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/1988269",
+  "symbols": [
+   "AUDCAD",
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-11T18:41:55+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "long_lived",
+   "gold"
+  ],
+  "ev_score": 18.851,
+  "growth_pct": 1045.66,
+  "weeks": 169.0,
+  "pf": 1.78,
+  "max_dd_pct": null,
+  "trades": 1671.0,
+  "win_pct": 1330.0,
+  "algo_pct": 74.0,
+  "subscribers": 8.0,
+  "author": "/en/users/datbh",
+  "author_other_signals": [
+   {
+    "sid": "2304847",
+    "title": "'MSC SuperGold Pro' by Bui Huy Dat",
+    "growth": "22082%",
+    "curve_points": 20,
+    "curve_dd": -1.0
+   },
+   {
+    "sid": "2231030",
+    "title": "'MSC Gold Stable Pro' by Bui Huy Dat",
+    "growth": "1435%",
+    "curve_points": 20,
+    "curve_dd": 0.0
+   },
+   {
+    "sid": "2381088",
+    "title": "'MSC SuperGold IC Pro' by Bui Huy Dat",
+    "growth": "133%",
+    "curve_points": 20,
+    "curve_dd": -14.0
+   }
+  ],
+  "hour_histogram": {
+   "09": 1,
+   "14": 3,
+   "05": 3,
+   "10": 1,
+   "22": 1,
+   "15": 1,
+   "13": 1,
+   "06": 1,
+   "21": 1,
+   "12": 1,
+   "20": 3,
+   "08": 3,
+   "11": 1,
+   "16": 4,
+   "03": 1,
+   "01": 1,
+   "00": 3,
+   "19": 5,
+   "17": 1,
+   "07": 2
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2300694",
+  "symbols": [
+   "AUDCAD",
+   "AUDNZD",
+   "BTCUSD",
+   "EURAUD",
+   "EURUSD",
+   "NZDCAD",
+   "NZDUSD",
+   "USDCAD",
+   "XAGUSD",
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-11T18:41:55+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "long_lived",
+   "algo_survivor",
+   "gold",
+   "multi_fx"
+  ],
+  "ev_score": 41.593,
+  "growth_pct": 2131.51,
+  "weeks": 198.0,
+  "pf": 1.96,
+  "max_dd_pct": null,
+  "trades": 1872.0,
+  "win_pct": 1373.0,
+  "algo_pct": 94.0,
+  "subscribers": 4.0,
+  "author": "/en/users/antonkon",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "10": 3,
+   "14": 2,
+   "19": 1,
+   "17": 1,
+   "16": 1,
+   "22": 1,
+   "05": 1,
+   "09": 1,
+   "15": 1,
+   "07": 1,
+   "23": 1,
+   "02": 1,
+   "00": 1,
+   "01": 1,
+   "12": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2351091",
+  "symbols": [
+   "BTCUSD",
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-11T18:41:55+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "algo_survivor",
+   "gold"
+  ],
+  "ev_score": 9.5,
+  "growth_pct": 1141.78,
+  "weeks": 36.0,
+  "pf": 2.08,
+  "max_dd_pct": null,
+  "trades": 111.0,
+  "win_pct": 76.0,
+  "algo_pct": 99.0,
+  "subscribers": 2.0,
+  "author": "/en/users/daosengathit",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "10": 2,
+   "16": 1,
+   "14": 4,
+   "01": 3,
+   "02": 1,
+   "13": 1,
+   "15": 1,
+   "03": 4,
+   "05": 1,
+   "07": 2,
+   "17": 2,
+   "09": 1,
+   "08": 1,
+   "06": 2,
+   "20": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2222743",
+  "symbols": [
+   "BTCUSD",
+   "EURUSD",
+   "USDJPY",
+   "XAUEUR",
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-11T18:41:55+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "long_lived",
+   "algo_survivor",
+   "gold",
+   "multi_fx"
+  ],
+  "ev_score": 47.682,
+  "growth_pct": 2970.3,
+  "weeks": 134.0,
+  "pf": 1.28,
+  "max_dd_pct": null,
+  "trades": 5393.0,
+  "win_pct": 2130.0,
+  "algo_pct": 82.0,
+  "subscribers": 0.0,
+  "author": "/en/users/liehtw",
+  "author_other_signals": [
+   {
+    "sid": "2153920",
+    "title": "'MCA100' by LU KUEI LIEH",
+    "growth": "1988%",
+    "curve_points": 20,
+    "curve_dd": -4.0
+   },
+   {
+    "sid": "2299696",
+    "title": "'Chicken dinner' by LU KUEI LIEH",
+    "growth": "2537%",
+    "curve_points": 20,
+    "curve_dd": -6.0
+   },
+   {
+    "sid": "2343740",
+    "title": "'Myfx Multiprod' by LU KUEI LIEH",
+    "growth": "580%",
+    "curve_points": 20,
+    "curve_dd": -5.0
+   }
+  ],
+  "hour_histogram": {
+   "02": 1,
+   "20": 1,
+   "13": 1,
+   "03": 1,
+   "11": 3,
+   "15": 2,
+   "09": 1,
+   "01": 1,
+   "23": 1,
+   "21": 1,
+   "05": 1,
+   "04": 2,
+   "06": 1,
+   "17": 2,
+   "12": 1,
+   "07": 2,
+   "14": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2204998",
+  "symbols": [
+   "AUDCAD",
+   "AUDJPY",
+   "AUDNZD",
+   "AUDUSD",
+   "BTCUSD",
+   "CADCHF",
+   "CHFJPY",
+   "EURAUD",
+   "EURCAD",
+   "EURJPY",
+   "EURNZD",
+   "EURUSD"
+  ],
+  "found_at": "2026-09-11T18:41:55+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "long_lived",
+   "algo_survivor",
+   "multi_fx"
+  ],
+  "ev_score": 19.391,
+  "growth_pct": 962.65,
+  "weeks": 211.0,
+  "pf": 1.19,
+  "max_dd_pct": null,
+  "trades": 7966.0,
+  "win_pct": 4955.0,
+  "algo_pct": 95.0,
+  "subscribers": 0.0,
+  "author": "/en/users/strueli",
+  "author_other_signals": [
+   {
+    "sid": "2265877",
+    "title": "'Gold Reaper New V2 2' by Profalgo Limited",
+    "growth": "304%",
+    "curve_points": 20,
+    "curve_dd": -1.0
+   },
+   {
+    "sid": "2084890",
+    "title": "'Goldtrade Pro ICM' by Profalgo Limited",
+    "growth": "643%",
+    "curve_points": 20,
+    "curve_dd": -9.0
+   },
+   {
+    "sid": "2376950",
+    "title": "'Multi EA combo' by Profalgo Limited",
+    "growth": "378%",
+    "curve_points": 20,
+    "curve_dd": -5.0
+   }
+  ],
+  "hour_histogram": {
+   "14": 2,
+   "23": 1,
+   "20": 2,
+   "16": 1,
+   "04": 1,
+   "06": 6,
+   "08": 2,
+   "12": 1
+  }
+ }
+]

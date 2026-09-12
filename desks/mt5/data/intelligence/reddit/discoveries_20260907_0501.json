@@ -5,8 +5,8 @@
     "title": "Trade",
     "url": "",
     "symbols": [
-      "XAUUSD",
-      "GBPUSD"
+      "GBPUSD",
+      "XAUUSD"
     ],
     "patterns": [],
     "confidence": 0.3
@@ -50,9 +50,9 @@
     "title": "I built an open-source MT5 visual replacer for backtesting \u2014 looking for honest feedback before I take it further",
     "url": "",
     "symbols": [
+      "GBPUSD",
       "EURUSD",
-      "XAUUSD",
-      "GBPUSD"
+      "XAUUSD"
     ],
     "patterns": [],
     "confidence": 0.3
@@ -74,8 +74,8 @@
     "title": "FINAL UPDATE: Turning Around a 1$ blown account",
     "url": "",
     "symbols": [
-      "XAUUSD",
-      "DXY"
+      "DXY",
+      "XAUUSD"
     ],
     "patterns": [
       "EMA"

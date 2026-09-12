@@ -196,7 +196,17 @@ ignore = ["B008"]
 known-first-party = ["libs", "app"]
 
 [tool.mypy]
-python_version = "3.11"
+# THE VERSION THE DESK ACTUALLY RUNS (2026-09-12). Both boxes are on CPython 3.14; pinning the
+# checker to 3.11 meant type-checking a Python this desk never executes, and it BLOCKED EVERY
+# PUSH from the trading box: numpy 2.5.3 ships stubs written with `type` statements (3.12+), so
+# mypy 2.3.1 under python_version 3.11 rejected numpy's own stub file and the gates went RED --
+# "Type statement is only supported in Python 3.12 and greater", in a dependency, with nothing
+# wrong in this repository at all.
+#
+# A gate that fails on the toolchain rather than on the code is worse than a missing gate: it
+# reads as a real defect, it cannot be fixed by fixing anything, and the only ways past it are
+# to bypass the hook or to stop pushing. The desk did the second one for a day.
+python_version = "3.14"
 strict = true
 warn_unused_ignores = true
 warn_redundant_casts = true

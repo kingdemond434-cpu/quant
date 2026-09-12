@@ -2,20 +2,6 @@
   {
     "source": "seasonality",
     "type": "historical_pattern",
-    "symbol": "3M_H1",
-    "month": 9,
-    "avg_return": -0.0117,
-    "overall_avg": 0.0032,
-    "direction": "bearish",
-    "symbols": [
-      "3M_H1"
-    ],
-    "confidence": 0.6,
-    "description": "3M_H1 historically bearish in month 9 (avg -0.012%)"
-  },
-  {
-    "source": "seasonality",
-    "type": "historical_pattern",
     "symbol": "AALB_H1",
     "month": 9,
     "avg_return": -0.0283,
@@ -88,14 +74,14 @@
     "type": "historical_pattern",
     "symbol": "ADAUSD_H1",
     "month": 9,
-    "avg_return": 0.7955,
-    "overall_avg": 0.4434,
+    "avg_return": 0.747,
+    "overall_avg": 0.4379,
     "direction": "bullish",
     "symbols": [
       "ADAUSD_H1"
     ],
-    "confidence": 0.5382061816707514,
-    "description": "ADAUSD_H1 historically bullish in month 9 (avg 0.795%)"
+    "confidence": 0.511740289473533,
+    "description": "ADAUSD_H1 historically bullish in month 9 (avg 0.747%)"
   },
   {
     "source": "seasonality",
@@ -130,14 +116,14 @@
     "type": "historical_pattern",
     "symbol": "ADP_H1",
     "month": 9,
-    "avg_return": 0.0559,
-    "overall_avg": 0.0305,
+    "avg_return": 0.0474,
+    "overall_avg": 0.0303,
     "direction": "bullish",
     "symbols": [
       "ADP_H1"
     ],
-    "confidence": 0.5495787046691293,
-    "description": "ADP_H1 historically bullish in month 9 (avg 0.056%)"
+    "confidence": 0.4694377218402751,
+    "description": "ADP_H1 historically bullish in month 9 (avg 0.047%)"
   },
   {
     "source": "seasonality",
@@ -310,44 +296,30 @@
   {
     "source": "seasonality",
     "type": "historical_pattern",
-    "symbol": "AT&T_H1",
-    "month": 9,
-    "avg_return": 0.0146,
-    "overall_avg": -0.0078,
-    "direction": "bullish",
-    "symbols": [
-      "AT&T_H1"
-    ],
-    "confidence": 0.5622699202125346,
-    "description": "AT&T_H1 historically bullish in month 9 (avg 0.015%)"
-  },
-  {
-    "source": "seasonality",
-    "type": "historical_pattern",
     "symbol": "AUDCAD_H1",
     "month": 9,
-    "avg_return": -0.0003,
-    "overall_avg": -0.0,
-    "direction": "bearish",
+    "avg_return": 0.0017,
+    "overall_avg": 0.0001,
+    "direction": "bullish",
     "symbols": [
       "AUDCAD_H1"
     ],
     "confidence": 0.6,
-    "description": "AUDCAD_H1 historically bearish in month 9 (avg -0.000%)"
+    "description": "AUDCAD_H1 historically bullish in month 9 (avg 0.002%)"
   },
   {
     "source": "seasonality",
     "type": "historical_pattern",
     "symbol": "AVAXUSD_H1",
     "month": 9,
-    "avg_return": 0.0437,
-    "overall_avg": 0.0075,
+    "avg_return": 0.0185,
+    "overall_avg": 0.0057,
     "direction": "bullish",
     "symbols": [
       "AVAXUSD_H1"
     ],
     "confidence": 0.6,
-    "description": "AVAXUSD_H1 historically bullish in month 9 (avg 0.044%)"
+    "description": "AVAXUSD_H1 historically bullish in month 9 (avg 0.019%)"
   },
   {
     "source": "seasonality",
@@ -368,28 +340,56 @@
     "type": "historical_pattern",
     "symbol": "Airbnb_H1",
     "month": 9,
-    "avg_return": -0.0189,
-    "overall_avg": -0.001,
-    "direction": "bearish",
+    "avg_return": 0.0635,
+    "overall_avg": 0.0057,
+    "direction": "bullish",
     "symbols": [
       "Airbnb_H1"
     ],
     "confidence": 0.6,
-    "description": "Airbnb_H1 historically bearish in month 9 (avg -0.019%)"
+    "description": "Airbnb_H1 historically bullish in month 9 (avg 0.064%)"
   },
   {
     "source": "seasonality",
     "type": "historical_pattern",
-    "symbol": "AlibabaGroup_H1",
+    "symbol": "Amgen_H1",
     "month": 9,
-    "avg_return": 0.0858,
-    "overall_avg": 0.0477,
+    "avg_return": 0.111,
+    "overall_avg": 0.0686,
     "direction": "bullish",
     "symbols": [
-      "AlibabaGroup_H1"
+      "Amgen_H1"
     ],
-    "confidence": 0.539296452908399,
-    "description": "AlibabaGroup_H1 historically bullish in month 9 (avg 0.086%)"
+    "confidence": 0.48537160769956267,
+    "description": "Amgen_H1 historically bullish in month 9 (avg 0.111%)"
+  },
+  {
+    "source": "seasonality",
+    "type": "historical_pattern",
+    "symbol": "Baidu_H1",
+    "month": 9,
+    "avg_return": -0.0402,
+    "overall_avg": 0.0012,
+    "direction": "bearish",
+    "symbols": [
+      "Baidu_H1"
+    ],
+    "confidence": 0.6,
+    "description": "Baidu_H1 historically bearish in month 9 (avg -0.040%)"
+  },
+  {
+    "source": "seasonality",
+    "type": "historical_pattern",
+    "symbol": "BeyondMeat_H1",
+    "month": 9,
+    "avg_return": -0.4531,
+    "overall_avg": -0.2977,
+    "direction": "bearish",
+    "symbols": [
+      "BeyondMeat_H1"
+    ],
+    "confidence": 0.45653664368102986,
+    "description": "BeyondMeat_H1 historically bearish in month 9 (avg -0.453%)"
   },
   {
     "source": "seasonality",
@@ -536,41 +536,41 @@
     "type": "historical_pattern",
     "symbol": "DOGEUSD_H1",
     "month": 9,
-    "avg_return": 2.9026,
-    "overall_avg": 0.757,
+    "avg_return": 2.8727,
+    "overall_avg": 0.7545,
     "direction": "bullish",
     "symbols": [
       "DOGEUSD_H1"
     ],
     "confidence": 0.6,
-    "description": "DOGEUSD_H1 historically bullish in month 9 (avg 2.903%)"
+    "description": "DOGEUSD_H1 historically bullish in month 9 (avg 2.873%)"
   },
   {
     "source": "seasonality",
     "type": "historical_pattern",
     "symbol": "DOTUSD_H1",
     "month": 9,
-    "avg_return": 0.1142,
-    "overall_avg": 0.0151,
+    "avg_return": 0.1151,
+    "overall_avg": 0.0152,
     "direction": "bullish",
     "symbols": [
       "DOTUSD_H1"
     ],
     "confidence": 0.6,
-    "description": "DOTUSD_H1 historically bullish in month 9 (avg 0.114%)"
+    "description": "DOTUSD_H1 historically bullish in month 9 (avg 0.115%)"
   },
   {
     "source": "seasonality",
     "type": "historical_pattern",
     "symbol": "EURGBP_H1",
     "month": 9,
-    "avg_return": -0.0006,
+    "avg_return": -0.0009,
     "overall_avg": -0.0003,
     "direction": "bearish",
     "symbols": [
       "EURGBP_H1"
     ],
-    "confidence": 0.5331035200429971,
+    "confidence": 0.6,
     "description": "EURGBP_H1 historically bearish in month 9 (avg -0.001%)"
   },
   {
@@ -590,23 +590,9 @@
   {
     "source": "seasonality",
     "type": "historical_pattern",
-    "symbol": "EURRUB_H1",
-    "month": 9,
-    "avg_return": -0.0057,
-    "overall_avg": -0.0002,
-    "direction": "bearish",
-    "symbols": [
-      "EURRUB_H1"
-    ],
-    "confidence": 0.6,
-    "description": "EURRUB_H1 historically bearish in month 9 (avg -0.006%)"
-  },
-  {
-    "source": "seasonality",
-    "type": "historical_pattern",
     "symbol": "EURUSD_H1",
     "month": 9,
-    "avg_return": 0.0009,
+    "avg_return": 0.0006,
     "overall_avg": 0.0001,
     "direction": "bullish",
     "symbols": [
@@ -648,7 +634,7 @@
     "type": "historical_pattern",
     "symbol": "GBPUSD_H1",
     "month": 9,
-    "avg_return": 0.0018,
+    "avg_return": 0.0019,
     "overall_avg": 0.0006,
     "direction": "bullish",
     "symbols": [
@@ -718,28 +704,28 @@
     "type": "historical_pattern",
     "symbol": "LNKUSD_H1",
     "month": 9,
-    "avg_return": 0.0603,
-    "overall_avg": 0.0229,
+    "avg_return": 0.0622,
+    "overall_avg": 0.0231,
     "direction": "bullish",
     "symbols": [
       "LNKUSD_H1"
     ],
     "confidence": 0.6,
-    "description": "LNKUSD_H1 historically bullish in month 9 (avg 0.060%)"
+    "description": "LNKUSD_H1 historically bullish in month 9 (avg 0.062%)"
   },
   {
     "source": "seasonality",
     "type": "historical_pattern",
     "symbol": "LTCUSD_H1",
     "month": 9,
-    "avg_return": 0.0629,
-    "overall_avg": 0.0073,
+    "avg_return": 0.0622,
+    "overall_avg": 0.0072,
     "direction": "bullish",
     "symbols": [
       "LTCUSD_H1"
     ],
     "confidence": 0.6,
-    "description": "LTCUSD_H1 historically bullish in month 9 (avg 0.063%)"
+    "description": "LTCUSD_H1 historically bullish in month 9 (avg 0.062%)"
   },
   {
     "source": "seasonality",
@@ -802,7 +788,7 @@
     "type": "historical_pattern",
     "symbol": "NOKSEK_H1",
     "month": 9,
-    "avg_return": 0.0021,
+    "avg_return": 0.002,
     "overall_avg": 0.0001,
     "direction": "bullish",
     "symbols": [
@@ -816,13 +802,13 @@
     "type": "historical_pattern",
     "symbol": "Oracle_H1",
     "month": 9,
-    "avg_return": 0.2849,
+    "avg_return": 0.2854,
     "overall_avg": 0.1874,
     "direction": "bullish",
     "symbols": [
       "Oracle_H1"
     ],
-    "confidence": 0.4561358784472221,
+    "confidence": 0.4569107258484384,
     "description": "Oracle_H1 historically bullish in month 9 (avg 0.285%)"
   },
   {
@@ -844,14 +830,14 @@
     "type": "historical_pattern",
     "symbol": "Qualcomm_H1",
     "month": 9,
-    "avg_return": 0.0919,
-    "overall_avg": 0.0548,
+    "avg_return": 0.0907,
+    "overall_avg": 0.0547,
     "direction": "bullish",
     "symbols": [
       "Qualcomm_H1"
     ],
-    "confidence": 0.5035397114127371,
-    "description": "Qualcomm_H1 historically bullish in month 9 (avg 0.092%)"
+    "confidence": 0.49784820808763186,
+    "description": "Qualcomm_H1 historically bullish in month 9 (avg 0.091%)"
   },
   {
     "source": "seasonality",
@@ -998,14 +984,14 @@
     "type": "historical_pattern",
     "symbol": "TexasInstruments_H1",
     "month": 9,
-    "avg_return": 0.126,
-    "overall_avg": 0.0587,
+    "avg_return": 0.1273,
+    "overall_avg": 0.0588,
     "direction": "bullish",
     "symbols": [
       "TexasInstruments_H1"
     ],
     "confidence": 0.6,
-    "description": "TexasInstruments_H1 historically bullish in month 9 (avg 0.126%)"
+    "description": "TexasInstruments_H1 historically bullish in month 9 (avg 0.127%)"
   },
   {
     "source": "seasonality",
@@ -1178,48 +1164,6 @@
   {
     "source": "seasonality",
     "type": "historical_pattern",
-    "symbol": "XAUUSD_M1",
-    "month": 9,
-    "avg_return": -0.0001,
-    "overall_avg": 0.0,
-    "direction": "bearish",
-    "symbols": [
-      "XAUUSD_M1"
-    ],
-    "confidence": 0.6,
-    "description": "XAUUSD_M1 historically bearish in month 9 (avg -0.000%)"
-  },
-  {
-    "source": "seasonality",
-    "type": "historical_pattern",
-    "symbol": "XAUUSD_M15",
-    "month": 9,
-    "avg_return": -0.0011,
-    "overall_avg": 0.0006,
-    "direction": "bearish",
-    "symbols": [
-      "XAUUSD_M15"
-    ],
-    "confidence": 0.5774411343374588,
-    "description": "XAUUSD_M15 historically bearish in month 9 (avg -0.001%)"
-  },
-  {
-    "source": "seasonality",
-    "type": "historical_pattern",
-    "symbol": "XAUUSD_M5",
-    "month": 9,
-    "avg_return": -0.0004,
-    "overall_avg": 0.0001,
-    "direction": "bearish",
-    "symbols": [
-      "XAUUSD_M5"
-    ],
-    "confidence": 0.6,
-    "description": "XAUUSD_M5 historically bearish in month 9 (avg -0.000%)"
-  },
-  {
-    "source": "seasonality",
-    "type": "historical_pattern",
     "symbol": "XBRUSD_H1",
     "month": 9,
     "avg_return": 0.0486,
@@ -1250,14 +1194,14 @@
     "type": "historical_pattern",
     "symbol": "XLMUSD_H1",
     "month": 9,
-    "avg_return": 0.1463,
-    "overall_avg": 0.0562,
+    "avg_return": 0.145,
+    "overall_avg": 0.0561,
     "direction": "bullish",
     "symbols": [
       "XLMUSD_H1"
     ],
     "confidence": 0.6,
-    "description": "XLMUSD_H1 historically bullish in month 9 (avg 0.146%)"
+    "description": "XLMUSD_H1 historically bullish in month 9 (avg 0.145%)"
   },
   {
     "source": "seasonality",
