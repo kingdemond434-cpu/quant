@@ -110,15 +110,25 @@ def load_credentials(path: Path = SECRET) -> Credentials:
 def _normalise(symbol: str) -> str:
     """Fold a symbol to a comparison key: upper case, no separators, no venue suffix.
 
-    `XAUUSD`, `XAU/USD`, `XAUUSD.pro` and `xauusd` are one instrument; the desk's universe and the
-    venue's catalogue disagree about which spelling is canonical, and neither is wrong.
+    `XAUUSD`, `XAU/USD`, `XAUUSD.pro`, `XAUUSD+` and `xauusd` are one instrument; the desk's
+    universe and the venue's catalogue disagree about which spelling is canonical, and neither is
+    wrong.
+
+    THE `+` IS NOT HYPOTHETICAL. Measured on the live E8 account 2026-09-12: every one of its 46
+    instruments is suffixed -- `EURUSD+`, `XAUUSD+`, `AUDNZD+` -- and without folding it the
+    adapter matched ZERO of the desk's 29 certified symbols while reporting a healthy connection
+    and a full catalogue. That is the exact failure this function exists to prevent, and it got
+    through because the suffix set was written from the venues the desk already knew.
     """
     s = symbol.upper()
     for sep in ("/", "-", "_", " "):
         s = s.replace(sep, "")
     if "." in s:
         s = s.split(".", 1)[0]
-    return s
+    # Trailing venue markers: `+` (E8/TradeLocker), and `m`/`c`/`pro` style suffixes are NOT
+    # stripped -- `EURUSDm` on some brokers is a genuinely different contract size, and folding
+    # those would map two instruments onto one key, which is worse than failing to match.
+    return s.rstrip("+")
 
 
 class TradeLockerVenue:

@@ -293,3 +293,83 @@ believing any of it -- that is one of the first things the TradeLocker adapter s
 reason to open a position before the book that is meant to trade it can actually reach the venue.
 
 Artifact: `desks/mt5/reports/PROP_BARRIER.json` (`research/prop_barrier.py`).
+
+---
+
+# 2026-09-13: CONNECTED, AND THE VENUE RE-PRICED THE BOOK
+
+First connection to account 2478877. **Balance $100,000.00, equity $100,000.00, 0 positions.**
+Server `E8`, phase 1, 46 instruments in the catalogue.
+
+## What the venue took away
+
+E8 lists no Scandi or EM crosses, so **ten of the sixty-one certificates cannot be traded here --
+and they are the best ten.**
+
+| mechanism | tradeable | blocked |
+|---|---|---|
+| `discovered` | 33 | 0 |
+| `session_range_breakout` | 15 | 0 |
+| `overnight_gap_decay` | **3** | **9** |
+| `carry` | **0** | **1** |
+
+Blocked symbols: CHFNOK, EURNOK, GBPNOK, GBPSEK, EURZAR, GBPZAR, USDZAR, GBPMXN, USDMXN, CHFDKK.
+`carry`'s only certificate (CHFNOK, ev 0.5929) is gone outright, so the mechanism count falls from
+four to three and one of the three has three sleeves. **This is a venue fact, not a research one:
+more certification does not fix it, but re-running the hunt against the 46 instruments E8 actually
+lists would.**
+
+Mean expected value: **0.2578 across all 61 -> 0.2340 across the 51 tradeable, a 9.2% haircut.**
+The blocked ten average 0.3796. But a diversity-first pick of the best few per mechanism averages
+**0.2719**, above the full-book mean -- picking well inside a smaller pool recovers most of what
+the pool lost.
+
+Correlation goes the other way. A 15-sleeve pick from 33/15/3 is 6+6+3, so 33 of its 105 pairs sit
+WITHIN a mechanism at rho 0.70 rather than across at 0.20: mean pairwise rho **0.30 -> 0.357**.
+
+## THE LOCKED PORTFOLIO
+
+**24 sleeves at 0.07% risk each (1.68% gross), diversity-first across all three tradeable
+mechanisms.** Measured against the book that was proposed before the venue was known:
+
+| book | risk each | P(pass) | p25 | median | p90 |
+|---|---|---|---|---|---|
+| proposed (16 sleeves, rho 0.30, net +0.100) | 0.10% | 97.4% | 35d | 54d | 121d |
+| E8 real (15 sleeves, rho 0.357, net +0.091) | 0.10% | 94.9% | 37d | 60d | 138d |
+| E8 real (20 sleeves) | 0.08% | 95.1% | 35d | 56d | 132d |
+| **E8 real (24 sleeves)** | **0.07%** | **94.6%** | **33d** | **54d** | **127d** |
+
+**Identical speed, about three points of pass probability behind.** Widening the book is what buys
+back the breadth the blocked certificates took; the `carry` mechanism is the irreducible loss.
+
+Gross exposure stays near 1.7% because every certificate fires in the ASIA window and the whole
+book therefore lands at once into a 2.5% daily floor. Per-sleeve size is small BECAUSE the book is
+wide -- more independent bets inside the same heat, which is the Tier-1 rule, not a smaller book.
+
+## THE NUMBER THIS ALL STILL RESTS ON, AND IT IS NOT MEASURED
+
+`net +0.091` is a derived haircut on a REPLAY expectancy from a book whose `matched_fills` is 0.
+The first spread reading was taken at 23:56 UTC on a **Saturday** -- the market shut, quotes frozen
+at the last print, consecutive samples identical to three decimals. EURUSD 2.33bp and XAUUSD 2.39bp
+look plausible; AUDNZD 29.9bp, AUDCAD 30.1bp and EURCHF 31.6bp are closed-book artefacts and must
+not be used to size anything.
+
+`prop/e8_spread_sampler.py` samples 19 instruments every five minutes and publishes median/min/max
+per UTC hour to `reports/E8_SPREADS.json`. It is running across the Sunday 21:00 UTC reopen and the
+whole asia session.
+
+**It decides more than the portfolio does.** Every tradeable certificate fires in asia, which opens
+directly after the daily rollover, and this desk has already measured on Fusion that AUDNZD's
+spread widens **88x at hour 00** against a mechanism that dies at **2.34x cost**. If that holds at
+E8, the book is untradeable at the hour it is certified for and the answer is a different set of
+hours, not a different size. Read E8_SPREADS.json before the first order.
+
+## Open, and named rather than assumed
+
+- **Server timezone.** `e8_guard.SERVER_UTC_OFFSET_HOURS` is 3, UNCONFIRMED. It places the daily
+  2.5% window, and every sleeve fires in asia -- right on the boundary.
+- **`MT5-AdoptRelease` was never registered on the trading box.** Registered now; its first run
+  exited 1 with 36 code paths still differing and a corrupt-entry message naming two BLANK files,
+  while a direct scan finds nothing unreadable. Until it succeeds the box runs pre-2026-09-12 code,
+  which means the principal's venue-minimum order is not live on the machine that trades.
+- **Nothing is scheduled and no order has been sent.** The clock starts on the first trade.
