@@ -1,5 +1,5 @@
 {
-"cursor": 220,
+"cursor": 221,
 "queries_done": {
 "zh": [
 "ea MT4",
@@ -199,6 +199,9 @@
 "robot de trading MT4",
 "robot de trading MT5",
 "robot de trading ranking",
+"seguidores MT4",
+"seguidores MT5",
+"seguidores ranking",
 "se\u00f1ales MT4",
 "se\u00f1ales MT5",
 "se\u00f1ales ranking"

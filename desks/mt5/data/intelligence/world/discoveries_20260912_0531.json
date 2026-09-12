@@ -1,0 +1,1137 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Prisvekst",
+  "url": "https://www.norges-bank.no/tema/statistikk/Indikatorer-for-prisvekst/",
+  "published": "2026-09-12T05:30:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "nb",
+  "endpoints": [
+   "https://www.norges-bank.no/globalassets/marketdata/ppo/kpi/kpi_tab_no.xlsx?v=11092026140058"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "1848e2b35364de940d5a",
+  "host": "www.norges-bank.no",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "https://www.norges-bank.no/globalassets/marketdata/ppo/kpi/kpi_tab_en.csv?v=11092026140057",
+  "url": "https://www.norges-bank.no/globalassets/marketdata/ppo/kpi/kpi_tab_en.csv?v=11092026140057",
+  "published": "2026-09-12T05:30:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "09b0f19ece0fd1e42f9d",
+  "host": "www.norges-bank.no",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Indicators of underlying inflation in Norway",
+  "url": "https://www.norges-bank.no/en/news-events/publications/Staff-Memo/2017/staff-memo-132017/",
+  "published": "2026-09-12T05:30:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5b6839a0d240e3c731bb",
+  "host": "www.norges-bank.no",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Sign In - Quiver Quantitative",
+  "url": "https://www.quiverquant.com/export/",
+  "published": "2026-09-12T05:30:14+00:00",
+  "symbols": [
+   "NVIDIA"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.quiverquant.com/export/",
+   "https://www.quiverquant.com/api/",
+   "https://www.quiverquant.com/accounts/google/login/?next=%2Fexport%2F"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "ffc4eda8f4ebd609f7e1",
+  "host": "www.quiverquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Quiver API Setup",
+  "url": "https://www.quiverquant.com/api/",
+  "published": "2026-09-12T05:30:17+00:00",
+  "symbols": [
+   "NVIDIA"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.quiverquant.com/export/",
+   "https://www.quiverquant.com/api/",
+   "https://api.quiverquant.com/datasets/congress-trades",
+   "https://api.quiverquant.com/datasets/congress-stock-holdings",
+   "https://api.quiverquant.com/datasets/insider-trades",
+   "https://api.quiverquant.com/datasets/politician-net-worth",
+   "https://api.quiverquant.com/datasets/government-contracts",
+   "https://api.quiverquant.com/datasets/corporate-lobbying",
+   "https://api.quiverquant.com/datasets/corporate-donors",
+   "https://api.quiverquant.com/datasets/corporate-patents",
+   "https://api.quiverquant.com/datasets/executive-compensation",
+   "https://api.quiverquant.com/datasets/hedge-fund-activity",
+   "https://api.quiverquant.com/datasets/top-shareholders",
+   "https://api.quiverquant.com/datasets/quiver-news",
+   "https://api.quiverquant.com/datasets/trump-stock-trades",
+   "https://api.quiverquant.com/datasets/off-exchange-trading",
+   "https://api.quiverquant.com/datasets/app-ratings"
+  ],
+  "n_endpoints": 17,
+  "vault_sha": "ead02f540815b0d5ae7f",
+  "host": "www.quiverquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Market Calendar API - Trading Hours & Holidays | TradingHours.com",
+  "url": "https://tradinghours.com/data",
+  "published": "2026-09-12T05:30:20+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "flow",
+   "night_session",
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [
+   "https://tradinghours.com/manifest.json",
+   "https://tradinghours.com/llms.txt",
+   "https://docs.tradinghours.com/4.x/endpoints/download",
+   "https://docs.tradinghours.com/3.x/enterprise/download",
+   "https://docs.tradinghours.com/3.x/enterprise/download#data-dictionary",
+   "https://docs.tradinghours.com/3.x/enterprise/download#schedules"
+  ],
+  "n_endpoints": 6,
+  "vault_sha": "42943279ea0a1b3e6ec1",
+  "host": "tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "trading_OTCMarket",
+  "url": "http://en.sge.com.cn/eng_trading_OTCMarket",
+  "published": "2026-09-12T05:30:24+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5744264d92c97c6c9759",
+  "host": "en.sge.com.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0421\u0442\u0430\u0442\u0438\u0441\u0442\u0438\u043a\u0430 \u0432\u043d\u0435\u0448\u043d\u0435\u0433\u043e \u0441\u0435\u043a\u0442\u043e\u0440\u0430 | \u0411\u0430\u043d\u043a \u0420\u043e\u0441\u0441\u0438\u0438",
+  "url": "https://www.cbr.ru/statistics/macro_itm/external_sector/ets/",
+  "published": "2026-09-12T05:30:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/63-trade_26.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/63-trade_25.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/63-trade_24.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/63-trade_23.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/63-trade_22.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/63-trade_21.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/63-trade_20.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/63-trade_19.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/63-trade_18.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/63-trade_17.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/63-trade_16.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/63-trade_15.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/63-trade_14.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/63-trade_13.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/63-trade_12.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/63-trade_11.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/63-trade_10.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/63-trade_09.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/63-trade_08.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/63-trade_07.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/63-trade_06.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/63-trade_05.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/63-trade_04.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/63-trade_03.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/63-trade_02.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/63-trade_01.xls",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/trade_monthly.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/exp_services_reg_26.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/exp_services_reg_25.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/exp_services_reg_24.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/exp_services_reg_23.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/exp_services_reg_22.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/exp_services_reg_21.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/exp_services_reg_20.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/exp_services_reg_19.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/exp_services_reg_18.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/imp_services_reg_26.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/imp_services_reg_25.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/imp_services_reg_24.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/imp_services_reg_23.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/imp_services_reg_22.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/imp_services_reg_21.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/imp_services_reg_20.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/imp_services_reg_19.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/imp_services_reg_18.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/exp_services_activity_26.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/exp_services_activity_25.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/exp_services_activity_24.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/exp_services_activity_23.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/exp_services_activity_22.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/exp_services_activity_21.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/exp_services_activity_20.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/exp_services_activity_19.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/exp_services_activity_18.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/imp_services_activity_26.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/imp_services_activity_25.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/imp_services_activity_24.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/imp_services_activity_23.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/imp_services_activity_22.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/imp_services_activity_21.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/imp_services_activity_20.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/imp_services_activity_19.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/imp_services_activity_18.xlsx",
+   "https://www.cbr.ru/Collection/Collection/File/60940/services_by_modes_of_supply_2025.xlsx",
+   "https://www.cbr.ru/Collection/Collection/File/55841/services_by_modes_of_supply_2024.xlsx",
+   "https://www.cbr.ru/Collection/Collection/File/50462/services_by_modes_of_supply_2023.xlsx",
+   "https://www.cbr.ru/Collection/Collection/File/50461/services_by_modes_of_supply_2022.xlsx",
+   "https://www.cbr.ru/Collection/Collection/File/50460/services_by_modes_of_supply_2021.xlsx",
+   "https://www.cbr.ru/Collection/Collection/File/50459/services_by_modes_of_supply_2020.xlsx",
+   "https://www.cbr.ru/Collection/Collection/File/50458/services_by_modes_of_supply_2019.xlsx",
+   "https://www.cbr.ru/Collection/Collection/File/62023/external_trade_enterprises_2025.xlsx",
+   "https://www.cbr.ru/Collection/Collection/File/55915/external_trade_enterprises_2024.xlsx",
+   "https://www.cbr.ru/Collection/Collection/File/50618/external_trade_enterprises_2023.xlsx",
+   "https://www.cbr.ru/Collection/Collection/File/50617/external_trade_enterprises_2022.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/64-trade_21.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/64-trade_20.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/64-trade_19.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/64-trade_18.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/64-trade_17.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/64-trade_16.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/64-trade_15.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/64-trade_14.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/64-trade_13.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/64-trade_12.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/64-trade_11.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/64-trade_10.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/64-trade_09.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/64-trade_08.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/64-trade_07.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/64-trade_06.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/64-trade_05.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/64-trade_04.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/64-trade_03.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/64-trade_02.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/exports_education_21.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/exports_education_20.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/exports_health_21.xlsx",
+   "https://www.cbr.ru/vfs/statistics/credit_statistics/trade/exports_health_20.xlsx",
+   "https://www.cbr.ru/Content/Document/File/164965/Methodological_approaches_export_of_services.pdf",
+   "https://www.cbr.ru/statistics/macro_itm/external_sector/ets/meth_comm_export_import_tourist_services/",
+   "https://www.cbr.ru/statistics/macro_itm/external_sector/ets/export_import_trip/"
+  ],
+  "n_endpoints": 101,
+  "vault_sha": "610e36c5470c504c3726",
+  "host": "www.cbr.ru",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Macro indicators and forecasts | Sveriges Riksbank",
+  "url": "https://www.riksbank.se/en-gb/statistics/macro-indicators/",
+  "published": "2026-09-12T05:30:27+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "en-GB",
+  "endpoints": [
+   "https://www.riksbank.se/en-gb/statistics/interest-rates-and-exchange-rates/retrieving-interest-rates-and-exchange-rates-via-api/series-for-the-api/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "6412fdfd9c40959f4df2",
+  "host": "www.riksbank.se",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forecasts and outcomes | Sveriges Riksbank",
+  "url": "https://www.riksbank.se/en-gb/statistics/macro-indicators/forecasts-and-outcomes/",
+  "published": "2026-09-12T05:30:29+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "en-GB",
+  "endpoints": [
+   "https://www.riksbank.se/globalassets/media/statistik/makro/eng/outcome-and-forecasts.xlsx",
+   "https://www.riksbank.se/globalassets/media/statistik/makro/eng/forecasts-and-outcomes-2007-2014.xlsx",
+   "https://www.riksbank.se/en-gb/statistics/interest-rates-and-exchange-rates/retrieving-interest-rates-and-exchange-rates-via-api/series-for-the-api/"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "6c8c4fb5e4198a2075b1",
+  "host": "www.riksbank.se",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Retrieving forecasts and outcomes via API | Sveriges Riksbank",
+  "url": "https://www.riksbank.se/en-gb/statistics/macro-indicators/forecasts-and-outcomes/retrieving-forecasts-and-outcomes-via-api/",
+  "published": "2026-09-12T05:30:31+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "en-GB",
+  "endpoints": [
+   "https://www.riksbank.se/en-gb/statistics/interest-rates-and-exchange-rates/retrieving-interest-rates-and-exchange-rates-via-api/series-for-the-api/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "a1e1be85032433e90ea9",
+  "host": "www.riksbank.se",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Underlying inflation | Sveriges Riksbank",
+  "url": "https://www.riksbank.se/en-gb/statistics/macro-indicators/underlying-inflation/",
+  "published": "2026-09-12T05:30:33+00:00",
+  "symbols": [
+   "XAUUSD",
+   "USDTRY",
+   "USDSEK"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en-GB",
+  "endpoints": [
+   "https://www.riksbank.se/globalassets/media/statistik/makro/eng/underlying-inflation.xlsx",
+   "https://www.riksbank.se/en-gb/statistics/interest-rates-and-exchange-rates/retrieving-interest-rates-and-exchange-rates-via-api/series-for-the-api/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "3e2eb0ca46649419b498",
+  "host": "www.riksbank.se",
+  "claims": [
+   {
+    "claim": "These are often shown as a band in which the measure showing the highest and lowest rate of increase respectively for each month constitutes the band's upper and lower limit.",
+    "lang": "en",
+    "quantities": [
+     "rate"
+    ],
+    "direction": [
+     "increase",
+     "lower"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "USDTRY",
+      "USDSEK"
+     ],
+     "mentioned": [
+      "gold",
+      "try",
+      "sek"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [
+      "riksbank: policy: Riksbank -> SEK"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "85b8567c454d"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Resource utilisation indicator | Sveriges Riksbank",
+  "url": "https://www.riksbank.se/en-gb/statistics/macro-indicators/resource-utilisation-indicator/",
+  "published": "2026-09-12T05:30:34+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "en-GB",
+  "endpoints": [
+   "https://www.riksbank.se/en-gb/statistics/interest-rates-and-exchange-rates/retrieving-interest-rates-and-exchange-rates-via-api/series-for-the-api/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "29a422e4f7e4173faefe",
+  "host": "www.riksbank.se",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "CPIF sub-groups | Sveriges Riksbank",
+  "url": "https://www.riksbank.se/en-gb/statistics/macro-indicators/cpif-sub-groups/",
+  "published": "2026-09-12T05:30:37+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "en-GB",
+  "endpoints": [
+   "https://www.riksbank.se/globalassets/media/statistik/makro/eng/cpif-sub-groups.xlsx",
+   "https://www.riksbank.se/en-gb/statistics/interest-rates-and-exchange-rates/retrieving-interest-rates-and-exchange-rates-via-api/series-for-the-api/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "8c0fdcbdaf6657903891",
+  "host": "www.riksbank.se",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Gold Trading Volume | Gold Daily Volume | World Gold Council",
+  "url": "https://www.gold.org/goldhub/data/gold-trading-volumes",
+  "published": "2026-09-12T05:30:37+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "orderflow",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.gold.org/download/file/19819/Trading_volumes_methodology_2025.pdf"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "71479c56d123e4c853c2",
+  "host": "www.gold.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Inflation indicators",
+  "url": "https://www.norges-bank.no/en/topics/statistics/Inflation-indicators/",
+  "published": "2026-09-12T05:30:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.norges-bank.no/globalassets/marketdata/ppo/kpi/kpi_tab_en.xlsx?v=11092026140057",
+   "https://www.norges-bank.no/globalassets/marketdata/ppo/kpi/kpi_tab_en.csv?v=11092026140057"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "e3c32c6e445bb0791121",
+  "host": "www.norges-bank.no",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Gold Price Performance &amp; Data | World Gold Council",
+  "url": "https://www.gold.org/goldhub/data",
+  "published": "2026-09-12T05:30:39+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "84f0cd797e873821b101",
+  "host": "www.gold.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Statistics",
+  "url": "https://www.norges-bank.no/en/topics/Statistics/",
+  "published": "2026-09-12T05:30:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2bbcc7a7635ac1bd9ccd",
+  "host": "www.norges-bank.no",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Leitbild und Strategie der Bundesbank | Deutsche Bundesbank",
+  "url": "https://www.bundesbank.de/de/bundesbank/organisation/leitbild-und-strategie",
+  "published": "2026-09-12T05:30:40+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "de-DE",
+  "endpoints": [
+   "https://www.bundesbank.de/de/aufgaben/geldpolitik/notenbankfaehige-sicherheiten/downloads-602058",
+   "https://www.bundesbank.de/de/aufgaben/bargeld/cashedi/downloads-und-videoanleitungen"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "b1d9ab73a6068d945d01",
+  "host": "www.bundesbank.de",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u671f\u8d27\u9891\u9053 - \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://futures.eastmoney.com/",
+  "published": "2026-09-12T05:30:43+00:00",
+  "symbols": [
+   "UST10Y",
+   "XTIUSD",
+   "XAUUSD",
+   "XAGUSD",
+   "XPTUSD",
+   "XPDUSD",
+   "XCUUSD",
+   "XALUSD",
+   "XNIUSD",
+   "XZNUSD",
+   "XPBUSD",
+   "HK50",
+   "US500",
+   "USDX",
+   "USDCNH",
+   "SOYBEAN",
+   "CORN",
+   "SUGAR",
+   "COTTON",
+   "WHEAT"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow",
+   "inventory",
+   "momentum",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "10dad264a2d2d98d0ba2",
+  "host": "futures.eastmoney.com",
+  "claims": [
+   {
+    "claim": "\u591a\u56fd\u51cf\u6301\u7f8e\u503a \u4f20\u7edf\u201c\u5b89\u5168\u8d44\u4ea7\u201d\u9762 9\u670812\u65e5 09:44 \u671f\u8d27\u516c\u53f8\u76d1\u7763\u7ba1\u7406\u529e\u6cd5\u4e03\u5927\u770b\u70b9\uff1a\u65b0\u589e\u4e13\u8282\u89c4\u8303\u505a\u5e02\u4e1a\u52a1 \u8d44\u7ba1\u63d0\u9ad8 9\u670812\u65e5 07:51 \u78b3\u9178\u9502\u671f\u8d27\u76d8\u4e2d\u8dcc\u8fd110% \u9502\u76d0\u4f01\u4e1a\u76f4\u8a00\u201c\u6ca1\u770b\u61c2\u201d\uff01",
+    "lang": "zh",
+    "quantities": [
+     "\u505a\u5e02"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "UST10Y"
+     ],
+     "mentioned": [
+      "\u7f8e\u503a",
+      "\u78b3\u9178\u9502"
+     ],
+     "transfer_only": [
+      "\u78b3\u9178\u9502->metals"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "09a654831681"
+   },
+   {
+    "claim": "\u7f8e\u56fd\u9650\u5236\u6cb9\u8f6e\u901a\u8fc7\u970d\u5c14\u6728\u5179\u6d77\u5ce1\u7684\u9632\u7a7a\u65f6\u6bb5 \u65e5\u672c\u4e0a\u8c03\u5341\u80dc\u5cb3\u706b\u5c71\u55b7\u53d1\u8b66\u6212\u7ea7\u522b \u6c38\u5174\u6750\u6599\uff1a\u76ee\u524d\u5728\u6c5f\u897f\u53ca\u6c5f\u82cf\u5730\u533a\u65e0\u7279\u79cd\u94a2\u57fa\u5730 \u67f4\u6cb9\u4ef7\u683c\u9ad8\u4f01\u6216\u6210\u7f8e\u56fd\u7ecf\u6d4e\u201c\u65e0\u58f0\u6740\u624b\u201d \u7cbe\u9009 | \u591c\u76d8\u76d8\u524d\u8981\u95fb\u6c47\u603b 9\u670811\u65e5 \u5468\u4e94 \u6bcf\u65e5\u9f99\u864e\u699c | \u5546\u54c1\u671f\u8d27\u7efc\u5408\u6307\u6570\u4e0b\u8dcc2.",
+    "lang": "zh",
+    "quantities": [
+     "\u591c\u76d8",
+     "\u65f6\u6bb5"
+    ],
+    "direction": [
+     "\u4e0b\u8dcc",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u6bcf\u65e5",
+     "\u591c\u76d8"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "\u9f99\u864e\u699c"
+     ],
+     "transfer_only": [
+      "\u9f99\u864e\u699c->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "4a60ed6a4ca9"
+   },
+   {
+    "claim": "\u671f\u5e02\u6536\u8bc4 | \u56fd\u5185\u5546\u54c1\u5927\u9762\u79ef\u98d8\u7eff \u80fd\u5316\u677f\u5757\u76d8\u4e2d\u8df3\u6c34 \u7f8e\u8054\u50a8\u4e0b\u5468\u662f\u5426\u52a0\u606f\uff1f",
+    "lang": "zh",
+    "quantities": [
+     "\u52a0\u606f"
+    ],
+    "direction": [
+     "\u8df3\u6c34"
+    ],
+    "horizon": [
+     "\u5468"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "\u7f8e\u8054\u50a8: policy: Fed -> dollar and US equities"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "576fa58d4d04"
+   },
+   {
+    "claim": "\u7f8e\u56fd8\u6708CPI\u524d\u77bb\uff1a\u80fd\u6e90\u6da8\u4ef7\u6270\u52a8\u901a\u80c0 \u7f8e\u8054\u50a8\u52a0\u606f\u9884.",
+    "lang": "zh",
+    "quantities": [
+     "\u901a\u80c0",
+     "\u52a0\u606f",
+     "cpi"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "\u7f8e\u8054\u50a8: policy: Fed -> dollar and US equities"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "06442ef40a4a"
+   },
+   {
+    "claim": "\u4e0a\u671f\u6240\u539f\u6cb9\u671f\u8d272610\u5408\u7ea6\u591c\u76d8\u6536\u6da81.",
+    "lang": "zh",
+    "quantities": [
+     "\u591c\u76d8",
+     "\u539f\u6cb9"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u591c\u76d8"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD"
+     ],
+     "mentioned": [
+      "\u539f\u6cb9"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "94b12efc73b0"
+   },
+   {
+    "claim": "\u73b0\u8d27\u9ec4\u91d1\u5468\u6da8\u8d857%\u7ad9\u4e0a4300\u7f8e\u5143 \u4e3a\u4f55\u7a81\u7136\u5927\u6da8\uff1f",
+    "lang": "zh",
+    "quantities": [
+     "\u9ec4\u91d1",
+     "\u7f8e\u5143"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u5468"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "1116033ebd6f"
+   },
+   {
+    "claim": "\u9ec4\u91d1\u56db\u5b63\u5ea6\u4ef7\u683c\u91cd\u5fc3\u4e0a\u79fb\u8d8b\u52bf\u4e0d\u53d8 \u94a2\u6750\u677f\u5757 \u4ece\u201c\u8d4c\u5468\u671f\u201d\u5230\u201c\u7ec3\u5185\u529f\u201d \u7a81\u7136\u8df3\u6c34\uff01",
+    "lang": "zh",
+    "quantities": [
+     "\u8d8b\u52bf",
+     "\u9ec4\u91d1"
+    ],
+    "direction": [
+     "\u8df3\u6c34"
+    ],
+    "horizon": [
+     "\u5468",
+     "\u5b63\u5ea6"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "ba85998cf9a2"
+   },
+   {
+    "claim": "34% \u5237\u65e5\u5185\u65b0\u9ad8 \u73b0\u8d27\u9ec4\u91d1\u4e00\u5ea6\u8dcc\u78344300\u7f8e\u5143/\u76ce\u53f8\u5173\u53e3 \u6bcf\u65e5\u9f99\u864e\u699c | \u5546\u54c1\u671f\u8d27\u7efc\u5408\u6307\u6570\u4e0b\u8dcc2.",
+    "lang": "zh",
+    "quantities": [
+     "\u65e5\u5185",
+     "\u9ec4\u91d1",
+     "\u7f8e\u5143"
+    ],
+    "direction": [
+     "\u4e0b\u8dcc",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u65e5\u5185",
+     "\u6bcf\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1",
+      "\u9f99\u864e\u699c"
+     ],
+     "transfer_only": [
+      "\u9f99\u864e\u699c->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "6c9faeb5bd6f"
+   }
+  ],
+  "n_claims": 10
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Challenge Validation",
+  "url": "https://www.balticexchange.com/en/data-services/market-information0/dry-services.html",
+  "published": "2026-09-12T05:30:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f32187d5de04595fafb0",
+  "host": "www.balticexchange.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e1c\u65b9\u8d22\u5bcc\u8bc1\u5238\uff1a\u8bc1\u5238\u4ea4\u6613|\u7092\u80a1|\u76ef\u76d8\u5b98\u65b9\u8f6f\u4ef6\u4e0b\u8f7d",
+  "url": "http://www.18.cn/download.html",
+  "published": "2026-09-12T05:30:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://zqcdn.eastmoneysec.com.cn/secuweb-ssr-18/static/builds/meta/479cc2dd-b5be-4a00-8375-0b47b2f70400.json",
+   "http://www.18.cn/download"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "0fa706582d2c0acd99b3",
+  "host": "www.18.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Congress Trading - Quiver Quantitative",
+  "url": "https://www.quiverquant.com/congresstrading/",
+  "published": "2026-09-12T05:30:57+00:00",
+  "symbols": [
+   "NVIDIA"
+  ],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "basis",
+   "flow",
+   "momentum",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.quiverquant.com/export/",
+   "https://www.quiverquant.com/api/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "ca4bcdd569961085bafb",
+  "host": "www.quiverquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Politician Stock Portfolio Leaderboard - Quiver Quantitative",
+  "url": "https://www.quiverquant.com/politician-stock-portfolio-leaderboard/",
+  "published": "2026-09-12T05:30:58+00:00",
+  "symbols": [
+   "NVIDIA"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "flow",
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.quiverquant.com/export/",
+   "https://www.quiverquant.com/api/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "f8f0fe063caefd887adc",
+  "host": "www.quiverquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Insider Trading Dashboard - Quiver Quantitative",
+  "url": "https://www.quiverquant.com/insiders/",
+  "published": "2026-09-12T05:31:01+00:00",
+  "symbols": [
+   "NVIDIA"
+  ],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "flow",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.quiverquant.com/export/",
+   "https://www.quiverquant.com/api/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "ed60679abb6e1bc68f3b",
+  "host": "www.quiverquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Congress Live Net Worth Tracker | Quiver Quantitative",
+  "url": "https://www.quiverquant.com/congress-live-net-worth/",
+  "published": "2026-09-12T05:31:03+00:00",
+  "symbols": [
+   "NVIDIA"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "flow",
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.quiverquant.com/export/",
+   "https://www.quiverquant.com/api/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "3b2d045faade7f07c6e8",
+  "host": "www.quiverquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Government Spending | Quiver Quantitative",
+  "url": "https://www.quiverquant.com/government-spending/",
+  "published": "2026-09-12T05:31:04+00:00",
+  "symbols": [
+   "NVIDIA"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.quiverquant.com/export/",
+   "https://www.quiverquant.com/api/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "df42791fec93023bcc07",
+  "host": "www.quiverquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Corporate Lobbying",
+  "url": "https://www.quiverquant.com/lobbying/",
+  "published": "2026-09-12T05:31:09+00:00",
+  "symbols": [
+   "AIRBNB",
+   "AMAZON",
+   "BOEING",
+   "INTUIT",
+   "NVIDIA",
+   "ORACLE",
+   "PFIZER",
+   "TOYOTA",
+   "TWILIO"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.quiverquant.com/export/",
+   "https://www.quiverquant.com/api/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "ec902921ff58a421becd",
+  "host": "www.quiverquant.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]

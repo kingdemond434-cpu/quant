@@ -4,12 +4,12 @@
   "equiti_copy": {
    "first_seen": "2026-08-25T22:44:03+00:00",
    "region": "MENA/global",
-   "last_seen": "2026-09-12T04:35:42+00:00",
-   "url": "https://copy-ratings.equiti.com/?page=2",
-   "diagnosis": "JS_APP_NEEDS_API",
-   "fix_hint": "client-rendered app: the page ships no data, so find the JSON endpoint its own XHR calls and read that instead of the HTML",
-   "error": "",
-   "attempts": 218
+   "last_seen": "2026-09-12T05:42:04+00:00",
+   "url": "https://copy-ratings.equiti.com/?page=3",
+   "diagnosis": "FETCH_ERROR",
+   "fix_hint": "page returned 200 with neither rendered numbers nor JS markers",
+   "error": "HTTPSConnectionPool(host='copy-ratings.equiti.com', port=443): Max retries exceeded with url: /?page=3 (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_",
+   "attempts": 219
   },
   "duplitrade": {
    "first_seen": "2026-08-25T22:44:16+00:00",
@@ -104,12 +104,12 @@
   "litefinance": {
    "first_seen": "2026-08-28T00:22:52+00:00",
    "region": "CIS/SEA",
-   "last_seen": "2026-08-28T00:22:52+00:00",
-   "url": "https://my.litefinance.org/traders?page=1",
+   "last_seen": "2026-09-12T05:44:04+00:00",
+   "url": "https://my.litefinance.org/traders?page=3",
    "diagnosis": "FETCH_ERROR",
    "fix_hint": "page returned 200 with neither rendered numbers nor JS markers",
-   "error": "HTTPSConnectionPool(host='my.litefinance.org', port=443): Read timed out. (read timeout=25)",
-   "attempts": 1
+   "error": "HTTPSConnectionPool(host='my.litefinance.org', port=443): Max retries exceeded with url: /traders?page=3 (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EO",
+   "attempts": 2
   },
   "instaforex_copy": {
    "first_seen": "2026-09-01T00:23:06+00:00",
@@ -120,6 +120,16 @@
    "fix_hint": "page returned 200 with neither rendered numbers nor JS markers",
    "error": "HTTPSConnectionPool(host='www.instaforex.com', port=443): Read timed out. (read timeout=25)",
    "attempts": 3
+  },
+  "trading_latam": {
+   "first_seen": "2026-09-12T05:43:45+00:00",
+   "region": "LATAM",
+   "last_seen": "2026-09-12T05:43:45+00:00",
+   "url": "https://trading-latam.com/ranking-toptraders/",
+   "diagnosis": "FETCH_ERROR",
+   "fix_hint": "page returned 200 with neither rendered numbers nor JS markers",
+   "error": "HTTPSConnectionPool(host='trading-latam.com', port=443): Max retries exceeded with url: /ranking-toptraders/ (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTE",
+   "attempts": 1
   }
  }
 }
