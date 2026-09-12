@@ -6468,6 +6468,6 @@
     "lockbox_oos_sharpe_min": 0.0,
     "expected_value_min_exclusive": 0.0
   },
-  "note": "UNIVERSAL 10-GATE PASS ONLY.",
-  "swept_at": "2026-09-12T09:07:34.004228+00:00"
+  "note": "UNIVERSAL 10-GATE PASS ONLY. Placebo null + fragility apply before portfolio entry.",
+  "swept_at": "2026-09-12T10:07:04.992565+00:00"
 }

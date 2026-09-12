@@ -1,0 +1,13 @@
+[
+  {
+    "source": "weather",
+    "type": "hurricane",
+    "name": "Lowell",
+    "symbols": [
+      "USOIL",
+      "NATGAS"
+    ],
+    "confidence": 0.5,
+    "description": "Active hurricane Lowell - may impact energy prices"
+  }
+]

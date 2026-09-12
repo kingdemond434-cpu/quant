@@ -94,3 +94,4 @@
 {"at": "2026-09-12T09:44:10+00:00", "run": "compile_candidates", "kind": "hourly_cycle", "outcome": "ok", "wall_s": 92.77, "cpu_s": 0.016}
 {"at": "2026-09-12T09:44:10+00:00", "run": "deepen", "kind": "hourly_cycle", "outcome": "ok", "wall_s": 0.032, "cpu_s": 0.031}
 {"at": "2026-09-12T09:44:12+00:00", "run": "merge_docket", "kind": "hourly_cycle", "outcome": "ok", "wall_s": 1.096, "cpu_s": 0.016}
+{"at": "2026-09-12T10:02:49+00:00", "run": "backtest", "kind": "hourly_cycle", "outcome": "TIMEOUT", "wall_s": 1117.268, "cpu_s": 0.031}

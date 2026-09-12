@@ -1,0 +1,32 @@
+[
+ {
+  "source": "deep_forest",
+  "kind": "dataset",
+  "title": "Press releases | MNB.hu",
+  "url": "https://www.mnb.hu/en/pressroom/press-releases",
+  "published": "2026-09-12T09:42:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.mnb.hu/letoltes/hufonia.xls",
+   "https://www.mnb.hu/letoltes/hufonia-swap-index.xls",
+   "https://www.mnb.hu/letoltes/bubor2.xls",
+   "https://www.mnb.hu/letoltes/birs.xls"
+  ],
+  "n_endpoints": 4,
+  "vault_sha": "39b14c92fbe7715a507e",
+  "host": "www.mnb.hu",
+  "ground": "MNB press releases",
+  "region": "hu",
+  "cluster": "east_eu",
+  "dataset_class": null,
+  "available_time": "2026-09-12T09:42:47+00:00",
+  "ingested_time": "2026-09-12T09:42:47+00:00",
+  "source_hash": "39b14c92fbe7715a507e",
+  "claims": [],
+  "n_claims": 0
+ }
+]

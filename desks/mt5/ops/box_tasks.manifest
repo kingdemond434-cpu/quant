@@ -44,6 +44,16 @@
 #   lane      money | research | data | ops -- what a failure of it costs
 
 # ---------------------------------------------------------------- money path (never research)
+# THE ORGANS ADDED 2026-09-12. Each was built, correct, and running nowhere -- the class the
+# principal asked to end. MT5-CostState carries the two cost producers that
+# check_enforcement_execution measured MENTIONED: each has a main() and writes an
+# artifact, and neither had ever been scheduled, so the desk went on charging one flat
+# spread per symbol at every hour and zero overnight financing.
+TASK name="MT5-MoatCapture"        trigger="every 30 minutes"     runs="desks/mt5/moat/capture_watch.py"        installer="NONE" lane="ops"
+TASK name="MT5-ShiftWatch"         trigger="hourly"              runs="desks/mt5/research/shift_watch.py"      installer="NONE" lane="research"
+TASK name="MT5-CostState"          trigger="daily 04:20"         runs="desks/mt5/research/cost_surface.py"     installer="NONE" lane="research"
+TASK name="MT5-CostState"          trigger="daily 04:20"         runs="desks/mt5/research/carry_state.py"      installer="NONE" lane="research"
+TASK name="MT5-CostState"          trigger="daily 04:20"         runs="desks/mt5/research/cost_honesty.py"     installer="NONE" lane="research"
 TASK name="MT5-Gateway"            trigger="continuous loop"      runs="desks/mt5/research/run_gateway_loop.py" installer="NONE" lane="money"
 TASK name="MT5-FusionDeadman"      trigger="UNDECLARED"           runs="scripts/run_deadman_switch.py"         installer="NONE" lane="money"
 # THE MT5 RAIL, DRY-RUN ONLY (2026-09-08). A separate task from MT5-FusionDeadman above, which runs

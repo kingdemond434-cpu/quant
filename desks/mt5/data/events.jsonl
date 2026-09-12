@@ -426,3 +426,4 @@
 {"at":"2026-09-12T09:44:10+00:00","kind":"LEG_DONE","leg":"deepen","outcome":"ok"}
 {"at":"2026-09-12T09:44:12+00:00","kind":"LEG_DONE","leg":"merge_docket","outcome":"ok"}
 {"at":"2026-09-12T09:44:12+00:00","kind":"DOCKET_MERGED","leg":"merge_docket","outcome":"ok"}
+{"at":"2026-09-12T10:02:49+00:00","kind":"LEG_FAILED","leg":"backtest","outcome":"TIMEOUT"}

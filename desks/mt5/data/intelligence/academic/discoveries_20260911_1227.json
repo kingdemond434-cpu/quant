@@ -1,0 +1,16 @@
+[
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "Entropic Value-at-Risk parity for tempered stable returns",
+    "summary": "We develop Entropic Value-at-Risk (EVaR) parity for tempered stable returns. EVaR-based inverse risk parity (IRP) and equal risk contribution (ERC) portfolios are constructed using multivariate normal",
+    "url": "https://arxiv.org/abs/2609.11905v1",
+    "published": "2026-09-10T17:56:21Z",
+    "trading_terms": [
+      "risk",
+      "portfolio"
+    ],
+    "symbols": [],
+    "confidence": 0.2
+  }
+]

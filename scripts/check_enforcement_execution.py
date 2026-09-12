@@ -107,6 +107,32 @@ _MANUAL: dict[str, str] = {
     "purpose is to execute once against a standing claim; "
     "re-running it on a timer would re-answer a question "
     "already answered and recorded in the law's own text.",
+    # THE RETIRED BOOK'S ACCOUNTING (recorded 2026-09-12). It reconciles the spot/perp carry legs
+    # of the CRYPTO-EXCHANGE book, which the MT5 universe mandate retired permanently -- "no
+    # crypto-exchange universe may EVER be hunted again", and data/RECORDERS_OFF has idled that
+    # venue since 2026-08-25.
+    #
+    # THE CORRECT REPAIR HERE IS NOT A CALLER. Wiring it would give a live clock to machinery for
+    # a venue the desk has decided never to trade again, which is worse than leaving it unwired:
+    # it would be building on ground the mandate abandoned. Nor is it deletion -- the reconciliation
+    # logic is the record of how that book was accounted for, and L1.6-attribution's citation
+    # points here for the history.
+    #
+    # So it is recorded as a DECISION rather than left to read as an oversight, which is this
+    # dict's whole convention: "no cron line must be a DECISION on the record, never a default".
+}
+
+#: Modules belonging to a PERMANENTLY RETIRED book. Not a wiring gap and not an oversight: the
+#: correct repair for these is neither a caller nor a deletion, and without a place to say so they
+#: read as MENTIONED forever -- a standing red whose only "fix" would be to schedule machinery for
+#: a market the desk has decided never to trade again.
+_RETIRED_ERA: dict[str, str] = {
+    "libs/execution/carry_accounting.py":
+        "the RETIRED crypto book's spot/perp carry reconciliation. The MT5 universe mandate "
+        "retired that venue permanently -- 'no crypto-exchange universe may EVER be hunted "
+        "again' -- and data/RECORDERS_OFF has idled it since 2026-08-25. A caller would give a "
+        "live clock to machinery for a market the desk abandoned; deletion would lose the record "
+        "L1.6-attribution cites for how that book was accounted for. Kept, unscheduled, recorded.",
 }
 
 #: Verdicts that mean the cited enforcement cannot be cashed. MENTIONED and DECORATIVE are both
@@ -115,7 +141,10 @@ _MANUAL: dict[str, str] = {
 #: whether the artifact should exist -- and a desk that cannot tell them apart debugs the wrong
 #: organ (L1.55, on ABSENT vs UNREADABLE).
 _BROKEN = ("DECORATIVE", "MISSING", "MENTIONED")
-_PASSING = frozenset({"OK"})
+#: RETIRED joins OK as a PASSING verdict: a module whose venue no longer exists owes
+#: no caller, and counting it broken would make the fence permanently red on a
+#: decision the desk has already taken and recorded.
+_PASSING = frozenset({"OK", "RETIRED"})
 
 #: Non-executable artifact roots: these enforce by CONTENT (a sealed lock, the doctrine text, the
 #: graveyard record), so "does it run" is the wrong question and existence is the right one.
@@ -270,6 +299,19 @@ def _code_index(text: str) -> tuple[set[str], bool] | None:
 _RUNNER_GLOBS = (
     "ops/**/*.sh", "ops/*.sh", "ops/**/*.service", "ops/**/*.timer",
     "deploy/**/*.sh", "deploy/*.sh", ".github/workflows/*.yml", ".github/workflows/*.yaml",
+    # THE WINDOWS BOX'S RUNNERS WERE INVISIBLE TO THIS FENCE (2026-09-12), and that box is the
+    # one that trades. Every organ on it is started by a .cmd or a .ps1 from ops/, and none of
+    # those suffixes was scanned -- so a module could be scheduled, running, writing its artifact
+    # every day, and still be reported MENTIONED because the only thing naming it was a file
+    # shape this list did not know about.
+    #
+    # That is a false NEGATIVE on execution, which is the more dangerous direction for this
+    # particular fence: it manufactures dead-architecture findings about live machinery, and a
+    # session acting on one would go looking for a caller that already exists. Measured here on
+    # cost_surface and carry_state -- both scheduled via ops/run_cost_state.cmd, both still
+    # reported MENTIONED until this line.
+    "ops/**/*.cmd", "ops/*.cmd", "ops/**/*.ps1", "ops/*.ps1",
+    "desks/mt5/scripts/*.ps1", "desks/mt5/ops/*.manifest",
 )
 
 
@@ -490,11 +532,21 @@ def evaluate() -> dict[str, Any]:
                         else "no cron line, no runner, no subprocess call, no importer",
                     }
             elif kind == "module":
+                rel = path.relative_to(_ROOT).as_posix() if path.exists() else ""
                 syms = _public_symbols(path)
                 init = path.parent / "__init__.py"
                 pkg = init if init.exists() else None
                 used = corpus.references(syms, exclude=path, package_init=pkg)
-                if not syms:
+                if rel in _RETIRED_ERA:
+                    # A RETIRED VENUE'S MACHINERY IS NOT A WIRING GAP (2026-09-12). `_MANUAL`
+                    # above only reaches script-kind rows, so a module belonging to a book the
+                    # desk has permanently stopped trading had no way to be dispositioned and
+                    # read as MENTIONED forever -- a standing red on the one repair that must
+                    # NOT be made. Wiring it would schedule machinery for a market the mandate
+                    # abandoned; deleting it would lose the record its law cites. Recorded, as
+                    # this file's own convention requires: a decision, never a default.
+                    row |= {"verdict": "RETIRED", "evidence": _RETIRED_ERA[rel]}
+                elif not syms:
                     row |= {
                         "verdict": "EXECUTED",
                         "evidence": "no public symbols to trace (conservative pass)",

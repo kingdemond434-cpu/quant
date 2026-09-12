@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-12T09:07:41+00:00",
+  "updated_at": "2026-09-12T10:05:33+00:00",
   "configured_sleeves": 94,
   "represented_sleeves": 94,
   "certified_sleeves_total": 66,
@@ -9,7 +9,7 @@
   "evidence_blocked_sleeves": 0,
   "missing_sleeves": [],
   "errors": {},
-  "seconds": 757.109,
+  "seconds": 616.991,
   "gateway_armed": true,
   "promoted_live_sleeves": [
     "xau_m5_anti_breakout_overlap",
