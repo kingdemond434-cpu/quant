@@ -1,0 +1,194 @@
+{
+ "version": 1,
+ "recorded": "2026-09-12",
+ "source": "principal, 2026-09-12 session -- the 100%-target blueprint remainder, delivered verbatim after an independent read of the active tree",
+ "why_this_file_exists": [
+  "A blueprint that lives only in a chat transcript is a blueprint the next session cannot act on.",
+  "The principal's own review corrected an earlier estimate UPWARD: portfolio-aware genetic/program search, nine search populations, successive halving, trial charging, MAP-Elites quality-diversity, structural alpha genome, feature genealogy, autonomous PIT dataset acquisition, adversarial poison canaries, sequential RL over partial specs, role-separated research agents and counterfactual Elog attribution are ALREADY REAL CODE on the active tree -- not future work.",
+  "So this ledger records the REMAINDER only, at ~94-96% architectural coverage, with the explicit caveat that end-to-end maturity is lower because several final pieces exist partially or are not yet capital-authoritative."
+ ],
+ "implementation_order": [
+  "release/time/provenance authority",
+  "forward/null calibration",
+  "world model + representation discovery",
+  "joint strategy evolution",
+  "research-tree + scientist tournament",
+  "learned negative knowledge / unknown-unknowns",
+  "unified meta-controller",
+  "market ecology + autonomous data acquisition",
+  "capacity/execution science",
+  "recursive Meta-R&D + formal verification"
+ ],
+ "status_vocabulary": {
+  "OPEN": "not started on this tree",
+  "PARTIAL": "machinery exists and is named in the item; the gap is stated in `gap`",
+  "LANDED": "built, scheduled, leaves an artifact, and something reads it",
+  "REFUSED": "deliberately not done, with the standing order that refuses it"
+ },
+ "items": [
+  {"id": "F1", "rank": 1, "title": "Canonical release / capital authority",
+   "status": "PARTIAL",
+   "need": "exactly one canonical branch and release lineage, protected and immutable; builds tied to an exact commit/data/config hash; live boxes accept ONLY signed release artifacts; no healer, sync process or agent may overwrite money-path files directly",
+   "gap": "the active branch is unprotected; Adopt-Release can land a tree that reverts a correct local fix when origin does not yet carry it",
+   "exists": ["libs/ops/release_signing.py", "libs/ops/release.py", "desks/mt5/scripts/Adopt-And-Seal.ps1", "ops/githooks/moneypath_precommit_guard.py", "data/release_identity.json"],
+   "note": "the principal names this the most important remaining NON-RESEARCH item"},
+
+  {"id": "F2", "rank": 2, "title": "Universal point-in-time truth",
+   "status": "PARTIAL",
+   "need": "event time, observation time, receive time, broker/server time, publication time, revision/vintage, timezone source, transformation lineage and availability timestamp on EVERY market and data path; derived features inherit full lineage; no implicit timezone conversion anywhere",
+   "gap": "acquire_datasets.py already refuses undated/revision-unsafe data and issues PIT certificates -- the standard exists and is not yet universal",
+   "exists": ["desks/mt5/research/acquire_datasets.py"]},
+
+  {"id": "F3", "rank": 3, "title": "Probabilistic Market World Model",
+   "status": "OPEN",
+   "need": "ensemble POSTERIOR models of volatility, liquidity, trend/reversion, jumps, event state, macro state, cross-asset transmission, participant pressure and structural breaks, emitting DISTRIBUTIONS and uncertainty rather than one regime label",
+   "gap": "alpha_habitat measures market fingerprints and mechanism-market affinity, which is useful but is not the world model",
+   "exists": ["desks/mt5/research/alpha_habitat.py", "libs/regime/engine.py"]},
+
+  {"id": "F4", "rank": 4, "title": "Learned representation discovery",
+   "status": "OPEN",
+   "need": "learned latent states, cross-market embeddings, nonlinear residual representations, event embeddings, participant-state embeddings, automatically invented composite variables -- COMPETING against symbolic/econometric representations, never replacing them",
+   "gap": "the grammar is typed and sophisticated but still searches transformations of KNOWN primitives"},
+
+  {"id": "F5", "rank": 5, "title": "Joint factor x model x state x execution x portfolio evolution",
+   "status": "PARTIAL",
+   "need": "evolve the whole executable object -- representation, predictive model, state condition, horizon, entry, exit, execution policy, portfolio role -- so search discovers INTERACTION STRUCTURE instead of optimising each layer separately",
+   "gap": "the evolutionary layer's own docstring still describes a fixed threshold recipe around evolved expressions"},
+
+  {"id": "F6", "rank": 6, "title": "Agentic research-tree search",
+   "status": "OPEN",
+   "need": "every promising mechanism spawns a persistent tree (mechanism -> basic experiment -> alternative explanations -> falsifiers -> state variants -> cross-market analogues -> execution variants -> portfolio-residual variants) with posterior value and expected information gain per node, MCTS/beam/best-first compute allocation, permanent pruning",
+   "gap": "genetic evolution and sequential RL are not a scientific tree"},
+
+  {"id": "F7", "rank": 7, "title": "Full AI scientist tournament",
+   "status": "PARTIAL",
+   "need": "independent competing agents -- generator, causal critic, statistician, leakage hunter, data/PIT critic, execution critic, portfolio critic, novelty critic, alternative-explanation, red team, reviewer, meta-reviewer -- with genuinely independent context and priors, and DISAGREEMENT PRESERVED rather than averaged away",
+   "gap": "contract-level separation between Evidence, Mechanism, Hypothesis and Falsifier agents exists and is genuinely useful; the tournament does not"},
+
+  {"id": "F8", "rank": 8, "title": "Unknown-Unknowns Engine",
+   "status": "OPEN",
+   "need": "feed the model everything the existing models CANNOT explain -- large forecast residuals, ensemble disagreement, unexplained drawdowns, cross-market decouplings, execution deterioration, state transitions, new latent clusters -- and generate hypotheses whose purpose is to explain those errors",
+   "why": "this is how the system searches OUTSIDE its current ontology"},
+
+  {"id": "F9", "rank": 9, "title": "Research Frontier Map as authoritative scheduler input",
+   "status": "PARTIAL",
+   "need": "ONE global map of data x mechanism x market x horizon x state x representation x execution x payoff geometry, with occupancy/confidence/expected value per region, DIRECTLY controlling research allocation",
+   "gap": "alpha_frontier, EVIG, transfer classes, crowding hazard, tail complementarity, null calibration and strategy DNA all exist; the single authoritative map does not",
+   "exists": ["desks/mt5/research/alpha_frontier.py"]},
+
+  {"id": "F10", "rank": 10, "title": "Learned Negative-Knowledge Model",
+   "status": "PARTIAL",
+   "need": "a trained meta-model over historical experiments predicting P(survive), likely failure gate, expected forward retention and expected dElog -- rejecting expensive low-value experiments BEFORE the gauntlet while preserving exploration",
+   "gap": "graveyard material already feeds back into search and structural genealogy exists; the trained model does not"},
+
+  {"id": "F11", "rank": 11, "title": "Unified Expected-Value-of-Information controller",
+   "status": "PARTIAL",
+   "need": "one controller choosing between fundamentally different actions -- new hypothesis, deepen existing, acquire dataset, run another falsifier, investigate an anomaly, gather forward observations, evolve a family, test cross-market transfer, abandon a region -- optimising expected future dElog + information value - compute/data/delay/trial cost",
+   "gap": "validation_evig() and sequential RL are a strong foundation; the cross-action controller is missing"},
+
+  {"id": "F12", "rank": 12, "title": "Connect all search populations to delayed truth",
+   "status": "PARTIAL",
+   "need": "a population's ultimate reward comes from FORWARD/LIVE incremental portfolio contribution, not screening success; credit flows backwards live outcome -> sleeve -> hypothesis -> representation -> search operator -> scientist -> dataset",
+   "gap": "the population that created each candidate is already recorded and generator weights are read; the credit path stops short of live"},
+
+  {"id": "F13", "rank": 13, "title": "Orthogonality beyond correlation",
+   "status": "PARTIAL",
+   "need": "conditional correlation, nonlinear mutual information, tail dependence, co-drawdown probability, same-event loss, common liquidity dependence, execution-resource overlap, factor residualisation, capacity overlap -- final score is marginal portfolio Elog after residualising against the ENTIRE existing book",
+   "gap": "the alpha genome already identifies duplicated mechanisms before P&L exists, which is the hard half; the dependence measures are missing"},
+
+  {"id": "F14", "rank": 14, "title": "Autonomous information-acquisition brain",
+   "status": "PARTIAL",
+   "need": "decide which MISSING observation is worth obtaining, estimate a dataset's EVIG BEFORE acquisition, find legal/public/licensed sources, compare competing providers, infer publication lags, build parsers, retire datasets that never contribute information",
+   "gap": "endpoint discovery, fetch, PIT-check and conversion to primitives all exist -- the DECIDING half does not",
+   "exists": ["desks/mt5/research/acquire_datasets.py", "desks/mt5/research/data_axis_miner.py", "desks/mt5/research/axis_ingest_all.py"]},
+
+  {"id": "F15", "rank": 15, "title": "Market ecology / opponent modelling",
+   "status": "OPEN",
+   "need": "model other participants -- dealer hedging, CTA flows, retail crowding, benchmark flows, producer hedging, systematic rebalance, vol-control funds, market makers, diffusion of public strategies -- and estimate how an edge decays as competitors learn it and how OWN size changes the market response",
+   "gap": "crowding hazard exists and is useful; participant modelling does not"},
+
+  {"id": "F16", "rank": 16, "title": "Causal discovery, not only causal stories",
+   "status": "PARTIAL",
+   "need": "causal-DAG discovery, conditional independence tests, natural experiments, event discontinuities, instrumental variables where defensible, automated distinguishing experiments -- the system CHOOSES between two causal explanations rather than describing both",
+   "gap": "mechanisms already require a forced participant/payer and alternative explanations are enforced"},
+
+  {"id": "F17", "rank": 17, "title": "Adversarial co-evolution",
+   "status": "PARTIAL",
+   "need": "an EVOLVING adversary population: every time the scientist improves, the destroyer invents new timestamp perturbations, synthetic leaks, state shifts, cost regimes, execution failures, covariance breaks and selection traps, so researchers evolve against a moving target",
+   "gap": "adversary.py is already excellent -- real-gauntlet poison canaries, silent-defect hunting, promoter gaming, anti-echo genealogy -- but the adversary is static",
+   "exists": ["desks/mt5/research/adversary.py"]},
+
+  {"id": "F18", "rank": 18, "title": "Permanent QuantBench",
+   "status": "OPEN",
+   "need": "every historical defect becomes an immutable benchmark -- same-bar ambiguity, state-drop propagation, JPY cost conversion, stale artifacts, timestamps, scheduler claims, dead scripts returning success, release overwrite, duplicate research identity, null admission -- and no new researcher, evaluator, allocator or release stack graduates without passing every historical failure mode plus synthetic variants"},
+
+  {"id": "F19", "rank": 19, "title": "Cryptographic Evidence Vault",
+   "status": "PARTIAL",
+   "need": "multiple sealed holdout tiers, irreversible reveal counters, ancestry-aware trial charges, signed code/data/config hashes, an independent certificate authority, LIMITED verdict feedback to researchers, and automatic certificate invalidation when any economically relevant dependency changes",
+   "gap": "the alpha state machine already prevents illegal stage skipping with explicit evidence requirements"},
+
+  {"id": "F20", "rank": 20, "title": "Calibrated forward laboratory",
+   "status": "PARTIAL",
+   "need": "forward testing as SEQUENTIAL statistical inference: placebo/null candidates run beside real ones, observed false-admission measured continuously, always-valid/sequential tests or Bayesian updating, pre-registered stopping rules, selection pressure calibrated against forward CAPACITY",
+   "gap": "an earlier audit showed the forward queue could be saturated by nulls -- capacity is the binding constraint and is not calibrated"},
+
+  {"id": "F21", "rank": 21, "title": "Empirical Capacity / Impact brain",
+   "status": "PARTIAL",
+   "need": "measure alpha(size), slippage(size), fill probability(size), rejection probability, broker depth/proxy liquidity, spread widening, market-impact decay and crowding; allocate strategy AND scale by marginal Elog of the NEXT unit of capital",
+   "gap": "alpha_fitness includes capacity conceptually only"},
+
+  {"id": "F22", "rank": 22, "title": "Execution Scientist",
+   "status": "PARTIAL",
+   "need": "research execution like alpha -- order timing, order type, entry delay, partial fills, spread state, adverse selection, rollover/swap, stop behaviour, session boundaries, broker microstructure -- with live fills continuously recalibrating the simulator and signal alpha attributed separately from execution alpha",
+   "exists": ["desks/mt5/research/cost_surface.py", "desks/mt5/research/carry_state.py", "desks/mt5/research/cost_honesty.py"],
+   "note": "cost_surface and carry_state were MENTIONED-but-unscheduled until 2026-09-12 and are now on a daily clock"},
+
+  {"id": "F23", "rank": 23, "title": "Live counterfactual attribution at every timeframe",
+   "status": "PARTIAL",
+   "need": "M1/M5/M15/tick-level replay, and enough entry/stop/exit metadata on every live decision to make it replayable",
+   "gap": "action_counterfactuals.py already measures alternative sizes/exits/opposite side in dElog and turns findings into research tasks, but its own code explicitly SKIPS sub-H1 sleeves because H1 bars cannot reconstruct them",
+   "exists": ["desks/mt5/research/action_counterfactuals.py"]},
+
+  {"id": "F24", "rank": 24, "title": "Every risk/growth modifier proves itself counterfactually",
+   "status": "PARTIAL",
+   "need": "every shrink, cap, gate, regime haircut, correlation penalty, decay prior and execution buffer carries a counterfactual ledger -- Elog with it versus without -- and BOOST decisions likewise prove positive contribution; governance becomes empirically priced",
+   "exists": ["libs/portfolio/rails.py", "desks/mt5/research/missed_growth.py", "libs/portfolio/capital_modifiers.py"],
+   "note": "GROWTH_GOVERNANCE Rule 1 already demands this of any NEW modifier; the existing ones are not all priced"},
+
+  {"id": "F25", "rank": 25, "title": "Recursive Meta-R&D",
+   "status": "OPEN",
+   "need": "the system may modify researcher prompts, role structures, grammar primitives, search operators, experiment schedulers, representations and search algorithms -- but every meta-version competes against the incumbent on sealed historical traps + synthetic benchmarks + prospective campaigns, and only an objectively better research system becomes champion",
+   "hard_boundary": "NEVER give this subsystem direct authority over live money-path code"},
+
+  {"id": "F26", "rank": 26, "title": "Formal verification where proof is possible",
+   "status": "OPEN",
+   "need": "property/model checking or SMT for structural invariants: no illegal alpha-state transition, no certificate bypass, no future observation access, no uncharged trial path, no unsigned deployment, no impossible sizing state, no multiple capital authorities",
+   "note": "statistical questions stay statistical; STRUCTURAL questions should be proved rather than tested"},
+
+  {"id": "F27", "rank": 27, "title": "Single Meta-Controller over RL and search allocation",
+   "status": "PARTIAL",
+   "need": "combine the sequential learner with the population bandit, EVIG, frontier coverage, research costs and delayed live credit so ALL research compute competes in one budget market",
+   "gap": "alpha_rl.py already learns Q(partial specification, next decision), keeps a permanent exploration floor and rewards only measured marginal portfolio utility",
+   "exists": ["desks/mt5/research/alpha_rl.py", "desks/mt5/research/budget_market.py"]},
+
+  {"id": "F28", "rank": 28, "title": "Three-resource optimisation loop closed",
+   "status": "OPEN",
+   "need": "jointly allocate COMPUTE by expected future dElog/compute, INFORMATION/TRIAL budget by expected information gain/statistical cost, and CAPITAL by expected marginal robust dElog/capital -- with every outcome updating all three",
+   "note": "the principal calls this the actual end-state"}
+ ],
+ "already_real_not_future": [
+  "portfolio-aware genetic/program search",
+  "nine search populations",
+  "successive halving",
+  "trial charging",
+  "MAP-Elites quality-diversity archive",
+  "search fitness over marginal portfolio dE[log W], novelty, tails, state breadth, capacity, costs, fragility, complexity, multiplicity",
+  "structural alpha genome",
+  "feature genealogy",
+  "autonomous PIT dataset acquisition",
+  "adversarial poison canaries",
+  "sequential RL over partial strategy specifications",
+  "role-separated research agents",
+  "counterfactual Elog attribution"
+ ]
+}
