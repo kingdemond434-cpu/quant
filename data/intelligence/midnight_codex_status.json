@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-09-13T08:04:38.706319+00:00",
+ "updated_at": "2026-09-13T09:44:19.491373+00:00",
  "status": "RUNNING_PIPELINE",
  "reason": "Deterministic frontier is running; controller has not started",
  "controller_rc": -1,

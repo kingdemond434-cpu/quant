@@ -1,0 +1,2085 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\"MetaTrader 4\" (MT4) \u0e40\u0e27\u0e47\u0e1a\u0e40\u0e17\u0e2d\u0e23\u0e4c\u0e21\u0e34\u0e19\u0e31\u0e25\u0e08\u0e32\u0e01 RoboForex Ltd.",
+  "url": "https://mt.roboforex.com/?lang=th",
+  "published": "2026-09-13T09:13:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "68f58537fc06b372ae84",
+  "host": "mt.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\"MetaTrader 5\" (MT5) \u0e40\u0e27\u0e47\u0e1a\u0e40\u0e17\u0e2d\u0e23\u0e4c\u0e21\u0e34\u0e19\u0e31\u0e25\u0e08\u0e32\u0e01 RoboForex Ltd.",
+  "url": "https://mt5.roboforex.com/?lang=th",
+  "published": "2026-09-13T09:13:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "36ea3bd2b30d2846ae72",
+  "host": "mt5.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "FAQ &#8211; RoboForex Help",
+  "url": "https://help.roboforex.com/about/client/risk-warning/",
+  "published": "2026-09-13T09:13:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1743511020"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "b545e3853c31957d243d",
+  "host": "help.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "R StocksTrader Launches Copy Trading in Its Mobile App - RoboForex Blog",
+  "url": "https://blog.roboforex.com/th/blog/2022/10/03/r-stockstrader-launches-copy-trading-in-its-mobile-app/",
+  "published": "2026-09-13T09:13:06+00:00",
+  "symbols": [
+   "XAUUSD",
+   "EURUSD",
+   "USDTRY",
+   "Tesla"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "gap",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7388c872d9e88ef61032",
+  "host": "blog.roboforex.com",
+  "claims": [
+   {
+    "claim": "2026 Analysis 16 min Market Week Ahead (September 7 \u2013 11): US CPI Forecast Lands After the ECB Decision The first week of September settled nothing.",
+    "lang": "en",
+    "quantities": [
+     "cpi"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "8dede90a48a2"
+   },
+   {
+    "claim": "2026 Analysis 16 min Market Week Ahead (August 31 \u2013 September 4): Non-Farm Payrolls Forecast Decides the Dollar's Course August closed on a firm note for US stocks, carried by the first corporate reports of the season.",
+    "lang": "en",
+    "quantities": [
+     "stocks"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "EURUSD",
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "gold",
+      "eur/usd",
+      "try",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "adb662934c31"
+   },
+   {
+    "claim": "2026 Analysis 23 min Gold Fed Rate Hike Bets: XAUUSD Forecast and a 4,772 USD Target Gold Fed rate hike bets have been the single biggest weight on the metal all year, and over one week in August that weight came off.",
+    "lang": "en",
+    "quantities": [
+     "rate",
+     "hike"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "0f6faf8e9a8f"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\"MetaTrader 4\" (MT4) web terminal from RoboForex Ltd",
+  "url": "https://mt.roboforex.com/?lang=en",
+  "published": "2026-09-13T09:13:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6b8789f19c067fda8b99",
+  "host": "mt.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\"MetaTrader 5\" (MT5) web terminal from RoboForex Ltd",
+  "url": "https://mt5.roboforex.com/?lang=en",
+  "published": "2026-09-13T09:13:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "74ff70663802ba1a2eeb",
+  "host": "mt5.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "R StocksTrader Launches Copy Trading in Its Mobile App - RoboForex Blog",
+  "url": "https://blog.roboforex.com/blog/2022/10/03/r-stockstrader-launches-copy-trading-in-its-mobile-app/",
+  "published": "2026-09-13T09:13:08+00:00",
+  "symbols": [
+   "XAUUSD",
+   "EURUSD",
+   "USDTRY",
+   "Tesla"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "gap",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "56468c66e046d5012ceb",
+  "host": "blog.roboforex.com",
+  "claims": [
+   {
+    "claim": "2026 Analysis 16 min Market Week Ahead (September 7 \u2013 11): US CPI Forecast Lands After the ECB Decision The first week of September settled nothing.",
+    "lang": "en",
+    "quantities": [
+     "cpi"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "8dede90a48a2"
+   },
+   {
+    "claim": "2026 Analysis 16 min Market Week Ahead (August 31 \u2013 September 4): Non-Farm Payrolls Forecast Decides the Dollar's Course August closed on a firm note for US stocks, carried by the first corporate reports of the season.",
+    "lang": "en",
+    "quantities": [
+     "stocks"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "EURUSD",
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "gold",
+      "eur/usd",
+      "try",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "adb662934c31"
+   },
+   {
+    "claim": "2026 Analysis 23 min Gold Fed Rate Hike Bets: XAUUSD Forecast and a 4,772 USD Target Gold Fed rate hike bets have been the single biggest weight on the metal all year, and over one week in August that weight came off.",
+    "lang": "en",
+    "quantities": [
+     "rate",
+     "hike"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "0f6faf8e9a8f"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "FAQ &#8211; RoboForex Help",
+  "url": "https://help.roboforex.com/en/support/solutions/articles/501000291518-how-a-trader-s-commission-is-calculated",
+  "published": "2026-09-13T09:13:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1743511020"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "b11827d75c4fa9e4963a",
+  "host": "help.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Security policy, Privacy policy - RoboForex",
+  "url": "https://www.roboforex.com/about/client/security-policy/",
+  "published": "2026-09-13T09:13:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1788266027",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "9e30afba06865c92e19d",
+  "host": "www.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "StocksTrader Terminal - RoboForex Ltd",
+  "url": "https://stockstrader.roboforex.com/",
+  "published": "2026-09-13T09:13:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://stockstrader.roboforex.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "bde60eaf921f68c27c2e",
+  "host": "stockstrader.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Finding an Edge in IPOs: Research and a Backtested Mechanical Trading System",
+  "url": "https://www.crackingmarkets.com/finding-an-edge-in-ipos-research-and-a-backtested-mechanical-trading-system/",
+  "published": "2026-09-13T09:13:11+00:00",
+  "symbols": [
+   "XPTUSD",
+   "NAS100",
+   "US500",
+   "USDKRW",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "breakout",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4cd3fbbaca679705087c",
+  "host": "www.crackingmarkets.com",
+  "claims": [
+   {
+    "claim": "Some brokers allow their clients to buy shares at this price before they hit the open market.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "buy"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XPTUSD",
+      "NAS100",
+      "US500",
+      "USDKRW",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "platinum",
+      "nasdaq",
+      "spy",
+      "won",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "4c3096b6fcfb"
+   },
+   {
+    "claim": "Often, due to high demand, stocks open higher than their initial subscription price.",
+    "lang": "en",
+    "quantities": [
+     "stocks",
+     "open"
+    ],
+    "direction": [
+     "higher"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XPTUSD",
+      "NAS100",
+      "US500",
+      "USDKRW",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "platinum",
+      "nasdaq",
+      "spy",
+      "won",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "2df345d6fcff"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Day Trading Volatility Breakouts Systematically [All Rules Included]",
+  "url": "https://www.crackingmarkets.com/day-trading-volatility-breakouts-systematically-all-rules-included/",
+  "published": "2026-09-13T09:13:13+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "breakout",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5847d58f4698fe7ac82c",
+  "host": "www.crackingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Timing Mean Reversion Using Implied Volatility",
+  "url": "https://www.crackingmarkets.com/iv-mean-reversion/",
+  "published": "2026-09-13T09:13:15+00:00",
+  "symbols": [
+   "US2000",
+   "US500"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "basis",
+   "breakout",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2a63c6f9fe22284cbe76",
+  "host": "www.crackingmarkets.com",
+  "claims": [
+   {
+    "claim": "Personally, I trade a live long mean reversion strategy that works with stocks that: Are from the Russell 1000 index Have an average volume of at least 200,000 Have a price higher than $20 Are in an uptrend: C>MA(C,200) Have a daily implied volatility of at least 0.",
+    "lang": "en",
+    "quantities": [
+     "mean reversion",
+     "stocks",
+     "volume",
+     "volatility"
+    ],
+    "direction": [
+     "long",
+     "higher"
+    ],
+    "horizon": [
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "US2000"
+     ],
+     "mentioned": [
+      "russell"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e8a2c3aedfe9"
+   },
+   {
+    "claim": "On August 2nd, the price drop of TPG stock significantly exceeded the daily implied volatility.",
+    "lang": "en",
+    "quantities": [
+     "volatility"
+    ],
+    "direction": [
+     "drop"
+    ],
+    "horizon": [
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "US2000"
+     ],
+     "mentioned": [
+      "spy",
+      "russell"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "1512b2e6c705"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Buy the dip",
+  "url": "https://www.crackingmarkets.com/buy-the-dip/",
+  "published": "2026-09-13T09:13:17+00:00",
+  "symbols": [
+   "US500",
+   "USDKRW"
+  ],
+  "timeframes": [
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1f0ea199e34c2d3eeb47",
+  "host": "www.crackingmarkets.com",
+  "claims": [
+   {
+    "claim": "Ideally, I look for a linear correlation\u2014for example, the higher the value of the function, the greater the average profit from a trade over a 5-day period.",
+    "lang": "en",
+    "quantities": [
+     "correlation"
+    ],
+    "direction": [
+     "higher"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "USDKRW"
+     ],
+     "mentioned": [
+      "s&p 500",
+      "won"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "00de3975974e"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Deep Dip - Innovative Short-Term Mean Reversion",
+  "url": "https://www.crackingmarkets.com/deep-dip-innovative-short-term-mean-reversion/",
+  "published": "2026-09-13T09:13:18+00:00",
+  "symbols": [
+   "NAS100",
+   "US500"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "feff7b77b9d6a009e926",
+  "host": "www.crackingmarkets.com",
+  "claims": [
+   {
+    "claim": "It is a momentum strategy that enters positions in Peter Live Trading Models \u00b7 Sep 17, 2024 Buy the dip (weekly) We have been trading this strategy since 2018.",
+    "lang": "en",
+    "quantities": [
+     "momentum"
+    ],
+    "direction": [
+     "buy",
+     "dip"
+    ],
+    "horizon": [
+     "weekly"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500"
+     ],
+     "mentioned": [
+      "ndx",
+      "s&p 500"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "cf48c373b039"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "NDX Momentum",
+  "url": "https://www.crackingmarkets.com/ndx-momentum/",
+  "published": "2026-09-13T09:13:20+00:00",
+  "symbols": [
+   "NAS100",
+   "US500"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "48b2a2adf04135cca87a",
+  "host": "www.crackingmarkets.com",
+  "claims": [
+   {
+    "claim": "This strategy leverages implied option volatility for precise Peter Live Trading Models \u00b7 Sep 17, 2024 Buy the dip (weekly) We have been trading this strategy since 2018.",
+    "lang": "en",
+    "quantities": [
+     "volatility"
+    ],
+    "direction": [
+     "buy",
+     "dip"
+    ],
+    "horizon": [
+     "weekly"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500"
+     ],
+     "mentioned": [
+      "ndx",
+      "s&p 500"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a0d3c3a89f33"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "G\u00f6del's Market: Interviewing the Quants: Marco Simioni and Nightly Patterns",
+  "url": "http://godelsmarket.blogspot.com/2015/02/interviewing-quants-marco-simioni-and.html?showComment=1424301749352",
+  "published": "2026-09-13T09:13:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "correlation",
+   "momentum",
+   "night_session",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "28b80527e41eea869f6b",
+  "host": "godelsmarket.blogspot.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "G\u00f6del's Market: Simple Automated Trading System",
+  "url": "http://godelsmarket.blogspot.com/2012/12/simple-automated-trading-system.html?showComment=1404717414399",
+  "published": "2026-09-13T09:13:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "correlation",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fa1f1c9b2ec0ae2d173f",
+  "host": "godelsmarket.blogspot.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "G\u00f6del's Market: Simple Automated Trading System",
+  "url": "http://godelsmarket.blogspot.com/2012/12/simple-automated-trading-system.html?showComment=1416562509793",
+  "published": "2026-09-13T09:13:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "correlation",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f025139d3ebab12a7ffa",
+  "host": "godelsmarket.blogspot.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "G\u00f6del's Market: Gap Trading",
+  "url": "http://godelsmarket.blogspot.com/2012/08/gap-trading.html",
+  "published": "2026-09-13T09:13:27+00:00",
+  "symbols": [
+   "US500",
+   "EURUSD",
+   "WHEAT"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "gap",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "670ab423314c1b02c383",
+  "host": "godelsmarket.blogspot.com",
+  "claims": [
+   {
+    "claim": "max return: if a negative gap, then you would go long so the max gain would be daily high minus open;",
+    "lang": "en",
+    "quantities": [
+     "gap",
+     "open"
+    ],
+    "direction": [
+     "negative",
+     "long"
+    ],
+    "horizon": [
+     "daily",
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURUSD",
+      "WHEAT"
+     ],
+     "mentioned": [
+      "spy",
+      "eurusd",
+      "wheat"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "XAUUSD",
+      "USDJPY"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities",
+      "commitments of traders: positioning: CFTC -> FX and gold"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "815b7f9de3f5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "G\u00f6del's Market: TICK Backtest",
+  "url": "http://godelsmarket.blogspot.com/2012/08/tick-backtest.html",
+  "published": "2026-09-13T09:13:29+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "correlation",
+   "gap",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8fc8e6084698671cc13f",
+  "host": "godelsmarket.blogspot.com",
+  "claims": [
+   {
+    "claim": "Here's the test that I ran: - If the TICK-NYSE's high > 500, go long SPY on the close of the minute bar.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "tick",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "db4ca97e351a"
+   },
+   {
+    "claim": "-If the TICK-NYSE's low < -500, go short SPY on the close of the minute bar.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "tick",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "d3371b7b3cf3"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "G\u00f6del's Market: backtest",
+  "url": "http://godelsmarket.blogspot.com/search/label/backtest?updated-max=2012-07-31T23:10:00-07:00&max-results=20&start=20&by-date=false",
+  "published": "2026-09-13T09:13:31+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "correlation",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "http://godelsmarket.blogspot.com/2015/08/downloading-stock-market-news-for.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "b05d65ba3eb8ea905c43",
+  "host": "godelsmarket.blogspot.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "G\u00f6del's Market: forex",
+  "url": "http://godelsmarket.blogspot.com/search/label/forex?updated-max=2013-02-05T21:45:00-08:00&max-results=20&start=20&by-date=false",
+  "published": "2026-09-13T09:13:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "correlation",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "http://godelsmarket.blogspot.com/2015/08/downloading-stock-market-news-for.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f7d04503cb183defcbfa",
+  "host": "godelsmarket.blogspot.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Free Point-in-Time Fundamentals Sample and Colab | Tradevo Data",
+  "url": "https://tradevodata.com/sample?ref=alt&cta_location=alternatives-quantconnect-data-inline",
+  "published": "2026-09-13T09:13:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "caa3e3ca995b42490c94",
+  "host": "tradevodata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Point-in-Time Fundamentals for Python Backtests | Tradevo Data",
+  "url": "https://tradevodata.com/?ref=alt&utm_content=alt-quantconnect-data",
+  "published": "2026-09-13T09:13:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a45759a6a9f92f185ca7",
+  "host": "tradevodata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Free Point-in-Time Fundamentals Sample and Colab | Tradevo Data",
+  "url": "https://tradevodata.com/sample?cta_location=alternatives-quantconnect-data",
+  "published": "2026-09-13T09:13:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "caa3e3ca995b42490c94",
+  "host": "tradevodata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "GitHub - christianpichichero-max/pit-fundamentals: Free point-in-time US fundamentals sample (40 large caps, 3,280 rows) \u2014 every value stamped with the date it became public. No lookahead bias. From S",
+  "url": "https://tradevodata.com/go/github-sample?utm_source=website&utm_medium=owned&utm_content=alternatives-quantconnect-data&cta_location=alternatives-quantconnect-data",
+  "published": "2026-09-13T09:13:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://tradevodata.com/manifest.json",
+   "https://tradevodata.com/christianpichichero-max/pit-fundamentals/blob/main/data/pit_fundamentals_history.csv",
+   "https://tradevodata.com/topics/dataset"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "24029165f28717fc033d",
+  "host": "tradevodata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cumulative DV2 Indicator | Adaptive Trader",
+  "url": "https://adaptivetrader.wordpress.com/2012/12/27/cumulative-dv2/",
+  "published": "2026-09-13T09:13:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "59a1c02909cbc8a11d45",
+  "host": "adaptivetrader.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "RSI of Volatility Indicator | Adaptive Trader",
+  "url": "https://adaptivetrader.wordpress.com/2013/01/03/rsi-of-volatility-indicator/",
+  "published": "2026-09-13T09:13:48+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "88af30a1a1823c02769b",
+  "host": "adaptivetrader.wordpress.com",
+  "claims": [
+   {
+    "claim": "To create a trading system that would short bursts of high volatility and buy short periods of low volatility I took the 5-day RSI of the daily Close-Open Range.",
+    "lang": "en",
+    "quantities": [
+     "volatility",
+     "close",
+     "open",
+     "range"
+    ],
+    "direction": [
+     "short",
+     "buy"
+    ],
+    "horizon": [
+     "day",
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "3b7398897cf5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cumulative IBS Indicator | Adaptive Trader",
+  "url": "https://adaptivetrader.wordpress.com/2012/12/28/cumulative-ibs-indicator/?replytocom=98",
+  "published": "2026-09-13T09:13:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e9fdcbadf1e1c1cc2c1e",
+  "host": "adaptivetrader.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cumulative IBS Indicator | Adaptive Trader",
+  "url": "https://adaptivetrader.wordpress.com/2012/12/28/cumulative-ibs-indicator/?replytocom=100",
+  "published": "2026-09-13T09:13:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3bb974bd897c0213aabf",
+  "host": "adaptivetrader.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "DV2 Indicator | Adaptive Trader",
+  "url": "https://adaptivetrader.wordpress.com/2012/09/29/dv2-indicator/",
+  "published": "2026-09-13T09:13:55+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e5731e54225ddf67f631",
+  "host": "adaptivetrader.wordpress.com",
+  "claims": [
+   {
+    "claim": "Drivers of MR Performance Roundup: DV(2) DV2 Performance in Review Best Short Term Indicators Long DV2 in different 30-day volatility regimes And after, I found the indicator coded for AmiBroker at this Quanting Dutchman post .",
+    "lang": "en",
+    "quantities": [
+     "volatility"
+    ],
+    "direction": [
+     "short",
+     "long"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "e695c271fdeb"
+   },
+   {
+    "claim": "60-Day ADX The classification for Trend Vs MR with the ADX MR: ADX(60) > 10 Trending: ADX(60) < 10 I understand that traditionally, a higher ADX signifies a stronger trend, but for some reason when I looked at the chart of the ADX(60) it seemed that at high values, it signified a range-bound market, so I decided to use high values as a signal for a MR market.",
+    "lang": "en",
+    "quantities": [
+     "trend",
+     "range"
+    ],
+    "direction": [
+     "higher"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "6d213c2de86e"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "XIV Donchian 50/25 Breakout Trading System | Adaptive Trader",
+  "url": "https://adaptivetrader.wordpress.com/2012/11/28/xiv-donchian-5025-breakout-trading-system/",
+  "published": "2026-09-13T09:13:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "breakout",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "768b95ff7564b6da1d41",
+  "host": "adaptivetrader.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Strategies | Adaptive Trader",
+  "url": "https://adaptivetrader.wordpress.com/category/trading-strategies/",
+  "published": "2026-09-13T09:13:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "breakout",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bb03062367402079a405",
+  "host": "adaptivetrader.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Dual momentum: real portfolios and current status | RRSP Strategy",
+  "url": "https://rrspstrategy.wordpress.com/2015/02/05/dual-momentum-real-portfolios-and-current-status/",
+  "published": "2026-09-13T09:13:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4fff35dacd463fd21ef7",
+  "host": "rrspstrategy.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Dual momentum with Value and Momentum factor portfolios | RRSP Strategy",
+  "url": "https://rrspstrategy.wordpress.com/2015/01/29/dual-momentum-with-value-and-momentum-factor-portfolios/",
+  "published": "2026-09-13T09:14:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8d8d1cced59fad61f4e2",
+  "host": "rrspstrategy.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Dual momentum without the benefit of the bond bull market | RRSP Strategy",
+  "url": "https://rrspstrategy.wordpress.com/2015/01/23/dual-momentum-without-the-benefit-of-the-bond-bull-market/",
+  "published": "2026-09-13T09:14:03+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "89cef606c48daed16015",
+  "host": "rrspstrategy.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Factor Dual Momentum status and plea for data | RRSP Strategy",
+  "url": "https://rrspstrategy.wordpress.com/2015/03/06/factor-dual-momentum-status-and-plea-for-data/",
+  "published": "2026-09-13T09:14:05+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "be80f0300cd147808efc",
+  "host": "rrspstrategy.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "RRSP Strategy",
+  "url": "https://rrspstrategy.wordpress.com",
+  "published": "2026-09-13T09:14:07+00:00",
+  "symbols": [
+   "XAUUSD",
+   "US500",
+   "US30",
+   "UK100"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "positioning",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://research.stlouisfed.org/fred2/series/RECPROUSM156N"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "d6d1247c3c28de9e123b",
+  "host": "rrspstrategy.wordpress.com",
+  "claims": [
+   {
+    "claim": "Using VBR and PDP for value and momentum, the current picture looks like this: The strategy should be invested in PDP as relative 12 month returns are higher and absolute returns are greater than zero.",
+    "lang": "en",
+    "quantities": [
+     "momentum"
+    ],
+    "direction": [
+     "higher"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "US500",
+      "US30",
+      "UK100"
+     ],
+     "mentioned": [
+      "gold",
+      "sp500",
+      "dow",
+      "ftse",
+      "topix"
+     ],
+     "transfer_only": [
+      "topix->indices (TSE)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8da78d594ff4"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Does sector momentum outperform stock momentum? | RRSP Strategy",
+  "url": "https://rrspstrategy.wordpress.com/2015/11/12/does-sector-momentum-outperform-stock-momentum/",
+  "published": "2026-09-13T09:14:09+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d491a0cbe1a3031d5b2a",
+  "host": "rrspstrategy.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Most of the insider trading alpha is gone by the time you see the filing: poof!",
+  "url": "https://tommijohnsen.substack.com/p/most-of-the-insider-trading-alpha/comments",
+  "published": "2026-09-13T09:14:10+00:00",
+  "symbols": [
+   "US500",
+   "TSMC",
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "1M",
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "carry",
+   "inventory"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "526ea1a9c29a14c18820",
+  "host": "tommijohnsen.substack.com",
+  "claims": [
+   {
+    "claim": "The cluster definition needs an extra filter The standard academic definition of a cluster buy \u2014 three or more distinct insiders making open-market purchases in a short window, with role and 10b5-1 filtering applied \u2014 flagged four tickers on May 19: TSM (Taiwan Semiconductor), ONON (On Holding), GEHC (GE HealthCare), and SPGI (S&P Global).",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "buy",
+     "short"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "TSMC"
+     ],
+     "mentioned": [
+      "s&p",
+      "taiwan semiconductor"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "5ba0f4e2373c"
+   },
+   {
+    "claim": "With twenty to fifty cluster observations, the per-buy and same-day-same-price thresholds become tunable against an actual false-positive rate.",
+    "lang": "en",
+    "quantities": [
+     "rate"
+    ],
+    "direction": [
+     "buy",
+     "positive"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "US500",
+      "TSMC"
+     ],
+     "mentioned": [
+      "gold",
+      "s&p",
+      "taiwan semiconductor"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "1a26a347de24"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Analytical Accuracy &#8211; Searching for quantitative engineered alpha",
+  "url": "https://quant007.wordpress.com/",
+  "published": "2026-09-13T09:14:11+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "38d92ce97f3ce3a1fa67",
+  "host": "quant007.wordpress.com",
+  "claims": [
+   {
+    "claim": "Result is as follows: For trend-following regime we use a simple momentum strategy: follow previous 50 days\u2019 trend and hold for another 15 days.",
+    "lang": "en",
+    "quantities": [
+     "trend",
+     "momentum"
+    ],
+    "direction": [
+     "follow"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "0588d34a7716"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "AnalyticalAccuracy &#8211; Analytical Accuracy",
+  "url": "https://quant007.wordpress.com/author/quant007/",
+  "published": "2026-09-13T09:14:15+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ce2fa8f3676887de7d29",
+  "host": "quant007.wordpress.com",
+  "claims": [
+   {
+    "claim": "Result is as follows: For trend-following regime we use a simple momentum strategy: follow previous 50 days\u2019 trend and hold for another 15 days.",
+    "lang": "en",
+    "quantities": [
+     "trend",
+     "momentum"
+    ],
+    "direction": [
+     "follow"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "0588d34a7716"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "mean reverting &#8211; Analytical Accuracy",
+  "url": "https://quant007.wordpress.com/tag/mean-reverting/",
+  "published": "2026-09-13T09:14:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "45a3f81a9b8771fc5643",
+  "host": "quant007.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Single Indicator Strategy with Sharpe ~1 on SPY &#8211; Analytical Accuracy",
+  "url": "https://quant007.wordpress.com/2015/02/16/single-indicator-strategy-with-sharpe-1-on-spy/?replytocom=30",
+  "published": "2026-09-13T09:14:21+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6f4ab41066d0ba28cd3f",
+  "host": "quant007.wordpress.com",
+  "claims": [
+   {
+    "claim": "2) Trigger a sell order if Close > 99.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "sell"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "1f43806673f1"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Analytical Accuracy &#8211; Searching for quantitative engineered alpha",
+  "url": "https://quant007.wordpress.com",
+  "published": "2026-09-13T09:14:23+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "38d92ce97f3ce3a1fa67",
+  "host": "quant007.wordpress.com",
+  "claims": [
+   {
+    "claim": "Result is as follows: For trend-following regime we use a simple momentum strategy: follow previous 50 days\u2019 trend and hold for another 15 days.",
+    "lang": "en",
+    "quantities": [
+     "trend",
+     "momentum"
+    ],
+    "direction": [
+     "follow"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "0588d34a7716"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Technical Indicators &amp; Trading Resources Archives - Tradinformed",
+  "url": "https://www.tradinformed.com/product-category/trading-resources/",
+  "published": "2026-09-13T09:14:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9a3833a57abea8c921f1",
+  "host": "www.tradinformed.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "How to Use a Tradinformed Backtest Model - Tradinformed",
+  "url": "https://www.tradinformed.com/how-use-tradinformed-backtest-model",
+  "published": "2026-09-13T09:14:33+00:00",
+  "symbols": [
+   "XAUUSD",
+   "EURUSD"
+  ],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.95,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "45a838f2ff60d456223b",
+  "host": "www.tradinformed.com",
+  "claims": [
+   {
+    "claim": "This is a Strength Close, which exits a long position if the price is greater than the upper band.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "EURUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "eur/usd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "1502966301d2"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Technical Indicators - Tradinformed",
+  "url": "https://www.tradinformed.com/technical-indicators-guide/",
+  "published": "2026-09-13T09:14:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "14c1db6d08bd6123a968",
+  "host": "www.tradinformed.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "RRSP Strategy",
+  "url": "https://rrspstrategy.wordpress.com/",
+  "published": "2026-09-13T09:14:38+00:00",
+  "symbols": [
+   "XAUUSD",
+   "US500",
+   "US30",
+   "UK100"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "positioning",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://research.stlouisfed.org/fred2/series/RECPROUSM156N"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "dfc9baa2751ea1d2d649",
+  "host": "rrspstrategy.wordpress.com",
+  "claims": [
+   {
+    "claim": "Using VBR and PDP for value and momentum, the current picture looks like this: The strategy should be invested in PDP as relative 12 month returns are higher and absolute returns are greater than zero.",
+    "lang": "en",
+    "quantities": [
+     "momentum"
+    ],
+    "direction": [
+     "higher"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "US500",
+      "US30",
+      "UK100"
+     ],
+     "mentioned": [
+      "gold",
+      "sp500",
+      "dow",
+      "ftse",
+      "topix"
+     ],
+     "transfer_only": [
+      "topix->indices (TSE)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8da78d594ff4"
+   }
+  ],
+  "n_claims": 1
+ }
+]
