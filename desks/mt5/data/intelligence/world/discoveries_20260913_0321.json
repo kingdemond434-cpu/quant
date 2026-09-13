@@ -1,0 +1,957 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "2025 Summer Internship - Software Developer (DV Commodities) - DV Trading",
+  "url": "https://dvtrading.co/job-post/2025-summer-internship-software-developer-dv-commodities-london/",
+  "published": "2026-09-13T03:20:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3b2a780e2eb8d56e00db",
+  "host": "dvtrading.co",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "2025 Summer Internship - Software Developer (DV Commodities) - DV Trading",
+  "url": "https://dvtrading.co/job-post/2025-summer-internship-software-developer-dv-commodities-ny/",
+  "published": "2026-09-13T03:20:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "60781489932c48d6d56d",
+  "host": "dvtrading.co",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "2025 Full-Time Software Developer (DV Commodities) - DV Trading",
+  "url": "https://dvtrading.co/job-post/2025-full-time-software-developer-dv-commodities-london/",
+  "published": "2026-09-13T03:20:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a0f8625fc095025478c7",
+  "host": "dvtrading.co",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "2025 Full-Time Software Developer (DV Commodities) - DV Trading",
+  "url": "https://dvtrading.co/job-post/2025-full-time-software-developer-dv-commodities-ny/",
+  "published": "2026-09-13T03:21:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "89af1635c5c59d6c2c33",
+  "host": "dvtrading.co",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Java GUI Developer - DV Trading",
+  "url": "https://dvtrading.co/job-post/java-gui-developer/",
+  "published": "2026-09-13T03:21:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "78193fa8b26de36eed6d",
+  "host": "dvtrading.co",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "C++ Software Developer - Front Office - DV Trading",
+  "url": "https://dvtrading.co/job-post/c-software-developer-front-office/",
+  "published": "2026-09-13T03:21:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7bba7a5a36ddd7b70af7",
+  "host": "dvtrading.co",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Back Office Software Developer - DV Trading",
+  "url": "https://dvtrading.co/job-post/back-office-software-developer/",
+  "published": "2026-09-13T03:21:08+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "basis",
+   "night_session",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "cb6482e1eb9f1d51de6e",
+  "host": "dvtrading.co",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "https://dvtrading.co/wp-content/uploads/2024/05/2024-03-22_Blue-Cross-and-Blue-Shield-of-Illinois_812060024_index.json",
+  "url": "https://dvtrading.co/wp-content/uploads/2024/05/2024-03-22_Blue-Cross-and-Blue-Shield-of-Illinois_812060024_index.json",
+  "published": "2026-09-13T03:21:22+00:00",
+  "symbols": [],
+  "timeframes": [
+   "MN"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "094e0353f1cbac432841",
+  "host": "dvtrading.co",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "How Data Changes Can Impact Your Futures Backtesting",
+  "url": "https://kjtradingsystems.com/data-changes-algo-trading.html",
+  "published": "2026-09-13T03:21:23+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f69b65888279b2787246",
+  "host": "kjtradingsystems.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Challenge Validation",
+  "url": "https://www.balticexchange.com/en/data-services/market-information0/dry-services.html",
+  "published": "2026-09-13T03:21:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "51d543eab02ae03f9f51",
+  "host": "www.balticexchange.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u671f\u8d27\u9891\u9053 - \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://futures.eastmoney.com/",
+  "published": "2026-09-13T03:21:26+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XPTUSD",
+   "XPDUSD",
+   "XCUUSD",
+   "XALUSD",
+   "XNIUSD",
+   "XZNUSD",
+   "XPBUSD",
+   "XTIUSD",
+   "HK50",
+   "US500",
+   "USDX",
+   "USDJPY",
+   "USDCNH",
+   "SOYBEAN",
+   "CORN",
+   "SUGAR",
+   "COTTON",
+   "WHEAT",
+   "UST10Y"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow",
+   "inventory",
+   "momentum",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "edc28309769f2a8085fa",
+  "host": "futures.eastmoney.com",
+  "claims": [
+   {
+    "claim": "\u8dcc\u3001\u8dcc\u3001\u8dcc\u2026\u2026\u7f51\u53cb\uff1a\u201c\u4e0d\u662f\u521b\u65b0\u4f4e\uff0c\u5c31\u662f\u5728\u521b\u65b0\u4f4e 9\u670813\u65e5 07:23 \u5384\u5c14\u5c3c\u8bfa\u5c06\u8fbe\u201c\u8d85\u5f3a\u201d\u7ea7\u522b \u8be5\u5982\u4f55\u5e94\u5bf9\u6781\u7aef\u5929\u6c14\uff1f",
+    "lang": "zh",
+    "quantities": [
+     "\u5929\u6c14"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XPTUSD",
+      "XPDUSD",
+      "XCUUSD",
+      "XALUSD",
+      "XNIUSD",
+      "XZNUSD",
+      "XPBUSD",
+      "XTIUSD",
+      "HK50",
+      "US500",
+      "USDX",
+      "USDJPY",
+      "USDCNH",
+      "SOYBEAN",
+      "CORN",
+      "SUGAR",
+      "COTTON",
+      "WHEAT",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "\u6caa\u91d1",
+      "\u6caa\u94f6",
+      "\u94c2\u91d1",
+      "\u94af\u91d1",
+      "\u6caa\u94dc",
+      "\u6caa\u94dd",
+      "\u6caa\u954d",
+      "\u6caa\u950c",
+      "\u6caa\u94c5",
+      "\u539f\u6cb9",
+      "\u6e2f\u80a1",
+      "\u7f8e\u80a1",
+      "\u7f8e\u5143\u6307\u6570",
+      "\u4e0a\u8bc1",
+      "\u7f8e\u65e5",
+      "\u4eba\u6c11\u5e01",
+      "\u5927\u8c46",
+      "\u7389\u7c73",
+      "\u767d\u7cd6",
+      "\u68c9\u82b1",
+      "\u5c0f\u9ea6",
+      "\u7f8e\u503a",
+      "\u87ba\u7eb9\u94a2",
+      "\u6ca5\u9752",
+      "\u8c46\u6cb9",
+      "\u6c27\u5316\u94dd",
+      "\u4e8c\u503a",
+      "\u9f99\u864e\u699c"
+     ],
+     "transfer_only": [
+      "\u4e0a\u8bc1->indices (China A-share)",
+      "\u87ba\u7eb9\u94a2->metals/energy",
+      "\u6ca5\u9752->energy",
+      "\u8c46\u6cb9->softs",
+      "\u6c27\u5316\u94dd->metals",
+      "\u4e8c\u503a->rates->fx carry",
+      "\u9f99\u864e\u699c->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": [
+      "\u7f8e\u8054\u50a8: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "c619903aaf6d"
+   },
+   {
+    "claim": "\u56fd\u9645\u6cb9\u4ef7\u5927\u8dcc 9\u670813\u65e5 00:48 \u9762\u4e34\u7f8e\u65e5\u6536\u76ca\u7387\u4e0a\u6da8 \u8d1d\u68ee\u7279\u9677\u5165\u4e24\u7ebf\u82e6\u6218 9\u670813\u65e5 02:54 \u4e0d\u6b62\u52a0\u606f\u4e00\u6b21\uff1f",
+    "lang": "zh",
+    "quantities": [
+     "\u52a0\u606f"
+    ],
+    "direction": [
+     "\u4e0a\u6da8",
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "\u7f8e\u65e5"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "5179f0cd28a9"
+   },
+   {
+    "claim": "\u7f8e\u56fd8\u6708CPI\u5f15\u53d1\u5e02\u573a\u75af\u72c2\u731c\u6d4b 9\u670812\u65e5 07:33 \u201c\u8d85\u5f3a\u201d\u5384\u5c14\u5c3c\u8bfa\u5c06\u81f3 \u6700\u65b0\u9884\u6d4b\uff01",
+    "lang": "zh",
+    "quantities": [
+     "cpi"
+    ],
+    "direction": [
+     "\u9884\u6d4b"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XPTUSD",
+      "XPDUSD",
+      "XCUUSD",
+      "XALUSD",
+      "XNIUSD",
+      "XZNUSD",
+      "XPBUSD",
+      "XTIUSD",
+      "HK50",
+      "US500",
+      "USDX",
+      "USDJPY",
+      "USDCNH",
+      "SOYBEAN",
+      "CORN",
+      "SUGAR",
+      "COTTON",
+      "WHEAT",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "\u6caa\u91d1",
+      "\u6caa\u94f6",
+      "\u94c2\u91d1",
+      "\u94af\u91d1",
+      "\u6caa\u94dc",
+      "\u6caa\u94dd",
+      "\u6caa\u954d",
+      "\u6caa\u950c",
+      "\u6caa\u94c5",
+      "\u539f\u6cb9",
+      "\u6e2f\u80a1",
+      "\u7f8e\u80a1",
+      "\u7f8e\u5143\u6307\u6570",
+      "\u4e0a\u8bc1",
+      "\u7f8e\u65e5",
+      "\u4eba\u6c11\u5e01",
+      "\u5927\u8c46",
+      "\u7389\u7c73",
+      "\u767d\u7cd6",
+      "\u68c9\u82b1",
+      "\u5c0f\u9ea6",
+      "\u7f8e\u503a",
+      "\u87ba\u7eb9\u94a2",
+      "\u6ca5\u9752",
+      "\u8c46\u6cb9",
+      "\u6c27\u5316\u94dd",
+      "\u4e8c\u503a",
+      "\u9f99\u864e\u699c"
+     ],
+     "transfer_only": [
+      "\u4e0a\u8bc1->indices (China A-share)",
+      "\u87ba\u7eb9\u94a2->metals/energy",
+      "\u6ca5\u9752->energy",
+      "\u8c46\u6cb9->softs",
+      "\u6c27\u5316\u94dd->metals",
+      "\u4e8c\u503a->rates->fx carry",
+      "\u9f99\u864e\u699c->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": [
+      "\u7f8e\u8054\u50a8: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "911bcacec9cf"
+   },
+   {
+    "claim": "\u4e0a\u671f\u6240\u539f\u6cb9\u671f\u8d272610\u5408\u7ea6\u591c\u76d8\u6536\u6da81.",
+    "lang": "zh",
+    "quantities": [
+     "\u591c\u76d8",
+     "\u539f\u6cb9"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u591c\u76d8"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD"
+     ],
+     "mentioned": [
+      "\u539f\u6cb9"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "94b12efc73b0"
+   },
+   {
+    "claim": "\u73b0\u8d27\u9ec4\u91d1\u5468\u6da8\u8d857%\u7ad9\u4e0a4300\u7f8e\u5143 \u4e3a\u4f55\u7a81\u7136\u5927\u6da8\uff1f",
+    "lang": "zh",
+    "quantities": [
+     "\u9ec4\u91d1",
+     "\u7f8e\u5143"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u5468"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "1116033ebd6f"
+   },
+   {
+    "claim": "\u9ec4\u91d1\u56db\u5b63\u5ea6\u4ef7\u683c\u91cd\u5fc3\u4e0a\u79fb\u8d8b\u52bf\u4e0d\u53d8 \u94a2\u6750\u677f\u5757 \u4ece\u201c\u8d4c\u5468\u671f\u201d\u5230\u201c\u7ec3\u5185\u529f\u201d \u7a81\u7136\u8df3\u6c34\uff01",
+    "lang": "zh",
+    "quantities": [
+     "\u8d8b\u52bf",
+     "\u9ec4\u91d1"
+    ],
+    "direction": [
+     "\u8df3\u6c34"
+    ],
+    "horizon": [
+     "\u5468",
+     "\u5b63\u5ea6"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "ba85998cf9a2"
+   },
+   {
+    "claim": "34% \u5237\u65e5\u5185\u65b0\u9ad8 \u73b0\u8d27\u9ec4\u91d1\u4e00\u5ea6\u8dcc\u78344300\u7f8e\u5143/\u76ce\u53f8\u5173\u53e3 \u6bcf\u65e5\u9f99\u864e\u699c | \u5546\u54c1\u671f\u8d27\u7efc\u5408\u6307\u6570\u4e0b\u8dcc2.",
+    "lang": "zh",
+    "quantities": [
+     "\u65e5\u5185",
+     "\u9ec4\u91d1",
+     "\u7f8e\u5143"
+    ],
+    "direction": [
+     "\u4e0b\u8dcc",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u65e5\u5185",
+     "\u6bcf\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1",
+      "\u9f99\u864e\u699c"
+     ],
+     "transfer_only": [
+      "\u9f99\u864e\u699c->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "6c9faeb5bd6f"
+   },
+   {
+    "claim": "\u7cbe\u9009 | \u672c\u5468\u91cd\u5927\u8d44\u8baf\u56de\u987e (9/7-9/11) \u73b0\u8d27\u91d1\u94f6\u65e5\u5185\u5747\u6da8\u8d851% \u4e09\u91cd\u538b\u529b\u6765\u88ad\uff01",
+    "lang": "zh",
+    "quantities": [
+     "\u65e5\u5185"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u65e5\u5185",
+     "\u5468"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XPTUSD",
+      "XPDUSD",
+      "XCUUSD",
+      "XALUSD",
+      "XNIUSD",
+      "XZNUSD",
+      "XPBUSD",
+      "XTIUSD",
+      "HK50",
+      "US500",
+      "USDX",
+      "USDJPY",
+      "USDCNH",
+      "SOYBEAN",
+      "CORN",
+      "SUGAR",
+      "COTTON",
+      "WHEAT",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "\u6caa\u91d1",
+      "\u6caa\u94f6",
+      "\u94c2\u91d1",
+      "\u94af\u91d1",
+      "\u6caa\u94dc",
+      "\u6caa\u94dd",
+      "\u6caa\u954d",
+      "\u6caa\u950c",
+      "\u6caa\u94c5",
+      "\u539f\u6cb9",
+      "\u6e2f\u80a1",
+      "\u7f8e\u80a1",
+      "\u7f8e\u5143\u6307\u6570",
+      "\u4e0a\u8bc1",
+      "\u7f8e\u65e5",
+      "\u4eba\u6c11\u5e01",
+      "\u5927\u8c46",
+      "\u7389\u7c73",
+      "\u767d\u7cd6",
+      "\u68c9\u82b1",
+      "\u5c0f\u9ea6",
+      "\u7f8e\u503a",
+      "\u87ba\u7eb9\u94a2",
+      "\u6ca5\u9752",
+      "\u8c46\u6cb9",
+      "\u6c27\u5316\u94dd",
+      "\u4e8c\u503a",
+      "\u9f99\u864e\u699c"
+     ],
+     "transfer_only": [
+      "\u4e0a\u8bc1->indices (China A-share)",
+      "\u87ba\u7eb9\u94a2->metals/energy",
+      "\u6ca5\u9752->energy",
+      "\u8c46\u6cb9->softs",
+      "\u6c27\u5316\u94dd->metals",
+      "\u4e8c\u503a->rates->fx carry",
+      "\u9f99\u864e\u699c->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": [
+      "\u7f8e\u8054\u50a8: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "33a1f661254e"
+   }
+  ],
+  "n_claims": 9
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "About Trading API",
+  "url": "https://docs.alpaca.markets/us/docs/trading-api",
+  "published": "2026-09-13T03:21:27+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "75f65043ad2485d47d9f",
+  "host": "docs.alpaca.markets",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Getting Started with Trading API",
+  "url": "https://docs.alpaca.markets/us/docs/getting-started-with-trading-api",
+  "published": "2026-09-13T03:21:29+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a572dbb0bfbb0fc8c3ce",
+  "host": "docs.alpaca.markets",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Paper Trading",
+  "url": "https://docs.alpaca.markets/us/docs/paper-trading",
+  "published": "2026-09-13T03:21:31+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8eb87832165bc0ae0c11",
+  "host": "docs.alpaca.markets",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Account",
+  "url": "https://docs.alpaca.markets/us/docs/account-plans",
+  "published": "2026-09-13T03:21:33+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9462508e5ef20802ee05",
+  "host": "docs.alpaca.markets",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Crypto Spot Trading",
+  "url": "https://docs.alpaca.markets/us/docs/crypto-trading",
+  "published": "2026-09-13T03:21:36+00:00",
+  "symbols": [
+   "BTCUSD",
+   "ETHUSD"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "437e0da77e50fca4b746",
+  "host": "docs.alpaca.markets",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Crypto Spot Trading Fees",
+  "url": "https://docs.alpaca.markets/us/docs/crypto-fees",
+  "published": "2026-09-13T03:21:38+00:00",
+  "symbols": [
+   "ETHUSD"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ace80fccf8772773a32a",
+  "host": "docs.alpaca.markets",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Options Level 3 Trading",
+  "url": "https://docs.alpaca.markets/us/docs/options-level-3-trading",
+  "published": "2026-09-13T03:21:43+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5d813e8f6d85aaa1f237",
+  "host": "docs.alpaca.markets",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Fractional Trading",
+  "url": "https://docs.alpaca.markets/us/docs/fractional-trading",
+  "published": "2026-09-13T03:21:44+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "basis",
+   "night_session"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d5a7fc256964df977edc",
+  "host": "docs.alpaca.markets",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "24/5 Trading",
+  "url": "https://docs.alpaca.markets/us/docs/245-trading-for-trading-api",
+  "published": "2026-09-13T03:21:48+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "gap",
+   "night_session",
+   "orderflow",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0ef8b77e66c247e63a3c",
+  "host": "docs.alpaca.markets",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Paper Trading",
+  "url": "https://docs.alpaca.markets/docs/paper-trading",
+  "published": "2026-09-13T03:21:51+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8eb87832165bc0ae0c11",
+  "host": "docs.alpaca.markets",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Crypto Spot Trading",
+  "url": "https://docs.alpaca.markets/docs/crypto-trading",
+  "published": "2026-09-13T03:21:53+00:00",
+  "symbols": [
+   "BTCUSD",
+   "ETHUSD"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "437e0da77e50fca4b746",
+  "host": "docs.alpaca.markets",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Fractional Trading",
+  "url": "https://docs.alpaca.markets/docs/fractional-trading",
+  "published": "2026-09-13T03:21:54+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "basis",
+   "night_session"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5eb229e4df7e3d2f115f",
+  "host": "docs.alpaca.markets",
+  "claims": [],
+  "n_claims": 0
+ }
+]

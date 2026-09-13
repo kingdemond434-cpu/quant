@@ -1,14 +1,15 @@
 {
  "authority": "REPORT ONLY: no gate, certificate, allocation, promotion, sizing, or order authority",
  "candidate_conservation": {
-  "accounted": 20173,
+  "accounted": 20174,
   "balanced": false,
   "blocked": 0,
   "cell_checkpoint": "content-addressed external_gauntlet series cache by cell+data-day",
-  "discovered": 20186,
+  "discovered": 20188,
   "formula": "discovered = tested + queued + rejected + blocked; lost must equal zero",
-  "lost": 13,
+  "lost": 14,
   "lost_cells": [
+   "AUDCAD.cross_asset_residual.p=32a0b5f688b0fed7",
    "GBPJPY.lvc_asia_london.p=44136fa355b3678a",
    "GBPZAR.lvc_asia_london.p=44136fa355b3678a",
    "EURZAR.lvc_asia_london.p=44136fa355b3678a",
@@ -23,7 +24,7 @@
    "XCUUSD.lvc_asia_london.p=44136fa355b3678a",
    "USDPLN.lvc_asia_london.p=44136fa355b3678a"
   ],
-  "queued": 18652,
+  "queued": 18653,
   "rejected": 1521,
   "resumable_deferred": 18662,
   "tested": 0
@@ -32,84 +33,84 @@
   "allocation_rule": "unfinished canonical cells first; among discretionary research organs prefer measured certificate yield per CPU-hour",
   "certificates_added": 0,
   "certificates_per_cpu_hour": 0.0,
-  "measured_cpu_hours": 0.00214,
+  "measured_cpu_hours": 0.002,
   "stage_rows": [
    {
     "certificate_delta": 0,
     "cpu_seconds": 0.0,
-    "duration_seconds": 1851.486,
+    "duration_seconds": 2642.227,
     "name": "canonical_external_pipeline"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 1.170629,
-    "duration_seconds": 9.025,
+    "cpu_seconds": 1.286092,
+    "duration_seconds": 3.41,
     "name": "external_queue_projection"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 3.15553,
-    "duration_seconds": 15.316,
+    "cpu_seconds": 2.919139,
+    "duration_seconds": 7.026,
     "name": "external_queue_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.071292,
-    "duration_seconds": 1.958,
+    "cpu_seconds": 0.068996,
+    "duration_seconds": 2.294,
     "name": "certificate_projection"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.22296,
-    "duration_seconds": 1736.278,
+    "cpu_seconds": 0.0,
+    "duration_seconds": 28.951,
     "name": "fusion_state_pull"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 1.157849,
-    "duration_seconds": 9.655,
+    "cpu_seconds": 1.104656,
+    "duration_seconds": 4.926,
     "name": "forward_identity_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.068741,
-    "duration_seconds": 2.712,
+    "cpu_seconds": 0.077092,
+    "duration_seconds": 1.775,
     "name": "forward_clock_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 1.065574,
-    "duration_seconds": 9.083,
+    "cpu_seconds": 0.996659,
+    "duration_seconds": 3.041,
     "name": "forward_lane_heal"
    },
    {
     "certificate_delta": 0,
     "cpu_seconds": 0.0,
-    "duration_seconds": 7.755,
+    "duration_seconds": 5.66,
     "name": "zero_capital_shadow_forward"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.294252,
-    "duration_seconds": 5.31,
+    "cpu_seconds": 0.286179,
+    "duration_seconds": 1.902,
     "name": "mechanism_independence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.11854,
-    "duration_seconds": 4.026,
+    "cpu_seconds": 0.110392,
+    "duration_seconds": 1.383,
     "name": "same_day_fence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.294179,
-    "duration_seconds": 4.229,
+    "cpu_seconds": 0.265962,
+    "duration_seconds": 1.721,
     "name": "certificate_yield_fence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.084815,
-    "duration_seconds": 2.789,
+    "cpu_seconds": 0.084899,
+    "duration_seconds": 1.405,
     "name": "forward_clock_fence"
    }
   ]
@@ -224,10 +225,10 @@
    "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY"
   ]
  },
- "generated_at": "2026-09-13T02:34:44.481511+00:00",
+ "generated_at": "2026-09-13T03:38:36.921965+00:00",
  "headline": {
-  "candidates_discovered": 20186,
-  "candidates_lost": 13,
+  "candidates_discovered": 20188,
+  "candidates_lost": 14,
   "certificates_added": 0,
   "forward_clocks": 165,
   "hard_failures": [
@@ -464,18 +465,18 @@
    "why": "N_eff is the participation ratio of the correlation eigenvalues: it cannot be inflated by adding a variant of something already held. Unmeasured pairs are assumed FULLY correlated, the conservative direction."
   },
   "forward_sleeves_with_observations": 30,
-  "measured_at": "2026-09-13T02:34:17+00:00",
+  "measured_at": "2026-09-13T03:38:26+00:00",
   "note": "Forward-phase observations only. Historical rows are excluded: allocation is a forward decision and may not be informed by evidence gathered during selection."
  },
  "rerouting": {
   "canonical_lane": "quant-external-pipeline.service",
   "policy": "restart the same canonical service while deferred work decreases; escalate no-progress or missing-data cells by root cause",
-  "stalled_cells": 18665
+  "stalled_cells": 18667
  },
  "resource_execution": {
   "collision_control": "systemd uses one quant-external-pipeline.service instance; hourly and midnight starts cannot duplicate the heavy worker",
   "external_pipeline_memory_max": "1500M",
-  "mem_available_mb": 3404.8,
+  "mem_available_mb": 3087.0,
   "remote_control": "desk-box job locks and per-stage timeouts remain authoritative"
  },
  "schema_version": 1,
@@ -636,6 +637,13 @@
     "overdue": true
    },
    {
+    "cell": "CHFNOK.carry.p=98d776f3e210d3e2",
+    "certificate": "external.CHFNOK.carry.p=98d776f3e210d3e2",
+    "deadline_at": "2026-09-13 03:20:37.166865+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
     "cell": "AUDCHF.overnight_gap_decay.p=44136fa355b3678a",
     "certificate": "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a",
     "deadline_at": "2026-09-02 00:13:35.223752+00:00",
@@ -671,6 +679,13 @@
     "overdue": true
    },
    {
+    "cell": "GBPMXN.overnight_gap_decay.p=44136fa355b3678a",
+    "certificate": "external.GBPMXN.overnight_gap_decay.p=44136fa355b3678a",
+    "deadline_at": "2026-09-13 03:20:12.773118+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
     "cell": "GBPNOK.overnight_gap_decay.p=44136fa355b3678a",
     "certificate": "external.GBPNOK.overnight_gap_decay.p=44136fa355b3678a",
     "deadline_at": "2026-09-03 23:37:32.826945+00:00",
@@ -688,6 +703,13 @@
     "cell": "GBPZAR.overnight_gap_decay.p=44136fa355b3678a",
     "certificate": "external.GBPZAR.overnight_gap_decay.p=44136fa355b3678a",
     "deadline_at": "2026-09-03 23:37:32.827067+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "USDMXN.overnight_gap_decay.p=44136fa355b3678a",
+    "certificate": "external.USDMXN.overnight_gap_decay.p=44136fa355b3678a",
+    "deadline_at": "2026-09-13 03:21:31.398667+00:00",
     "enrolled": false,
     "overdue": true
    },
@@ -727,6 +749,34 @@
     "overdue": true
    },
    {
+    "cell": "EURCHF.discovered.p=e266baf78567bef3",
+    "certificate": "external.EURCHF.discovered.p=e266baf78567bef3",
+    "deadline_at": "2026-09-13 03:21:03.321027+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "EURCHF.discovered.p=16bd35526c7f3515",
+    "certificate": "external.EURCHF.discovered.p=16bd35526c7f3515",
+    "deadline_at": "2026-09-13 03:21:05.464073+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "EURGBP.discovered.p=8e61ea22743f15b7",
+    "certificate": "external.EURGBP.discovered.p=8e61ea22743f15b7",
+    "deadline_at": "2026-09-13 03:23:59.125103+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "EURCHF.discovered.p=4cba1afa572a99cd",
+    "certificate": "external.EURCHF.discovered.p=4cba1afa572a99cd",
+    "deadline_at": "2026-09-13 03:20:40.495147+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
     "cell": "EURGBP.discovered.p=f31f02aa2b9d79b1",
     "certificate": "external.EURGBP.discovered.p=f31f02aa2b9d79b1",
     "deadline_at": "2026-09-04 11:06:39.720124+00:00",
@@ -741,9 +791,30 @@
     "overdue": true
    },
    {
+    "cell": "AUDCAD.discovered.p=8030fb339510dceb",
+    "certificate": "external.AUDCAD.discovered.p=8030fb339510dceb",
+    "deadline_at": "2026-09-13 03:21:32.011596+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "AUDNZD.discovered.p=c76b860ff91ee920",
+    "certificate": "external.AUDNZD.discovered.p=c76b860ff91ee920",
+    "deadline_at": "2026-09-13 03:23:57.877753+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
     "cell": "AUDUSD.discovered.p=de80ad4f2ef91116",
     "certificate": "external.AUDUSD.discovered.p=de80ad4f2ef91116",
     "deadline_at": "2026-09-04 11:06:39.719383+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "AUDUSD.discovered.p=cf0368e026d6b477",
+    "certificate": "external.AUDUSD.discovered.p=cf0368e026d6b477",
+    "deadline_at": "2026-09-13 03:21:57.867121+00:00",
     "enrolled": false,
     "overdue": true
    },
@@ -802,11 +873,81 @@
     "deadline_at": "2026-09-11 09:10:40.339434+00:00",
     "enrolled": false,
     "overdue": true
+   },
+   {
+    "cell": "NZDCAD.discovered.p=0ffb1e19a04f260e",
+    "certificate": "external.NZDCAD.discovered.p=0ffb1e19a04f260e",
+    "deadline_at": "2026-09-13 03:21:07.168462+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "GBPAUD.discovered.p=ad78944aaab9c896",
+    "certificate": "external.GBPAUD.discovered.p=ad78944aaab9c896",
+    "deadline_at": "2026-09-13 03:19:09.480874+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "USDCHF.discovered.p=193aadf2caba3698",
+    "certificate": "external.USDCHF.discovered.p=193aadf2caba3698",
+    "deadline_at": "2026-09-13 03:20:13.583347+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "USDCHF.discovered.p=113c06dfc5ed6c6f",
+    "certificate": "external.USDCHF.discovered.p=113c06dfc5ed6c6f",
+    "deadline_at": "2026-09-13 03:20:36.209247+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "EURJPY.discovered.p=279d9b806e28ffe9",
+    "certificate": "external.EURJPY.discovered.p=279d9b806e28ffe9",
+    "deadline_at": "2026-09-13 03:22:22.897061+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "EURAUD.discovered.p=113a1d39cc9a6857",
+    "certificate": "external.EURAUD.discovered.p=113a1d39cc9a6857",
+    "deadline_at": "2026-09-13 03:22:23.761894+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "AUDNZD.discovered.p=78953578dbeef296",
+    "certificate": "external.AUDNZD.discovered.p=78953578dbeef296",
+    "deadline_at": "2026-09-13 03:23:21.408328+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "AUDNZD.discovered.p=393cd9ae33aa6b42",
+    "certificate": "external.AUDNZD.discovered.p=393cd9ae33aa6b42",
+    "deadline_at": "2026-09-13 03:23:51.881927+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "AUDNZD.discovered.p=a5bbf78b5c8595c0",
+    "certificate": "external.AUDNZD.discovered.p=a5bbf78b5c8595c0",
+    "deadline_at": "2026-09-13 03:23:53.291347+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "AUDNZD.discovered.p=113c06dfc5ed6c6f",
+    "certificate": "external.AUDNZD.discovered.p=113c06dfc5ed6c6f",
+    "deadline_at": "2026-09-13 03:23:57.004646+00:00",
+    "enrolled": false,
+    "overdue": true
    }
   ],
   "certificates": 125,
   "certificates_not_enrolled": 124,
-  "certificates_overdue": 46,
+  "certificates_overdue": 66,
   "policy": "queued candidates and certificates have a 24h maximum waiting-room SLA",
   "queue_active": 13,
   "queue_overdue": 13,

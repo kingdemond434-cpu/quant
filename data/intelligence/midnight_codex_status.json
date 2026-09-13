@@ -1,8 +1,8 @@
 {
- "updated_at": "2026-09-13T02:45:35.080166+00:00",
- "status": "RUNNING_PIPELINE",
- "reason": "Deterministic frontier is running; controller has not started",
- "controller_rc": -1,
- "pipeline_rc": -1,
+ "updated_at": "2026-09-13T03:38:59.121529+00:00",
+ "status": "UNAVAILABLE",
+ "reason": "Codex CLI is not installed on the VPS; deterministic cycle preserved",
+ "controller_rc": 127,
+ "pipeline_rc": 1,
  "persistent_workers_controller_independent": true
 }
