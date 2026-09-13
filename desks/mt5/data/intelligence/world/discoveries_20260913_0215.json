@@ -1,0 +1,1152 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "How Data Changes Can Impact Your Futures Backtesting",
+  "url": "https://kjtradingsystems.com/data-changes-algo-trading.html",
+  "published": "2026-09-13T02:13:17+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ceff6a7d1b7523347344",
+  "host": "kjtradingsystems.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "How Data Changes Can Impact Your Futures Backtesting",
+  "url": "https://www.kjtradingsystems.com/data-changes-algo-trading.html",
+  "published": "2026-09-13T02:13:18+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "81f76baa867dc48be0fc",
+  "host": "www.kjtradingsystems.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Challenge Validation",
+  "url": "https://www.balticexchange.com/en/data-services/market-information0/dry-services.html",
+  "published": "2026-09-13T02:13:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6e3df03e4c94e409147d",
+  "host": "www.balticexchange.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u671f\u8d27\u9891\u9053 - \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://futures.eastmoney.com/",
+  "published": "2026-09-13T02:13:20+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XPTUSD",
+   "XPDUSD",
+   "XCUUSD",
+   "XALUSD",
+   "XNIUSD",
+   "XZNUSD",
+   "XPBUSD",
+   "XTIUSD",
+   "HK50",
+   "US500",
+   "USDX",
+   "USDJPY",
+   "USDCNH",
+   "SOYBEAN",
+   "CORN",
+   "SUGAR",
+   "COTTON",
+   "WHEAT",
+   "UST10Y"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow",
+   "inventory",
+   "momentum",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e6c944082f50627b32ca",
+  "host": "futures.eastmoney.com",
+  "claims": [
+   {
+    "claim": "\u8dcc\u3001\u8dcc\u3001\u8dcc\u2026\u2026\u7f51\u53cb\uff1a\u201c\u4e0d\u662f\u521b\u65b0\u4f4e\uff0c\u5c31\u662f\u5728\u521b\u65b0\u4f4e 9\u670813\u65e5 07:23 \u5384\u5c14\u5c3c\u8bfa\u5c06\u8fbe\u201c\u8d85\u5f3a\u201d\u7ea7\u522b \u8be5\u5982\u4f55\u5e94\u5bf9\u6781\u7aef\u5929\u6c14\uff1f",
+    "lang": "zh",
+    "quantities": [
+     "\u5929\u6c14"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XPTUSD",
+      "XPDUSD",
+      "XCUUSD",
+      "XALUSD",
+      "XNIUSD",
+      "XZNUSD",
+      "XPBUSD",
+      "XTIUSD",
+      "HK50",
+      "US500",
+      "USDX",
+      "USDJPY",
+      "USDCNH",
+      "SOYBEAN",
+      "CORN",
+      "SUGAR",
+      "COTTON",
+      "WHEAT",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "\u6caa\u91d1",
+      "\u6caa\u94f6",
+      "\u94c2\u91d1",
+      "\u94af\u91d1",
+      "\u6caa\u94dc",
+      "\u6caa\u94dd",
+      "\u6caa\u954d",
+      "\u6caa\u950c",
+      "\u6caa\u94c5",
+      "\u539f\u6cb9",
+      "\u6e2f\u80a1",
+      "\u7f8e\u80a1",
+      "\u7f8e\u5143\u6307\u6570",
+      "\u4e0a\u8bc1",
+      "\u7f8e\u65e5",
+      "\u4eba\u6c11\u5e01",
+      "\u5927\u8c46",
+      "\u7389\u7c73",
+      "\u767d\u7cd6",
+      "\u68c9\u82b1",
+      "\u5c0f\u9ea6",
+      "\u7f8e\u503a",
+      "\u87ba\u7eb9\u94a2",
+      "\u6ca5\u9752",
+      "\u8c46\u6cb9",
+      "\u6c27\u5316\u94dd",
+      "\u4e8c\u503a",
+      "\u9f99\u864e\u699c"
+     ],
+     "transfer_only": [
+      "\u4e0a\u8bc1->indices (China A-share)",
+      "\u87ba\u7eb9\u94a2->metals/energy",
+      "\u6ca5\u9752->energy",
+      "\u8c46\u6cb9->softs",
+      "\u6c27\u5316\u94dd->metals",
+      "\u4e8c\u503a->rates->fx carry",
+      "\u9f99\u864e\u699c->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": [
+      "\u7f8e\u8054\u50a8: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "c619903aaf6d"
+   },
+   {
+    "claim": "\u56fd\u9645\u6cb9\u4ef7\u5927\u8dcc 9\u670813\u65e5 00:48 \u9762\u4e34\u7f8e\u65e5\u6536\u76ca\u7387\u4e0a\u6da8 \u8d1d\u68ee\u7279\u9677\u5165\u4e24\u7ebf\u82e6\u6218 9\u670813\u65e5 02:54 \u4e0d\u6b62\u52a0\u606f\u4e00\u6b21\uff1f",
+    "lang": "zh",
+    "quantities": [
+     "\u52a0\u606f"
+    ],
+    "direction": [
+     "\u4e0a\u6da8",
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "\u7f8e\u65e5"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "5179f0cd28a9"
+   },
+   {
+    "claim": "\u7f8e\u56fd8\u6708CPI\u5f15\u53d1\u5e02\u573a\u75af\u72c2\u731c\u6d4b 9\u670812\u65e5 07:33 \u201c\u8d85\u5f3a\u201d\u5384\u5c14\u5c3c\u8bfa\u5c06\u81f3 \u6700\u65b0\u9884\u6d4b\uff01",
+    "lang": "zh",
+    "quantities": [
+     "cpi"
+    ],
+    "direction": [
+     "\u9884\u6d4b"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XPTUSD",
+      "XPDUSD",
+      "XCUUSD",
+      "XALUSD",
+      "XNIUSD",
+      "XZNUSD",
+      "XPBUSD",
+      "XTIUSD",
+      "HK50",
+      "US500",
+      "USDX",
+      "USDJPY",
+      "USDCNH",
+      "SOYBEAN",
+      "CORN",
+      "SUGAR",
+      "COTTON",
+      "WHEAT",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "\u6caa\u91d1",
+      "\u6caa\u94f6",
+      "\u94c2\u91d1",
+      "\u94af\u91d1",
+      "\u6caa\u94dc",
+      "\u6caa\u94dd",
+      "\u6caa\u954d",
+      "\u6caa\u950c",
+      "\u6caa\u94c5",
+      "\u539f\u6cb9",
+      "\u6e2f\u80a1",
+      "\u7f8e\u80a1",
+      "\u7f8e\u5143\u6307\u6570",
+      "\u4e0a\u8bc1",
+      "\u7f8e\u65e5",
+      "\u4eba\u6c11\u5e01",
+      "\u5927\u8c46",
+      "\u7389\u7c73",
+      "\u767d\u7cd6",
+      "\u68c9\u82b1",
+      "\u5c0f\u9ea6",
+      "\u7f8e\u503a",
+      "\u87ba\u7eb9\u94a2",
+      "\u6ca5\u9752",
+      "\u8c46\u6cb9",
+      "\u6c27\u5316\u94dd",
+      "\u4e8c\u503a",
+      "\u9f99\u864e\u699c"
+     ],
+     "transfer_only": [
+      "\u4e0a\u8bc1->indices (China A-share)",
+      "\u87ba\u7eb9\u94a2->metals/energy",
+      "\u6ca5\u9752->energy",
+      "\u8c46\u6cb9->softs",
+      "\u6c27\u5316\u94dd->metals",
+      "\u4e8c\u503a->rates->fx carry",
+      "\u9f99\u864e\u699c->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": [
+      "\u7f8e\u8054\u50a8: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "911bcacec9cf"
+   },
+   {
+    "claim": "\u4e0a\u671f\u6240\u539f\u6cb9\u671f\u8d272610\u5408\u7ea6\u591c\u76d8\u6536\u6da81.",
+    "lang": "zh",
+    "quantities": [
+     "\u591c\u76d8",
+     "\u539f\u6cb9"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u591c\u76d8"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD"
+     ],
+     "mentioned": [
+      "\u539f\u6cb9"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "94b12efc73b0"
+   },
+   {
+    "claim": "\u73b0\u8d27\u9ec4\u91d1\u5468\u6da8\u8d857%\u7ad9\u4e0a4300\u7f8e\u5143 \u4e3a\u4f55\u7a81\u7136\u5927\u6da8\uff1f",
+    "lang": "zh",
+    "quantities": [
+     "\u9ec4\u91d1",
+     "\u7f8e\u5143"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u5468"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "1116033ebd6f"
+   },
+   {
+    "claim": "\u9ec4\u91d1\u56db\u5b63\u5ea6\u4ef7\u683c\u91cd\u5fc3\u4e0a\u79fb\u8d8b\u52bf\u4e0d\u53d8 \u94a2\u6750\u677f\u5757 \u4ece\u201c\u8d4c\u5468\u671f\u201d\u5230\u201c\u7ec3\u5185\u529f\u201d \u7a81\u7136\u8df3\u6c34\uff01",
+    "lang": "zh",
+    "quantities": [
+     "\u8d8b\u52bf",
+     "\u9ec4\u91d1"
+    ],
+    "direction": [
+     "\u8df3\u6c34"
+    ],
+    "horizon": [
+     "\u5468",
+     "\u5b63\u5ea6"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "ba85998cf9a2"
+   },
+   {
+    "claim": "34% \u5237\u65e5\u5185\u65b0\u9ad8 \u73b0\u8d27\u9ec4\u91d1\u4e00\u5ea6\u8dcc\u78344300\u7f8e\u5143/\u76ce\u53f8\u5173\u53e3 \u6bcf\u65e5\u9f99\u864e\u699c | \u5546\u54c1\u671f\u8d27\u7efc\u5408\u6307\u6570\u4e0b\u8dcc2.",
+    "lang": "zh",
+    "quantities": [
+     "\u65e5\u5185",
+     "\u9ec4\u91d1",
+     "\u7f8e\u5143"
+    ],
+    "direction": [
+     "\u4e0b\u8dcc",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u65e5\u5185",
+     "\u6bcf\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1",
+      "\u9f99\u864e\u699c"
+     ],
+     "transfer_only": [
+      "\u9f99\u864e\u699c->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "6c9faeb5bd6f"
+   },
+   {
+    "claim": "\u7cbe\u9009 | \u672c\u5468\u91cd\u5927\u8d44\u8baf\u56de\u987e (9/7-9/11) \u73b0\u8d27\u91d1\u94f6\u65e5\u5185\u5747\u6da8\u8d851% \u4e09\u91cd\u538b\u529b\u6765\u88ad\uff01",
+    "lang": "zh",
+    "quantities": [
+     "\u65e5\u5185"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u65e5\u5185",
+     "\u5468"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XPTUSD",
+      "XPDUSD",
+      "XCUUSD",
+      "XALUSD",
+      "XNIUSD",
+      "XZNUSD",
+      "XPBUSD",
+      "XTIUSD",
+      "HK50",
+      "US500",
+      "USDX",
+      "USDJPY",
+      "USDCNH",
+      "SOYBEAN",
+      "CORN",
+      "SUGAR",
+      "COTTON",
+      "WHEAT",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "\u6caa\u91d1",
+      "\u6caa\u94f6",
+      "\u94c2\u91d1",
+      "\u94af\u91d1",
+      "\u6caa\u94dc",
+      "\u6caa\u94dd",
+      "\u6caa\u954d",
+      "\u6caa\u950c",
+      "\u6caa\u94c5",
+      "\u539f\u6cb9",
+      "\u6e2f\u80a1",
+      "\u7f8e\u80a1",
+      "\u7f8e\u5143\u6307\u6570",
+      "\u4e0a\u8bc1",
+      "\u7f8e\u65e5",
+      "\u4eba\u6c11\u5e01",
+      "\u5927\u8c46",
+      "\u7389\u7c73",
+      "\u767d\u7cd6",
+      "\u68c9\u82b1",
+      "\u5c0f\u9ea6",
+      "\u7f8e\u503a",
+      "\u87ba\u7eb9\u94a2",
+      "\u6ca5\u9752",
+      "\u8c46\u6cb9",
+      "\u6c27\u5316\u94dd",
+      "\u4e8c\u503a",
+      "\u9f99\u864e\u699c"
+     ],
+     "transfer_only": [
+      "\u4e0a\u8bc1->indices (China A-share)",
+      "\u87ba\u7eb9\u94a2->metals/energy",
+      "\u6ca5\u9752->energy",
+      "\u8c46\u6cb9->softs",
+      "\u6c27\u5316\u94dd->metals",
+      "\u4e8c\u503a->rates->fx carry",
+      "\u9f99\u864e\u699c->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": [
+      "\u7f8e\u8054\u50a8: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "33a1f661254e"
+   }
+  ],
+  "n_claims": 9
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "NuGet Gallery | Package Downloads for QuantLib",
+  "url": "https://www.nuget.org/stats/packages/QuantLib?groupby=Version",
+  "published": "2026-09-13T02:13:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.nuget.org/downloads"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "40aff15df05c96bb6fc8",
+  "host": "www.nuget.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Citau - Viquip\u00e8dia, l'enciclop\u00e8dia lliure",
+  "url": "https://ca.wikipedia.org/w/index.php?title=Especial:Citau&page=Algorisme_d%27expectativa-maximitzaci%C3%B3&id=38314787&wpFormIdentifier=titleform",
+  "published": "2026-09-13T02:13:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.35,
+  "lang": "ca",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c5c51615af58a493f9e7",
+  "host": "ca.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "L'usuari est\u00e0 blocat - Viquip\u00e8dia, l'enciclop\u00e8dia lliure",
+  "url": "https://ca.wikipedia.org/w/index.php?title=Especial:UrlShortener&url=https%3A%2F%2Fca.wikipedia.org%2Fwiki%2FAlgorisme_d%2527expectativa-maximitzaci%25C3%25B3",
+  "published": "2026-09-13T02:13:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.35,
+  "lang": "ca",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9c716d32abead033e667",
+  "host": "ca.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorisme d'expectativa-maximitzaci\u00f3 - Viquip\u00e8dia, l'enciclop\u00e8dia lliure",
+  "url": "https://ca.wikipedia.org/w/index.php?title=Algorisme_d%27expectativa-maximitzaci%C3%B3&useparsoid=0",
+  "published": "2026-09-13T02:13:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "ca",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e74c719c75aedad924e8",
+  "host": "ca.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Creador de llibres - Viquip\u00e8dia, l'enciclop\u00e8dia lliure",
+  "url": "https://ca.wikipedia.org/w/index.php?title=Especial:Llibre&bookcmd=book_creator&referer=Algorisme+d%27expectativa-maximitzaci%C3%B3",
+  "published": "2026-09-13T02:13:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "ca",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d0522c1a0a6db3122282",
+  "host": "ca.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Baixa com a PDF - Viquip\u00e8dia, l'enciclop\u00e8dia lliure",
+  "url": "https://ca.wikipedia.org/w/index.php?title=Especial:DownloadAsPdf&page=Algorisme_d%27expectativa-maximitzaci%C3%B3&action=show-download-screen",
+  "published": "2026-09-13T02:13:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.35,
+  "lang": "ca",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "55843703cf95339be5a5",
+  "host": "ca.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorisme d'expectativa-maximitzaci\u00f3 - Viquip\u00e8dia, l'enciclop\u00e8dia lliure",
+  "url": "https://ca.wikipedia.org/w/index.php?title=Algorisme_d%27expectativa-maximitzaci%C3%B3&printable=yes",
+  "published": "2026-09-13T02:13:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "ca",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7738e8df5e789b931abc",
+  "host": "ca.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Edici\u00f3 de la p\u00e0gina \u00abAlgorisme d'expectativa-maximitzaci\u00f3\u00bb - Viquip\u00e8dia, l'enciclop\u00e8dia lliure",
+  "url": "https://ca.wikipedia.org/w/index.php?title=Algorisme_d%27expectativa-maximitzaci%C3%B3&action=edit&section=1",
+  "published": "2026-09-13T02:13:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.35,
+  "lang": "ca",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "513b3a4875a72b078d30",
+  "host": "ca.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "EM algoritmus \u2013 Wikipedie",
+  "url": "https://cs.wikipedia.org/w/index.php?title=EM_algoritmus&veaction=edit",
+  "published": "2026-09-13T02:13:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "cs",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f33fde3382d3fd5dce0a",
+  "host": "cs.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Zobrazen\u00ed zdroje str\u00e1nky EM algoritmus \u2013 Wikipedie",
+  "url": "https://cs.wikipedia.org/w/index.php?title=EM_algoritmus&action=edit",
+  "published": "2026-09-13T02:13:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "cs",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d48dc7c6bc5dcd6d9875",
+  "host": "cs.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Crear una cuenta - Wikipedia, la enciclopedia libre",
+  "url": "https://es.wikipedia.org/w/index.php?title=Especial:Crear_una_cuenta&returnto=Algoritmo+esperanza-maximizaci%C3%B3n",
+  "published": "2026-09-13T02:13:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0316349544ec2249041a",
+  "host": "es.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Ingresar - Wikipedia, la enciclopedia libre",
+  "url": "https://es.wikipedia.org/w/index.php?title=Especial:Entrar&returnto=Algoritmo+esperanza-maximizaci%C3%B3n",
+  "published": "2026-09-13T02:13:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6a2cdd44b8908f3be394",
+  "host": "es.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Discusi\u00f3n:Algoritmo esperanza-maximizaci\u00f3n - Wikipedia, la enciclopedia libre",
+  "url": "https://es.wikipedia.org/wiki/Discusi%C3%B3n:Algoritmo_esperanza-maximizaci%C3%B3n",
+  "published": "2026-09-13T02:13:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fbf7b0ed04e60543aae2",
+  "host": "es.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Ver el c\u00f3digo de \u00abAlgoritmo esperanza-maximizaci\u00f3n\u00bb - Wikipedia, la enciclopedia libre",
+  "url": "https://es.wikipedia.org/w/index.php?title=Algoritmo_esperanza-maximizaci%C3%B3n&action=edit",
+  "published": "2026-09-13T02:13:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fca982c6f44de2e4b314",
+  "host": "es.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Historial de \u00abAlgoritmo esperanza-maximizaci\u00f3n\u00bb - Wikipedia, la enciclopedia libre",
+  "url": "https://es.wikipedia.org/w/index.php?title=Algoritmo_esperanza-maximizaci%C3%B3n&action=history",
+  "published": "2026-09-13T02:13:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "mean_reversion"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "38178e55a560f7acfeae",
+  "host": "es.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Discussion:Algorithme esp\u00e9rance-maximisation \u2014 Wikip\u00e9dia",
+  "url": "https://fr.wikipedia.org/wiki/Discussion:Algorithme_esp%C3%A9rance-maximisation",
+  "published": "2026-09-13T02:14:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "fr",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "412fd6b1a05bb3b46e6e",
+  "host": "fr.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithme esp\u00e9rance-maximisation \u2014 Wikip\u00e9dia",
+  "url": "https://fr.wikipedia.org/w/index.php?title=Algorithme_esp%C3%A9rance-maximisation&veaction=edit",
+  "published": "2026-09-13T02:14:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "fr",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fdbd44efe8294ba5e053",
+  "host": "fr.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u00ab Algorithme esp\u00e9rance-maximisation \u00bb : historique des versions \u2014 Wikip\u00e9dia",
+  "url": "https://fr.wikipedia.org/w/index.php?title=Algorithme_esp%C3%A9rance-maximisation&action=history",
+  "published": "2026-09-13T02:14:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory"
+  ],
+  "confidence": 0.35,
+  "lang": "fr",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a18794f06f5a14dac8be",
+  "host": "fr.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Pembicaraan:Algoritma ekspektasi-maksimisasi - Wikipedia bahasa Indonesia, ensiklopedia bebas",
+  "url": "https://id.wikipedia.org/wiki/Pembicaraan:Algoritma_ekspektasi-maksimisasi",
+  "published": "2026-09-13T02:14:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "id",
+  "endpoints": [
+   "https://id.wikipedia.org/api/rest_v1/page/pdf/Pembicaraan%3AAlgoritma%20ekspektasi-maksimisasi"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "080e7c30964eece41a0f",
+  "host": "id.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritma ekspektasi-maksimisasi - Wikipedia bahasa Indonesia, ensiklopedia bebas",
+  "url": "https://id.wikipedia.org/w/index.php?title=Algoritma_ekspektasi-maksimisasi&veaction=edit",
+  "published": "2026-09-13T02:14:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "id",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7cc7f12dbfa6ae62a629",
+  "host": "id.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Lihat sumber Algoritma ekspektasi-maksimisasi - Wikipedia bahasa Indonesia, ensiklopedia bebas",
+  "url": "https://id.wikipedia.org/w/index.php?title=Algoritma_ekspektasi-maksimisasi&action=edit",
+  "published": "2026-09-13T02:14:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.35,
+  "lang": "id",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6b8b53c19478ae553fc0",
+  "host": "id.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritma ekspektasi-maksimisasi: Riwayat revisi - Wikipedia bahasa Indonesia, ensiklopedia bebas",
+  "url": "https://id.wikipedia.org/w/index.php?title=Algoritma_ekspektasi-maksimisasi&action=history",
+  "published": "2026-09-13T02:14:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "id",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ad59ea62486f6deeb665",
+  "host": "id.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo EM - Wikipedia",
+  "url": "https://it.wikipedia.org/w/index.php?title=Algoritmo_EM&veaction=edit",
+  "published": "2026-09-13T02:14:31+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation"
+  ],
+  "confidence": 0.35,
+  "lang": "it",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "988d238eef866b0f0382",
+  "host": "it.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo EM: cronologia delle modifiche - Wikipedia",
+  "url": "https://it.wikipedia.org/w/index.php?title=Algoritmo_EM&action=history",
+  "published": "2026-09-13T02:14:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory"
+  ],
+  "confidence": 0.35,
+  "lang": "it",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e152b97a93becafe3071",
+  "host": "it.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Discuss\u00e3o:Algoritmo de maximiza\u00e7\u00e3o de expectativa \u2013 Wikip\u00e9dia, a enciclop\u00e9dia livre",
+  "url": "https://pt.wikipedia.org/wiki/Discuss%C3%A3o:Algoritmo_de_maximiza%C3%A7%C3%A3o_de_expectativa",
+  "published": "2026-09-13T02:14:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a8decdd903d84d98e1a5",
+  "host": "pt.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo de maximiza\u00e7\u00e3o de expectativa \u2013 Wikip\u00e9dia, a enciclop\u00e9dia livre",
+  "url": "https://pt.wikipedia.org/w/index.php?title=Algoritmo_de_maximiza%C3%A7%C3%A3o_de_expectativa&veaction=edit",
+  "published": "2026-09-13T02:14:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b5fac648b356ce43f464",
+  "host": "pt.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Ver c\u00f3digo fonte para Algoritmo de maximiza\u00e7\u00e3o de expectativa \u2013 Wikip\u00e9dia, a enciclop\u00e9dia livre",
+  "url": "https://pt.wikipedia.org/w/index.php?title=Algoritmo_de_maximiza%C3%A7%C3%A3o_de_expectativa&action=edit",
+  "published": "2026-09-13T02:14:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b84813584295bf4ad0f1",
+  "host": "pt.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo de maximiza\u00e7\u00e3o de expectativa: historial de revis\u00f5es \u2013 Wikip\u00e9dia, a enciclop\u00e9dia livre",
+  "url": "https://pt.wikipedia.org/w/index.php?title=Algoritmo_de_maximiza%C3%A7%C3%A3o_de_expectativa&action=history",
+  "published": "2026-09-13T02:14:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "mean_reversion"
+  ],
+  "confidence": 0.35,
+  "lang": "pt",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "89a78d19d94edc2a10c3",
+  "host": "pt.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Best Trading Course - Strategy Workshop&reg; | KJTradingSystems",
+  "url": "https://kjtradingsystems.com/strategy-workshop.html",
+  "published": "2026-09-13T02:14:52+00:00",
+  "symbols": [
+   "PAYPAL"
+  ],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "inventory",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "629049c387f1d1543212",
+  "host": "kjtradingsystems.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Which Algorithmic Trading Courses Provide Mentorship or Coaching?",
+  "url": "https://kjtradingsystems.com/which-algorithmic-trading-courses-provide-mentorship-or-coaching.html",
+  "published": "2026-09-13T02:14:57+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "43357dafb69f76f21f8c",
+  "host": "kjtradingsystems.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Purchase Algorithmic Trading Course With Money-back Guarantee",
+  "url": "https://kjtradingsystems.com/purchase-algorithmic-trading-course-with-money-back-guarantee.html",
+  "published": "2026-09-13T02:14:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "21f3edb52e3c097135d4",
+  "host": "kjtradingsystems.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]
