@@ -1,0 +1,83 @@
+[
+ {
+  "source": "deep_forest",
+  "kind": "dataset",
+  "title": "Повышенная волатильность или большая устойчивость? Влияние финтех ...",
+  "url": "https://www.hse.ru/edu/vkr/624890498",
+  "published": "2026-09-13T19:39:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.4,
+  "lang": "ru",
+  "endpoints": [
+   "https://www.hse.ru/f/src/manifest/manifest_ru.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "047166516fa2fa2f41e6",
+  "host": "www.hse.ru",
+  "ground": "НИУ ВШЭ working papers",
+  "region": "ru",
+  "cluster": "ru",
+  "dataset_class": null,
+  "available_time": "2026-09-13T19:39:35+00:00",
+  "ingested_time": "2026-09-13T19:39:35+00:00",
+  "source_hash": "047166516fa2fa2f41e6",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "deep_forest",
+  "kind": "dataset",
+  "title": "Моделирование волатильности финансовых временных рядов при помощи ...",
+  "url": "https://www.hse.ru/sci/diss/373043215",
+  "published": "2026-09-13T19:39:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.4,
+  "lang": "ru",
+  "endpoints": [
+   "https://www.hse.ru/f/src/manifest/manifest_ru.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5612c0479bb34add0f1d",
+  "host": "www.hse.ru",
+  "ground": "НИУ ВШЭ working papers",
+  "region": "ru",
+  "cluster": "ru",
+  "dataset_class": null,
+  "available_time": "2026-09-13T19:39:39+00:00",
+  "ingested_time": "2026-09-13T19:39:39+00:00",
+  "source_hash": "5612c0479bb34add0f1d",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "deep_forest",
+  "kind": "dataset",
+  "title": "Волатильность денежных потоков как оперативный индикатор состояния ...",
+  "url": "https://publications.hse.ru/articles/1070913466",
+  "published": "2026-09-13T19:39:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.4,
+  "lang": "ru",
+  "endpoints": [
+   "https://publications.hse.ru/f/src/manifest/manifest_ru.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "726ae7320b4be02eda7d",
+  "host": "publications.hse.ru",
+  "ground": "НИУ ВШЭ working papers",
+  "region": "ru",
+  "cluster": "ru",
+  "dataset_class": null,
+  "available_time": "2026-09-13T19:39:41+00:00",
+  "ingested_time": "2026-09-13T19:39:41+00:00",
+  "source_hash": "726ae7320b4be02eda7d",
+  "claims": [],
+  "n_claims": 0
+ }
+]
