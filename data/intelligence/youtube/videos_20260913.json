@@ -28,5 +28,22 @@
   "start_verified": false,
   "end_verified": false,
   "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UCIZpqvFv_B9ktXvEzhaeELQ",
+  "channel": "Ryan Brown (ResponsibleForexTrading)",
+  "video_id": "IvMSWFzVROE",
+  "published": "2026-09-13T15:00:22Z",
+  "title": "One Profitable Account Doesn\u2019t Prove a Trading Bot Works",
+  "description": "What actually proves that a trading bot works? One profitable account definitely doesn\u2019t.\n\nIn this video, I look at Powerhouse across multiple trading accounts to see whether the results are actually repeatable. That matters because forex has no single centralized price feed \u2014 different brokers can produce slightly different prices, spreads, candles, entries, and ultimately different trading bot results.\n\nI also address one of the biggest criticisms of Powerhouse: its use of grid trading and position-sizing techniques. Critics often argue that systems like these are eventually destined to fail. Rather than relying on one great-looking account, I think the better test is multiple accounts, thousands of trades, different market conditions, and transparency when losses happen.\n\nI\u2019ll also show the newest strategy being added to Powerhouse: Northstar AUDCAD.\n\nIn approximately 20 years of historical testing, Northstar saw 90.37% of trades close by grid level 4, only 1.77% reach level 8 or deeper, and level 13 was reached just once.\n\nNorthstar does not yet have the same amount of forward trading history as the older Powerhouse strategies, so I\u2019m not calling it proven. That test is still happening.\n\nPowerhouse:\nhttps://responsibleforextrading.com/\n\nPublic trading results:\nhttps://responsibleforextrading.com/stats/\n\nTrading involves risk. Historical and forward results do not guarantee future performance.",
+  "links": [
+   "https://responsibleforextrading.com/",
+   "https://responsibleforextrading.com/stats/"
+  ],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
  }
 ]
