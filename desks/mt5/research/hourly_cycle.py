@@ -632,6 +632,21 @@ def _allocator_mode_for_the_hour(art: Path | None = None, now: datetime | None =
     return "normal"
 
 
+#: Exit codes a leg uses to REPORT rather than to fail, by leg name. Declared here, beside the
+#: place that reads them, because the alternative is every consumer of the ledger inventing its
+#: own list. A code absent from a leg's tuple is a genuine failure and is recorded as one.
+#:
+#: Each entry is a claim about that leg's contract and is checked by reading the leg: `model_skill`
+#: documents exit 2 as a verdict in its own docstring; `deep_forest` returns 1 for a pass that
+#: mined nothing; `maintain_miners` exits 2 after examining stale artifacts and deciding, which is
+#: the work, not a failure to do it.
+VERDICT_EXITS: dict[str, tuple[int, ...]] = {
+    "model_skill": (2,),
+    "deep_forest": (1,),
+    "maintain_miners": (2,),
+}
+
+
 def _costed(name: str, fn):
     """Run one leg and record what it COST, whatever it returns or raises.
 
@@ -714,7 +729,28 @@ def _costed(name: str, fn):
         elif out.get("timeout_s") and out.get("exit_code") is None:
             outcome = "TIMEOUT"
         elif out.get("exit_code") not in (None, 0):
-            outcome = f"exit_code={out['exit_code']}"
+            # A VERDICT IS NOT A FAILURE, AND RENDERING THEM THE SAME IS ITS OWN DEFECT (WS-005).
+            #
+            # Several legs exit non-zero BY DESIGN to report bad news. `model_skill` says so in
+            # its own docstring -- "its non-zero exit is a VERDICT, not a cycle failure: it exits
+            # 2 while any predictor is unscored or beaten by its baseline ... a measurement organ
+            # must never be able to stop the desk by reporting bad news". `deep_forest` exits 1
+            # for a pass that mined nothing; `maintain_miners` exits 2 having examined every
+            # stale artifact and decided correctly about each.
+            #
+            # The ledger wrote `exit_code=2` for all of them, identical to a crash. Measured
+            # 2026-09-13: a reader counting non-ok rows found "16 legs failing every pass" and
+            # went looking for sixteen bugs, when most of those legs were working and reporting.
+            # The desk already knows this rule and states it one file over -- "different alarms
+            # and they must not render the same way".
+            #
+            # So the leg declares which of its exit codes are verdicts, and the ledger says
+            # `verdict_exit=N` rather than `exit_code=N`. Nothing is hidden: the code is still
+            # there, a verdict still ends a leg non-zero, and a code NOT on the declared list is
+            # still a failure. What changes is that a reader can tell them apart.
+            _code = out["exit_code"]
+            outcome = (f"verdict_exit={_code}" if _code in VERDICT_EXITS.get(name, ())
+                       else f"exit_code={_code}")
     if close_run and run is not None:
         close_run(run, outcome=outcome)
     _emit_leg(name, outcome)
