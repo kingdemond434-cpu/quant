@@ -1,6 +1,6 @@
 # Desk lessons
 
-299 lessons, generated from `docs/desk_lessons.jsonl`.
+301 lessons, generated from `docs/desk_lessons.jsonl`.
 
 > [!warning] This vault is a DERIVED VIEW.
 > `docs/desk_lessons.jsonl` is the source of truth and the only thing organs read.
@@ -27,7 +27,7 @@ there dilutes the lessons that do apply.
 - #priors (11)
 - #validation (10)
 - #testing (10)
-- #measurement (8)
+- #measurement (9)
 - #data (8)
 - #mining (8)
 - #silent-failure (7)
@@ -36,6 +36,7 @@ there dilutes the lessons that do apply.
 - #frontier (6)
 - #fences (5)
 - #windows (5)
+- #wiring (5)
 - #ci (4)
 - #scheduling (4)
 - #coverage (4)
@@ -47,7 +48,6 @@ there dilutes the lessons that do apply.
 - #accounting (3)
 - #safety (3)
 - #discovery (3)
-- #memory (3)
 
 ## All lessons
 
@@ -350,3 +350,5 @@ there dilutes the lessons that do apply.
 - [[l0297-register-a-scheduled-task-with-the-absolute-interprete]]
 - [[l0298-a-daemon-registered-as-a-periodic-task-reports-2147946]]
 - [[l0299-never-escalate-a-bookkeeping-gap-beside-a-dead-gateway]]
+- [[l0300-two-implementations-of-one-digest-will-disagree-put-th]]
+- [[l0301-an-ssh-host-alias-is-a-dependency-if-a-script-says-rem]]

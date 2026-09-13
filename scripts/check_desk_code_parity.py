@@ -27,13 +27,19 @@ Read-only. This never ships anything; it reports what diverged so a human or the
 from __future__ import annotations
 
 import argparse
-import hashlib
 import importlib.util
 import json
 import subprocess
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
+
+# THE DIGEST IS IMPORTED, NEVER REIMPLEMENTED. The defect this fence carried was two
+# implementations of one hash -- Python here, Get-FileHash on the box -- that had to agree
+# about encoding and newlines and did not. The box now runs `scripts/fold_hash.py` directly;
+# this side imports that same file, so there is one algorithm and it lives in one place.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from fold_hash import fold_hash as _fold_hash
 
 ROOT = Path(__file__).resolve().parent.parent
 REMOTE = "contabo-mt5"
@@ -52,33 +58,66 @@ def protected_files() -> list[str]:
     return sorted(str(k) for k in mod.PROTECTED)
 
 
+#: SHA256 over bytes with CRLF FOLDED TO LF. Both sides run exactly this.
+#:
+#: THE PREVIOUS RULE DIAGNOSED THE DISEASE AND THEN PRESCRIBED IT (fixed 2026-09-14). Its
+#: docstring was right that `git hash-object` applies clean filters and that the desk box's git
+#: normalises line endings while this one does not -- and then hashed RAW BYTES, which is exactly
+#: what makes two identical checkouts hash differently. The stated goal was to stop the fence
+#: crying wolf on one file in twenty-five. Measured tonight it cried wolf on TEN OF THIRTY-FOUR,
+#: and the proof they were false is in its own report: for nine of the ten the box's hash equalled
+#: `origin`'s byte for byte, while "here" -- the same file in a CRLF checkout -- did not.
+#:
+#: WHY THIS IS NOT A LOOSENING, the only question that matters for a fence. CPython folds
+#: universal newlines in the tokenizer before the parser sees them, so two files differing only
+#: in line terminators compile to the same code object and place the same orders. No edit an
+#: attacker or a bad sync could make is hidden by this: the fold collapses CR-LF to LF and
+#: nothing else, so any added, removed or altered character still changes the digest. It removes
+#: one difference, and it is the one difference both checkouts are configured to create.
+#:
+#: WHAT LEAVING IT BROKEN COST. `heal()` below SHIPS every diverged file to the box. Had healing
+#: been armed this fence would have copied CRLF files at an LF checkout, re-hashed, found them
+#: diverged, and shipped them again -- a repair loop that cannot converge, running every thirty
+#: minutes against the money path. Detection that cannot be trusted is bad; automatic repair
+#: driven by it is worse.
+#:
+#: ONE ALGORITHM, BOTH SIDES, AND IT TRAVELS AS BASE64. The old code hashed with Python here and
+#: `Get-FileHash` there -- two implementations that had to agree about encoding and newlines and
+#: were never tested against each other. The box now runs THIS source under its own Python.
+#: Base64 is the transport because the script contains quotes and backslash escapes that would
+#: otherwise cross ssh, cmd and PowerShell quoting three times; encoded, it is alphanumeric and
+#: survives all three unaltered.
 def local_hashes(files: list[str]) -> dict[str, str]:
-    """SHA256 of the RAW BYTES -- never `git hash-object`.
+    """SHA256 of the bytes with CRLF folded to LF -- never `git hash-object`.
 
-    `git hash-object` applies the repository's own clean filters, and the desk box's git
-    normalises line endings while this one does not: `run_hunt17.py` was byte-for-byte identical
-    on both boxes (cmp confirmed it) and still hashed differently. A fence that cries wolf on one
-    file in twenty-five every run is a fence nobody reads, which is how the real divergence next
-    to it survives. Bytes are what the interpreter executes, so bytes are what this compares.
+    `git hash-object` applies the repository's own clean filters, a different and unstable
+    normalisation that depends on each checkout's config. This fold is fixed and explicit.
     """
     out: dict[str, str] = {}
     for f in files:
         path = ROOT / f
         if path.exists():
-            out[f] = hashlib.sha256(path.read_bytes()).hexdigest()
+            out[f] = _fold_hash(path.read_bytes())
     return out
 
 
 def remote_hashes(files: list[str], timeout: int) -> dict[str, str] | None:
     """None means UNREACHABLE -- never an empty dict, which would read as 'everything missing'."""
-    # Per-file so one absent path cannot abort the batch and blank every other verdict.
-    script = " ; ".join(
-        f'if (Test-Path "{f}") {{ (Get-FileHash -Algorithm SHA256 "{f}").Hash.ToLower() }} '
-        f'else {{ "MISSING" }}' for f in files)
+    # THE BOX'S OWN PYTHON RUNS THE SAME FOLD, so a mismatch means the FILES differ and never
+    # that the two hashers disagree. `Get-FileHash` cannot do this: it hashes the file as it
+    # sits, which is the whole defect. Still positional and per-file -- the script prints
+    # MISSING in a slot rather than skipping it, so one absent path cannot shift every verdict
+    # after it onto the wrong file, which is a worse failure than the blank batch it replaced.
+    # THE BOX RUNS THE SAME FILE. `scripts/fold_hash.py` is in the repo and reaches the box the
+    # way all code does, so this is one algorithm in one place rather than two that must agree.
+    # If the box has not adopted it yet, the remote exits non-zero and this reports UNMEASURED --
+    # the honest answer, and it self-heals on the next adopt.
+    quoted = " ".join(f"'{f}'" for f in files)
     try:
         res = subprocess.run(
             ["ssh", "-o", "ConnectTimeout=20", REMOTE,
-             f'powershell -Command "cd {REMOTE_ROOT} ; {script}"'],
+             f'powershell -Command "cd {REMOTE_ROOT}; '
+             f'python scripts/fold_hash.py {quoted}"'],
             capture_output=True, text=True, timeout=timeout)
     except (subprocess.TimeoutExpired, OSError):
         return None
