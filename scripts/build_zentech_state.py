@@ -459,10 +459,30 @@ def _funnel(universal: dict[str, Any]) -> dict[str, Any]:
             if status == "PROMOTION CANDIDATE":
                 promo_ready += 1
                 promo_names.append(key)
+    # `sleeves.json` HOLDS A LIST AND THIS ONLY EVER READ A DICT, so the board reported live: 0
+    # while 36 sleeves were trading. Measured 2026-09-13: the file is
+    # `{"sleeves": [ ...65 rows... ]}` -- `isinstance(..., dict)` is False for the list, the
+    # fallback `sleeves_doc if isinstance(sleeves_doc, dict)` then took the WHOLE document, and
+    # `.items()` over it yielded one key ("sleeves") whose value is a list, which the
+    # `isinstance(v, dict)` filter dropped. Zero rows, no error, a confident zero on the tile the
+    # principal reads to know whether anything is trading.
+    #
+    # A ZERO THAT MEANS "I COULD NOT READ IT" IS THE WORST KIND OF NUMBER. It is the same shape as
+    # the 0/0 `capacity.measure` returned for weeks, and the reason both were invisible: an empty
+    # count is a perfectly plausible state, so nothing looks wrong.
+    #
+    # Both shapes are read now, and only rows the desk calls LIVE are counted -- the previous code
+    # counted every row regardless of status, so on a dict-shaped file it would have reported all
+    # 65 (LIVE + STANDBY) as live.
     sleeves_doc = _read(DESK / "data" / "sleeves.json")
-    live_rows = sleeves_doc.get("sleeves") if isinstance(sleeves_doc.get("sleeves"), dict) else (
-        sleeves_doc if isinstance(sleeves_doc, dict) else {})
-    live_rows = {k: v for k, v in (live_rows or {}).items() if isinstance(v, dict)}
+    _raw = sleeves_doc.get("sleeves") if isinstance(sleeves_doc, dict) else sleeves_doc
+    if isinstance(_raw, dict):
+        _pairs = [(k, v) for k, v in _raw.items() if isinstance(v, dict)]
+    elif isinstance(_raw, list):
+        _pairs = [(str(v.get("name") or i), v) for i, v in enumerate(_raw) if isinstance(v, dict)]
+    else:
+        _pairs = []
+    live_rows = {k: v for k, v in _pairs if str(v.get("status") or "").upper() == "LIVE"}
     forward_obs = sum(r["n"] for r in forward)
     hist_obs = sum(r.get("n_historical", 0) for r in forward)
     # WHY CERTIFIED != CLOCKS. A certificate with no `params` cannot be executed -- there is no
