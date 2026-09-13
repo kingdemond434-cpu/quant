@@ -1,0 +1,1228 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Statistics and indicators | BCRA",
+  "url": "https://www.bcra.gob.ar/en/statistics-indicators/",
+  "published": "2026-09-13T18:38:34+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "auction",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c96eff4074cd397c829c",
+  "host": "www.bcra.gob.ar",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Como Investir para a Aposentadoria na Bolsa de Valores - A Estrat\u00e9gia DOBRAR - Clube do Valor",
+  "url": "https://clubedovalor.com.br/blog/investir-para-a-aposentadoria/",
+  "published": "2026-09-13T18:38:35+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2326a7c2154f1812e86a",
+  "host": "clubedovalor.com.br",
+  "claims": [
+   {
+    "claim": "Na minha vis\u00e3o, os investimentos para a parte \u201c 1 \u201d da f\u00f3rmula devem ser simples: renda fixa p\u00f3s-fixada, que sobe todo dia, com liquidez di\u00e1ria, como Tesouro SELIC ou a NuConta .",
+    "lang": "pt",
+    "quantities": [
+     "liquidez",
+     "tesouro",
+     "selic"
+    ],
+    "direction": [
+     "sobe"
+    ],
+    "horizon": [
+     "dia"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDBRL"
+     ],
+     "channels": [
+      "selic: flow/policy: Brazil (BCB, soy, iron ore) -> BRL"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "33d6e331b728"
+   },
+   {
+    "claim": "(Para o Curto, M\u00e9dio e Longo Prazo) Maria Eduarda 5 jun 2020 Como Investir em A\u00e7\u00f5es Com Pouco Dinheiro (Menos de Mil Reais) Maria Eduarda 28 maio 2020 Quanto rende R$ 500 mil no Tesouro Direto?",
+    "lang": "pt",
+    "quantities": [
+     "tesouro"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "longo prazo"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "s&p 500"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDSGD",
+      "USDBRL"
+     ],
+     "channels": [
+      "mas : policy: MAS band -> SGD",
+      "selic: flow/policy: Brazil (BCB, soy, iron ore) -> BRL"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b54f414dad5b"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Melhores FIIs na Estrat\u00e9gia S-Rank do Clube do Valor",
+  "url": "https://clubedovalor.com.br/blog/melhores-fiis-s-rank/",
+  "published": "2026-09-13T18:38:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "momentum",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b926194a64d10bc0cddd",
+  "host": "clubedovalor.com.br",
+  "claims": [
+   {
+    "claim": "Primeiramente, \u00e9 importante explicar mais a fundo o porqu\u00ea de os Fundos de Investimento Imobili\u00e1rio serem uma boa forma de investir para o longo prazo.",
+    "lang": "pt",
+    "quantities": [
+     "fundo"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "longo prazo"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "ibovespa"
+     ],
+     "transfer_only": [
+      "ibovespa->indices (B3)"
+     ],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "mas : policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b1a397759b68"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "IPOs Recentes | QuantBrasil",
+  "url": "https://quantbrasil.com.br/ipos",
+  "published": "2026-09-13T18:38:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a8c34e39ae8778127ebc",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Blog | QuantBrasil",
+  "url": "https://quantbrasil.com.br/blog/",
+  "published": "2026-09-13T18:38:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "flow",
+   "gap",
+   "momentum",
+   "policy",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [
+   "https://quantbrasil.com.br/blog/como-exportar-dados-do-profitchart-para-um-banco-de-dados-utilizando-python-e-sql/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "3eb1cd88f25ecf896222",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Code Capital | QuantBrasil",
+  "url": "https://quantbrasil.com.br/code-capital/",
+  "published": "2026-09-13T18:38:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "98abb178a774ef16d503",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "V\u00eddeos do YouTube | QuantBrasil",
+  "url": "https://quantbrasil.com.br/youtube/",
+  "published": "2026-09-13T18:38:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "84bc7955cade53a31c30",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Releases | QuantBrasil",
+  "url": "https://quantbrasil.com.br/releases/",
+  "published": "2026-09-13T18:38:47+00:00",
+  "symbols": [
+   "XCUUSD",
+   "US500",
+   "BTCUSD",
+   "ETHUSD",
+   "CORN"
+  ],
+  "timeframes": [
+   "1H",
+   "INTRADAY",
+   "INTRADI\u00c1RIO"
+  ],
+  "patterns": [
+   "auction",
+   "correlation",
+   "flow",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "720522802bb06786d2bf",
+  "host": "quantbrasil.com.br",
+  "claims": [
+   {
+    "claim": "Essa simples estrat\u00e9gia utiliza o hor\u00e1rio de abertura dos candles para determinar uma entrada ou sa\u00edda.",
+    "lang": "pt",
+    "quantities": [
+     "abertura",
+     "candle"
+    ],
+    "direction": [
+     "entrada",
+     "sa\u00edda"
+    ],
+    "horizon": [
+     "abertura"
+    ],
+    "instruments": {
+     "analogues": [
+      "XCUUSD",
+      "US500",
+      "BTCUSD",
+      "ETHUSD",
+      "CORN"
+     ],
+     "mentioned": [
+      "cobre",
+      "s&p 500",
+      "ibovespa",
+      "bitcoin",
+      "ethereum",
+      "milho"
+     ],
+     "transfer_only": [
+      "ibovespa->indices (B3)"
+     ],
+     "indirect": [
+      "USDSGD",
+      "USDILS"
+     ],
+     "channels": [
+      "mas : policy: MAS band -> SGD",
+      "boi : policy: BoI -> ILS"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "0e1ca0ab3b82"
+   },
+   {
+    "claim": "O GIF a seguir exemplifica o funcionamento da estrat\u00e9gia na ponta da compra: Essa estrat\u00e9gia funciona apenas no day-trade e est\u00e1 dispon\u00edvel, tanto na compra quanto na venda, para os assinantes Premium do QuantBrasil.",
+    "lang": "pt",
+    "quantities": [
+     "premium"
+    ],
+    "direction": [
+     "compra",
+     "venda"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XCUUSD",
+      "US500",
+      "BTCUSD",
+      "ETHUSD",
+      "CORN"
+     ],
+     "mentioned": [
+      "cobre",
+      "s&p 500",
+      "ibovespa",
+      "bitcoin",
+      "ethereum",
+      "milho"
+     ],
+     "transfer_only": [
+      "ibovespa->indices (B3)"
+     ],
+     "indirect": [
+      "USDSGD",
+      "USDILS"
+     ],
+     "channels": [
+      "mas : policy: MAS band -> SGD",
+      "boi : policy: BoI -> ILS"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8e2b8108cf2c"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Documenta\u00e7\u00e3o do QuantBrasil | QuantBrasil",
+  "url": "https://quantbrasil.com.br/docs/",
+  "published": "2026-09-13T18:38:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2894411dbb55c6eae0a3",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Estrat\u00e9gias Quantitativas | QuantBrasil",
+  "url": "https://quantbrasil.com.br/estrategias/",
+  "published": "2026-09-13T18:38:53+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "INTRADAY",
+   "INTRADI\u00c1RIO"
+  ],
+  "patterns": [
+   "auction",
+   "breakout",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "64f90a35863fe2d4cb7e",
+  "host": "quantbrasil.com.br",
+  "claims": [
+   {
+    "claim": "IFR M\u00e1ximo Valor de IFR utilizado como ponto de entrada, isto \u00e9, a entrada \u00e9 efetuada no fechamento do candle quando o valor atual de IFR for igual ou menor ao valor definido no par\u00e2metro.",
+    "lang": "pt",
+    "quantities": [
+     "fechamento",
+     "candle"
+    ],
+    "direction": [
+     "entrada"
+    ],
+    "horizon": [
+     "fechamento"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "s&p 500",
+      "ibov"
+     ],
+     "transfer_only": [
+      "ibov->indices (B3)"
+     ],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "mas : policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "e118f45fe006"
+   },
+   {
+    "claim": "Portanto, identificado um padr\u00e3o 123 de compra, a entrada \u00e9 efetuada se o pr\u00f3ximo candle romper (1 tick acima) a m\u00e1xima do 3\u00ba candle.",
+    "lang": "pt",
+    "quantities": [
+     "candle",
+     "m\u00e1xima"
+    ],
+    "direction": [
+     "compra",
+     "entrada"
+    ],
+    "horizon": [
+     "tick"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "s&p 500",
+      "ibov"
+     ],
+     "transfer_only": [
+      "ibov->indices (B3)"
+     ],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "mas : policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "94a796e878a9"
+   },
+   {
+    "claim": "Motivacional A estrat\u00e9gia de Varia\u00e7\u00e3o At\u00edpica de Compra \u00e9 uma estrat\u00e9gia de volatilidade que busca operar distor\u00e7\u00f5es at\u00edpicas no pre\u00e7o de um ativo, levando-se em considera\u00e7\u00e3o o Z-Score calculado em uma determinada janela (por padr\u00e3o, 20 dias).",
+    "lang": "pt",
+    "quantities": [
+     "volatilidade"
+    ],
+    "direction": [
+     "compra"
+    ],
+    "horizon": [
+     "dia"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "s&p 500",
+      "ibov"
+     ],
+     "transfer_only": [
+      "ibov->indices (B3)"
+     ],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "mas : policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "e7781125b56d"
+   },
+   {
+    "claim": "Motivacional A estrat\u00e9gia de Breakout de compra \u00e9 uma estrat\u00e9gia de tend\u00eancia que parte da premissa de que a m\u00e1xima do dia anterior \u00e9 uma resist\u00eancia , e portanto opera o seu rompimento.",
+    "lang": "pt",
+    "quantities": [
+     "breakout",
+     "tend\u00eancia",
+     "m\u00e1xima",
+     "resist\u00eancia"
+    ],
+    "direction": [
+     "compra"
+    ],
+    "horizon": [
+     "dia"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "s&p 500",
+      "ibov"
+     ],
+     "transfer_only": [
+      "ibov->indices (B3)"
+     ],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "mas : policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "3b286817fa25"
+   },
+   {
+    "claim": "O ponto de entrada \u00e9 definido 1 tick acima da m\u00e1xima do candle anterior (candle sinal).",
+    "lang": "pt",
+    "quantities": [
+     "m\u00e1xima",
+     "candle"
+    ],
+    "direction": [
+     "entrada"
+    ],
+    "horizon": [
+     "tick"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "s&p 500",
+      "ibov"
+     ],
+     "transfer_only": [
+      "ibov->indices (B3)"
+     ],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "mas : policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "e8396a64c67a"
+   },
+   {
+    "claim": "Compra Tend\u00eancia Compra por Hor\u00e1rio Motivacional A estrat\u00e9gia por hor\u00e1rio \u00e9 uma estrat\u00e9gia de volatilidade na qual opera-se somente no intraday .",
+    "lang": "pt",
+    "quantities": [
+     "tend\u00eancia",
+     "volatilidade"
+    ],
+    "direction": [
+     "compra"
+    ],
+    "horizon": [
+     "intraday"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "s&p 500",
+      "ibov"
+     ],
+     "transfer_only": [
+      "ibov->indices (B3)"
+     ],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "mas : policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "430f8e08bd37"
+   },
+   {
+    "claim": "Filtro Candle Martelo (opcional) Al\u00e9m do rompimento da m\u00e1xima do candle sinal, a entrada s\u00f3 \u00e9 efetuada se o candle sinal for um candle positivo (fechamento maior que abertura).",
+    "lang": "pt",
+    "quantities": [
+     "candle",
+     "rompimento",
+     "m\u00e1xima",
+     "fechamento"
+    ],
+    "direction": [
+     "entrada"
+    ],
+    "horizon": [
+     "fechamento",
+     "abertura"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "s&p 500",
+      "ibov"
+     ],
+     "transfer_only": [
+      "ibov->indices (B3)"
+     ],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "mas : policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "041c2b13cf7a"
+   },
+   {
+    "claim": "Motivacional A estrat\u00e9gia Canal de Donchian de Compra \u00e9 uma estrat\u00e9gia de breakout e tend\u00eancia que consiste em comprar quando o pre\u00e7o de fechamento rompe acima da linha superior do canal (a m\u00e1xima mais alta do per\u00edodo definido).",
+    "lang": "pt",
+    "quantities": [
+     "breakout",
+     "tend\u00eancia",
+     "fechamento",
+     "m\u00e1xima"
+    ],
+    "direction": [
+     "compra",
+     "rompe"
+    ],
+    "horizon": [
+     "fechamento"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "s&p 500",
+      "ibov"
+     ],
+     "transfer_only": [
+      "ibov->indices (B3)"
+     ],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "mas : policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5590342c309b"
+   }
+  ],
+  "n_claims": 12
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Backtest Score | QuantBrasil",
+  "url": "https://quantbrasil.com.br/backtests/score/",
+  "published": "2026-09-13T18:38:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "987976f3aac8ebf6284e",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Simulador de Backtests | QuantBrasil",
+  "url": "https://quantbrasil.com.br/backtests/",
+  "published": "2026-09-13T18:38:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6890042e07ca7265851b",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Long &amp; Short por Cointegra\u00e7\u00e3o | QuantBrasil",
+  "url": "https://quantbrasil.com.br/cointegracao/",
+  "published": "2026-09-13T18:38:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "46f3f11ccb9809af00c0",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Suportes e Resist\u00eancias | QuantBrasil",
+  "url": "https://quantbrasil.com.br/suportes-e-resistencias/",
+  "published": "2026-09-13T18:39:00+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "22ca1ec22c69945c504a",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Retorno Hist\u00f3rico | QuantBrasil",
+  "url": "https://quantbrasil.com.br/retorno-historico/",
+  "published": "2026-09-13T18:39:02+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ec9107980a8d116d449b",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "BTC vs IBOV: Comparativo Bitcoin e Ibovespa | QuantBrasil",
+  "url": "https://quantbrasil.com.br/btc-vs-ibov/",
+  "published": "2026-09-13T18:39:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "30afad3d495af4430f37",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Value-at-Risk (VaR) | QuantBrasil",
+  "url": "https://quantbrasil.com.br/value-at-risk/",
+  "published": "2026-09-13T18:39:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "75014a2a65ad9bc663b9",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Beta da Carteira | QuantBrasil",
+  "url": "https://quantbrasil.com.br/beta-da-carteira/",
+  "published": "2026-09-13T18:39:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "476ad3989ac05b481a5c",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "IFR2 | QuantBrasil",
+  "url": "https://quantbrasil.com.br/ifr2/",
+  "published": "2026-09-13T18:39:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "39e1f89ed1bdca17d274",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Setup 123 | QuantBrasil",
+  "url": "https://quantbrasil.com.br/setup-123/",
+  "published": "2026-09-13T18:39:12+00:00",
+  "symbols": [],
+  "timeframes": [
+   "D1",
+   "H1",
+   "W1"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fdd0b29eb6cc5e4ccbe5",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Estoc\u00e1stico Lento | QuantBrasil",
+  "url": "https://quantbrasil.com.br/estocastico-lento/",
+  "published": "2026-09-13T18:39:14+00:00",
+  "symbols": [],
+  "timeframes": [
+   "D1",
+   "H1",
+   "W1"
+  ],
+  "patterns": [
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6d12ef87af3e7d1e607f",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Melhores investimentos 2024: Estrat\u00e9gias da Liberdade Financeira - Clube do Valor",
+  "url": "https://clubedovalor.com.br/blog/melhores-investimentos-2024/",
+  "published": "2026-09-13T18:39:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bbedad03c80c229aa942",
+  "host": "clubedovalor.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Estrat\u00e9gia de investimentos - P\u00e1gina 2 de 18 - Clube do Valor",
+  "url": "https://clubedovalor.com.br/blog/aprenda-a-investir/estrategia-de-investimentos/page/2/",
+  "published": "2026-09-13T18:39:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8820dbd26438704e4b54",
+  "host": "clubedovalor.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Estrat\u00e9gias de Investimento de Longo Prazo: Guia Definitivo",
+  "url": "https://clubedovalor.com.br/blog/estrategias-de-investimento-de-longo-prazo/",
+  "published": "2026-09-13T18:39:19+00:00",
+  "symbols": [
+   "COFROB"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6e729b0af5c749ee77fb",
+  "host": "clubedovalor.com.br",
+  "claims": [
+   {
+    "claim": "Objetivo financeiro: Saiba COMO definir metas de curto, m\u00e9dio e longo prazo Tipos de Investimento de Longo Prazo As principais op\u00e7\u00f5es de investimento de longo prazo incluem ativos como a\u00e7\u00f5es, t\u00edtulos, fundos m\u00fatuos, fundos de previd\u00eancia privada e mais.",
+    "lang": "pt",
+    "quantities": [
+     "fundo"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "longo prazo"
+    ],
+    "instruments": {
+     "analogues": [
+      "COFROB"
+     ],
+     "mentioned": [
+      "robusta"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "mas : policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "d7338aa77de5"
+   },
+   {
+    "claim": "Buy and Hold A estrat\u00e9gia envolve a aquisi\u00e7\u00e3o de ativos \u2013 como a\u00e7\u00f5es, fundos e op\u00e7\u00f5es \u2013 e a manuten\u00e7\u00e3o desses investimentos por um per\u00edodo prolongado, mesmo diante de flutua\u00e7\u00f5es de curto prazo.",
+    "lang": "pt",
+    "quantities": [
+     "fundo"
+    ],
+    "direction": [
+     "buy"
+    ],
+    "horizon": [
+     "dia",
+     "curto prazo"
+    ],
+    "instruments": {
+     "analogues": [
+      "COFROB"
+     ],
+     "mentioned": [
+      "robusta"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "mas : policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "c6f861cc21dc"
+   },
+   {
+    "claim": "Investimentos de longo prazo oferecem benef\u00edcios como potencial de crescimento sustentado, aproveitamento dos efeitos dos juros compostos, menor impacto das flutua\u00e7\u00f5es de curto prazo e a capacidade de alcan\u00e7ar metas financeiras significativas, como aposentadoria ou educa\u00e7\u00e3o dos filhos.",
+    "lang": "pt",
+    "quantities": [
+     "juros"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "longo prazo",
+     "curto prazo"
+    ],
+    "instruments": {
+     "analogues": [
+      "COFROB"
+     ],
+     "mentioned": [
+      "robusta"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "mas : policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "0ec13c4fb6f7"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Servi\u00e7o de Wealth Advisor | Consultor Financeiro - Clube do Valor",
+  "url": "https://clubedovalor.com.br/blog/calltoaction/cta-advisor/?origem=quanto-rende-500-mil-no-tesouro-direto",
+  "published": "2026-09-13T18:39:31+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "51081588427f74a31463",
+  "host": "clubedovalor.com.br",
+  "claims": [
+   {
+    "claim": "O aconselhamento transparente \u00e9 o grande diferencial que protege e multiplica patrim\u00f4nios, aproximando o investidor da tranquilidade financeira no longo prazo.",
+    "lang": "pt",
+    "quantities": [
+     "diferencial"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "longo prazo"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "mas : policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "ead7b96308b4"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Quantas a\u00e7\u00f5es ter na carteira: guia completo - Clube do Valor",
+  "url": "https://clubedovalor.com.br/blog/quantas-acoes-ter-na-carteira/",
+  "published": "2026-09-13T18:39:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bd2ab0deddf8782b6466",
+  "host": "clubedovalor.com.br",
+  "claims": [
+   {
+    "claim": "Neste sentido, optar por a\u00e7\u00f5es que movimentam volumes di\u00e1rios significativos , mas com uma varia\u00e7\u00e3o de cota\u00e7\u00f5es baixas, pode fazer sentido na sua estrat\u00e9gia .",
+    "lang": "pt",
+    "quantities": [
+     "volume",
+     "cot"
+    ],
+    "direction": [
+     "baixa"
+    ],
+    "horizon": [
+     "di\u00e1rio"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "mas : policy: MAS band -> SGD"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "0a475d15aed9"
+   }
+  ],
+  "n_claims": 1
+ }
+]
