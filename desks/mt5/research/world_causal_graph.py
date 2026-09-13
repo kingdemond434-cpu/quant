@@ -393,9 +393,26 @@ def claim_candidates(rows: list[dict[str, Any]], universe: set[str],
 
 
 def cross_asset_candidates(doc: dict[str, Any], universe: set[str]) -> list[cg.Edge]:
-    """The pairs `cross_asset_graph` screened, as candidates carrying its verdict as evidence."""
+    """The pairs `cross_asset_graph` screened, as candidates carrying its verdict as evidence.
+
+    THE PRODUCER PUBLISHES A COUNT AND THIS READ IT AS A LIST, which took the whole leg down on
+    every hourly pass. `CROSS_ASSET_GRAPH.json` is a SUMMARY -- `edges: 26`, `pairs: 195`,
+    `tests_run: 104`, and a `proposals` list that is empty -- so `for e in doc["edges"]` iterated
+    an int and raised `TypeError: 'int' object is not iterable`. Measured in the compute ledger:
+    `causal_graph: exit_code=1` on four of four recent runs, and WORLD_CAUSAL_GRAPH.json 48.9h
+    stale as a result. One schema mismatch between two organs, costing the desk its causal graph.
+
+    A MISSING EDGE LIST IS NOT AN ERROR AND IS NOT SILENCE EITHER. The graph is perfectly
+    computable from its other candidate sources; what it loses is the cross-asset screen's prior.
+    So a summary-shaped artifact yields NO candidates and the caller carries on, while the absence
+    itself is recorded as `cross_asset_basis` rather than being indistinguishable from a screen
+    that genuinely found nothing. Crashing was the worst of the three available behaviours.
+    """
     out: list[cg.Edge] = []
-    for e in doc.get("edges") or []:
+    edges = doc.get("edges")
+    if not isinstance(edges, list):
+        return out
+    for e in edges:
         if not isinstance(e, dict):
             continue
         d, t = str(e.get("driver") or ""), str(e.get("target") or "")
@@ -582,7 +599,16 @@ def run(symbols: list[str] | None = None, budget_s: float = DEFAULT_BUDGET_S) ->
     universe_ids = set(universe)
     claim_rows = _read_jsonl(CLAIMS)
     claim_edges, unmapped = claim_candidates(claim_rows, universe_ids, graph)
-    cross_edges = cross_asset_candidates(_read_json(CROSS), universe_ids)
+    _cross_doc = _read_json(CROSS)
+    cross_edges = cross_asset_candidates(_cross_doc, universe_ids)
+    # NAMED, NOT INFERRED. "no cross-asset candidates" has two very different causes -- the screen
+    # ran and found nothing, or the screen publishes only a summary and there is nothing to read.
+    # A reader of the graph cannot tell them apart from an empty list, so the basis is carried.
+    _cross_basis = ("MEASURED" if isinstance(_cross_doc.get("edges"), list)
+                    else "UNAVAILABLE: CROSS_ASSET_GRAPH.json publishes counts, not an edge list "
+                         f"(edges={_cross_doc.get('edges')!r}); the cross-asset prior is absent "
+                         "from this graph and the screen would have to publish its pairs for it "
+                         "to return")
     # A candidate is a PAIR: the lag on it is a hint and the measurement lands at the lag the
     # data chooses, so two rows for one pair would be the same hypothesis measured twice.
     seeded = [e for e in graph.edges.values() if e.status != cg.STRUCTURAL]
@@ -696,6 +722,9 @@ def run(symbols: list[str] | None = None, budget_s: float = DEFAULT_BUDGET_S) ->
                                        "horizon", "claim_hash", "evidence_grade",
                                        "available_time"]},
         "cross_asset_graph_edges": len(cross_edges),
+        # WHY THAT COUNT IS WHAT IT IS. Zero from a screen that found nothing and zero from a
+        # screen that publishes no edge list are the same number and different facts.
+        "cross_asset_basis": _cross_basis,
         "skipped": skipped, "seed_notes": graph.seed_notes,
         "consumer": "research/state_vector_build.py reads conditioning_hints; the allocator "
                     "reads the state vector; nothing here sizes or trades",
