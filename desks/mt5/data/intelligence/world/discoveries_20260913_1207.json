@@ -1,0 +1,1468 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "What Is Gamma Scalping & Why It Matters To Trade Forex Markets | Nasdaq",
+  "url": "https://www.nasdaq.com/articles/what-gamma-scalping-why-it-matters-trade-forex-markets-2019-01-04",
+  "published": "2026-09-13T12:06:02+00:00",
+  "symbols": [
+   "NAS100",
+   "EURUSD",
+   "USDCHF",
+   "EURJPY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "breakout",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "51a018dfb28cb927f2f2",
+  "host": "www.nasdaq.com",
+  "claims": [
+   {
+    "claim": "We refer this approach as \"Delta Neutral\" and in practicality, it encompasses a position built upon the concept of a straddle or a strangle with initial positive and negative deltas that offset one another to ultimately create a position that has a delta close to 0.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "positive",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "EURUSD",
+      "USDCHF",
+      "EURJPY"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "eur/usd",
+      "usd/chf",
+      "eur/jpy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "57cdb99577ee"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Security policy, Privacy policy - RoboForex",
+  "url": "https://www.roboforex.com/about/client/security-policy/",
+  "published": "2026-09-13T12:06:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1788266027",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "7105e5709bc523f512f6",
+  "host": "www.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Beginner's Guide to Building Trading Systems",
+  "url": "https://www.thechartist.com.au/purchase-building-trading-systems-course/",
+  "published": "2026-09-13T12:06:09+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://optassets.ontraport.com/opt_assets/static/language_pack/paths/logtxn_paths.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "e52820775c931c4092e0",
+  "host": "www.thechartist.com.au",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Share Trading Books Archives - The Chartist",
+  "url": "https://www.thechartist.com.au/product-category/share-trading-ebooks/?add-to-cart=4671",
+  "published": "2026-09-13T12:06:12+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "041755048996a1d14998",
+  "host": "www.thechartist.com.au",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Share Trading Books Archives - The Chartist",
+  "url": "https://www.thechartist.com.au/product-category/share-trading-ebooks/?add-to-cart=4683",
+  "published": "2026-09-13T12:06:14+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e753d94d8c6a6a1a4913",
+  "host": "www.thechartist.com.au",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Share Trading Books Archives - The Chartist",
+  "url": "https://www.thechartist.com.au/product-category/share-trading-ebooks/?add-to-cart=4675",
+  "published": "2026-09-13T12:06:17+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "790f1cb44b7f2dcd5ddb",
+  "host": "www.thechartist.com.au",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Share Trading Books Archives - The Chartist",
+  "url": "https://www.thechartist.com.au/product-category/share-trading-ebooks/?add-to-cart=4615",
+  "published": "2026-09-13T12:06:20+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "398b030e2c8a8f9de029",
+  "host": "www.thechartist.com.au",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Share Trading Books Archives - The Chartist",
+  "url": "https://www.thechartist.com.au/product-category/share-trading-ebooks/?add-to-cart=4677",
+  "published": "2026-09-13T12:06:23+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "87f1f105e747835251f3",
+  "host": "www.thechartist.com.au",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "The Algorithmic Advantage - Podcast - Apple Podcasts",
+  "url": "https://podcasts.apple.com/us/podcast/the-algorithmic-advantage/id1703013320",
+  "published": "2026-09-13T12:06:25+00:00",
+  "symbols": [
+   "USDTRY"
+  ],
+  "timeframes": [
+   "1H",
+   "DAILY",
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2Fthe-algorithmic-advantage%2Fid1703013320"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "9ca4ec2562c892b01614",
+  "host": "podcasts.apple.com",
+  "claims": [
+   {
+    "claim": "Toby Crabel \u2014 founder of Crabel Capital Management (~$5B AUM) and author of the legendary *Day Trading with Short Term Price Patterns and Intraday Breakouts* (1990), the book that gave the world the opening range breakout and NR4/NR7 patterns \u2014 joins the show for a rare, wide-ranging conversation.",
+    "lang": "en",
+    "quantities": [
+     "range",
+     "breakout"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "day",
+     "intraday"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "07bb48ab20f0"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "The Algorithmic Advantage - Podcast - Apple Podcasts",
+  "url": "https://podcasts.apple.com/us/podcast/024-trading-think-tank-02-battle-of-the-back-testers/id1703013320?l=es",
+  "published": "2026-09-13T12:06:27+00:00",
+  "symbols": [
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "positioning",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "es-MX",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2Fthe-algorithmic-advantage%2Fid1703013320%3Fl%3Des-MX"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "ad090d8e725f9128b02f",
+  "host": "podcasts.apple.com",
+  "claims": [
+   {
+    "claim": "Toby Crabel \u2014 founder of Crabel Capital Management (~$5B AUM) and author of the legendary *Day Trading with Short Term Price Patterns and Intraday Breakouts* (1990), the book that gave the world the opening range breakout and NR4/NR7 patterns \u2014 joins the show for a rare, wide-ranging conversation.",
+    "lang": "en",
+    "quantities": [
+     "range",
+     "breakout"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "day",
+     "intraday"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "07bb48ab20f0"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "The Algorithmic Advantage - \u0628\u0648\u062f\u0643\u0627\u0633\u062a - Apple Podcasts",
+  "url": "https://podcasts.apple.com/us/podcast/024-trading-think-tank-02-battle-of-the-back-testers/id1703013320?l=ar",
+  "published": "2026-09-13T12:06:29+00:00",
+  "symbols": [
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "ar",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2Fthe-algorithmic-advantage%2Fid1703013320%3Fl%3Dar"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "5102f57831c238008779",
+  "host": "podcasts.apple.com",
+  "claims": [
+   {
+    "claim": "Toby Crabel \u2014 founder of Crabel Capital Management (~$5B AUM) and author of the legendary *Day Trading with Short Term Price Patterns and Intraday Breakouts* (1990), the book that gave the world the opening range breakout and NR4/NR7 patterns \u2014 joins the show for a rare, wide-ranging conversation.",
+    "lang": "en",
+    "quantities": [
+     "range",
+     "breakout"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "day",
+     "intraday"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "07bb48ab20f0"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "The Algorithmic Advantage \u2014 \u041f\u043e\u0434\u043a\u0430\u0441\u0442 \u2014 \u041f\u043e\u0434\u043a\u0430\u0441\u0442\u044b Apple",
+  "url": "https://podcasts.apple.com/us/podcast/024-trading-think-tank-02-battle-of-the-back-testers/id1703013320?l=ru",
+  "published": "2026-09-13T12:06:32+00:00",
+  "symbols": [
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "ru",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2Fthe-algorithmic-advantage%2Fid1703013320%3Fl%3Dru"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "985abe65a8aefd198f7b",
+  "host": "podcasts.apple.com",
+  "claims": [
+   {
+    "claim": "Toby Crabel \u2014 founder of Crabel Capital Management (~$5B AUM) and author of the legendary *Day Trading with Short Term Price Patterns and Intraday Breakouts* (1990), the book that gave the world the opening range breakout and NR4/NR7 patterns \u2014 joins the show for a rare, wide-ranging conversation.",
+    "lang": "en",
+    "quantities": [
+     "range",
+     "breakout"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "day",
+     "intraday"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "07bb48ab20f0"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "The Algorithmic Advantage - \u64ad\u5ba2 - Apple \u64ad\u5ba2",
+  "url": "https://podcasts.apple.com/us/podcast/024-trading-think-tank-02-battle-of-the-back-testers/id1703013320?l=zh-Hans-CN",
+  "published": "2026-09-13T12:06:34+00:00",
+  "symbols": [
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY",
+   "\u5206\u949f",
+   "\u5c0f\u65f6"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "zh-Hans-",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2Fthe-algorithmic-advantage%2Fid1703013320%3Fl%3Dzh-Hans-CN"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "33cd93513963c0aa0848",
+  "host": "podcasts.apple.com",
+  "claims": [
+   {
+    "claim": "#AlgorithmicTrading #QuantTrading #SystematicTrading Contents: 1 \u5c0f\u65f6 4 \u5206\u949f 8\u670814\u65e5 055 - Toby Crabel - Short-Term Futures Trading with Size!",
+    "lang": "zh",
+    "quantities": [
+     "futures"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "\u5206\u949f",
+     "\u5c0f\u65f6"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "66a44e3acf89"
+   },
+   {
+    "claim": "Toby Crabel \u2014 founder of Crabel Capital Management (~$5B AUM) and author of the legendary *Day Trading with Short Term Price Patterns and Intraday Breakouts* (1990), the book that gave the world the opening range breakout and NR4/NR7 patterns \u2014 joins the show for a rare, wide-ranging conversation.",
+    "lang": "en",
+    "quantities": [
+     "range",
+     "breakout"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "day",
+     "intraday"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "07bb48ab20f0"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "The Algorithmic Advantage - \u00c9mission - Apple Podcasts",
+  "url": "https://podcasts.apple.com/us/podcast/024-trading-think-tank-02-battle-of-the-back-testers/id1703013320?l=fr",
+  "published": "2026-09-13T12:06:37+00:00",
+  "symbols": [
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "fr-FR",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2Fthe-algorithmic-advantage%2Fid1703013320%3Fl%3Dfr-FR"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "c0e8bb42aff4eb59b06b",
+  "host": "podcasts.apple.com",
+  "claims": [
+   {
+    "claim": "Toby Crabel \u2014 founder of Crabel Capital Management (~$5B AUM) and author of the legendary *Day Trading with Short Term Price Patterns and Intraday Breakouts* (1990), the book that gave the world the opening range breakout and NR4/NR7 patterns \u2014 joins the show for a rare, wide-ranging conversation.",
+    "lang": "en",
+    "quantities": [
+     "range",
+     "breakout"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "day",
+     "intraday"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "07bb48ab20f0"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "The Algorithmic Advantage - \ud31f\uce90\uc2a4\ud2b8 - Apple \ud31f\uce90\uc2a4\ud2b8",
+  "url": "https://podcasts.apple.com/us/podcast/024-trading-think-tank-02-battle-of-the-back-testers/id1703013320?l=ko",
+  "published": "2026-09-13T12:06:39+00:00",
+  "symbols": [
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "ko",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2Fthe-algorithmic-advantage%2Fid1703013320%3Fl%3Dko"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "0a8867c5fb56f288404a",
+  "host": "podcasts.apple.com",
+  "claims": [
+   {
+    "claim": "#AlgorithmicTrading #QuantTrading #SystematicTrading Contents: 1\uc2dc\uac04 4\ubd84 8\uc6d4 14\uc77c 055 - Toby Crabel - Short-Term Futures Trading with Size!",
+    "lang": "ko",
+    "quantities": [
+     "futures"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "\ubd84",
+     "\uc2dc\uac04"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "78dca51634ca"
+   },
+   {
+    "claim": "Toby Crabel \u2014 founder of Crabel Capital Management (~$5B AUM) and author of the legendary *Day Trading with Short Term Price Patterns and Intraday Breakouts* (1990), the book that gave the world the opening range breakout and NR4/NR7 patterns \u2014 joins the show for a rare, wide-ranging conversation.",
+    "lang": "en",
+    "quantities": [
+     "range",
+     "breakout"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "day",
+     "intraday"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "07bb48ab20f0"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "The Algorithmic Advantage \u2014 Podcast \u2014 Apple Podcasts",
+  "url": "https://podcasts.apple.com/us/podcast/024-trading-think-tank-02-battle-of-the-back-testers/id1703013320?l=pt",
+  "published": "2026-09-13T12:06:42+00:00",
+  "symbols": [
+   "USDTRY"
+  ],
+  "timeframes": [
+   "1H",
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "pt-BR",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2Fthe-algorithmic-advantage%2Fid1703013320%3Fl%3Dpt-BR"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "1a0862e0e891f94ac198",
+  "host": "podcasts.apple.com",
+  "claims": [
+   {
+    "claim": "Toby Crabel \u2014 founder of Crabel Capital Management (~$5B AUM) and author of the legendary *Day Trading with Short Term Price Patterns and Intraday Breakouts* (1990), the book that gave the world the opening range breakout and NR4/NR7 patterns \u2014 joins the show for a rare, wide-ranging conversation.",
+    "lang": "en",
+    "quantities": [
+     "range",
+     "breakout"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "day",
+     "intraday"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "07bb48ab20f0"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "The Algorithmic Advantage - Podcast - Apple Podcasts",
+  "url": "https://podcasts.apple.com/us/podcast/024-trading-think-tank-02-battle-of-the-back-testers/id1703013320?l=vi",
+  "published": "2026-09-13T12:06:44+00:00",
+  "symbols": [
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "vi",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2Fthe-algorithmic-advantage%2Fid1703013320%3Fl%3Dvi"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "b4df97425d533eaa7e61",
+  "host": "podcasts.apple.com",
+  "claims": [
+   {
+    "claim": "Toby Crabel \u2014 founder of Crabel Capital Management (~$5B AUM) and author of the legendary *Day Trading with Short Term Price Patterns and Intraday Breakouts* (1990), the book that gave the world the opening range breakout and NR4/NR7 patterns \u2014 joins the show for a rare, wide-ranging conversation.",
+    "lang": "en",
+    "quantities": [
+     "range",
+     "breakout"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "day",
+     "intraday"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "07bb48ab20f0"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "The Algorithmic Advantage - Podcast - Apple Podcast",
+  "url": "https://podcasts.apple.com/us/podcast/024-trading-think-tank-02-battle-of-the-back-testers/id1703013320?l=zh-Hant-TW",
+  "published": "2026-09-13T12:06:46+00:00",
+  "symbols": [
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY",
+   "\u5206\u9418"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "zh-Hant-",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2Fthe-algorithmic-advantage%2Fid1703013320%3Fl%3Dzh-Hant-TW"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "f855e4bcb4b69458954e",
+  "host": "podcasts.apple.com",
+  "claims": [
+   {
+    "claim": "#AlgorithmicTrading #QuantTrading #SystematicTrading Contents: 1 \u5c0f\u6642 4 \u5206\u9418 8\u670814\u65e5 055 - Toby Crabel - Short-Term Futures Trading with Size!",
+    "lang": "zh-Hant",
+    "quantities": [
+     "futures"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "\u5206\u9418",
+     "\u5c0f\u6642"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "d7e66212c0a9"
+   },
+   {
+    "claim": "Toby Crabel \u2014 founder of Crabel Capital Management (~$5B AUM) and author of the legendary *Day Trading with Short Term Price Patterns and Intraday Breakouts* (1990), the book that gave the world the opening range breakout and NR4/NR7 patterns \u2014 joins the show for a rare, wide-ranging conversation.",
+    "lang": "en",
+    "quantities": [
+     "range",
+     "breakout"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "day",
+     "intraday"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "07bb48ab20f0"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Better System Trader - Balado - Apple Podcasts",
+  "url": "https://podcasts.apple.com/ca/podcast/183-overcoming-broken-strategies-marsten-parker/id985870258?l=fr",
+  "published": "2026-09-13T12:06:49+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "fr-CA",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fca%2Fpodcast%2Fbetter-system-trader%2Fid985870258%3Fl%3Dfr-CA"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "80df79c8c81e62f681b8",
+  "host": "podcasts.apple.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forex Blog Advertising Program | Forex Blog",
+  "url": "http://www.forexblog.org/forex-blog-advertising-program",
+  "published": "2026-09-13T12:06:50+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bb64c91c1da77c78329d",
+  "host": "www.forexblog.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Australian Dollar | Forex Blog",
+  "url": "http://www.forexblog.org/category/australian-dollar/",
+  "published": "2026-09-13T12:06:56+00:00",
+  "symbols": [
+   "NZDUSD",
+   "AUDUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "auction",
+   "basis",
+   "carry",
+   "correlation",
+   "flow",
+   "gap",
+   "momentum",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [
+   "http://www.heraldsun.com.au/business/strong-aussie-dollar-undermining-exporters/story-fn7j19iv-1226059973706",
+   "http://www.forexblog.org/2009/07/japanese-yen-exports-versus-carry.html"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "68780c15cc6bb9336577",
+  "host": "www.forexblog.org",
+  "claims": [
+   {
+    "claim": "In fact, the Kiwi recently rose to a one-month high on the same day that Spain successfully completed a bond auction.",
+    "lang": "en",
+    "quantities": [
+     "auction"
+    ],
+    "direction": [
+     "rose"
+    ],
+    "horizon": [
+     "month",
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "NZDUSD"
+     ],
+     "mentioned": [
+      "kiwi"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "UST10Y",
+      "USDX"
+     ],
+     "channels": [
+      "bond auction: auction: sovereign debt -> rates and dollar"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "8f991c066a92"
+   },
+   {
+    "claim": "The premium of contracts granting the right to sell the Aussie versus the Canadian currency in one week over those for buying increased on February 8 to 1.",
+    "lang": "en",
+    "quantities": [
+     "premium"
+    ],
+    "direction": [
+     "contracts",
+     "sell"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "AUDUSD"
+     ],
+     "mentioned": [
+      "aussie"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "365ed1b1b3db"
+   },
+   {
+    "claim": "By its own admission, the RBA raised rates only after much deliberation: \u201c The rate adjustment \u2018would not be intended to slow demand compared with the current forecast path, but aimed simply at keeping the stance of policy appropriate for improving economic conditions,\u2019 \u201d according to its own minutes.",
+    "lang": "en",
+    "quantities": [
+     "rate"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "minutes"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "AUDUSD"
+     ],
+     "channels": [
+      "rba: policy: RBA -> AUD"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "fa0a67029338"
+   },
+   {
+    "claim": "\u201c What\u2019s the point of picking up a 3 percent interest-rate differential by being long Aussie and short Japan in a world where the exchange rate can move by that much in two days?",
+    "lang": "en",
+    "quantities": [
+     "rate"
+    ],
+    "direction": [
+     "long",
+     "short"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "AUDUSD"
+     ],
+     "mentioned": [
+      "aussie"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "72b368ef9c65"
+   }
+  ],
+  "n_claims": 4
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "British Pound | Forex Blog",
+  "url": "http://www.forexblog.org/category/british-pound/",
+  "published": "2026-09-13T12:07:03+00:00",
+  "symbols": [
+   "XAUUSD",
+   "US500",
+   "US30",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "USDKRW",
+   "USDTRY",
+   "UKGILT"
+  ],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "breakout",
+   "carry",
+   "correlation",
+   "flow",
+   "gap",
+   "inventory",
+   "momentum",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d177fbd6e67164c7be03",
+  "host": "www.forexblog.org",
+  "claims": [
+   {
+    "claim": "4bn over the month compared with a meagre \u00a3200m rise in exports.",
+    "lang": "en",
+    "quantities": [
+     "exports"
+    ],
+    "direction": [
+     "rise"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "US500",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDKRW",
+      "USDTRY",
+      "UKGILT"
+     ],
+     "mentioned": [
+      "gold",
+      "s&p 500",
+      "dow jones",
+      "eur/usd",
+      "pound",
+      "yen",
+      "won",
+      "try",
+      "gilt"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "european central bank: policy: ECB -> EUR",
+      "bank of england: policy: BoE -> GBP",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY",
+      "commitments of traders: positioning: CFTC -> FX and gold"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b8aaa98fb217"
+   },
+   {
+    "claim": "50 in 12 months\u2026After the Bank of England decision, pound futures and options speculators became more pessimistic as weekly bets favoring sterling fell more than 32 percent, the most since November.",
+    "lang": "en",
+    "quantities": [
+     "futures",
+     "options"
+    ],
+    "direction": [
+     "fell"
+    ],
+    "horizon": [
+     "weekly"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "pound"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [
+      "bank of england: policy: BoE -> GBP"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "51d3f71c7d81"
+   },
+   {
+    "claim": "This changed last week, when positive US economic data triggered expectations of a near-term economic recovery and consequent Fed rate hikes.",
+    "lang": "en",
+    "quantities": [
+     "rate"
+    ],
+    "direction": [
+     "positive"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "US500",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDKRW",
+      "USDTRY",
+      "UKGILT"
+     ],
+     "mentioned": [
+      "gold",
+      "s&p 500",
+      "dow jones",
+      "eur/usd",
+      "pound",
+      "yen",
+      "won",
+      "try",
+      "gilt"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "european central bank: policy: ECB -> EUR",
+      "bank of england: policy: BoE -> GBP",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY",
+      "commitments of traders: positioning: CFTC -> FX and gold"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "76a3075596fa"
+   },
+   {
+    "claim": "According to the Commodity Futures Trading Commission, \u201cMore hedge funds and large speculators have positioned for a decline in the pound against the dollar rather than a rise \u2014 so-called net shorts \u2014 every week since August.",
+    "lang": "en",
+    "quantities": [
+     "futures"
+    ],
+    "direction": [
+     "rise"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "pound"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "9456d8c14cda"
+   },
+   {
+    "claim": "\u201d But the Bank\u2019s rate cuts are being offset by the Pound\u2019s recent 15% rise- its strongest quarterly performance in over 20 years.",
+    "lang": "en",
+    "quantities": [
+     "rate"
+    ],
+    "direction": [
+     "rise"
+    ],
+    "horizon": [
+     "quarterly"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "pound"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "f30a558c9afc"
+   },
+   {
+    "claim": "In fact, the most recent data indicates that half of the bonds that the BOE bought last month (with freshly minted cash) were from foreign buyers, which causes inflation without any of the economic benefits from an increase in the domestic flow of money.",
+    "lang": "en",
+    "quantities": [
+     "flow"
+    ],
+    "direction": [
+     "increase"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "GBPUSD"
+     ],
+     "channels": [
+      "boe: policy: BoE -> GBP"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "0c1c35f25b59"
+   },
+   {
+    "claim": "pound is joining other currencies in beating up on the dollar ,\u201d announced one analyst on a day that stocks and commodities rallied broadly.",
+    "lang": "en",
+    "quantities": [
+     "stocks"
+    ],
+    "direction": [
+     "rallied"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "pound"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "82e3ef344959"
+   },
+   {
+    "claim": "\" Read More: Euro Falls to Three-Week Low on Speculation ECB Will Cut Rates Posted by Adam Kritzer | in British Pound , Central Banks , Euro | No Comments \u00bb Pound Versus the Euro Jan.",
+    "lang": "en",
+    "quantities": [
+     "cut"
+    ],
+    "direction": [
+     "falls"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "pound"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "30d89f23b686"
+   }
+  ],
+  "n_claims": 12
+ }
+]
