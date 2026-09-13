@@ -239,6 +239,67 @@ def gold_min_lot() -> float:
     return _core.gold_min_lot()
 
 
+#: E2's ARM SWITCH, deliberately its own file beside GENERIC_EXEC_ENABLED. Present means the
+#: winner of the priced execution competition chooses the order shape; absent means the
+#: competition is still run, still ranked and still logged, and the hard-coded market order is
+#: still what goes out. A principal who armed generic execution must not silently acquire a
+#: router, so the two are separate acts.
+EXEC_ROUTING_ENABLED = BASE / "data" / "EXEC_ROUTING_ENABLED"
+
+#: Algorithms this router may select. Every child must be a `market` child: those need no
+#: management between signal and fill, so a wrong choice costs slippage rather than leaving an
+#: unmanaged resting order on the book. `twap`, `sniper`, `pullback` and the staged shapes stay
+#: measured and unrouted until the fill surface is fitted on this box's own fills.
+ROUTABLE_ALGOS = ("market",)
+
+
+def _exec_route(symbol: str, side: int, entry_ref: float, tick: object, sym: object,
+                dist: float, signal: object, lot: float) -> dict:
+    """Run the execution competition and say whether its winner may be routed. E2.
+
+    ALWAYS RUNS, ROUTES ONLY WHEN ARMED. The competition's value is the same either way -- the
+    counterfactual ledger scores the road not taken from it -- so refusing to compute it when
+    disarmed would cost the evidence and save nothing.
+
+    Returns a row that is recorded whether or not it routed, because "the router would have
+    chosen twap and was not allowed to" is the measurement that decides whether to arm it.
+    """
+    out: dict = {"routed": False, "armed": EXEC_ROUTING_ENABLED.exists()}
+    try:
+        from mt5desk import execution_registry as er
+
+        # `side` IS A STRING HERE and an int at the call site; `stop_frac` is the stop distance
+        # over the price, which is the R denominator the competition prices everything in.
+        intent = er.Intent(symbol=symbol, side=("buy" if int(side) > 0 else "sell"),
+                           lots=float(lot), price=float(entry_ref),
+                           stop_frac=(float(dist) / float(entry_ref)) if entry_ref else 0.0)
+        comp = er.compete(intent)
+        best = comp["plans"][comp["best"]]
+        market = comp["plans"].get("market")
+        out.update({
+            "algo": str(comp["best"]),
+            "utility": float(best.utility),
+            "market_utility": float(market.utility) if market is not None else None,
+            "utilities": {k: round(float(v), 6) for k, v in (comp.get("utilities") or {}).items()},
+            "children_all_market": all(str(c.get("kind", "")) == "market"
+                                       for c in (best.children or [])),
+        })
+    except Exception as exc:
+        out["why"] = f"competition unavailable ({type(exc).__name__}: {str(exc)[:110]})"
+        return out
+    if not out["armed"]:
+        out["why"] = ("EXEC_ROUTING_ENABLED absent: the winner is logged and the hard-coded "
+                      "market order is sent. Arming this is a separate principal act")
+        return out
+    if out["algo"] not in ROUTABLE_ALGOS or not out["children_all_market"]:
+        out["why"] = (f"{out['algo']} is not routable: only algorithms whose children are all "
+                      "`market` may be selected, because the rest leave resting orders this lane "
+                      "does not yet manage")
+        return out
+    out["routed"] = True
+    return out
+
+
 def venue_min_lot(symbol: str = GOLD_SYMBOL, info: object | None = None) -> float:
     """The smallest lot THIS VENUE accepts for THIS symbol -- `decision_core.venue_min_lot`.
 
@@ -1960,6 +2021,35 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
         # counterfactual ledger can score the road not taken. Routing stays MARKET until the
         # fill surface is fitted on enough of the box's own fills to make the choice measured.
         policy_advice = _policy_advice(s["symbol"], side, entry_ref, tick, sym, dist, g, lot)
+        # E2 -- THE COMPETITION IS RUN ON EVERY PASS AND ROUTES NOTHING UNLESS ARMED SEPARATELY.
+        #
+        # Nine execution policies and five child-order algorithms are priced and ranked inside
+        # every gateway pass, and exactly two order shapes have ever reached the venue: a pending
+        # stop for gold and a market order for everything else, chosen by a hard-coded branch
+        # rather than by the argmax the competition computes. That is the whole of E2: the
+        # ranking exists, is measured, and decides nothing.
+        #
+        # WHY THIS IS A SEPARATE SWITCH FROM GENERIC_EXEC_ENABLED. Arming generic execution says
+        # "this lane may send". Arming this says "the WINNER of a priced competition chooses the
+        # order shape" -- a different decision, on a different kind of evidence, and one that
+        # changes what arrives at the venue for sleeves already trading. Folding it into the
+        # existing switch would mean a principal who armed execution last month silently
+        # acquired a router today.
+        #
+        # ONLY ALGORITHMS WHOSE CHILDREN ARE ALL `market` ARE ELIGIBLE, and that bound is the
+        # reason this can be armed at all. `twap` and `sniper` win by SPLITTING or DELAYING, and
+        # both introduce a live decision between the signal and the fill -- a resting child that
+        # the desk must then manage, cancel and reconcile. `market` children need none of that:
+        # the only thing the router changes is WHICH market order is sent, so a wrong answer
+        # costs slippage rather than an unmanaged resting order. The staged and time-sliced
+        # algorithms stay measured and unrouted until the fill surface is fitted on this box's
+        # own fills, which needs matched_fills > 0 and it is 0.
+        exec_route = _exec_route(s["symbol"], side, entry_ref, tick, sym, dist, g, lot)
+        if exec_route.get("routed"):
+            _mu = exec_route["market_utility"]
+            log(f"[{name}] EXEC-ROUTE {exec_route['algo']} "
+                f"(utility {exec_route['utility']:+.5f} vs market "
+                f"{_mu:+.5f})" if _mu is not None else f"[{name}] EXEC-ROUTE {exec_route['algo']}")
         # The theoretical book sees every intent, armed or not, so netting is measured in shadow.
         _book_target(name, s["symbol"], side * lot, f"family_market/{family}/{selector}",
                      price=entry_ref)

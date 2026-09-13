@@ -44,6 +44,13 @@ function Set-E8Task {
     # RunLevel Highest so the task can write under C:\opt\quant regardless of the ACL the
     # adoption left; S4U so it runs whether or not anyone is logged in over RDP.
     $principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
+    # AN EXECUTION LIMIT SHORTER THAN THE WORK IS NOT A SAFETY RAIL, IT IS A GUARANTEED KILL.
+    # Measured 2026-09-13 on MT5-Daily, registered the same day with a 3-hour cap: daily_cycle's
+    # own leg budgets sum past that before the network miners are counted, so the run was
+    # terminated mid-flight having produced real output all the way to the cut, never wrote its
+    # state file, and left 68 artifacts frozen at 49h looking like a dead organ. These E8 tasks
+    # are minutes of work, so 50 minutes is generous here -- but the lesson is that the limit must
+    # be read off the job's own budgets and not chosen for being a round number.
     $settings  = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
                     -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Minutes 50) `
                     -MultipleInstances IgnoreNew

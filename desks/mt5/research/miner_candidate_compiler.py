@@ -889,6 +889,28 @@ def main() -> int:
         # unfunded, unrouted or broken, and every one of those has looked like "no findings".
         print(f"SEATS DARK inside the {WINDOW_DAYS}-day window: {', '.join(seats_dark)}",
               flush=True)
+    # EVERY SEAT DARK IS A DIFFERENT CONDITION FROM ONE SEAT DARK, and until now they printed the
+    # same (G1, wired 2026-09-13). One dark seat is a seat to chase. ALL of them dark means Engine
+    # A -- the whole mechanism-driven LLM synthesis lane, every role on every vendor -- produced
+    # nothing this window, and the compiler downstream of it has been reading an empty room and
+    # reporting a healthy conversion of zero.
+    #
+    # A PRINT IS NOT A SIGNAL. This lane has failed silently in exactly this shape before: the
+    # seats wrote where no reader looked, the compiler said 0 rows with no complaint, and the
+    # docket simply stopped growing from that source while every other number looked normal.
+    # Printing into a scheduled task's stdout is indistinguishable from working.
+    if seats_dark and len(seats_dark) == len(SEAT_SOURCES):
+        try:
+            from libs.ops.repair_invoke import request_repair
+            request_repair(
+                f"miner_candidate_compiler: ALL {len(SEAT_SOURCES)} synthesis seat(s) "
+                f"({', '.join(sorted(SEAT_SOURCES))}) donated ZERO rows inside the "
+                f"{WINDOW_DAYS}-day window. Engine A is producing nothing: the seats are "
+                "unfunded, unrouted or broken, and the compiler below them is converting an "
+                "empty room. Check the seat doors write under data/intelligence/<seat>/ and "
+                "that their clocks ran.")
+        except Exception as exc:      # a missing actuator must not take the compiler down
+            print(f"  (repair not requested: {type(exc).__name__}: {exc})", flush=True)
     agreement = sum(1 for c in candidates.values() if c.get("n_independent_sources", 0) > 1)
     # DISAGREEMENT IS A SIGNAL TOO (Tier-1 item G20, 2026-09-09). Two engines naming the same
     # symbol under DIFFERENT families is not a tie to discard: it is the cell whose test settles

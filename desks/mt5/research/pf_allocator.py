@@ -2880,10 +2880,57 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             # measurement rides in `survival["margin_use"]` where the principal can read it and
             # decide, and the envelope is computed exactly as it was before this wave.
             # Flip `margin_use=_mu` back on only on the principal's explicit yes.
-            survival = _envelope(_pre_surface.get("rows") or [], alpha=cfg.cvar_alpha,
-                                 fallback=HEAT_HARD_CEILING,
-                                 margin_use=None,
-                                 capacity_max=_capacity_ceiling())
+            # P13 CLOSED BY MEASURING BOTH ANSWERS INSTEAD OF ASSUMING ONE (2026-09-13).
+            #
+            # The refusal above was correct and it rested on a claim nobody had checked: that
+            # feeding `margin_use` can only SHORTEN the envelope. It cannot only shorten it. The
+            # clause binds the run where margin use exceeds MAX_MARGIN_USE, so on a
+            # margin-STARVED account it shortens and on an account with HEADROOM it is slack and
+            # changes nothing -- and the envelope's own fallback can be the tighter of the two.
+            # Which of those this account is, is an arithmetic question about a broker fact, and
+            # leaving it unanswered turned a measurable thing into a standing argument.
+            #
+            # So both envelopes are computed and the DELTA is published. The fed one is still the
+            # unconstrained envelope unless `data/MARGIN_CLAUSE_ENABLED` exists, because arming
+            # a clause that CAN reduce heat is the principal's act and not a session's -- but the
+            # principal now decides against a number rather than against a worry.
+            _env_free = _envelope(_pre_surface.get("rows") or [], alpha=cfg.cvar_alpha,
+                                  fallback=HEAT_HARD_CEILING,
+                                  margin_use=None,
+                                  capacity_max=_capacity_ceiling())
+            _env_margin = _env_free
+            if _mu:
+                try:
+                    _env_margin = _envelope(_pre_surface.get("rows") or [], alpha=cfg.cvar_alpha,
+                                            fallback=HEAT_HARD_CEILING,
+                                            margin_use=_mu,
+                                            capacity_max=_capacity_ceiling())
+                except Exception as _exc:
+                    _env_margin = _env_free
+                    _mu_why = f"{_mu_why}; counterfactual envelope failed ({type(_exc).__name__})"
+            _armed_margin = (BASE / "data" / "MARGIN_CLAUSE_ENABLED").exists()
+            survival = _env_margin if (_armed_margin and _mu) else _env_free
+            _c_free = _env_free.get("operative_ceiling")
+            _c_marg = _env_margin.get("operative_ceiling")
+            survival["margin_clause"] = {
+                # WHAT THE CLAUSE WOULD DO, whether or not it is fed. This is the number the
+                # decision to arm it turns on, and it did not exist before today.
+                "armed": _armed_margin,
+                "fed": bool(_armed_margin and _mu),
+                "operative_ceiling_without": _c_free,
+                "operative_ceiling_with": _c_marg,
+                "delta": (None if (_c_free is None or _c_marg is None)
+                          else round(float(_c_marg) - float(_c_free), 6)),
+                "direction": ("UNMEASURED" if (_c_free is None or _c_marg is None or not _mu)
+                              else "SLACK -- the clause does not bind; arming costs nothing"
+                              if float(_c_marg) >= float(_c_free)
+                              else "BINDS LOWER -- arming would shrink the book; principal's call"),
+                "arm_with": "create desks/mt5/data/MARGIN_CLAUSE_ENABLED",
+                "why_gated": ("this is the one term in the wave that can bind the envelope BELOW "
+                              "today's ceiling, and a risk reduction by fiat is exactly what the "
+                              "standing order forbids -- so it is measured, published and fed "
+                              "only on an explicit yes"),
+            }
             survival["margin_use"] = {
                 "status": "MEASURED" if _mu else "UNMEASURED", "why": _mu_why,
                 "account_margin": _acc_margin, "account_equity": _acc_equity,

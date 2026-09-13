@@ -141,6 +141,22 @@ JOBS: dict[str, tuple[float, str] | tuple[float, str, EmptyFn]] = {
     # host -- was indistinguishable from a measured world by age alone.
     "desks/mt5/reports/COUNTERFACTUAL_WORLD.json": (26.0, "missed_growth (veto rails), dashboard",
                                                     _empty_counterfactual),
+    # THE TICK TAPE, WHICH HAD NO ALARM AND WAS ALREADY DEAD (I8, wired 2026-09-13).
+    #
+    # `desks/mt5/data/tape/` was reachable only by reading the directory, so a stopped recorder
+    # was invisible to the one report that has a consumer column. Measured on the box the hour
+    # this row was added: `tape_state.json` and `ticks` were 56.6 HOURS old while
+    # `triangle_executable.json` beside them was 1.4h -- so part of the lane was running and the
+    # tick recorder had been silently stopped for two and a half days. Nothing said so.
+    #
+    # This is the market-microstructure half of the data moat, and it is the half the strategies
+    # actually trade: `tape_features` builds the execution twin from it and
+    # `counterfactual_replay` prices the road not taken against it. A two-hour limit because the
+    # recorder rewrites continuously while a market is open -- it is gauged on the STATE file
+    # rather than on the tick spool, because the spool grows by append and an append can succeed
+    # while the recorder is stuck on one symbol.
+    "desks/mt5/data/tape/tape_state.json": (2.0, "tape_features (execution twin), "
+                                                 "counterfactual_replay, mt5desk.tape"),
     "data/gauntlet_survivors.json": (26.0, "promotion_gate"),
     "web/desk_state.json": (0.5, "dashboard (Dell/phone)"),
     "data/authority_ratchet.json": (1.0, "earned-evidence floors"),

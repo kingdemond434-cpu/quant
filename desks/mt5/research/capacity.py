@@ -46,7 +46,10 @@ belongs in its own reviewed change, not smuggled in behind a new measurement org
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
+import math
+import re
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -70,6 +73,8 @@ OVER_RISK_TOLERANCE = 1.25
 
 #: Account sizes the capacity curve is evaluated at. Spans this desk's plausible next two orders
 #: of magnitude, so the report answers "when does this stop binding" rather than only "does it".
+SURVIVORS = BASE / "reports" / "UNIVERSAL_SURVIVORS.json"
+
 LADDER_EUR = (250.0, 500.0, 750.0, 1_000.0, 2_500.0, 5_000.0, 10_000.0, 25_000.0, 100_000.0)
 
 
@@ -114,6 +119,206 @@ def capacity_curve(q_target: float, symbol: str, dist_price: float | None = None
     ]
 
 
+def _certificate_for(symbol: str, family: str) -> dict[str, Any] | None:
+    """The best ten-gate certificate on this (symbol, family), with its ev and cell rr.
+
+    Joined on (symbol, family) rather than by id because a sleeve's `certificate` field is the
+    string "forward_clock" -- it names the LANE that promoted the row, not a key into the survivor
+    ledger. The best ev wins when several certificates cover the same coordinate; `rr` is read off
+    the cell name, which is where the gauntlet records it (`...rr=1.5_wb=12`).
+    """
+    try:
+        doc = json.loads(SURVIVORS.read_text("utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(doc, dict):
+        return None
+    best: dict[str, Any] | None = None
+    for key, val in (doc.get("survivors") or {}).items():
+        if not isinstance(val, dict):
+            continue
+        spec = val.get("shadow_spec") or {}
+        if str(spec.get("symbol") or val.get("sym") or "").upper() != symbol.upper():
+            continue
+        if family and str(spec.get("family") or "") != family:
+            continue
+        ev = ((val.get("gates") or {}).get("expected_value") or {}).get("ev")
+        if not isinstance(ev, (int, float)):
+            continue
+        rr = None
+        m = re.search(r"rr=([0-9]*\.?[0-9]+)", str(val.get("cell") or key))
+        if m:
+            with contextlib.suppress(ValueError):
+                rr = float(m.group(1))
+        if best is None or ev > best["ev"]:
+            best = {"key": str(key), "ev": float(ev), "rr": rr}
+    return best
+
+
+def elog_per_trade(f: float, exp_r: float, rr: float) -> float | None:
+    """E[log(1 + f*R)] for one trade at risk fraction `f`, over the sleeve's own payoff shape.
+
+    THE TWO-POINT FORM IS THE SLEEVE'S OWN, NOT AN ASSUMPTION ABOUT IT. A sleeve declares
+    `shadow_exp` (expectancy in R) and a target/stop ATR pair, which fix the reward:risk and
+    therefore the win rate exactly: p*rr - (1-p) = exp_r, so p = (exp_r + 1) / (rr + 1). Nothing
+    here is fitted and nothing is invented.
+
+    WHY LOG AND NOT THE MEAN. Growth compounds, so the quantity that decides whether an edge is
+    worth holding at THIS size is E[log W], and its defining feature is that it turns NEGATIVE
+    while the arithmetic edge is still positive. That is the whole of the capacity problem at
+    small capital: the venue's minimum lot forces a risk fraction past the growth optimum, and a
+    book can be over-betting a real edge into a real loss with every number except this one
+    looking healthy.
+
+    f >= 1 IS RUIN AND IS RETURNED AS SUCH. A full-risk loss takes the account to zero, log(0) is
+    -inf, and reporting a large negative number instead would invite someone to average it.
+    """
+    if not (rr > 0) or not (0.0 < f):
+        return None
+    p_win = (exp_r + 1.0) / (rr + 1.0)
+    if not (0.0 < p_win < 1.0):
+        return None
+    if f >= 1.0:
+        return float("-inf")
+    return float(p_win * math.log(1.0 + f * rr) + (1.0 - p_win) * math.log(1.0 - f))
+
+
+def elog_now(sleeve: dict[str, Any], q_target: float, symbol: str, equity: float,
+             dist_price: float | None = None) -> dict[str, Any]:
+    """Expected log growth per trade AT THIS EXACT EQUITY. The decision, not the display.
+
+    THE LADDER IS A SHAPE AND THIS IS A VERDICT. `elog_at_capital` walks decade rungs so a reader
+    can see where growth peaks and where it turns; at EUR 752.51 the nearest rungs are 500 and
+    750, and reading the decision off either is reading it off a number the account is not at.
+    Measured the day this was added: six sleeves showed NEGATIVE at the 500 rung and POSITIVE at
+    750, so the ladder alone could have condemned six working sleeves or blessed six losing ones
+    depending on which rung a reader's eye landed on.
+
+    WHAT TO DO WITH A NEGATIVE VERDICT, and it is not "cut risk". Removing a sleeve whose
+    E[log W] is negative RAISES the book's total expected log growth -- that is the whole of Rule
+    1's test, satisfied directly rather than argued -- and the heat it frees goes to sleeves above
+    their peak, which is Rule 2. So this is a REALLOCATION instrument, not a veto: it says which
+    bets are paying at this account size, and the answer to a negative one may equally be more
+    capital rather than less risk.
+
+    NOTHING HERE FEEDS THE ALLOCATOR. It is published beside the ceiling's refusal like every
+    other number in this module.
+    """
+    exp_r = sleeve.get("_elog_exp_r")
+    rr = sleeve.get("_elog_rr")
+    if not isinstance(exp_r, (int, float)) or not isinstance(rr, (int, float)):
+        return {"status": "UNMEASURED", "why": "no priced edge or payoff shape for this sleeve"}
+    if not (equity > 0):
+        return {"status": "UNMEASURED", "why": "no positive equity to price against"}
+    floor_frac = core.min_lot_risk_eur(symbol, dist_price) / equity
+    f = max(q_target * realised_over_policy(equity, q_target, symbol, dist_price), floor_frac)
+    g = elog_per_trade(f, float(exp_r), float(rr))
+    return {
+        "status": "MEASURED",
+        "equity_eur": round(equity, 2),
+        "realised_frac": round(f, 6),
+        "elog_per_trade": None if g is None else (None if g == float("-inf") else round(g, 8)),
+        "ruin": g == float("-inf"),
+        "verdict": ("RUIN" if g == float("-inf") else
+                    "UNPRICEABLE" if g is None else
+                    "NEGATIVE" if g <= 0 else "POSITIVE"),
+        "why": ("a NEGATIVE verdict means this sleeve is expected to shrink the book by "
+                "compounding at THIS equity even though its edge is positive -- the venue's "
+                "minimum lot is forcing a fraction past the growth optimum. Reallocating away "
+                "from it RAISES total E[log W]; so does more capital"),
+    }
+
+
+def elog_at_capital(sleeve: dict[str, Any], q_target: float, symbol: str,
+                    dist_price: float | None = None,
+                    ladder: tuple[float, ...] = LADDER_EUR) -> dict[str, Any]:
+    """Expected log growth per trade at each rung of the equity ladder. P12.
+
+    THE CEILING IS UNMEASURABLE AND THIS IS NOT THE CEILING. Market impact needs realised fills
+    and `matched_fills` is 0, so an upper bound would be a believed fiction. This is the same
+    capacity question asked at the end that IS computable from numbers already on disk: what the
+    edge is WORTH at each account size, given that below `floor_binding_equity` the venue's
+    minimum forces more risk than policy asks for.
+
+    It costs no new data. `realised_over_policy` already says how far past policy the floor pushes
+    the fraction at each rung; this multiplies that by the sleeve's declared target and prices the
+    result in log growth. The shape it produces is the small-account story stated as a number:
+    growth rising with capital and SATURATING at the policy optimum, and -- where the floor pushes
+    the realised fraction past the growth peak -- NEGATIVE at the bottom rungs of an edge that is
+    genuinely positive.
+
+    `peak_equity_eur` is the rung where growth is highest, and `negative_below_eur` is the equity
+    beneath which this sleeve is expected to LOSE money by compounding, both of which are
+    decisions the desk could not previously make.
+    """
+    # WHERE THE EDGE COMES FROM, AND IT IS NAMED. Only 3 of 65 LIVE rows carry `shadow_exp`;
+    # the other 62 hold a ten-gate certificate whose `expected_value` gate measured exactly this
+    # number. Reporting 62 UNMEASURED while the measurement sits one join away is not rigour, it
+    # is a missing join -- so the certificate is consulted, and the artifact says which source
+    # priced each curve rather than letting the two look alike.
+    exp_r, exp_src = sleeve.get("shadow_exp"), "sleeve.shadow_exp"
+    rr, rr_src = None, None
+    stop_atr, target_atr = sleeve.get("stop_atr"), sleeve.get("target_atr")
+    try:
+        rr = float(target_atr) / float(stop_atr)          # type: ignore[arg-type]
+        rr_src = "sleeve.target_atr/stop_atr"
+    except (TypeError, ValueError, ZeroDivisionError):
+        rr = None
+    if not isinstance(exp_r, (int, float)) or rr is None:
+        cert = _certificate_for(symbol, str(sleeve.get("family") or ""))
+        if cert:
+            if not isinstance(exp_r, (int, float)) and isinstance(cert.get("ev"), (int, float)):
+                exp_r, exp_src = cert["ev"], f"certificate {cert['key'][:48]} expected_value.ev"
+            if rr is None and isinstance(cert.get("rr"), (int, float)):
+                rr, rr_src = cert["rr"], f"certificate {cert['key'][:48]} cell rr"
+    if not isinstance(exp_r, (int, float)):
+        return {"status": "UNMEASURED",
+                "why": "neither the sleeve nor any certificate on (symbol, family) declares an "
+                       "expectancy, so there is no edge to price at any capital -- absence is "
+                       "not a zero edge (L1.28a)"}
+    if rr is None:
+        return {"status": "UNMEASURED",
+                "why": "no usable reward:risk from the sleeve's ATR pair or the certificate's "
+                       "cell, so the payoff shape is unknown and a win rate cannot be derived"}
+    rows: list[dict[str, Any]] = []
+    for e in ladder:
+        over = realised_over_policy(e, q_target, symbol, dist_price)
+        # THE REALISED FRACTION IS WHAT COMPOUNDS, and below `floor_binding_equity` it is the
+        # FLOOR's number and not the policy's. A sleeve the allocator zeroed still trades the
+        # venue minimum since the principal's 2026-09-12 order, so `q_target * over` would price
+        # zero risk for a position that is really on -- the floor is taken directly instead.
+        floor_frac = (core.min_lot_risk_eur(symbol, dist_price) / e) if e > 0 else 0.0
+        f = max(q_target * over, floor_frac)
+        g = elog_per_trade(f, float(exp_r), rr)
+        rows.append({"equity_eur": e, "realised_frac": round(f, 6),
+                     "over_policy": round(over, 4),
+                     "elog_per_trade": None if g is None else (
+                         None if g == float("-inf") else round(g, 8)),
+                     "ruin": g == float("-inf")})
+    priced = [r for r in rows if isinstance(r["elog_per_trade"], float)]
+    peak = max(priced, key=lambda r: r["elog_per_trade"]) if priced else None
+    negative_below = None
+    for r in rows:
+        v = r["elog_per_trade"]
+        if r["ruin"] or (isinstance(v, float) and v <= 0):
+            negative_below = r["equity_eur"]
+    return {
+        "status": "MEASURED",
+        "exp_r": float(exp_r), "exp_r_source": exp_src,
+        "rr": round(rr, 4), "rr_source": rr_src,
+        # Stashed so `elog_now` can price the exact equity without redoing the certificate join.
+        "_resolved": {"exp_r": float(exp_r), "rr": float(rr)},
+        "win_rate": round((float(exp_r) + 1.0) / (rr + 1.0), 4),
+        "curve": rows,
+        "peak_equity_eur": None if peak is None else peak["equity_eur"],
+        "peak_elog_per_trade": None if peak is None else peak["elog_per_trade"],
+        # THE NUMBER THAT DECIDES WHETHER TO HOLD THIS SLEEVE AT ALL RIGHT NOW.
+        "negative_at_or_below_eur": negative_below,
+        "basis": ("E[log(1 + f*R)] over the sleeve's own two-point payoff, f = q_target x "
+                  "realised_over_policy(equity); no new data, no fitted parameter"),
+    }
+
+
 def assess(sleeve: dict[str, Any], equity: float) -> dict[str, Any]:
     """One sleeve's capacity facts. Never raises on a missing field -- it reports the gap."""
     name = str(sleeve.get("name") or "?")
@@ -128,6 +333,7 @@ def assess(sleeve: dict[str, Any], equity: float) -> dict[str, Any]:
     dist_price = float(dist) if dist else None
     bind_at = floor_binding_equity(q_target, symbol, dist_price)
     over = realised_over_policy(equity, q_target, symbol, dist_price)
+    _curve = elog_at_capital(sleeve, q_target, symbol, dist_price)
     return {
         "sleeve": name, "symbol": symbol, "q_target": q_target,
         "min_lot_risk_eur": round(core.min_lot_risk_eur(symbol, dist_price), 4),
@@ -141,6 +347,15 @@ def assess(sleeve: dict[str, Any], equity: float) -> dict[str, Any]:
         "ceiling_status": "UNMEASURED",
         "ceiling_why": ("market impact needs realised fills and matched_fills is 0; a ceiling "
                         "from an unvalidated cost model would be believed and should not be"),
+        # P12: what the edge is WORTH at each account size. The ceiling stays unmeasurable; this
+        # is the half of the capacity question that is computable from numbers already on disk,
+        # and it is the half that binds at EUR 607.
+        "elog_at_capital": _curve,
+        # THE VERDICT AT THE ACCOUNT'S ACTUAL EQUITY, which is the number a decision is made on.
+        "elog_now": elog_now({**sleeve,
+                              "_elog_exp_r": (_curve.get("_resolved") or {}).get("exp_r"),
+                              "_elog_rr": (_curve.get("_resolved") or {}).get("rr")},
+                             q_target, symbol, equity, dist_price),
         "status": "MEASURED",
     }
 

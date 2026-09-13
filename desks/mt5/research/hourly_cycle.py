@@ -852,6 +852,123 @@ def causal_graph() -> dict:
     return _producer("world_causal_graph", "research/world_causal_graph.py")
 
 
+#: The worker name this cycle claims under. One name, so a lease abandoned by a crashed pass is
+#: recoverable by the next one rather than orphaned under a per-run identifier.
+QUEUE_WORKER = "hourly_cycle"
+
+
+def _claim_one(kind: str) -> tuple[object | None, object | None, str]:
+    """Lease the most valuable READY task of `kind`, or explain why nothing was claimed. I2.
+
+    THE QUEUE HAD NO CONSUMER, WHICH MADE IT A LOG. `task_queue`, `worker`, `org`,
+    `wiring_campaign` and `coverage_governor` are five tested modules forming one complete loop,
+    `queue_cycle` gave them a clock, and still no leg ever called `claim()` -- so the journal grew,
+    the census reported it, and the cycle went on running every leg in source order regardless of
+    whether anything had happened. A queue nothing claims from is a list of regrets.
+
+    Returns (queue, task, why). `task is None` is the ordinary case and is NOT a failure: it means
+    nothing of this kind is ready, which is the whole point of running because something happened.
+    """
+    try:
+        from libs.ops.task_queue import TaskQueue
+    except Exception as exc:
+        return None, None, f"task_queue unimportable ({type(exc).__name__})"
+    path = BASE / "data" / "task_queue.jsonl"
+    if not path.exists():
+        return None, None, f"no queue journal at {path.name}; queue_cycle has not produced yet"
+    try:
+        q = TaskQueue(path)
+        task = q.claim(QUEUE_WORKER, kinds=(kind,))
+    except Exception as exc:
+        return None, None, f"claim failed ({type(exc).__name__}: {str(exc)[:100]})"
+    if task is None:
+        return q, None, f"no READY {kind!r} task -- nothing to do, which is the point"
+    return q, task, ""
+
+
+def lake_promote() -> dict:
+    """`lake_promote`: what share of the desk's own intelligence survives a point-in-time question.
+
+    I7. `libs/data/lake.py` carried the whole bronze/silver/gold ladder and its refusal rules, and
+    nothing on the tree ever called `promote` -- so the ladder was a schema. This leg climbs it
+    with the intelligence corpus the compiler reads, and publishes the REFUSAL count.
+
+    The refusals are the output, not the promotions. A promoter that fills a missing `event_time`
+    with the ingestion time produces a lake in which every backtest passes and none of them mean
+    anything, because every row then claims to have been knowable the moment it was scraped.
+
+    FIRST REAL PASS: 2,416 bronze rows, ZERO reached silver, all refused for "no resolvable
+    event_time". Not one row of the desk's own intelligence carries a stamp saying WHEN it could
+    have been known. That is a fact about the corpus, it was invisible until something ran the
+    ladder, and it bears directly on every claim built from these rows.
+    """
+    return _producer("lake_promote", "research/lake_promote.py")
+
+
+def _recertify_canon_claimed() -> dict:
+    """`recertify_canon`, but only for a window the queue says is actually uncovered."""
+    q, task, why = _claim_one("recertify")
+    if task is None:
+        return {"status": "STOOD_DOWN", "why": why,
+                "note": ("not a failure: the queue is the schedule now, and an empty queue means "
+                         "no window is UNCOVERED. Running anyway would spend the hour proving it")}
+    payload = getattr(task, "payload", {}) or {}
+    res = _producer("recertify_canon", "scripts/recertify_canon.py")
+    ok = res.get("exit_code") == 0
+    try:
+        if ok:
+            q.complete(getattr(task, "id", ""), QUEUE_WORKER,
+                       why=f"recertify_canon exit 0 for {payload.get('cell', '?')}")
+        else:
+            q.fail(getattr(task, "id", ""), QUEUE_WORKER,
+                   why=f"recertify_canon exit {res.get('exit_code')}")
+    except Exception as exc:
+        res["queue_bookkeeping_error"] = f"{type(exc).__name__}: {exc}"
+    return {**res, "claimed": {"id": getattr(task, "id", ""),
+                               "cell": payload.get("cell"),
+                               "priority": getattr(task, "priority", None),
+                               "understatement": payload.get("understatement")}}
+
+
+def research_exchange_score() -> dict:
+    """`research_exchange score`: which external source's proposals actually became anything.
+
+    G1, AND IT IS THE MEASUREMENT THAT MAKES THE SEATS ACCOUNTABLE. `data/panel_scorecard.json`
+    has held thirteen providers at 0 scored / hit_rate null since 2026-07-17, which the scorer
+    itself says in its own output -- so every allocation between sources so far was made on
+    REPUTATION. The scorer walks the exchange ledger and turns that into proposed/dead/dup/built/
+    live per source, which is the only thing that can replace reputation with a yield.
+
+    It was scheduled by nothing. Wired here rather than as a VPS timer because this cycle is the
+    clock that demonstrably runs, and a timer on a machine that is not adopting is a clock in
+    name. It is cheap -- a ledger read and an arithmetic pass -- and it writes an EMPTY scoreboard
+    with an explicit "nothing has ever been ingested" when the ledger is empty, which is the
+    honest state rather than a fabricated one.
+    """
+    return _producer("research_exchange_score", "scripts/research_exchange.py", "score")
+
+
+def alpha_rl() -> dict:
+    """`alpha_rl_run`: the sequential alpha search, learning from the allocator's own marginals.
+
+    G4 HAD EXISTED AND RUN NOWHERE. `libs/research/alpha_rl.py` carried a complete Q-learner over
+    the alpha-construction MDP -- replay buffer, epsilon floor, and a reward that is the book's
+    measured marginal dE[log W] -- and its own Tier-1 row said so: "SEQUENTIAL CONTROL NOW EXISTS
+    AND IS MEASURED; NOTHING RUNS IT". That is III.16 stated in the ledger and left there.
+
+    Billed like every other leg, and bounded: the runner takes a wall-clock budget and reports how
+    many of the requested episodes it reached, so a slow host loses episodes rather than the hour.
+
+    ITS REFUSALS ARE PUBLISHED, WHICH IS WHY IT IS WORTH RUNNING AT ALL. With no allocator
+    artifact the reward is UNMEASURED and NO episode runs -- an empty table, said plainly, rather
+    than a confident ranking of a fabrication. An episode whose completed spec the book has never
+    valued is discarded whole rather than scored zero. The first real pass reported 291 rewarded
+    against 509 unpriced and learned almost entirely at `family` depth, which is exactly the sort
+    of thing a reader must be able to see before acting on a ranking.
+    """
+    return _producer("alpha_rl", "research/alpha_rl_run.py")
+
+
 def compile_candidates() -> dict:
     """`miner_candidate_compiler`: every crawler row becomes a candidate or a deepening task.
 
@@ -1587,8 +1704,17 @@ def main() -> None:
     # THE CANON SEAL, hourly rather than daily. A certificate the gauntlet minted at 02:00 sat
     # unsealed until the next midnight run, so `shadow_admission._canon` -- which enrolment,
     # promotion and the dashboard all read -- was up to 24 hours behind the gates.
-    rc = _costed("recertify_canon", lambda: _producer(
-        "recertify_canon", "scripts/recertify_canon.py"))
+    # RUNS BECAUSE SOMETHING HAPPENED, NOT BECAUSE THE HOUR TURNED (I2). `queue_cycle` raises a
+    # `recertify` task for every window whose cost coverage came back UNCOVERED, priced by how
+    # much the charge was understated. This leg now CLAIMS one instead of running unconditionally:
+    # with an empty queue it stands down and says so, and the hour is spent on something that has
+    # work waiting. That single change is what turns a cycle running in source order into one
+    # running on events.
+    #
+    # The task is completed or failed by its outcome, so a pass that dies does not silently
+    # consume the work -- the lease expires and the next pass re-claims it, which is the property
+    # the durable journal exists to provide and which nothing was using.
+    rc = _costed("recertify_canon", _recertify_canon_claimed)
     # ENROLMENT, ON THE MACHINE THAT MINTS THE CERTIFICATES. `heal_clocks` above repairs clocks
     # that EXIST and have gone IDENTITY_BROKEN; it does nothing whatever for a certificate that
     # has no clock at all, and those are two different failures that read the same on a dashboard.
@@ -1680,6 +1806,9 @@ def main() -> None:
 
     et = _costed("execution_twin", execution_twin)
     cg = _costed("causal_graph", causal_graph)
+    arl = _costed("alpha_rl", alpha_rl)
+    rxs = _costed("research_exchange_score", research_exchange_score)
+    lkp = _costed("lake_promote", lake_promote)
     ms = _costed("model_skill", model_skill)
     fcx = _costed("forecast_contract", forecast_contract)
     mz = _costed("model_league", model_league)
@@ -1845,7 +1974,9 @@ def main() -> None:
                     "regime_monitor": rg,
                     "deepening": dp, "heal_clocks": hc, "mine": m,
                     "search": se, "sweep": sw, "compile": cc,
-                    "execution_twin": et, "causal_graph": cg, "model_skill": ms,
+                    "execution_twin": et, "causal_graph": cg, "alpha_rl": arl,
+                    "research_exchange_score": rxs, "lake_promote": lkp,
+                    "model_skill": ms,
                     "frontier": fr, "refresh_bars": rb, "deep_forest": df,
                     "maintain_miners": mm, "publish_survivors": ps,
                     "forecast_contract": fcx, "model_league": mz, "adversaries": ad,

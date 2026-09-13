@@ -1,6 +1,7 @@
 """Cross-controller, cross-shell single-instance locks for heavy MT5 research writers."""
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import socket
@@ -53,12 +54,74 @@ def _peaks_path(name: str) -> Path:
 
 
 def observed_peaks(name: str) -> list[int]:
-    """What this job has actually used on its last runs, newest last."""
+    """What this job has actually used on its last runs, newest last.
+
+    READS BOTH LEDGER SHAPES. The file was a bare list of peaks until the declared spec (I3) gave
+    it a second thing to hold, and every box in the fleet has files in the old shape. Reading only
+    the new one would lose the peak history that admission is CORRECTED by -- so a job that had
+    overrun its declaration eight times would be re-admitted on the declaration again, which is
+    the exact defect `measured_need_mb` exists to prevent.
+    """
     try:
-        rows = json.loads(_peaks_path(name).read_text("utf-8"))
-        return [int(v) for v in rows if isinstance(v, (int, float)) and v > 0][-PEAK_HISTORY:]
+        loaded = json.loads(_peaks_path(name).read_text("utf-8"))
     except (OSError, ValueError, TypeError):
         return []
+    rows = loaded.get("peaks", []) if isinstance(loaded, dict) else loaded
+    try:
+        return [int(v) for v in rows if isinstance(v, (int, float)) and v > 0][-PEAK_HISTORY:]
+    except TypeError:
+        return []
+
+
+def record_spec(name: str, *, mb: int, cpu: int | None = None,
+                deadline_s: float | None = None, evsi: float | None = None) -> None:
+    """Record what a job DECLARED about itself, beside what it has actually used. I3.
+
+    ADMISSION WAS A COMPARISON OF ONE NUMBER AGAINST ONE NUMBER, and that is why it could only
+    ever answer "does this fit". A job declared megabytes; the box compared them to free memory
+    and said yes or no. Nothing in that exchange could express which of two jobs that BOTH fit
+    should run first, how long either may hold the machine, or what the desk expects to learn by
+    running it -- so the hourly cycle ran in source order and called it a schedule.
+
+    Four fields make the decision rankable instead of binary:
+
+        mb          memory, as before, still corrected upward by measured peaks
+        cpu         cores the job will actually use. Two 1-core jobs fit beside each other on a
+                    4-core box; two 4-core jobs do not, and memory alone cannot say so.
+        deadline_s  how long the job may hold the machine before it is worth pre-empting. A sweep
+                    with no deadline is indistinguishable from a hung one, which is exactly the
+                    shape of the 87-minute thrash this module was written after.
+        evsi        expected value of sample information: what the desk expects to LEARN. This is
+                    the field that turns admission into scheduling, because it is the only one
+                    that can say a cheap job is worth more than a cheap job.
+
+    Declared, never inferred. A job that states nothing gets None, which is written as None and
+    reads as UNDECLARED rather than as a zero -- a job claiming zero cores would sort first.
+    """
+    path = _peaks_path(name)
+    doc: dict = {}
+    with contextlib.suppress(OSError, ValueError, TypeError):
+        loaded = json.loads(path.read_text("utf-8"))
+        # THE LEDGER WAS A BARE LIST OF PEAKS and older files still are. Read either shape and
+        # write the richer one, so a box mid-upgrade never loses the peak history that admission
+        # depends on.
+        doc = loaded if isinstance(loaded, dict) else {"peaks": list(loaded)}
+    doc["declared"] = {"mb": int(mb), "cpu": cpu, "deadline_s": deadline_s, "evsi": evsi,
+                       "at": datetime.now(tz=UTC).isoformat(timespec="seconds")}
+    with contextlib.suppress(OSError, TypeError, ValueError):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(doc, indent=1), encoding="utf-8")
+
+
+def declared_spec(name: str) -> dict:
+    """What this job last declared, or an empty mapping. The admission ranking reads this."""
+    with contextlib.suppress(OSError, ValueError, TypeError):
+        loaded = json.loads(_peaks_path(name).read_text("utf-8"))
+        if isinstance(loaded, dict):
+            got = loaded.get("declared")
+            if isinstance(got, dict):
+                return got
+    return {}
 
 
 def record_peak(name: str, mb: int) -> None:
@@ -67,7 +130,17 @@ def record_peak(name: str, mb: int) -> None:
     try:
         LOCK_ROOT.mkdir(parents=True, exist_ok=True)
         rows = [*observed_peaks(name), int(mb)]
-        _peaks_path(name).write_text(json.dumps(rows[-PEAK_HISTORY:]), encoding="utf-8")
+        # PRESERVE THE DECLARED BLOCK. This wrote a bare list, which would erase the spec every
+        # time a job finished -- the ranking inputs would exist only between a declaration and
+        # the next completion, which is to say never when anything reads them.
+        path = _peaks_path(name)
+        doc: dict = {}
+        with contextlib.suppress(OSError, ValueError, TypeError):
+            loaded = json.loads(path.read_text("utf-8"))
+            if isinstance(loaded, dict):
+                doc = loaded
+        doc["peaks"] = rows[-PEAK_HISTORY:]
+        path.write_text(json.dumps(doc, indent=1), encoding="utf-8")
     except (OSError, ValueError, TypeError):
         pass
 
@@ -245,7 +318,8 @@ def free_mb() -> int | None:
 
 
 @contextmanager
-def exclusive_job(name: str, need_mb: int = 0) -> Iterator[bool]:
+def exclusive_job(name: str, need_mb: int = 0, *, cpu: int | None = None,
+                  deadline_s: float | None = None, evsi: float | None = None) -> Iterator[bool]:
     """Yield True to one writer, False to duplicates OR when the box cannot fit this job.
 
     THE MEMORY PRECONDITION (2026-08-28). This desk box has 8GB and runs the LIVE MT5 terminal
@@ -374,6 +448,11 @@ def exclusive_job(name: str, need_mb: int = 0) -> Iterator[bool]:
             if need_mb and _hwm > need_mb:
                 print(f"{name}: PEAK {_hwm}MB exceeded the {need_mb}MB it was admitted on -- "
                       f"the next run is admitted on {_hwm}MB")
+        # THE DECLARATION IS RECORDED WHETHER OR NOT THE PLATFORM REPORTS A PEAK, because the
+        # ranking inputs are what the job SAID about itself and they are true even where RSS is
+        # unreadable. Recording them only alongside a peak would leave every job on a platform
+        # without `getrusage` permanently unrankable.
+        record_spec(name, mb=int(need_mb), cpu=cpu, deadline_s=deadline_s, evsi=evsi)
         # Never delete a successor's lock after a stale-owner race.
         try:
             current = json.loads(path.read_text("utf-8"))
