@@ -1,0 +1,944 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5957\u5229\u80a1 \u8981\u7ea6\u6536\u8d2d \u73b0\u91d1\u9009\u62e9 \u6362\u80a1\u4ef7 \u5438\u6536\u5408\u5e76 - \u96c6\u601d\u5f55",
+  "url": "https://www.jisilu.cn/data/taoligu/",
+  "published": "2026-09-13T14:49:07+00:00",
+  "symbols": [
+   "HK50"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0e1313379c8906398f2a",
+  "host": "www.jisilu.cn",
+  "claims": [
+   {
+    "claim": "Edge Chrome Firefox \u9996\u9875 \u6295\u8d44\u65e5\u5386 \u5b9e\u65f6\u6570\u636e \u793e\u533a-\u77e5\u8bc6\u5e93 \u767b\u5f55 \u6ce8\u518c \u6301\u4ed3 \u65b0\u80a1 \u80a1\u606f\u7387 \u5957\u5229\u80a1 \u503a\u5238 \u53ef\u8f6c\u503a \u5c01\u95ed\u57fa\u91d1 ETF \u73b0\u91d1\u7ba1\u7406 A/H\u6bd4\u4ef7 T+0 QDII REITs \u6307\u6570\u6da8\u5e45 LOF \u4e2d\u6982\u80a1\u79c1\u6709\u5316\u5957\u5229 \u6e2f\u80a1\u79c1\u6709\u5316\u5957\u5229 \u6e2f\u80a1\u4f9b\u80a1\u6743\u5957\u5229 A\u80a1\u5957\u5229 A\u80a1\u5957\u5229( \u5237\u65b0 ) \u7f51\u683c\u8ba1\u7b97\u5668 \u6ce8\uff1a\u5df2\u6309\u5f53\u65e5\u6c47\u7387\u8ba1\u7b97B\u80a1\u6298\u6ea2\u4ef7\uff08\uff09 \u4e2d\u6982\u80a1\u79c1\u6709\u5316\u5957\u5229( \u5237\u65b0 ) \u4e2d\u6982\u80a1\u79c1\u6709\u5316FAQ \u6d4b\u8bd5\u7248\uff0c\u8bf7\u8c28\u614e\u53c2\u8003\uff01",
+    "lang": "zh",
+    "quantities": [
+     "\u5957\u5229",
+     "\u6301\u4ed3",
+     "\u6c47\u7387",
+     "\u6ea2\u4ef7"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u5f53\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "HK50"
+     ],
+     "mentioned": [
+      "\u6e2f\u80a1",
+      "a\u80a1",
+      "\u53ef\u8f6c\u503a"
+     ],
+     "transfer_only": [
+      "a\u80a1->indices (China A-share)",
+      "\u53ef\u8f6c\u503a->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "ad099491ec2e"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "What Is Gamma Scalping & Why It Matters To Trade Forex Markets | Nasdaq",
+  "url": "https://www.nasdaq.com/articles/what-gamma-scalping-why-it-matters-trade-forex-markets-2019-01-04",
+  "published": "2026-09-13T14:49:09+00:00",
+  "symbols": [
+   "NAS100",
+   "EURUSD",
+   "USDCHF",
+   "EURJPY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "breakout",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d41b355804436feecfe7",
+  "host": "www.nasdaq.com",
+  "claims": [
+   {
+    "claim": "We refer this approach as \"Delta Neutral\" and in practicality, it encompasses a position built upon the concept of a straddle or a strangle with initial positive and negative deltas that offset one another to ultimately create a position that has a delta close to 0.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "positive",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "EURUSD",
+      "USDCHF",
+      "EURJPY"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "eur/usd",
+      "usd/chf",
+      "eur/jpy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "57cdb99577ee"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Why 90% of Backtests Fail &#8211; The Financial Hacker",
+  "url": "https://financial-hacker.com/why-90-of-backtests-fail/",
+  "published": "2026-09-13T14:49:11+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "flow",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://financial-hacker.com/hackerscripts.zip",
+   "https://financial-hacker.com/hacking3.zip",
+   "https://financial-hacker.com/scripts2025.zip",
+   "https://financial-hacker.com/scripts2024.zip",
+   "https://financial-hacker.com/scripts2023.zip",
+   "https://financial-hacker.com/scripts2022.zip",
+   "https://financial-hacker.com/scripts2021.zip",
+   "https://financial-hacker.com/scripts2020.zip",
+   "https://financial-hacker.com/scripts2018.zip",
+   "https://financial-hacker.com/scripts2017.zip",
+   "https://financial-hacker.com/scripts2016.zip",
+   "https://financial-hacker.com/scripts2015.zip",
+   "https://financial-hacker.com/tag/api/"
+  ],
+  "n_endpoints": 13,
+  "vault_sha": "7066746626fc475ef91d",
+  "host": "financial-hacker.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Build Better Strategies! Part 3: The Development Process &#8211; The Financial Hacker",
+  "url": "https://financial-hacker.com/build-better-strategies-part-3-the-development-process/",
+  "published": "2026-09-13T14:49:14+00:00",
+  "symbols": [
+   "EURUSD",
+   "XAGUSD",
+   "US500",
+   "USDKRW",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "1H",
+   "D1",
+   "DAILY",
+   "INTRADAY",
+   "M1"
+  ],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [
+   "https://financial-hacker.com/hacking4.zip",
+   "https://financial-hacker.com/hacking3.zip",
+   "https://financial-hacker.com/scripts2026.zip",
+   "https://financial-hacker.com/scripts2025.zip",
+   "https://financial-hacker.com/scripts2024.zip",
+   "https://financial-hacker.com/scripts2023.zip",
+   "https://financial-hacker.com/scripts2022.zip",
+   "https://financial-hacker.com/scripts2021.zip",
+   "https://financial-hacker.com/scripts2020.zip",
+   "https://financial-hacker.com/scripts2018.zip",
+   "https://financial-hacker.com/scripts2017.zip",
+   "https://financial-hacker.com/scripts2016.zip",
+   "https://financial-hacker.com/scripts2015.zip",
+   "https://financial-hacker.com/tag/api/"
+  ],
+  "n_endpoints": 14,
+  "vault_sha": "c29c490f36ca8fb3c645",
+  "host": "financial-hacker.com",
+  "claims": [
+   {
+    "claim": "The test time should be long enough for trades to properly open and close, and small enough for the parameters to stay valid.",
+    "lang": "en",
+    "quantities": [
+     "open",
+     "close"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAGUSD",
+      "US500",
+      "EURUSD",
+      "USDKRW",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "xagusd",
+      "spy",
+      "eur/usd",
+      "won",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "58690e8b5607"
+   },
+   {
+    "claim": "Get the indicator working with a test system after a long coding session.",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAGUSD",
+      "US500",
+      "EURUSD",
+      "USDKRW",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "xagusd",
+      "spy",
+      "eur/usd",
+      "won",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "d4770c7c5c37"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "High-Conviction Trading &#8211; The Financial Hacker",
+  "url": "https://financial-hacker.com/high-conviction-trading/",
+  "published": "2026-09-13T14:49:15+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "positioning",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://financial-hacker.com/hackerscripts.zip",
+   "https://financial-hacker.com/hacking3.zip",
+   "https://financial-hacker.com/scripts2024.zip",
+   "https://financial-hacker.com/scripts2023.zip",
+   "https://financial-hacker.com/scripts2022.zip",
+   "https://financial-hacker.com/scripts2021.zip",
+   "https://financial-hacker.com/scripts2020.zip",
+   "https://financial-hacker.com/scripts2018.zip",
+   "https://financial-hacker.com/scripts2017.zip",
+   "https://financial-hacker.com/scripts2016.zip",
+   "https://financial-hacker.com/scripts2015.zip",
+   "https://financial-hacker.com/tag/api/"
+  ],
+  "n_endpoints": 12,
+  "vault_sha": "bec9bab0d811d0a26627",
+  "host": "financial-hacker.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The MAD indicator &#8211; The Financial Hacker",
+  "url": "https://financial-hacker.com/the-mad-indicator/",
+  "published": "2026-09-13T14:49:17+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://financial-hacker.com/hackerscripts.zip",
+   "https://financial-hacker.com/hacking3.zip",
+   "https://financial-hacker.com/scripts2024.zip",
+   "https://financial-hacker.com/scripts2023.zip",
+   "https://financial-hacker.com/scripts2022.zip",
+   "https://financial-hacker.com/scripts2021.zip",
+   "https://financial-hacker.com/scripts2020.zip",
+   "https://financial-hacker.com/scripts2018.zip",
+   "https://financial-hacker.com/scripts2017.zip",
+   "https://financial-hacker.com/scripts2016.zip",
+   "https://financial-hacker.com/scripts2015.zip",
+   "https://financial-hacker.com/tag/api/"
+  ],
+  "n_endpoints": 12,
+  "vault_sha": "c8d3d6171abf1e07a046",
+  "host": "financial-hacker.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Better Indicators with Windowing &#8211; The Financial Hacker",
+  "url": "https://financial-hacker.com/better-indicators-with-windowing/",
+  "published": "2026-09-13T14:49:19+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "positioning",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://financial-hacker.com/hackerscripts.zip",
+   "https://financial-hacker.com/hacking3.zip",
+   "https://financial-hacker.com/scripts2024.zip",
+   "https://financial-hacker.com/scripts2023.zip",
+   "https://financial-hacker.com/scripts2022.zip",
+   "https://financial-hacker.com/scripts2021.zip",
+   "https://financial-hacker.com/scripts2020.zip",
+   "https://financial-hacker.com/scripts2018.zip",
+   "https://financial-hacker.com/scripts2017.zip",
+   "https://financial-hacker.com/scripts2016.zip",
+   "https://financial-hacker.com/scripts2015.zip",
+   "https://financial-hacker.com/tag/api/"
+  ],
+  "n_endpoints": 12,
+  "vault_sha": "2c72e07c12997971f5a3",
+  "host": "financial-hacker.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Indicators &#8211; Page 3 &#8211; The Financial Hacker",
+  "url": "https://financial-hacker.com/category/indicators/page/3/",
+  "published": "2026-09-13T14:49:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "breakout",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://financial-hacker.com/hacking4.zip",
+   "https://financial-hacker.com/hacking3.zip",
+   "https://financial-hacker.com/scripts2026.zip",
+   "https://financial-hacker.com/scripts2025.zip",
+   "https://financial-hacker.com/scripts2024.zip",
+   "https://financial-hacker.com/scripts2023.zip",
+   "https://financial-hacker.com/scripts2022.zip",
+   "https://financial-hacker.com/scripts2021.zip",
+   "https://financial-hacker.com/scripts2020.zip",
+   "https://financial-hacker.com/scripts2018.zip",
+   "https://financial-hacker.com/scripts2017.zip",
+   "https://financial-hacker.com/scripts2016.zip",
+   "https://financial-hacker.com/scripts2015.zip",
+   "https://financial-hacker.com/tag/api/"
+  ],
+  "n_endpoints": 14,
+  "vault_sha": "584d96db12b5d1514934",
+  "host": "financial-hacker.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Boosting Strategies with MMI &#8211; The Financial Hacker",
+  "url": "https://financial-hacker.com/boosting-systems-by-trade-filtering/",
+  "published": "2026-09-13T14:49:23+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "US500",
+   "EURUSD",
+   "USDKRW",
+   "USDTRY",
+   "BTCUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "night_session",
+   "policy",
+   "positioning",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [
+   "https://financial-hacker.com/hackerscripts.zip",
+   "https://financial-hacker.com/hacking3.zip",
+   "https://financial-hacker.com/scripts2024.zip",
+   "https://financial-hacker.com/scripts2023.zip",
+   "https://financial-hacker.com/scripts2022.zip",
+   "https://financial-hacker.com/scripts2021.zip",
+   "https://financial-hacker.com/scripts2020.zip",
+   "https://financial-hacker.com/scripts2018.zip",
+   "https://financial-hacker.com/scripts2017.zip",
+   "https://financial-hacker.com/scripts2016.zip",
+   "https://financial-hacker.com/scripts2015.zip",
+   "https://financial-hacker.com/tag/api/"
+  ],
+  "n_endpoints": 12,
+  "vault_sha": "1a99361dfb09a0045252",
+  "host": "financial-hacker.com",
+  "claims": [
+   {
+    "claim": "As most parameters in a strategy, the MMI range is a compromise: It should be no less than 200 bars for getting any accuracy, but it should not be too long for preventing that different market regimes fall in the same MMI range.",
+    "lang": "en",
+    "quantities": [
+     "range"
+    ],
+    "direction": [
+     "long",
+     "fall"
+    ],
+    "horizon": [
+     "bars"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "US500",
+      "EURUSD",
+      "USDKRW",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "xau",
+      "xag",
+      "s&p 500",
+      "eur/usd",
+      "won",
+      "try",
+      "bitcoin",
+      "pp"
+     ],
+     "transfer_only": [
+      "pp->energy"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "71312405dfaa"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trend Indicators &#8211; The Financial Hacker",
+  "url": "https://financial-hacker.com/trend-delusion-or-reality/",
+  "published": "2026-09-13T14:49:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://financial-hacker.com/hackerscripts.zip",
+   "https://financial-hacker.com/hacking3.zip",
+   "https://financial-hacker.com/scripts2024.zip",
+   "https://financial-hacker.com/scripts2023.zip",
+   "https://financial-hacker.com/scripts2022.zip",
+   "https://financial-hacker.com/scripts2021.zip",
+   "https://financial-hacker.com/scripts2020.zip",
+   "https://financial-hacker.com/scripts2018.zip",
+   "https://financial-hacker.com/scripts2017.zip",
+   "https://financial-hacker.com/scripts2016.zip",
+   "https://financial-hacker.com/scripts2015.zip",
+   "https://financial-hacker.com/tag/api/"
+  ],
+  "n_endpoints": 12,
+  "vault_sha": "a2ffe7cb1ab6a478c63e",
+  "host": "financial-hacker.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Indicators &#8211; Page 4 &#8211; The Financial Hacker",
+  "url": "https://financial-hacker.com/category/indicators/page/4/",
+  "published": "2026-09-13T14:49:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "carry",
+   "correlation",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://financial-hacker.com/hacking4.zip",
+   "https://financial-hacker.com/hacking3.zip",
+   "https://financial-hacker.com/scripts2026.zip",
+   "https://financial-hacker.com/scripts2025.zip",
+   "https://financial-hacker.com/scripts2024.zip",
+   "https://financial-hacker.com/scripts2023.zip",
+   "https://financial-hacker.com/scripts2022.zip",
+   "https://financial-hacker.com/scripts2021.zip",
+   "https://financial-hacker.com/scripts2020.zip",
+   "https://financial-hacker.com/scripts2018.zip",
+   "https://financial-hacker.com/scripts2017.zip",
+   "https://financial-hacker.com/scripts2016.zip",
+   "https://financial-hacker.com/scripts2015.zip",
+   "https://financial-hacker.com/tag/api/"
+  ],
+  "n_endpoints": 14,
+  "vault_sha": "2ed1811b13412f9662b2",
+  "host": "financial-hacker.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Blog | Quant Investing",
+  "url": "http://www.quant-investing.com/blog/",
+  "published": "2026-09-13T14:49:31+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "inventory",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "806787e74baa13d86117",
+  "host": "www.quant-investing.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Pricing | Quant Investing",
+  "url": "http://www.quant-investing.com/pricing/",
+  "published": "2026-09-13T14:49:35+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "flow",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a9457d883f657e00d783",
+  "host": "www.quant-investing.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "About | Quant Investing",
+  "url": "https://www.quant-investing.com/about",
+  "published": "2026-09-13T14:49:36+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum",
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "671dfe93447d626a4d59",
+  "host": "www.quant-investing.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Tag search results | Quant Investing",
+  "url": "http://www.quant-investing.com/tag-search-results?tag=OShaughnessy",
+  "published": "2026-09-13T14:49:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "64a367302e67d032b2d0",
+  "host": "www.quant-investing.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Tag search results | Quant Investing",
+  "url": "http://www.quant-investing.com/tag-search-results?tag=Value-Investing",
+  "published": "2026-09-13T14:49:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f2d2562207630972ee28",
+  "host": "www.quant-investing.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Tag search results | Quant Investing",
+  "url": "http://www.quant-investing.com/tag-search-results?tag=benjamin-graham",
+  "published": "2026-09-13T14:49:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fe607d28233e02e812b5",
+  "host": "www.quant-investing.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Tag search results | Quant Investing",
+  "url": "http://www.quant-investing.com/tag-search-results?tag=Back-test",
+  "published": "2026-09-13T14:49:46+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c9f7fbdd561b88772770",
+  "host": "www.quant-investing.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Glossary | Quant Investing",
+  "url": "http://www.quant-investing.com/glossary/",
+  "published": "2026-09-13T14:49:48+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M",
+   "5M",
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "796ddff749bea5078b6e",
+  "host": "www.quant-investing.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Be careful of this time tested value ratio | Quant Investing",
+  "url": "https://www.quant-investing.com/blogs/general/2015/01/29/be-careful-of-this-time-tested-value-ratio",
+  "published": "2026-09-13T14:49:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e4bf9228ee47aff50246",
+  "host": "www.quant-investing.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "This simple ratio beats the world&#x2019;s best value funds | Quant Investing",
+  "url": "https://www.quant-investing.com/blogs/general/2014/05/12/a-simple-ration-beats-the-world-s-best-value-funds",
+  "published": "2026-09-13T14:49:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "272f99458f4ab4163e39",
+  "host": "www.quant-investing.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "How and why to implement a Value Composite One investment strategy world-wide | Quant Investing",
+  "url": "https://www.quant-investing.com/blogs/general/2018/08/03/how-and-why-to-implement-a-value-composite-one-investment-strategy-world-wide",
+  "published": "2026-09-13T14:49:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "125f150764195b2267fd",
+  "host": "www.quant-investing.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Screenshots | Quant Investing",
+  "url": "http://www.quant-investing.com/products/screener/screenshots/",
+  "published": "2026-09-13T14:50:00+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "flow",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3e3ecd4a6cd0f7bcbad0",
+  "host": "www.quant-investing.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Countries | Quant Investing",
+  "url": "http://www.quant-investing.com/products/screener/countries/",
+  "published": "2026-09-13T14:50:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0af876ccc3243bacdd6a",
+  "host": "www.quant-investing.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Privacy policy | Quant Investing",
+  "url": "https://www.quant-investing.com/privacy-policy",
+  "published": "2026-09-13T14:50:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a2df7333900056b2687d",
+  "host": "www.quant-investing.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]
