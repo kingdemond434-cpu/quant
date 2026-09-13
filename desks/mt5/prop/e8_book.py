@@ -41,6 +41,36 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
 SURVIVORS = DESK / "reports" / "UNIVERSAL_SURVIVORS.json"
 OUT = DESK / "reports" / "E8_BOOK.json"
 
+#: The last catalogue the venue actually reported. Written whenever the live call succeeds, read
+#: when it does not. A prop venue's instrument list changes on the order of months; a connection
+#: fails on the order of minutes, and the desk must not lose rule 1 for the length of an outage.
+CATALOGUE_CACHE = DESK / "data" / "e8_catalogue.json"
+
+
+def _cache_catalogue(keys: set[str]) -> None:
+    """Remember what the venue lists, so an outage costs freshness and not the rule."""
+    try:
+        CATALOGUE_CACHE.parent.mkdir(parents=True, exist_ok=True)
+        CATALOGUE_CACHE.write_text(json.dumps({
+            "measured_utc": datetime.now(UTC).isoformat(timespec="seconds"),
+            "n": len(keys),
+            "instruments": sorted(keys),
+        }, indent=1), encoding="utf-8")
+    except OSError:
+        pass
+
+
+def _cached_catalogue() -> set[str] | None:
+    """The last measured catalogue, or None. None is 'I do not know', never 'no restriction'."""
+    try:
+        doc = json.loads(CATALOGUE_CACHE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    rows = doc.get("instruments")
+    if not isinstance(rows, list) or not rows:
+        return None
+    return {str(r) for r in rows}
+
 #: HOW MANY SLEEVES, and it is a breadth decision rather than a taste one. Every certified sleeve
 #: fires in the asia window, so the whole book lands at once into a 2.5% daily floor; widening the
 #: book at a smaller per-sleeve size is what raises pass probability, and 24 x 0.05% keeps gross
@@ -152,17 +182,64 @@ def write(doc: dict[str, Any], path: Path = OUT) -> Path:
 def main(argv: list[str] | None = None) -> int:
     import argparse
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--live-venue", action="store_true",
-                    help="ask the E8 venue which instruments it lists (needs credentials)")
+    ap.add_argument("--no-live-venue", action="store_true",
+                    help="do NOT ask the venue what it lists. The book is then written only if a "
+                         "previously measured catalogue is on disk; with neither, nothing is "
+                         "written, because an unfiltered book is not a safer book.")
     args = ap.parse_args(argv)
-    tradeable = None
-    if args.live_venue:
-        from prop.tradelocker_venue import TradeLockerVenue
-        tradeable = set(TradeLockerVenue().connect()._by_key)
+
+    # RULE 1 OF THIS FILE WAS OPTIONAL, AND OFF BY DEFAULT (fixed 2026-09-14).
+    #
+    # The docstring's first selection rule is THE VENUE MUST LIST IT. The implementation asked
+    # for the catalogue only under `--live-venue`, and the scheduled task runs
+    # `python e8_book.py` with no arguments -- so `tradeable` was None, `select()` reads None as
+    # "apply no filter", and the rule that leads the file was never applied on any scheduled
+    # pass. `n_blocked_by_venue` then published 0, which is not "nothing was blocked" but "I did
+    # not look".
+    #
+    # MEASURED ON THE LIVE $100k ACCOUNT TONIGHT: of the 24 sleeves in the book, EIGHT were Scandi
+    # and EM crosses -- EURNOK, CHFNOK, GBPMXN and siblings -- that E8's 46-instrument catalogue
+    # does not carry. The executor caught every one and refused it as NOT_LISTED, so no bad order
+    # was sent; the cost was worse than an error. A third of the book's slots were spent on
+    # instruments that cannot trade, on an account whose pass probability is a function of how
+    # many INDEPENDENT mechanisms are actually running, with a five-day hard speed floor and a
+    # right tail that is confiscated at 2% a day. Those eight slots were unavailable to the
+    # certified sleeves that E8 does list.
+    #
+    # ABSENCE IS NOT PERMISSION (LAWS). `None` meaning "no filter" is that violation in one
+    # sentinel: the failure to measure and the decision not to restrict were the same value.
+    # They are now different values and the failure fails CLOSED.
+    tradeable: set[str] | None = None
+    source = ""
+    if not args.no_live_venue:
+        try:
+            from prop.tradelocker_venue import TradeLockerVenue
+            tradeable = set(TradeLockerVenue().connect()._by_key)
+            source = f"live venue ({len(tradeable)} instruments)"
+            _cache_catalogue(tradeable)
+        except Exception as exc:
+            print(f"live venue UNREACHABLE ({type(exc).__name__}: {exc}); falling back to the "
+                  f"last measured catalogue")
+    if tradeable is None:
+        cached = _cached_catalogue()
+        if cached:
+            tradeable, source = cached, f"cached catalogue ({len(cached)} instruments)"
+
+    if tradeable is None:
+        # NOT AN ERROR TO SWALLOW. Writing an unfiltered book here would republish the exact
+        # defect this fix removes, and silently: the artifact would look complete. Keeping the
+        # last good book is the conservative act -- it was written when the catalogue WAS known.
+        print("REFUSING to write the book: the venue's catalogue is unknown and no cached one "
+              "exists, so rule 1 (the venue must list it) cannot be applied. The previous book "
+              "stands.")
+        return 1
+
     doc = select(tradeable)
+    doc["catalogue_source"] = source
     write(doc)
     print(f"E8 book: {doc['n_selected']} sleeve(s) at {RISK_FRAC:.2%} "
           f"= {doc['gross_exposure_if_all_fire']:.2%} gross if every one fires")
+    print(f"  catalogue: {source}")
     print(f"  by mechanism: {doc['by_mechanism']}")
     print(f"  mean ev {doc['mean_ev']} | {doc['n_blocked_by_venue']} blocked by the venue, "
           f"{doc['n_duplicate_mechanism_symbol']} duplicate (mechanism, symbol)")

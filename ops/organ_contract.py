@@ -113,8 +113,14 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
                            "here is indistinguishable from a flat book"),
     "E8-Spreads":         ("desks/mt5/reports/E8_SPREADS.json", 120,
                            "the venue cost sample the executor's spread fence refuses against"),
-    "E8-Guard":           ("desks/mt5/reports/E8_GUARD.json", 120,
-                           "BREACHED / STOOD_DOWN / CAPPED / PASSED against the static drawdown"),
+    # NO E8-Guard ROW, AND REMOVING IT IS THE POINT. I added one earlier tonight naming
+    # `E8_GUARD.json`, and both halves were wrong: there is no `E8-Guard` task in the scheduler,
+    # and that artifact has never existed. The guard is a PROPERTY of E8-Executor -- its verdict
+    # rides inside `E8_EXEC.json` under `guard`, which is where the executor reads it before
+    # sending. Contracting it as a task would have reported NOT_SCHEDULED on every pass about an
+    # organ that runs hourly and is healthy, which is exactly the mistake recorded ten lines above
+    # for `MT5-Gauntlet-Rotation`. Writing the same bug twice in one file in one night is the
+    # argument for reading a file's own scar tissue before adding to it.
     # THE ORGANS BUILT 2026-09-12. Every one was UNCONTRACTED on the day it was written, which is
     # the gap that lets a new organ stop without anyone noticing -- exactly the class the
     # principal asked to end. A contract is the difference between an organ and a hope.

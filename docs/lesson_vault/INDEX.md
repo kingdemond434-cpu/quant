@@ -1,6 +1,6 @@
 # Desk lessons
 
-301 lessons, generated from `docs/desk_lessons.jsonl`.
+302 lessons, generated from `docs/desk_lessons.jsonl`.
 
 > [!warning] This vault is a DERIVED VIEW.
 > `docs/desk_lessons.jsonl` is the source of truth and the only thing organs read.
@@ -18,7 +18,7 @@ there dilutes the lessons that do apply.
 
 ## Tags
 
-- #governance (26)
+- #governance (27)
 - #statistics (17)
 - #ops (15)
 - #research (14)
@@ -352,3 +352,4 @@ there dilutes the lessons that do apply.
 - [[l0299-never-escalate-a-bookkeeping-gap-beside-a-dead-gateway]]
 - [[l0300-two-implementations-of-one-digest-will-disagree-put-th]]
 - [[l0301-an-ssh-host-alias-is-a-dependency-if-a-script-says-rem]]
+- [[l0302-a-sentinel-that-means-both-not-measured-and-no-restric]]
