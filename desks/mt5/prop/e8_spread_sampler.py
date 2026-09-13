@@ -13,12 +13,24 @@ worth having BEFORE the first trade rather than after twenty.
 
 Writes desks/mt5/reports/E8_SPREADS.json -- per symbol, per UTC hour: n, median, p90, min.
 """
-import json, pathlib, sys, time, logging, statistics, collections
+from __future__ import annotations
+
+import collections
+import json
+import logging
+import pathlib
+import statistics
+import sys
+import time
 from datetime import UTC, datetime
-ROOT = pathlib.Path(r"C:\opt\quant")
-sys.path.insert(0, str(ROOT/"desks"/"mt5")); sys.path.insert(0, str(ROOT))
+
+ROOT = pathlib.Path(__file__).resolve().parents[3]
+for _p in (str(ROOT / "desks" / "mt5"), str(ROOT)):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 logging.disable(logging.ERROR)
-from prop.tradelocker_venue import TradeLockerVenue, VenueError
+
+from prop.tradelocker_venue import TradeLockerVenue  # noqa: E402
 
 OUT = ROOT/"desks"/"mt5"/"reports"/"E8_SPREADS.json"
 SYMS = ["EURUSD","XAUUSD","USDCHF","USDCAD","EURGBP","GBPJPY","EURJPY","USDJPY","CADJPY",
@@ -27,7 +39,7 @@ INTERVAL_S = 300
 HOURS = 10
 
 v = TradeLockerVenue().connect()
-samples = collections.defaultdict(list)
+samples: dict[str, list[tuple[int, float]]] = collections.defaultdict(list)
 if OUT.exists():
     try:
         for s, rows in (json.loads(OUT.read_text(encoding="utf-8")).get("raw") or {}).items():
@@ -44,17 +56,19 @@ while time.time() < deadline:
             samples[s].append((hour, round(1e4*(ask-bid)/bid, 3)))
         except Exception:
             pass
-    doc = {"generated_utc": datetime.now(UTC).isoformat(),
-           "unit": "basis points of price (spread/bid * 1e4)",
-           "rule": "median per UTC hour; the asia window is what the certified book trades",
-           "raw": {k: v_ for k, v_ in samples.items()}, "by_hour": {}}
+    by_hour: dict[str, dict[str, dict[str, float]]] = {}
+    doc: dict[str, object] = {
+        "generated_utc": datetime.now(UTC).isoformat(),
+        "unit": "basis points of price (spread/bid * 1e4)",
+        "rule": "median per UTC hour; the asia window is what the certified book trades",
+        "raw": dict(samples), "by_hour": by_hour}
     for s, rows in samples.items():
-        per = collections.defaultdict(list)
+        per: dict[int, list[float]] = collections.defaultdict(list)
         for h, bp in rows:
             per[h].append(bp)
-        doc["by_hour"][s] = {str(h): {"n": len(x), "median": round(statistics.median(x), 3),
-                                      "min": round(min(x), 3), "max": round(max(x), 3)}
-                             for h, x in sorted(per.items())}
+        by_hour[s] = {str(h): {"n": len(x), "median": round(statistics.median(x), 3),
+                               "min": round(min(x), 3), "max": round(max(x), 3)}
+                      for h, x in sorted(per.items())}
     OUT.write_text(json.dumps(doc, indent=1), encoding="utf-8")
     time.sleep(INTERVAL_S)
 print("done", OUT)

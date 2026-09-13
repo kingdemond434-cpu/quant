@@ -167,7 +167,7 @@ def assess(equity: float, *, now: datetime | None = None, state: dict[str, Any] 
     # floors, where the error runs the other way and would report OK one hundredth of a cent
     # inside a breach. Money is counted in cents; the comparisons are made there.
     def _c(x: float) -> int:
-        return int(round(x * 100))
+        return round(x * 100)
 
     day_start = float(st["day_start"])
     day_pnl = equity - day_start
