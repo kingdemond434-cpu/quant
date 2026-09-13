@@ -1,0 +1,557 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Stock trading API developer Alpaca raises $15M convertible note from SBI Group | TechCrunch",
+  "url": "https://techcrunch.com/2023/10/12/stock-trading-api-developer-alpaca-raises-15m-convertible-note-from-sbi-group/",
+  "published": "2026-09-13T21:13:16+00:00",
+  "symbols": [],
+  "timeframes": [
+   "15M"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "86fcaca63ba9341f2ac3",
+  "host": "techcrunch.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Google Books",
+  "url": "https://www.google.co.id/books/edition/DATA_MINING/MWcHEAAAQBAJ?hl=id&newbks=1&gbpv=1&dq=statistika+dan+algoritma+em&pg=PA120&printsec=frontcover",
+  "published": "2026-09-13T21:13:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "id-DE",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9abe7ada4c31dd389f8c",
+  "host": "www.google.co.id",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Graph Algorithms - GeeksforGeeks",
+  "url": "https://www.geeksforgeeks.org/dsa/graph-data-structure-and-algorithms/",
+  "published": "2026-09-13T21:13:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b5cd7118b22d48fc7b03",
+  "host": "www.geeksforgeeks.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Bitwise Algorithms - GeeksforGeeks",
+  "url": "https://www.geeksforgeeks.org/dsa/bitwise-algorithms/",
+  "published": "2026-09-13T21:13:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "60003762a74dbc2a8a52",
+  "host": "www.geeksforgeeks.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Square Root (Sqrt) Decomposition Algorithm - GeeksforGeeks",
+  "url": "https://www.geeksforgeeks.org/dsa/square-root-sqrt-decomposition-algorithm/",
+  "published": "2026-09-13T21:13:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5d2de295257b48b38ba9",
+  "host": "www.geeksforgeeks.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quiz about Top MCQs on Data Structures and Algorithms",
+  "url": "https://www.geeksforgeeks.org/quizzes/top-mcqs-on-data-structures-and-algorithms/",
+  "published": "2026-09-13T21:13:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e7767f25bb25fa73bfa4",
+  "host": "www.geeksforgeeks.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "What is an Algorithm? - GeeksforGeeks",
+  "url": "https://www.geeksforgeeks.org/dsa/introduction-to-algorithms/",
+  "published": "2026-09-13T21:13:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c6ba931f1b1a701ce85a",
+  "host": "www.geeksforgeeks.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "matrix multiplication algorithm - Wikidata",
+  "url": "https://www.wikidata.org/wiki/Q17082383",
+  "published": "2026-09-13T21:13:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.wikidata.org/wiki/Special:EntityData/Q17082383.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "307a021fd142bc2e43ab",
+  "host": "www.wikidata.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Karatsuba algorithm - Wikidata",
+  "url": "https://www.wikidata.org/wiki/Q629940",
+  "published": "2026-09-13T21:13:31+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.wikidata.org/wiki/Special:EntityData/Q629940.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "21c4149440c951179164",
+  "host": "www.wikidata.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "algorithm - Wikidata",
+  "url": "https://www.wikidata.org/wiki/Q8366",
+  "published": "2026-09-13T21:13:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.wikidata.org/wiki/Special:EntityData/Q8366.json",
+   "https://docs.openalex.org/download-snapshot/snapshot-data-format"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "370e723f144368057417",
+  "host": "www.wikidata.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Category:Cluster analysis algorithms - Wikidata",
+  "url": "https://www.wikidata.org/wiki/Q8363832",
+  "published": "2026-09-13T21:13:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.wikidata.org/wiki/Special:EntityData/Q8363832.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "52d2df0f03f44c78d5d3",
+  "host": "www.wikidata.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "N26 launches stock and ETF trading to complement its banking offering | TechCrunch",
+  "url": "https://techcrunch.com/2024/01/17/n26-launches-stock-and-etf-trading-to-complement-its-banking-offering/",
+  "published": "2026-09-13T21:13:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ab6664d45616099c0e31",
+  "host": "techcrunch.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "MarketWolf is a trading-first platform for new investors",
+  "url": "https://techcrunch.com/2022/07/04/marketwolf-is-a-trading-first-platform-for-new-investors/",
+  "published": "2026-09-13T21:13:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2ddbc3796af3a91395be",
+  "host": "techcrunch.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "As Morgan Stanley buys E-Trade, Robinhood preps social trading | TechCrunch",
+  "url": "https://techcrunch.com/2020/02/20/robinhood-profiles-morgan-stanley-etrade/",
+  "published": "2026-09-13T21:13:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4c0c511cb59f3b25690c",
+  "host": "techcrunch.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Multilateral handelsfasilitet \u2013 Wikipedia",
+  "url": "https://no.wikipedia.org/w/index.php?title=Multilateral_handelsfasilitet&veaction=edit",
+  "published": "2026-09-13T21:13:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "nb",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7fdc877c11f13deef921",
+  "host": "no.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Multilateral handelsfasilitet: Sideversjonshistorikk \u2013 Wikipedia",
+  "url": "https://no.wikipedia.org/w/index.php?title=Multilateral_handelsfasilitet&action=history",
+  "published": "2026-09-13T21:13:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory"
+  ],
+  "confidence": 0.35,
+  "lang": "nb",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "babb48eaa6693d133704",
+  "host": "no.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Unsolved Problems in Algorithms",
+  "url": "https://iq.opengenus.org/unsolved-problems-in-algorithms/",
+  "published": "2026-09-13T21:13:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7305f9eb0cfe5c2fcac9",
+  "host": "iq.opengenus.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "100+ Graph Algorithms and Techniques [Complete List]",
+  "url": "https://iq.opengenus.org/list-of-graph-algorithms/",
+  "published": "2026-09-13T21:14:06+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "acf1f29207fe7d51529e",
+  "host": "iq.opengenus.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cannon\u2019s algorithm for distributed matrix multiplication",
+  "url": "https://iq.opengenus.org/cannon-algorithm-distributed-matrix-multiplication/",
+  "published": "2026-09-13T21:14:08+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "correlation"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "357beb3fd74c3b9cc9fe",
+  "host": "iq.opengenus.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Freivalds\u2019 algorithm for verifying Matrix Multiplication",
+  "url": "https://iq.opengenus.org/freivalds-algorithm/",
+  "published": "2026-09-13T21:14:10+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "correlation"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1f2d76b7d59154f4ce4b",
+  "host": "iq.opengenus.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Russian peasant multiplication algorithm",
+  "url": "https://iq.opengenus.org/russian-peasant-multiplication-algorithm/",
+  "published": "2026-09-13T21:14:12+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "correlation"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "da87ae3390771a3831f9",
+  "host": "iq.opengenus.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Erweiterte Buchsuche",
+  "url": "https://books.google.de/advanced_book_search?q=Multilaterales+Handelssystem&hl=de",
+  "published": "2026-09-13T21:14:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8607d9d0ae0916f4e6c8",
+  "host": "books.google.de",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Enter The World Cup Trading Championships - 2025 - World Cup Trading Championships",
+  "url": "https://www.worldcupchampionships.com/enter-the-world-cup-trading-championships",
+  "published": "2026-09-13T21:14:17+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ddcc0b3a47e6f2912c21",
+  "host": "www.worldcupchampionships.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Learn Algorithmic Trading &#38; Python | Investopedia-Recommended Course",
+  "url": "https://algotrading101.com/",
+  "published": "2026-09-13T21:14:38+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "inventory",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.filepicker.io/api/file/17HniYF8TFymzWNN35Vc"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "7eef36a76fbf53071336",
+  "host": "algotrading101.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Learn Algorithmic Trading &#38; Python | Investopedia-Recommended Course",
+  "url": "https://algotrading101.com",
+  "published": "2026-09-13T21:14:40+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "inventory",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.filepicker.io/api/file/17HniYF8TFymzWNN35Vc"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c0f61bd4811f63511394",
+  "host": "algotrading101.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "DV Commodities | Trading the Global Commodities Markets",
+  "url": "https://dvcommodities.com/",
+  "published": "2026-09-13T21:14:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "orderflow",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b12630dbbd4addf2b0f6",
+  "host": "dvcommodities.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]

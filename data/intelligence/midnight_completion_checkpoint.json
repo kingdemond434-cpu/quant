@@ -3,10 +3,15 @@
  "schema_version": 1,
  "stages": {
   "canonical_external_pipeline": {
-   "finished_at": "2026-09-13T20:35:07.922401+00:00",
-   "passes_completed": 1,
-   "returncode": 1,
-   "status": "FAILED"
+   "command": [
+    "systemctl",
+    "--user",
+    "start",
+    "quant-external-pipeline.service"
+   ],
+   "passes_completed": 0,
+   "started_at": "2026-09-13T21:46:53.954970+00:00",
+   "status": "RUNNING"
   },
   "certificate_projection": {
    "finished_at": "2026-09-13T20:35:39.301863+00:00",
@@ -15,7 +20,7 @@
    "status": "DONE"
   },
   "certificate_yield_fence": {
-   "finished_at": "2026-09-13T19:25:07.949556+00:00",
+   "finished_at": "2026-09-13T21:24:57.904700+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -33,7 +38,7 @@
    "status": "DONE"
   },
   "forward_clock_fence": {
-   "finished_at": "2026-09-13T19:25:10.404168+00:00",
+   "finished_at": "2026-09-13T21:25:04.477475+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "DONE"
@@ -51,13 +56,10 @@
    "status": "FAILED"
   },
   "forward_lane_heal": {
-   "command": [
-    "/home/quant/quant-platform/.venv/bin/python",
-    "scripts/heal_forward_lane.py"
-   ],
-   "passes_completed": 0,
-   "started_at": "2026-09-13T20:36:30.049603+00:00",
-   "status": "RUNNING"
+   "finished_at": "2026-09-13T20:55:25.256278+00:00",
+   "passes_completed": 1,
+   "returncode": 1,
+   "status": "FAILED"
   },
   "fusion_state_pull": {
    "finished_at": "2026-09-13T20:36:19.040764+00:00",
@@ -66,23 +68,23 @@
    "status": "DONE"
   },
   "mechanism_independence": {
-   "finished_at": "2026-09-13T19:24:58.794976+00:00",
+   "finished_at": "2026-09-13T21:24:43.975168+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "same_day_fence": {
-   "finished_at": "2026-09-13T19:25:03.639280+00:00",
+   "finished_at": "2026-09-13T21:24:50.522203+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "DONE"
   },
   "zero_capital_shadow_forward": {
-   "finished_at": "2026-09-13T19:24:55.474036+00:00",
+   "finished_at": "2026-09-13T21:24:35.657672+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   }
  },
- "updated_at": "2026-09-13T20:36:30.049603+00:00"
+ "updated_at": "2026-09-13T21:46:53.954970+00:00"
 }
