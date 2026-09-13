@@ -58,6 +58,34 @@ def test_a_driftless_book_is_not_rescued_by_a_daily_stop() -> None:
         "bug returning, not a strategy")
 
 
+def test_a_stop_cannot_help_a_book_that_fires_all_at_once() -> None:
+    """THE SECOND TIME THIS FILE FAKED AN EDGE, and the fault had moved.
+
+    The first version drew one correlation factor per DAY, so the first trade revealed the day's
+    regime. That was fixed by splitting the day into sessions. This one survived the fix: the
+    halt was evaluated on RUNNING equity between sequential trades, which models a book that
+    trickles in over the day and can stand down partway.
+
+    The desk's certified book is entirely in the asia window -- all twenty sleeves fire together.
+    By the time the first loss exists the other nineteen are already open, and no rule can stop
+    them. A voluntary stop can only refuse to OPEN something; it cannot un-take a simultaneous
+    trade. Modelled wrongly it turned the first trade into a regime detector and reported a
+    NO-EDGE book passing 98.5% against 2.9% without the rule.
+
+    The bound is loose on purpose: the claim is not "a stop is worth exactly nothing here", it is
+    "a stop cannot turn a coin flip into a certainty".
+    """
+    b = pb.Book(sleeves=20, rho=0.66, risk_frac=0.0015, exp_r=0.0, rr=1.5,
+                trades_per_day_per_sleeve=1.0, sessions=1)
+    without = pb.simulate(b, 0.10, n_paths=4_000).summary()["p_pass"]
+    withstop = pb.simulate(b, 0.10, n_paths=4_000, stand_down=0.0075).summary()["p_pass"]
+    assert withstop < 0.5, (
+        f"a stand-down raised a simultaneous NO-EDGE book to {withstop:.3f}; a stop that cannot "
+        "refuse anything cannot add drift")
+    assert withstop < without + 0.25, (
+        f"{without:.3f} -> {withstop:.3f} is too large a move for a rule with nothing to refuse")
+
+
 def test_the_day_is_several_independent_sessions() -> None:
     """The structural fact the fix rests on, pinned so it cannot be quietly set to 1."""
     assert _book().sessions >= 3
@@ -82,15 +110,25 @@ def test_the_daily_floor_is_what_kills_a_large_book_not_the_static_one() -> None
     assert s["p_fail_daily"] > 5 * s["p_fail_static"]
 
 
-def test_a_voluntary_stand_down_removes_daily_breaches_entirely() -> None:
-    """What the rule is actually for: it cannot add drift, but it can take one wall off the board.
+def test_a_voluntary_stand_down_nearly_removes_daily_breaches_but_cannot_remove_them_all() -> None:
+    """What the rule is actually for -- and the honest limit of it.
 
-    The stand-down is set INSIDE E8's own floor, so no path should reach the firm's limit -- and
-    the failures it does not prevent move to the static floor and to timeouts, which is where a
+    The stand-down sits INSIDE E8's own floor, so it takes the firm's wall off the board for any
+    path that reaches it BETWEEN entries. It cannot take it off entirely, and this test said it
+    could until the simultaneous-firing fix: a stop can only refuse to OPEN something, so trades
+    already on when the session began can still carry equity through the floor together. The
+    residual is small and it is real, and a test asserting exactly zero was asserting that a
+    stand-down could close a position, which it cannot.
+
+    The failures it DOES prevent move to the static floor and to timeouts, which is where a
     variance reduction should send them.
     """
     b = _book(risk_frac=0.0075)
-    assert pb.simulate(b, 0.10, n_paths=4_000, stand_down=0.0050).summary()["p_fail_daily"] == 0.0
+    without = pb.simulate(b, 0.10, n_paths=4_000).summary()["p_fail_daily"]
+    withstop = pb.simulate(b, 0.10, n_paths=4_000, stand_down=0.0050).summary()["p_fail_daily"]
+    assert withstop < without / 10, (
+        f"the stand-down must take most of the wall away: {without} -> {withstop}")
+    assert withstop < 0.05
 
 
 def test_the_win_rate_reconstructs_the_declared_expectancy() -> None:

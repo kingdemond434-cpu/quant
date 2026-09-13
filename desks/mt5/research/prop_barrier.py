@@ -232,11 +232,39 @@ def simulate(book: Book, target: float, *, n_paths: int = 20_000, max_days: int 
         # t // trades_per_session, so consecutive trades share a regime and distant ones do not.
         per_session = max(1.0, book.trades_per_day / max(1, book.sessions))
         factors = rng.standard_normal((book.sessions + 2, P))
+        session_open = equity.copy()
+        last_session = -1
         for t in range(int(n.max()) if n.size else 0):
-            common = factors[min(int(t // per_session), book.sessions + 1)]
+            sess = min(int(t // per_session), book.sessions + 1)
+            if sess != last_session:
+                # a new session: everything in it opens against the equity standing right now
+                session_open = equity.copy()
+                last_session = sess
+            common = factors[sess]
             act = live & (state == 0) & (n > t)
             if halt is not None:
-                act = act & (equity > halt)
+                # THE HALT IS EVALUATED ON THE SESSION'S OPENING EQUITY, NOT ON RUNNING EQUITY,
+                # AND THAT DISTINCTION IS THE SECOND TIME THIS FILE HAS FAKED AN EDGE.
+                #
+                # A voluntary daily stop can only refuse to OPEN something. It cannot close a
+                # position that is already on, and it cannot un-take a trade that fired at the
+                # same instant as the one that lost. This desk's certified book is entirely in
+                # the asia window: all twenty sleeves fire together, so by the time the first
+                # loss exists the other nineteen are already open and no rule can stop them.
+                #
+                # Checking `equity > halt` between sequential trades models a book that trickles
+                # in over the day and can stand down partway. Applied to a simultaneous book it
+                # turns the first trade into a regime detector, and the simulation duly reported
+                # a NO-EDGE book passing 98.5% of the time against 2.9% without the rule --
+                # which is impossible, because a stop on a driftless walk moves variance and not
+                # drift. The first version of this file made the same mistake with a daily
+                # common factor and was caught by the same test; this one survived that fix
+                # because the fault had moved from the FACTOR to the ORDER OF ARRIVAL.
+                #
+                # `session_open` is the equity when the session's block of trades began, so a
+                # stand-down triggered by yesterday, or by an earlier SESSION today, still stops
+                # this one -- which is the real power of the rule and all of it.
+                act = act & (session_open > halt)
             if not act.any():
                 break
             z = a * common + b * rng.standard_normal(P)
