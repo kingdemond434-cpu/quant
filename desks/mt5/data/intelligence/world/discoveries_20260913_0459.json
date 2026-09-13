@@ -1,0 +1,610 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "How Data Changes Can Impact Your Futures Backtesting",
+  "url": "https://kjtradingsystems.com/data-changes-algo-trading.html",
+  "published": "2026-09-13T04:58:22+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5737d9ec46a4f82d4abc",
+  "host": "kjtradingsystems.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Challenge Validation",
+  "url": "https://www.balticexchange.com/en/data-services/market-information0/dry-services.html",
+  "published": "2026-09-13T04:58:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "53d906b41b2bab301452",
+  "host": "www.balticexchange.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "EM-algoritmi \u2013 Wikipedia",
+  "url": "https://fi.wikipedia.org/w/index.php?title=EM-algoritmi&oldid=24200011",
+  "published": "2026-09-13T04:58:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "fi",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c39abb0216c0831c421b",
+  "host": "fi.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Tietoja sivusta \u201dEM-algoritmi\u201d \u2013 Wikipedia",
+  "url": "https://fi.wikipedia.org/w/index.php?title=EM-algoritmi&action=info",
+  "published": "2026-09-13T04:58:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "fi",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f7f6e6a05b91f0e6642e",
+  "host": "fi.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Viitetiedot \u2013 Wikipedia",
+  "url": "https://fi.wikipedia.org/w/index.php?title=Toiminnot:Viittaus&page=EM-algoritmi&id=24200011&wpFormIdentifier=titleform",
+  "published": "2026-09-13T04:58:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "fi",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c6f2c341f8500e3fc457",
+  "host": "fi.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "K\u00e4ytt\u00e4j\u00e4 on estetty \u2013 Wikipedia",
+  "url": "https://fi.wikipedia.org/w/index.php?title=Toiminnot:UrlShortener&url=https%3A%2F%2Ffi.wikipedia.org%2Fwiki%2FEM-algoritmi",
+  "published": "2026-09-13T04:58:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "fi",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e6948aefab0048124867",
+  "host": "fi.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "EM-algoritmi \u2013 Wikipedia",
+  "url": "https://fi.wikipedia.org/w/index.php?title=EM-algoritmi&useparsoid=0",
+  "published": "2026-09-13T04:58:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "fi",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1497dd64956ce3f8ad33",
+  "host": "fi.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Lataa PDF-tiedostona \u2013 Wikipedia",
+  "url": "https://fi.wikipedia.org/w/index.php?title=Toiminnot:DownloadAsPdf&page=EM-algoritmi&action=show-download-screen",
+  "published": "2026-09-13T04:58:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "fi",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a207ab665b41a65c6db0",
+  "host": "fi.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "EM-algoritmi \u2013 Wikipedia",
+  "url": "https://fi.wikipedia.org/w/index.php?title=EM-algoritmi&printable=yes",
+  "published": "2026-09-13T04:58:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "fi",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9856540790898d533b11",
+  "host": "fi.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "EM-algoritmi \u2013 Wikipedia",
+  "url": "https://fi.wikipedia.org/w/index.php?title=EM-algoritmi&veaction=edit&section=1",
+  "published": "2026-09-13T04:58:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "fi",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2a9186329aacab4dffeb",
+  "host": "fi.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "L\u00e4hdekoodi sivulle EM-algoritmi \u2013 Wikipedia",
+  "url": "https://fi.wikipedia.org/w/index.php?title=EM-algoritmi&action=edit&section=1",
+  "published": "2026-09-13T04:58:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "fi",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3d5e6d02ee5ec282c3f1",
+  "host": "fi.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "EM-algoritmi \u2013 Wikipedia",
+  "url": "https://fi.wikipedia.org/w/index.php?title=EM-algoritmi&veaction=edit&section=2",
+  "published": "2026-09-13T04:58:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "fi",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8d3791c9d868fd4c81cf",
+  "host": "fi.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "L\u00e4hdekoodi sivulle EM-algoritmi \u2013 Wikipedia",
+  "url": "https://fi.wikipedia.org/w/index.php?title=EM-algoritmi&action=edit&section=2",
+  "published": "2026-09-13T04:58:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "fi",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "18cb1c145342a64023f1",
+  "host": "fi.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "EM-algoritmi \u2013 Wikipedia",
+  "url": "https://fi.wikipedia.org/w/index.php?title=EM-algoritmi&veaction=edit&section=3",
+  "published": "2026-09-13T04:58:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "fi",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "af229c3511f55ddfcb85",
+  "host": "fi.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "L\u00e4hdekoodi sivulle EM-algoritmi \u2013 Wikipedia",
+  "url": "https://fi.wikipedia.org/w/index.php?title=EM-algoritmi&action=edit&section=3",
+  "published": "2026-09-13T04:58:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "fi",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d4914366aebf5a638b83",
+  "host": "fi.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "EM-algoritmi \u2013 Wikipedia",
+  "url": "https://fi.wikipedia.org/w/index.php?title=EM-algoritmi&veaction=edit&section=4",
+  "published": "2026-09-13T04:58:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "fi",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e9ce4e754e725895ec11",
+  "host": "fi.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "L\u00e4hdekoodi sivulle EM-algoritmi \u2013 Wikipedia",
+  "url": "https://fi.wikipedia.org/w/index.php?title=EM-algoritmi&action=edit&section=4",
+  "published": "2026-09-13T04:58:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "fi",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "747212f49a75a3fa40bb",
+  "host": "fi.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "EM-algoritmi \u2013 Wikipedia",
+  "url": "https://fi.wikipedia.org/w/index.php?title=EM-algoritmi&veaction=edit&section=5",
+  "published": "2026-09-13T04:58:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "fi",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e2ae80be157761a489aa",
+  "host": "fi.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "L\u00e4hdekoodi sivulle EM-algoritmi \u2013 Wikipedia",
+  "url": "https://fi.wikipedia.org/w/index.php?title=EM-algoritmi&action=edit&section=5",
+  "published": "2026-09-13T04:58:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "fi",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4f27f6f5fb7966abef97",
+  "host": "fi.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo de Strassen - Vikipedio",
+  "url": "https://eo.wikipedia.org/w/index.php?title=Algoritmo_de_Strassen&oldid=9444650",
+  "published": "2026-09-13T04:58:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "eo",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "44d3020bc3e54e178746",
+  "host": "eo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Informoj por \"Algoritmo de Strassen\" - Vikipedio",
+  "url": "https://eo.wikipedia.org/w/index.php?title=Algoritmo_de_Strassen&action=info",
+  "published": "2026-09-13T04:59:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "eo",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3e2bb945d4e7ac07d1c6",
+  "host": "eo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Citado - Vikipedio",
+  "url": "https://eo.wikipedia.org/w/index.php?title=Speciala%C4%B5o:Citi&page=Algoritmo_de_Strassen&id=9444650&wpFormIdentifier=titleform",
+  "published": "2026-09-13T04:59:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "eo",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b79bd81e0df0ed1b47ab",
+  "host": "eo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "La uzanto estas forbarita. - Vikipedio",
+  "url": "https://eo.wikipedia.org/w/index.php?title=Speciala%C4%B5o:UrlShortener&url=https%3A%2F%2Feo.wikipedia.org%2Fwiki%2FAlgoritmo_de_Strassen",
+  "published": "2026-09-13T04:59:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "eo",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b964f5458b73c2d97fc2",
+  "host": "eo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo de Strassen - Vikipedio",
+  "url": "https://eo.wikipedia.org/w/index.php?title=Algoritmo_de_Strassen&useparsoid=0",
+  "published": "2026-09-13T04:59:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "eo",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "193ed75dc2b0a83985f9",
+  "host": "eo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Libro-kreilo - Vikipedio",
+  "url": "https://eo.wikipedia.org/w/index.php?title=Speciala%C4%B5o:Libro&bookcmd=book_creator&referer=Algoritmo+de+Strassen",
+  "published": "2026-09-13T04:59:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "eo",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f9a64a4770fbb36a121e",
+  "host": "eo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "El\u015duti kiel PDF - Vikipedio",
+  "url": "https://eo.wikipedia.org/w/index.php?title=Speciala%C4%B5o:DownloadAsPdf&page=Algoritmo_de_Strassen&action=show-download-screen",
+  "published": "2026-09-13T04:59:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "eo",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dc691c01eaf8e58f6018",
+  "host": "eo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo de Strassen - Vikipedio",
+  "url": "https://eo.wikipedia.org/w/index.php?title=Algoritmo_de_Strassen&printable=yes",
+  "published": "2026-09-13T04:59:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "eo",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "914bf8ba59b52ececbc5",
+  "host": "eo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo - Vikipedio",
+  "url": "https://eo.wikipedia.org/wiki/Algoritmo",
+  "published": "2026-09-13T04:59:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "eo",
+  "endpoints": [
+   "https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.146.3017&amp;rep=rep1&amp;type=pdf"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "700e6a2562de5460a343",
+  "host": "eo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo de Coppersmith-Winograd - Vikipedio",
+  "url": "https://eo.wikipedia.org/wiki/Algoritmo_de_Coppersmith-Winograd",
+  "published": "2026-09-13T04:59:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "eo",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "006e44a007ce92713f72",
+  "host": "eo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo de Karacuba - Vikipedio",
+  "url": "https://eo.wikipedia.org/wiki/Algoritmo_de_Karatsuba",
+  "published": "2026-09-13T04:59:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "eo",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8ed0d715aec74a62a13d",
+  "host": "eo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ }
+]
