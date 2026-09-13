@@ -45,6 +45,7 @@ from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 DESK = Path(__file__).resolve().parents[1]
 ROOT = DESK.parent.parent
@@ -67,13 +68,24 @@ DAILY_PROFIT_CAP = 0.02
 #: decision, which is why it is named here rather than computed.
 STAND_DOWN = 0.0075
 
-#: E8's rollover is "between midnight and 1am SERVER time", and the server is not UTC. UNCONFIRMED
-#: for this account -- most MT/TradeLocker prop servers run UTC+2 in winter and UTC+3 in summer.
-#: It is declared here as an offset so that reading the real value off the dashboard is a one-line
-#: change rather than a hunt, and so that a wrong value is a visible assumption rather than a
-#: silent one. Getting it wrong misplaces the DAILY floor by a few hours, which is the difference
-#: between a stand-down that works and one that measures the wrong day.
-SERVER_UTC_OFFSET_HOURS = 3
+#: THE SERVER DAY IS ANCHORED TO US EASTERN, NOT TO A FIXED UTC OFFSET, and that is the whole
+#: point of this block (confirmed 2026-09-13 from E8's own help centre).
+#:
+#: E8's servers run UTC+2 in winter and UTC+3 in SUMMER -- so a hard-coded offset is right for
+#: part of the year and silently wrong for the rest. This file carried `SERVER_UTC_OFFSET_HOURS =
+#: 3`, which is correct today and would have become wrong at the end of October with nothing to
+#: announce it: the daily 2.5% window would have been measured an hour off, and every certified
+#: sleeve fires in the asia session, which sits right on that boundary. A guard that measures the
+#: wrong day is worse than no guard, because it reports a number.
+#:
+#: What E8 states as invariant is the ANCHOR, not the offset: midnight server time is 5pm US
+#: Eastern year round. Deriving from that is exact across both hemispheres' clock changes and
+#: needs no maintenance -- Eastern's own DST is handled by the zone database, and Europe's and
+#: America's transitions falling on different weekends is precisely the case a fixed offset gets
+#: wrong. Midnight server = 17:00 New York, so the server date is the date seven hours past the
+#: New York clock.
+SERVER_ANCHOR_TZ = "America/New_York"
+SERVER_MIDNIGHT_ET_HOUR = 17
 
 
 class Verdict(StrEnum):
@@ -113,6 +125,15 @@ class Decision:
         }
 
 
+def server_offset_hours(now: datetime | None = None) -> int:
+    """E8's UTC offset at this instant: +3 in summer, +2 in winter, derived and never assumed."""
+    now = (now or datetime.now(UTC)).astimezone(UTC)
+    et = now.astimezone(ZoneInfo(SERVER_ANCHOR_TZ))
+    off = et.utcoffset() or timedelta(0)
+    # midnight server == 17:00 Eastern, so server = UTC + (24 - 17) + eastern_offset
+    return int((timedelta(hours=24 - SERVER_MIDNIGHT_ET_HOUR) + off).total_seconds() // 3600)
+
+
 def server_day(now: datetime | None = None) -> str:
     """The trading day E8 is measuring, not the one the box's clock is in.
 
@@ -121,8 +142,8 @@ def server_day(now: datetime | None = None) -> str:
     most wrong exactly when it mattered -- during the asia session, which is where every one of
     this desk's certified sleeves fires.
     """
-    now = now or datetime.now(UTC)
-    return (now.astimezone(UTC) + timedelta(hours=SERVER_UTC_OFFSET_HOURS)).strftime("%Y-%m-%d")
+    now = (now or datetime.now(UTC)).astimezone(ZoneInfo(SERVER_ANCHOR_TZ))
+    return (now + timedelta(hours=24 - SERVER_MIDNIGHT_ET_HOUR)).strftime("%Y-%m-%d")
 
 
 def load_state(path: Path = STATE) -> dict[str, Any]:
@@ -226,7 +247,9 @@ def write_report(decision: Decision, path: Path = OUT) -> Path:
         "account": {"balance": START_BALANCE, "target": PROFIT_TARGET,
                     "static_drawdown": STATIC_DRAWDOWN, "daily_drawdown": DAILY_DRAWDOWN,
                     "daily_profit_cap": DAILY_PROFIT_CAP, "stand_down": STAND_DOWN,
-                    "server_utc_offset_hours": SERVER_UTC_OFFSET_HOURS},
+                    "server_anchor": SERVER_ANCHOR_TZ,
+                    "server_utc_offset_hours_now": server_offset_hours(),
+                    "server_day": server_day()},
         "decision": decision.as_dict(),
     }, indent=1), encoding="utf-8")
     return path

@@ -290,9 +290,38 @@ def test_a_new_server_day_re_anchors(tmp_path) -> None:
 def test_the_server_day_is_not_the_utc_day() -> None:
     """E8 rolls over at SERVER midnight, and every certified sleeve fires in the asia session --
     which is exactly the window a UTC-anchored guard would misattribute."""
-    assert g.SERVER_UTC_OFFSET_HOURS != 0
     late = datetime(2026, 9, 15, 22, 0, tzinfo=UTC)
     assert g.server_day(late) == "2026-09-16"
+
+
+def test_the_offset_follows_daylight_saving_instead_of_being_assumed() -> None:
+    """E8 IS UTC+2 IN WINTER AND UTC+3 IN SUMMER, so a fixed offset is wrong half the year.
+
+    This guard carried a hard-coded 3. Correct in September, and it would have become wrong at
+    the end of October with nothing to announce it -- the daily 2.5% window measured an hour off,
+    on a book whose every sleeve fires in the asia session, which sits on that boundary.
+
+    What E8 states as invariant is the ANCHOR and not the offset: midnight server is 5pm US
+    Eastern, year round. Deriving from that is exact through both hemispheres' clock changes,
+    including the weeks when Europe and America have already diverged.
+    """
+    assert g.server_offset_hours(datetime(2026, 1, 15, 12, tzinfo=UTC)) == 2, "winter"
+    assert g.server_offset_hours(datetime(2026, 6, 15, 12, tzinfo=UTC)) == 3, "summer"
+    assert g.server_offset_hours(datetime(2026, 11, 15, 12, tzinfo=UTC)) == 2, "back to winter"
+
+
+def test_the_day_rolls_exactly_at_server_midnight() -> None:
+    """One minute either side of the wall the daily floor is measured from.
+
+    In summer that is 21:00 UTC -- which is also when the week reopens, so the first bar of the
+    trading week and the first minute of a new E8 day are the same instant. A guard that rolled
+    a minute late would measure Sunday's reopen against Friday's closing balance.
+    """
+    assert g.server_day(datetime(2026, 9, 15, 20, 59, tzinfo=UTC)) == "2026-09-15"
+    assert g.server_day(datetime(2026, 9, 15, 21, 0, tzinfo=UTC)) == "2026-09-16"
+    # and in winter the same wall is an hour later in UTC
+    assert g.server_day(datetime(2026, 11, 15, 21, 59, tzinfo=UTC)) == "2026-11-15"
+    assert g.server_day(datetime(2026, 11, 15, 22, 0, tzinfo=UTC)) == "2026-11-16"
 
 
 def test_a_stand_down_latches_for_the_rest_of_the_session() -> None:
