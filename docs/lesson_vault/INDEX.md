@@ -1,6 +1,6 @@
 # Desk lessons
 
-286 lessons, generated from `docs/desk_lessons.jsonl`.
+299 lessons, generated from `docs/desk_lessons.jsonl`.
 
 > [!warning] This vault is a DERIVED VIEW.
 > `docs/desk_lessons.jsonl` is the source of truth and the only thing organs read.
@@ -18,9 +18,9 @@ there dilutes the lessons that do apply.
 
 ## Tags
 
-- #governance (25)
+- #governance (26)
 - #statistics (17)
-- #ops (14)
+- #ops (15)
 - #research (14)
 - #verification (13)
 - #design (13)
@@ -41,13 +41,13 @@ there dilutes the lessons that do apply.
 - #coverage (4)
 - #free-data (4)
 - #sizing (4)
+- #staleness (4)
 - #breadth (4)
+- #money-path (4)
 - #accounting (3)
 - #safety (3)
 - #discovery (3)
 - #memory (3)
-- #calibration (3)
-- #units (3)
 
 ## All lessons
 
@@ -328,7 +328,7 @@ there dilutes the lessons that do apply.
 - [[l0275-read-the-producer-s-field-names-before-writing-a-reade]]
 - [[l0276-every-purge-must-have-a-restore-that-asks-the-same-pre]]
 - [[l0277-the-sha-check-answers-is-this-the-sealed-code-the-per-]]
-- [[l0278-a-memory-floor-measured-on-a-smaller-box-becomes-a-sel]]
+- [[l0278-a-memory-floor-pinned-to-the-budget-is-a-self-tighteni]]
 - [[l0279-when-the-cache-key-rolls-with-the-data-day-a-single-pr]]
 - [[l0280-a-watchdog-that-ends-on-needs-a-human-decision-is-a-wa]]
 - [[l0281-the-box-must-pull-as-well-as-push-a-fix-that-lives-on-]]
@@ -337,3 +337,16 @@ there dilutes the lessons that do apply.
 - [[l0284-never-pipe-pytest-through-tail-in-a-commit-chain-the-e]]
 - [[l0285-read-a-timestamped-field-with-its-timestamp-a-stale-er]]
 - [[l0286-do-not-quote-a-point-estimate-on-a-quantity-whose-spec]]
+- [[l0287-a-principal-s-hardware-figure-is-a-claim-the-box-s-own]]
+- [[l0288-an-in-place-adoption-that-rewrites-every-differing-pat]]
+- [[l0289-fix-the-function-the-money-path-calls-and-prove-it-wit]]
+- [[l0290-a-force-close-keyed-by-symbol-closes-every-lane-on-tha]]
+- [[l0291-a-consecutive-failures-counter-without-a-clock-is-a-la]]
+- [[l0292-two-machines-on-two-branches-with-a-silent-conflict-ab]]
+- [[l0293-a-seat-that-writes-where-no-reader-looks-has-produced-]]
+- [[l0294-never-filter-a-census-with-one-enum-member-on-a-field-]]
+- [[l0295-a-deficiency-an-organ-measured-must-never-share-an-exi]]
+- [[l0296-staleness-on-this-desk-has-exactly-three-causes-and-th]]
+- [[l0297-register-a-scheduled-task-with-the-absolute-interprete]]
+- [[l0298-a-daemon-registered-as-a-periodic-task-reports-2147946]]
+- [[l0299-never-escalate-a-bookkeeping-gap-beside-a-dead-gateway]]

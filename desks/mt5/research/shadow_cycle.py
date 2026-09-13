@@ -16,6 +16,26 @@ from pathlib import Path
 BASE = Path(__file__).resolve().parent.parent
 OUT = BASE / "reports" / "shadow" / "shadow_health.json"
 
+#: EVERY BASIS ON WHICH THIS DESK ENROLS A FORWARD CLOCK. One place, because the alternative is
+#: an `==` against one member scattered through the readers -- which is how the cure lane's 86
+#: clocks came to be reported as missing for a day.
+#:
+#:   ORIGINAL_UNIVERSAL_10_PASS   all ten gates; the only basis that carries promotion authority
+#:                                on its own, and what every clock held before 2026-09-13
+#:   VALIDITY_PASS_POWER_DEFICIENT  all five VALIDITY gates pass, one or more POWER gates fail.
+#:                                The deficiency is `cure_by_forward: true` BY DESIGN -- forward
+#:                                evidence is the thing that cures a power shortfall -- so the
+#:                                clock exists precisely to earn what the gate withheld. It
+#:                                enrols with `promotion_authority: false` and stays there until
+#:                                `pipeline/promote.py` applies the cure thresholds.
+#:   FULL_10_PASS                 promote.py's own spelling of the ten-gate basis; accepted here
+#:                                so the two vocabularies cannot disagree about who is enrolled.
+ENROLLED_ADMISSIONS = frozenset({
+    "ORIGINAL_UNIVERSAL_10_PASS",
+    "VALIDITY_PASS_POWER_DEFICIENT",
+    "FULL_10_PASS",
+})
+
 
 def _refresh_scalp_bars() -> None:
     """Refresh broker M1/M5/M15 before replay; never place or modify an order.
@@ -170,10 +190,44 @@ def run() -> tuple[dict, int]:
     legacy = _read(BASE / "reports" / "shadow" / "shadow_state.json")
     scalp = _read(BASE / "reports" / "shadow" / "scalp_shadow_state.json")
     qquant = _read(BASE / "reports" / "shadow" / "qquant_shadow_state.json")
+    # THE CENSUS COUNTED ONE ADMISSION STRING AND CALLED THE REST MISSING (fixed 2026-09-13).
+    #
+    # This matched `gate_admission == "ORIGINAL_UNIVERSAL_10_PASS"` exactly, which was complete
+    # while that was the only basis any clock could hold. The power-cure lane ended that: a cell
+    # that passes all five VALIDITY gates and fails only POWER gates now enrols carrying
+    # `VALIDITY_PASS_POWER_DEFICIENT`, because `pipeline/promote.py` branches on that exact
+    # string to apply the forward-cure thresholds instead of the ten-gate ones.
+    #
+    # So every cure clock became INVISIBLE HERE the moment the lane opened. Measured on the box
+    # tonight: shadow_state.json held 230 rows with 218 ACTIVE, this set matched 95, and the
+    # difference was published as `missing_sleeves: ["86 certified sleeve(s)"]` -- 86 clocks that
+    # exist, are enrolled, are accruing forward evidence, and were being reported as never having
+    # been created. The lane I opened to cure power deficiency is the lane this reported as a
+    # hole, every hour, with an exit code.
+    #
+    # THE DEFECT IS THE EQUALITY, NOT THE VALUE. An `== <one enum member>` filter over a field
+    # that is designed to grow new members fails silently and in the safe-looking direction: it
+    # UNDER-counts, which reads as a shortfall rather than an error, so it survives review. Same
+    # shape as `live: 0` (a reader that handled one JSON shape) and the `min_volume` /
+    # `volume_min` spelling -- all three answered confidently with a number that meant "I did not
+    # recognise this".
+    #
+    # A row is represented if it is a clock this desk knowingly enrolled. Membership is now the
+    # test, the bases are named in one place, and an UNRECOGNISED basis is surfaced rather than
+    # silently dropped -- because the next basis added will otherwise reproduce this exactly.
     represented_legacy = {
         key for key, row in legacy.items()
-        if isinstance(row, dict) and row.get("gate_admission") == "ORIGINAL_UNIVERSAL_10_PASS"
+        if isinstance(row, dict) and str(row.get("gate_admission") or "") in ENROLLED_ADMISSIONS
     }
+    _unrecognised = sorted({
+        str(row.get("gate_admission") or "")
+        for key, row in legacy.items()
+        if isinstance(row, dict) and ("status" in row or "n" in row)
+        and str(row.get("gate_admission") or "") not in ENROLLED_ADMISSIONS
+    } - {""})
+    if _unrecognised:
+        print("UNRECOGNISED gate_admission basis (not counted, and that is a defect here, "
+              f"not in the row): {_unrecognised}")
     represented_scalp = set((scalp.get("sleeves") or {}).keys())
     represented_qquant = {
         key for key, row in qquant.items()
@@ -227,8 +281,33 @@ def run() -> tuple[dict, int]:
         "gateway_armed": bool(gw.get("armed", False)),
         "promoted_live_sleeves": live_sleeves,
     }
-    if missing or errors:
+    # AN ENROLMENT GAP IS A CENSUS, NOT A CRASH (fixed 2026-09-13, WS-005).
+    #
+    # `missing` and `errors` were collapsed into one FAILED verdict and one exit code 1. Measured
+    # on the box tonight: the cycle ran for 2,667 seconds, saved 183 sleeves, resolved the
+    # allocation FRESH, applied four demotions and a resize, rewrote sleeves.json -- and then
+    # exited 1, because 187 certificates hold 95 clocks and the other 86 have none. Every part of
+    # that run worked. The number it reported was TRUE. It was rendered as the same event as a
+    # traceback.
+    #
+    # THE COST IS NOT COSMETIC. `ops/never_stale.py` keys its remedy table on the exit code, so
+    # the healer that exists to end staleness read code 1, found nothing keyed to it -- 1 is too
+    # generic to key globally -- and published "NEEDS HUMAN / no standing remedy for this shape"
+    # every hour about a lane that was working. An operator who checks twice and finds the desk
+    # healthy both times stops checking (L0296), and the one time it IS a traceback it will look
+    # exactly the same.
+    #
+    # So the two alarms now render differently, and the gap gets an exit code of its own:
+    #   errors   -> FAILED         1   something threw; the run is not trustworthy
+    #   missing  -> ENROLMENT_GAP  3   the run is trustworthy AND says N certificates lack clocks
+    #   blocked  -> EVIDENCE_BLOCKED 2 (unchanged)
+    # A non-zero code is kept for the gap ON PURPOSE: 86 unenrolled certificates is a real
+    # deficiency the desk must not be allowed to call OK. It is simply a DIFFERENT deficiency,
+    # and `ENROLMENT_GAP` carries its own remedy in never_stale's task table.
+    if errors:
         health["status"] = "FAILED"
+    elif missing:
+        health["status"] = "ENROLMENT_GAP"
     elif blocked:
         health["status"] = "EVIDENCE_BLOCKED"
     else:
@@ -236,7 +315,8 @@ def run() -> tuple[dict, int]:
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(health, indent=2), "utf-8")
     print(json.dumps(health, indent=2))
-    return health, {"OPERATING": 0, "EVIDENCE_BLOCKED": 2}.get(health["status"], 1)
+    return health, {"OPERATING": 0, "EVIDENCE_BLOCKED": 2,
+                    "ENROLMENT_GAP": 3}.get(health["status"], 1)
 
 
 def main() -> int:

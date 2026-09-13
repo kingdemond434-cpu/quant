@@ -29,3 +29,4 @@ FAMILY_SURVIVAL in libs/research/transcript_candidates.py, from the 131,441-back
 - [[l0031-the-backtest-gauntlet-is-a-screen-with-zero-promotion-]]
 - [[l0054-on-crypto-specifically-rank-mean-reversion-families-la]]
 - [[l0142-when-a-correction-runs-conservative-nobody-audits-it-s]]
+- [[l0293-a-seat-that-writes-where-no-reader-looks-has-produced-]]

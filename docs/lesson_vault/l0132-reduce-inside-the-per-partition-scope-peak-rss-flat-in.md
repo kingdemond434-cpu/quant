@@ -24,3 +24,6 @@ screen_orderbook_state held ~23MB of parsed dicts per partition (~550MB/day-cell
 - [[l0225-a-date-stamp-that-records-that-a-job-ran-never-what-it]]
 - [[l0240-a-guard-in-the-caller-is-invisible-from-the-callee-bef]]
 - [[l0277-the-sha-check-answers-is-this-the-sealed-code-the-per-]]
+- [[l0288-an-in-place-adoption-that-rewrites-every-differing-pat]]
+- [[l0289-fix-the-function-the-money-path-calls-and-prove-it-wit]]
+- [[l0292-two-machines-on-two-branches-with-a-silent-conflict-ab]]

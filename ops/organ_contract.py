@@ -90,6 +90,31 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
                            "the symbol registry the whole hypothesis lane reads"),
     "MT5-LocalConvert":   ("desks/mt5/data/hypotheses/local_candidates.json", 180,
                            "deterministic row -> candidate conversion"),
+
+    # THE E8 PROP ORGANS, CONTRACTED 2026-09-13 -- and the gap they close is one I made.
+    #
+    # The comment below says every organ built on 2026-09-12 was UNCONTRACTED on the day it was
+    # written. So was every organ I built for the prop account, and I wrote that comment. The
+    # board listed E8-Book, E8-Executor and E8-Spreads under "unwatched: 12 organ(s) with no
+    # artifact contract" -- the three organs that decide what a $100,000 funded account trades.
+    #
+    # An uncontracted organ is not merely unmonitored. If E8-Executor stops, the book stops
+    # placing and NOTHING SAYS SO: the guard keeps reporting the account is within its drawdown,
+    # which it trivially is when no order has been sent, and a 5-day speed floor bleeds away
+    # against a 2% daily cap that strips what it does not use. The failure and the healthy state
+    # produce the same artifact. That is the E8 version of `live: 0`.
+    #
+    # Budgets are the task's own cadence plus one period of slack, so a single skipped run is not
+    # an alarm and two are.
+    "E8-Book":            ("desks/mt5/reports/E8_BOOK.json", 120,
+                           "which sleeves the prop account is allowed to trade this hour"),
+    "E8-Executor":        ("desks/mt5/reports/E8_EXEC.json", 120,
+                           "what the prop account actually sent, or refused and why -- silence "
+                           "here is indistinguishable from a flat book"),
+    "E8-Spreads":         ("desks/mt5/reports/E8_SPREADS.json", 120,
+                           "the venue cost sample the executor's spread fence refuses against"),
+    "E8-Guard":           ("desks/mt5/reports/E8_GUARD.json", 120,
+                           "BREACHED / STOOD_DOWN / CAPPED / PASSED against the static drawdown"),
     # THE ORGANS BUILT 2026-09-12. Every one was UNCONTRACTED on the day it was written, which is
     # the gap that lets a new organ stop without anyone noticing -- exactly the class the
     # principal asked to end. A contract is the difference between an organ and a hope.
