@@ -34,6 +34,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -123,6 +124,31 @@ def records(rel: str, text: str) -> set[str]:
     return set()
 
 
+def _bodies(rel: str, text: str) -> dict[str, str]:
+    """id -> a fingerprint of the record's SUBSTANCE, for .jsonl ledgers that carry ids.
+
+    Empty for every other shape, which keeps this check narrow on purpose.
+    """
+    if not rel.endswith(".jsonl") or not text.strip():
+        return {}
+    out: dict[str, str] = {}
+    for line in text.splitlines():
+        if not line.strip():
+            continue
+        try:
+            d = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(d, dict) or "id" not in d:
+            continue
+        # The substance, not the bookkeeping: a record may gain tags, an enforcer or a recurrence
+        # count without being a different record. What must not change under a fixed id is what
+        # the record ASSERTS.
+        body = "\u0000".join(str(d.get(k, "")) for k in ("lesson", "evidence", "text", "claim"))
+        out[str(d["id"])] = hashlib.sha256(body.encode("utf-8")).hexdigest()[:16]
+    return out
+
+
 def compare(rel: str, before: str, after: str) -> dict[str, object] | None:
     """None when nothing was lost; otherwise the finding, with the lost ids NAMED."""
     if before.strip() and not after.strip():
@@ -134,6 +160,35 @@ def compare(rel: str, before: str, after: str) -> dict[str, object] | None:
         return {"file": rel, "kind": "RECORDS_LOST", "lost": lost,
                 "detail": f"{len(lost)} record(s) present in the old version and absent from the "
                           f"new one"}
+
+    # A RECORD CAN BE DESTROYED WITHOUT ITS ID EVER GOING MISSING (added 2026-09-14).
+    #
+    # Identity here is the id ALONE, so a commit that keeps every id and replaces what they say
+    # passes this fence completely. That is not a hypothetical gap; it is how the desk's two
+    # machines nearly lost eleven lessons in one night.
+    #
+    # `scripts/learn.py` mints the next id from the LOCAL ledger. The trading box and this
+    # checkout were both sitting at L0293, so both minted L0294 onward, and eleven ids came to
+    # name two entirely different lessons depending on which machine you asked. Adopting either
+    # copy would have silently overwritten the other's eleven -- with every id present, every
+    # count unchanged, and this guard reporting OK. The three ids that happened NOT to collide
+    # (L0305-L0307) were caught, which is the only reason any of it was noticed.
+    #
+    # A ledger's promise is that a record, once written, keeps saying what it said. Deletion and
+    # substitution break that promise equally, and substitution is the more dangerous of the two
+    # precisely because it leaves the counts intact.
+    #
+    # Deliberate edits remain possible -- a typo, a sharpened evidence line -- through the same
+    # named override the loss rule uses. What is refused is doing it SILENTLY.
+    b_before, b_after = _bodies(rel, before), _bodies(rel, after)
+    rewritten = sorted(
+        (k for k in b_before if k in b_after and b_before[k] != b_after[k]),
+        key=lambda s: (len(s), s))
+    if rewritten and not os.environ.get("ALLOW_PROTECTED_RECORD_REWRITE"):
+        return {"file": rel, "kind": "RECORDS_REWRITTEN", "lost": rewritten,
+                "detail": f"{len(rewritten)} record(s) keep their id and now assert something "
+                          f"different. Set ALLOW_PROTECTED_RECORD_REWRITE=1 to allow a "
+                          f"deliberate edit, naming the records in the commit message"}
     return None
 
 

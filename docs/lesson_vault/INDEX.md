@@ -1,6 +1,6 @@
 # Desk lessons
 
-304 lessons, generated from `docs/desk_lessons.jsonl`.
+316 lessons, generated from `docs/desk_lessons.jsonl`.
 
 > [!warning] This vault is a DERIVED VIEW.
 > `docs/desk_lessons.jsonl` is the source of truth and the only thing organs read.
@@ -18,36 +18,36 @@ there dilutes the lessons that do apply.
 
 ## Tags
 
-- #governance (27)
+- #governance (28)
+- #ops (21)
 - #statistics (17)
-- #ops (15)
 - #research (14)
 - #verification (13)
 - #design (13)
+- #measurement (12)
 - #priors (11)
-- #measurement (10)
 - #validation (10)
 - #testing (10)
 - #data (8)
 - #mining (8)
 - #silent-failure (7)
-- #wiring (7)
 - #execution (6)
 - #provenance (6)
 - #frontier (6)
+- #wiring (6)
 - #fences (5)
 - #windows (5)
+- #breadth (5)
+- #monitoring (4)
 - #ci (4)
 - #scheduling (4)
 - #coverage (4)
 - #free-data (4)
 - #sizing (4)
 - #staleness (4)
-- #breadth (4)
 - #money-path (4)
+- #research-loop (4)
 - #accounting (3)
-- #safety (3)
-- #discovery (3)
 
 ## All lessons
 
@@ -105,6 +105,9 @@ there dilutes the lessons that do apply.
 - [[l0052-a-403-from-a-public-venue-endpoint-is-a-user-agent-bot]]
 - [[l0053-state-the-units-in-the-name-of-every-threshold-constan]]
 - [[l0054-on-crypto-specifically-rank-mean-reversion-families-la]]
+- [[l0055-a-false-positive-gate-is-self-amplifying-when-its-metr]]
+- [[l0056-a-drawdown-rail-measures-a-ratio-so-an-accounting-chan]]
+- [[l0057-a-red-pytest-leg-can-mean-zero-tests-ran-a-test-module]]
 - [[l0058-check-the-as-of-date-of-a-ratio-s-denominator-separate]]
 - [[l0059-a-guard-that-enumerates-a-hardcoded-subset-of-its-inpu]]
 - [[l0060-rank-a-mined-comment-tree-by-mechanism-keyword-density]]
@@ -112,9 +115,6 @@ there dilutes the lessons that do apply.
 - [[l0062-never-git-stash-pop-in-this-shared-working-tree-git-st]]
 - [[l0063-run-a-leak-detector-on-data-you-know-is-clean-before-y]]
 - [[l0064-when-two-organs-read-the-same-source-share-the-filter-]]
-- [[l0055-a-false-positive-gate-is-self-amplifying-when-its-metr]]
-- [[l0056-a-drawdown-rail-measures-a-ratio-so-an-accounting-chan]]
-- [[l0057-a-red-pytest-leg-can-mean-zero-tests-ran-a-test-module]]
 - [[l0065-a-green-local-gate-proves-nothing-unless-the-installed]]
 - [[l0066-on-a-box-where-several-agent-sessions-share-one-workin]]
 - [[l0067-before-replacing-a-fabricated-default-with-unmeasured-]]
@@ -344,14 +344,26 @@ there dilutes the lessons that do apply.
 - [[l0291-a-consecutive-failures-counter-without-a-clock-is-a-la]]
 - [[l0292-two-machines-on-two-branches-with-a-silent-conflict-ab]]
 - [[l0293-a-seat-that-writes-where-no-reader-looks-has-produced-]]
-- [[l0294-never-filter-a-census-with-one-enum-member-on-a-field-]]
-- [[l0295-a-deficiency-an-organ-measured-must-never-share-an-exi]]
-- [[l0296-staleness-on-this-desk-has-exactly-three-causes-and-th]]
-- [[l0297-register-a-scheduled-task-with-the-absolute-interprete]]
-- [[l0298-a-daemon-registered-as-a-periodic-task-reports-2147946]]
-- [[l0299-never-escalate-a-bookkeeping-gap-beside-a-dead-gateway]]
-- [[l0300-two-implementations-of-one-digest-will-disagree-put-th]]
-- [[l0301-an-ssh-host-alias-is-a-dependency-if-a-script-says-rem]]
-- [[l0302-a-sentinel-that-means-both-not-measured-and-no-restric]]
-- [[l0303-git-add-fails-the-whole-invocation-rc-128-pathspec-did]]
-- [[l0304-always-pass-encoding-utf-8-errors-replace-when-capturi]]
+- [[l0294-a-scheduled-task-with-a-relative-script-path-and-no-wo]]
+- [[l0295-a-daemon-registered-as-a-periodic-task-reports-failure]]
+- [[l0296-schtasks-prints-task-result-codes-signed-and-the-power]]
+- [[l0297-last-result-is-the-previous-run-s-code-so-a-task-that-]]
+- [[l0298-python-with-no-ca-store-fails-tls-verification-on-ever]]
+- [[l0299-an-organ-whose-artifact-has-no-reader-has-produced-not]]
+- [[l0300-a-board-that-reports-a-family-blocked-on-an-input-is-r]]
+- [[l0301-an-unjudged-test-is-unmeasured-never-a-pass-and-never-]]
+- [[l0302-shipping-a-caller-before-its-callee-is-a-self-inflicte]]
+- [[l0303-a-rotation-cursor-that-only-some-code-paths-stamp-will]]
+- [[l0304-bool-on-a-pandas-index-or-series-raises-rather-than-an]]
+- [[l0305-a-fallback-that-is-out-of-band-makes-a-failure-permane]]
+- [[l0306-a-ceiling-derived-from-a-measurement-grid-is-the-edge-]]
+- [[l0307-viterbi-labels-know-the-future-hmm-predict-has-a-backw]]
+- [[l0308-never-filter-a-census-with-one-enum-member-on-a-field-]]
+- [[l0309-a-deficiency-an-organ-measured-must-never-share-an-exi]]
+- [[l0310-staleness-on-this-desk-has-exactly-three-causes-and-th]]
+- [[l0311-never-escalate-a-bookkeeping-gap-beside-a-dead-gateway]]
+- [[l0312-two-implementations-of-one-digest-will-disagree-put-th]]
+- [[l0313-an-ssh-host-alias-is-a-dependency-if-a-script-says-rem]]
+- [[l0314-a-sentinel-that-means-both-not-measured-and-no-restric]]
+- [[l0315-git-add-fails-the-whole-invocation-rc-128-pathspec-did]]
+- [[l0316-always-pass-encoding-utf-8-errors-replace-when-capturi]]

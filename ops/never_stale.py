@@ -62,13 +62,13 @@ RESTARTABLE = {"STALE", "NO_ARTIFACT"}
 DIAGNOSIS = {
     2: ("relative script path with no working directory -- the scheduler starts it in System32. "
         "Re-register with the ABSOLUTE interpreter and an explicit -WorkingDirectory. "
-        "(L0297: MT5-IdentityHealer had never once run for this reason.)"),
+        "(L0294: MT5-IdentityHealer had never once run for this reason.)"),
     2147942401: ("the system cannot find the file specified -- same shape as code 2: check the "
                  "working directory before the script."),
     2147946720: ("killed by the scheduler. If the job is a DAEMON this is a registration error, "
                  "not a failure: give it an at-startup trigger and ExecutionTimeLimit zero. "
-                 "(L0298: MT5-NewsDesk and MT5-ResearchReports both reported this forever.)"),
-    3221225786: ("terminated by console close -- the daemon shape again; see L0298."),
+                 "(L0295: MT5-NewsDesk and MT5-ResearchReports both reported this forever.)"),
+    3221225786: ("terminated by console close -- the daemon shape again; see L0295."),
     2147943645: ("no logged-on interactive session. An Interactive task cannot run headless; "
                  "either a user must stay signed in or the task needs a service principal."),
     3: ("ENROLMENT GAP, not a failure. The organ completed its work and is reporting a "
@@ -254,7 +254,7 @@ def run(apply: bool) -> dict:
         # UNCONTRACTED IS A BOOKKEEPING GAP, NOT A BREAKAGE. The organ runs fine; nobody wrote it
         # an artifact contract, so nothing would notice if it stopped. That is worth fixing and
         # worth listing, but escalating it as NEEDS_HUMAN beside a dead gateway is precisely the
-        # cry-wolf failure that teaches an operator to stop reading the board (L0299).
+        # cry-wolf failure that teaches an operator to stop reading the board (L0311).
         if verdict == "UNCONTRACTED":
             uncontracted.append(name)
             continue

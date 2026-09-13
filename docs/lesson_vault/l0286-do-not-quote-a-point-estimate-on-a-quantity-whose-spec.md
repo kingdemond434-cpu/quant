@@ -23,4 +23,4 @@ docs/BOOK_E8_MEASURED.md: three successive pass probabilities (92%, 67%, 73.6%) 
 - [[l0206-a-number-whose-unit-lives-in-a-sibling-column-is-not-d]]
 - [[l0230-a-dataset-s-own-label-for-its-statistic-can-be-wrong-a]]
 - [[l0268-before-believing-a-ratio-of-two-measurements-prove-the]]
-- [[l0304-always-pass-encoding-utf-8-errors-replace-when-capturi]]
+- [[l0316-always-pass-encoding-utf-8-errors-replace-when-capturi]]
