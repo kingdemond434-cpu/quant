@@ -375,14 +375,38 @@ def measure(sleeves: list[dict[str, Any]] | None = None,
             equity: float | None = None) -> dict[str, Any]:
     """The whole capability, in one call."""
     if equity is None:
-        equity = 0.0
-        state = BASE / "web" / "desk_state.json"
-        for candidate in (REPO / "web" / "desk_state.json", state):
+        # THE EQUITY A SIZING VERDICT USES MUST NOT COME FROM A DASHBOARD (measured 2026-09-13).
+        #
+        # This read `web/desk_state.json` FIRST, which is the payload the dashboard renders --
+        # a display artifact, written by whichever machine last published, and present on boxes
+        # that do not trade at all. Run on the mirror it returned EUR 752.51 while the live
+        # terminal, account_state.json and gateway_state.json all said 607.68. Every Elog(C)
+        # verdict in this module is a function of that number, so the whole P12 table was priced
+        # at an equity the account has never had, and nothing in the artifact said which box's
+        # dashboard it had believed.
+        #
+        # PRECEDENCE IS NOW BY AUTHORITY, NOT BY CONVENIENCE: the account organ's own state, then
+        # the gateway's, then -- last and named as such -- the dashboard payload. The source
+        # RIDES ON THE REPORT, because "EUR 607.68" and "EUR 607.68 from a display artifact on a
+        # machine that does not trade" are the same number and different facts.
+        equity, equity_source = 0.0, "NONE"
+        for candidate, keys, label in (
+            (BASE / "data" / "account_state.json", ("equity",), "account_state.json"),
+            (BASE / "data" / "gateway_state.json", ("equity",), "gateway_state.json"),
+            (BASE / "web" / "desk_state.json", ("account", "equity"), "web/desk_state.json"),
+            (REPO / "web" / "desk_state.json", ("account", "equity"),
+             "REPO web/desk_state.json (display artifact -- may be another box's)"),
+        ):
             try:
-                equity = float(json.loads(candidate.read_text("utf-8"))["account"]["equity"])
-                break
+                doc = json.loads(candidate.read_text("utf-8"))
+                for k in keys:
+                    doc = doc[k]
+                val = float(doc)
             except Exception:                                           # noqa: BLE001, S110
                 continue
+            if val > 0:
+                equity, equity_source = val, label
+                break
     source = "caller"
     if sleeves is None:
         sleeves = []
@@ -422,6 +446,9 @@ def measure(sleeves: list[dict[str, Any]] | None = None,
     return {
         "generated_utc": datetime.now(tz=UTC).isoformat(timespec="seconds"),
         "equity_eur": equity,
+        # WHERE THAT NUMBER CAME FROM. A sizing verdict priced off a display artifact is not the
+        # same claim as one priced off the account organ, and a reader must be able to tell.
+        "equity_source": equity_source,
         "sleeve_source": source,
         "sleeves": len(rows),
         "measured": sum(1 for r in rows if r.get("status") == "MEASURED"),
