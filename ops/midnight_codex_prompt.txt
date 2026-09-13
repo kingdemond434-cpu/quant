@@ -36,29 +36,23 @@ This review is part of this same daily cycle, not a new competing scheduler or p
 Keep operational recovery first when needed to make experiments meaningful; do not let daily
 research become another stream of recommendations without implemented, verified follow-through.
 
-ACQUIRE BEFORE DEFERRING: missing data, symbols, exact rules or infrastructure initiate a recovery
-task in this same cycle, not an automatic DEFER until tomorrow. Define the exact missing fields,
-instrument mapping, history, resolution, publication/availability timestamps and permissible use.
-Search the existing lake, source ledger and collectors first, then lawful official APIs, archives,
-broker exports and public research datasets. Attempt acquisition now; record source URLs, requests,
-retrieval outcomes and hashes. Reuse or repair the canonical collector, backfill available history,
-validate schema, gaps, point-in-time provenance and downstream readability, then continue the
-original hypothesis through exact-rule compilation, implementation, backtest and unchanged gates.
-Repair recoverable local path, ownership and memory/batch-persistence faults within authority;
-do not stop at describing them. Never bypass host protections or other controllers' ownership.
-Do not silently substitute proxy venues, reconstructed vintages or coarser data for required
-native/PIT/finer observations. Start a lawful prospective collector when history cannot exist,
-freeze the intended experiment and minimum evidence requirement, and continue other runnable work.
-Try a materially different lawful source or acquisition method after a recoverable failed attempt;
-honor rate limits and bounded retry/compute budgets instead of looping or scraping indiscriminately.
-Only record BLOCKED after concrete attempts identify a real access, licensing, unavailable-history,
-resource or external-service constraint. Include attempts, exact dependency, owner, next trigger
-and resumable state. Do not purchase new subscriptions or bypass access controls. A blocker is
-not completion, and an acquisition plan is not acquired data. Do not invent tests or survivors.
-For every chosen improvement, pursue the complete acquisition -> implementation -> validation ->
-canonical deployment -> runtime-consumer chain until verified or genuinely blocked. Report which
-link actually completed. No new-source count, plumbing patch or research prose alone constitutes
-completed edge conversion. Measure independent useful output, not guaranteed survivor quotas.
+ACQUIRE BEFORE DEFERRING: missing data, symbols, rules or infrastructure trigger recovery now,
+not automatic DEFER until tomorrow. Specify fields, mapping, history, resolution, PIT timestamps
+and permitted use. Search existing lake/ledgers/collectors, then lawful official APIs, archives,
+broker exports and research datasets. Attempt acquisition; log URLs, outcomes and hashes. Repair
+or reuse canonical collectors, backfill, validate schema/gaps/PIT/downstream readability, then
+continue exact-rule compilation, implementation, backtests and unchanged gates. Fix recoverable
+path, ownership and memory/batch-persistence faults within authority, not merely describe them.
+Try a materially different lawful source/method after recoverable failure, within rate limits and
+retry/compute budgets. Never bypass host protections, another controller's ownership or access
+controls; never purchase new subscriptions. Do not substitute proxies, reconstructed vintages or
+coarser observations for required native/PIT/finer evidence. If history cannot exist, start lawful
+prospective collection, preregister evidence needs and continue other runnable work.
+BLOCKED requires concrete attempts and a real access/licensing/history/resource/service constraint,
+plus the dependency, owner, next trigger and resumable state. Plans are not acquired data;
+blockers are not completion. Pursue acquisition -> implementation -> validation -> canonical
+deployment -> runtime-consumer proof until verified or genuinely blocked. Report the actual link
+completed: source counts, plumbing and prose alone are not completed edge conversion.
 
 NEW-BOX MIGRATION ACCEPTANCE: discover the authorized current host mapping from repository
 handoff and configured connections; do not assume the old Contabo alias is the new machine.
