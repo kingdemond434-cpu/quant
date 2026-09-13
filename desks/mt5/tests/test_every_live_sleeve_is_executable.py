@@ -65,11 +65,47 @@ def _live() -> list[dict]:
     return [r for r in _rows() if str(r.get("status", "")).upper() == "LIVE"]
 
 
+def _scalp_families() -> frozenset[str]:
+    """The names the SCALP lane can construct, asked of the lane itself.
+
+    THE LANE THIS TEST COULD NOT SEE. `scalp_exec.signal_at_open` resolves a family through
+    `research.scalp_family_expansion._base_signals`, which is a different registry from either of
+    the two below and is the ONLY one that carries the M5/M15 anti-* recipes. Without it this test
+    reported `xau_m5_anti_breakout_overlap`, `xau_m15_anti_breakout` and `xau_m5_anti_momentum_ny`
+    as LIVE rows nothing could construct -- three working scalp sleeves, named as dead.
+
+    That is the worst way for this particular test to be wrong. Its whole purpose is to catch a
+    LIVE row that places nothing while counting toward every heat figure and dashboard tile, so a
+    false positive here argues for RETIRING a sleeve that works. A blind spot covering an entire
+    execution lane is not a stricter test, it is a wrong one.
+
+    The registry is asked with a synthetic frame because `_base_signals` returns a dict keyed by
+    family name; the values are irrelevant here and only the KEYS are the answer to "can this lane
+    build it".
+    """
+    try:
+        import numpy as np
+        import pandas as pd
+        from desks.mt5.research import scalp_family_expansion as fx
+    except Exception:
+        return frozenset()
+    try:
+        idx = pd.date_range("2026-01-01", periods=400, freq="15min", tz="UTC")
+        rng = np.random.default_rng(1)
+        px = 2000 + np.cumsum(rng.normal(0, 1, 400))
+        frame = pd.DataFrame({"open": px, "high": px + 1, "low": px - 1,
+                              "close": px + rng.normal(0, 0.3, 400)}, index=idx)
+        return frozenset(fx._base_signals(frame))
+    except Exception:
+        return frozenset()
+
+
 def _resolves(fam: str) -> bool:
     """Any lane. `resolve_family` is the forward engine's order (hunt16, families, orthogonal);
-    `get_family_func` is the backtest/pipeline lane. Either answering is enough for the row to be
-    runnable, and the two are checked separately so a future divergence between them is visible
-    rather than hidden behind an `or`."""
+    `get_family_func` is the backtest/pipeline lane; `_scalp_families` is the scalp lane, which
+    carries recipes neither of the others does. Any one answering is enough for the row to be
+    runnable, and they are checked separately so a future divergence is visible rather than hidden
+    behind an `or`."""
     ok = False
     try:
         from mt5desk.executables import resolve_family
@@ -81,7 +117,7 @@ def _resolves(fam: str) -> bool:
         ok = ok or get_family_func(fam) is not None
     except Exception:
         pass
-    return ok
+    return ok or fam in _scalp_families()
 
 
 def test_every_live_sleeve_is_runnable_by_some_lane() -> None:
@@ -97,7 +133,7 @@ def test_every_live_sleeve_is_runnable_by_some_lane() -> None:
             continue
         if not _resolves(fam):
             dead.append(f"{name}: family {fam!r} resolves in NO lane "
-                        f"(hunt16, families, families_orthogonal)")
+                        f"(hunt16, families, families_orthogonal, scalp)")
     assert not dead, (
         f"{len(dead)} LIVE sleeve(s) cannot be executed by any lane on this tree. A LIVE row is a "
         f"claim the gateway will trade it; a row nothing can construct places nothing while "
