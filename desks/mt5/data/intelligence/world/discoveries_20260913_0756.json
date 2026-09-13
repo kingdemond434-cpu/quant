@@ -1,0 +1,1884 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "&quot;R WebTrader&quot; \u0e08\u0e32\u0e01 RoboForex Ltd",
+  "url": "https://webtrader.roboforex.com/th",
+  "published": "2026-09-13T07:55:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6b8178809830ffd02292",
+  "host": "webtrader.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "&quot;R WebTrader&quot; \u0e08\u0e32\u0e01 RoboForex Ltd",
+  "url": "https://webtrader.roboforex.com/th/?show-pwa-modal",
+  "published": "2026-09-13T07:55:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "85908dbb28cedc8c3f14",
+  "host": "webtrader.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "&quot;R WebTrader&quot; from RoboForex Ltd",
+  "url": "https://webtrader.roboforex.com/th/mobile",
+  "published": "2026-09-13T07:55:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6323e5de857f58f0d4a7",
+  "host": "webtrader.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\"MetaTrader 4\" (MT4) \u0e40\u0e27\u0e47\u0e1a\u0e40\u0e17\u0e2d\u0e23\u0e4c\u0e21\u0e34\u0e19\u0e31\u0e25\u0e08\u0e32\u0e01 RoboForex Ltd.",
+  "url": "https://mt.roboforex.com/?lang=th",
+  "published": "2026-09-13T07:55:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6f682c42959d2bb796c8",
+  "host": "mt.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\"MetaTrader 5\" (MT5) \u0e40\u0e27\u0e47\u0e1a\u0e40\u0e17\u0e2d\u0e23\u0e4c\u0e21\u0e34\u0e19\u0e31\u0e25\u0e08\u0e32\u0e01 RoboForex Ltd.",
+  "url": "https://mt5.roboforex.com/?lang=th",
+  "published": "2026-09-13T07:55:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "88d68b9713479ab85b62",
+  "host": "mt5.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "FAQ &#8211; RoboForex Help",
+  "url": "https://help.roboforex.com/about/client/risk-warning/",
+  "published": "2026-09-13T07:55:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1743511020"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "6d79f349a4a95d78173c",
+  "host": "help.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "R StocksTrader Launches Copy Trading in Its Mobile App - RoboForex Blog",
+  "url": "https://blog.roboforex.com/th/blog/2022/10/03/r-stockstrader-launches-copy-trading-in-its-mobile-app/",
+  "published": "2026-09-13T07:55:41+00:00",
+  "symbols": [
+   "XAUUSD",
+   "EURUSD",
+   "USDTRY",
+   "Tesla"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "gap",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "188a15d4f6571103239b",
+  "host": "blog.roboforex.com",
+  "claims": [
+   {
+    "claim": "2026 Analysis 16 min Market Week Ahead (September 7 \u2013 11): US CPI Forecast Lands After the ECB Decision The first week of September settled nothing.",
+    "lang": "en",
+    "quantities": [
+     "cpi"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "8dede90a48a2"
+   },
+   {
+    "claim": "2026 Analysis 16 min Market Week Ahead (August 31 \u2013 September 4): Non-Farm Payrolls Forecast Decides the Dollar's Course August closed on a firm note for US stocks, carried by the first corporate reports of the season.",
+    "lang": "en",
+    "quantities": [
+     "stocks"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "EURUSD",
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "gold",
+      "eur/usd",
+      "try",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "adb662934c31"
+   },
+   {
+    "claim": "2026 Analysis 23 min Gold Fed Rate Hike Bets: XAUUSD Forecast and a 4,772 USD Target Gold Fed rate hike bets have been the single biggest weight on the metal all year, and over one week in August that weight came off.",
+    "lang": "en",
+    "quantities": [
+     "rate",
+     "hike"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "0f6faf8e9a8f"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Security policy, Privacy policy - RoboForex",
+  "url": "https://www.roboforex.com/about/client/security-policy/",
+  "published": "2026-09-13T07:55:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1788266027",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "e40f01c7045fdb646b27",
+  "host": "www.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "&quot;R WebTrader&quot; from RoboForex Ltd",
+  "url": "https://webtrader.roboforex.com",
+  "published": "2026-09-13T07:55:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b8985ec48ca202ddb356",
+  "host": "webtrader.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "&quot;R WebTrader&quot; from RoboForex Ltd",
+  "url": "https://webtrader.roboforex.com/?show-pwa-modal",
+  "published": "2026-09-13T07:55:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a9ed76f7a5800147e378",
+  "host": "webtrader.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "&quot;R WebTrader&quot; from RoboForex Ltd",
+  "url": "https://webtrader.roboforex.com/mobile",
+  "published": "2026-09-13T07:55:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://webtrader.roboforex.com/mobile/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "8bce1c138194fad4df25",
+  "host": "webtrader.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "&quot;R WebTrader&quot; from RoboForex Ltd",
+  "url": "https://webtrader.roboforex.com/",
+  "published": "2026-09-13T07:55:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e7eac3dd41dabd708f50",
+  "host": "webtrader.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "&quot;R WebTrader&quot; from RoboForex Ltd",
+  "url": "https://webtrader.roboforex.com/mobile?show-pwa-modal/",
+  "published": "2026-09-13T07:55:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://webtrader.roboforex.com/mobile/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c0c786cc9d16d8a47dae",
+  "host": "webtrader.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "StocksTrader Terminal - RoboForex Ltd",
+  "url": "https://stockstrader.roboforex.com/",
+  "published": "2026-09-13T07:55:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://stockstrader.roboforex.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "09cedcbf5e5002b088c3",
+  "host": "stockstrader.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "StocksTrader Terminal - RoboForex Ltd",
+  "url": "https://stockstrader.roboforex.com/?specs",
+  "published": "2026-09-13T07:55:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://stockstrader.roboforex.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f76de3a4971f27c1a129",
+  "host": "stockstrader.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Trader Workstation (TWS) | Interactive Brokers U.K. Limited",
+  "url": "https://www.interactivebrokers.co.uk/en/trading/download-tws.php",
+  "published": "2026-09-13T07:55:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.co.uk/en/trading/download-tws.php",
+   "https://download2.interactivebrokers.com/installers/tws/latest/tws-latest-macos-arm.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/latest/tws-latest-macosx-x64.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/latest/tws-latest-windows-x64.exe",
+   "https://download2.interactivebrokers.com/installers/tws/latest/tws-latest-linux-x64.sh",
+   "https://download2.interactivebrokers.com/installers/tws/stable/tws-stable-macos-arm.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/stable/tws-stable-macosx-x64.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/stable/tws-stable-windows-x64.exe",
+   "https://download2.interactivebrokers.com/installers/tws/stable/tws-stable-linux-x64.sh",
+   "https://download2.interactivebrokers.com/installers/tws/beta/tws-beta-macos-arm.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/beta/tws-beta-macosx-x64.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/beta/tws-beta-windows-x64.exe",
+   "https://download2.interactivebrokers.com/installers/tws/beta/tws-beta-linux-x64.sh",
+   "https://download2.interactivebrokers.com/installers/tws/latest-standalone/tws-latest-standalone-macos-arm.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/latest-standalone/tws-latest-standalone-macosx-x64.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/latest-standalone/tws-latest-standalone-windows-x64.exe",
+   "https://download2.interactivebrokers.com/installers/tws/latest-standalone/tws-latest-standalone-linux-x64.sh",
+   "https://download2.interactivebrokers.com/installers/tws/stable-standalone/tws-stable-standalone-macos-arm.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/stable-standalone/tws-stable-standalone-macosx-x64.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/stable-standalone/tws-stable-standalone-windows-x64.exe",
+   "https://download2.interactivebrokers.com/installers/tws/stable-standalone/tws-stable-standalone-linux-x64.sh"
+  ],
+  "n_endpoints": 21,
+  "vault_sha": "238603d9bc237b19c3b7",
+  "host": "www.interactivebrokers.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\"MetaTrader 4\" (MT4) web terminal from RoboForex Ltd",
+  "url": "https://mt.roboforex.com/?lang=en",
+  "published": "2026-09-13T07:56:00+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "134caa4f3cc4d124a4b2",
+  "host": "mt.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\"MetaTrader 5\" (MT5) web terminal from RoboForex Ltd",
+  "url": "https://mt5.roboforex.com/?lang=en",
+  "published": "2026-09-13T07:56:00+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3f68f5a591755995e468",
+  "host": "mt5.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "R StocksTrader Launches Copy Trading in Its Mobile App - RoboForex Blog",
+  "url": "https://blog.roboforex.com/blog/2022/10/03/r-stockstrader-launches-copy-trading-in-its-mobile-app/",
+  "published": "2026-09-13T07:56:01+00:00",
+  "symbols": [
+   "XAUUSD",
+   "EURUSD",
+   "USDTRY",
+   "Tesla"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "gap",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9a1d347eb5f46651eae2",
+  "host": "blog.roboforex.com",
+  "claims": [
+   {
+    "claim": "2026 Analysis 16 min Market Week Ahead (September 7 \u2013 11): US CPI Forecast Lands After the ECB Decision The first week of September settled nothing.",
+    "lang": "en",
+    "quantities": [
+     "cpi"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "8dede90a48a2"
+   },
+   {
+    "claim": "2026 Analysis 16 min Market Week Ahead (August 31 \u2013 September 4): Non-Farm Payrolls Forecast Decides the Dollar's Course August closed on a firm note for US stocks, carried by the first corporate reports of the season.",
+    "lang": "en",
+    "quantities": [
+     "stocks"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "EURUSD",
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "gold",
+      "eur/usd",
+      "try",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "adb662934c31"
+   },
+   {
+    "claim": "2026 Analysis 23 min Gold Fed Rate Hike Bets: XAUUSD Forecast and a 4,772 USD Target Gold Fed rate hike bets have been the single biggest weight on the metal all year, and over one week in August that weight came off.",
+    "lang": "en",
+    "quantities": [
+     "rate",
+     "hike"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "0f6faf8e9a8f"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "FAQ &#8211; RoboForex Help",
+  "url": "https://help.roboforex.com/en/support/solutions/articles/501000291518-how-a-trader-s-commission-is-calculated",
+  "published": "2026-09-13T07:56:02+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1743511020"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "515aa8e97730d377a964",
+  "host": "help.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Portfolio Analysis in R: Part II | Analyzing A 60/40 Strategy | The Capital Spectator",
+  "url": "https://www.capitalspectator.com/portfolio-analysis-in-r-part-ii-analyzing-a-6040-strategy/",
+  "published": "2026-09-13T07:56:05+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3238befaf71103f93e9d",
+  "host": "www.capitalspectator.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "A Revelation For Small-Cap Investing Strategies | The Capital Spectator",
+  "url": "https://www.capitalspectator.com/a-revelation-for-small-cap-investing-strategies/",
+  "published": "2026-09-13T07:56:07+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "inventory",
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c1f99d5f51494e9de76c",
+  "host": "www.capitalspectator.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "A Momentum-Based Trading Signal With Strategic Value | The Capital Spectator",
+  "url": "https://www.capitalspectator.com/a-momentum-based-trading-signal-with-strategic-value/",
+  "published": "2026-09-13T07:56:09+00:00",
+  "symbols": [
+   "US500",
+   "US30",
+   "US2000"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "20d6329156e3568dba1b",
+  "host": "www.capitalspectator.com",
+  "claims": [
+   {
+    "claim": "omit(Lag(ifelse(i >0,1,0))) # lag adjusted return signal by one day for trading analysis } [/code] Now let\u2019s create another function for comparing a portfolio strategy based on EAM\u2019s buy/sell signal vs.",
+    "lang": "en",
+    "quantities": [
+     "lag"
+    ],
+    "direction": [
+     "buy",
+     "sell"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "US30",
+      "US2000"
+     ],
+     "mentioned": [
+      "s&p 500",
+      "dow jones",
+      "russell"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a201413d2d50"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Portfolio Analysis in R: Part III | Adding A Global Strategy | The Capital Spectator",
+  "url": "https://www.capitalspectator.com/portfolio-analysis-in-r-part-iii-adding-a-global-strategy/",
+  "published": "2026-09-13T07:56:11+00:00",
+  "symbols": [
+   "US500",
+   "US30",
+   "US2000"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "05ac56789939a16c005e",
+  "host": "www.capitalspectator.com",
+  "claims": [
+   {
+    "claim": "As a preview, the global strategy delivers a slightly higher return over the sample period (the close of 2003 through Feb.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "higher"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "US30",
+      "US2000"
+     ],
+     "mentioned": [
+      "spy",
+      "dow jones",
+      "russell"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "4c8c6425dfae"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "We\u2019re All Backtesters Now | The Capital Spectator",
+  "url": "https://www.capitalspectator.com/were-all-backtesters-now/",
+  "published": "2026-09-13T07:56:13+00:00",
+  "symbols": [
+   "XAGUSD",
+   "US500",
+   "US30",
+   "US2000"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d76daf11c8191ef18620",
+  "host": "www.capitalspectator.com",
+  "claims": [
+   {
+    "claim": "> Post navigation \u2190 Initial Guidance | 4 March 2015 ADP: US February Payrolls Continue To Grow, But At Slower Rate \u2192 3 thoughts on \u201c We\u2019re All Backtesters Now \u201d Pingback: We\u2019re All Backtesters Now | XLNtrading Pingback: The Whole Street\u2019s Daily Wrap for 3/4/2015 | The Whole Street Emlyn Flint March 9, 2015 at 7:58 am Normally don\u2019t leave comments but your post struck a chord.",
+    "lang": "en",
+    "quantities": [
+     "rate"
+    ],
+    "direction": [
+     "continue"
+    ],
+    "horizon": [
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAGUSD",
+      "US500",
+      "US30",
+      "US2000"
+     ],
+     "mentioned": [
+      "silver",
+      "s&p 500",
+      "dow jones",
+      "russell"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "4ae7ce4e797e"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Implied vs. Realized Volatility in Delta Hedging Strategies &#8211; Relative Value Arbitrage",
+  "url": "https://blog.harbourfronts.com/2026/01/15/implied-vs-realized-volatility-in-delta-hedging-strategies/",
+  "published": "2026-09-13T07:56:15+00:00",
+  "symbols": [
+   "NAS100"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.algos.org/api/v1/file/8708a7e7-0d94-4297-9f54-d3dd3b233520.pdf"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "17c5cb42ae0d6e823ac1",
+  "host": "blog.harbourfronts.com",
+  "claims": [
+   {
+    "claim": "Since last week, the same phenomenon has emerged again, with the spot/volatility correlation turning positive.",
+    "lang": "en",
+    "quantities": [
+     "spot",
+     "volatility",
+     "correlation"
+    ],
+    "direction": [
+     "positive"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100"
+     ],
+     "mentioned": [
+      "nasdaq"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "7e530a4fbd82"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Effectiveness of Covered Call Strategy in Developed and Emerging Markets &#8211; Relative Value Arbitrage",
+  "url": "https://blog.harbourfronts.com/2025/10/20/effectiveness-of-covered-call-strategy-in-developed-and-emerging-markets/",
+  "published": "2026-09-13T07:56:17+00:00",
+  "symbols": [
+   "XAUUSD",
+   "US500",
+   "USDINR"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0072a056dec1d78bb79d",
+  "host": "blog.harbourfronts.com",
+  "claims": [
+   {
+    "claim": "-The high volatility of options often leads to sharp losses, with the potential to erase a year\u2019s gains in a single week of negative returns.",
+    "lang": "en",
+    "quantities": [
+     "volatility",
+     "options"
+    ],
+    "direction": [
+     "gains",
+     "negative"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "US500",
+      "USDINR"
+     ],
+     "mentioned": [
+      "gold",
+      "spy",
+      "rupee"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "40bc4223dc7f"
+   },
+   {
+    "claim": "Since last week, the same phenomenon has emerged again, with the spot/volatility correlation turning positive.",
+    "lang": "en",
+    "quantities": [
+     "spot",
+     "volatility",
+     "correlation"
+    ],
+    "direction": [
+     "positive"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "US500",
+      "USDINR"
+     ],
+     "mentioned": [
+      "gold",
+      "spy",
+      "rupee"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "7e530a4fbd82"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "options trading strategies &#8211; Page 2 &#8211; Relative Value Arbitrage",
+  "url": "https://blog.harbourfronts.com/category/options-trading-strategies/page/2/",
+  "published": "2026-09-13T07:56:21+00:00",
+  "symbols": [
+   "US500",
+   "GBPUSD",
+   "USDINR",
+   "UST10Y"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "auction",
+   "basis",
+   "carry",
+   "correlation",
+   "gap",
+   "inventory",
+   "mean_reversion",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "policy",
+   "positioning",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7fdc548209a3c31cfad4",
+  "host": "blog.harbourfronts.com",
+  "claims": [
+   {
+    "claim": "-The high volatility of options often leads to sharp losses, with the potential to erase a year\u2019s gains in a single week of negative returns.",
+    "lang": "en",
+    "quantities": [
+     "volatility",
+     "options"
+    ],
+    "direction": [
+     "gains",
+     "negative"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "GBPUSD",
+      "USDINR",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "spy",
+      "nifty",
+      "omxs30",
+      "cable",
+      "rupee",
+      "treasuries"
+     ],
+     "transfer_only": [
+      "nifty->indices (NSE/BSE)",
+      "omxs30->indices (Nordic exchanges)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "40bc4223dc7f"
+   },
+   {
+    "claim": "-The correction is modeled as an exponential increase function of the option expiry.",
+    "lang": "en",
+    "quantities": [
+     "expiry"
+    ],
+    "direction": [
+     "increase"
+    ],
+    "horizon": [
+     "expiry"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "GBPUSD",
+      "USDINR",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "spy",
+      "nifty",
+      "omxs30",
+      "cable",
+      "rupee",
+      "treasuries"
+     ],
+     "transfer_only": [
+      "nifty->indices (NSE/BSE)",
+      "omxs30->indices (Nordic exchanges)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "1d22670b9ddd"
+   },
+   {
+    "claim": "Findings -The public directional order imbalance of S&P500 in-the-money options reliably predicts negative market returns over monthly horizons extending up to three months.",
+    "lang": "en",
+    "quantities": [
+     "imbalance",
+     "options"
+    ],
+    "direction": [
+     "negative"
+    ],
+    "horizon": [
+     "monthly"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "s&p500"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "19dbd8eed173"
+   },
+   {
+    "claim": "In short, the authors showed that the Option Volume Imbalance has predictive power on directional overnight price movements for the underlyings.",
+    "lang": "en",
+    "quantities": [
+     "volume",
+     "imbalance"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "overnight"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "GBPUSD",
+      "USDINR",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "spy",
+      "nifty",
+      "omxs30",
+      "cable",
+      "rupee",
+      "treasuries"
+     ],
+     "transfer_only": [
+      "nifty->indices (NSE/BSE)",
+      "omxs30->indices (Nordic exchanges)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "01d73b08e34e"
+   },
+   {
+    "claim": "-Complex orders made up 58% to 76% of retail open positions, challenging the belief that retail traders primarily hold simple long positions.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "GBPUSD",
+      "USDINR",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "spy",
+      "nifty",
+      "omxs30",
+      "cable",
+      "rupee",
+      "treasuries"
+     ],
+     "transfer_only": [
+      "nifty->indices (NSE/BSE)",
+      "omxs30->indices (Nordic exchanges)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "de261ae4e153"
+   },
+   {
+    "claim": "Reference [1] continues this line of research, with its main contribution being the decomposition of the variance risk premium into overnight and intraday components using a variance swap approach.",
+    "lang": "en",
+    "quantities": [
+     "premium",
+     "swap"
+    ],
+    "direction": [
+     "continues"
+    ],
+    "horizon": [
+     "overnight",
+     "intraday"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "GBPUSD",
+      "USDINR",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "spy",
+      "nifty",
+      "omxs30",
+      "cable",
+      "rupee",
+      "treasuries"
+     ],
+     "transfer_only": [
+      "nifty->indices (NSE/BSE)",
+      "omxs30->indices (Nordic exchanges)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b607be2c6873"
+   },
+   {
+    "claim": "\u2013 Strong positive overnight returns suggest that the VRP in Nifty options prices mainly compensates for overnight risk.",
+    "lang": "en",
+    "quantities": [
+     "options"
+    ],
+    "direction": [
+     "positive"
+    ],
+    "horizon": [
+     "overnight"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "nifty"
+     ],
+     "transfer_only": [
+      "nifty->indices (NSE/BSE)"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "db56b43d6e31"
+   },
+   {
+    "claim": "\u2013 A strategy of selling index options at the end of the trading day and covering them at the beginning of the next day yields positive returns before transaction costs but is not profitable after accounting for transaction costs.",
+    "lang": "en",
+    "quantities": [
+     "options"
+    ],
+    "direction": [
+     "positive"
+    ],
+    "horizon": [
+     "day",
+     "next day"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "GBPUSD",
+      "USDINR",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "spy",
+      "nifty",
+      "omxs30",
+      "cable",
+      "rupee",
+      "treasuries"
+     ],
+     "transfer_only": [
+      "nifty->indices (NSE/BSE)",
+      "omxs30->indices (Nordic exchanges)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "2edea3e685b5"
+   }
+  ],
+  "n_claims": 10
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "options trading strategies &#8211; Page 4 &#8211; Relative Value Arbitrage",
+  "url": "https://blog.harbourfronts.com/category/options-trading-strategies/page/4/",
+  "published": "2026-09-13T07:56:24+00:00",
+  "symbols": [
+   "US500",
+   "UK100",
+   "USDTRY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "correlation",
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0e58e0d2c84d7af2d8a6",
+  "host": "blog.harbourfronts.com",
+  "claims": [
+   {
+    "claim": "Within the context of volatility trading, we compare 2 option strategies 1- NoTiming : Sell 1-Month at-the-money (ATM) put option on every option expiration Friday.",
+    "lang": "en",
+    "quantities": [
+     "volatility"
+    ],
+    "direction": [
+     "sell"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "UK100",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "ftse 100",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "6317c1a2cfaa"
+   },
+   {
+    "claim": "Since last week, the same phenomenon has emerged again, with the spot/volatility correlation turning positive.",
+    "lang": "en",
+    "quantities": [
+     "spot",
+     "volatility",
+     "correlation"
+    ],
+    "direction": [
+     "positive"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "UK100",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "ftse 100",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "7e530a4fbd82"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "AI-Powered Portfolio Analysis & Trading Tools | Interactive Brokers U.K. Limited",
+  "url": "https://www.interactivebrokers.co.uk/en/trading/ai-integrations.php",
+  "published": "2026-09-13T07:56:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "flow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.co.uk/en/trading/download-tws.php"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "30c0cc75d1ff2e4e0ca6",
+  "host": "www.interactivebrokers.co.uk",
+  "claims": [
+   {
+    "claim": "\" Execution \"Create sell instructions to reduce by 50% any holding with 30-day historical volatility above 60%.",
+    "lang": "en",
+    "quantities": [
+     "volatility"
+    ],
+    "direction": [
+     "sell"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "php"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "monetary authority of singapore: policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "e618abb6deff"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Products, Exchanges and Contracts Search | Interactive Brokers U.K. Limited",
+  "url": "https://www.interactivebrokers.co.uk/en/trading/products-exchanges.php",
+  "published": "2026-09-13T07:56:27+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.co.uk/en/trading/download-tws.php"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "12ff1858ad8879deab9f",
+  "host": "www.interactivebrokers.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Stock Trading: Trade Stocks Online | Interactive Brokers U.K. Limited",
+  "url": "https://www.interactivebrokers.co.uk/en/trading/products-stocks.php",
+  "published": "2026-09-13T07:56:31+00:00",
+  "symbols": [
+   "NAS100",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "carry",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.co.uk/en/trading/download-tws.php"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "9550880172c67c0a889e",
+  "host": "www.interactivebrokers.co.uk",
+  "claims": [
+   {
+    "claim": "Open Account Disclosures Lower investment costs will increase your overall return on investment, but lower costs do not guarantee that your investment will be profitable.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "lower",
+     "increase"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "gbp/usd",
+      "php"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "monetary authority of singapore: policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "cb2bc63ee7ce"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "IBKR ATS Clients | Interactive Brokers U.K. Limited",
+  "url": "https://www.interactivebrokers.co.uk/en/trading/clients-ibkr-ats.php?menu=A",
+  "published": "2026-09-13T07:56:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.co.uk/en/trading/download-tws.php"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "273203ff79e7fd521532",
+  "host": "www.interactivebrokers.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Order Types and Algos | Interactive Brokers U.K. Limited",
+  "url": "https://www.interactivebrokers.co.uk/en/trading/ordertypes.php",
+  "published": "2026-09-13T07:56:42+00:00",
+  "symbols": [
+   "NAS100",
+   "US500",
+   "USDTRY",
+   "Tesla"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "carry",
+   "mean_reversion",
+   "night_session",
+   "orderflow",
+   "policy",
+   "positioning",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.co.uk/en/trading/download-tws.php"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f5ad4cf4a1aa12ac702f",
+  "host": "www.interactivebrokers.co.uk",
+  "claims": [
+   {
+    "claim": "You want to buy 10 XYZ futures contracts as an auction order at the calculated opening price, which you think will be the best price of the day.",
+    "lang": "en",
+    "quantities": [
+     "futures",
+     "auction"
+    ],
+    "direction": [
+     "buy",
+     "contracts"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "s&p 500",
+      "try",
+      "php",
+      "tsla"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "monetary authority of singapore: policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "4ca01962e354"
+   },
+   {
+    "claim": "53 is significantly higher than the NBBO and above the daily trading range.",
+    "lang": "en",
+    "quantities": [
+     "range"
+    ],
+    "direction": [
+     "higher"
+    ],
+    "horizon": [
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "s&p 500",
+      "try",
+      "php",
+      "tsla"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "monetary authority of singapore: policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5564ade07706"
+   },
+   {
+    "claim": "however under certain circumstances IBKR may not be able to cancel such orders on a timely basis, including but not limited to when IBKR receives information on a corporate action within 48 hours of the announced effective date, and such GTC orders may continue to remain in force and may be eligible for execution.",
+    "lang": "en",
+    "quantities": [
+     "basis"
+    ],
+    "direction": [
+     "continue"
+    ],
+    "horizon": [
+     "hours"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "s&p 500",
+      "try",
+      "php",
+      "tsla"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "monetary authority of singapore: policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "1eeca5ee5935"
+   },
+   {
+    "claim": "Directed liquidity-adding orders to IBKR ATS whose effective price would match or cross the opposite side NBBO are repriced to be 1 minimum tick increment away (less aggressive) from the opposite side, except for Pegged-to-Midpoint orders with positive offsets when the NBBO spread is one cent, in which case the order would be repriced to the NBBO midpoint.",
+    "lang": "en",
+    "quantities": [
+     "liquidity",
+     "spread"
+    ],
+    "direction": [
+     "positive"
+    ],
+    "horizon": [
+     "tick"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "s&p 500",
+      "try",
+      "php",
+      "tsla"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "monetary authority of singapore: policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "147d787fcb2f"
+   },
+   {
+    "claim": "Order Type In Depth - Limit-on-Open Buy Order Step 1 \u2013 Enter a Limit-on-Open Buy Order XYZ stock has a current Ask price of 38.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "buy"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "s&p 500",
+      "try",
+      "php",
+      "tsla"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "monetary authority of singapore: policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "d5461e48e725"
+   },
+   {
+    "claim": "Video Lesson Order Type Outside RTH Products: Stocks, ETFs, Options, Futures, FOPs, Currencies, Bonds, Funds, Warrants, EFPs Platforms: TWS, IBKR Desktop, IBKR Mobile, Client Portal Regions: US and Non-US Products Routing: Smart, Directed You can instruct an order to continue to work after normal trading hours have ended by enabling Outside RTH (outside regular trading hours).",
+    "lang": "en",
+    "quantities": [
+     "stocks",
+     "options",
+     "futures"
+    ],
+    "direction": [
+     "continue"
+    ],
+    "horizon": [
+     "hours"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "s&p 500",
+      "try",
+      "php",
+      "tsla"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "monetary authority of singapore: policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "27574d2406da"
+   }
+  ],
+  "n_claims": 6
+ }
+]
