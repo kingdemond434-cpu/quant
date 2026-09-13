@@ -1,0 +1,29 @@
+[
+ {
+  "source": "deep_forest",
+  "kind": "dataset",
+  "title": "Komoditní shrnutí - Pšenice, kakao, zlato, ropa (1. 9. 2026)",
+  "url": "https://zpravy.kurzy.cz/873175-komoditni-shrnuti--psenice-kakao-zlato-ropa-1-9-2026/",
+  "published": "2026-09-13T10:11:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.4,
+  "lang": "en",
+  "endpoints": [
+   "https://www.kurzy.cz/podnikani/export/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ad64007d2eebe74851a8",
+  "host": "zpravy.kurzy.cz",
+  "ground": "Czech investing boards (Patria, Kurzy)",
+  "region": "cz",
+  "cluster": "east_eu",
+  "dataset_class": null,
+  "available_time": "2026-09-13T10:11:42+00:00",
+  "ingested_time": "2026-09-13T10:11:42+00:00",
+  "source_hash": "ad64007d2eebe74851a8",
+  "claims": [],
+  "n_claims": 0
+ }
+]

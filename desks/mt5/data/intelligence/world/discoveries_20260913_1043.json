@@ -1,0 +1,859 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Navigating the Market - QuantConnect.com",
+  "url": "http://quantconnect.com/docs/v2/our-platform/datasets/navigating-the-market",
+  "published": "2026-09-13T10:42:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://cdn.quantconnect.com/2024-quantconnect-brand-kit.zip",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/navigating-the-market",
+   "https://www.quantconnect.com/datasets/",
+   "http://www.quantconnect.com/datasets/",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/navigating-the-market",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/categories",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/data-issues",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/misconceptions",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/licensing",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/vendors",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-equities",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-equity-options",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/crypto",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/crypto-futures",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/forex",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/futures",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-index-options",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/cfd",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/alternative-data",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/auxiliary-data",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/interactive-brokers",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/tradestation",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/tastytrade",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/alpaca",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/charles-schwab",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/databento",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/tradier",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/bloomberg-bpipe",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/ssc-eze",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/trading-technologies",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/polygon",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/data-issues#04-Report-New-Issues",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/navigating-the-market#02-View-All-Listings"
+  ],
+  "n_endpoints": 35,
+  "vault_sha": "9777c5c86ad8e85f09b7",
+  "host": "quantconnect.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Algorithmic Trading Platform - QuantConnect.com",
+  "url": "http://quantconnect.com/datasets",
+  "published": "2026-09-13T10:42:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "http://quantconnect.com/datasets"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "94664166d8f30ae22dd9",
+  "host": "quantconnect.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Algorithmic Trading Platform - QuantConnect.com",
+  "url": "http://quantconnect.com/datasets/",
+  "published": "2026-09-13T10:42:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "http://quantconnect.com/datasets"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "1fb0726406d6580d29df",
+  "host": "quantconnect.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Security policy, Privacy policy - RoboForex",
+  "url": "https://www.roboforex.com/about/client/security-policy/",
+  "published": "2026-09-13T10:42:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1788266027",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "2f9f233f2409dfd876e7",
+  "host": "www.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "US Market Strategy | Logical Invest",
+  "url": "http://www.logical-invest.com/app/strategy/usmarket/us-market-strategy",
+  "published": "2026-09-13T10:42:58+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "http://www.logical-invest.com/app/manifest.json",
+   "http://www.logical-invest.com/wp-content/Amcharts/amcharts/plugins/export/export.css"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "2b130e7e6238de2e21d6",
+  "host": "www.logical-invest.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "US Market Strategy 2x Leverage | Logical Invest",
+  "url": "http://www.logical-invest.com/app/strategy/usmx2/us-market-strategy-2x-leverage",
+  "published": "2026-09-13T10:42:59+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "http://www.logical-invest.com/app/manifest.json",
+   "http://www.logical-invest.com/wp-content/Amcharts/amcharts/plugins/export/export.css"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "abda7f01f12e78db1684",
+  "host": "www.logical-invest.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "NASDAQ 100 Strategy | Logical Invest",
+  "url": "http://www.logical-invest.com/app/strategy/nas100/nasdaq-100-strategy",
+  "published": "2026-09-13T10:43:02+00:00",
+  "symbols": [
+   "NAS100"
+  ],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "http://www.logical-invest.com/app/manifest.json",
+   "http://www.logical-invest.com/wp-content/Amcharts/amcharts/plugins/export/export.css"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "50598c6f990b0064b36b",
+  "host": "www.logical-invest.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Dow 30 Strategy | Logical Invest",
+  "url": "http://www.logical-invest.com/app/strategy/dow30/dow-30-strategy",
+  "published": "2026-09-13T10:43:03+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "http://www.logical-invest.com/app/manifest.json",
+   "http://www.logical-invest.com/wp-content/Amcharts/amcharts/plugins/export/export.css"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "9416f094758bbc618794",
+  "host": "www.logical-invest.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Universal Investment Strategy | Logical Invest",
+  "url": "http://www.logical-invest.com/app/strategy/uis/universal-investment-strategy",
+  "published": "2026-09-13T10:43:05+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "correlation",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "http://www.logical-invest.com/app/manifest.json",
+   "http://www.logical-invest.com/wp-content/Amcharts/amcharts/plugins/export/export.css"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "6e511f92b97f6db7e84d",
+  "host": "www.logical-invest.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Universal Investment Strategy 2x Leverage | Logical Invest",
+  "url": "http://www.logical-invest.com/app/strategy/uisx2/universal-investment-strategy-2x-leverage",
+  "published": "2026-09-13T10:43:07+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "http://www.logical-invest.com/app/manifest.json",
+   "http://www.logical-invest.com/wp-content/Amcharts/amcharts/plugins/export/export.css"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "170760b95c8aa9781f6b",
+  "host": "www.logical-invest.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Universal Investment Strategy 3x Leverage | Logical Invest",
+  "url": "http://www.logical-invest.com/app/strategy/uisx3/universal-investment-strategy-3x-leverage",
+  "published": "2026-09-13T10:43:09+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M",
+   "DAILY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "http://www.logical-invest.com/app/manifest.json",
+   "http://www.logical-invest.com/wp-content/Amcharts/amcharts/plugins/export/export.css"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "f3147284b9e5723d3b8e",
+  "host": "www.logical-invest.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Enhanced Permanent Portfolio Strategy | Logical Invest",
+  "url": "http://www.logical-invest.com/app/strategy/pp/enhanced-permanent-portfolio-strategy",
+  "published": "2026-09-13T10:43:11+00:00",
+  "symbols": [
+   "XAUUSD",
+   "NAS100",
+   "US500",
+   "USDTRY",
+   "UST10Y"
+  ],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "http://www.logical-invest.com/app/manifest.json",
+   "http://www.logical-invest.com/wp-content/Amcharts/amcharts/plugins/export/export.css"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "52560ef6fa00fd199d9c",
+  "host": "www.logical-invest.com",
+  "claims": [
+   {
+    "claim": "stocks 25% in long-term bonds 25% in gold 25% in cash The Logical Invest permanent portfolio is somewhat more sophisticated, rebalances monthly and is not always split evenly across the three main assets.",
+    "lang": "en",
+    "quantities": [
+     "stocks"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "monthly"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "97ad5ed1472a"
+   },
+   {
+    "claim": "2%) During the last 3 years, the historical 30 days volatility is 10%, which is lower, thus better than the value of 15.",
+    "lang": "en",
+    "quantities": [
+     "volatility"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "NAS100",
+      "US500",
+      "USDTRY",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "gold",
+      "nasdaq",
+      "spy",
+      "try",
+      "treasuries",
+      "pp"
+     ],
+     "transfer_only": [
+      "pp->energy"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "313fa115286d"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "BUG Permanent Portfolio Strategy | Logical Invest",
+  "url": "http://www.logical-invest.com/app/strategy/bug/bug-permanent-portfolio-strategy",
+  "published": "2026-09-13T10:43:13+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "http://www.logical-invest.com/app/manifest.json",
+   "http://www.logical-invest.com/wp-content/Amcharts/amcharts/plugins/export/export.css"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "83890514634a5e4eca99",
+  "host": "www.logical-invest.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Hedge Strategy | Logical Invest",
+  "url": "http://www.logical-invest.com/app/strategy/hedge/hedge-strategy",
+  "published": "2026-09-13T10:43:15+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "correlation",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "http://www.logical-invest.com/app/manifest.json",
+   "http://www.logical-invest.com/wp-content/Amcharts/amcharts/plugins/export/export.css"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "2d6083daee5e57b18818",
+  "host": "www.logical-invest.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Bond ETF Rotation Strategy | Logical Invest",
+  "url": "http://www.logical-invest.com/app/strategy/brs/bond-etf-rotation-strategy",
+  "published": "2026-09-13T10:43:17+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "http://www.logical-invest.com/app/manifest.json",
+   "http://www.logical-invest.com/wp-content/Amcharts/amcharts/plugins/export/export.css"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "ca97fa7d67a8f0ed8b3b",
+  "host": "www.logical-invest.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "US Sector Rotation Strategy | Logical Invest",
+  "url": "http://www.logical-invest.com/app/strategy/ussect/us-sector-rotation-strategy",
+  "published": "2026-09-13T10:43:19+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "http://www.logical-invest.com/app/manifest.json",
+   "http://www.logical-invest.com/wp-content/Amcharts/amcharts/plugins/export/export.css"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "b3ca1c73e8378b0d4bbf",
+  "host": "www.logical-invest.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Top 3 Strategies | Logical Invest",
+  "url": "http://www.logical-invest.com/app/strategy/mst3/top-3-strategies",
+  "published": "2026-09-13T10:43:21+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "http://www.logical-invest.com/app/manifest.json",
+   "http://www.logical-invest.com/wp-content/Amcharts/amcharts/plugins/export/export.css"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "cd5e47dc647c8932eb82",
+  "host": "www.logical-invest.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Maximum Yield Strategy | Logical Invest",
+  "url": "http://www.logical-invest.com/app/strategy/myrs/maximum-yield-strategy",
+  "published": "2026-09-13T10:43:23+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "http://www.logical-invest.com/app/manifest.json",
+   "http://www.logical-invest.com/wp-content/Amcharts/amcharts/plugins/export/export.css"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "6f3b10ac3e1a064e4db9",
+  "host": "www.logical-invest.com",
+  "claims": [
+   {
+    "claim": "6 days in the last 5 years of Maximum Yield Strategy, we see it is relatively lower, thus worse in comparison to the benchmark SPY (-24.",
+    "lang": "en",
+    "quantities": [
+     "yield"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "26ace9c31700"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Global Market Rotation Strategy | Logical Invest",
+  "url": "http://www.logical-invest.com/app/strategy/gmrs/global-market-rotation-strategy",
+  "published": "2026-09-13T10:43:25+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "basis",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "http://www.logical-invest.com/app/manifest.json",
+   "http://www.logical-invest.com/wp-content/Amcharts/amcharts/plugins/export/export.css"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "26f61d45e2ed0be86fb1",
+  "host": "www.logical-invest.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "World Top 4 Strategy | Logical Invest",
+  "url": "http://www.logical-invest.com/app/strategy/wtop4/world-top-4-strategy",
+  "published": "2026-09-13T10:43:27+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "http://www.logical-invest.com/app/manifest.json",
+   "http://www.logical-invest.com/wp-content/Amcharts/amcharts/plugins/export/export.css"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "d7b5a913cb19ddcb0ada",
+  "host": "www.logical-invest.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Global Sector Rotation Strategy | Logical Invest",
+  "url": "http://www.logical-invest.com/app/strategy/gsrs/global-sector-rotation-strategy",
+  "published": "2026-09-13T10:43:29+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "http://www.logical-invest.com/app/manifest.json",
+   "http://www.logical-invest.com/wp-content/Amcharts/amcharts/plugins/export/export.css"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "b289a8a06ef25d09876c",
+  "host": "www.logical-invest.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Gold-Currency Strategy II | Logical Invest",
+  "url": "http://www.logical-invest.com/app/strategy/gld-uup/gold-currency-strategy-ii",
+  "published": "2026-09-13T10:43:31+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "correlation",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "http://www.logical-invest.com/app/manifest.json",
+   "http://www.logical-invest.com/wp-content/Amcharts/amcharts/plugins/export/export.css"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "504e07768073afd2329d",
+  "host": "www.logical-invest.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "ATS Pocket App \u2014 Best Trading App in India | ATS",
+  "url": "http://www.adityatrading.in/Pocketapp/",
+  "published": "2026-09-13T10:43:43+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-IN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8ab35f5b5c2ae0f0e0e7",
+  "host": "www.adityatrading.in",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Apply for IPO Online \u2014 UPI Application &amp; Allotment | ATS",
+  "url": "http://www.adityatrading.in/Products/ipo/",
+  "published": "2026-09-13T10:43:45+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XZNUSD",
+   "XTIUSD",
+   "XNGUSD",
+   "NAS100",
+   "US500"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en-IN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bf4a6cabcf64e4637166",
+  "host": "www.adityatrading.in",
+  "claims": [
+   {
+    "claim": "Apply to mainboard and SME IPOs with UPI, follow live subscription while the window is open, and track allotment \u2014 alongside buyback offers and sovereign gold bonds, from the Pocket app or a browser.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "follow"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "a16891232480"
+   },
+   {
+    "claim": "The same flow covers buyback tender offers and sovereign gold bonds, and you can follow live subscription while the window is open.",
+    "lang": "en",
+    "quantities": [
+     "flow",
+     "open"
+    ],
+    "direction": [
+     "follow"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "7fad3eebb2dc"
+   },
+   {
+    "claim": "UPI block mandate Mainboard and SME issues Cut-off or your own price 02 Live subscription Follow how many times an issue has been subscribed by retail and institutional investors while the window is still open.",
+    "lang": "en",
+    "quantities": [
+     "cut",
+     "open"
+    ],
+    "direction": [
+     "follow"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XZNUSD",
+      "XTIUSD",
+      "XNGUSD",
+      "NAS100",
+      "US500"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "zinc",
+      "crude",
+      "natural gas",
+      "nasdaq",
+      "s&p 500",
+      "nifty"
+     ],
+     "transfer_only": [
+      "nifty->indices (NSE/BSE)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "2d2d1b118156"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "ATS Pocket App \u2014 Best Trading App in India | ATS",
+  "url": "http://www.adityatrading.in/Pocketapp",
+  "published": "2026-09-13T10:43:50+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-IN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8ab35f5b5c2ae0f0e0e7",
+  "host": "www.adityatrading.in",
+  "claims": [],
+  "n_claims": 0
+ }
+]

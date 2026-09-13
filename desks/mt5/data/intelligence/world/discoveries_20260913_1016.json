@@ -1,0 +1,1319 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Algorithmic Trading Platform - QuantConnect.com",
+  "url": "http://quantconnect.com/datasets",
+  "published": "2026-09-13T10:13:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "http://quantconnect.com/datasets"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "4734f491cadf47e3db49",
+  "host": "quantconnect.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Algorithmic Trading Platform - QuantConnect.com",
+  "url": "http://quantconnect.com/datasets/",
+  "published": "2026-09-13T10:13:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "http://quantconnect.com/datasets"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "38c8e612ec1a10bde2fc",
+  "host": "quantconnect.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Security policy, Privacy policy - RoboForex",
+  "url": "https://www.roboforex.com/about/client/security-policy/",
+  "published": "2026-09-13T10:13:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1788266027",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "1ebc673dc5c9c51bca3c",
+  "host": "www.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "StocksTrader Terminal - RoboForex Ltd",
+  "url": "https://stockstrader.roboforex.com/",
+  "published": "2026-09-13T10:13:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://stockstrader.roboforex.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "e35d11a8c9ca3f7c0f32",
+  "host": "stockstrader.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "4 Volatility Indicators for Options Trading With ThinkOrSwim ThinkScript Code - Theta Trend",
+  "url": "https://www.thetatrend.com/4-volatility-indicators-for-options-trading-with-thinkorswim-thinkscript-code/",
+  "published": "2026-09-13T10:13:58+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.0.4"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "01da2d7c2da6b1c25aaf",
+  "host": "www.thetatrend.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "How To Improve Your Trading With Meditation and Incantations - Theta Trend",
+  "url": "https://www.thetatrend.com/how-to-improve-your-trading-using-meditation-incantations/",
+  "published": "2026-09-13T10:14:00+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.0.4"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "af51b72ce417db544b06",
+  "host": "www.thetatrend.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Directional Trading Archives - Page 2 of 14 - Theta Trend",
+  "url": "https://www.thetatrend.com/category/directional-trading/page/2/",
+  "published": "2026-09-13T10:14:02+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.0.4"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f7a1888a6eef3eae9c60",
+  "host": "www.thetatrend.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Donchian Channel Breakout Trade Alert in $DBE and a General Update",
+  "url": "https://www.thetatrend.com/donchian-channel-breakout-trade-alert-general-update/",
+  "published": "2026-09-13T10:14:04+00:00",
+  "symbols": [
+   "XAUUSD",
+   "US500"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.0.4"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "45df2c13bd4736d94f06",
+  "host": "www.thetatrend.com",
+  "claims": [
+   {
+    "claim": "Yesterday, Christmas eve, was a short session for the markets, but I was filled on a Donchian Channel breakout trade.",
+    "lang": "en",
+    "quantities": [
+     "session",
+     "breakout"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "US500"
+     ],
+     "mentioned": [
+      "gold",
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "77c264463a20"
+   },
+   {
+    "claim": "I\u2019ll continue to monitor the open positions and take any new signals that come up.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "continue"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "US500"
+     ],
+     "mentioned": [
+      "gold",
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "07abde3d8781"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Options Trend Following With Donchian Channels - Theta Breakout Video",
+  "url": "https://www.thetatrend.com/options-trend-following-donchian-channels-theta-breakout-video/",
+  "published": "2026-09-13T10:14:06+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.0.4"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "9d0a1aac197fd2d7590b",
+  "host": "www.thetatrend.com",
+  "claims": [
+   {
+    "claim": "TLT issued a new short signal on November 21st, 2013 and on December 4th I sold the 106/110 February 2014 call spread with 77 or so days to expiration.",
+    "lang": "en",
+    "quantities": [
+     "spread"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "96967e8385d2"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Backtest Results from Short Options Trend Following and New Questions",
+  "url": "https://www.thetatrend.com/backtest-results-short-options-trend-following-new-questions/",
+  "published": "2026-09-13T10:14:08+00:00",
+  "symbols": [
+   "XAUUSD",
+   "NAS100",
+   "US500",
+   "US2000"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.0.4"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ab2e070b7fb0d0401777",
+  "host": "www.thetatrend.com",
+  "claims": [
+   {
+    "claim": "5 ATR trailing stop, any short options are covered at the close.",
+    "lang": "en",
+    "quantities": [
+     "options",
+     "close"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "NAS100",
+      "US500",
+      "US2000"
+     ],
+     "mentioned": [
+      "gold",
+      "nasdaq",
+      "s&p 500",
+      "russell 2000"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "bcb838447cbf"
+   },
+   {
+    "claim": "Extensions: I think the biggest question is what happens if you just sell options in every month regardless of the trend direction and manage those positions based on a change in Delta.",
+    "lang": "en",
+    "quantities": [
+     "options",
+     "trend"
+    ],
+    "direction": [
+     "sell"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "NAS100",
+      "US500",
+      "US2000"
+     ],
+     "mentioned": [
+      "gold",
+      "nasdaq",
+      "s&p 500",
+      "russell 2000"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "afaa01031094"
+   },
+   {
+    "claim": "Alternatively, what if we were to use a different trend filter, like a 50 day simple moving average, and sell puts when price is above the 50 day average and calls when price is below.",
+    "lang": "en",
+    "quantities": [
+     "trend"
+    ],
+    "direction": [
+     "sell"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "NAS100",
+      "US500",
+      "US2000"
+     ],
+     "mentioned": [
+      "gold",
+      "nasdaq",
+      "s&p 500",
+      "russell 2000"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "837464c94494"
+   },
+   {
+    "claim": "com Chris says: December 8, 2013 at 10:41 am A year ago I tested selling 10-delta SPX weekly credit spreads every Thursday morning, then closing either at a 25% stop loss or allowing to expire worthless.",
+    "lang": "da",
+    "quantities": [
+     "spread"
+    ],
+    "direction": [
+     "stop"
+    ],
+    "horizon": [
+     "weekly"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spx"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "c13458da9d68"
+   }
+  ],
+  "n_claims": 4
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Donchian Channel System Archives - Page 2 of 3 - Theta Trend",
+  "url": "https://www.thetatrend.com/category/directional-trading/donchian-channel-system/page/2/",
+  "published": "2026-09-13T10:14:10+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.0.4"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "6b6d83e33da48e4d11b0",
+  "host": "www.thetatrend.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "How a World Champion Trader Builds Winning Strategies \u2013 Kevin Davey How to Trade Stocks and Options Podcast with OVTLYR Live | iHeart",
+  "url": "https://www.iheart.com/podcast/256-how-to-trade-stocks-and-op-31080769/episode/how-a-world-champion-trader-builds-269541174/",
+  "published": "2026-09-13T10:14:11+00:00",
+  "symbols": [
+   "NVIDIA"
+  ],
+  "timeframes": [
+   "1M",
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e85aa8234a5b9b41458b",
+  "host": "www.iheart.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "072 - Interview w Wayne Klump of EnvironmentalTradingEdge.com Consistent Profits Podcast | iHeart",
+  "url": "https://www.iheart.com/podcast/269-consistent-profits-podcast-109844703/episode/072-interview-w-wayne-klump-of-environmentaltradingedgecom-220535210",
+  "published": "2026-09-13T10:14:13+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8cf6807ce68d0252c09f",
+  "host": "www.iheart.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "071 - Interview w Louise Bedford of TradingGame.com.au Consistent Profits Podcast | iHeart",
+  "url": "https://www.iheart.com/podcast/269-consistent-profits-podcast-109844703/episode/071-interview-w-louise-bedford-of-tradinggamecomau-217854056",
+  "published": "2026-09-13T10:14:15+00:00",
+  "symbols": [
+   "XAUUSD",
+   "NAS100",
+   "US500"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d1eb76a5d65d258c9726",
+  "host": "www.iheart.com",
+  "claims": [
+   {
+    "claim": "Noonan's strategies and trading plans are simple, robust, and effective, making them valuable for anyone looking to succeed in forex, futures, options contracts, and day trading.",
+    "lang": "en",
+    "quantities": [
+     "futures",
+     "options"
+    ],
+    "direction": [
+     "contracts"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "NAS100",
+      "US500"
+     ],
+     "mentioned": [
+      "gold",
+      "nasdaq",
+      "s&p"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "05fe8967a483"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Whole Brain Trading Expert - Zvi Benyamini \u2013 Episode 070 Consistent Profits Podcast | iHeart",
+  "url": "https://www.iheart.com/podcast/269-consistent-profits-podcast-109844703/episode/whole-brain-trading-expert-zvi-benyamini-episode-070-210277286",
+  "published": "2026-09-13T10:14:17+00:00",
+  "symbols": [
+   "XAUUSD",
+   "NAS100",
+   "US500"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5d3b263d5b054f58fc8e",
+  "host": "www.iheart.com",
+  "claims": [
+   {
+    "claim": "Noonan's strategies and trading plans are simple, robust, and effective, making them valuable for anyone looking to succeed in forex, futures, options contracts, and day trading.",
+    "lang": "en",
+    "quantities": [
+     "futures",
+     "options"
+    ],
+    "direction": [
+     "contracts"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "NAS100",
+      "US500"
+     ],
+     "mentioned": [
+      "gold",
+      "nasdaq",
+      "s&p"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "05fe8967a483"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "069 \u2013 Wyckoff and Volume Trading Specialist \u2013 Interview w Tim Ord Consistent Profits Podcast | iHeart",
+  "url": "https://www.iheart.com/podcast/269-consistent-profits-podcast-109844703/episode/069-wyckoff-and-volume-trading-specialist-interview-w-tim-ord-199091038",
+  "published": "2026-09-13T10:14:19+00:00",
+  "symbols": [
+   "XAUUSD",
+   "NAS100",
+   "US500"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b58056e6f31032553edf",
+  "host": "www.iheart.com",
+  "claims": [
+   {
+    "claim": "Noonan's strategies and trading plans are simple, robust, and effective, making them valuable for anyone looking to succeed in forex, futures, options contracts, and day trading.",
+    "lang": "en",
+    "quantities": [
+     "futures",
+     "options"
+    ],
+    "direction": [
+     "contracts"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "NAS100",
+      "US500"
+     ],
+     "mentioned": [
+      "gold",
+      "nasdaq",
+      "s&p"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "05fe8967a483"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "065 - Trading Psychology specific to Prop Firm Trading \u2013 Interview w Norman Hallett Consistent Profits Podcast | iHeart",
+  "url": "https://www.iheart.com/podcast/269-consistent-profits-podcast-109844703/episode/065-trading-psychology-specific-to-prop-firm-trading-interview-w-norman-hallett-185249912",
+  "published": "2026-09-13T10:14:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "706557decc1af4f95395",
+  "host": "www.iheart.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "064 - Robust Algo Trader Mr Breakouts \u2013 Interview w Tomas Nesnidal Consistent Profits Podcast | iHeart",
+  "url": "https://www.iheart.com/podcast/269-consistent-profits-podcast-109844703/episode/064-robust-algo-trader-mr-breakouts-interview-w-tomas-nesnidal-183136921",
+  "published": "2026-09-13T10:14:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "adac0cf72208c1e0473e",
+  "host": "www.iheart.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Paper Trading for Systematic Strategies | TradeLock",
+  "url": "https://tradelock.net/blog/paper-trading-platform-systematic-strategies",
+  "published": "2026-09-13T10:14:29+00:00",
+  "symbols": [
+   "US500",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "gap",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bc3e27148345edf9b7f6",
+  "host": "tradelock.net",
+  "claims": [
+   {
+    "claim": "TradeLock is best suited for systematic, liquid, lower-frequency strategies: weekly or monthly rebalances, ETF portfolios, tactical allocation, trend models, and medium-term stock or crypto allocation systems.",
+    "lang": "en",
+    "quantities": [
+     "trend"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "weekly",
+     "monthly"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "97e69ec78c4b"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Before Collective2 or Darwinex: How to Build a Trading Track Record You Actually Own | TradeLock",
+  "url": "https://tradelock.net/blog/before-collective2-darwinex-build-track-record",
+  "published": "2026-09-13T10:14:30+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "407c2991b73c698311a9",
+  "host": "tradelock.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "https://systematicedge.wordpress.com/2015/02/22/automated-trading-system-internal-order-matching/?share=twitter",
+  "url": "https://systematicedge.wordpress.com/2015/02/22/automated-trading-system-internal-order-matching/?share=twitter",
+  "published": "2026-09-13T10:14:31+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://systematicedge.wordpress.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5a5044722d6a200f1ca1",
+  "host": "systematicedge.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Asset Class and Sector Rotation strategies | Logical Invest",
+  "url": "http://www.logical-invest.com/app/strategies",
+  "published": "2026-09-13T10:14:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "correlation",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "http://www.logical-invest.com/app/manifest.json",
+   "http://www.logical-invest.com/wp-content/Amcharts/amcharts/plugins/export/export.css"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "ed25cb7b794551e228b3",
+  "host": "www.logical-invest.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Gold-Currency Strategy II | Logical Invest",
+  "url": "http://www.logical-invest.com/app/strategy/GLD-UUP",
+  "published": "2026-09-13T10:14:36+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "correlation",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "http://www.logical-invest.com/app/manifest.json",
+   "http://www.logical-invest.com/wp-content/Amcharts/amcharts/plugins/export/export.css"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "b98a93f0ad6a8b7021ed",
+  "host": "www.logical-invest.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Universal Investment Strategy 3x Leverage | Logical Invest",
+  "url": "http://www.logical-invest.com/app/strategy/UISx3",
+  "published": "2026-09-13T10:14:38+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M",
+   "DAILY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "http://www.logical-invest.com/app/manifest.json",
+   "http://www.logical-invest.com/wp-content/Amcharts/amcharts/plugins/export/export.css"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "4db6157490493fb95bfe",
+  "host": "www.logical-invest.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Crypto & Leveraged Top 2 Strategy | Logical Invest",
+  "url": "http://www.logical-invest.com/app/strategy/CLT2",
+  "published": "2026-09-13T10:14:40+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M",
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "http://www.logical-invest.com/app/manifest.json",
+   "http://www.logical-invest.com/wp-content/Amcharts/amcharts/plugins/export/export.css"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "35abe79cd0dc23eebd59",
+  "host": "www.logical-invest.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Dow 30 Strategy | Logical Invest",
+  "url": "http://www.logical-invest.com/app/strategy/DOW30",
+  "published": "2026-09-13T10:14:42+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "http://www.logical-invest.com/app/manifest.json",
+   "http://www.logical-invest.com/wp-content/Amcharts/amcharts/plugins/export/export.css"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "1bdeb4e5810f50787ee9",
+  "host": "www.logical-invest.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "World Top 4 Strategy | Logical Invest",
+  "url": "http://www.logical-invest.com/app/strategy/WTOP4",
+  "published": "2026-09-13T10:14:44+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "http://www.logical-invest.com/app/manifest.json",
+   "http://www.logical-invest.com/wp-content/Amcharts/amcharts/plugins/export/export.css"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "f6230e182521471107a3",
+  "host": "www.logical-invest.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "New Bond Rotation Strategy for a IRA and 401k Investment Portfolio - Logical Invest",
+  "url": "http://www.logical-invest.com/new-bond-strategy-adaptive-allocation/",
+  "published": "2026-09-13T10:14:47+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "415463aa4ef54c9c3d37",
+  "host": "www.logical-invest.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "A Simple Tactical Asset Allocation Portfolio with Percentile Channels | CSSA",
+  "url": "https://cssanalytics.wordpress.com/2015/01/26/a-simple-tactical-asset-allocation-portfolio-with-percentile-channels/",
+  "published": "2026-09-13T10:14:48+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://cssanalytics.files.wordpress.com/2012/10/minimum-correlation-mincorr-spreadsheet.xlsx"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "90c22e5fe419fdb5c7dc",
+  "host": "cssanalytics.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "https://cssanalytics.wordpress.com/2015/02/16/percentile-channel-strategy-replication/?share=twitter",
+  "url": "https://cssanalytics.wordpress.com/2015/02/16/percentile-channel-strategy-replication/?share=twitter",
+  "published": "2026-09-13T10:14:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://cssanalytics.wordpress.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "7e56d09bc185eb571412",
+  "host": "cssanalytics.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Percentile Channel Strategy Replication | CSSA",
+  "url": "https://cssanalytics.wordpress.com/2015/02/16/percentile-channel-strategy-replication/?replytocom=7198",
+  "published": "2026-09-13T10:14:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://cssanalytics.files.wordpress.com/2012/10/minimum-correlation-mincorr-spreadsheet.xlsx"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "3aa1923496a88ea3ed44",
+  "host": "cssanalytics.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Percentile Channel Strategy Replication | CSSA",
+  "url": "https://cssanalytics.wordpress.com/2015/02/16/percentile-channel-strategy-replication/?replytocom=7199",
+  "published": "2026-09-13T10:14:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://cssanalytics.files.wordpress.com/2012/10/minimum-correlation-mincorr-spreadsheet.xlsx"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "180090b803f14a81480b",
+  "host": "cssanalytics.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Percentile Channel Strategy Replication | CSSA",
+  "url": "https://cssanalytics.wordpress.com/2015/02/16/percentile-channel-strategy-replication/?replytocom=7203",
+  "published": "2026-09-13T10:14:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://cssanalytics.files.wordpress.com/2012/10/minimum-correlation-mincorr-spreadsheet.xlsx"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "4a01cde9f79c177ee1c8",
+  "host": "cssanalytics.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithmic Trading Platform - QuantConnect.com",
+  "url": "http://quantconnect.com/terminal/",
+  "published": "2026-09-13T10:15:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "http://quantconnect.com/datasets"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "050e89eba8b41a813b96",
+  "host": "quantconnect.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Online Stock Trading &amp; Demat Account in India | ATS",
+  "url": "http://www.adityatrading.in",
+  "published": "2026-09-13T10:15:14+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XZNUSD",
+   "XTIUSD",
+   "NAS100",
+   "US500",
+   "USDINR"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en-IN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dff12dec51182306da10",
+  "host": "www.adityatrading.in",
+  "claims": [
+   {
+    "claim": "Premium Recommendations ATS's premium package is designed for clients looking to achieve higher returns compared to standard intraday packages.",
+    "lang": "en",
+    "quantities": [
+     "premium"
+    ],
+    "direction": [
+     "higher"
+    ],
+    "horizon": [
+     "intraday"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XZNUSD",
+      "XTIUSD",
+      "NAS100",
+      "US500",
+      "USDINR"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "zinc",
+      "crude",
+      "nasdaq",
+      "s&p 500",
+      "nifty",
+      "inr"
+     ],
+     "transfer_only": [
+      "nifty->indices (NSE/BSE)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a5a4c19371d7"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Option Trading Service - SteadyOptions",
+  "url": "https://steadyoptions.com/",
+  "published": "2026-09-13T10:16:02+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "45235210b893b5392170",
+  "host": "steadyoptions.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trade Easy | Home Page",
+  "url": "http://www.tradeeasy.in",
+  "published": "2026-09-13T10:16:03+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "be9d67f41845b9898c50",
+  "host": "www.tradeeasy.in",
+  "claims": [],
+  "n_claims": 0
+ }
+]

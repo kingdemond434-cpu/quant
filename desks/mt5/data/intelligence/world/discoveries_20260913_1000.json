@@ -1,0 +1,1219 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\"MetaTrader 4\" (MT4) \u0e40\u0e27\u0e47\u0e1a\u0e40\u0e17\u0e2d\u0e23\u0e4c\u0e21\u0e34\u0e19\u0e31\u0e25\u0e08\u0e32\u0e01 RoboForex Ltd.",
+  "url": "https://mt.roboforex.com/?lang=th",
+  "published": "2026-09-13T09:59:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f90b1fd9067b52799bcd",
+  "host": "mt.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\"MetaTrader 5\" (MT5) \u0e40\u0e27\u0e47\u0e1a\u0e40\u0e17\u0e2d\u0e23\u0e4c\u0e21\u0e34\u0e19\u0e31\u0e25\u0e08\u0e32\u0e01 RoboForex Ltd.",
+  "url": "https://mt5.roboforex.com/?lang=th",
+  "published": "2026-09-13T09:59:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "beb2535d469ad668e523",
+  "host": "mt5.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "FAQ &#8211; RoboForex Help",
+  "url": "https://help.roboforex.com/about/client/risk-warning/",
+  "published": "2026-09-13T09:59:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1743511020"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "54bf0961cd11d1882a1a",
+  "host": "help.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "R StocksTrader Launches Copy Trading in Its Mobile App - RoboForex Blog",
+  "url": "https://blog.roboforex.com/th/blog/2022/10/03/r-stockstrader-launches-copy-trading-in-its-mobile-app/",
+  "published": "2026-09-13T09:59:46+00:00",
+  "symbols": [
+   "XAUUSD",
+   "EURUSD",
+   "USDTRY",
+   "Tesla"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "gap",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "289071f53694c0506b6c",
+  "host": "blog.roboforex.com",
+  "claims": [
+   {
+    "claim": "2026 Analysis 16 min Market Week Ahead (September 7 \u2013 11): US CPI Forecast Lands After the ECB Decision The first week of September settled nothing.",
+    "lang": "en",
+    "quantities": [
+     "cpi"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "8dede90a48a2"
+   },
+   {
+    "claim": "2026 Analysis 16 min Market Week Ahead (August 31 \u2013 September 4): Non-Farm Payrolls Forecast Decides the Dollar's Course August closed on a firm note for US stocks, carried by the first corporate reports of the season.",
+    "lang": "en",
+    "quantities": [
+     "stocks"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "EURUSD",
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "gold",
+      "eur/usd",
+      "try",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "adb662934c31"
+   },
+   {
+    "claim": "2026 Analysis 23 min Gold Fed Rate Hike Bets: XAUUSD Forecast and a 4,772 USD Target Gold Fed rate hike bets have been the single biggest weight on the metal all year, and over one week in August that weight came off.",
+    "lang": "en",
+    "quantities": [
+     "rate",
+     "hike"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "0f6faf8e9a8f"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\"MetaTrader 4\" (MT4) web terminal from RoboForex Ltd",
+  "url": "https://mt.roboforex.com/?lang=en",
+  "published": "2026-09-13T09:59:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ebc5736fd78653cc9d4f",
+  "host": "mt.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\"MetaTrader 5\" (MT5) web terminal from RoboForex Ltd",
+  "url": "https://mt5.roboforex.com/?lang=en",
+  "published": "2026-09-13T09:59:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2ffc0e8277439554bccd",
+  "host": "mt5.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "R StocksTrader Launches Copy Trading in Its Mobile App - RoboForex Blog",
+  "url": "https://blog.roboforex.com/blog/2022/10/03/r-stockstrader-launches-copy-trading-in-its-mobile-app/",
+  "published": "2026-09-13T09:59:48+00:00",
+  "symbols": [
+   "XAUUSD",
+   "EURUSD",
+   "USDTRY",
+   "Tesla"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "gap",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "94aaaf47074120a0a707",
+  "host": "blog.roboforex.com",
+  "claims": [
+   {
+    "claim": "2026 Analysis 16 min Market Week Ahead (September 7 \u2013 11): US CPI Forecast Lands After the ECB Decision The first week of September settled nothing.",
+    "lang": "en",
+    "quantities": [
+     "cpi"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "8dede90a48a2"
+   },
+   {
+    "claim": "2026 Analysis 16 min Market Week Ahead (August 31 \u2013 September 4): Non-Farm Payrolls Forecast Decides the Dollar's Course August closed on a firm note for US stocks, carried by the first corporate reports of the season.",
+    "lang": "en",
+    "quantities": [
+     "stocks"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "EURUSD",
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "gold",
+      "eur/usd",
+      "try",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "adb662934c31"
+   },
+   {
+    "claim": "2026 Analysis 23 min Gold Fed Rate Hike Bets: XAUUSD Forecast and a 4,772 USD Target Gold Fed rate hike bets have been the single biggest weight on the metal all year, and over one week in August that weight came off.",
+    "lang": "en",
+    "quantities": [
+     "rate",
+     "hike"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "0f6faf8e9a8f"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "FAQ &#8211; RoboForex Help",
+  "url": "https://help.roboforex.com/en/support/solutions/articles/501000291518-how-a-trader-s-commission-is-calculated",
+  "published": "2026-09-13T09:59:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1743511020"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "2fc93f7c26906f528b60",
+  "host": "help.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Security policy, Privacy policy - RoboForex",
+  "url": "https://www.roboforex.com/about/client/security-policy/",
+  "published": "2026-09-13T09:59:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1788266027",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "e840c964186277cb4d2d",
+  "host": "www.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "StocksTrader Terminal - RoboForex Ltd",
+  "url": "https://stockstrader.roboforex.com/",
+  "published": "2026-09-13T09:59:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://stockstrader.roboforex.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "2faaa1410f28fe114b25",
+  "host": "stockstrader.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Directional Trading Archives - Theta Trend",
+  "url": "https://www.thetatrend.com/category/directional-trading/",
+  "published": "2026-09-13T09:59:51+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.0.4"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "8390bf564e02eada091c",
+  "host": "www.thetatrend.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Donchian Channel System Archives - Theta Trend",
+  "url": "https://www.thetatrend.com/category/directional-trading/donchian-channel-system/",
+  "published": "2026-09-13T09:59:53+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.0.4"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ac9bb07624a83d539db7",
+  "host": "www.thetatrend.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Investing Archives - Theta Trend",
+  "url": "https://www.thetatrend.com/category/directional-trading/investing/",
+  "published": "2026-09-13T09:59:55+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.0.4"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "37236295d92d199380ce",
+  "host": "www.thetatrend.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Monthly Rotation System Archives - Theta Trend",
+  "url": "https://www.thetatrend.com/category/directional-trading/monthly-rotation-system/",
+  "published": "2026-09-13T09:59:57+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.0.4"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c189e30604146db70804",
+  "host": "www.thetatrend.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Naked Options Archives - Theta Trend",
+  "url": "https://www.thetatrend.com/category/directional-trading/naked-options/",
+  "published": "2026-09-13T09:59:59+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.0.4"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "eb70ddae2e5b83e87a26",
+  "host": "www.thetatrend.com",
+  "claims": [
+   {
+    "claim": "I take a look at two expiration week adjustments that [\u2026] Naked Put Option Selling in Gold \u2013 pTheta Entry Analysis ($GLD) December 7, 2014 March 30, 2015 Dan Directional Trading , Naked Options , Naked Put Selling , Video Post Quick Overview: As I mentioned in the Weekend Market Commentary, I\u2019m looking for a naked put to sell in Gold ($GLD).",
+    "lang": "en",
+    "quantities": [
+     "options"
+    ],
+    "direction": [
+     "sell"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "926e45044b1f"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Naked Put Selling Archives - Theta Trend",
+  "url": "https://www.thetatrend.com/category/directional-trading/naked-put-selling/",
+  "published": "2026-09-13T10:00:01+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.0.4"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f947d0186d6c63ba5947",
+  "host": "www.thetatrend.com",
+  "claims": [
+   {
+    "claim": "I take a look at two expiration week adjustments that [\u2026] Naked Put Option Selling in Gold \u2013 pTheta Entry Analysis ($GLD) December 7, 2014 March 30, 2015 Dan Directional Trading , Naked Options , Naked Put Selling , Video Post Quick Overview: As I mentioned in the Weekend Market Commentary, I\u2019m looking for a naked put to sell in Gold ($GLD).",
+    "lang": "en",
+    "quantities": [
+     "options"
+    ],
+    "direction": [
+     "sell"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "926e45044b1f"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Weekly Options Archives - Theta Trend",
+  "url": "https://www.thetatrend.com/category/directional-trading/weekly-options/",
+  "published": "2026-09-13T10:00:03+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.0.4"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "638b82a28a11babe7b35",
+  "host": "www.thetatrend.com",
+  "claims": [
+   {
+    "claim": "For example, they might want the market to sell off as much as possible [\u2026] Weekly Options Trade Watch 7/24/2014 \u2013 Weekly Theta July 24, 2014 March 30, 2015 Dan Directional Trading , Video Post , Weekly Options Disclaimer: This is not a recommendation to take a trade and is being provided for educational and informational purposes only.",
+    "lang": "en",
+    "quantities": [
+     "options"
+    ],
+    "direction": [
+     "sell"
+    ],
+    "horizon": [
+     "weekly"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "s&p 500"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "69917a962ff9"
+   },
+   {
+    "claim": "The ATRts remains in a long state, but the market is now extended [\u2026] Weekly Options Trade Watch 7/16/2014 \u2013 Weekly Theta July 17, 2014 March 30, 2015 Dan Video Post , Weekly Options Disclaimer: This is not a recommendation to take a trade and is being provided for educational and informational purposes only.",
+    "lang": "en",
+    "quantities": [
+     "options"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "weekly"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "s&p 500"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "d39f62fba4e2"
+   },
+   {
+    "claim": "Update 7/10/2014, 4:50 am MST: The /ES Futures are trading close to 1% lower this morning and that creates a new lower low on the 65 minute chart.",
+    "lang": "en",
+    "quantities": [
+     "futures",
+     "close"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "close",
+     "minute"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "s&p 500"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "4ff5999920bc"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Schwab Commission Free ETF Rotation System Backtest $SPY, $TLO, $PCY, $RWO, $SHY - Theta Trend",
+  "url": "https://www.thetatrend.com/schwab-commission-free-etf-rotation-system-backtest-spy-tlo-pcy-rwo-shy/",
+  "published": "2026-09-13T10:00:05+00:00",
+  "symbols": [
+   "USDCHF"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "momentum",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.0.4"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "cabab33d7c598d3eaf2c",
+  "host": "www.thetatrend.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Donchian Channel Breakout Trend Following Trading System - Theta Trend",
+  "url": "http://www.thetatrend.com/donchian-channel-breakout-trend-following-trading-system/",
+  "published": "2026-09-13T10:00:07+00:00",
+  "symbols": [
+   "XAUUSD",
+   "US500",
+   "EURUSD",
+   "USDJPY",
+   "USDCHF",
+   "SUGAR",
+   "COTTON",
+   "COFARA"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.0.4"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "b997ca132bc44947bbd3",
+  "host": "www.thetatrend.com",
+  "claims": [
+   {
+    "claim": "The rules of a Donchian breakout trading system rules for long trades generally involve buying the high of a certain number of days and then selling the low of a certain number of days when price breaks down.",
+    "lang": "en",
+    "quantities": [
+     "breakout"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "US500",
+      "EURUSD",
+      "USDJPY",
+      "USDCHF",
+      "SUGAR",
+      "COTTON",
+      "COFARA"
+     ],
+     "mentioned": [
+      "gold",
+      "spy",
+      "eur/usd",
+      "usd/jpy",
+      "usd/chf",
+      "sugar",
+      "cotton",
+      "coffee"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "cd92e8721464"
+   },
+   {
+    "claim": "The initial stop is placed at 3x the 14 day average true range or the 25 day low (for long positions) or high (for short positions).",
+    "lang": "en",
+    "quantities": [
+     "range"
+    ],
+    "direction": [
+     "long",
+     "short"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "US500",
+      "EURUSD",
+      "USDJPY",
+      "USDCHF",
+      "SUGAR",
+      "COTTON",
+      "COFARA"
+     ],
+     "mentioned": [
+      "gold",
+      "spy",
+      "eur/usd",
+      "usd/jpy",
+      "usd/chf",
+      "sugar",
+      "cotton",
+      "coffee"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "ff7f155ee61e"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantitative Futures, stocks and Options Trading (AVAILABLE FOR MATLAB FREELANCING): Convert Stock CUSIPs to Stock Symbols with a MATLAB program",
+  "url": "http://tradingwithmatlab.blogspot.in/2009/06/convert-stock-cusips-to-stock-symbols.html",
+  "published": "2026-09-13T10:00:16+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "http://tradingwithmatlab.blogspot.com/2009/01/download-and-analyse-option-chains-data.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f954cb86da46d73fa7fa",
+  "host": "tradingwithmatlab.blogspot.in",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Consistent Profits Podcast | iHeart",
+  "url": "https://www.iheart.com/podcast/269-profit-by-design-trading-p-109844703/",
+  "published": "2026-09-13T10:00:33+00:00",
+  "symbols": [
+   "XAUUSD",
+   "NAS100",
+   "US500",
+   "USDKRW"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "33f6acb53359dad286b5",
+  "host": "www.iheart.com",
+  "claims": [
+   {
+    "claim": "Noonan's strategies and trading plans are simple, robust, and effective, making them valuable for anyone looking to succeed in forex, futures, options contracts, and day trading.",
+    "lang": "en",
+    "quantities": [
+     "futures",
+     "options"
+    ],
+    "direction": [
+     "contracts"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "NAS100",
+      "US500",
+      "USDKRW"
+     ],
+     "mentioned": [
+      "gold",
+      "nasdaq",
+      "s&p",
+      "won"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "05fe8967a483"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Designing State-of-the-Art Logging in Python",
+  "url": "https://www.research.hangukquant.com/p/designing-state-of-the-art-logging",
+  "published": "2026-09-13T10:00:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fc340db1ae0f86577044",
+  "host": "www.research.hangukquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Track Your Strategy for Free | TradeLock",
+  "url": "https://tradelock.net/",
+  "published": "2026-09-13T10:00:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ccb336bb4db2e0048fba",
+  "host": "tradelock.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Automated Trading System &#8211; Internal Order Matching | Systematic Edge",
+  "url": "https://systematicedge.wordpress.com/2015/02/22/automated-trading-system-internal-order-matching/",
+  "published": "2026-09-13T10:00:35+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "mean_reversion",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9dd3df1cf4840dbd9f2d",
+  "host": "systematicedge.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "New Bond Rotation Strategy for a IRA and 401k Investment Portfolio - Logical Invest",
+  "url": "http://www.logical-invest.com/new-enhanced-bond-rotation-strategy-adaptive-bond-allocation/",
+  "published": "2026-09-13T10:00:39+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4bd16454d3bc543410f1",
+  "host": "www.logical-invest.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Percentile Channel Strategy Replication | CSSA",
+  "url": "https://cssanalytics.wordpress.com/2015/02/16/percentile-channel-strategy-replication/",
+  "published": "2026-09-13T10:00:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://cssanalytics.files.wordpress.com/2012/10/minimum-correlation-mincorr-spreadsheet.xlsx"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "d29b9d0c6059e0d154b4",
+  "host": "cssanalytics.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "G\u00f6del's Market: Interviewing the Quants: Marco Simioni and Nightly Patterns",
+  "url": "http://godelsmarket.blogspot.jp/2015/02/interviewing-quants-marco-simioni-and.html",
+  "published": "2026-09-13T10:00:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "correlation",
+   "momentum",
+   "night_session",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "aafe2a560614cd95f4a0",
+  "host": "godelsmarket.blogspot.jp",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Research, Backtest and Live Trade Your Strategies - QuantConnect.com",
+  "url": "http://quantconnect.com/",
+  "published": "2026-09-13T10:00:43+00:00",
+  "symbols": [
+   "BTCUSD",
+   "XAUUSD",
+   "NAS100",
+   "US500",
+   "Tesla",
+   "NVIDIA"
+  ],
+  "timeframes": [
+   "1H",
+   "1M",
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "flow",
+   "mean_reversion",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://cdn.quantconnect.com/2024-quantconnect-brand-kit.zip",
+   "https://www.quantconnect.com/datasets/",
+   "http://www.quantconnect.com/datasets/",
+   "http://quantconnect.com/datasets",
+   "http://quantconnect.com/datasets/"
+  ],
+  "n_endpoints": 5,
+  "vault_sha": "6f855e7712743410fcd9",
+  "host": "quantconnect.com",
+  "claims": [
+   {
+    "claim": "Futures US Future markets at tick to daily resolutions since 2009, for the most liquid 70 contracts.",
+    "lang": "en",
+    "quantities": [
+     "futures"
+    ],
+    "direction": [
+     "contracts"
+    ],
+    "horizon": [
+     "tick",
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "NAS100",
+      "US500",
+      "BTCUSD",
+      "Tesla",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "gold",
+      "nasdaq",
+      "spy",
+      "btcusd",
+      "tsla",
+      "nvda"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "08f849a824a7"
+   },
+   {
+    "claim": "Future Options Future Option markets at minute to daily resolutions since 2012, for the most liquid 70 contracts.",
+    "lang": "en",
+    "quantities": [
+     "options"
+    ],
+    "direction": [
+     "contracts"
+    ],
+    "horizon": [
+     "minute",
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "NAS100",
+      "US500",
+      "BTCUSD",
+      "Tesla",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "gold",
+      "nasdaq",
+      "spy",
+      "btcusd",
+      "tsla",
+      "nvda"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "6ad353f106a2"
+   }
+  ],
+  "n_claims": 2
+ }
+]
