@@ -379,8 +379,31 @@ def test_the_script_keeps_before_it_deletes_and_verifies_outside_the_kept_set() 
     # a kept path is not staged either -- it is left for the sync that owns it
     keep_branch = code[code.index("if (Test-KeptByBox $rel)"):code.index('if ($op.Kind -eq "D")')]
     assert "$staged.Add" not in keep_branch and "continue" in keep_branch
-    # the verification gate excludes exactly the kept set, nothing wider
-    assert "Where-Object { -not (Test-KeptByBox $_) })" in code
+    # THE VERIFICATION GATE EXCLUDES EVERY STATE PATH, WHICH IS WIDER THAN THE KEPT SET AND HAD
+    # TO BECOME SO (2026-09-13). This asserted `-not (Test-KeptByBox $_)`, i.e. "exactly the kept
+    # set, nothing wider" -- and that scope made the adoption unable to succeed on a live box.
+    #
+    # `Test-KeptByBox` keeps a state path only when the box CHANGED it since the merge base. A
+    # state path the box had not touched is therefore written from the target in step 2 and then
+    # checked here -- and the organs that own those files are running while the adoption runs.
+    # Measured on the box: 2,404 paths adopted, 54 written and committed, then 52 "still differ",
+    # every one under data/intelligence/, desks/mt5/data/ or web/, rewritten between the write and
+    # the diff by hourly_cycle, shadow_forward, external_gauntlet, moat_recorder and the gateway
+    # loop, with twelve python processes live. The adoption was racing its own machine.
+    #
+    # What step 4 is FOR is refusing to record a merge whose CODE did not land, because sealing a
+    # half-adopted tree is the failure the whole script exists to prevent. A state file that
+    # differs says nothing about that: it is either the box's evidence, kept by design and carried
+    # up by the next push, or an input its own organ has since rewritten. So the gate is scoped to
+    # code, state drift is counted and named rather than hidden, and the refusal message says
+    # CODE path(s) so nobody reads it as the old rule.
+    assert "$stateDrift = @($allDiff | Where-Object { Test-StatePath $_ })" in code
+    assert "$drift      = @($allDiff | Where-Object { -not (Test-StatePath $_) })" in code
+    assert "CODE path(s) still differ" in code, (
+        "the refusal must say which kind of path blocked it, or the next reader re-widens the gate")
+    assert "state path(s) differ and are NOT blocking" in code, (
+        "state drift is reported, never silently dropped -- that is the difference between "
+        "scoping a gate and weakening it")
     # box-touched is measured from the merge base AFTER the box's own state is committed
     assert (code.index("Box state captured before release adoption")
             < code.index('"merge-base", "HEAD", $target'))
