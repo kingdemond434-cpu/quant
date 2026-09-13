@@ -1,0 +1,1163 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Statistics",
+  "url": "https://www.cbe.org.eg/en/economic-research/statistics",
+  "published": "2026-09-13T16:29:53+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "inventory",
+   "night_session",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.cbe.org.eg/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "7d176615cb56f8487117",
+  "host": "www.cbe.org.eg",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "What Is Gamma Scalping & Why It Matters To Trade Forex Markets | Nasdaq",
+  "url": "https://www.nasdaq.com/articles/what-gamma-scalping-why-it-matters-trade-forex-markets-2019-01-04",
+  "published": "2026-09-13T16:29:58+00:00",
+  "symbols": [
+   "NAS100",
+   "EURUSD",
+   "USDCHF",
+   "EURJPY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "breakout",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "75a5d25ba7e9da5062e7",
+  "host": "www.nasdaq.com",
+  "claims": [
+   {
+    "claim": "We refer this approach as \"Delta Neutral\" and in practicality, it encompasses a position built upon the concept of a straddle or a strangle with initial positive and negative deltas that offset one another to ultimately create a position that has a delta close to 0.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "positive",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "EURUSD",
+      "USDCHF",
+      "EURJPY"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "eur/usd",
+      "usd/chf",
+      "eur/jpy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "57cdb99577ee"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Investment Basics - Learn to Invest | I3investor",
+  "url": "https://klse.i3investor.com/web/hti/forexstock",
+  "published": "2026-09-13T16:29:59+00:00",
+  "symbols": [
+   "TARGET",
+   "XTIUSD",
+   "HK50",
+   "JPN225"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "momentum",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "714e21aa9d1630fb0fb3",
+  "host": "klse.i3investor.com",
+  "claims": [
+   {
+    "claim": "To make money from buying stocks, a trader must be able to identify shares which will increase in value, either temporarily or long-term, depending on how long the investment is planned to be held open.",
+    "lang": "en",
+    "quantities": [
+     "stocks",
+     "open"
+    ],
+    "direction": [
+     "increase",
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD",
+      "HK50",
+      "JPN225"
+     ],
+     "mentioned": [
+      "brent crude",
+      "hsi",
+      "nikkei"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "f8d31b25f2bd"
+   },
+   {
+    "claim": "Because it is possible to make money regardless of whether the market rises or falls, investors can opt to open a position when the currency is high and exit when the price drops.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "rises",
+     "falls"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD",
+      "HK50",
+      "JPN225"
+     ],
+     "mentioned": [
+      "brent crude",
+      "hsi",
+      "nikkei"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "7247c10663ae"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Investment Basics - Learn to Invest | I3investor",
+  "url": "https://klse.i3investor.com/web/hti/forexbinaryopt",
+  "published": "2026-09-13T16:30:01+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "momentum",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "998f01c6cadcd50543e8",
+  "host": "klse.i3investor.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Public Watchlist: Kenanga\u2019s 1Q20 Investment Strategy, Fair comments by Calvin | I3investor",
+  "url": "https://klse.i3investor.com/web/blog/detail/www.eaglevisioninvest.com/2022-01-03-story-h1596522501-Public_Watchlist_Kenanga_s_1Q20_Investment_Strategy_Fair_comments_by_Ca",
+  "published": "2026-09-13T16:30:04+00:00",
+  "symbols": [
+   "TARGET",
+   "XTIUSD",
+   "HK50",
+   "JPN225",
+   "UST10Y"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "flow",
+   "momentum",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "93f949db7683427e017f",
+  "host": "klse.i3investor.com",
+  "claims": [
+   {
+    "claim": "He cannot predict the exact day, hour, or volume of market interventions.",
+    "lang": "en",
+    "quantities": [
+     "volume"
+    ],
+    "direction": [
+     "predict"
+    ],
+    "horizon": [
+     "day",
+     "hour"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD",
+      "HK50",
+      "JPN225",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "crude",
+      "hsi",
+      "nikkei",
+      "bursa malaysia",
+      "treasuries",
+      "palm oil"
+     ],
+     "transfer_only": [
+      "bursa malaysia->indices (Bursa)",
+      "palm oil->softs"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "0347ddd66e7f"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "AI\u4ea4\u6613\u9031\u4e00\u6050\u906d\u300c\u66b4\u64ca\u300d\uff1f\u4e09\u5de8\u982d\u652f\u6301\u653e\u6162AI\u958b\u767c\u771f\u662f\u56e0\u300c\u5b89\u5168\u300d\u9084\u662f\u300c\u71d2\u4e0d\u8d77\u9322\u4e86\u300d\uff1f | \u9245\u4ea8\u7db2 - \u7f8e\u80a1\u96f7\u9054",
+  "url": "https://news.cnyes.com/news/id/6605272",
+  "published": "2026-09-13T16:30:05+00:00",
+  "symbols": [
+   "XAUUSD",
+   "US500",
+   "NVIDIA"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "zh-TW",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "65d1b5a4a69f2b542655",
+  "host": "news.cnyes.com",
+  "claims": [
+   {
+    "claim": "8%\uff0c\u793e\u7fa4\u66f4\u50b3\u51faAI\u6982\u5ff5\u80a1\u9031\u4e00\uff0814\u65e5\uff09\u958b\u76e4\u53ef\u80fd\u9762\u81e8\u903e10%\u7684\u8dcc\u5e45\u3002",
+    "lang": "zh-Hant",
+    "quantities": [
+     "\u958b\u76e4"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u9031"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "US500",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "\u9ec3\u91d1",
+      "\u7f8e\u80a1",
+      "\u53f0\u80a1",
+      "\u8f1d\u9054"
+     ],
+     "transfer_only": [
+      "\u53f0\u80a1->indices (TWSE)"
+     ],
+     "indirect": [
+      "USDJPY"
+     ],
+     "channels": [
+      "\u65e5\u9280: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "0ef525fb422f"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Short to Medium Term Strategy of fixing Nigeria&#039;s forex challenges - Cardoso - Nairametrics",
+  "url": "https://nairametrics.com/2024/02/05/short-to-medium-term-strategy-of-fixing-nigerias-forex-challenges-cardoso/",
+  "published": "2026-09-13T16:30:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "048956e0c2d2eb3f7cee",
+  "host": "nairametrics.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "BDCs implementation of CBN forex policy strengthens naira to N1,545/$1 in the black market - ABCON - Nairametrics",
+  "url": "https://nairametrics.com/2025/02/16/bdcs-implementation-of-cbn-forex-policy-strengthens-naira-to-n1545-1-in-the-black-market-abcon/",
+  "published": "2026-09-13T16:30:07+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "gap",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a27179975484154abd13",
+  "host": "nairametrics.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "CBN intervenes in FX market, allocates $20,000 to each BDC to stabilise Naira - Nairametrics",
+  "url": "https://nairametrics.com/2024/02/27/cbn-intervenes-in-fx-market-allocates-20000-to-each-bdc-to-stabilise-naira/",
+  "published": "2026-09-13T16:30:09+00:00",
+  "symbols": [
+   "XTIUSD",
+   "USDKRW"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4185941db55efb62b5fc",
+  "host": "nairametrics.com",
+  "claims": [
+   {
+    "claim": "CBN offers N1,301/$ This allocation will be sold at a rate of N1,301/$, reflecting the lower band rate of executed spot transactions at the Nigerian Autonomous Foreign Exchange Market (NAFEM) as of the previous trading day, dated February 27, 2024.",
+    "lang": "en",
+    "quantities": [
+     "rate",
+     "spot"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD",
+      "USDKRW"
+     ],
+     "mentioned": [
+      "petrol",
+      "won",
+      "naira"
+     ],
+     "transfer_only": [
+      "naira->fx (NGN not quoted)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "805caec9a660"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "CBN edges towards free float of naira with discontinuation of cap on forex transactions - Nairametrics",
+  "url": "https://nairametrics.com/2024/02/09/cbn-edges-towards-free-float-of-naira-with-discontinuation-of-cap-on-forex-transactions/",
+  "published": "2026-09-13T16:30:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "flow",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9f7dc8db803014c0ecd6",
+  "host": "nairametrics.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "CBN injects $197.71 million into FX market to boost liquidity and stability - Nairametrics",
+  "url": "https://nairametrics.com/2025/04/05/cbn-injects-197-71-million-into-fx-market-to-boost-liquidity-and-stability/",
+  "published": "2026-09-13T16:30:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1ed66b4ab6a2f186654b",
+  "host": "nairametrics.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "NGX lost N13 trillion in June \u2014 Here\u2019s how to separate bargains from traps - Nairametrics",
+  "url": "https://nairametrics.com/2026/07/05/ngx-sell-off-3-tests-investors-should-use-to-pick-stocks-in-h2-2026/",
+  "published": "2026-09-13T16:30:15+00:00",
+  "symbols": [
+   "US2000",
+   "UK100"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ed682696073ffff90e78",
+  "host": "nairametrics.com",
+  "claims": [
+   {
+    "claim": "most stocks on the exchange closed the month lower than they started it.",
+    "lang": "en",
+    "quantities": [
+     "stocks"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "US2000",
+      "UK100"
+     ],
+     "mentioned": [
+      "russell",
+      "ftse",
+      "ngx"
+     ],
+     "transfer_only": [
+      "ngx->indices (African exchanges)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "985e86eee7c0"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Why NGX postponed launch of new Shares Pricing Methodology - Nairametrics",
+  "url": "https://nairametrics.com/2026/09/10/why-ngx-postponed-launch-of-new-shares-pricing-methodology/",
+  "published": "2026-09-13T16:30:18+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "81ee2afe4f80369f8008",
+  "host": "nairametrics.com",
+  "claims": [
+   {
+    "claim": "\u201d The concern has gained another dimension with the Dangote Refinery IPO scheduled to open on September 14.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "gained"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "ngx",
+      "naira"
+     ],
+     "transfer_only": [
+      "ngx->indices (African exchanges)",
+      "naira->fx (NGN not quoted)"
+     ],
+     "indirect": [
+      "USDINR"
+     ],
+     "channels": [
+      "foreign portfolio: flow: India portfolio flows -> INR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "6cc3cfb8c337"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Nigerian stocks&#039; low trailing multiples clash with overbought signals - Nairametrics",
+  "url": "https://nairametrics.com/2026/05/24/nigerian-stocks-low-trailing-multiples-clash-with-overbought-signals/",
+  "published": "2026-09-13T16:30:19+00:00",
+  "symbols": [
+   "XTIUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "flow",
+   "gap",
+   "momentum",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0914a6cb8d88fa91d8f9",
+  "host": "nairametrics.com",
+  "claims": [
+   {
+    "claim": "Also Read Top 10 longest-serving CEOs on the NGX 30 DMO returns to popular 2038 bond with fresh N600 billion offer Best performing Nigerian stocks for the week ended September 11, 2026 The macro and corporate fundamentals underpinning this rally indicate a structural re-rating of Nigerian stocks.",
+    "lang": "en",
+    "quantities": [
+     "stocks"
+    ],
+    "direction": [
+     "rally"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "ngx"
+     ],
+     "transfer_only": [
+      "ngx->indices (African exchanges)"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "879d89870e82"
+   },
+   {
+    "claim": "Recent sessions have displayed a pronounced volume fade (down 34% in daily volume and down 55% in turnover on a bearish cycle);",
+    "lang": "en",
+    "quantities": [
+     "volume"
+    ],
+    "direction": [
+     "fade",
+     "bearish"
+    ],
+    "horizon": [
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD"
+     ],
+     "mentioned": [
+      "crude",
+      "ngx",
+      "naira"
+     ],
+     "transfer_only": [
+      "ngx->indices (African exchanges)",
+      "naira->fx (NGN not quoted)"
+     ],
+     "indirect": [
+      "USDINR"
+     ],
+     "channels": [
+      "foreign portfolio: flow: India portfolio flows -> INR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "da3b6d0f93ae"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "NGX: Retail investors boost trading with N2.33 trillion in 8 months - Nairametrics",
+  "url": "https://nairametrics.com/2025/10/07/ngx-retail-investors-boost-trading-with-n2-33-trillion-in-8-months/",
+  "published": "2026-09-13T16:30:21+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "gap",
+   "momentum",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a0971bd4e9ea46e0551e",
+  "host": "nairametrics.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "CIC, DTB replace Kenya Airways and StanChart on key NSE index - Business Daily",
+  "url": "https://www.businessdailyafrica.com/bd/markets/capital-markets/cic-dtb-replace-kenya-airways-and-stanchart-on-key-nse-index-2113946",
+  "published": "2026-09-13T16:30:22+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "31b630d94b24a30223d7",
+  "host": "www.businessdailyafrica.com",
+  "claims": [
+   {
+    "claim": "READ: NSE 20 share index hits two-month high on bank stocks rally Further, a company must have at least 20 per cent of its shares quoted on the NSE and a minimum market capitalisation of Sh20 million.",
+    "lang": "en",
+    "quantities": [
+     "stocks"
+    ],
+    "direction": [
+     "rally"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "nse 20"
+     ],
+     "transfer_only": [
+      "nse 20->indices (African exchanges)"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "fc48051914fa"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "How new NSE shares trade rules will impact investors - Business Daily",
+  "url": "https://www.businessdailyafrica.com/bd/markets/capital-markets/how-new-nse-shares-trade-rules-will-impact-investors-5127818",
+  "published": "2026-09-13T16:30:24+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b6fbc2c07276ed0ba829",
+  "host": "www.businessdailyafrica.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "20 foreign institutional investors flee NSE in three months - Business Daily",
+  "url": "https://www.businessdailyafrica.com/bd/markets/capital-markets/20-foreign-institutional-investors-flee-nse-in-three-months--4607376",
+  "published": "2026-09-13T16:30:28+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "31887bdc8ca15ff30118",
+  "host": "www.businessdailyafrica.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Inside NSE firms raising dividends despite fall in profits - Business Daily",
+  "url": "https://www.businessdailyafrica.com/bd/markets/capital-markets/inside-nse-firms-raising-dividends-despite-fall-in-profits-5569824",
+  "published": "2026-09-13T16:30:30+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9e9767c450713990742c",
+  "host": "www.businessdailyafrica.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Why NSE is betting on funds to spur investor participation - Business Daily",
+  "url": "https://www.businessdailyafrica.com/bd/markets/capital-markets/why-nse-is-betting-on-funds-to-spur-investor-participation-5352540",
+  "published": "2026-09-13T16:30:32+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "44755ed09e91025200a0",
+  "host": "www.businessdailyafrica.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "CBOE Australia (ex Chi-X) to offer Australian futures trading | Aussie Stock Forums",
+  "url": "https://www.aussiestockforums.com/threads/cboe-australia-ex-chi-x-to-offer-australian-futures-trading.36966/post-1402013",
+  "published": "2026-09-13T16:30:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5c54162c49799fccff13",
+  "host": "www.aussiestockforums.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Duc&#039;s BTC Strategy | Page 21 | Aussie Stock Forums",
+  "url": "https://www.aussiestockforums.com/threads/ducs-btc-strategy.38800/post-1407465",
+  "published": "2026-09-13T16:30:40+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XTIUSD",
+   "AUDUSD",
+   "USDTRY",
+   "BTCUSD",
+   "Tesla"
+  ],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "auction",
+   "basis",
+   "breakout",
+   "carry",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dba9165f1b53bad9a5a2",
+  "host": "www.aussiestockforums.com",
+  "claims": [
+   {
+    "claim": "Until it does, the honest read is range-bound, not breakout, and a hot CPI print tomorrow followed by a Fed hike next week is exactly the kind of catalyst that sends this market lower instead of through that line.",
+    "lang": "en",
+    "quantities": [
+     "range",
+     "breakout",
+     "cpi",
+     "hike"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "AUDUSD",
+      "USDTRY",
+      "BTCUSD",
+      "Tesla"
+     ],
+     "mentioned": [
+      "gold",
+      "brent crude",
+      "aussie",
+      "try",
+      "bitcoin",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "EURUSD",
+      "UST10Y"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "european central bank: policy: ECB -> EUR",
+      "treasury auction: auction: sovereign debt -> rates and dollar"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "1fa517f535b2"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Strategies/Systems | Aussie Stock Forums",
+  "url": "https://www.aussiestockforums.com/forums/trading-strategies-systems.7/",
+  "published": "2026-09-13T16:30:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4a1009be37e3dc1efa7b",
+  "host": "www.aussiestockforums.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forex | ShareTrader",
+  "url": "https://www.sharetrader.co.nz/forums/forex/",
+  "published": "2026-09-13T16:30:48+00:00",
+  "symbols": [
+   "AUDNZD",
+   "AUDUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "inventory",
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0f50874b37f305c06110",
+  "host": "www.sharetrader.co.nz",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Investment Strategies | ShareTrader",
+  "url": "https://www.sharetrader.co.nz/forums/investment-strategies/",
+  "published": "2026-09-13T16:30:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "62a52db9e5268bd1c0c7",
+  "host": "www.sharetrader.co.nz",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u05de\u05d8\"\u05d7 (\u05de\u05d8\u05d1\u05e2 \u05d7\u05d5\u05e5) - \u05d2\u05dc\u05d5\u05d1\u05e1",
+  "url": "https://www.globes.co.il/portal/forex/",
+  "published": "2026-09-13T16:30:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "he",
+  "endpoints": [
+   "https://www.globes.co.il/news/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "e24a5042f118bff5a2ec",
+  "host": "www.globes.co.il",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "NFEM turnover hits $1.45 billion as FX trading activity surges - Nairametrics",
+  "url": "https://nairametrics.com/2026/09/11/nfem-turnover-hits-1-45-billion-as-fx-trading-activity-surges/",
+  "published": "2026-09-13T16:30:49+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5d877c21853b12e407d6",
+  "host": "nairametrics.com",
+  "claims": [
+   {
+    "claim": "Also Read Top 10 longest-serving CEOs on the NGX 30 DMO returns to popular 2038 bond with fresh N600 billion offer Best performing Nigerian stocks for the week ended September 11, 2026 What the data is saying The increase in turnover came alongside a rise in the number of transactions, with 470 deals recorded on September 10, compared with 276 the previous day.",
+    "lang": "en",
+    "quantities": [
+     "stocks"
+    ],
+    "direction": [
+     "increase",
+     "rise"
+    ],
+    "horizon": [
+     "week",
+     "day"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "ngx"
+     ],
+     "transfer_only": [
+      "ngx->indices (African exchanges)"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "922bea9badd6"
+   },
+   {
+    "claim": "Despite the stronger trading activity, the naira weakened during the session.",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "weakened"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "naira"
+     ],
+     "transfer_only": [
+      "naira->fx (NGN not quoted)"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "57fbc21ba049"
+   }
+  ],
+  "n_claims": 2
+ }
+]
