@@ -1916,9 +1916,38 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
         stages["expected_value"] = {"passed": bool(ev > 0.0), "ev": round(ev, 4)}
 
         passed = all(s["passed"] for s in stages.values())
+        # WHICH GATE ACTUALLY STOPPED IT, AND WITHOUT THIS THE FUNNEL IS INVISIBLE.
+        #
+        # `stages` has carried every gate's verdict all along and the row never said which one
+        # was terminal, so `_append_gate_ledger` fell through to its "UNKNOWN" default. Measured
+        # 2026-09-13 on the box: 20,806 of 21,663 ledger rows read UNKNOWN. The desk could not
+        # answer "why did this cell fail" for 96% of everything it has ever judged.
+        #
+        # THAT IS NOT A REPORTING NICETY, IT IS THE BOTTLENECK ITSELF. `gate_fails` counts how
+        # often each gate refused ANY cell -- deflated_sharpe 18,372, cpcv 15,848,
+        # in_sample_screen 15,787 -- and a cell can fail several, so those counts cannot say
+        # which cells would pass everything ELSE. Only the terminal gate can, and it is the
+        # question every throughput decision turns on: a cell whose sole obstacle is the
+        # multiplicity charge is a candidate for the forward cure the gate spec already grants
+        # (`cure_by_forward: true`), while a cell that also fails cpcv and walk_forward is not.
+        #
+        # `stages` is insertion-ordered in evaluation order, so the FIRST failure is the one that
+        # stopped it. Recorded as `failed_gates` too, because "died at deflated_sharpe having
+        # passed everything else" and "died at deflated_sharpe and four others" are the same
+        # terminal gate and completely different prospects.
+        _failed = [k for k, v in stages.items() if not v.get("passed")]
         verdicts.append({
             "cell": cid, "sym": c["sym"], "family": c["family"],
-            "days": len(arr), "passed": passed, "stages": stages
+            "days": len(arr), "passed": passed, "stages": stages,
+            "terminal_gate": ("PASSED" if passed else _failed[0]),
+            "failed_gates": _failed,
+            "n_failed_gates": len(_failed),
+            # THE CURE LANE'S ELIGIBILITY, computed where the evidence is rather than re-derived
+            # by a reader. The gate spec grants `cure_by_forward` on deflated_sharpe, so a cell
+            # that fails ONLY that one has cleared every other test this desk applies and is
+            # exactly what forward evidence was meant to adjudicate.
+            "curable_by_forward": (not passed and len(_failed) == 1
+                                   and _failed[0] == "deflated_sharpe"),
         })
 
     # A DROPPED CELL IS A MEASURED OUTCOME, NOT A DISAPPEARANCE (L1.28a / WS-005). Cells whose
@@ -2361,6 +2390,15 @@ def main():
     # THE GATE LEDGER (2026-09-12). Reproduction writes its own file and touches no shared
     # record, exactly as the report and the cursors already do.
     if not _repro_active():
+        # THE FUNNEL'S OWN ANSWER, on the report rather than only in the ledger: where cells
+        # died, and how many died at ONE gate only -- which is the population the forward cure
+        # was written for and which nothing could count before today.
+        import collections as _c
+        _v = result.get("verdicts") or []
+        result["terminal_gates"] = dict(_c.Counter(
+            str(v.get("terminal_gate")) for v in _v if isinstance(v, dict)).most_common())
+        result["n_curable_by_forward"] = sum(
+            1 for v in _v if isinstance(v, dict) and v.get("curable_by_forward"))
         result["gate_ledger"] = _safe(lambda: _append_gate_ledger(result["verdicts"]),
                                       "gate_ledger")
 
