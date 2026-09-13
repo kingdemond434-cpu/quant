@@ -1,0 +1,1908 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Futures Trading",
+  "url": "https://ninjatrader.com/?utm_campaign=brand-nt-us&utm_source=partner&utm_medium=futuresio&utm_content=sitelink_platform&utm_term=",
+  "published": "2026-09-13T05:51:31+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6461dd5f56dd1402e18b",
+  "host": "ninjatrader.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Why Futures Over CFDs",
+  "url": "https://ninjatrader.com/eu/en-de/futures/why-trade-futures/futures-vs-forex-and-cfds/",
+  "published": "2026-09-13T05:51:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "964184478a44e249d84c",
+  "host": "ninjatrader.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Online Futures Trading Platform",
+  "url": "https://ninjatrader.com/eu/en-de/platform/",
+  "published": "2026-09-13T05:51:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3321ef969edabf2d7898",
+  "host": "ninjatrader.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "NinjaTrader Desktop: Futures Trading Platform | NinjaTrader",
+  "url": "https://ninjatrader.com/eu/en-de/platform/desktop-trading/",
+  "published": "2026-09-13T05:51:37+00:00",
+  "symbols": [
+   "NAS100",
+   "US500",
+   "GER40",
+   "EUSTX50"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0f01f0881015e024effa",
+  "host": "ninjatrader.com",
+  "claims": [
+   {
+    "claim": "For EU traders Define multiple named ATM templates suited to different contracts and session conditions\u2014for example, a tighter template for FDAX scalps and a wider one for overnight FGBL holds.",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "contracts"
+    ],
+    "horizon": [
+     "session",
+     "overnight"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "GER40",
+      "EUSTX50"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "s&p 500",
+      "dax",
+      "euro stoxx"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "7b4cb31ddc5f"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Futures Trading Mobile App",
+  "url": "https://ninjatrader.com/eu/en-de/platform/mobile-trading/",
+  "published": "2026-09-13T05:51:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e87ea1ee751dbff2064c",
+  "host": "ninjatrader.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "TradingView | NinjaTrader",
+  "url": "https://ninjatrader.com/eu/en-de/tradingview/",
+  "published": "2026-09-13T05:51:43+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XPTUSD",
+   "XTIUSD",
+   "XNGUSD",
+   "NAS100",
+   "US500",
+   "US30",
+   "US2000",
+   "UST10Y"
+  ],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e2cc419e7655aa82fc21",
+  "host": "ninjatrader.com",
+  "claims": [
+   {
+    "claim": "You only need enough capital to meet the margin requirements of the contracts you want to trade \u2014 from $50 intraday margin for Micro E-mini futures.",
+    "lang": "en",
+    "quantities": [
+     "futures"
+    ],
+    "direction": [
+     "contracts"
+    ],
+    "horizon": [
+     "intraday"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XPTUSD",
+      "XTIUSD",
+      "XNGUSD",
+      "NAS100",
+      "US500",
+      "US30",
+      "US2000",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "platinum",
+      "crude",
+      "natural gas",
+      "nasdaq",
+      "s&p 500",
+      "dow jones",
+      "russell 2000",
+      "treasuries"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "f2e6ede67e04"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Futures Trading",
+  "url": "https://ninjatrader.com/tradingview-ninjatrader/",
+  "published": "2026-09-13T05:51:45+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5520078b0483e12584b0",
+  "host": "ninjatrader.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "IBKR Quant Home | IBKR Campus",
+  "url": "https://ibkrcampus.com/campus/category/ibkr-quant-news/ibkr-quant-home/",
+  "published": "2026-09-13T05:51:49+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.com/campus/traders-academy/api/",
+   "https://ibkrcampus.com/campus/traders-academy/api/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "13ea13be95fd927a227f",
+  "host": "ibkrcampus.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Educators | Student Trading Lab | IBKR Campus",
+  "url": "https://ibkrcampus.com/campus/student-trading-lab/",
+  "published": "2026-09-13T05:51:51+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.com/campus/traders-academy/api/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "d7679c24632904220574",
+  "host": "ibkrcampus.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "I paper-traded 22 popular crypto strategies on real fees for 10 days. 16 of them lost money. Here&#x27;s the data. | StratProof",
+  "url": "https://stratproof.com/blog/paper-trading-22-strategies-real-fees",
+  "published": "2026-09-13T05:51:53+00:00",
+  "symbols": [],
+  "timeframes": [
+   "15M",
+   "1H",
+   "30M",
+   "4H",
+   "5M",
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "575063195a8034628a02",
+  "host": "stratproof.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Live Feed",
+  "url": "https://www.forexlive.com/live-feed",
+  "published": "2026-09-13T05:51:55+00:00",
+  "symbols": [
+   "USDCAD",
+   "USDCHF",
+   "XAUUSD",
+   "XTIUSD",
+   "NAS100",
+   "US500",
+   "US2000",
+   "BTCUSD",
+   "NVIDIA"
+  ],
+  "timeframes": [
+   "5M",
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e5f4e2b67fc41a18d12b",
+  "host": "www.forexlive.com",
+  "claims": [
+   {
+    "claim": "Odds of a fed hike 90% Greg Michalowski 11/09/2026 | 21:18 GMT Expand Greg Michalowski 11/09/2026 | 21:18 GMT Expand Stocks Stocks US stocks rebound sharply, but major indices still close lower for the week The major indices snap 4-day losing streak with gains in the major indices today.",
+    "lang": "en",
+    "quantities": [
+     "hike",
+     "stocks",
+     "close"
+    ],
+    "direction": [
+     "expand",
+     "rebound"
+    ],
+    "horizon": [
+     "close",
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "NAS100",
+      "US500",
+      "US2000",
+      "USDCAD",
+      "USDCHF",
+      "BTCUSD",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "gold",
+      "wti",
+      "nasdaq",
+      "s&p",
+      "russell 2000",
+      "kospi",
+      "usdcad",
+      "usdchf",
+      "bitcoin",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "kospi->indices (KRX)"
+     ],
+     "indirect": [
+      "USDX",
+      "EURUSD",
+      "USDKRW"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "bank of korea: policy: BoK / MoEF -> KRW"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "acb1b0d3367c"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "investingLive: Daily Forex Market News &amp; Expert Analysis",
+  "url": "https://www.forexlive.com/forex",
+  "published": "2026-09-13T05:51:57+00:00",
+  "symbols": [
+   "USDJPY",
+   "XAUUSD",
+   "XTIUSD",
+   "NAS100",
+   "EURUSD",
+   "USDCNH",
+   "USDINR",
+   "BTCUSD",
+   "UST10Y",
+   "NVIDIA"
+  ],
+  "timeframes": [
+   "5M",
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0c48c86491ed2a6201a7",
+  "host": "www.forexlive.com",
+  "claims": [
+   {
+    "claim": "Giuseppe Dellamotta 08/09/2026 | 07:39 GMT Expand Giuseppe Dellamotta 08/09/2026 | 07:39 GMT Expand MUFG sees ECB hike this week, flags downside risk for euro MUFG expects the ECB to deliver a second 25bp hike this week, already fully priced in, meaning EUR reaction hinges on Lagardes guidance.",
+    "lang": "en",
+    "quantities": [
+     "hike"
+    ],
+    "direction": [
+     "expand"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "a8a01118a9db"
+   },
+   {
+    "claim": "Eamonn Sheridan 07/09/2026 | 00:19 GMT Expand Eamonn Sheridan 07/09/2026 | 00:19 GMT Expand Yen's sharp weekly rally tied to BOJ rate hike repricing The yen strengthened sharply last week as USD/JPY fell from near 160 to under 156, with a Japanese brokerage's research pointing to markets now pricing a September BOJ rate hike near certainty and growing odds of a follow-up move as soon as October.",
+    "lang": "en",
+    "quantities": [
+     "rate",
+     "hike"
+    ],
+    "direction": [
+     "expand",
+     "rally"
+    ],
+    "horizon": [
+     "weekly",
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "yen"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [
+      "boj: policy: BoJ / MoF intervention -> JPY"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "f3f8fd49b26b"
+   },
+   {
+    "claim": "Eamonn Sheridan 07/09/2026 | 00:07 GMT Expand Eamonn Sheridan 07/09/2026 | 00:07 GMT Expand Monday open indicative forex prices, 07 September 2026 As is usual for a Monday morning, market liquidity is very thin until it improves as more Asian centres come online .",
+    "lang": "en",
+    "quantities": [
+     "open",
+     "liquidity"
+    ],
+    "direction": [
+     "expand"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "NAS100",
+      "EURUSD",
+      "USDJPY",
+      "USDCNH",
+      "USDINR",
+      "BTCUSD",
+      "UST10Y",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "gold",
+      "crude",
+      "nasdaq",
+      "kospi",
+      "eur/usd",
+      "usd/jpy",
+      "usd/cny",
+      "rupee",
+      "bitcoin",
+      "treasuries",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "kospi->indices (KRX)"
+     ],
+     "indirect": [
+      "USDX",
+      "US500",
+      "USDKRW"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "boj: policy: BoJ / MoF intervention -> JPY",
+      "pboc: policy: PBoC fixing -> CNH",
+      "bank of korea: policy: BoK / MoEF -> KRW",
+      "rbi: policy: RBI -> INR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "9e16ee4c96a5"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "investingLive: Daily Stock Market News &amp; Expert Analysis",
+  "url": "https://www.forexlive.com/stocks",
+  "published": "2026-09-13T05:51:59+00:00",
+  "symbols": [
+   "XTIUSD",
+   "UST10Y",
+   "XAUUSD",
+   "NAS100",
+   "US500",
+   "US2000",
+   "FRA40",
+   "BTCUSD",
+   "NVIDIA"
+  ],
+  "timeframes": [
+   "5M",
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "inventory",
+   "momentum",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c41b8126d4c021ee4e57",
+  "host": "www.forexlive.com",
+  "claims": [
+   {
+    "claim": "Eamonn Sheridan 10/09/2026 | 20:16 GMT Expand Eamonn Sheridan 10/09/2026 | 20:16 GMT Expand ADVERTISEMENT - CONTINUE READING BELOW US stocks close lower as rising yields and $100+ oil prices pressure the indices The 10-year yield climbed to its highest level since October 2023, while crude oil moved above $100 per barrel for the first time since mid-May.",
+    "lang": "en",
+    "quantities": [
+     "stocks",
+     "close",
+     "yield"
+    ],
+    "direction": [
+     "expand",
+     "continue"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "crude",
+      "10-year yield"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "dcbf71d3ff95"
+   },
+   {
+    "claim": "Itai Levitan 10/09/2026 | 09:56 GMT Expand Itai Levitan 10/09/2026 | 09:56 GMT Expand ADVERTISEMENT - CONTINUE READING BELOW Oracle earnings preview: AI spending, cloud growth and a $638 billion backlog in focus Oracle reports Q1 FY2027 earnings after the US close today, with Wall Street looking for around $19.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "expand",
+     "continue"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "NAS100",
+      "US500",
+      "US2000",
+      "FRA40",
+      "BTCUSD",
+      "UST10Y",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "gold",
+      "crude",
+      "nasdaq",
+      "s&p",
+      "russell 2000",
+      "cac",
+      "kospi",
+      "bitcoin",
+      "10-year yield",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "kospi->indices (KRX)"
+     ],
+     "indirect": [
+      "USDX",
+      "EURUSD",
+      "USDKRW"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "bank of korea: policy: BoK / MoEF -> KRW"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "e88589a9b738"
+   },
+   {
+    "claim": "A soft or in-line CPI could boost the Nasdaq, while a hot core monthly CPI could trigger another selloff on renewed rate hike bets.",
+    "lang": "en",
+    "quantities": [
+     "cpi",
+     "rate",
+     "hike"
+    ],
+    "direction": [
+     "selloff"
+    ],
+    "horizon": [
+     "monthly"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100"
+     ],
+     "mentioned": [
+      "nasdaq"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "954857b467d1"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "investingLive: Live Crypto News &amp; Expert Technical Analysis",
+  "url": "https://www.forexlive.com/Cryptocurrency",
+  "published": "2026-09-13T05:52:01+00:00",
+  "symbols": [
+   "BTCUSD",
+   "ETHUSD",
+   "XAUUSD",
+   "XTIUSD",
+   "NAS100",
+   "USDKRW",
+   "NVIDIA"
+  ],
+  "timeframes": [
+   "5M",
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "breakout",
+   "inventory",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "57b8496c82312907914e",
+  "host": "www.forexlive.com",
+  "claims": [
+   {
+    "claim": "A soft or in-line CPI could support another ETH rally, while a hotter monthly core inflation reading would likely trigger renewed selling.",
+    "lang": "en",
+    "quantities": [
+     "cpi"
+    ],
+    "direction": [
+     "rally"
+    ],
+    "horizon": [
+     "monthly"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "NAS100",
+      "USDKRW",
+      "BTCUSD",
+      "ETHUSD",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "gold",
+      "crude",
+      "nasdaq",
+      "kospi",
+      "won",
+      "bitcoin",
+      "ethereum",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "kospi->indices (KRX)"
+     ],
+     "indirect": [
+      "USDX",
+      "US500",
+      "EURUSD"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "bank of korea: policy: BoK / MoEF -> KRW"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "e333a92d32d6"
+   },
+   {
+    "claim": "A soft or in-line reading could boost Bitcoin, while a hot core monthly CPI could trigger another selloff.",
+    "lang": "en",
+    "quantities": [
+     "cpi"
+    ],
+    "direction": [
+     "selloff"
+    ],
+    "horizon": [
+     "monthly"
+    ],
+    "instruments": {
+     "analogues": [
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "663bd665e0d0"
+   },
+   {
+    "claim": "Itai Levitan 21/08/2026 | 00:52 GMT Expand Itai Levitan 21/08/2026 | 00:52 GMT Expand Bitcoin nears $70K, but Ethereum\u2019s eight-hour breakout reveals the bigger crypto shift ETH rapidly crossed its six-month high-volume range as institutional flows and altcoin breadth improved, suggesting crypto risk appetite is expanding beyond Bitcoin.",
+    "lang": "en",
+    "quantities": [
+     "breakout",
+     "volume",
+     "range"
+    ],
+    "direction": [
+     "expand"
+    ],
+    "horizon": [
+     "hour",
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "BTCUSD",
+      "ETHUSD"
+     ],
+     "mentioned": [
+      "bitcoin",
+      "ethereum"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "3a56e8aec3a7"
+   },
+   {
+    "claim": "Itai Levitan 20/08/2026 | 03:25 GMT Expand Itai Levitan 20/08/2026 | 03:25 GMT Expand Bitcoin Price Analysis: The Critical Crypto Chart Between $64K and $65K Bitcoin is trading between key monthly volume levels at $64,085 and $65,050.",
+    "lang": "en",
+    "quantities": [
+     "volume"
+    ],
+    "direction": [
+     "expand"
+    ],
+    "horizon": [
+     "monthly"
+    ],
+    "instruments": {
+     "analogues": [
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "a65a6d593c3d"
+   }
+  ],
+  "n_claims": 4
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Commodities | investingLive",
+  "url": "https://www.forexlive.com/commodities",
+  "published": "2026-09-13T05:52:03+00:00",
+  "symbols": [
+   "XTIUSD"
+  ],
+  "timeframes": [
+   "5M",
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "inventory"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b949a7be6a726538d590",
+  "host": "www.forexlive.com",
+  "claims": [
+   {
+    "claim": "Greg Michalowski 10/09/2026 | 16:42 GMT Expand Greg Michalowski 10/09/2026 | 16:42 GMT Expand ADVERTISEMENT - CONTINUE READING BELOW EIA weekly US crude oil inventories -391K vs -1554K expected Weekly petroleum data Adam Button 10/09/2026 | 16:01 GMT Expand Adam Button 10/09/2026 | 16:01 GMT Expand Oil prices are surging again but oil company stocks are down, what gives?",
+    "lang": "en",
+    "quantities": [
+     "inventories",
+     "stocks"
+    ],
+    "direction": [
+     "expand",
+     "continue"
+    ],
+    "horizon": [
+     "weekly"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD"
+     ],
+     "mentioned": [
+      "crude"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "efe225611117"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "investingLive: Expert Technical Analysis",
+  "url": "https://www.forexlive.com/technical-analysis",
+  "published": "2026-09-13T05:52:06+00:00",
+  "symbols": [
+   "AUDUSD",
+   "EURUSD",
+   "GBPUSD",
+   "USDCAD",
+   "USDCHF",
+   "USDJPY",
+   "XAUUSD",
+   "XCUUSD",
+   "XTIUSD",
+   "NAS100",
+   "US500",
+   "BTCUSD",
+   "NVIDIA"
+  ],
+  "timeframes": [
+   "5M",
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "inventory",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "40a9f8f85436bd5fa59e",
+  "host": "www.forexlive.com",
+  "claims": [
+   {
+    "claim": "Greg Michalowski 09/09/2026 | 13:44 GMT Expand Greg Michalowski 09/09/2026 | 13:44 GMT Expand Kickstart the NA session: A technical look at the EURUSD, USDJPY and GBPUSD to start the day The USD is lower, yields are mixed.",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "expand",
+     "lower"
+    ],
+    "horizon": [
+     "session",
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY"
+     ],
+     "mentioned": [
+      "eurusd",
+      "gbpusd",
+      "usdjpy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "ac52917853a9"
+   },
+   {
+    "claim": "Greg Michalowski 07/09/2026 | 16:49 GMT Expand Greg Michalowski 07/09/2026 | 16:49 GMT Expand Kickstart the North American FX session.",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "expand"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XCUUSD",
+      "XTIUSD",
+      "NAS100",
+      "US500",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDCHF",
+      "BTCUSD",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "gold",
+      "copper",
+      "crude",
+      "nasdaq",
+      "s&p",
+      "kospi",
+      "eurusd",
+      "gbpusd",
+      "usdjpy",
+      "audusd",
+      "usdcad",
+      "usdchf",
+      "bitcoin",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "kospi->indices (KRX)"
+     ],
+     "indirect": [
+      "USDKRW"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR",
+      "boj: policy: BoJ / MoF intervention -> JPY",
+      "bank of korea: policy: BoK / MoEF -> KRW"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "ce4e7e21ec61"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "investingLive Education Hub: Trading &amp; Strategy Guides",
+  "url": "https://www.forexlive.com/Education",
+  "published": "2026-09-13T05:52:07+00:00",
+  "symbols": [
+   "EURUSD",
+   "USDCAD",
+   "XAUUSD",
+   "XTIUSD",
+   "NAS100",
+   "US500",
+   "BTCUSD",
+   "NVIDIA"
+  ],
+  "timeframes": [
+   "5M",
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "breakout",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c2d06442a23a9270eed9",
+  "host": "www.forexlive.com",
+  "claims": [
+   {
+    "claim": "Eamonn Sheridan 10/09/2026 | 23:37 GMT Expand Eamonn Sheridan 10/09/2026 | 23:37 GMT Expand What the September futures rollover means for traders, ES and NQ as examples The September quarterly futures rollover affects every contract on the March, June, September and December cycle, shifting volume and open interest into the next quarter, illustrated here using ES and NQ.",
+    "lang": "en",
+    "quantities": [
+     "futures",
+     "rollover",
+     "volume",
+     "open interest"
+    ],
+    "direction": [
+     "expand",
+     "contract"
+    ],
+    "horizon": [
+     "quarterly",
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "NAS100",
+      "US500",
+      "EURUSD",
+      "USDCAD",
+      "BTCUSD",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "gold",
+      "brent",
+      "nasdaq",
+      "s&p",
+      "kospi",
+      "eurusd",
+      "usdcad",
+      "bitcoin",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "kospi->indices (KRX)"
+     ],
+     "indirect": [
+      "USDX",
+      "NZDUSD",
+      "USDKRW"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "rbnz: policy: RBNZ -> NZD",
+      "bank of korea: policy: BoK / MoEF -> KRW"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "7c9d3873020b"
+   },
+   {
+    "claim": "Eamonn Sheridan 07/09/2026 | 02:04 GMT Expand Eamonn Sheridan 07/09/2026 | 02:04 GMT Expand Why Globex still opens on the night before a US market holiday CME Globex opens as normal on Sunday evening ahead of Monday holidays like Labor Day, since the open belongs to Monday's trade date, before halting trading early around midday and resuming that evening for the next session.",
+    "lang": "en",
+    "quantities": [
+     "open",
+     "session"
+    ],
+    "direction": [
+     "expand"
+    ],
+    "horizon": [
+     "day",
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "NAS100",
+      "US500",
+      "EURUSD",
+      "USDCAD",
+      "BTCUSD",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "gold",
+      "brent",
+      "nasdaq",
+      "s&p",
+      "kospi",
+      "eurusd",
+      "usdcad",
+      "bitcoin",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "kospi->indices (KRX)"
+     ],
+     "indirect": [
+      "USDX",
+      "NZDUSD",
+      "USDKRW"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "rbnz: policy: RBNZ -> NZD",
+      "bank of korea: policy: BoK / MoEF -> KRW"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "0c9e3d7ebfc9"
+   },
+   {
+    "claim": "Eamonn Sheridan 03/09/2026 | 23:41 GMT Expand Eamonn Sheridan 03/09/2026 | 23:41 GMT Expand How Waller moved the Fed rate-hike odds by 12 points in minutes: a look inside CME FedWatch Waller's pushback on a September Fed hike moved CME FedWatch odds by 12 points in minutes, from around 67% to 54.",
+    "lang": "en",
+    "quantities": [
+     "rate",
+     "hike"
+    ],
+    "direction": [
+     "expand"
+    ],
+    "horizon": [
+     "minutes"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "8ef07f93c438"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "All Directory | investingLive",
+  "url": "https://www.forexlive.com/directory/",
+  "published": "2026-09-13T05:52:09+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f8bd9a51472bdf4c624d",
+  "host": "www.forexlive.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "All Brokers | investingLive",
+  "url": "https://www.forexlive.com/directory/brokers/",
+  "published": "2026-09-13T05:52:11+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a4392580eceb5e558d68",
+  "host": "www.forexlive.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "All Prop Trading Firms | investingLive",
+  "url": "https://www.forexlive.com/directory/prop-trading-firms/",
+  "published": "2026-09-13T05:52:12+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "basis",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "440404ad65f4ef614eb6",
+  "host": "www.forexlive.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Broker Reviews | investingLive",
+  "url": "https://www.forexlive.com/directory/reviews/",
+  "published": "2026-09-13T05:52:15+00:00",
+  "symbols": [
+   "BTCUSD",
+   "ETHUSD"
+  ],
+  "timeframes": [
+   "5M",
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ae55c97b869a9aa776bd",
+  "host": "www.forexlive.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Broker Compare List | investingLive",
+  "url": "https://www.forexlive.com/directory/best/",
+  "published": "2026-09-13T05:52:16+00:00",
+  "symbols": [],
+  "timeframes": [
+   "5M",
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "inventory"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b4dd53aa8c072185e301",
+  "host": "www.forexlive.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Live Charts | ForexLive",
+  "url": "https://www.forexlive.com/LiveCharts",
+  "published": "2026-09-13T05:52:19+00:00",
+  "symbols": [
+   "EURUSD",
+   "XAUUSD",
+   "XTIUSD",
+   "NAS100",
+   "US500",
+   "US30",
+   "US2000",
+   "BTCUSD",
+   "NVIDIA"
+  ],
+  "timeframes": [
+   "5M",
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "inventory",
+   "momentum"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c993432ac2b1ff47d25f",
+  "host": "www.forexlive.com",
+  "claims": [
+   {
+    "claim": "positive compared to the open price (green) or negative (red).",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "positive",
+     "negative"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "NAS100",
+      "US500",
+      "US30",
+      "US2000",
+      "EURUSD",
+      "BTCUSD",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "gold",
+      "crude",
+      "nasdaq",
+      "s&p",
+      "dow jones",
+      "russell",
+      "kospi",
+      "eurusd",
+      "bitcoin",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "kospi->indices (KRX)"
+     ],
+     "indirect": [
+      "USDKRW"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR",
+      "bank of korea: policy: BoK / MoEF -> KRW"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "37658dc44200"
+   },
+   {
+    "claim": "for you, so always be open-minded and don\u2019t follow strict rigid rules like a",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "follow"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "NAS100",
+      "US500",
+      "US30",
+      "US2000",
+      "EURUSD",
+      "BTCUSD",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "gold",
+      "crude",
+      "nasdaq",
+      "s&p",
+      "dow jones",
+      "russell",
+      "kospi",
+      "eurusd",
+      "bitcoin",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "kospi->indices (KRX)"
+     ],
+     "indirect": [
+      "USDKRW"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR",
+      "bank of korea: policy: BoK / MoEF -> KRW"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "d6439428c0e2"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Live Quotes | ForexLive",
+  "url": "https://www.forexlive.com/LiveQuotes",
+  "published": "2026-09-13T05:52:20+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bd518342a000be407db2",
+  "host": "www.forexlive.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Economic Calendar | ForexLive",
+  "url": "https://www.forexlive.com/EconomicCalendar",
+  "published": "2026-09-13T05:52:23+00:00",
+  "symbols": [],
+  "timeframes": [
+   "5M",
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "inventory"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "edf1017d89468c316702",
+  "host": "www.forexlive.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Live Feed",
+  "url": "https://www.forexlive.com/live-feed/",
+  "published": "2026-09-13T05:52:24+00:00",
+  "symbols": [
+   "USDCAD",
+   "USDCHF",
+   "XAUUSD",
+   "XTIUSD",
+   "NAS100",
+   "US500",
+   "US2000",
+   "BTCUSD",
+   "NVIDIA"
+  ],
+  "timeframes": [
+   "5M",
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e5f4e2b67fc41a18d12b",
+  "host": "www.forexlive.com",
+  "claims": [
+   {
+    "claim": "Odds of a fed hike 90% Greg Michalowski 11/09/2026 | 21:18 GMT Expand Greg Michalowski 11/09/2026 | 21:18 GMT Expand Stocks Stocks US stocks rebound sharply, but major indices still close lower for the week The major indices snap 4-day losing streak with gains in the major indices today.",
+    "lang": "en",
+    "quantities": [
+     "hike",
+     "stocks",
+     "close"
+    ],
+    "direction": [
+     "expand",
+     "rebound"
+    ],
+    "horizon": [
+     "close",
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "NAS100",
+      "US500",
+      "US2000",
+      "USDCAD",
+      "USDCHF",
+      "BTCUSD",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "gold",
+      "wti",
+      "nasdaq",
+      "s&p",
+      "russell 2000",
+      "kospi",
+      "usdcad",
+      "usdchf",
+      "bitcoin",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "kospi->indices (KRX)"
+     ],
+     "indirect": [
+      "USDX",
+      "EURUSD",
+      "USDKRW"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "bank of korea: policy: BoK / MoEF -> KRW"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "acb1b0d3367c"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "investingLive - Latest Forex News, Market Analysis &amp; Trading Insights",
+  "url": "https://www.forexlive.com/",
+  "published": "2026-09-13T05:52:27+00:00",
+  "symbols": [
+   "USDCAD",
+   "XAUUSD",
+   "XTIUSD",
+   "NAS100",
+   "US500",
+   "US2000",
+   "BTCUSD",
+   "NVIDIA"
+  ],
+  "timeframes": [
+   "5M",
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "77ca8794028fefece69a",
+  "host": "www.forexlive.com",
+  "claims": [
+   {
+    "claim": "Odds of a fed hike 90% Greg Michalowski 11/09/2026 | 21:18 GMT Greg Michalowski 11/09/2026 | 21:18 GMT Expand Stocks Stocks US stocks rebound sharply, but major indices still close lower for the week The major indices snap 4-day losing streak with gains in the major indices today.",
+    "lang": "en",
+    "quantities": [
+     "hike",
+     "stocks",
+     "close"
+    ],
+    "direction": [
+     "expand",
+     "rebound"
+    ],
+    "horizon": [
+     "close",
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "NAS100",
+      "US500",
+      "US2000",
+      "USDCAD",
+      "BTCUSD",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "gold",
+      "crude",
+      "nasdaq",
+      "s&p",
+      "russell 2000",
+      "kospi",
+      "usdcad",
+      "bitcoin",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "kospi->indices (KRX)"
+     ],
+     "indirect": [
+      "USDX",
+      "EURUSD",
+      "USDKRW"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "bank of korea: policy: BoK / MoEF -> KRW"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "4ca98bb2d702"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Eamonn Sheridan | investingLive",
+  "url": "https://www.forexlive.com/author/eamonn-sheridan",
+  "published": "2026-09-13T05:52:28+00:00",
+  "symbols": [
+   "XAUUSD",
+   "JPN225",
+   "USDJPY",
+   "USDCNH",
+   "UST10Y"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "41be4d871cdc2b6ed57c",
+  "host": "www.forexlive.com",
+  "claims": [
+   {
+    "claim": "Eamonn Sheridan 11/09/2026 | 03:45 GMT Expand Eamonn Sheridan 11/09/2026 | 03:45 GMT Expand Central Banks Central Banks BOJ hike next week is a given, the real question is pace and terminal rate Reuters sources say the BOJ is set to hike rates 25bp to 1.",
+    "lang": "en",
+    "quantities": [
+     "hike",
+     "rate"
+    ],
+    "direction": [
+     "expand"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDJPY"
+     ],
+     "channels": [
+      "boj: policy: BoJ / MoF intervention -> JPY"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "4fd34747ab6f"
+   },
+   {
+    "claim": "Eamonn Sheridan 11/09/2026 | 02:28 GMT Expand Eamonn Sheridan 11/09/2026 | 02:28 GMT Expand Stock market update Stock market update Preview: August CPI due Friday to decide odds of first Fed hike since 2023 US August CPI lands Friday at 8:30am ET, 1230 GMT, the last inflation data before next week's Fed meeting.",
+    "lang": "en",
+    "quantities": [
+     "cpi",
+     "hike"
+    ],
+    "direction": [
+     "expand"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "JPN225",
+      "USDJPY",
+      "USDCNH",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "gold",
+      "nikkei",
+      "kospi",
+      "yen",
+      "usd/cny",
+      "10-year treasury"
+     ],
+     "transfer_only": [
+      "kospi->indices (KRX)"
+     ],
+     "indirect": [
+      "EURUSD",
+      "XTIUSD",
+      "XBRUSD",
+      "USDCAD",
+      "USDNOK"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR",
+      "boj: policy: BoJ / MoF intervention -> JPY",
+      "pboc: policy: PBoC fixing -> CNH",
+      "houthi: energy flow: OPEC / inventories / chokepoints -> oil, CAD, NOK"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "dbadd3357241"
+   },
+   {
+    "claim": "Eamonn Sheridan 11/09/2026 | 01:54 GMT Expand Eamonn Sheridan 11/09/2026 | 01:54 GMT Expand Central Banks Central Banks Coming up: What Lagarde may say next, two days after the ECB's rate rise ECB President Christine Lagarde is due to speak at the F\u00eate de la Pomme in Normandy on Saturday, two days after the ECB's 25bp rate hike.",
+    "lang": "en",
+    "quantities": [
+     "rate",
+     "hike"
+    ],
+    "direction": [
+     "expand",
+     "rise"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "lagarde: policy: ECB -> EUR"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "6a8a12103983"
+   }
+  ],
+  "n_claims": 3
+ }
+]
