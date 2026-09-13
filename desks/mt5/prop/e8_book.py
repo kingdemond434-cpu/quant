@@ -77,15 +77,40 @@ def _cached_catalogue() -> set[str] | None:
 #: simultaneous exposure at 1.2% -- under half the daily wall, before any stand-down.
 MAX_SLEEVES = 24
 
-#: RISK PER TRADE, as a fraction of the $100,000 initial balance. 0.05%, i.e. $50.
+#: RISK PER TRADE, as a fraction of the $100,000 initial balance. 0.125%, i.e. $125.
 #:
-#: Measured under TAIL-implied correlation, not linear. `orthogonality.py` on sleeve returns
-#: reports mean pairwise pearson 0.155 against a tail-implied 0.251 -- a 1.62x multiplier -- so
-#: this book's structural rho of 0.357 is about 0.58 in the decile that decides whether the daily
-#: floor is touched. At 0.07% the pass probability falls from 95.0% (linear) to 84.0% (tail); at
-#: 0.05% it is 96.3% and 91.9%. The smaller size is the one that survives being wrong about the
-#: correlation, which is the only assumption here that has never been measured on live fills.
-RISK_FRAC = 0.0005
+#: RAISED FROM 0.05% ON 2026-09-14, on the principal's decision, against a measured sweep of the
+#: real barrier -- `research/prop_barrier.py` over 4,000 paths per cell at the book actually
+#: fielded (24 sleeves, rr 1.5, 0.64 trades per sleeve per day) and expectancy NET of cost at
+#: +0.135R, which is the honest reading of the desk's +0.20 gross replay figure.
+#:
+#: WHAT 0.05% WAS COSTING, at tail-implied rho 0.58:
+#:
+#:     risk     P(pass)   median days   p90
+#:     0.050%    99.6%         91       146
+#:     0.075%   100.0%         61       106
+#:     0.100%    99.9%         45        87
+#:     0.125%    98.2%         37        74      <- here
+#:     0.150%    88.3%         31        65
+#:     0.200%    47.4%         20        37
+#:
+#: Fifty-four days bought one and a half points of pass probability. That is not a conservative
+#: trade, it is an expensive one: E8 publishes no time limit on Pro, but every extra day is a day
+#: of daily-floor exposure that the 2.5% rule can end, so a slower pass is not a monotonically
+#: safer pass. The earlier 0.05% reading compared 0.05% against 0.07% only, where the difference
+#: really was 96.3% against 84.0%; it never priced the speed being given up, because the sweep it
+#: cited did not report days.
+#:
+#: WHY NOT FURTHER. Above 0.15% the curve falls off a cliff -- 47.4% at 0.20% -- because this
+#: account truncates the right tail at +2% a day and leaves the left free to -2.5%. The pass-
+#: optimal size is therefore well below the growth-optimal one, and 0.125% is the last point
+#: where P(pass) is still near the ceiling while the median more than halves.
+#:
+#: This is an INCREASE in size and that is deliberate (growth governance Rule 2: a strong
+#: opportunity must be allowed more capital when the evidence supports it). Nothing here lowers
+#: any limit on the live MT5 book, which solves a different problem on a different venue --
+#: `mt5desk/account_profile.py` is where that line is drawn.
+RISK_FRAC = 0.00125
 
 
 def _load_survivors() -> list[dict[str, Any]]:

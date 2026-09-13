@@ -193,6 +193,29 @@ because the reasoning in them is sound and a future One purchase would use it.
 | Payout | 100% | |
 | Consistency rule | none on Pro | the 40% rule above is an E8 One rule |
 
+### Size, decided 2026-09-14
+
+**RISK_FRAC = 0.125% of the initial balance = $125 per trade.** Raised from 0.05% on the
+principal's decision, against a measured `research/prop_barrier.py` sweep (4,000 paths per cell,
+24 sleeves, rr 1.5, 0.64 trades/sleeve/day, exp_r net +0.135, tail-implied rho 0.58):
+
+| risk/trade | P(pass) | median days | p90 |
+|---|---|---|---|
+| 0.050% | 99.6% | 91 | 146 |
+| 0.075% | 100.0% | 61 | 106 |
+| 0.100% | 99.9% | 45 | 87 |
+| **0.125%** | **98.2%** | **37** | **74** |
+| 0.150% | 88.3% | 31 | 65 |
+| 0.200% | 47.4% | 20 | 37 |
+
+0.05% was paying 54 days for 1.4 points of pass probability. Above 0.15% the curve collapses,
+because the right tail is confiscated at +2%/day while the left runs free to -2.5%.
+
+**What more certificates buy, at constant 0.125% and >=95% pass:** 4 mechanisms 37 days,
+6 -> 32, 8 -> 29, 12 -> 26. Mechanism INDEPENDENCE is the lever, not certificate count -- and
+the concrete gap is `carry` on an E8-listed symbol. The only carry certificate is CHFNOK, which
+E8's 46-instrument catalogue does not carry, so the live book runs 3 mechanisms, not 4.
+
 The barrier ratio is **1.0** -- a 10% target against a 10% drawdown. That is better than E8 One's
 fixed 1.5 (12% against 8%), and it is the one way this account is kinder than the one planned for.
 
