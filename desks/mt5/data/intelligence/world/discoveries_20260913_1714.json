@@ -1,0 +1,1688 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "What Is Gamma Scalping & Why It Matters To Trade Forex Markets | Nasdaq",
+  "url": "https://www.nasdaq.com/articles/what-gamma-scalping-why-it-matters-trade-forex-markets-2019-01-04",
+  "published": "2026-09-13T17:12:28+00:00",
+  "symbols": [
+   "NAS100",
+   "EURUSD",
+   "USDCHF",
+   "EURJPY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "breakout",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "59f99ffb87a435f3b83b",
+  "host": "www.nasdaq.com",
+  "claims": [
+   {
+    "claim": "We refer this approach as \"Delta Neutral\" and in practicality, it encompasses a position built upon the concept of a straddle or a strangle with initial positive and negative deltas that offset one another to ultimately create a position that has a delta close to 0.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "positive",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "EURUSD",
+      "USDCHF",
+      "EURJPY"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "eur/usd",
+      "usd/chf",
+      "eur/jpy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "57cdb99577ee"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "NFEM turnover hits $1.45 billion as FX trading activity surges - Nairametrics",
+  "url": "https://nairametrics.com/2026/09/11/nfem-turnover-hits-1-45-billion-as-fx-trading-activity-surges/?utm_source=auto-read-also&utm_medium=web",
+  "published": "2026-09-13T17:12:31+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1dada1bc4457260975ec",
+  "host": "nairametrics.com",
+  "claims": [
+   {
+    "claim": "Also Read Top 10 longest-serving CEOs on the NGX 30 DMO returns to popular 2038 bond with fresh N600 billion offer Best performing Nigerian stocks for the week ended September 11, 2026 What the data is saying The increase in turnover came alongside a rise in the number of transactions, with 470 deals recorded on September 10, compared with 276 the previous day.",
+    "lang": "en",
+    "quantities": [
+     "stocks"
+    ],
+    "direction": [
+     "increase",
+     "rise"
+    ],
+    "horizon": [
+     "week",
+     "day"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "ngx"
+     ],
+     "transfer_only": [
+      "ngx->indices (African exchanges)"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "922bea9badd6"
+   },
+   {
+    "claim": "Despite the stronger trading activity, the naira weakened during the session.",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "weakened"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "naira"
+     ],
+     "transfer_only": [
+      "naira->fx (NGN not quoted)"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "57fbc21ba049"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "CBN plans $10,000/year limit on foreign school fees from BDCs - Nairametrics",
+  "url": "https://nairametrics.com/2024/02/26/cbn-plans-10000-year-limit-on-foreign-school-fees-from-bdcs/",
+  "published": "2026-09-13T17:12:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "56bef96fc30a7f992e56",
+  "host": "nairametrics.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "CBN adjust &quot;Net Open Position&quot; rules to curb Banks&#039; forex speculation - Nairametrics",
+  "url": "https://nairametrics.com/2024/01/31/new-cbn-circular-aims-to-curb-banks-forex-speculation-issues-guidelines-to-stop-it/",
+  "published": "2026-09-13T17:12:35+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "flow",
+   "inventory",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2ac1d8a4e9dd2e23c0c4",
+  "host": "nairametrics.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forex Crisis Archives - Nairametrics",
+  "url": "https://nairametrics.com/tag/forex-crisis/",
+  "published": "2026-09-13T17:12:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dd36800c4d7e56629433",
+  "host": "nairametrics.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forex | Page 2 | ShareTrader",
+  "url": "https://www.sharetrader.co.nz/forums/forex/page-2",
+  "published": "2026-09-13T17:12:38+00:00",
+  "symbols": [
+   "AUDNZD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2da3c4b5291782832f7e",
+  "host": "www.sharetrader.co.nz",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forex | Page 3 | ShareTrader",
+  "url": "https://www.sharetrader.co.nz/forums/forex/page-3",
+  "published": "2026-09-13T17:12:40+00:00",
+  "symbols": [
+   "AUDNZD"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "gap",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d7601f0eb00f05102bd4",
+  "host": "www.sharetrader.co.nz",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forex | Page 7 | ShareTrader",
+  "url": "https://www.sharetrader.co.nz/forums/forex/page-7",
+  "published": "2026-09-13T17:12:41+00:00",
+  "symbols": [
+   "AUDNZD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a1b4fed0615687db1715",
+  "host": "www.sharetrader.co.nz",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "forex templates | ShareTrader",
+  "url": "https://www.sharetrader.co.nz/threads/forex-templates.12823/",
+  "published": "2026-09-13T17:12:44+00:00",
+  "symbols": [
+   "USDCHF"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6c05224d0515fbe9d782",
+  "host": "www.sharetrader.co.nz",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "forex templates | Page 3 | ShareTrader",
+  "url": "https://www.sharetrader.co.nz/threads/forex-templates.12823/page-3",
+  "published": "2026-09-13T17:12:48+00:00",
+  "symbols": [
+   "AUDUSD",
+   "USDCNH",
+   "USDJPY"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b814f70a72a163be052e",
+  "host": "www.sharetrader.co.nz",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "forex templates | Page 3 | ShareTrader",
+  "url": "https://www.sharetrader.co.nz/threads/forex-templates.12823/latest",
+  "published": "2026-09-13T17:12:51+00:00",
+  "symbols": [
+   "AUDUSD",
+   "USDCNH",
+   "USDJPY"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dd234a0621f2a066e56a",
+  "host": "www.sharetrader.co.nz",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantitative Modeling and Risk Analytics",
+  "url": "https://www.cbe.org.eg/en/markets/quantitative-modeling-and-risk-analytics",
+  "published": "2026-09-13T17:12:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.cbe.org.eg/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "4ddac07e4919afd1def3",
+  "host": "www.cbe.org.eg",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Financial Inclusion Strategy",
+  "url": "https://www.cbe.org.eg/en/financial-inclusion/financial-inclusion-strategy",
+  "published": "2026-09-13T17:12:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.cbe.org.eg/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "21e6d021b5e06ea3ea46",
+  "host": "www.cbe.org.eg",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Strategy",
+  "url": "https://www.cbe.org.eg/en/about-cbe/strategy",
+  "published": "2026-09-13T17:12:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.cbe.org.eg/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5c27364ca97e532f48d9",
+  "host": "www.cbe.org.eg",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Time Series",
+  "url": "https://www.cbe.org.eg/en/economic-research/time-series",
+  "published": "2026-09-13T17:12:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.cbe.org.eg/manifest.json",
+   "https://www.cbe.org.eg/en/economic-research/time-series/downloadlist?category=099EFD590A274C8F9259740B4FE96AAD",
+   "https://www.cbe.org.eg/en/economic-research/time-series/downloadlist?category=F016705643D24C51959577587914DA5C",
+   "https://www.cbe.org.eg/en/economic-research/time-series/downloadlist?category=2596CC0C64D5474C865C49E48A24D483",
+   "https://www.cbe.org.eg/en/economic-research/time-series/downloadlist?category=DEF6421CA1354B128A1113D7A5BBFC66",
+   "https://www.cbe.org.eg/en/economic-research/time-series/downloadlist?category=909707CDAD5C47529817D6146659E054",
+   "https://www.cbe.org.eg/en/economic-research/time-series/downloadlist?category=A6ACD7B25BE64045A90660B320ECFA32",
+   "https://www.cbe.org.eg/en/economic-research/time-series/downloadlist?category=623F34508AE148C1969795A8F78FDA49",
+   "https://www.cbe.org.eg/en/economic-research/time-series/downloadlist?category=B928771A1D1A4550A1B08F9386DDC0FA",
+   "https://www.cbe.org.eg/en/economic-research/time-series/downloadlist?category=F0324992E95741438C789A669E5194F4",
+   "https://www.cbe.org.eg/en/economic-research/time-series/downloadlist?category=3EB4667B01F04C41ADCF7D96039037A4",
+   "https://www.cbe.org.eg/en/economic-research/time-series/downloadlist?category=F9F37F0E98A54C3684790C4037AA4BE3",
+   "https://www.cbe.org.eg/en/economic-research/time-series/downloadlist?category=232131B16F15454BB1E1933B2BFEB041",
+   "https://www.cbe.org.eg/en/economic-research/time-series/downloadlist?category=706A9057F8454F7284BE8143070D88C4",
+   "https://www.cbe.org.eg/en/economic-research/time-series/downloadlist?category=97805EA8534C4134B65BDE9621E187AF"
+  ],
+  "n_endpoints": 15,
+  "vault_sha": "06075105bad26501e0b1",
+  "host": "www.cbe.org.eg",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u05e9\u05e2\u05e8\u05d9 \u05de\u05d8\"\u05d7 \u05e8\u05e6\u05d9\u05e4\u05d9\u05dd - \u05d2\u05dc\u05d5\u05d1\u05e1",
+  "url": "https://www.globes.co.il/portal/forex/?fid=3721",
+  "published": "2026-09-13T17:12:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "he",
+  "endpoints": [
+   "https://www.globes.co.il/news/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "96fdfb8d962710875083",
+  "host": "www.globes.co.il",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u05e9\u05e2\u05e8\u05d9 \u05de\u05d8\"\u05d7 \u05e8\u05e6\u05d9\u05e4\u05d9\u05dd - \u05d2\u05dc\u05d5\u05d1\u05e1",
+  "url": "https://www.globes.co.il/portal/forex/?fid=3721&indexID=3",
+  "published": "2026-09-13T17:13:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "he",
+  "endpoints": [
+   "https://www.globes.co.il/news/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "90843a779a685fd6e225",
+  "host": "www.globes.co.il",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u05de\u05d8\"\u05d7-\u05e9\u05e2\u05e8\u05d9\u05dd \u05d9\u05e6\u05d9\u05d2\u05d9\u05dd (\u05d1\u05e0\u05e7 \u05d9\u05e9\u05e8\u05d0\u05dc) - \u05d2\u05dc\u05d5\u05d1\u05e1",
+  "url": "https://www.globes.co.il/portal/forex/?fid=14848",
+  "published": "2026-09-13T17:13:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "he",
+  "endpoints": [
+   "https://www.globes.co.il/news/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "816d65a139007b088ea4",
+  "host": "www.globes.co.il",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "BANK AL-MAGHRIB - Strat\u00e9gie",
+  "url": "https://www.bkam.ma/A-propos/Strategie",
+  "published": "2026-09-13T17:13:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "night_session",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "fr-FR",
+  "endpoints": [
+   "https://www.bkam.ma/Statistiques/Statistiques-monetaires/Series-statistiques-monetaires",
+   "https://www.bkam.ma/content/download/798653/8827703/Plan strat\u00e9gique 2024-2028 Fr.pdf",
+   "https://www.bkam.ma/content/download/640910/7202962/PS_2019-2023.pdf",
+   "https://www.bkam.ma/content/download/18448/148133/PS+2016-2018+FR.pdf",
+   "https://www.bkam.ma/content/download/18447/148131/PS2013-2015.pdf",
+   "https://www.bkam.ma/content/download/18446/148129/planstrategiqueWEB.pdf",
+   "https://www.bkam.ma/content/download/824871/9008450/Politique-communication BAM.pdf",
+   "https://support.apple.com/downloads/safari",
+   "http://windows.microsoft.com/fr-fr/internet-explorer/download-ie"
+  ],
+  "n_endpoints": 9,
+  "vault_sha": "e7277c4469342523f9e8",
+  "host": "www.bkam.ma",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "BANK AL-MAGHRIB - Rapport sur la Strat\u00e9gie Nationale de l\u2019Inclusion Financi\u00e8re",
+  "url": "https://www.bkam.ma/Inclusion-financiere/Rapport-sur-la-strategie-nationale-de-l-inclusion-financiere",
+  "published": "2026-09-13T17:13:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "night_session",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "fr-FR",
+  "endpoints": [
+   "https://www.bkam.ma/Statistiques/Statistiques-monetaires/Series-statistiques-monetaires",
+   "https://www.bkam.ma/content/download/844036/9139518/Rapport SNIF 2023.pdf",
+   "https://www.bkam.ma/content/download/804298/8866311/Rapport SNIF 2022 V 03042024 F.pdf",
+   "https://www.bkam.ma/content/download/775636/8670507/SNIF 2021 VF.pdf",
+   "https://www.bkam.ma/content/download/752818/8511626/SNIF 2020.pdf",
+   "https://www.bkam.ma/content/download/729697/8338297/Rapport \u00e9tude GreenBack_Morocco_VF.pdf",
+   "https://www.bkam.ma/content/download/719569/8267827/SNIF.pdf",
+   "https://support.apple.com/downloads/safari",
+   "http://windows.microsoft.com/fr-fr/internet-explorer/download-ie"
+  ],
+  "n_endpoints": 9,
+  "vault_sha": "a44f188ec78e1929d88b",
+  "host": "www.bkam.ma",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "BANK AL-MAGHRIB - Strat\u00e9gie data et statistiques",
+  "url": "https://www.bkam.ma/Statistiques/Strategie-data-et-statistiques",
+  "published": "2026-09-13T17:13:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "night_session",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "fr-FR",
+  "endpoints": [
+   "https://www.bkam.ma/Statistiques/Statistiques-monetaires/Series-statistiques-monetaires",
+   "https://www.bkam.ma/content/download/759273/8556388/version/5/file/Strat%C3%A9gie+Data+et+Statistiques.pdf",
+   "https://www.bkam.ma/content/download/800609/8840920/version/1/file/Charte+de+diffusion_19+02+2024.pdf",
+   "https://support.apple.com/downloads/safari",
+   "http://windows.microsoft.com/fr-fr/internet-explorer/download-ie"
+  ],
+  "n_endpoints": 5,
+  "vault_sha": "233de4db3aa1f2e35ab4",
+  "host": "www.bkam.ma",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "BIDS Trading | Cboe",
+  "url": "https://www.cboe.com/markets/bidstrading",
+  "published": "2026-09-13T17:13:08+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0d7dbbfbc6cceb55b808",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Global Trading Hours | Cboe",
+  "url": "https://www.cboe.com/about/global-trading-hours",
+  "published": "2026-09-13T17:13:11+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d03824cdd8ddbb8a48b9",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Plus - Exklusive Analysen & Trading-Setups bestellen | stock3",
+  "url": "https://stock3.com/store/godmode-plus-55",
+  "published": "2026-09-13T17:13:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "de",
+  "endpoints": [
+   "https://stock3.com/site.webmanifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "864e0dceddba4bd3de00",
+  "host": "stock3.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "(3\u207a) stock3 Wochenend-Setup: Pullback beendet \u2013 Rally-Setup steht! | stock3",
+  "url": "https://stock3.com/news/stock3-wochenend-setup-pullback-beendet-rally-setup-steht-17280694",
+  "published": "2026-09-13T17:13:14+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "de",
+  "endpoints": [
+   "https://stock3.com/site.webmanifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "6718e39da696e4874098",
+  "host": "stock3.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Artikel Archiv | stock3",
+  "url": "https://stock3.com/news/archiv?categoryId=2600",
+  "published": "2026-09-13T17:13:16+00:00",
+  "symbols": [
+   "AMAZON"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "de",
+  "endpoints": [
+   "https://stock3.com/site.webmanifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "efec625c80ee15e0ce83",
+  "host": "stock3.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Kognitive Verzerrungen im Trading | stock3",
+  "url": "https://stock3.com/news/kognitive-verzerrungen-im-trading-17283383",
+  "published": "2026-09-13T17:13:18+00:00",
+  "symbols": [
+   "XNGUSD",
+   "US500",
+   "US30",
+   "GER40",
+   "BTCUSD",
+   "ETHUSD"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "de",
+  "endpoints": [
+   "https://stock3.com/site.webmanifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "285a7b7f3c1049bad920",
+  "host": "stock3.com",
+  "claims": [
+   {
+    "claim": "Oder bist du stur in einer fallenden Aktie geblieben, nur weil du sie vor wenigen Wochen zu einem viel h\u00f6heren Preis gekauft hast?",
+    "lang": "de",
+    "quantities": [
+     "aktie"
+    ],
+    "direction": [
+     "fall"
+    ],
+    "horizon": [
+     "woche"
+    ],
+    "instruments": {
+     "analogues": [
+      "XNGUSD",
+      "US500",
+      "US30",
+      "GER40",
+      "BTCUSD",
+      "ETHUSD"
+     ],
+     "mentioned": [
+      "erdgas",
+      "s&p 500",
+      "dow jones",
+      "dax",
+      "bitcoin",
+      "ethereum"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "0e7d318a9ce9"
+   },
+   {
+    "claim": "Gra\u00df Analyse stock3 Wochenend-Setup: Pullback beendet \u2013 Rally-Setup steht!",
+    "lang": "de",
+    "quantities": [
+     "pullback"
+    ],
+    "direction": [
+     "rally"
+    ],
+    "horizon": [
+     "woche"
+    ],
+    "instruments": {
+     "analogues": [
+      "XNGUSD",
+      "US500",
+      "US30",
+      "GER40",
+      "BTCUSD",
+      "ETHUSD"
+     ],
+     "mentioned": [
+      "erdgas",
+      "s&p 500",
+      "dow jones",
+      "dax",
+      "bitcoin",
+      "ethereum"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "97f7de4c2f01"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Chinas Nvidia-Rivalen starten durch \u2013 diese KI-Chip-Aktie ist handelbar! | stock3",
+  "url": "https://stock3.com/news/nvidia-unter-druck-china-baut-seine-eigene-ki-chip-welt-auf-17274840",
+  "published": "2026-09-13T17:13:20+00:00",
+  "symbols": [
+   "NVIDIA"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "de",
+  "endpoints": [
+   "https://stock3.com/site.webmanifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "660c9a59acb7dd4d779d",
+  "host": "stock3.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Technologie-Aktien & Krypto Trading-Service bestellen | stock3",
+  "url": "https://stock3.com/store/tech-aktien-krypto-183",
+  "published": "2026-09-13T17:13:22+00:00",
+  "symbols": [
+   "BTCUSD",
+   "WHEAT",
+   "Tesla"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "de",
+  "endpoints": [
+   "https://stock3.com/site.webmanifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "867743c1653f0a8f4488",
+  "host": "stock3.com",
+  "claims": [
+   {
+    "claim": "Der Technologie-Aktien & Krypto Trading Service im \u00dcberblick Basiswerte deutsche und US-amerikanische Technologie-Aktien Kryptow\u00e4hrungen Instrumente Zertifikate (long und short) Aktien Kryptow\u00e4hrungen Webinare Zwei Webinare im Monat: Krypto-M\u00e4rkte im \u00dcberblick und Tech-M\u00e4rkte im \u00dcberblick Videobeitr\u00e4ge zu interessanten Unternehmen inkl.",
+    "lang": "de",
+    "quantities": [
+     "aktie",
+     "basis"
+    ],
+    "direction": [
+     "long",
+     "short"
+    ],
+    "horizon": [
+     "monat"
+    ],
+    "instruments": {
+     "analogues": [
+      "BTCUSD",
+      "WHEAT",
+      "Tesla"
+     ],
+     "mentioned": [
+      "bitcoin",
+      "weizen",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "1238d679f277"
+   },
+   {
+    "claim": "Trendvoraussagen mit gelegentlichen Special Guests Musterdepots Krypto-Trading Depot (kurzfristig) Krypto-Hodl Depot Tech-Aktien und Derivate Depot Biopharma Depot Buy & Hold Depot Sascha Huber Experte f\u00fcr Kryptow\u00e4hrungen Kryptow\u00e4hrungen Technologie-Aktien Seit \u00fcber 20 Jahren ist Sascha Huber an der B\u00f6rse aktiv und z\u00e4hlt zu den profundesten Kennern der Technologiebranche.",
+    "lang": "de",
+    "quantities": [
+     "trend",
+     "aktie"
+    ],
+    "direction": [
+     "buy"
+    ],
+    "horizon": [
+     "kurzfristig"
+    ],
+    "instruments": {
+     "analogues": [
+      "BTCUSD",
+      "WHEAT",
+      "Tesla"
+     ],
+     "mentioned": [
+      "bitcoin",
+      "weizen",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "2ee3968b50a2"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forum (Day)Trading : conseils, analyses, discussions, avis - Boursorama",
+  "url": "https://www.boursorama.com/bourse/forum/trading/",
+  "published": "2026-09-13T17:13:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.boursorama.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "48664d5f6871dd5cab2e",
+  "host": "www.boursorama.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forum Forex : conseils, analyses, discussions, avis - Boursorama",
+  "url": "https://www.boursorama.com/bourse/forum/forex-fxcm/",
+  "published": "2026-09-13T17:13:27+00:00",
+  "symbols": [
+   "EURUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.boursorama.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f56699ed43a4d1fe04ec",
+  "host": "www.boursorama.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Consumer Protection is Becoming a Business Growth Strategy - Business Daily",
+  "url": "https://www.businessdailyafrica.com/bd/sponsored/consumer-protection-is-becoming-a-business-growth-strategy-5573146",
+  "published": "2026-09-13T17:13:28+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b93a2b8834a23a16f795",
+  "host": "www.businessdailyafrica.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "CMA curbs speculative trading in troubled firms - Business Daily",
+  "url": "https://www.businessdailyafrica.com/bd/markets/capital-markets/cma-curbs-speculative-trading-in-troubled-firms-4921234",
+  "published": "2026-09-13T17:13:30+00:00",
+  "symbols": [
+   "USDKRW",
+   "USDTRY",
+   "SUGAR"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "abf84d4646ce5ee78b97",
+  "host": "www.businessdailyafrica.com",
+  "claims": [
+   {
+    "claim": "The daily trading limit refers to the maximum amount by which the price of a stock or other exchange-traded security can rise or fall during a trading session.",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "rise",
+     "fall"
+    ],
+    "horizon": [
+     "daily",
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDKRW",
+      "USDTRY",
+      "SUGAR"
+     ],
+     "mentioned": [
+      "won",
+      "try",
+      "sugar"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "XTIUSD",
+      "XBRUSD",
+      "USDCAD",
+      "USDNOK"
+     ],
+     "channels": [
+      "strait of hormuz: energy flow: OPEC / inventories / chokepoints -> oil, CAD, NOK"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "cc9ac80b8154"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "NSE drops minimum 100 shares trading rule - Business Daily",
+  "url": "https://www.businessdailyafrica.com/bd/markets/capital-markets/nse-drops-minimum-100-shares-trading-rule-5123378",
+  "published": "2026-09-13T17:13:32+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "auction",
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b1bf36c90204b3e41ab8",
+  "host": "www.businessdailyafrica.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "X-Trader.net - Trading en Estado Puro",
+  "url": "https://www.x-trader.net/",
+  "published": "2026-09-13T17:13:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "afddcb332410e81bfcc9",
+  "host": "www.x-trader.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Forum IEX | Van beleggers voor beleggers",
+  "url": "https://www.iex.nl/forum/",
+  "published": "2026-09-13T17:13:35+00:00",
+  "symbols": [
+   "US30",
+   "XAUUSD",
+   "XTIUSD",
+   "US500",
+   "FRA40",
+   "NETH25"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "nl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6b78968d1f957cb95386",
+  "host": "www.iex.nl",
+  "claims": [
+   {
+    "claim": "Markt Monitor Inloggen Word abonnee \u2715 Met IEX wordt u een betere belegger en verhoogt u het rendement op uw beleggingen Vanaf 13,95 per maand leest u dagelijks onze professionele aandelenanalyses en kooptips.",
+    "lang": "nl",
+    "quantities": [
+     "rendement"
+    ],
+    "direction": [
+     "koop"
+    ],
+    "horizon": [
+     "maand",
+     "dagelijks"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "US500",
+      "US30",
+      "FRA40",
+      "NETH25"
+     ],
+     "mentioned": [
+      "goud",
+      "olie",
+      "sp500",
+      "us30",
+      "cac40",
+      "aex"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "0aaf8d27eccc"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Tilastot",
+  "url": "https://www.suomenpankki.fi/fi/tilastot/",
+  "published": "2026-09-13T17:13:36+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "fi",
+  "endpoints": [
+   "https://www.suomenpankki.fi/img/favicons/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "029c476a1f99dc70a742",
+  "host": "www.suomenpankki.fi",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0421\u0442\u0430\u0442\u0438\u0441\u0442\u0438\u043a\u0430",
+  "url": "https://bank.gov.ua/ua/statistic",
+  "published": "2026-09-13T17:13:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "uk",
+  "endpoints": [
+   "https://bank.gov.ua/frontend/icon/manifest.json?v=19"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "bd6ed37e35041a6d5a82",
+  "host": "bank.gov.ua",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\u0424\u0438\u043d\u0430\u043d\u0441\u044b \u0432 IT \u2014 \u041e \u0441\u043b\u043e\u0436\u043d\u044b\u0445 \u0444\u0438\u043d\u0430\u043d\u0441\u043e\u0432\u044b\u0445 \u043c\u0430\u0442\u0435\u0440\u0438\u044f\u0445 &#x2F; \u0425\u0430\u0431\u0440",
+  "url": "https://habr.com/ru/hubs/finance/",
+  "published": "2026-09-13T17:13:40+00:00",
+  "symbols": [
+   "XNGUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "ru",
+  "endpoints": [
+   "https://assets.habr.com/habr-web/release_2.348.2/client/js/_plugin-vue_export-helperDefFM05j.js"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ffce2962381367c03140",
+  "host": "habr.com",
+  "claims": [
+   {
+    "claim": "5 \u0447\u0430\u0441\u0430 \u0432\u043f\u0435\u0440\u0451\u0434: \u043a\u0430\u043a \u043c\u043e\u0434\u0435\u043b\u044c \u043e\u0431\u043c\u0430\u043d\u044b\u0432\u0430\u043b\u0430 \u0441\u0430\u043c\u0443 \u0441\u0435\u0431\u044f \u043f\u043e\u043b\u0442\u043e\u0440\u0430 \u043c\u0435\u0441\u044f\u0446\u0430 \u2014 \u0438 \u043a\u0430\u043a \u043c\u044b \u044d\u0442\u043e \u043f\u043e\u0439\u043c\u0430\u043b\u0438 \u0423\u0440\u043e\u0432\u0435\u043d\u044c \u0441\u043b\u043e\u0436\u043d\u043e\u0441\u0442\u0438 \u0421\u0440\u0435\u0434\u043d\u0438\u0439 \u0412\u0440\u0435\u043c\u044f \u043d\u0430 \u043f\u0440\u043e\u0447\u0442\u0435\u043d\u0438\u0435 7 \u043c\u0438\u043d \u041e\u0445\u0432\u0430\u0442 \u0438 \u0447\u0438\u0442\u0430\u0442\u0435\u043b\u0438 8K \u041c\u0430\u0448\u0438\u043d\u043d\u043e\u0435 \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u0435 * Python * \u0410\u043b\u0433\u043e\u0440\u0438\u0442\u043c\u044b * \u0410\u043d\u0430\u043b\u0438\u0437 \u0438 \u043f\u0440\u043e\u0435\u043a\u0442\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u0435 \u0441\u0438\u0441\u0442\u0435\u043c * \u0424\u0438\u043d\u0430\u043d\u0441\u044b \u0432 IT \u041a\u0435\u0439\u0441 \u0418\u0437 \u043f\u0435\u0441\u043e\u0447\u043d\u0438\u0446\u044b \u0420\u0430\u0437\u0440\u044b\u0432 \u043c\u0435\u0436\u0434\u0443 \u00ab\u043e\u0442\u043b\u0438\u0447\u043d\u043e \u0440\u0430\u0431\u043e\u0442\u0430\u0435\u0442 \u043d\u0430 \u0438\u0441\u0442\u043e\u0440\u0438\u0438\u00bb \u0438 \u00ab\u0441\u043b\u0438\u0432\u0430\u0435\u0442 \u0432 \u0440\u0435\u0430\u043b\u044c\u043d\u043e\u0441\u0442\u0438\u00bb \u2014 \u043a\u043b\u0430\u0441\u0441\u0438\u043a\u0430 ML \u043d\u0430 \u0432\u0440\u0435\u043c\u0435\u043d\u043d\u044b\u0445 \u0440\u044f\u0434\u0430\u0445.",
+    "lang": "ru",
+    "quantities": [
+     "\u0443\u0440\u043e\u0432\u0435\u043d"
+    ],
+    "direction": [
+     "\u0441\u043b\u0438\u0432"
+    ],
+    "horizon": [
+     "\u0447\u0430\u0441",
+     "\u043c\u0435\u0441\u044f\u0446"
+    ],
+    "instruments": {
+     "analogues": [
+      "XNGUSD"
+     ],
+     "mentioned": [
+      "\u0433\u0430\u0437"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "164e886704fe"
+   },
+   {
+    "claim": "\u0415\u0441\u043b\u0438 RSI \u0441\u0442\u0430\u043b \u0431\u043e\u043b\u044c\u0448\u0435 30, \u0442\u043e \u043c\u044b \u043f\u043e\u043a\u0443\u043f\u0430\u0435\u043c \u0438 \u0434\u0435\u0440\u0436\u0438\u043c, \u0437\u0430\u043a\u0440\u044b\u0442\u0438\u0435 \u043b\u0438\u0431\u043e \u043f\u043e \u0441\u0442\u043e\u043f \u043b\u043e\u0441\u0443, \u0442\u0435\u0439\u043a \u043f\u0440\u043e\u0444\u0438\u0442\u0443 \u0438\u043b\u0438 \u0435\u0441\u043b\u0438 RSI \u0431\u0443\u0434\u0435\u0442 \u0431\u043e\u043b\u044c\u0448\u0435 \u0438\u043b\u0438 \u0440\u0430\u0432\u0435\u043d 70.",
+    "lang": "ru",
+    "quantities": [
+     "rsi"
+    ],
+    "direction": [
+     "\u043f\u043e\u043a\u0443\u043f",
+     "\u0441\u0442\u043e\u043f"
+    ],
+    "horizon": [
+     "\u0437\u0430\u043a\u0440\u044b\u0442\u0438"
+    ],
+    "instruments": {
+     "analogues": [
+      "XNGUSD"
+     ],
+     "mentioned": [
+      "\u0433\u0430\u0437"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "6a5aa884dbed"
+   },
+   {
+    "claim": "\u0415\u0441\u043b\u0438 RSI \u0441\u0442\u0430\u043b \u043c\u0435\u043d\u044c\u0448\u0435 70, \u0442\u043e \u043c\u044b \u043f\u0440\u043e\u0434\u0430\u0435\u043c \u0438 \u0434\u0435\u0440\u0436\u0438\u043c, \u0437\u0430\u043a\u0440\u044b\u0442\u0438\u0435 \u043b\u0438\u0431\u043e \u043f\u043e \u0441\u0442\u043e\u043f \u043b\u043e\u0441\u0443, \u0442\u0435\u0439\u043a \u043f\u0440\u043e\u0444\u0438\u0442\u0443 \u0438\u043b\u0438 \u0435\u0441\u043b\u0438 RSI \u0431\u0443\u0434\u0435\u0442 \u043c\u0435\u043d\u044c\u0448\u0435 \u0438\u043b\u0438 \u0440\u0430\u0432\u0435\u043d 30.",
+    "lang": "ru",
+    "quantities": [
+     "rsi"
+    ],
+    "direction": [
+     "\u043f\u0440\u043e\u0434\u0430",
+     "\u0441\u0442\u043e\u043f"
+    ],
+    "horizon": [
+     "\u0437\u0430\u043a\u0440\u044b\u0442\u0438"
+    ],
+    "instruments": {
+     "analogues": [
+      "XNGUSD"
+     ],
+     "mentioned": [
+      "\u0433\u0430\u0437"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5cb022ca30cb"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Mercados - \u00daltimas not\u00edcias | InfoMoney",
+  "url": "https://www.infomoney.com.br/mercados/",
+  "published": "2026-09-13T17:13:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3c8fb3df0d0bccecbe0f",
+  "host": "www.infomoney.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Blog de investimentos financeiros - Clube do Valor",
+  "url": "https://clubedovalor.com.br/blog/",
+  "published": "2026-09-13T17:13:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ffb6c8f8848bbd23179b",
+  "host": "clubedovalor.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "N\u00e3o opere no escuro | QuantBrasil",
+  "url": "https://quantbrasil.com.br/",
+  "published": "2026-09-13T17:13:49+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "momentum",
+   "policy",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c2733f06eddb8609126c",
+  "host": "quantbrasil.com.br",
+  "claims": [
+   {
+    "claim": "A sa\u00edda real depende do preg\u00e3o e dos dados da sua conta.",
+    "lang": "pt",
+    "quantities": [
+     "real"
+    ],
+    "direction": [
+     "sa\u00edda"
+    ],
+    "horizon": [
+     "preg\u00e3o"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "s&p 500",
+      "ibov"
+     ],
+     "transfer_only": [
+      "ibov->indices (B3)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "f5f37b471b06"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Home \u2014 Companhia Nacional de Abastecimento",
+  "url": "https://www.conab.gov.br/info-agro/safras",
+  "published": "2026-09-13T17:13:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-br",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "45fd246e7114679d480d",
+  "host": "www.conab.gov.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Mercados",
+  "url": "https://www.eleconomista.com.mx/mercados/",
+  "published": "2026-09-13T17:13:55+00:00",
+  "symbols": [
+   "XTIUSD",
+   "USDMXN"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [
+   "https://www.eleconomista.com.mx/mediakit/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "433cdd9c8145cebe8879",
+  "host": "www.eleconomista.com.mx",
+  "claims": [
+   {
+    "claim": "registra p\u00e9rdida semanal Por Jos\u00e9 Antonio Rivera Mercados Los precios del petr\u00f3leo bajan por perspectiva de di\u00e1logo sobre el estrecho de Ormuz Por AFP Mercados El petr\u00f3leo baja, pero cierra la semana con alza de m\u00e1s de 9%;",
+    "lang": "es",
+    "quantities": [
+     "petr\u00f3leo"
+    ],
+    "direction": [
+     "baja",
+     "alza"
+    ],
+    "horizon": [
+     "semanal",
+     "semana"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD"
+     ],
+     "mentioned": [
+      "petr\u00f3leo"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "75eaa6138465"
+   },
+   {
+    "claim": "mercado asimila dato de inflaci\u00f3n Por Jos\u00e9 Antonio Rivera Mercados Bolsa mexicana perfila su tercera ca\u00edda consecutiva y una p\u00e9rdida semanal Por Jos\u00e9 Antonio Rivera Mercados Peso mexicano se aprecia levemente frente al d\u00f3lar;",
+    "lang": "es",
+    "quantities": [
+     "peso",
+     "d\u00f3lar"
+    ],
+    "direction": [
+     "se aprecia"
+    ],
+    "horizon": [
+     "semanal"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDMXN"
+     ],
+     "mentioned": [
+      "peso mexicano"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "ef76f7fc1863"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Sistema de Informaci&oacute;n Econ&oacute;mica (SIE, Banco de M&eacute;xico)",
+  "url": "https://www.banxico.org.mx/SieInternet/",
+  "published": "2026-09-13T17:13:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f2f703f5e74cf1dbe49d",
+  "host": "www.banxico.org.mx",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Base de Datos Estad&#237;sticos (BDE)",
+  "url": "https://si3.bcentral.cl/Siete/",
+  "published": "2026-09-13T17:14:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "es-CL",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8716fa578b09b9d535a5",
+  "host": "si3.bcentral.cl",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Inicio | Rava Burs\u00e1til",
+  "url": "https://www.rava.com/",
+  "published": "2026-09-13T17:14:30+00:00",
+  "symbols": [
+   "NVIDIA",
+   "XTIUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dd20f7b7842f583431e2",
+  "host": "www.rava.com",
+  "claims": [
+   {
+    "claim": "+ Licitaci\u00f3n del Tesoro y an\u00e1lisis de Oracle 11/09 En La ma\u00f1ana del mercado se analiza la inflaci\u00f3n de Estados Unidos (3,4% interanual), cifra que eleva la probabilidad de una suba de tasas por la Reserva Federal, junto con el alza del petr\u00f3leo y los balances de Adobe y Oracle.",
+    "lang": "es",
+    "quantities": [
+     "tasa",
+     "petr\u00f3leo"
+    ],
+    "direction": [
+     "alza"
+    ],
+    "horizon": [
+     "ma\u00f1ana"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD"
+     ],
+     "mentioned": [
+      "petr\u00f3leo"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "5fbc666d5a0e"
+   }
+  ],
+  "n_claims": 1
+ }
+]
