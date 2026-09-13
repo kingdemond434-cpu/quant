@@ -32,84 +32,84 @@
   "allocation_rule": "unfinished canonical cells first; among discretionary research organs prefer measured certificate yield per CPU-hour",
   "certificates_added": 0,
   "certificates_per_cpu_hour": 0.0,
-  "measured_cpu_hours": 0.002338,
+  "measured_cpu_hours": 0.002225,
   "stage_rows": [
    {
     "certificate_delta": 0,
     "cpu_seconds": 0.0,
-    "duration_seconds": 809.607,
+    "duration_seconds": 1749.313,
     "name": "canonical_external_pipeline"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 1.291728,
-    "duration_seconds": 8.435,
+    "cpu_seconds": 1.352354,
+    "duration_seconds": 7.293,
     "name": "external_queue_projection"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 3.435399,
-    "duration_seconds": 13.65,
+    "cpu_seconds": 3.377969,
+    "duration_seconds": 8.149,
     "name": "external_queue_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.105114,
-    "duration_seconds": 1.577,
+    "cpu_seconds": 0.060108,
+    "duration_seconds": 1.568,
     "name": "certificate_projection"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.050268,
-    "duration_seconds": 38.489,
+    "cpu_seconds": 0.0,
+    "duration_seconds": 27.359,
     "name": "fusion_state_pull"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 1.236524,
-    "duration_seconds": 4.204,
+    "cpu_seconds": 1.187987,
+    "duration_seconds": 2.022,
     "name": "forward_identity_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.073258,
-    "duration_seconds": 1.526,
+    "cpu_seconds": 0.075101,
+    "duration_seconds": 0.827,
     "name": "forward_clock_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 1.344604,
-    "duration_seconds": 1135.207,
+    "cpu_seconds": 1.126048,
+    "duration_seconds": 2.334,
     "name": "forward_lane_heal"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.0,
-    "duration_seconds": 8.065,
+    "cpu_seconds": 0.016106,
+    "duration_seconds": 5.304,
     "name": "zero_capital_shadow_forward"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.284203,
-    "duration_seconds": 3.944,
+    "cpu_seconds": 0.362161,
+    "duration_seconds": 1.153,
     "name": "mechanism_independence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.121132,
-    "duration_seconds": 4.107,
+    "cpu_seconds": 0.092741,
+    "duration_seconds": 1.276,
     "name": "same_day_fence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.36664,
-    "duration_seconds": 4.121,
+    "cpu_seconds": 0.290752,
+    "duration_seconds": 1.239,
     "name": "certificate_yield_fence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.107525,
-    "duration_seconds": 3.376,
+    "cpu_seconds": 0.067601,
+    "duration_seconds": 0.837,
     "name": "forward_clock_fence"
    }
   ]
@@ -224,7 +224,7 @@
    "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY"
   ]
  },
- "generated_at": "2026-09-13T21:25:07.190096+00:00",
+ "generated_at": "2026-09-13T22:17:16.202912+00:00",
  "headline": {
   "candidates_discovered": 20186,
   "candidates_lost": 13,
@@ -464,7 +464,7 @@
    "why": "N_eff is the participation ratio of the correlation eigenvalues: it cannot be inflated by adding a variant of something already held. Unmeasured pairs are assumed FULLY correlated, the conservative direction."
   },
   "forward_sleeves_with_observations": 30,
-  "measured_at": "2026-09-13T21:24:40+00:00",
+  "measured_at": "2026-09-13T22:17:08+00:00",
   "note": "Forward-phase observations only. Historical rows are excluded: allocation is a forward decision and may not be informed by evidence gathered during selection."
  },
  "rerouting": {
@@ -475,7 +475,7 @@
  "resource_execution": {
   "collision_control": "systemd uses one quant-external-pipeline.service instance; hourly and midnight starts cannot duplicate the heavy worker",
   "external_pipeline_memory_max": "1500M",
-  "mem_available_mb": 3140.0,
+  "mem_available_mb": 2251.2,
   "remote_control": "desk-box job locks and per-stage timeouts remain authoritative"
  },
  "schema_version": 1,
@@ -942,11 +942,249 @@
     "deadline_at": "2026-09-13 03:23:57.004646+00:00",
     "enrolled": false,
     "overdue": true
+   },
+   {
+    "cell": "XAUUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 1.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 8}",
+    "certificate": "external.XAUUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 1.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 8}",
+    "deadline_at": "2026-09-13 21:58:45.031328+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "XAUUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 8}",
+    "certificate": "external.XAUUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 8}",
+    "deadline_at": "2026-09-13 21:58:45.031387+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "XAUUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 1.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}",
+    "certificate": "external.XAUUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 1.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}",
+    "deadline_at": "2026-09-13 21:58:45.031399+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "XAUUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}",
+    "certificate": "external.XAUUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}",
+    "deadline_at": "2026-09-13 21:58:45.031407+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "XAUUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}",
+    "certificate": "external.XAUUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}",
+    "deadline_at": "2026-09-13 21:58:45.031414+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "XAUUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 1.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}",
+    "certificate": "external.XAUUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 1.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}",
+    "deadline_at": "2026-09-13 21:58:45.031422+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "XAUUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}",
+    "certificate": "external.XAUUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}",
+    "deadline_at": "2026-09-13 21:58:45.031428+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "XAUUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}",
+    "certificate": "external.XAUUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}",
+    "deadline_at": "2026-09-13 21:58:45.031433+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "GBPUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 8}",
+    "certificate": "external.GBPUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 8}",
+    "deadline_at": "2026-09-13 21:58:45.031440+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "GBPUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 8}",
+    "certificate": "external.GBPUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 8}",
+    "deadline_at": "2026-09-13 21:58:45.031445+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "GBPUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}",
+    "certificate": "external.GBPUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}",
+    "deadline_at": "2026-09-13 21:58:45.031453+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "GBPUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}",
+    "certificate": "external.GBPUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}",
+    "deadline_at": "2026-09-13 21:58:45.031544+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "GBPUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}",
+    "certificate": "external.GBPUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}",
+    "deadline_at": "2026-09-13 21:58:45.031555+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "GBPUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}",
+    "certificate": "external.GBPUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}",
+    "deadline_at": "2026-09-13 21:58:45.031561+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "EURUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}",
+    "certificate": "external.EURUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}",
+    "deadline_at": "2026-09-13 21:58:45.031569+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "EURUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}",
+    "certificate": "external.EURUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}",
+    "deadline_at": "2026-09-13 21:58:45.031579+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "EURUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}",
+    "certificate": "external.EURUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}",
+    "deadline_at": "2026-09-13 21:58:45.031586+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "EURUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}",
+    "certificate": "external.EURUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}",
+    "deadline_at": "2026-09-13 21:58:45.031591+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "EURJPY.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 1.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 8}",
+    "certificate": "external.EURJPY.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 1.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 8}",
+    "deadline_at": "2026-09-13 21:58:45.031598+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "EURJPY.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 8}",
+    "certificate": "external.EURJPY.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 8}",
+    "deadline_at": "2026-09-13 21:58:45.031607+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "EURJPY.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 1.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}",
+    "certificate": "external.EURJPY.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 1.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}",
+    "deadline_at": "2026-09-13 21:58:45.031613+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "EURJPY.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}",
+    "certificate": "external.EURJPY.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}",
+    "deadline_at": "2026-09-13 21:58:45.031618+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "EURJPY.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}",
+    "certificate": "external.EURJPY.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}",
+    "deadline_at": "2026-09-13 21:58:45.031624+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "EURJPY.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}",
+    "certificate": "external.EURJPY.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}",
+    "deadline_at": "2026-09-13 21:58:45.031630+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "USDCAD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}",
+    "certificate": "external.USDCAD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}",
+    "deadline_at": "2026-09-13 21:58:45.031639+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "USDCAD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 1.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}",
+    "certificate": "external.USDCAD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 1.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}",
+    "deadline_at": "2026-09-13 21:58:45.031645+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "USDCAD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}",
+    "certificate": "external.USDCAD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}",
+    "deadline_at": "2026-09-13 21:58:45.031651+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "AUDUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 1.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}",
+    "certificate": "external.AUDUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 1.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}",
+    "deadline_at": "2026-09-13 21:58:45.031659+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "AUDUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}",
+    "certificate": "external.AUDUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}",
+    "deadline_at": "2026-09-13 21:58:45.031664+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "AUDUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}",
+    "certificate": "external.AUDUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}",
+    "deadline_at": "2026-09-13 21:58:45.031671+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "AUDUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 1.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}",
+    "certificate": "external.AUDUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 1.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}",
+    "deadline_at": "2026-09-13 21:58:45.031677+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "AUDUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}",
+    "certificate": "external.AUDUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.0, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}",
+    "deadline_at": "2026-09-13 21:58:45.031685+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "AUDUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}",
+    "certificate": "external.AUDUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 2.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 16}",
+    "deadline_at": "2026-09-13 21:58:45.031696+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
+    "cell": "NZDUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 1.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}",
+    "certificate": "external.NZDUSD.session_range_breakout.{\"atr_n\": 20, \"midpoint_filter\": \"off\", \"range_end\": null, \"range_filter\": \"all\", \"range_start\": 7, \"rr\": 1.5, \"signal_at\": null, \"spread_gate\": false, \"trend_filter\": \"none\", \"ttl_bars\": 12, \"vol_filter\": \"all\", \"wait_bars\": 12}",
+    "deadline_at": "2026-09-13 21:58:45.031709+00:00",
+    "enrolled": false,
+    "overdue": true
    }
   ],
   "certificates": 125,
   "certificates_not_enrolled": 124,
-  "certificates_overdue": 66,
+  "certificates_overdue": 124,
   "policy": "queued candidates and certificates have a 24h maximum waiting-room SLA",
   "queue_active": 13,
   "queue_overdue": 13,

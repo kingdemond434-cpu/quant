@@ -1,0 +1,546 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Google Books",
+  "url": "https://www.google.co.id/books/edition/DATA_MINING/MWcHEAAAQBAJ?hl=id&newbks=1&gbpv=1&dq=statistika+dan+algoritma+em&pg=PA120&printsec=frontcover",
+  "published": "2026-09-13T21:58:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "id-DE",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e8c431df86e63f0c8ed4",
+  "host": "www.google.co.id",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "multiplication algorithm - Wikidata",
+  "url": "https://www.wikidata.org/wiki/Q130762",
+  "published": "2026-09-13T21:58:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.wikidata.org/wiki/Special:EntityData/Q130762.json",
+   "https://docs.openalex.org/download-snapshot/snapshot-data-format"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "4777723e0e2998b75c5c",
+  "host": "www.wikidata.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "algorithmics - Wikidata",
+  "url": "https://www.wikidata.org/wiki/Q13636890",
+  "published": "2026-09-13T21:58:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.wikidata.org/wiki/Special:EntityData/Q13636890.json",
+   "https://docs.openalex.org/download-snapshot/snapshot-data-format"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "8c7ec22fe84380d63019",
+  "host": "www.wikidata.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "analysis of algorithms - Wikidata",
+  "url": "https://www.wikidata.org/wiki/Q333464",
+  "published": "2026-09-13T21:58:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.wikidata.org/wiki/Special:EntityData/Q333464.json",
+   "https://docs.openalex.org/download-snapshot/snapshot-data-format"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "5e21951d0592b1434386",
+  "host": "www.wikidata.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "algorithmization - Wikidata",
+  "url": "https://www.wikidata.org/wiki/Q12077575",
+  "published": "2026-09-13T21:58:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.wikidata.org/wiki/Special:EntityData/Q12077575.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "d731e283f909eb0f2fca",
+  "host": "www.wikidata.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithmus - Wikidata",
+  "url": "https://www.wikidata.org/wiki/Q23852643",
+  "published": "2026-09-13T21:58:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.wikidata.org/wiki/Special:EntityData/Q23852643.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "903cce7427491df9cdfd",
+  "host": "www.wikidata.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The Art of Computer Programming, Volume 1: Fundamental Algorithms, 3rd edition - Wikidata",
+  "url": "https://www.wikidata.org/wiki/Q47755251",
+  "published": "2026-09-13T21:58:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.wikidata.org/wiki/Special:EntityData/Q47755251.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "4930e84b241048523f73",
+  "host": "www.wikidata.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "algorithmic efficiency - Wikidata",
+  "url": "https://www.wikidata.org/wiki/Q1296251",
+  "published": "2026-09-13T21:58:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.wikidata.org/wiki/Special:EntityData/Q1296251.json",
+   "https://docs.openalex.org/download-snapshot/snapshot-data-format"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "9287abc6186489e4e3d5",
+  "host": "www.wikidata.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "algorithmic stability - Wikidata",
+  "url": "https://www.wikidata.org/wiki/Q7595718",
+  "published": "2026-09-13T21:58:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.wikidata.org/wiki/Special:EntityData/Q7595718.json",
+   "https://docs.openalex.org/download-snapshot/snapshot-data-format"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "fddd3b2f4340ff20c50d",
+  "host": "www.wikidata.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithm (E178)",
+  "url": "https://www.wikidata.org/wiki/EntitySchema:E178",
+  "published": "2026-09-13T21:59:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "79afe15887996d9a8eaa",
+  "host": "www.wikidata.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithm - Wikidata",
+  "url": "https://www.wikidata.org/wiki/Q22349237",
+  "published": "2026-09-13T21:59:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.wikidata.org/wiki/Special:EntityData/Q22349237.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "dcde343ee99216dcbe89",
+  "host": "www.wikidata.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Template:Infobox algorithm - Wikidata",
+  "url": "https://www.wikidata.org/wiki/Q5910871",
+  "published": "2026-09-13T21:59:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.wikidata.org/wiki/Special:EntityData/Q5910871.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "9fd6fefdb83358ffec3b",
+  "host": "www.wikidata.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Category:Algorithms - Wikidata",
+  "url": "https://www.wikidata.org/wiki/Q7019560",
+  "published": "2026-09-13T21:59:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.wikidata.org/wiki/Special:EntityData/Q7019560.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "89dd0501231e97e5f5bc",
+  "host": "www.wikidata.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Dictionary of Algorithms and Data Structures ID - Wikidata",
+  "url": "https://www.wikidata.org/wiki/Property:P5106",
+  "published": "2026-09-13T21:59:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.wikidata.org/wiki/Special:EntityData/P5106.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "727e0e305c741fc45070",
+  "host": "www.wikidata.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Why Do I Teach and Do I Find Meaning in Trading - AlgoTrading101 Blog",
+  "url": "https://algotrading101.com/learn/why-do-i-teach-and-do-i-find-meaning-in-trading/",
+  "published": "2026-09-13T21:59:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7b4e3220126dd76166cc",
+  "host": "algotrading101.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "About Us - Quantitative Trading Ideas and Guides - AlgoTrading101 Blog",
+  "url": "https://algotrading101.com/p/about-me-lucas-liew",
+  "published": "2026-09-13T21:59:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b545f655eddc4c73b1c7",
+  "host": "algotrading101.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Terms of Use | AlgoTrading101",
+  "url": "https://algotrading101.com/p/terms",
+  "published": "2026-09-13T21:59:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "carry",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3965df18ab1cdff273b2",
+  "host": "algotrading101.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Privacy Policy | AlgoTrading101",
+  "url": "https://algotrading101.com/p/privacy",
+  "published": "2026-09-13T21:59:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "carry"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c2fe2ca447a16cc7af4a",
+  "host": "algotrading101.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Intern - Summer 2027 (DV Commodities) - DV Commodities",
+  "url": "https://dvcommodities.com/career/trading-intern-summer-2027-dv-commodities-2/",
+  "published": "2026-09-13T21:59:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0efd2d435cac66189b9a",
+  "host": "dvcommodities.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Intern - Summer 2027 (DV Commodities) - DV Commodities",
+  "url": "https://dvcommodities.com/career/trading-intern-summer-2027-dv-commodities/",
+  "published": "2026-09-13T21:59:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "48c3f52d332fcbda59c5",
+  "host": "dvcommodities.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Fowler-Noll-Vo (FNV) Hash Algorithm",
+  "url": "https://iq.opengenus.org/fnv-hash-algorithm/",
+  "published": "2026-09-13T21:59:30+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "basis",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "aa4a601e0d07f941d9b5",
+  "host": "iq.opengenus.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithms that run our Universe",
+  "url": "https://iq.opengenus.org/tag/algorithm/",
+  "published": "2026-09-13T21:59:31+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7df84b4f71d724faa571",
+  "host": "iq.opengenus.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Biconnected Components [Explained + Algorithm to find it]",
+  "url": "https://iq.opengenus.org/biconnected-components/",
+  "published": "2026-09-13T21:59:38+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c08f51f2a88d13622701",
+  "host": "iq.opengenus.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "D\u2019Esopo-Pape Algorithm",
+  "url": "https://iq.opengenus.org/desopo-pape-algorithm/",
+  "published": "2026-09-13T21:59:40+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M",
+   "DAILY"
+  ],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f752d23a36163807376c",
+  "host": "iq.opengenus.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Edmonds Karp Algorithm for maximum flow",
+  "url": "https://iq.opengenus.org/edmonds-karp-algorithm-for-maximum-flow/",
+  "published": "2026-09-13T21:59:42+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a116ae9e5478d6e6ad8e",
+  "host": "iq.opengenus.org",
+  "claims": [],
+  "n_claims": 0
+ }
+]

@@ -1,0 +1,347 @@
+[
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2308093",
+  "symbols": [
+   "AUDCAD"
+  ],
+  "found_at": "2026-09-13T22:26:41+00:00",
+  "platform": "mt4",
+  "phenotypes": [
+   "max_growth",
+   "long_lived",
+   "algo_survivor"
+  ],
+  "ev_score": 5.074,
+  "growth_pct": 293.9,
+  "weeks": 155.0,
+  "pf": 1.9,
+  "max_dd_pct": null,
+  "trades": 1689.0,
+  "win_pct": 1232.0,
+  "algo_pct": 99.0,
+  "subscribers": 12.0,
+  "author": "/en/users/tec_daniel",
+  "author_other_signals": [
+   {
+    "sid": "2262642",
+    "title": "'NoPain MT5' by Daniel Moraes Da Silva",
+    "growth": "2122%",
+    "curve_points": 20,
+    "curve_dd": 0.0
+   },
+   {
+    "sid": "2308095",
+    "title": "'UpFuji MT5' by Daniel Moraes Da Silva",
+    "growth": "106%",
+    "curve_points": 20,
+    "curve_dd": 0.0
+   },
+   {
+    "sid": "2363323",
+    "title": "'UpEverest MT4' by Daniel Moraes Da Silva",
+    "growth": "536%",
+    "curve_points": 20,
+    "curve_dd": 0.0
+   }
+  ],
+  "hour_histogram": {
+   "06": 1,
+   "12": 2,
+   "10": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/1922647",
+  "symbols": [
+   "EURUSD",
+   "USDCAD",
+   "USDJPY",
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-13T22:26:41+00:00",
+  "platform": "mt4",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "long_lived",
+   "algo_survivor",
+   "gold",
+   "multi_fx"
+  ],
+  "ev_score": 49.725,
+  "growth_pct": 1856.62,
+  "weeks": 373.0,
+  "pf": 1.53,
+  "max_dd_pct": null,
+  "trades": 15536.0,
+  "win_pct": 12068.0,
+  "algo_pct": 99.0,
+  "subscribers": 0.0,
+  "author": "/en/users/kris1002",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "14": 2,
+   "11": 2,
+   "09": 1,
+   "12": 1,
+   "08": 2,
+   "22": 3,
+   "21": 3,
+   "16": 1,
+   "04": 2,
+   "13": 1,
+   "10": 1,
+   "05": 1,
+   "15": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2356872",
+  "symbols": [
+   "EURGBP"
+  ],
+  "found_at": "2026-09-13T22:26:41+00:00",
+  "platform": "mt4",
+  "phenotypes": [
+   "max_growth",
+   "algo_survivor"
+  ],
+  "ev_score": 9.241,
+  "growth_pct": 790.81,
+  "weeks": 71.0,
+  "pf": 1.99,
+  "max_dd_pct": null,
+  "trades": 2965.0,
+  "win_pct": 2221.0,
+  "algo_pct": 100.0,
+  "subscribers": 6.0,
+  "author": "/en/users/valerchik941",
+  "author_other_signals": [
+   {
+    "sid": "2365003",
+    "title": "'Grid 2Profi' by Valerii Stetsenko",
+    "growth": "85%",
+    "curve_points": 20,
+    "curve_dd": 0.0
+   },
+   {
+    "sid": "2377277",
+    "title": "'Grid 2 Revers' by Valerii Stetsenko",
+    "growth": "70%",
+    "curve_points": 20,
+    "curve_dd": -5.0
+   }
+  ],
+  "hour_histogram": {
+   "12": 1,
+   "06": 1,
+   "15": 1,
+   "11": 1,
+   "22": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2381327",
+  "symbols": [
+   "AUDCAD",
+   "AUDNZD",
+   "AUDUSD",
+   "EURCAD",
+   "EURGBP",
+   "EURUSD",
+   "GBPAUD",
+   "GBPCAD",
+   "GBPCHF",
+   "GBPJPY",
+   "GBPUSD",
+   "NZDCAD"
+  ],
+  "found_at": "2026-09-13T22:26:41+00:00",
+  "platform": "mt4",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "long_lived",
+   "algo_survivor",
+   "multi_fx"
+  ],
+  "ev_score": 24.924,
+  "growth_pct": 1332.22,
+  "weeks": 182.0,
+  "pf": 1.44,
+  "max_dd_pct": null,
+  "trades": 3198.0,
+  "win_pct": 2289.0,
+  "algo_pct": 96.0,
+  "subscribers": 1.0,
+  "author": "/en/users/danidice_official",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "16": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2329267",
+  "symbols": [
+   "AUDCAD",
+   "AUDNZD",
+   "AUDUSD",
+   "BTCUSD",
+   "ETHUSD",
+   "EURUSD",
+   "GBPCHF",
+   "NZDCAD",
+   "NZDUSD",
+   "USDCAD",
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-13T22:26:41+00:00",
+  "platform": "mt4",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "long_lived",
+   "high_pf",
+   "algo_survivor",
+   "gold",
+   "multi_fx"
+  ],
+  "ev_score": 22.555,
+  "growth_pct": 1379.54,
+  "weeks": 139.0,
+  "pf": 2.0,
+  "max_dd_pct": null,
+  "trades": 2548.0,
+  "win_pct": 1830.0,
+  "algo_pct": 100.0,
+  "subscribers": 0.0,
+  "author": "/en/users/nekto61",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "06": 1,
+   "02": 1,
+   "16": 2,
+   "15": 1,
+   "18": 3,
+   "09": 1,
+   "03": 1,
+   "13": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2352610",
+  "symbols": [
+   "AUDCHF",
+   "AUDJPY",
+   "AUDNZD",
+   "AUDUSD",
+   "BTCUSD",
+   "CADCHF",
+   "CHFJPY",
+   "ETHUSD",
+   "EURAUD",
+   "EURGBP",
+   "EURJPY",
+   "EURUSD"
+  ],
+  "found_at": "2026-09-13T22:26:41+00:00",
+  "platform": "mt4",
+  "phenotypes": [],
+  "ev_score": 0.0,
+  "growth_pct": 2473.24,
+  "weeks": 96.0,
+  "pf": 3.1,
+  "max_dd_pct": null,
+  "trades": 98.0,
+  "win_pct": 54.0,
+  "algo_pct": 67.0,
+  "subscribers": 0.0,
+  "author": "/en/users/nafeesjaved",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "05": 1,
+   "10": 2,
+   "11": 2,
+   "22": 1,
+   "21": 2,
+   "13": 2,
+   "12": 1,
+   "15": 1,
+   "01": 1,
+   "14": 1,
+   "09": 1,
+   "06": 1,
+   "03": 1,
+   "00": 2,
+   "23": 1,
+   "16": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2382360",
+  "symbols": [
+   "EURUSD",
+   "USDJPY",
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-13T22:26:41+00:00",
+  "platform": "mt4",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "long_lived",
+   "gold"
+  ],
+  "ev_score": 30.019,
+  "growth_pct": 1275.55,
+  "weeks": 288.0,
+  "pf": 1.35,
+  "max_dd_pct": null,
+  "trades": 1140.0,
+  "win_pct": 659.0,
+  "algo_pct": 21.0,
+  "subscribers": 1.0,
+  "author": "/en/users/anson5129",
+  "author_other_signals": [
+   {
+    "sid": "2381807",
+    "title": "'Anson Account 1' by Cho Hong Au",
+    "growth": "150%",
+    "curve_points": 20,
+    "curve_dd": -58.0
+   },
+   {
+    "sid": "2386671",
+    "title": "'Anson Account 2' by Cho Hong Au",
+    "growth": "-43%",
+    "curve_points": 20,
+    "curve_dd": -94.0
+   }
+  ],
+  "hour_histogram": {
+   "04": 1,
+   "05": 1
+  }
+ }
+]

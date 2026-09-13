@@ -1,0 +1,915 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Data Science Archives - AlgoTrading101 Wiki",
+  "url": "https://algotrading101.com/wiki/data-science-resources/",
+  "published": "2026-09-13T22:13:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "16c7489493864ce37d66",
+  "host": "algotrading101.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Google Books",
+  "url": "https://www.google.co.id/books/edition/DATA_MINING/MWcHEAAAQBAJ?hl=id&newbks=1&gbpv=1&dq=statistika+dan+algoritma+em&pg=PA120&printsec=frontcover",
+  "published": "2026-09-13T22:13:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "id-DE",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dd93a27d74c6339dc80d",
+  "host": "www.google.co.id",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithmus - Alemannische Wikipedia",
+  "url": "https://als.wikipedia.org/wiki/Algorithmus",
+  "published": "2026-09-13T22:13:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "gsw",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "14127df3cb37401adbdc",
+  "host": "als.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorismo - Biquipedia, a enciclopedia libre",
+  "url": "https://an.wikipedia.org/wiki/Algorismo",
+  "published": "2026-09-13T22:13:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "an",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "68979869c4b3ae173f63",
+  "host": "an.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo - Wikipedia",
+  "url": "https://bcl.wikipedia.org/wiki/Algoritmo",
+  "published": "2026-09-13T22:13:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "bcl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6503001ef9e361810205",
+  "host": "bcl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritam - Wikipedia",
+  "url": "https://bs.wikipedia.org/wiki/Algoritam",
+  "published": "2026-09-13T22:13:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "bs",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c6b0dc639045b5ce1574",
+  "host": "bs.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritme - Wikipedia, den frie encyklop\u00e6di",
+  "url": "https://da.wikipedia.org/wiki/Algoritme",
+  "published": "2026-09-13T22:13:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "da",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "300cdf918f5220a5710a",
+  "host": "da.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritm \u2013 Vikipeedia",
+  "url": "https://et.wikipedia.org/wiki/Algoritm",
+  "published": "2026-09-13T22:14:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "et",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fb2405c755045a266381",
+  "host": "et.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo - Wikipedia, entziklopedia askea.",
+  "url": "https://eu.wikipedia.org/wiki/Algoritmo",
+  "published": "2026-09-13T22:14:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "eu",
+  "endpoints": [
+   "http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.146.3017&amp;rep=rep1&amp;type=pdf"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "7a61bc69dbbee617eb41",
+  "host": "eu.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo - Wikipedia, a enciclopedia libre",
+  "url": "https://gl.wikipedia.org/wiki/Algoritmo",
+  "published": "2026-09-13T22:14:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "inventory",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "gl",
+  "endpoints": [
+   "http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.146.3017&amp;rep=rep1&amp;type=pdf"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "72237f35cd5b1714ba1f",
+  "host": "gl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo - Vikipet\u00e3",
+  "url": "https://gn.wikipedia.org/wiki/Algoritmo",
+  "published": "2026-09-13T22:14:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "gn",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8a54cac2c7f649311d93",
+  "host": "gn.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithm - Wikipedia",
+  "url": "https://hif.wikipedia.org/wiki/Algorithm",
+  "published": "2026-09-13T22:14:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "hif",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ea379cf4ea6a5f22bbd5",
+  "host": "hif.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritam \u2013 Wikipedija",
+  "url": "https://hr.wikipedia.org/wiki/Algoritam",
+  "published": "2026-09-13T22:14:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "hr",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d18739763c99dd0e9636",
+  "host": "hr.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithmo - Wikipedia, le encyclopedia libere",
+  "url": "https://ia.wikipedia.org/wiki/Algorithmo",
+  "published": "2026-09-13T22:14:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "ia",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6bfd16bfbf8f0efbd597",
+  "host": "ia.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo - Wikipedia, ti nawaya nga ensiklopedia",
+  "url": "https://ilo.wikipedia.org/wiki/Algoritmo",
+  "published": "2026-09-13T22:14:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "ilo",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a3f33059cc02c9638567",
+  "host": "ilo.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo - Wikipedio",
+  "url": "https://io.wikipedia.org/wiki/Algoritmo",
+  "published": "2026-09-13T22:14:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "io",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5b0b1640eb94188ba846",
+  "host": "io.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritm - Vikipedija",
+  "url": "https://isv.wikipedia.org/wiki/Algoritm",
+  "published": "2026-09-13T22:14:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "isv",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c6adac61d4de6d608a1f",
+  "host": "isv.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritm \u2014 Qaraqalpaqsha Wikipedia",
+  "url": "https://kaa.wikipedia.org/wiki/Algoritm",
+  "published": "2026-09-13T22:14:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "kaa",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7db429ecff68485151c7",
+  "host": "kaa.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithm - Wikipedia",
+  "url": "https://ki.wikipedia.org/wiki/Algorithm",
+  "published": "2026-09-13T22:14:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "ki",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fa103d9946acf1418928",
+  "host": "ki.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithmus - Vicipaedia",
+  "url": "https://la.wikipedia.org/wiki/Algorithmus",
+  "published": "2026-09-13T22:14:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "la",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fb2584eb3afbb8758326",
+  "host": "la.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithmus \u2013 Wikipedia",
+  "url": "https://lb.wikipedia.org/wiki/Algorithmus",
+  "published": "2026-09-13T22:14:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "lb",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d37400f9d0c224af5192",
+  "host": "lb.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo - Vicipedia",
+  "url": "https://lfn.wikipedia.org/wiki/Algoritmo",
+  "published": "2026-09-13T22:14:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "lfn",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "32521ad1442221e21468",
+  "host": "lfn.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmas \u2013 Vikipedija",
+  "url": "https://lt.wikipedia.org/wiki/Algoritmas",
+  "published": "2026-09-13T22:14:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "lt",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5bf352d47847c053fc61",
+  "host": "lt.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritms \u2014 Vikip\u0113dija",
+  "url": "https://lv.wikipedia.org/wiki/Algoritms",
+  "published": "2026-09-13T22:14:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "lv",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d2e9c8c865e6cf774682",
+  "host": "lv.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritma - Wikipedia Bahasa Melayu, ensiklopedia bebas",
+  "url": "https://ms.wikipedia.org/wiki/Algoritma",
+  "published": "2026-09-13T22:14:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "gap",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "ms",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "555c95724ff8fdd18446",
+  "host": "ms.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo - Biquip\u00e9dia",
+  "url": "https://mwl.wikipedia.org/wiki/Algoritmo",
+  "published": "2026-09-13T22:14:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "mwl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "42132b953c8c70fab315",
+  "host": "mwl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritme - Wikipedia",
+  "url": "https://nl.wikipedia.org/wiki/Algoritme",
+  "published": "2026-09-13T22:14:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "nl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1d92a4f5353f46dc797c",
+  "host": "nl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritme \u2013 Wikipedia",
+  "url": "https://nn.wikipedia.org/wiki/Algoritme",
+  "published": "2026-09-13T22:14:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "nn",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1af3aeae20fcdf9413c0",
+  "host": "nn.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritme \u2014 Wikip\u00e8dia",
+  "url": "https://oc.wikipedia.org/wiki/Algoritme",
+  "published": "2026-09-13T22:14:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "oc",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2d50adbde183767276bc",
+  "host": "oc.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritm - Wikipedia",
+  "url": "https://ro.wikipedia.org/wiki/Algoritm",
+  "published": "2026-09-13T22:14:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "ro",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0529b559f155bc5220bb",
+  "host": "ro.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmu - Wikipedia",
+  "url": "https://sc.wikipedia.org/wiki/Algoritmu",
+  "published": "2026-09-13T22:14:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sc",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4260d2f6bfcbbb05cf62",
+  "host": "sc.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithm - Wikipedia",
+  "url": "https://sco.wikipedia.org/wiki/Algorithm",
+  "published": "2026-09-13T22:14:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "sco",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c2271093953b2088281b",
+  "host": "sco.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritam \u2013 Wikipedija / \u0412\u0438\u043a\u0438\u043f\u0435\u0434\u0438\u0458\u0430",
+  "url": "https://sh.wikipedia.org/wiki/Algoritam",
+  "published": "2026-09-13T22:14:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sh-Latn",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "eb11e5c7bd93fb1c161e",
+  "host": "sh.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithm - Simple English Wikipedia, the free encyclopedia",
+  "url": "https://simple.wikipedia.org/wiki/Algorithm",
+  "published": "2026-09-13T22:14:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f5d7d4c5f18780ea1ad4",
+  "host": "simple.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritem - Wikipedija, prosta enciklopedija",
+  "url": "https://sl.wikipedia.org/wiki/Algoritem",
+  "published": "2026-09-13T22:14:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "carry",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6f151ce1f1bb41a52b56",
+  "host": "sl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmi - Wikipedia",
+  "url": "https://sq.wikipedia.org/wiki/Algoritmi",
+  "published": "2026-09-13T22:14:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sq",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7efa714564481cb41c7c",
+  "host": "sq.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritm \u2013 Wikipedia",
+  "url": "https://sv.wikipedia.org/wiki/Algoritm",
+  "published": "2026-09-13T22:14:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sv",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9211b88fdac505eecb7f",
+  "host": "sv.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo - Wikipedia, ang malayang ensiklopedya",
+  "url": "https://tl.wikipedia.org/wiki/Algoritmo",
+  "published": "2026-09-13T22:14:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "tl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "817ca5cb93ab345d5405",
+  "host": "tl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritma - Vikipedi",
+  "url": "https://tr.wikipedia.org/wiki/Algoritma",
+  "published": "2026-09-13T22:14:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "mean_reversion"
+  ],
+  "confidence": 0.35,
+  "lang": "tr",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7bb84b25d1b25ab10235",
+  "host": "tr.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithm - Wikipedia",
+  "url": "https://tw.wikipedia.org/wiki/Algorithm",
+  "published": "2026-09-13T22:14:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "tw",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b580aa7ca8a1b03553d3",
+  "host": "tw.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritm - Vikipediya",
+  "url": "https://uz.wikipedia.org/wiki/Algoritm",
+  "published": "2026-09-13T22:14:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "uz",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f76b29dbb7db5e48cf34",
+  "host": "uz.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo - Wikipedia",
+  "url": "https://war.wikipedia.org/wiki/Algoritmo",
+  "published": "2026-09-13T22:14:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "war",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3f3191c96636eb61e4db",
+  "host": "war.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Category:Algorithms - Wikimedia Commons",
+  "url": "https://commons.wikimedia.org/wiki/Category:Algorithms",
+  "published": "2026-09-13T22:14:47+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [
+   "auction",
+   "carry",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://kmlexport.toolforge.org/?project=commons&amp;article=Category%3AAlgorithms"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "44b6b9fc4e23795b0bd7",
+  "host": "commons.wikimedia.org",
+  "claims": [],
+  "n_claims": 0
+ }
+]
