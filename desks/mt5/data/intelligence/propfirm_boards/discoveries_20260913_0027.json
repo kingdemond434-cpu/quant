@@ -1,0 +1,12 @@
+[
+ {
+  "source": "propfirm_boards",
+  "kind": "fetch_error",
+  "title": "HTTPSConnectionPool(host='ftmo.com', port=443): Max retries exceeded with url: /trading-updates-sitemap.xml (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in viol",
+  "url": "",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-13T00:37:06+00:00",
+  "needs_selector_work": true
+ }
+]

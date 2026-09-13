@@ -1,0 +1,1609 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Indikatorar for underliggjande inflasjon i Noreg",
+  "url": "https://www.norges-bank.no/aktuelt/publikasjoner/Staff-Memo/2017/staff-memo-132017/",
+  "published": "2026-09-13T00:13:02+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "nn",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "99500e6c6bb6e406e420",
+  "host": "www.norges-bank.no",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "trading_ProductsIntroduce",
+  "url": "http://en.sge.com.cn/eng_trading_ProductsIntroduce",
+  "published": "2026-09-13T00:13:06+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b1daad78e9ea73984b1b",
+  "host": "en.sge.com.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "trading_matchingMarket_PhysicalTrading",
+  "url": "http://en.sge.com.cn/eng_trading_matchingMarket_PhysicalTrading",
+  "published": "2026-09-13T00:13:10+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b1e5cc838de99acb2d7f",
+  "host": "en.sge.com.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "trading_matchingMarket_MarginTrading",
+  "url": "http://en.sge.com.cn/eng_trading_matchingMarket_MarginTrading",
+  "published": "2026-09-13T00:13:13+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d763ff65ab84446d66e3",
+  "host": "en.sge.com.cn",
+  "claims": [
+   {
+    "claim": "T+N contracts have fixed maturity date, while T+D position could rollover day by day.",
+    "lang": "en",
+    "quantities": [
+     "rollover"
+    ],
+    "direction": [
+     "contracts"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "fc5619e25e25"
+   },
+   {
+    "claim": "T+N Contracts T+N includes Au(T+N1) and Au(T+N2): \u221a The maturity date of Au(T+N1) is June 15th \u221a The maturity date of Au(T+N2) is December 15th Till the maturity date, the participant that holding the T+N position could: \u221a Close out the position \u221a Submit delivery tender to physically settle the position.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "contracts"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "12d20d58d50d"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "rules_Trading",
+  "url": "http://en.sge.com.cn/eng_rules_Trading",
+  "published": "2026-09-13T00:13:15+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "48f4d870bfc35ce3ee92",
+  "host": "en.sge.com.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "rules_Rulebook",
+  "url": "http://en.sge.com.cn/membership_downloads?topicCode=membership_downloads_Trading",
+  "published": "2026-09-13T00:13:18+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "cd01448b5482641ab765",
+  "host": "en.sge.com.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "trading_ProductsIntroduce_details",
+  "url": "http://en.sge.com.cn/eng_trading_ProductsIntroduce_details1?pro_id=942640319334866944",
+  "published": "2026-09-13T00:13:20+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "937931a51962a57331e3",
+  "host": "en.sge.com.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "trading_ProductsIntroduce_details",
+  "url": "http://en.sge.com.cn/eng_trading_ProductsIntroduce_details1?pro_id=943287334147448832",
+  "published": "2026-09-13T00:13:23+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a8bbf4021b7383605d91",
+  "host": "en.sge.com.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Market Calendar API - Trading Hours & Holidays | TradingHours.com",
+  "url": "https://www.tradinghours.com/data",
+  "published": "2026-09-13T00:13:25+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "flow",
+   "night_session",
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.tradinghours.com/manifest.json",
+   "https://www.tradinghours.com/llms.txt",
+   "https://docs.tradinghours.com/4.x/endpoints/download",
+   "https://docs.tradinghours.com/3.x/enterprise/download",
+   "https://docs.tradinghours.com/3.x/enterprise/download#data-dictionary",
+   "https://docs.tradinghours.com/3.x/enterprise/download#schedules"
+  ],
+  "n_endpoints": 6,
+  "vault_sha": "844bed2142df9de9e8a3",
+  "host": "www.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Prisvekst",
+  "url": "https://www.norges-bank.no/tema/statistikk/Indikatorer-for-prisvekst/",
+  "published": "2026-09-13T00:13:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "nb",
+  "endpoints": [
+   "https://www.norges-bank.no/globalassets/marketdata/ppo/kpi/kpi_tab_no.xlsx?v=11092026140058"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ba8def86cf95fd092384",
+  "host": "www.norges-bank.no",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Indicators of underlying inflation in Norway",
+  "url": "https://www.norges-bank.no/en/news-events/publications/Staff-Memo/2017/staff-memo-132017/",
+  "published": "2026-09-13T00:13:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b574fa2de7a5d39ecc72",
+  "host": "www.norges-bank.no",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Data Downloads | TradingHours Docs",
+  "url": "https://docs.tradinghours.com/4.x/endpoints/download",
+  "published": "2026-09-13T00:13:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://docs.tradinghours.com/4.x/endpoints/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "6e8f4ab5de7ff54e2d9e",
+  "host": "docs.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Data Downloads | TradingHours Docs",
+  "url": "https://docs.tradinghours.com/3.x/enterprise/download",
+  "published": "2026-09-13T00:13:31+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://docs.tradinghours.com/4.x/endpoints/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "3c5b49d06bbf78cde953",
+  "host": "docs.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Inflation indicators",
+  "url": "https://www.norges-bank.no/en/topics/statistics/Inflation-indicators/",
+  "published": "2026-09-13T00:13:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.norges-bank.no/globalassets/marketdata/ppo/kpi/kpi_tab_en.xlsx?v=11092026140057",
+   "https://www.norges-bank.no/globalassets/marketdata/ppo/kpi/kpi_tab_en.csv?v=11092026140057"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "70ec5c8311bf6b77392c",
+  "host": "www.norges-bank.no",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Market Calendar API - Trading Hours & Holidays | TradingHours.com",
+  "url": "https://tradinghours.com/data",
+  "published": "2026-09-13T00:13:33+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "flow",
+   "night_session",
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [
+   "https://tradinghours.com/manifest.json",
+   "https://tradinghours.com/llms.txt",
+   "https://docs.tradinghours.com/4.x/endpoints/download",
+   "https://docs.tradinghours.com/3.x/enterprise/download",
+   "https://docs.tradinghours.com/3.x/enterprise/download#data-dictionary",
+   "https://docs.tradinghours.com/3.x/enterprise/download#schedules"
+  ],
+  "n_endpoints": 6,
+  "vault_sha": "c027e55f2cad926563a6",
+  "host": "tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Gold Trading Volume | Gold Daily Volume | World Gold Council",
+  "url": "https://www.gold.org/goldhub/data/gold-trading-volumes",
+  "published": "2026-09-13T00:13:34+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "orderflow",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.gold.org/download/file/19819/Trading_volumes_methodology_2025.pdf"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "7352513aa7bf2a8bc0ad",
+  "host": "www.gold.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u671f\u8d27\u9891\u9053 - \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://futures.eastmoney.com/",
+  "published": "2026-09-13T00:13:35+00:00",
+  "symbols": [
+   "XTIUSD",
+   "XAUUSD",
+   "XAGUSD",
+   "XPTUSD",
+   "XPDUSD",
+   "XCUUSD",
+   "XALUSD",
+   "XNIUSD",
+   "XZNUSD",
+   "XPBUSD",
+   "HK50",
+   "US500",
+   "USDX",
+   "USDCNH",
+   "SOYBEAN",
+   "CORN",
+   "SUGAR",
+   "COTTON",
+   "WHEAT",
+   "UST10Y"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow",
+   "inventory",
+   "momentum",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6c225342139e57542690",
+  "host": "futures.eastmoney.com",
+  "claims": [
+   {
+    "claim": "\u7cbe\u9009 | \u591c\u76d8\u76d8\u524d\u8981\u95fb\u6c47\u603b 9\u670811\u65e5 \u5468\u4e94 \u6bcf\u65e5\u9f99\u864e\u699c | \u5546\u54c1\u671f\u8d27\u7efc\u5408\u6307\u6570\u4e0b\u8dcc2.",
+    "lang": "zh",
+    "quantities": [
+     "\u591c\u76d8"
+    ],
+    "direction": [
+     "\u4e0b\u8dcc",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u6bcf\u65e5",
+     "\u591c\u76d8"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "\u9f99\u864e\u699c"
+     ],
+     "transfer_only": [
+      "\u9f99\u864e\u699c->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "97df2e47f869"
+   },
+   {
+    "claim": "\u671f\u5e02\u6536\u8bc4 | \u56fd\u5185\u5546\u54c1\u5927\u9762\u79ef\u98d8\u7eff \u80fd\u5316\u677f\u5757\u76d8\u4e2d\u8df3\u6c34 \u7f8e\u8054\u50a8\u4e0b\u5468\u662f\u5426\u52a0\u606f\uff1f",
+    "lang": "zh",
+    "quantities": [
+     "\u52a0\u606f"
+    ],
+    "direction": [
+     "\u8df3\u6c34"
+    ],
+    "horizon": [
+     "\u5468"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "\u7f8e\u8054\u50a8: policy: Fed -> dollar and US equities"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "576fa58d4d04"
+   },
+   {
+    "claim": "\u7f8e\u56fd8\u6708CPI\u524d\u77bb\uff1a\u80fd\u6e90\u6da8\u4ef7\u6270\u52a8\u901a\u80c0 \u7f8e\u8054\u50a8\u52a0\u606f\u9884.",
+    "lang": "zh",
+    "quantities": [
+     "\u901a\u80c0",
+     "\u52a0\u606f",
+     "cpi"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "\u7f8e\u8054\u50a8: policy: Fed -> dollar and US equities"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "06442ef40a4a"
+   },
+   {
+    "claim": "\u4e0a\u671f\u6240\u539f\u6cb9\u671f\u8d272610\u5408\u7ea6\u591c\u76d8\u6536\u6da81.",
+    "lang": "zh",
+    "quantities": [
+     "\u591c\u76d8",
+     "\u539f\u6cb9"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u591c\u76d8"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD"
+     ],
+     "mentioned": [
+      "\u539f\u6cb9"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "94b12efc73b0"
+   },
+   {
+    "claim": "\u73b0\u8d27\u9ec4\u91d1\u5468\u6da8\u8d857%\u7ad9\u4e0a4300\u7f8e\u5143 \u4e3a\u4f55\u7a81\u7136\u5927\u6da8\uff1f",
+    "lang": "zh",
+    "quantities": [
+     "\u9ec4\u91d1",
+     "\u7f8e\u5143"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u5468"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "1116033ebd6f"
+   },
+   {
+    "claim": "\u9ec4\u91d1\u56db\u5b63\u5ea6\u4ef7\u683c\u91cd\u5fc3\u4e0a\u79fb\u8d8b\u52bf\u4e0d\u53d8 \u94a2\u6750\u677f\u5757 \u4ece\u201c\u8d4c\u5468\u671f\u201d\u5230\u201c\u7ec3\u5185\u529f\u201d \u7a81\u7136\u8df3\u6c34\uff01",
+    "lang": "zh",
+    "quantities": [
+     "\u8d8b\u52bf",
+     "\u9ec4\u91d1"
+    ],
+    "direction": [
+     "\u8df3\u6c34"
+    ],
+    "horizon": [
+     "\u5468",
+     "\u5b63\u5ea6"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "ba85998cf9a2"
+   },
+   {
+    "claim": "34% \u5237\u65e5\u5185\u65b0\u9ad8 \u73b0\u8d27\u9ec4\u91d1\u4e00\u5ea6\u8dcc\u78344300\u7f8e\u5143/\u76ce\u53f8\u5173\u53e3 \u6bcf\u65e5\u9f99\u864e\u699c | \u5546\u54c1\u671f\u8d27\u7efc\u5408\u6307\u6570\u4e0b\u8dcc2.",
+    "lang": "zh",
+    "quantities": [
+     "\u65e5\u5185",
+     "\u9ec4\u91d1",
+     "\u7f8e\u5143"
+    ],
+    "direction": [
+     "\u4e0b\u8dcc",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u65e5\u5185",
+     "\u6bcf\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1",
+      "\u9f99\u864e\u699c"
+     ],
+     "transfer_only": [
+      "\u9f99\u864e\u699c->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "6c9faeb5bd6f"
+   },
+   {
+    "claim": "\u7cbe\u9009 | \u672c\u5468\u91cd\u5927\u8d44\u8baf\u56de\u987e (9/7-9/11) \u73b0\u8d27\u91d1\u94f6\u65e5\u5185\u5747\u6da8\u8d851% \u4e09\u91cd\u538b\u529b\u6765\u88ad\uff01",
+    "lang": "zh",
+    "quantities": [
+     "\u65e5\u5185"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u65e5\u5185",
+     "\u5468"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XPTUSD",
+      "XPDUSD",
+      "XCUUSD",
+      "XALUSD",
+      "XNIUSD",
+      "XZNUSD",
+      "XPBUSD",
+      "XTIUSD",
+      "HK50",
+      "US500",
+      "USDX",
+      "USDCNH",
+      "SOYBEAN",
+      "CORN",
+      "SUGAR",
+      "COTTON",
+      "WHEAT",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "\u6caa\u91d1",
+      "\u6caa\u94f6",
+      "\u94c2\u91d1",
+      "\u94af\u91d1",
+      "\u6caa\u94dc",
+      "\u6caa\u94dd",
+      "\u6caa\u954d",
+      "\u6caa\u950c",
+      "\u6caa\u94c5",
+      "\u539f\u6cb9",
+      "\u6e2f\u80a1",
+      "\u7f8e\u80a1",
+      "\u7f8e\u5143\u6307\u6570",
+      "\u4e0a\u8bc1",
+      "\u4eba\u6c11\u5e01",
+      "\u5927\u8c46",
+      "\u7389\u7c73",
+      "\u767d\u7cd6",
+      "\u68c9\u82b1",
+      "\u5c0f\u9ea6",
+      "\u7f8e\u503a",
+      "\u87ba\u7eb9\u94a2",
+      "\u6ca5\u9752",
+      "\u8c46\u6cb9",
+      "\u6c27\u5316\u94dd",
+      "\u4e8c\u503a",
+      "\u9f99\u864e\u699c"
+     ],
+     "transfer_only": [
+      "\u4e0a\u8bc1->indices (China A-share)",
+      "\u87ba\u7eb9\u94a2->metals/energy",
+      "\u6ca5\u9752->energy",
+      "\u8c46\u6cb9->softs",
+      "\u6c27\u5316\u94dd->metals",
+      "\u4e8c\u503a->rates->fx carry",
+      "\u9f99\u864e\u699c->cn-equities-only"
+     ],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "\u7f8e\u8054\u50a8: policy: Fed -> dollar and US equities",
+      "\u6b27\u6d32\u592e\u884c: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "33a1f661254e"
+   }
+  ],
+  "n_claims": 9
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Challenge Validation",
+  "url": "https://www.balticexchange.com/en/data-services/market-information0/dry-services.html",
+  "published": "2026-09-13T00:13:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "908d1ff7606f2cb9546c",
+  "host": "www.balticexchange.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Gold Price Performance &amp; Data | World Gold Council",
+  "url": "https://www.gold.org/goldhub/data",
+  "published": "2026-09-13T00:13:36+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3cda0ca12e4ceb4aa777",
+  "host": "www.gold.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "NuGet Gallery | Package Downloads for QuantLib",
+  "url": "https://www.nuget.org/stats/packages/QuantLib?groupby=Version",
+  "published": "2026-09-13T00:13:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.nuget.org/downloads"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "76ee1017c29f78c6794d",
+  "host": "www.nuget.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Is the Stock Market Open? - TradingHours.com",
+  "url": "https://tradinghours.com/open",
+  "published": "2026-09-13T00:13:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://tradinghours.com/manifest.json",
+   "https://tradinghours.com/llms.txt"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "3f3e1b30aa4de414e55c",
+  "host": "tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Global Market Coverage - TradingHours.com",
+  "url": "https://tradinghours.com/coverage",
+  "published": "2026-09-13T00:13:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://tradinghours.com/manifest.json",
+   "https://tradinghours.com/llms.txt"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "8d9149c6e50329642a3c",
+  "host": "tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Statistics - International Cocoa Organization",
+  "url": "https://www.icco.org/statistics/",
+  "published": "2026-09-13T00:13:51+00:00",
+  "symbols": [
+   "USCOCOA"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "flow",
+   "inventory"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.icco.org/pwa-manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ea1eca5214aa0061d197",
+  "host": "www.icco.org",
+  "claims": [
+   {
+    "claim": "The document is graphically illustrated and provides analysis of front-month cocoa futures contract prices denominated in U.",
+    "lang": "en",
+    "quantities": [
+     "futures"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "USCOCOA"
+     ],
+     "mentioned": [
+      "cocoa"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "9994bdc7421b"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Stocks Archives - TradingMarkets",
+  "url": "https://tradingmarkets.com/category/stocks",
+  "published": "2026-09-13T00:13:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "446e12d7d6484d0939c7",
+  "host": "tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "ETFs Archives - TradingMarkets",
+  "url": "https://tradingmarkets.com/category/etfs",
+  "published": "2026-09-13T00:13:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1e4a4305db87899f7731",
+  "host": "tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Options Archives - TradingMarkets",
+  "url": "https://tradingmarkets.com/category/options",
+  "published": "2026-09-13T00:13:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "091449965e53d87c544b",
+  "host": "tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Volatility Archives - TradingMarkets",
+  "url": "https://tradingmarkets.com/category/volatility",
+  "published": "2026-09-13T00:13:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "306934be00e704d43074",
+  "host": "tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "TradingMarkets",
+  "url": "https://store.tradingmarkets.com/",
+  "published": "2026-09-13T00:13:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1321b8948c4a3964b7a0",
+  "host": "store.tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Account &ndash; TradingMarkets",
+  "url": "https://store.tradingmarkets.com/account/",
+  "published": "2026-09-13T00:14:00+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "23b8429a3fb510208f51",
+  "host": "store.tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Interviews Archives - TradingMarkets",
+  "url": "https://tradingmarkets.com/category/interviews",
+  "published": "2026-09-13T00:14:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "91044ad8ec914d8f1dc9",
+  "host": "tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "AI For Traders: A Professional Manual for Hedge\u2011Fund\u2011Level Alpha",
+  "url": "https://store.tradingmarkets.com/products/cognitive-analysis-guidebook",
+  "published": "2026-09-13T00:14:02+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "mean_reversion",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6c55f89b1463cc65a7f9",
+  "host": "store.tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Webinar Replay: Bear Market Checklist &amp; Short-Side Opportunities - TradingMarkets",
+  "url": "https://tradingmarkets.com/trading-tip/webinar-replay-bear-market-checklist-short-side-opportunities-1597779",
+  "published": "2026-09-13T00:14:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0232881a28b57c0c08e3",
+  "host": "tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "ChatGPT Unveiled: The Modern Trader&#039;s Tool for Deciphering Stock Charts - TradingMarkets",
+  "url": "https://tradingmarkets.com/stocks/chatgpt-unveiled-the-modern-traders-tool-for-deciphering-stock-charts-1597135",
+  "published": "2026-09-13T00:14:05+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "eea1d8e2d3e8c7e85f2a",
+  "host": "tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "AI For Traders: A Professional Manual for Hedge\u2011Fund\u2011Level Alpha",
+  "url": "https://store.tradingmarkets.com/products/ai-for-traders-manual",
+  "published": "2026-09-13T00:14:06+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "mean_reversion",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fd3be9db94456c5f8aa3",
+  "host": "store.tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Buy the Fear, Sell the Greed - 7 Behavioral Quant Strategies For Traders &ndash; TradingMarkets",
+  "url": "https://store.tradingmarkets.com/products/new-buy-the-fear-sell-the-greed-7-behavioral-quant-strategies-for-traders-hardcover-available-for-immediate-shipping-1",
+  "published": "2026-09-13T00:14:09+00:00",
+  "symbols": [
+   "US500",
+   "USDSGD",
+   "USDILS",
+   "USDPLN",
+   "USDCZK",
+   "USDSEK",
+   "USDDKK"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "night_session",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2f0f1cca17e59e603b1c",
+  "host": "store.tradingmarkets.com",
+  "claims": [
+   {
+    "claim": "Now imagine that after the close, a negative news story comes out and the media induces panic overnight and that stock or ETF plunges even further the next day.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "negative"
+    ],
+    "horizon": [
+     "close",
+     "overnight"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "USDSGD",
+      "USDILS",
+      "USDPLN",
+      "USDCZK",
+      "USDSEK",
+      "USDDKK"
+     ],
+     "mentioned": [
+      "s&p 500",
+      "sgd",
+      "ils",
+      "pln",
+      "czk",
+      "sek",
+      "dkk",
+      "myr"
+     ],
+     "transfer_only": [
+      "myr->fx (MYR not quoted)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "876fab5e1087"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "NEW! The Alpha Formula: High Powered Strategies to Beat The Market Wit &ndash; TradingMarkets",
+  "url": "https://store.tradingmarkets.com/products/new-the-alpha-formula-high-powered-strategies-to-beat-the-market-with-less-risk-hardcover?utm_source=copyToPasteBoard&utm_medium=product-links&utm_content=web",
+  "published": "2026-09-13T00:14:10+00:00",
+  "symbols": [
+   "USDKRW",
+   "USDSGD",
+   "USDILS",
+   "USDPLN",
+   "USDCZK",
+   "USDSEK",
+   "USDDKK",
+   "UST10Y"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c91dff3c3597d1778426",
+  "host": "store.tradingmarkets.com",
+  "claims": [
+   {
+    "claim": "Profit from Mean Reversion - Over the shorter term (days to weeks), securities often overreact and then mean revert.",
+    "lang": "en",
+    "quantities": [
+     "mean reversion"
+    ],
+    "direction": [
+     "revert"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDKRW",
+      "USDSGD",
+      "USDILS",
+      "USDPLN",
+      "USDCZK",
+      "USDSEK",
+      "USDDKK",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "won",
+      "sgd",
+      "ils",
+      "pln",
+      "czk",
+      "sek",
+      "dkk",
+      "myr",
+      "treasuries"
+     ],
+     "transfer_only": [
+      "myr->fx (MYR not quoted)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "94122b58f193"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "TradingMarkets Swing Trading College 2019",
+  "url": "https://store.tradingmarkets.com/products/tradingmarkets-swing-trading-college-2019",
+  "published": "2026-09-13T00:14:12+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f0d314176164111a25f9",
+  "host": "store.tradingmarkets.com",
+  "claims": [
+   {
+    "claim": "-- How to find the best stocks and ETFs to trade long each day -- A powerful strategy to trade high quality S&P 500 stocks in a systematic manner (see the S&P Selective test results below.",
+    "lang": "en",
+    "quantities": [
+     "stocks"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "s&p 500"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "c6de00c8f2b5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Introduction | TradingHours Docs",
+  "url": "https://docs.tradinghours.com",
+  "published": "2026-09-13T00:14:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://docs.tradinghours.com/4.x/endpoints/download",
+   "https://docs.tradinghours.com/3.x/enterprise/download"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "16f760b0395dccbf9620",
+  "host": "docs.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Introduction | TradingHours Docs",
+  "url": "https://docs.tradinghours.com/",
+  "published": "2026-09-13T00:14:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://docs.tradinghours.com/4.x/endpoints/download",
+   "https://docs.tradinghours.com/3.x/enterprise/download"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "36581454ecd3ad494138",
+  "host": "docs.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Python Library Overview | TradingHours Docs",
+  "url": "https://docs.tradinghours.com/python-library/",
+  "published": "2026-09-13T00:14:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://docs.tradinghours.com/4.x/endpoints/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "96a09a37cd635ed30a2b",
+  "host": "docs.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Market Update: Increased transparency on gold trading | World Gold Council",
+  "url": "https://www.gold.org/goldhub/research/market-update/increased-transparency-on-gold-trading",
+  "published": "2026-09-13T00:14:21+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.gold.org/download/file/13527/201812_Gold-trading-volumes.pdf"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "9c08ea06f0e80e5ca7f1",
+  "host": "www.gold.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Alvarez Quant Trading &#8211; Providing confidence in your trading",
+  "url": "https://www.alvarezquanttrading.com",
+  "published": "2026-09-13T00:14:25+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3d1470057af3a6b587de",
+  "host": "www.alvarezquanttrading.com",
+  "claims": [
+   {
+    "claim": "The 30% Selloff Signal: What History Tells Us About Market Recoveries SPY, SSO and TLT Strategy Join my email list For the best curated research in quantitative finance, bookmark Popular Posts Internal Bar Strength for Mean Reversion February 16, 2022 The 100% Club.",
+    "lang": "en",
+    "quantities": [
+     "mean reversion"
+    ],
+    "direction": [
+     "selloff"
+    ],
+    "horizon": [
+     "bar"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "a52e7ccfeb50"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Bioconductor - quantsmooth",
+  "url": "https://www.bioconductor.org/packages/release/bioc/html/quantsmooth.html",
+  "published": "2026-09-13T00:14:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.bioconductor.org/packages/release/bioc/src/contrib/quantsmooth_1.78.0.tar.gz",
+   "https://www.bioconductor.org/packages/release/bioc/bin/windows/contrib/4.6/quantsmooth_1.78.0.zip"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "1e0e2920b8e781f13561",
+  "host": "www.bioconductor.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Award-Winning Algorithmic Trading Course &amp; Strategies | Kevin Davey",
+  "url": "https://www.kjtradingsystems.com",
+  "published": "2026-09-13T00:14:27+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XTIUSD",
+   "US500"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "cd82159501dbbe9c8275",
+  "host": "www.kjtradingsystems.com",
+  "claims": [
+   {
+    "claim": "Each market has unique characteristics related to volatility, liquidity, contract structure, and trading hours that must be considered during strategy development.",
+    "lang": "en",
+    "quantities": [
+     "volatility",
+     "liquidity"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "hours"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "US500"
+     ],
+     "mentioned": [
+      "gold",
+      "crude",
+      "s&p"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "71cc627a2a42"
+   }
+  ],
+  "n_claims": 1
+ }
+]
