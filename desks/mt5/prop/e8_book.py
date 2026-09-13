@@ -77,7 +77,7 @@ def _cached_catalogue() -> set[str] | None:
 #: simultaneous exposure at 1.2% -- under half the daily wall, before any stand-down.
 MAX_SLEEVES = 24
 
-#: RISK PER TRADE, as a fraction of the $100,000 initial balance. 0.125%, i.e. $125.
+#: RISK PER TRADE, as a fraction of the $100,000 initial balance. 0.15%, i.e. $150.
 #:
 #: RAISED FROM 0.05% ON 2026-09-14, on the principal's decision, against a measured sweep of the
 #: real barrier -- `research/prop_barrier.py` over 4,000 paths per cell at the book actually
@@ -110,7 +110,33 @@ MAX_SLEEVES = 24
 #: opportunity must be allowed more capital when the evidence supports it). Nothing here lowers
 #: any limit on the live MT5 book, which solves a different problem on a different venue --
 #: `mt5desk/account_profile.py` is where that line is drawn.
-RISK_FRAC = 0.00125
+#:
+#: RAISED AGAIN TO 0.15% THE SAME NIGHT, once the venue's spreads were measured LIVE rather than
+#: over a closed weekend. The first sample had every symbol frozen (min == max == median across
+#: 11 draws); with the session open the same instruments quote EURUSD 0.431 bps and XAUUSD 1.175,
+#: which on a 20-pip stop is a haircut of ~0.025R, not the ~0.065R the cost note assumed. Net
+#: expectancy is therefore nearer +0.175 than +0.135 and the whole curve shifts.
+#:
+#: THE BINDING CONSTRAINT IS THE DAILY FLOOR, NOT THE STATIC ONE. At net +0.175, rho 0.58:
+#:
+#:     risk     P(pass)   median   p_fail_daily   worst_dd_p90
+#:     0.125%    99.9%      35          0.1%          2.75%
+#:     0.150%    98.3%      30          1.6%          3.30%     <- here
+#:     0.175%    91.7%      26          8.0%          3.76%
+#:     0.200%    78.0%      22         21.9%          3.90%
+#:
+#: Between 0.15% and 0.175% the daily-breach probability QUINTUPLES to buy four days. Worst
+#: drawdown at p90 is 3.3% against a 10% static floor, so the $90,000 line is not what ends these
+#: accounts -- the 2.5% daily one is.
+#:
+#: AND IT IS THE LAST SIZE THAT SURVIVES BEING WRONG. Across net +0.175 / +0.135 / +0.100:
+#:     0.125%  ->  99.9 / 99.6 / 98.5
+#:     0.150%  ->  98.3 / 97.1 / 93.6
+#:     0.175%  ->  91.7 / 87.6 / 79.6
+#: 0.175% collapses on the pessimistic leg; 0.15% does not. `rho` 0.58 is TAIL-IMPLIED and has
+#: never been measured on live fills (`matched_fills` is still 0), and correlation error is what
+#: larger size punishes hardest -- which is the whole reason the ceiling is here and not higher.
+RISK_FRAC = 0.0015
 
 
 def _load_survivors() -> list[dict[str, Any]]:

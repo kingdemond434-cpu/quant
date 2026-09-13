@@ -195,7 +195,7 @@ because the reasoning in them is sound and a future One purchase would use it.
 
 ### Size, decided 2026-09-14
 
-**RISK_FRAC = 0.125% of the initial balance = $125 per trade.** Raised from 0.05% on the
+**RISK_FRAC = 0.15% of the initial balance = $150 per trade.** Raised from 0.05% on the
 principal's decision, against a measured `research/prop_barrier.py` sweep (4,000 paths per cell,
 24 sleeves, rr 1.5, 0.64 trades/sleeve/day, exp_r net +0.135, tail-implied rho 0.58):
 
@@ -208,8 +208,28 @@ principal's decision, against a measured `research/prop_barrier.py` sweep (4,000
 | 0.150% | 88.3% | 31 | 65 |
 | 0.200% | 47.4% | 20 | 37 |
 
-0.05% was paying 54 days for 1.4 points of pass probability. Above 0.15% the curve collapses,
-because the right tail is confiscated at +2%/day while the left runs free to -2.5%.
+0.05% was paying 54 days for 1.4 points of pass probability.
+
+**Raised again to 0.15% the same night**, once spreads were measured with the session OPEN. The
+first sample was taken over a closed weekend and every symbol was frozen (min == max == median
+across 11 draws); live, the same instruments quote EURUSD 0.431 bps and XAUUSD 1.175, a ~0.025R
+haircut on a 20-pip stop rather than the ~0.065R assumed. Net expectancy is nearer +0.175:
+
+| risk/trade | P(pass) | median | p_fail_daily | worst DD p90 |
+|---|---|---|---|---|
+| 0.125% | 99.9% | 35 | 0.1% | 2.75% |
+| **0.150%** | **98.3%** | **30** | **1.6%** | **3.30%** |
+| 0.175% | 91.7% | 26 | 8.0% | 3.76% |
+| 0.200% | 78.0% | 22 | 21.9% | 3.90% |
+
+**The daily floor binds, not the static one.** Worst drawdown at p90 is 3.3% against a $90,000
+floor; the 2.5% daily rule is what ends these accounts, and between 0.15% and 0.175% its breach
+probability quintuples to buy four days.
+
+**0.15% is the last size that survives being wrong.** Across net +0.175 / +0.135 / +0.100:
+0.125% -> 99.9/99.6/98.5, 0.150% -> 98.3/97.1/93.6, 0.175% -> 91.7/87.6/**79.6**. `rho` 0.58 is
+TAIL-IMPLIED and has never been measured on live fills (`matched_fills` is 0); correlation error
+is what larger size punishes hardest, which is why the ceiling is here.
 
 **What more certificates buy, at constant 0.125% and >=95% pass:** 4 mechanisms 37 days,
 6 -> 32, 8 -> 29, 12 -> 26. Mechanism INDEPENDENCE is the lever, not certificate count -- and
