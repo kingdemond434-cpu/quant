@@ -150,3 +150,27 @@ def test_every_declared_organ_exists_on_this_tree() -> None:
         if not found:
             missing.append(name)
     assert not missing, missing
+
+
+def test_real_acquirer_entrypoint_retains_its_report(monkeypatch) -> None:
+    import acquire_datasets
+
+    report = {"endpoints_tried": 2, "datasets_kept": 1, "new_series": ["native"]}
+    monkeypatch.setattr(acquire_datasets, "acquire", lambda: report)
+    assert hd.run_organ("acquire_datasets", 60.0) == {"result": report}
+    assert hd.yield_of(report) == {"endpoints_tried": 2, "datasets_kept": 1, "new_series": 1}
+
+
+def test_real_futures_cli_does_not_parse_dispatcher_flags(tmp_path, monkeypatch) -> None:
+    import fetch_futures_curves as curves
+
+    monkeypatch.setattr(sys, "argv", ["hourly_discovery.py", "--organ",
+                                     "fetch_futures_curves", "--budget-s", "60"])
+    monkeypatch.setattr(curves, "PRODUCTS", {})
+    monkeypatch.setattr(curves, "REPORT", tmp_path / "coverage.json")
+    # Real argparse and report publication run; no contracts means UNMEASURED,
+    # whose nonzero result must propagate rather than become a dispatch success.
+    assert hd.run_organ("fetch_futures_curves", 60.0) == {"rc": 2}
+    report = json.loads(curves.REPORT.read_text())
+    assert report["status"] == "UNMEASURED"
+    assert report["contracts"] == []

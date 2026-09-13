@@ -73,7 +73,7 @@ EX_TEMPFAIL = 75
 YIELD_KEYS = ("cells_proposed", "donated_rows", "proposals", "claims_new", "tasks_queued",
               "tasks", "endpoints", "acquired", "targets", "discovered", "candidates",
               "cases_joined", "symbols_calibrated", "symbols_unmeasured",
-              "stages_measured", "cell_types")
+              "stages_measured", "cell_types", "endpoints_tried", "datasets_kept", "new_series")
 YIELD_PREFIX = "YIELD "
 
 #: name -> (how to call it). "run_budget" = run(budget_s=...); "run" = run(); "main" = main().
@@ -94,7 +94,7 @@ ORGANS: dict[str, str] = {
     "world_crawler": "crawl_budget",
     # data organs: datasets and moats
     "data_prospector": "run",
-    "acquire_datasets": "main",
+    "acquire_datasets": "acquire",
     "fetch_futures_curves": "main",
     # proposers: families over the desk's bars, deflated by their own search
     "plumbing_miner": "run",
@@ -173,7 +173,12 @@ def run_organ(name: str, budget_s: float) -> dict[str, Any]:
         return {"result": mod.run(**kwargs)}
     if how == "run":
         return {"result": mod.run()}
-    return {"rc": int(mod.main() or 0)}
+    if how == "acquire":
+        return {"result": mod.acquire()}
+    # The dispatcher owns sys.argv. CLI organs must parse their own defaults,
+    # never the parent --organ/--budget-s flags. Preserve no-argument entrypoints.
+    kwargs = {"argv": []} if "argv" in inspect.signature(mod.main).parameters else {}
+    return {"rc": int(mod.main(**kwargs) or 0)}
 
 
 def yield_of(result: Any) -> dict[str, int]:
