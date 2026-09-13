@@ -1,0 +1,1207 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "http://bioconductor.org/packages/stats/bioc/quantsmooth/quantsmooth_2026_stats.tab",
+  "url": "http://bioconductor.org/packages/stats/bioc/quantsmooth/quantsmooth_2026_stats.tab",
+  "published": "2026-09-13T01:00:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "68bd7c3696e8196f315c",
+  "host": "bioconductor.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "http://bioconductor.org/packages/stats/bioc/quantsmooth/quantsmooth_2025_stats.tab",
+  "url": "http://bioconductor.org/packages/stats/bioc/quantsmooth/quantsmooth_2025_stats.tab",
+  "published": "2026-09-13T01:00:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c9f561a3c1718131f880",
+  "host": "bioconductor.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "http://bioconductor.org/packages/stats/bioc/quantsmooth/quantsmooth_2024_stats.tab",
+  "url": "http://bioconductor.org/packages/stats/bioc/quantsmooth/quantsmooth_2024_stats.tab",
+  "published": "2026-09-13T01:00:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6474d2ccdd679113ed95",
+  "host": "bioconductor.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "http://bioconductor.org/packages/stats/bioc/quantsmooth/quantsmooth_2023_stats.tab",
+  "url": "http://bioconductor.org/packages/stats/bioc/quantsmooth/quantsmooth_2023_stats.tab",
+  "published": "2026-09-13T01:00:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "aaca91ab126a2f3a6132",
+  "host": "bioconductor.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "http://bioconductor.org/packages/stats/bioc/quantsmooth/quantsmooth_2022_stats.tab",
+  "url": "http://bioconductor.org/packages/stats/bioc/quantsmooth/quantsmooth_2022_stats.tab",
+  "published": "2026-09-13T01:00:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4e09f941410ebecdc793",
+  "host": "bioconductor.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "http://bioconductor.org/packages/stats/bioc/quantsmooth/quantsmooth_2021_stats.tab",
+  "url": "http://bioconductor.org/packages/stats/bioc/quantsmooth/quantsmooth_2021_stats.tab",
+  "published": "2026-09-13T01:00:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1b5397bc118ca189b315",
+  "host": "bioconductor.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "http://bioconductor.org/packages/stats/bioc/quantsmooth/quantsmooth_2020_stats.tab",
+  "url": "http://bioconductor.org/packages/stats/bioc/quantsmooth/quantsmooth_2020_stats.tab",
+  "published": "2026-09-13T01:00:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3f15efbc99ce84315709",
+  "host": "bioconductor.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "http://bioconductor.org/packages/stats/bioc/quantsmooth/quantsmooth_2019_stats.tab",
+  "url": "http://bioconductor.org/packages/stats/bioc/quantsmooth/quantsmooth_2019_stats.tab",
+  "published": "2026-09-13T01:00:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9edf520083eca57a085e",
+  "host": "bioconductor.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "http://bioconductor.org/packages/stats/bioc/quantsmooth/quantsmooth_2018_stats.tab",
+  "url": "http://bioconductor.org/packages/stats/bioc/quantsmooth/quantsmooth_2018_stats.tab",
+  "published": "2026-09-13T01:01:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b088a0a3a68576f8912c",
+  "host": "bioconductor.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "http://bioconductor.org/packages/stats/bioc/quantsmooth/quantsmooth_2017_stats.tab",
+  "url": "http://bioconductor.org/packages/stats/bioc/quantsmooth/quantsmooth_2017_stats.tab",
+  "published": "2026-09-13T01:01:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ae673a53fb01231294d0",
+  "host": "bioconductor.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "http://bioconductor.org/packages/stats/bioc/quantsmooth/quantsmooth_2016_stats.tab",
+  "url": "http://bioconductor.org/packages/stats/bioc/quantsmooth/quantsmooth_2016_stats.tab",
+  "published": "2026-09-13T01:01:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dd9cacbb3bdc572e57cc",
+  "host": "bioconductor.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "http://bioconductor.org/packages/stats/bioc/quantsmooth/quantsmooth_2015_stats.tab",
+  "url": "http://bioconductor.org/packages/stats/bioc/quantsmooth/quantsmooth_2015_stats.tab",
+  "published": "2026-09-13T01:01:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6de905d28facd583b914",
+  "host": "bioconductor.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "http://bioconductor.org/packages/stats/bioc/quantsmooth/quantsmooth_2014_stats.tab",
+  "url": "http://bioconductor.org/packages/stats/bioc/quantsmooth/quantsmooth_2014_stats.tab",
+  "published": "2026-09-13T01:01:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3cde45b7baf8f7c8170c",
+  "host": "bioconductor.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "http://bioconductor.org/packages/stats/bioc/quantsmooth/quantsmooth_2013_stats.tab",
+  "url": "http://bioconductor.org/packages/stats/bioc/quantsmooth/quantsmooth_2013_stats.tab",
+  "published": "2026-09-13T01:01:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "23988eedeb74061ace48",
+  "host": "bioconductor.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "http://bioconductor.org/packages/stats/bioc/quantsmooth/quantsmooth_2012_stats.tab",
+  "url": "http://bioconductor.org/packages/stats/bioc/quantsmooth/quantsmooth_2012_stats.tab",
+  "published": "2026-09-13T01:01:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "87b2c09f202f845b11e1",
+  "host": "bioconductor.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "http://bioconductor.org/packages/stats/bioc/quantsmooth/quantsmooth_2011_stats.tab",
+  "url": "http://bioconductor.org/packages/stats/bioc/quantsmooth/quantsmooth_2011_stats.tab",
+  "published": "2026-09-13T01:01:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f7fc941e124e4fc377ad",
+  "host": "bioconductor.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "http://bioconductor.org/packages/stats/bioc/quantsmooth/quantsmooth_2010_stats.tab",
+  "url": "http://bioconductor.org/packages/stats/bioc/quantsmooth/quantsmooth_2010_stats.tab",
+  "published": "2026-09-13T01:01:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "95fbfaf88bd6a7a9b5e0",
+  "host": "bioconductor.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "http://bioconductor.org/packages/stats/bioc/quantsmooth/quantsmooth_2009_stats.tab",
+  "url": "http://bioconductor.org/packages/stats/bioc/quantsmooth/quantsmooth_2009_stats.tab",
+  "published": "2026-09-13T01:01:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f37ccea490e6f494bd29",
+  "host": "bioconductor.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Global Market Coverage - TradingHours.com",
+  "url": "https://www.tradinghours.com/data/coverage",
+  "published": "2026-09-13T01:01:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.tradinghours.com/manifest.json",
+   "https://www.tradinghours.com/llms.txt"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "cba40438141ecc809ae3",
+  "host": "www.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Market Calendar API - Trading Hours & Holidays | TradingHours.com",
+  "url": "https://www.tradinghours.com/data",
+  "published": "2026-09-13T01:01:22+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "flow",
+   "night_session",
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.tradinghours.com/manifest.json",
+   "https://www.tradinghours.com/llms.txt",
+   "https://docs.tradinghours.com/4.x/endpoints/download",
+   "https://docs.tradinghours.com/3.x/enterprise/download",
+   "https://docs.tradinghours.com/3.x/enterprise/download#data-dictionary",
+   "https://docs.tradinghours.com/3.x/enterprise/download#schedules"
+  ],
+  "n_endpoints": 6,
+  "vault_sha": "e73dd5bbd36fdb5d588d",
+  "host": "www.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Data Downloads | TradingHours Docs",
+  "url": "https://docs.tradinghours.com/4.x/endpoints/download",
+  "published": "2026-09-13T01:01:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://docs.tradinghours.com/4.x/endpoints/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "653083219403ecf03f14",
+  "host": "docs.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Data Downloads | TradingHours Docs",
+  "url": "https://docs.tradinghours.com/3.x/enterprise/download",
+  "published": "2026-09-13T01:01:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://docs.tradinghours.com/4.x/endpoints/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f9f5757304766e274de8",
+  "host": "docs.tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Challenge Validation",
+  "url": "https://www.balticexchange.com/en/data-services/market-information0/dry-services.html",
+  "published": "2026-09-13T01:01:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1d09443501c46d3606ec",
+  "host": "www.balticexchange.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u671f\u8d27\u9891\u9053 - \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://futures.eastmoney.com/",
+  "published": "2026-09-13T01:01:26+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XPTUSD",
+   "XPDUSD",
+   "XCUUSD",
+   "XALUSD",
+   "XNIUSD",
+   "XZNUSD",
+   "XPBUSD",
+   "XTIUSD",
+   "HK50",
+   "US500",
+   "USDX",
+   "USDJPY",
+   "USDCNH",
+   "SOYBEAN",
+   "CORN",
+   "SUGAR",
+   "COTTON",
+   "WHEAT",
+   "UST10Y"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow",
+   "inventory",
+   "momentum",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "242941ea2ab6eab7c289",
+  "host": "futures.eastmoney.com",
+  "claims": [
+   {
+    "claim": "\u8dcc\u3001\u8dcc\u3001\u8dcc\u2026\u2026\u7f51\u53cb\uff1a\u201c\u4e0d\u662f\u521b\u65b0\u4f4e\uff0c\u5c31\u662f\u5728\u521b\u65b0\u4f4e 9\u670813\u65e5 07:23 \u5384\u5c14\u5c3c\u8bfa\u5c06\u8fbe\u201c\u8d85\u5f3a\u201d\u7ea7\u522b \u8be5\u5982\u4f55\u5e94\u5bf9\u6781\u7aef\u5929\u6c14\uff1f",
+    "lang": "zh",
+    "quantities": [
+     "\u5929\u6c14"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XPTUSD",
+      "XPDUSD",
+      "XCUUSD",
+      "XALUSD",
+      "XNIUSD",
+      "XZNUSD",
+      "XPBUSD",
+      "XTIUSD",
+      "HK50",
+      "US500",
+      "USDX",
+      "USDJPY",
+      "USDCNH",
+      "SOYBEAN",
+      "CORN",
+      "SUGAR",
+      "COTTON",
+      "WHEAT",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "\u6caa\u91d1",
+      "\u6caa\u94f6",
+      "\u94c2\u91d1",
+      "\u94af\u91d1",
+      "\u6caa\u94dc",
+      "\u6caa\u94dd",
+      "\u6caa\u954d",
+      "\u6caa\u950c",
+      "\u6caa\u94c5",
+      "\u539f\u6cb9",
+      "\u6e2f\u80a1",
+      "\u7f8e\u80a1",
+      "\u7f8e\u5143\u6307\u6570",
+      "\u4e0a\u8bc1",
+      "\u7f8e\u65e5",
+      "\u4eba\u6c11\u5e01",
+      "\u5927\u8c46",
+      "\u7389\u7c73",
+      "\u767d\u7cd6",
+      "\u68c9\u82b1",
+      "\u5c0f\u9ea6",
+      "\u7f8e\u503a",
+      "\u87ba\u7eb9\u94a2",
+      "\u6ca5\u9752",
+      "\u8c46\u6cb9",
+      "\u6c27\u5316\u94dd",
+      "\u4e8c\u503a",
+      "\u9f99\u864e\u699c"
+     ],
+     "transfer_only": [
+      "\u4e0a\u8bc1->indices (China A-share)",
+      "\u87ba\u7eb9\u94a2->metals/energy",
+      "\u6ca5\u9752->energy",
+      "\u8c46\u6cb9->softs",
+      "\u6c27\u5316\u94dd->metals",
+      "\u4e8c\u503a->rates->fx carry",
+      "\u9f99\u864e\u699c->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": [
+      "\u7f8e\u8054\u50a8: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "c619903aaf6d"
+   },
+   {
+    "claim": "\u4e16\u754c\u9ec4\u91d1\u534f\u4f1a\u6700\u65b0\u62a5\u544a 9\u670813\u65e5 05:29 \u7a81\u7136\u76f4\u7ebf\u5927\u8df3\u6c34\uff01",
+    "lang": "zh",
+    "quantities": [
+     "\u9ec4\u91d1"
+    ],
+    "direction": [
+     "\u8df3\u6c34"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "c9722830dee7"
+   },
+   {
+    "claim": "\u56fd\u9645\u6cb9\u4ef7\u5927\u8dcc 9\u670813\u65e5 00:48 \u9762\u4e34\u7f8e\u65e5\u6536\u76ca\u7387\u4e0a\u6da8 \u8d1d\u68ee\u7279\u9677\u5165\u4e24\u7ebf\u82e6\u6218 9\u670813\u65e5 02:54 \u4e0d\u6b62\u52a0\u606f\u4e00\u6b21\uff1f",
+    "lang": "zh",
+    "quantities": [
+     "\u52a0\u606f"
+    ],
+    "direction": [
+     "\u4e0a\u6da8",
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "\u7f8e\u65e5"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "5179f0cd28a9"
+   },
+   {
+    "claim": "\u7f8e\u56fd8\u6708CPI\u5f15\u53d1\u5e02\u573a\u75af\u72c2\u731c\u6d4b 9\u670812\u65e5 07:33 \u201c\u8d85\u5f3a\u201d\u5384\u5c14\u5c3c\u8bfa\u5c06\u81f3 \u6700\u65b0\u9884\u6d4b\uff01",
+    "lang": "zh",
+    "quantities": [
+     "cpi"
+    ],
+    "direction": [
+     "\u9884\u6d4b"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XPTUSD",
+      "XPDUSD",
+      "XCUUSD",
+      "XALUSD",
+      "XNIUSD",
+      "XZNUSD",
+      "XPBUSD",
+      "XTIUSD",
+      "HK50",
+      "US500",
+      "USDX",
+      "USDJPY",
+      "USDCNH",
+      "SOYBEAN",
+      "CORN",
+      "SUGAR",
+      "COTTON",
+      "WHEAT",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "\u6caa\u91d1",
+      "\u6caa\u94f6",
+      "\u94c2\u91d1",
+      "\u94af\u91d1",
+      "\u6caa\u94dc",
+      "\u6caa\u94dd",
+      "\u6caa\u954d",
+      "\u6caa\u950c",
+      "\u6caa\u94c5",
+      "\u539f\u6cb9",
+      "\u6e2f\u80a1",
+      "\u7f8e\u80a1",
+      "\u7f8e\u5143\u6307\u6570",
+      "\u4e0a\u8bc1",
+      "\u7f8e\u65e5",
+      "\u4eba\u6c11\u5e01",
+      "\u5927\u8c46",
+      "\u7389\u7c73",
+      "\u767d\u7cd6",
+      "\u68c9\u82b1",
+      "\u5c0f\u9ea6",
+      "\u7f8e\u503a",
+      "\u87ba\u7eb9\u94a2",
+      "\u6ca5\u9752",
+      "\u8c46\u6cb9",
+      "\u6c27\u5316\u94dd",
+      "\u4e8c\u503a",
+      "\u9f99\u864e\u699c"
+     ],
+     "transfer_only": [
+      "\u4e0a\u8bc1->indices (China A-share)",
+      "\u87ba\u7eb9\u94a2->metals/energy",
+      "\u6ca5\u9752->energy",
+      "\u8c46\u6cb9->softs",
+      "\u6c27\u5316\u94dd->metals",
+      "\u4e8c\u503a->rates->fx carry",
+      "\u9f99\u864e\u699c->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": [
+      "\u7f8e\u8054\u50a8: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "911bcacec9cf"
+   },
+   {
+    "claim": "\u4e0a\u671f\u6240\u539f\u6cb9\u671f\u8d272610\u5408\u7ea6\u591c\u76d8\u6536\u6da81.",
+    "lang": "zh",
+    "quantities": [
+     "\u591c\u76d8",
+     "\u539f\u6cb9"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u591c\u76d8"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD"
+     ],
+     "mentioned": [
+      "\u539f\u6cb9"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "94b12efc73b0"
+   },
+   {
+    "claim": "\u73b0\u8d27\u9ec4\u91d1\u5468\u6da8\u8d857%\u7ad9\u4e0a4300\u7f8e\u5143 \u4e3a\u4f55\u7a81\u7136\u5927\u6da8\uff1f",
+    "lang": "zh",
+    "quantities": [
+     "\u9ec4\u91d1",
+     "\u7f8e\u5143"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u5468"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "1116033ebd6f"
+   },
+   {
+    "claim": "\u9ec4\u91d1\u56db\u5b63\u5ea6\u4ef7\u683c\u91cd\u5fc3\u4e0a\u79fb\u8d8b\u52bf\u4e0d\u53d8 \u94a2\u6750\u677f\u5757 \u4ece\u201c\u8d4c\u5468\u671f\u201d\u5230\u201c\u7ec3\u5185\u529f\u201d \u7a81\u7136\u8df3\u6c34\uff01",
+    "lang": "zh",
+    "quantities": [
+     "\u8d8b\u52bf",
+     "\u9ec4\u91d1"
+    ],
+    "direction": [
+     "\u8df3\u6c34"
+    ],
+    "horizon": [
+     "\u5468",
+     "\u5b63\u5ea6"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "ba85998cf9a2"
+   },
+   {
+    "claim": "34% \u5237\u65e5\u5185\u65b0\u9ad8 \u73b0\u8d27\u9ec4\u91d1\u4e00\u5ea6\u8dcc\u78344300\u7f8e\u5143/\u76ce\u53f8\u5173\u53e3 \u6bcf\u65e5\u9f99\u864e\u699c | \u5546\u54c1\u671f\u8d27\u7efc\u5408\u6307\u6570\u4e0b\u8dcc2.",
+    "lang": "zh",
+    "quantities": [
+     "\u65e5\u5185",
+     "\u9ec4\u91d1",
+     "\u7f8e\u5143"
+    ],
+    "direction": [
+     "\u4e0b\u8dcc",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u65e5\u5185",
+     "\u6bcf\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1",
+      "\u9f99\u864e\u699c"
+     ],
+     "transfer_only": [
+      "\u9f99\u864e\u699c->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "6c9faeb5bd6f"
+   }
+  ],
+  "n_claims": 10
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "NuGet Gallery | Package Downloads for QuantLib",
+  "url": "https://www.nuget.org/stats/packages/QuantLib?groupby=Version",
+  "published": "2026-09-13T01:01:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.nuget.org/downloads"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "03c190cbe3bf7633af35",
+  "host": "www.nuget.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Beginner Archives - TradingMarkets",
+  "url": "https://tradingmarkets.com/level/beginner",
+  "published": "2026-09-13T01:01:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ebdba9263448b64449ee",
+  "host": "tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The 20 Most Important Risk Management Tips for Traders - TradingMarkets",
+  "url": "https://tradingmarkets.com/recent/the-20-most-important-risk-management-tips-for-traders-1596943",
+  "published": "2026-09-13T01:01:30+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "inventory",
+   "momentum",
+   "night_session",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4a0048063aebdcfc7519",
+  "host": "tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Dec 2023 relaunch Archives - TradingMarkets",
+  "url": "https://tradingmarkets.com/category/dec-2023-relaunch",
+  "published": "2026-09-13T01:01:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e522cc1dd7b94ff3711f",
+  "host": "tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "evergreen Archives - TradingMarkets",
+  "url": "https://tradingmarkets.com/category/evergreen",
+  "published": "2026-09-13T01:01:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5ab94aebee7717620a1d",
+  "host": "tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Recent Archives - TradingMarkets",
+  "url": "https://tradingmarkets.com/category/recent",
+  "published": "2026-09-13T01:01:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2dbac6a57d5984162cab",
+  "host": "tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Unlocking the Power of Momentum Trading: From Basics to Strategies - TradingMarkets",
+  "url": "https://tradingmarkets.com/recent/unlocking-the-power-of-momentum-trading-from-basics-to-strategies-1597138",
+  "published": "2026-09-13T01:01:38+00:00",
+  "symbols": [
+   "US500",
+   "US2000",
+   "BTCUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "momentum",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "de004bdd153faef5d774",
+  "host": "tradingmarkets.com",
+  "claims": [
+   {
+    "claim": "Historical Context The history of momentum trading traces its roots back to the early days of stock markets, but the method gained scientific credence with the advent of modern financial theories.",
+    "lang": "en",
+    "quantities": [
+     "momentum"
+    ],
+    "direction": [
+     "gained"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "US2000",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "spy",
+      "russell 2000",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b055b5d5d373"
+   },
+   {
+    "claim": "Action: If stocks outperform bonds and the 6-month return of stocks is positive, allocate more to stocks.",
+    "lang": "en",
+    "quantities": [
+     "stocks"
+    ],
+    "direction": [
+     "outperform",
+     "positive"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "US2000",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "spy",
+      "russell 2000",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "fb3fdb912546"
+   },
+   {
+    "claim": "Absolute Momentum: Make sure the top-performing sector also has a positive 3-month return.",
+    "lang": "en",
+    "quantities": [
+     "momentum"
+    ],
+    "direction": [
+     "positive"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "US2000",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "spy",
+      "russell 2000",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "294fc525716a"
+   },
+   {
+    "claim": "Absolute Momentum: Make sure the asset with higher momentum has a positive 1-month return.",
+    "lang": "en",
+    "quantities": [
+     "momentum"
+    ],
+    "direction": [
+     "higher",
+     "positive"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "US2000",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "spy",
+      "russell 2000",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "6370f7b16418"
+   }
+  ],
+  "n_claims": 4
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Intermediate Archives - TradingMarkets",
+  "url": "https://tradingmarkets.com/level/intermediate",
+  "published": "2026-09-13T01:01:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "25c26a5630db30c544aa",
+  "host": "tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Mastering Oscillators: Unveil Trading Strategies for Market Success - TradingMarkets",
+  "url": "https://tradingmarkets.com/recent/mastering-oscillators-unveil-trading-strategies-for-market-success-1597139",
+  "published": "2026-09-13T01:01:43+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "89eb6032c1718a2ac999",
+  "host": "tradingmarkets.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Boost Your Trading Profits with These 18 Essential Volatility Indexes - TradingMarkets",
+  "url": "https://tradingmarkets.com/recent/boost-your-trading-profits-with-these-26-essential-volatility-indexes-1596939",
+  "published": "2026-09-13T01:01:45+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "correlation",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2bb5f3a79be607cd899a",
+  "host": "tradingmarkets.com",
+  "claims": [
+   {
+    "claim": "VXST (CBOE Short-Term Volatility Index) The VXST measures the 9-day expected volatility of the S&P 500, providing an even shorter-term view than the VIX.",
+    "lang": "en",
+    "quantities": [
+     "volatility",
+     "vix"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "s&p 500"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "fd49192c44c1"
+   }
+  ],
+  "n_claims": 1
+ }
+]
