@@ -105,7 +105,10 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
                 side = _runnable_side(run, fam)
                 if side is None:
                     continue                # refused and logged by _runnable_side
-                rows.append((run["symbol"], run["selector"], params, fam, side))
+                rows.append((run["symbol"], run["selector"], params, fam, side,
+                             str(run.get("gate_admission") or ""),
+                             tuple(run.get("power_deficiencies") or ()),
+                             bool(run.get("promotion_authority", True))))
                 continue
             # EVERY certified family owes a clock (one-pipeline law; the same-day fence carried
             # CERTIFIED-NOT-ENROLLED on two overnight_gap_decay certificates while this branch
@@ -130,7 +133,10 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
             side = _runnable_side(run, fam)
             if side is None:
                 continue                    # refused and logged by _runnable_side
-            rows.append((run["symbol"], run["selector"], dict(run["params"] or {}), fam, side))
+            rows.append((run["symbol"], run["selector"], dict(run["params"] or {}), fam, side,
+                         str(run.get("gate_admission") or ""),
+                         tuple(run.get("power_deficiencies") or ()),
+                         bool(run.get("promotion_authority", True))))
     except Exception as exc:
         slog(f"certified_sleeves FAILED ({type(exc).__name__}: {exc}); "
              f"running grandfathered sleeves only this pass")
@@ -874,9 +880,35 @@ def main() -> None:
             st["bar_source"] = bars.source
             st["evidence_venue"] = bars.evidence_venue
             st["bar_source_stale"] = bars.stale
-            st["promotion_authority"] = bars.promotion_authority
             st["order_authority"] = False
-            st["gate_admission"] = "ORIGINAL_UNIVERSAL_10_PASS"
+            # THE ADMISSION BASIS IS THE ROW'S, NOT A CONSTANT (fixed 2026-09-13).
+            #
+            # This stamped `ORIGINAL_UNIVERSAL_10_PASS` on EVERY clock unconditionally, which was
+            # true while the only rows that reached here were ten-gate certificates. The power-cure
+            # lane now enrols validity-pass, power-deficient cells alongside them -- and they were
+            # being stamped as ten-gate passes too.
+            #
+            # THAT WOULD HAVE MADE THE CURE LANE INERT AND SILENTLY SO. `pipeline/promote.py`
+            # branches on this exact string: it promotes `FULL_10_PASS`, applies the forward cure
+            # thresholds to `VALIDITY_PASS_POWER_DEFICIENT`, and BLOCKS everything else with "No
+            # validity pass". `ORIGINAL_UNIVERSAL_10_PASS` matches neither branch, so all 120 cure
+            # clocks would have accrued forward evidence for a fortnight and then been refused --
+            # a lane that looks like it is working and cannot produce.
+            #
+            # `promotion_authority` is likewise the ROW's when the row denies it. A cure candidate
+            # carries False by construction: it has no certificate, and bar provenance cannot
+            # grant an authority the gauntlet withheld.
+            # SLICED WITH DEFAULTS, exactly as `sym, win, params` are above and for the same
+            # reason: a row built by an older `certified_sleeves` must not raise here. A row
+            # that carries no admission is a ten-gate certificate, which is what every row was
+            # before the cure lane existed.
+            _adm = str(row[5]).strip() if len(row) > 5 else ""
+            _defs = list(row[6]) if len(row) > 6 else []
+            _row_auth = bool(row[7]) if len(row) > 7 else True
+            st["gate_admission"] = _adm or "ORIGINAL_UNIVERSAL_10_PASS"
+            if _defs:
+                st["power_deficiencies"] = _defs
+            st["promotion_authority"] = bool(bars.promotion_authority and _row_auth)
             if trades:
                 rs = [t.r_multiple for t in trades]
                 cum = [sum(rs[:i + 1]) for i in range(len(rs))]

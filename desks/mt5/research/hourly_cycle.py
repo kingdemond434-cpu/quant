@@ -922,6 +922,28 @@ def _claim_one(kind: str) -> tuple[object | None, object | None, str]:
     return q, task, ""
 
 
+def orthogonality() -> dict:
+    """`orthogonality`: tail dependence between sleeves -- the correction the allocator sizes past.
+
+    MOVED FROM DAILY TO HOURLY 2026-09-13, and the mismatch it closes is this: `pf_allocator`
+    refreshes every pass and `EFFECTIVE_BREADTH` (the LINEAR n_eff it sizes on) refreshes hourly,
+    while the TAIL correction -- the reading that says 3.31 effective bets are really 3.05 when it
+    costs something -- ran once a day on MT5-FrontierAudit at 05:10. So the desk's tail-risk view
+    was permanently up to a day behind its own sizing decisions.
+
+    The day that became indefensible: the cure lane enrolled 120 clocks in one hour and the book
+    went 129 -> 251, none of which a 17-hour-old dependence estimate could see.
+
+    It costs 3.5 SECONDS measured on the box, so there was never a compute argument for daily --
+    only that nobody had asked. It stays on the frontier audit too; running twice is free and the
+    artifact is idempotent.
+
+    IT PUBLISHES AND DOES NOT RESIZE. Nothing here feeds the allocator: a dependence estimate that
+    silently shrank the book would be a growth cut with no missed-growth ledger line behind it.
+    """
+    return _producer("orthogonality", "research/orthogonality.py", "--apply")
+
+
 def lake_promote() -> dict:
     """`lake_promote`: what share of the desk's own intelligence survives a point-in-time question.
 
@@ -1845,6 +1867,7 @@ def main() -> None:
     arl = _costed("alpha_rl", alpha_rl)
     rxs = _costed("research_exchange_score", research_exchange_score)
     lkp = _costed("lake_promote", lake_promote)
+    orth = _costed("orthogonality", orthogonality)
     ms = _costed("model_skill", model_skill)
     fcx = _costed("forecast_contract", forecast_contract)
     mz = _costed("model_league", model_league)
@@ -2012,6 +2035,7 @@ def main() -> None:
                     "search": se, "sweep": sw, "compile": cc,
                     "execution_twin": et, "causal_graph": cg, "alpha_rl": arl,
                     "research_exchange_score": rxs, "lake_promote": lkp,
+                    "orthogonality": orth,
                     "model_skill": ms,
                     "frontier": fr, "refresh_bars": rb, "deep_forest": df,
                     "maintain_miners": mm, "publish_survivors": ps,
