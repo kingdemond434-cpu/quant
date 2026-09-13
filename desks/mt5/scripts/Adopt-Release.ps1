@@ -594,11 +594,40 @@ if ($kept.Count -gt 0) {
 # ---- 3. STAGE BY NAME AND COMMIT ---------------------------------------------
 # Chunked: a repository-sized pathspec list overruns the Windows command line,
 # and the failure mode is a TRUNCATED add that commits part of the tree.
+#
+# ONE PHANTOM PATH USED TO ABORT ONE HUNDRED AND NINETY-NINE GOOD ONES (fixed 2026-09-14).
+# `git add` fails the WHOLE invocation with rc=128 when any pathspec matches nothing on disk and
+# nothing in the index -- "fatal: pathspec '...' did not match any files" -- and it stages none
+# of the chunk when it does. That is not hypothetical: the lesson vault names each note after
+# its lesson's text, so editing a lesson RENAMES its file. A rename that is added and reverted
+# across two pushes leaves a path in the computed diff that exists in neither place, and the
+# adoption then exits 1 and refuses to seal, every hour, for a file nothing reads.
+#
+# THE COST WAS NOT THE VAULT NOTE. Adopt-Release is the ONLY durable path from origin to the
+# trading box, so while it exited 1 the box ran last night's engines: a census fix, a parity
+# fix, an executor fix and a prop-book fix all sat on origin, pushed and gated and signed, and
+# none of them were executing. Nothing said so -- the task table shows "Ready" and the failure
+# is one line of stderr inside a 6,000-path log.
+#
+# So a chunk that fails is retried PATH BY PATH with -AllowFail, which is the pattern this file
+# already uses for dirty state paths at the top. A phantom is then skipped alone, everything
+# real in its chunk still stages, and the adoption completes.
 if ($staged.Count -gt 0) {
     for ($c = 0; $c -lt $staged.Count; $c += 200) {
         $chunk = @($staged.GetRange($c, [Math]::Min(200, $staged.Count - $c)))
         $addArgs = @("add", "--all", "--") + $chunk
-        Invoke-Git $addArgs | Out-Null
+        $null = Invoke-Git $addArgs -AllowFail
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host ("  chunk add failed; retrying {0} path(s) individually" -f $chunk.Count)
+            $skipped = 0
+            foreach ($p in $chunk) {
+                $null = Invoke-Git @("add", "--all", "--", $p) -AllowFail
+                if ($LASTEXITCODE -ne 0) { $skipped++ }
+            }
+            if ($skipped -gt 0) {
+                Write-Host ("  skipped {0} pathspec(s) that match nothing on disk or in the index" -f $skipped)
+            }
+        }
     }
 }
 # THE COMMIT DOES NOT DEPEND ON $staged. The index also carries the `rm --cached` removals

@@ -29,3 +29,4 @@ Stage a long-running writer's appends OUTSIDE the repo; automation unlinks track
 - [[l0194-a-liveness-check-written-against-posix-exceptions-is-d]]
 - [[l0212-a-miner-that-swallows-its-fetch-exception-and-writes-t]]
 - [[l0277-the-sha-check-answers-is-this-the-sealed-code-the-per-]]
+- [[l0303-git-add-fails-the-whole-invocation-rc-128-pathspec-did]]
