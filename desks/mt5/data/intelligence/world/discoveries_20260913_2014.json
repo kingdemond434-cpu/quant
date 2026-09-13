@@ -1,0 +1,651 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Google Books",
+  "url": "https://www.google.co.id/books/edition/DATA_MINING/MWcHEAAAQBAJ?hl=id&newbks=1&gbpv=1&dq=statistika+dan+algoritma+em&pg=PA120&printsec=frontcover",
+  "published": "2026-09-13T20:13:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "id-DE",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6e3618186c36abb61a52",
+  "host": "www.google.co.id",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Who Is Casey Stubbs, Founder Of Trading Strategy Guides",
+  "url": "https://tradingstrategyguides.com/casey-stubbs/",
+  "published": "2026-09-13T20:13:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3451946eabb75b8884e1",
+  "host": "tradingstrategyguides.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Chris Tate\u2019s Art Of Trading [Psychology + Mindset]",
+  "url": "https://tradingstrategyguides.com/chris-tate-the-art-of-trading/",
+  "published": "2026-09-13T20:13:16+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "carry",
+   "flow",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3212eafbc668cc4ab936",
+  "host": "tradingstrategyguides.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Start Here | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/66652478",
+  "published": "2026-09-13T20:13:18+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XPTUSD"
+  ],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "087a609d70e4c4847927",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [
+   {
+    "claim": "Welcome & Road Map \u2014 GOLD Micro Strategy Portfolio Package \u2014 GOLD Micro Strategy Portfolio Package \u2014 PLATINUM Using Kevin\u2019s Strategies \u2014 GOLD Basics of Position Sizing and Diversification \u2014 GOLD Bonus Intraday Strategies \u2014 PLATINUM The Strategy Performance Report \u2014 GOLD What Are Futures Continuous Contracts?",
+    "lang": "en",
+    "quantities": [
+     "futures"
+    ],
+    "direction": [
+     "contracts"
+    ],
+    "horizon": [
+     "intraday"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XPTUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "platinum"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "cd2dde5d229c"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Welcome &amp; Road Map | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/22710771",
+  "published": "2026-09-13T20:13:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c3df37d28e364d2610ed",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "90 Minute Onboarding Session | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/61498030",
+  "published": "2026-09-13T20:13:21+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "014f9fb6e437013ba881",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [
+   {
+    "claim": "90 Minute Onboarding Session | Ultimate Algo Trading Autoplay Autocomplete Previous Lesson Complete and Continue Strategy Factory Workshop Your First 25 Lessons - Mapped Out For You Start Here Introduction To The Strategy Factory Course Welcome & Road Map",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "continue"
+    ],
+    "horizon": [
+     "minute",
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "7d63c0b11f07"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Resources | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/64528521",
+  "published": "2026-09-13T20:13:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6e4da5227260d5cfcb2e",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Strategies | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/66618572",
+  "published": "2026-09-13T20:13:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b79b41ae233246a8f5fd",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Introduction, Live Workshop Slides | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/22711075",
+  "published": "2026-09-13T20:13:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "42675e8308d49cd90212",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Live Workshop Recordings - Sept 10, 2026 | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/66789016",
+  "published": "2026-09-13T20:13:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8f927a74c81ead67d6c0",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "World Cup Trading Championship Historical Standings - World Cup Trading Championships",
+  "url": "https://www.worldcupchampionships.com/world-cup-trading-championship-historical-standings",
+  "published": "2026-09-13T20:13:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2f10131e0683efd0040c",
+  "host": "www.worldcupchampionships.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Strategies: FX, Stock, Crypto, Options, And Futures",
+  "url": "https://tradingstrategyguides.com/trading-strategy-guides-blog/",
+  "published": "2026-09-13T20:13:37+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ccfc8a08dfb52c173930",
+  "host": "tradingstrategyguides.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "6 Of The Best Free Trading Tools For Traders",
+  "url": "https://tradingstrategyguides.com/free-tools/",
+  "published": "2026-09-13T20:13:42+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "631bf5fc6e6a66f53d04",
+  "host": "tradingstrategyguides.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Home - World Cup Trading Championships",
+  "url": "https://www.worldcupchampionships.com/",
+  "published": "2026-09-13T20:13:45+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "night_session"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f64cf450386424ae400b",
+  "host": "www.worldcupchampionships.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Alpaca nabs $6M for stocks API so anyone can build a Robinhood | TechCrunch",
+  "url": "https://techcrunch.com/2019/11/08/alpaca-stock-trading-api/",
+  "published": "2026-09-13T20:13:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "56ff8fa2a0fa6101625a",
+  "host": "techcrunch.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Alpaca raises $10M Series A for its API-powered equities trading service | TechCrunch",
+  "url": "https://techcrunch.com/2020/10/15/alpaca-raises-10m-series-a-for-its-api-powered-equities-trading-service/",
+  "published": "2026-09-13T20:13:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "14a47a4b1ac09bd0dbfd",
+  "host": "techcrunch.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Saving, not spending, is the new hotness in fintech | TechCrunch",
+  "url": "https://techcrunch.com/2020/04/17/saving-not-spending-is-the-new-hotness-in-fintech/",
+  "published": "2026-09-13T20:13:51+00:00",
+  "symbols": [
+   "US2000"
+  ],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f73d5c6087f29727090a",
+  "host": "techcrunch.com",
+  "claims": [
+   {
+    "claim": "TechCrunch touched on this trend last week when we noted in a fintech round-up that savings and investing services were boasting about usage gains.",
+    "lang": "en",
+    "quantities": [
+     "trend"
+    ],
+    "direction": [
+     "gains"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "US2000"
+     ],
+     "mentioned": [
+      "russell"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "d954e1ae703b"
+   },
+   {
+    "claim": "If it can close another quarter billion in capital and sustain its revenue gains, perhaps we\u2019ll move the firm onto our more serious lists of IPO hopefuls.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "gains"
+    ],
+    "horizon": [
+     "close",
+     "quarter"
+    ],
+    "instruments": {
+     "analogues": [
+      "US2000"
+     ],
+     "mentioned": [
+      "russell"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "22ef0bf85017"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "What&#039;s driving API-powered startups forward in 2020? | TechCrunch",
+  "url": "https://techcrunch.com/2020/09/10/whats-driving-api-powered-startups-forward-in-2020/",
+  "published": "2026-09-13T20:13:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "momentum",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e4fb81b16359752a3569",
+  "host": "techcrunch.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Strassen\u2019s Matrix Multiplication Algorithm | Implementation - GeeksforGeeks",
+  "url": "https://www.geeksforgeeks.org/strassens-matrix-multiplication-algorithm-implementation/",
+  "published": "2026-09-13T20:14:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "71315afff3e746572203",
+  "host": "www.geeksforgeeks.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Strassen\u2019s Matrix Multiplication algorithm",
+  "url": "https://iq.opengenus.org/strassens-matrix-multiplication-algorithm/",
+  "published": "2026-09-13T20:14:17+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "correlation"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6501fa8c472b48dc45a2",
+  "host": "iq.opengenus.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "alternative trading system - Wikidata",
+  "url": "https://www.wikidata.org/wiki/Special:EntityPage/Q438711",
+  "published": "2026-09-13T20:14:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.wikidata.org/wiki/Special:EntityData/Q438711.json",
+   "https://docs.openalex.org/download-snapshot/snapshot-data-format"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "9410e88398f3f52dae83",
+  "host": "www.wikidata.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Multilateral handelsfasilitet \u2013 Wikipedia",
+  "url": "https://no.wikipedia.org/wiki/Multilateral_handelsfasilitet",
+  "published": "2026-09-13T20:14:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "nb",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "99b0e98530cc3b5e2d65",
+  "host": "no.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Kapitalmarktrecht - Petra Buck-Heeb - Google Books",
+  "url": "https://books.google.de/books?id=PkyqW_qpr9YC&pg=PA41&dq=Multilaterales+Handelssystem&hl=de&sa=X&ved=2ahUKEwjk6qCH3K3tAhUmsKQKHR0FBVoQuwUwAHoECAEQBw",
+  "published": "2026-09-13T20:14:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://books.google.de/books/download/Kapitalmarktrecht.bibtex?id=PkyqW_qpr9YC&amp;hl=de&amp;output=bibtex",
+   "https://books.google.de/books/download/Kapitalmarktrecht.enw?id=PkyqW_qpr9YC&amp;hl=de&amp;output=enw",
+   "https://books.google.de/books/download/Kapitalmarktrecht.ris?id=PkyqW_qpr9YC&amp;hl=de&amp;output=ris"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "9242aef32c0d93de36bb",
+  "host": "books.google.de",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "expectation\u2013maximization algorithm - Wikidata",
+  "url": "https://www.wikidata.org/wiki/Special:EntityPage/Q1275153",
+  "published": "2026-09-13T20:14:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.wikidata.org/wiki/Special:EntityData/Q1275153.json",
+   "https://docs.openalex.org/download-snapshot/snapshot-data-format"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "790e5814d1b3fd8b5ffc",
+  "host": "www.wikidata.org",
+  "claims": [],
+  "n_claims": 0
+ }
+]

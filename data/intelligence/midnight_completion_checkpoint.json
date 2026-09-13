@@ -3,13 +3,13 @@
  "schema_version": 1,
  "stages": {
   "canonical_external_pipeline": {
-   "finished_at": "2026-09-13T19:23:30.077370+00:00",
+   "finished_at": "2026-09-13T20:35:07.922401+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "FAILED"
   },
   "certificate_projection": {
-   "finished_at": "2026-09-13T19:24:05.002920+00:00",
+   "finished_at": "2026-09-13T20:35:39.301863+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -21,13 +21,13 @@
    "status": "DONE"
   },
   "external_queue_projection": {
-   "finished_at": "2026-09-13T19:23:39.865340+00:00",
+   "finished_at": "2026-09-13T20:35:19.040953+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "external_queue_reconciliation": {
-   "finished_at": "2026-09-13T19:23:58.869798+00:00",
+   "finished_at": "2026-09-13T20:35:36.337840+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -39,25 +39,28 @@
    "status": "DONE"
   },
   "forward_clock_reconciliation": {
-   "finished_at": "2026-09-13T19:24:44.596703+00:00",
+   "finished_at": "2026-09-13T20:36:28.603970+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "FAILED"
   },
   "forward_identity_reconciliation": {
-   "finished_at": "2026-09-13T19:24:40.679139+00:00",
+   "finished_at": "2026-09-13T20:36:25.572891+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "FAILED"
   },
   "forward_lane_heal": {
-   "finished_at": "2026-09-13T19:24:48.601562+00:00",
-   "passes_completed": 1,
-   "returncode": 1,
-   "status": "FAILED"
+   "command": [
+    "/home/quant/quant-platform/.venv/bin/python",
+    "scripts/heal_forward_lane.py"
+   ],
+   "passes_completed": 0,
+   "started_at": "2026-09-13T20:36:30.049603+00:00",
+   "status": "RUNNING"
   },
   "fusion_state_pull": {
-   "finished_at": "2026-09-13T19:24:35.039576+00:00",
+   "finished_at": "2026-09-13T20:36:19.040764+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -81,5 +84,5 @@
    "status": "DONE"
   }
  },
- "updated_at": "2026-09-13T19:25:10.404168+00:00"
+ "updated_at": "2026-09-13T20:36:30.049603+00:00"
 }

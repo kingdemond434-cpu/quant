@@ -1,0 +1,1155 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Data Structures and Algorithms (DSA) MCQ Quiz Online - GeeksforGeeks",
+  "url": "https://www.geeksforgeeks.org/dsa/data-structures-and-algorithms-online-quiz/",
+  "published": "2026-09-13T20:21:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "34ab8332819f46ef0b03",
+  "host": "www.geeksforgeeks.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Google Books",
+  "url": "https://www.google.co.id/books/edition/DATA_MINING/MWcHEAAAQBAJ?hl=id&newbks=1&gbpv=1&dq=statistika+dan+algoritma+em&pg=PA120&printsec=frontcover",
+  "published": "2026-09-13T20:21:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "id-DE",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e9f2a69de1323e2aa031",
+  "host": "www.google.co.id",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Live Workshop Recordings - July 23, 2026 | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/66372779",
+  "published": "2026-09-13T20:21:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2e993a0ed6a957b10c9a",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Live Q&amp;A - Mar 18,2021 | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/31250022",
+  "published": "2026-09-13T20:21:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "16dace7758c937aa4bf3",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Live Q&amp;A - August 7, 2023 | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/48571081",
+  "published": "2026-09-13T20:21:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3f4f968a417f3bceb2d7",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Introduction and Roadmap | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/22846027",
+  "published": "2026-09-13T20:21:51+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "694cc2c3645a8d916406",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [
+   {
+    "claim": "Complete and Continue Discussion 0 comments Load more Lesson Content Locked Your session expired.",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "continue"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "f1454ed49a79"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Helpful Guides From Tradestation | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/36041697",
+  "published": "2026-09-13T20:21:53+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "69c68dd0435f92d422c6",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [
+   {
+    "claim": "html Complete and Continue Lesson Content Locked Your session expired.",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "continue"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a6c9af08ac89"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Reference Material, Getting Help | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/22846173",
+  "published": "2026-09-13T20:21:55+00:00",
+  "symbols": [
+   "XAUUSD",
+   "USDTRY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "102e4c79f83bd2997381",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [
+   {
+    "claim": "pdf Complete and Continue Discussion 0 comments Load more Lesson Content Locked Your session expired.",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "continue"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "gold",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "132980bffee4"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Getting Correct TS Version (I use 10.0 as of mid 2021) | Ultimate Algo",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/22846333",
+  "published": "2026-09-13T20:21:57+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0490ad010e9ffa89f539",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [
+   {
+    "claim": "0 is good (I use it for development), but some people report crashes Complete and Continue Discussion 38 comments Load more Lesson Content Locked Your session expired.",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "continue"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "e4cdad265a14"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Inserting A Chart | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/22846786",
+  "published": "2026-09-13T20:21:59+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1bd4cc7f71a4f7aa49e8",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [
+   {
+    "claim": "(41:22) Inserting A Chart Complete and Continue Discussion 0 comments Load more Lesson Content Locked Your session expired.",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "continue"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "ab3ed95df9b5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "What Are Futures Continuous Contracts? | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/22846787",
+  "published": "2026-09-13T20:22:02+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "91293e3ba0db8d36aadf",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [
+   {
+    "claim": "html Complete and Continue Discussion 24 comments Load more Lesson Content Locked Your session expired.",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "continue"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b144afeede75"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Building A Strategy | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/22846789",
+  "published": "2026-09-13T20:22:03+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "07e4d5438a705cf256b2",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [
+   {
+    "claim": "(41:22) Building A Strategy Complete and Continue Discussion 16 comments Load more Lesson Content Locked Your session expired.",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "continue"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "ce5f68799b2e"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Adding A Stop Loss To A Strategy | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/22846790",
+  "published": "2026-09-13T20:22:06+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "33e6e448a0aa3842ebc5",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [
+   {
+    "claim": "(41:22) Adding A Stop Loss To A Strategy Complete and Continue Discussion 3 comments Load more Lesson Content Locked Your session expired.",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "continue"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a0503b992f7e"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Adding A Profit Target To A Strategy | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/22846792",
+  "published": "2026-09-13T20:22:07+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b6d9b5f8ac886937c102",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [
+   {
+    "claim": "(41:22) Adding A Profit Target To A Strategy Complete and Continue Discussion 5 comments Load more Lesson Content Locked Your session expired.",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "continue"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "916cb37b8522"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Profit/Loss Keywords To Avoid | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/22846793",
+  "published": "2026-09-13T20:22:10+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b0c2874e809ad05cc435",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [
+   {
+    "claim": "(41:22) Profit/Loss Keywords To Avoid Complete and Continue Discussion 0 comments Load more Lesson Content Locked Your session expired.",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "continue"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b9b974753aa2"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Adding &quot;If&quot; Statements - SUPER IMPORTANT! | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/22846794",
+  "published": "2026-09-13T20:22:12+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "cc9008e33fe0efe5ca35",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [
+   {
+    "claim": "Complete and Continue Discussion 2 comments Load more Lesson Content Locked Your session expired.",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "continue"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "49fe606f6834"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Using The Easy Language Help File | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/22846795",
+  "published": "2026-09-13T20:22:13+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0e4692b42d8e1440f6f6",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [
+   {
+    "claim": "(41:22) Using The Easy Language Help File Complete and Continue Discussion 1 comments Load more Lesson Content Locked Your session expired.",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "continue"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "f40cbcd5eddd"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Let&#39;s Add Momentum and Moving Averages | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/22846796",
+  "published": "2026-09-13T20:22:15+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a3ae1a155ff88782fe4d",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [
+   {
+    "claim": "(41:22) Let's Add Momentum and Moving Averages Complete and Continue Discussion 0 comments Load more Lesson Content Locked Your session expired.",
+    "lang": "en",
+    "quantities": [
+     "momentum",
+     "session"
+    ],
+    "direction": [
+     "continue"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b305b0415559"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Incorporating RSI Into A Strategy | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/22846797",
+  "published": "2026-09-13T20:22:17+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3d18ec6f9aa281f7dcfc",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [
+   {
+    "claim": "(41:22) Incorporating RSI Into A Strategy Complete and Continue Discussion 0 comments Load more Lesson Content Locked Your session expired.",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "continue"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "22eb64fc99ac"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Using Dates and MarketPosition | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/22846798",
+  "published": "2026-09-13T20:22:19+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "016edb4747f5ced8e44b",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [
+   {
+    "claim": "(41:22) Using Dates and MarketPosition Complete and Continue Discussion 3 comments Load more Lesson Content Locked Your session expired.",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "continue"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8752efee0857"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Financial markets may be sliding globally, but interest in stock trading apps soars | TechCrunch",
+  "url": "https://techcrunch.com/2020/03/25/financial-markets-may-be-sliding-globally-but-interest-in-stock-trading-apps-soars/",
+  "published": "2026-09-13T20:22:23+00:00",
+  "symbols": [
+   "US2000"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "148da7c11ebca7309d3f",
+  "host": "techcrunch.com",
+  "claims": [
+   {
+    "claim": "Following precipitous declines over the past week, stocks were roaring back today, with major market indices posting their biggest gains since the financial crisis of 2008 .",
+    "lang": "en",
+    "quantities": [
+     "stocks"
+    ],
+    "direction": [
+     "gains"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "US2000"
+     ],
+     "mentioned": [
+      "russell"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "852bd6acd27e"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Strassen algorithm - Wikidata",
+  "url": "https://www.wikidata.org/wiki/Special:EntityPage/Q728507",
+  "published": "2026-09-13T20:22:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.wikidata.org/wiki/Special:EntityData/Q728507.json",
+   "https://docs.openalex.org/download-snapshot/snapshot-data-format"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "722495cd40aa02b7b5b8",
+  "host": "www.wikidata.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "data clustering algorithm - Wikidata",
+  "url": "https://www.wikidata.org/wiki/Q28058114",
+  "published": "2026-09-13T20:22:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.wikidata.org/wiki/Special:EntityData/Q28058114.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "b4e3c5d2ebf08021005d",
+  "host": "www.wikidata.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritme \u2013 Wikipedia",
+  "url": "https://no.wikipedia.org/wiki/Algoritme",
+  "published": "2026-09-13T20:22:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "nb",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "24f9a57e88114b41c57c",
+  "host": "no.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "DSA Tutorial - GeeksforGeeks",
+  "url": "https://www.geeksforgeeks.org/dsa/dsa-tutorial-learn-data-structures-and-algorithms/",
+  "published": "2026-09-13T20:22:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a500a4870c72f1fb2244",
+  "host": "www.geeksforgeeks.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Top 100 Data Structure and Algorithms DSA Interview Questions Topic-wise - GeeksforGeeks",
+  "url": "https://www.geeksforgeeks.org/dsa/top-100-data-structure-and-algorithms-dsa-interview-questions-topic-wise/",
+  "published": "2026-09-13T20:22:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "111b102780b54cd04df9",
+  "host": "www.geeksforgeeks.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "DSA with Python - Data Structures and Algorithms - GeeksforGeeks",
+  "url": "https://www.geeksforgeeks.org/dsa/python-data-structures-and-algorithms/",
+  "published": "2026-09-13T20:22:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "df76faa975301772ab6c",
+  "host": "www.geeksforgeeks.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Analysis of Algorithms - GeeksforGeeks",
+  "url": "https://www.geeksforgeeks.org/dsa/analysis-of-algorithms/",
+  "published": "2026-09-13T20:22:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ea4b4ea7edb67ff0b805",
+  "host": "www.geeksforgeeks.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Searching Algorithms - GeeksforGeeks",
+  "url": "https://www.geeksforgeeks.org/dsa/searching-algorithms/",
+  "published": "2026-09-13T20:22:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b81deafb21c42b585986",
+  "host": "www.geeksforgeeks.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Sorting Algorithms - GeeksforGeeks",
+  "url": "https://www.geeksforgeeks.org/dsa/sorting-algorithms/",
+  "published": "2026-09-13T20:22:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2fec46b50d51d35a8b7d",
+  "host": "www.geeksforgeeks.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Greedy Algorithms Tutorial - GeeksforGeeks",
+  "url": "https://www.geeksforgeeks.org/dsa/greedy-algorithms/",
+  "published": "2026-09-13T20:22:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "51e20e021df33c55741c",
+  "host": "www.geeksforgeeks.org",
+  "claims": [],
+  "n_claims": 0
+ }
+]
