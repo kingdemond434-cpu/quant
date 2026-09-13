@@ -1,10 +1,10 @@
 ---
-id: L0303
+id: L0315
 cost: blind
 tags: ["wiring"]
 ---
 
-# L0303
+# L0315
 
 git add fails the WHOLE invocation (rc=128, 'pathspec did not match any files') when any one pathspec matches nothing on disk AND nothing in the index, staging none of the batch. Never stage a computed path list in one call without a per-path retry -- one phantom aborts every real path beside it.
 

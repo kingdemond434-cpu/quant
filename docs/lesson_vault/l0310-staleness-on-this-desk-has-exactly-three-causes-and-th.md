@@ -1,10 +1,10 @@
 ---
-id: L0296
+id: L0310
 cost: slow
 tags: ["staleness", "wiring"]
 ---
 
-# L0296
+# L0310
 
 Staleness on this desk has exactly three causes and they need different fixes: (1) NO CLOCK -- the organ was built and never scheduled; (2) THE CLOCK RUNS AND THE ORGAN EXITS NON-ZERO -- read the log, the artifact keeps its old internal stamp while its mtime refreshes from adopt; (3) THE ORGAN RUNS AND REWRITES WITHOUT REFRESHING updated_at. Check mtime AND the internal stamp AND the task's last result code before concluding anything -- any one of the three alone gives the wrong answer.
 

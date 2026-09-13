@@ -1,10 +1,10 @@
 ---
-id: L0295
+id: L0309
 cost: blind
 tags: ["staleness", "alarms"]
 ---
 
-# L0295
+# L0309
 
 A deficiency an organ MEASURED must never share an exit code with a traceback. Give the measured gap its own status and its own non-zero code, so the healer's remedy table can key on it -- a verdict rendered as a crash is unfixable by machine and teaches the operator to stop reading the board.
 

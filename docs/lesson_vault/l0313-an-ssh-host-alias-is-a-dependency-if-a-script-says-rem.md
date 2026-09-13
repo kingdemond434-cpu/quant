@@ -1,10 +1,10 @@
 ---
-id: L0301
+id: L0313
 cost: blind
 tags: ["wiring"]
 ---
 
-# L0301
+# L0313
 
 An ssh Host alias is a dependency. If a script says REMOTE = 'some-alias', check that ~/.ssh/config actually defines it on THIS machine -- a missing alias degrades every tool that uses it to UNREACHABLE, which reads as 'the box is down' rather than 'this checkout was never configured'.
 

@@ -1,10 +1,10 @@
 ---
-id: L0294
+id: L0308
 cost: blind
 tags: ["governance", "staleness"]
 ---
 
-# L0294
+# L0308
 
 Never filter a census with '== <one enum member>' on a field the desk is designed to extend. Test MEMBERSHIP against a named constant and PRINT the unrecognised values -- an equality filter under-counts, which reads as a shortfall rather than an error, so it survives review.
 

@@ -1,10 +1,10 @@
 ---
-id: L0304
+id: L0316
 cost: blind
 tags: ["wiring", "measurement"]
 ---
 
-# L0304
+# L0316
 
 Always pass encoding='utf-8', errors='replace' when capturing a subprocess with text=True. text=True alone decodes with the system locale (cp1252 on Windows) while git and most tools emit UTF-8, and the UnicodeDecodeError is raised inside subprocess's READER THREAD where the caller cannot catch it -- the capture is lost and the process exits non-zero having printed nothing.
 

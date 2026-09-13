@@ -1,10 +1,10 @@
 ---
-id: L0300
+id: L0312
 cost: blind
 tags: ["wiring", "measurement"]
 ---
 
-# L0300
+# L0312
 
 Two implementations of one digest will disagree. Put the hash algorithm in a FILE both machines run, never one hasher here and another there -- and if the two checkouts normalise line endings differently by design, fold CRLF to LF before hashing rather than declaring raw bytes the rule.
 

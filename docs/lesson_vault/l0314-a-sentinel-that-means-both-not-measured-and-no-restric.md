@@ -1,10 +1,10 @@
 ---
-id: L0302
+id: L0314
 cost: capital
 tags: ["governance"]
 ---
 
-# L0302
+# L0314
 
 A sentinel that means BOTH 'not measured' and 'no restriction' will eventually apply no restriction. Never let None do both jobs on a gate: make the unmeasured case its own value and fail CLOSED, and never put the rule that leads a file behind an off-by-default flag.
 

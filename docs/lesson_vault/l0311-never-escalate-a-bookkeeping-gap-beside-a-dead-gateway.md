@@ -1,10 +1,10 @@
 ---
-id: L0299
+id: L0311
 cost: blind
 tags: ["alarms"]
 ---
 
-# L0299
+# L0311
 
 Never escalate a bookkeeping gap beside a dead gateway. An organ with no artifact contract runs fine and nobody would notice if it stopped -- worth listing, never worth the same alarm as live risk. An operator who checks twice and finds the desk healthy stops checking.
 
