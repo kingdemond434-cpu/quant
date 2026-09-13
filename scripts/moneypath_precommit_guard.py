@@ -59,7 +59,26 @@ def log(msg: str) -> None:
 
 
 def git(*args: str) -> subprocess.CompletedProcess[str]:
+    # UTF-8 EXPLICITLY, NEVER THE LOCALE (fixed 2026-09-14).
+    #
+    # `text=True` alone decodes with the system locale, which on this Windows box is cp1252.
+    # Git emits UTF-8. Any byte cp1252 does not map -- 0x81, 0x8d, 0x8f, 0x90, 0x9d -- raises
+    # UnicodeDecodeError inside subprocess's READER THREAD, where it is not catchable by the
+    # caller: the thread dies, the capture is lost, and this process exits non-zero having
+    # printed nothing about why.
+    #
+    # THE HOOK THAT CANNOT DECODE BLOCKS EVERY COMMIT. Measured on the trading box tonight:
+    # `git diff --cached` over 79 staged paths carried 0x81 at offset 122398, so the guard
+    # crashed, the pre-commit hook returned non-zero, and EVERY commit on the box failed --
+    # including Adopt-Release's, which is the only durable path from origin to the machine that
+    # trades. The box ran stale engines while gated signed code sat on origin, and the visible
+    # symptom was a scheduled task reporting result 1 with an empty error.
+    #
+    # errors="replace" because a fence must never fail closed on a byte it cannot render. The
+    # guard reasons about PATHS and STATUS LETTERS; a mangled character inside a diff body
+    # cannot change its verdict, while an exception silences it completely.
     return subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True,
+                          encoding="utf-8", errors="replace",
                           timeout=120, check=False)
 
 

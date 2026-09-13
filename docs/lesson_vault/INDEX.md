@@ -1,6 +1,6 @@
 # Desk lessons
 
-303 lessons, generated from `docs/desk_lessons.jsonl`.
+304 lessons, generated from `docs/desk_lessons.jsonl`.
 
 > [!warning] This vault is a DERIVED VIEW.
 > `docs/desk_lessons.jsonl` is the source of truth and the only thing organs read.
@@ -25,16 +25,16 @@ there dilutes the lessons that do apply.
 - #verification (13)
 - #design (13)
 - #priors (11)
+- #measurement (10)
 - #validation (10)
 - #testing (10)
-- #measurement (9)
 - #data (8)
 - #mining (8)
 - #silent-failure (7)
+- #wiring (7)
 - #execution (6)
 - #provenance (6)
 - #frontier (6)
-- #wiring (6)
 - #fences (5)
 - #windows (5)
 - #ci (4)
@@ -354,3 +354,4 @@ there dilutes the lessons that do apply.
 - [[l0301-an-ssh-host-alias-is-a-dependency-if-a-script-says-rem]]
 - [[l0302-a-sentinel-that-means-both-not-measured-and-no-restric]]
 - [[l0303-git-add-fails-the-whole-invocation-rc-128-pathspec-did]]
+- [[l0304-always-pass-encoding-utf-8-errors-replace-when-capturi]]

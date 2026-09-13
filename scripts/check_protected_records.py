@@ -51,7 +51,14 @@ _ID_KEYS = ("id", "rowid", "row_id", "name", "slug", "key")
 
 
 def _git(*args: str) -> str:
+    # UTF-8 EXPLICITLY, NEVER THE LOCALE. `text=True` alone decodes with the system locale --
+    # cp1252 on the Windows trading box -- while git emits UTF-8. An unmappable byte (0x81,
+    # 0x8d, 0x8f, 0x90, 0x9d) raises inside subprocess's reader THREAD, which the caller cannot
+    # catch: the capture is lost and this hook exits non-zero having explained nothing. A
+    # pre-commit hook that cannot decode blocks every commit on the box, including the
+    # adoption's -- measured 2026-09-14, same defect in all three hook scripts.
     r = subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True,
+                       encoding="utf-8", errors="replace",
                        check=False, timeout=120)
     return r.stdout
 
