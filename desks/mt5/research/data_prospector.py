@@ -35,6 +35,8 @@ for p in (str(BASE), str(BASE / "research"), str(ROOT)):
     if p not in sys.path:
         sys.path.insert(0, p)
 
+from macro.ledger import write_json_atomic  # noqa: E402
+
 OUT = BASE / "reports" / "DATA_PROSPECTOR.json"
 COVERAGE = BASE / "reports" / "REGIME_COVERAGE.json"
 STATE_VECTOR = BASE / "data" / "state_vector.json"
@@ -58,9 +60,11 @@ GAP_SOURCES: dict[str, dict] = {
                      "why": "the real-rate factor regime cannot be fitted"},
     "factor:RISK": {"source": "US500/NAS100 H1 bars", "unlocks": ["risk_appetite", "global_beta"],
                     "why": "the risk factor regime cannot be fitted"},
-    "factor:OIL": {"source": "XBRUSD/XTIUSD H1 bars", "unlocks": ["commodity_cad", "energy_complex"],
+    "factor:OIL": {"source": "XBRUSD/XTIUSD H1 bars",
+                   "unlocks": ["commodity_cad", "energy_complex"],
                    "why": "the energy factor regime cannot be fitted"},
-    "factor:GROWTH": {"source": "XCUUSD/CHINAH H1 bars", "unlocks": ["commodity_aud", "growth_dollar"],
+    "factor:GROWTH": {"source": "XCUUSD/CHINAH H1 bars",
+                      "unlocks": ["commodity_aud", "growth_dollar"],
                       "why": "the growth factor regime cannot be fitted"},
     "session": {"source": "broker_clock.json (record the terminal's UTC offset once)",
                 "unlocks": ["session conditioning", "plumbing_miner", "clock_transition"],
@@ -80,7 +84,7 @@ MANDATE_EXCLUDED: dict[str, str] = {
 def _catalogue() -> list[dict]:
     try:
         from libs.autodiscovery.data_opportunity import _CATALOG
-    except Exception:                                            # noqa: BLE001
+    except Exception:
         return []
     out = []
     for d in _CATALOG:
@@ -115,7 +119,7 @@ def _named_gaps() -> dict[str, str]:
     for k, v in (sv.get("gaps") or {}).items():
         out[k] = str(v)
     for scope in ("event", "liquidity"):
-        for sym, st in ((sv.get(scope) or {}).get("per_symbol") or {}).items():
+        for _sym, st in ((sv.get(scope) or {}).get("per_symbol") or {}).items():
             for g, why in (st.get("gaps") or {}).items():
                 out.setdefault(g, str(why))
     return out
@@ -130,7 +134,7 @@ def _barren() -> dict[str, float]:
             a, b = r.posterior("certified")
             out[name] = round(a / (a + b), 4) if (a + b) > 0 else 0.0
         return out
-    except Exception:                                            # noqa: BLE001
+    except Exception:
         return {}
 
 
@@ -179,14 +183,14 @@ def rank() -> dict:
 def run() -> dict:
     doc = rank()
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
+    write_json_atomic(OUT, doc)
     # The crawler's targeting file: source strings only, in rank order, with the reason.
     CRAWLER_TARGETS.parent.mkdir(parents=True, exist_ok=True)
-    CRAWLER_TARGETS.write_text(json.dumps(
+    write_json_atomic(CRAWLER_TARGETS,
         {"generated_utc": doc["generated_utc"],
          "targets": [{"query": it["source"], "why": it["engine_said"] or "catalogue",
                       "unlocks": it["unlocks"], "score": it["score"]}
-                     for it in doc["queue"][:25]]}, indent=1), "utf-8")
+                     for it in doc["queue"][:25]]})
     return doc
 
 

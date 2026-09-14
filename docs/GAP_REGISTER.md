@@ -2018,3 +2018,25 @@ Snapshots retained durably on serving host in
 projects old-source issue evidence from September 11 and midnight evidence from September 3;
 no source alias changed or stale observation restamped. Current discovery/certificate/forward
 aggregate totals are not proof of native observations, exact certificates or migration cutover.
+
+### 2026-09-14 — hourly research publication (epoch 150; hel8 epoch 210)
+
+- Assignment: `hourly-discovery:publication`, the same recovery chain as
+  `world-crawler:persistence`. Latest original `hel8q:desks/mt5/reports/HOURLY_DISCOVERY.json`
+  at 00:35:43Z has 16 OK, three FAILED. Prospector and conversion ledger raise PermissionError
+  on copied root-owned mode0644 outputs; conversion evidence remains dated September 5.
+- IMPLEMENTED: reuse `macro.ledger.write_json_atomic` in both existing producers, covering
+  both prospector outputs and the conversion ledger. No ownership escalation, schema, research
+  policy or live authority change. A serialization/replace failure preserves prior evidence and
+  propagates to the existing hourly failure detector. Existing writable parent directories are
+  the authorized publication boundary; an unwritable directory remains an error.
+- TESTED: 27 publication and conversion tests pass; six publication regressions include read-only
+  copied artifacts, interrupted serialization/replacement, cleanup and the real allocator reader.
+  Release gates (ruff, compileall, pytest collection, mypy) all green.
+- CANONICALLY_MERGED / DEPLOYED / RUNTIME_VERIFIED: pending commit and host verification.
+- Newly reproduced wiring gap: `prospector_targets.json` is declared as crawler input but no
+  Python reader references it. Publication recovery does not close that missing consumer.
+  `trial_allocator.target_stage()` actually reads the conversion ledger; verify it at runtime.
+- Separate open blockers: acquired registry and compiler outputs remain root-owned; compiler
+  memory pressure and acquisition per-series persistence require their own bounded repair.
+  No stopped process, reset trial history, changed forward start or new survivor is claimed.

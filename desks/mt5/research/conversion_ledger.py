@@ -66,6 +66,8 @@ for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from macro.ledger import write_json_atomic  # noqa: E402
+
 OUT = BASE / "data" / "conversion_ledger.json"
 
 #: Stage transitions, in funnel order. `critical` marks the stages every certificate must pass:
@@ -676,7 +678,7 @@ def run(base: Path | None = None, write: bool = True) -> dict[str, Any]:
     if write:
         out = (base or BASE) / "data" / "conversion_ledger.json"
         out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
+        write_json_atomic(out, doc)
         doc["artifact"] = str(out)
     # The hourly pass reads its YIELD counters off the report. This organ produces knowledge,
     # not cells: `stages_measured` is what it actually bought, and it is never reported as
