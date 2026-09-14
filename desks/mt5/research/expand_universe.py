@@ -117,6 +117,60 @@ def _want_bars(tf: str) -> int:
     return _WANT.get(str(tf).upper(), 40_000)
 
 
+
+#: Symbols whose finest charts the desk actually consumes first. See `_collection_order`.
+SLEEVES = BASE / "data" / "sleeves.json"
+
+
+def _traded_symbols() -> set[str]:
+    """Symbols the desk has live or standby risk on, read from the sleeve registry.
+
+    Absence is not an error here: a registry that cannot be read yields an EMPTY priority set, so
+    the ordering degrades to "least covered first" rather than refusing to collect.
+    """
+    try:
+        doc = json.loads(SLEEVES.read_text("utf-8"))
+    except (OSError, ValueError):
+        return set()
+    rows = doc.get("sleeves") if isinstance(doc, dict) else doc
+    out: set[str] = set()
+    for r in rows or []:
+        if not isinstance(r, dict):
+            continue
+        sym = str(r.get("symbol") or str(r.get("name") or "").split("_")[0]).upper()
+        if sym:
+            out.add(sym)
+    return out
+
+
+def _collection_order(tradable: list, traded: set[str]) -> list:
+    """Least-covered, most-needed symbol first -- never the broker's own ordering.
+
+    THE BUDGET DIED AT THE SAME PREFIX EVERY RUN. This walked `mt5.symbols_get()` in whatever
+    order the terminal returned and asked every symbol for every chart, M1's 200,000 bars
+    included -- four chunked calls each. The leg's budget expired partway down that list and the
+    NEXT run started from the same place, so the same prefix was re-collected hourly and the tail
+    was never reached at all. Measured 2026-09-14: M5, M15, M30 and H4 all hold 248 symbols and
+    D1 250, while M1 holds 25 of 299. That is not M1 being expensive; it is M1 being last.
+
+    Ordering is by what the desk would lose by not having the file:
+      1. a symbol the desk has RISK on, missing charts -- the intrabar wick that decides whether
+         an unfilled order was an execution defect or a strategy one lives in M1, and only for
+         symbols orders were actually sent to;
+      2. any symbol missing charts, fewest first, so each run extends coverage;
+      3. everything already complete, refreshed last.
+
+    This reprioritises and collects no less: the same budget, spent where it buys something.
+    """
+    def key(s):
+        name = str(getattr(s, "name", "")).upper()
+        have = sum(1 for tf in TIMEFRAMES if (UNIVERSE / f"{name}_{tf}.parquet").exists())
+        missing = len(TIMEFRAMES) - have
+        return (0 if (name in traded and missing) else 1 if missing else 2, -missing, name)
+
+    return sorted(tradable, key=key)
+
+
 def _pull_bars(mt5, sym: str, code, want: int, start, now):
     """Up to `want` bars, walking BACKWARD in capped chunks. None when the venue serves nothing.
 
@@ -190,7 +244,14 @@ def main() -> int:
 
     symbols = mt5.symbols_get() or ()
     tradable = [s for s in symbols if getattr(s, "trade_mode", 0) != 0]
-    print(f"Fusion exposes {len(symbols)} symbols, {len(tradable)} tradable")
+    _traded = _traded_symbols()
+    tradable = _collection_order(tradable, _traded)
+    _need = sum(1 for s in tradable
+                if any(not (UNIVERSE / f"{str(s.name).upper()}_{tf}.parquet").exists()
+                       for tf in TIMEFRAMES))
+    print(f"Fusion exposes {len(symbols)} symbols, {len(tradable)} tradable; "
+          f"{_need} missing at least one chart, {len(_traded)} carry desk risk. "
+          f"Collecting least-covered first so a budget cut does not re-walk the same prefix.")
 
     registry = {}
     if REGISTRY.exists():
