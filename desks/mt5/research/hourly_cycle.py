@@ -963,6 +963,33 @@ def lake_promote() -> dict:
     return _producer("lake_promote", "research/lake_promote.py")
 
 
+def session_allocation() -> dict:
+    """`session_allocation`: which HOURS the desk has an edge in, and which its capital sits idle.
+
+    `pf_allocator` solves posterior E[log W] per SLEEVE and nothing solved it per SESSION, so the
+    one dimension that decides whether capital works 24 hours had no measurement at all. It could
+    not have had one: all 228 forward clocks answered "?" to which window they trade, while the
+    answer sat in their own keys.
+
+    FIRST PASS, and both findings were invisible until something ran it. `overlap` held 14.2% of
+    deployed heat with ZERO clocks and ZERO forward trades -- capital sized into a window carrying
+    no forward evidence. And seven of twenty-four UTC hours have no forward clock at all, which no
+    amount of sizing can fix; only mechanisms hunted in those hours will.
+
+    It also corrected an impression worth correcting: the book's Asia concentration is EARNED.
+    exp_R 0.5384 +/- 0.0803 over 155 trades is a 6.7-sigma edge, so 61.5% of heat there is the
+    allocator being right, not drifting. `london_am` at 0.1649 +/- 0.1474 is ~1.1 sigma and
+    correctly gets nothing.
+
+    MEASUREMENT ONLY. A second allocator stacked on pf_allocator would shrink twice, and growth
+    governance Rule 1 requires any reduction to prove it raises robust forward E[log W]. The
+    honest use of this artifact is ADDITIVE: it hands the research side a target list of idle
+    hours to fill with NEW independent bets (Rule 2), never a reason to take heat off a window
+    that is earning.
+    """
+    return _producer("session_allocation", "research/session_allocator.py")
+
+
 def _recertify_canon_claimed() -> dict:
     """`recertify_canon`, but only for a window the queue says is actually uncovered."""
     q, task, why = _claim_one("recertify")
@@ -1868,6 +1895,7 @@ def main() -> None:
     rxs = _costed("research_exchange_score", research_exchange_score)
     lkp = _costed("lake_promote", lake_promote)
     orth = _costed("orthogonality", orthogonality)
+    sess = _costed("session_allocation", session_allocation)
     ms = _costed("model_skill", model_skill)
     fcx = _costed("forecast_contract", forecast_contract)
     mz = _costed("model_league", model_league)
@@ -2036,6 +2064,7 @@ def main() -> None:
                     "execution_twin": et, "causal_graph": cg, "alpha_rl": arl,
                     "research_exchange_score": rxs, "lake_promote": lkp,
                     "orthogonality": orth,
+                    "session_allocation": sess,
                     "model_skill": ms,
                     "frontier": fr, "refresh_bars": rb, "deep_forest": df,
                     "maintain_miners": mm, "publish_survivors": ps,
