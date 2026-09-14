@@ -1,0 +1,3645 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Los valores del Ibex 35 con m\u00e1s potencial y estrategias para aprovecharlo | Estrategias de Inversi\u00f3n",
+  "url": "https://www.estrategiasdeinversion.com/analisis/bolsa-y-mercados/informes/los-valores-del-ibex-35-con-mas-potencial-y-las-n-615265",
+  "published": "2026-09-14T18:12:33+00:00",
+  "symbols": [
+   "NAS100",
+   "US30"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [
+   "https://www.estrategiasdeinversion.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "768be293fd5eb658768d",
+  "host": "www.estrategiasdeinversion.com",
+  "claims": [
+   {
+    "claim": "P 500 y Nasdaq caen al cierre ante tensiones en Norteam\u00e9rica y Medio Oriente Dow Jones cae 500 puntos en la vuelta al trabajo de Wall Street;",
+    "lang": "es",
+    "quantities": [
+     "cierre"
+    ],
+    "direction": [
+     "cae"
+    ],
+    "horizon": [
+     "cierre"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US30"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "dow jones"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "f823ae8570a8"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Pr\u00f3ximo objetivo del Ibex 35, con m\u00e1ximos hist\u00f3ricos y subidas potenciales del 4,11% a corto plazo | Estrategias de Inversi\u00f3n",
+  "url": "https://www.estrategiasdeinversion.com/analisis/bolsa-y-mercados/el-experto-opina/este-es-el-proximo-objetivo-del-ibex-35-con-maximos-n-851013",
+  "published": "2026-09-14T18:12:34+00:00",
+  "symbols": [
+   "E35",
+   "NVIDIA",
+   "NAS100",
+   "US30",
+   "XAUUSD",
+   "XTIUSD",
+   "US500",
+   "BTCUSD",
+   "ETHUSD",
+   "Tesla"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [
+   "https://www.estrategiasdeinversion.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "bfb3064f6b6b2dba952a",
+  "host": "www.estrategiasdeinversion.com",
+  "claims": [
+   {
+    "claim": "Pr\u00f3ximo objetivo del Ibex 35, con m\u00e1ximos hist\u00f3ricos y subidas potenciales del 4,11% a corto plazo | Estrategias de Inversi\u00f3n La bolsa hoy Ibex 35 Telef\u00f3nica Apple Fondo IA Inmobiliarias del Continuo Mercado franc\u00e9s Oportunidad en Nvidia Guerra de chips Enag\u00e1s M\u00e1s Navegaci\u00f3n Buscar Buscar cotizaci\u00f3n, analisis, cursos.",
+    "lang": "es",
+    "quantities": [
+     "ibex",
+     "m\u00e1ximo",
+     "cot"
+    ],
+    "direction": [
+     "corto"
+    ],
+    "horizon": [
+     "corto plazo"
+    ],
+    "instruments": {
+     "analogues": [
+      "E35",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "ibex 35",
+      "nvidia"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "1feb03f6ace1"
+   },
+   {
+    "claim": "P 500 y Nasdaq caen al cierre ante tensiones en Norteam\u00e9rica y Medio Oriente Dow Jones cae 500 puntos en la vuelta al trabajo de Wall Street;",
+    "lang": "es",
+    "quantities": [
+     "cierre"
+    ],
+    "direction": [
+     "cae"
+    ],
+    "horizon": [
+     "cierre"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US30"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "dow jones"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "f823ae8570a8"
+   },
+   {
+    "claim": "Por tanto, pr\u00f3ximo objetivo alcista por parte de Ibex 35, la proyecci\u00f3n de este peque\u00f1o proceso de consolidaci\u00f3n a partir del punto de fuga, obteniendo como contexto m\u00e1s probable al corto plazo continuar con los avances a la cota de los 16.",
+    "lang": "es",
+    "quantities": [
+     "ibex",
+     "cot"
+    ],
+    "direction": [
+     "alcista",
+     "corto"
+    ],
+    "horizon": [
+     "corto plazo"
+    ],
+    "instruments": {
+     "analogues": [
+      "E35"
+     ],
+     "mentioned": [
+      "ibex 35"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "404eb2af8259"
+   },
+   {
+    "claim": "052 puntos, no tendremos ning\u00fan tipo de justificaci\u00f3n s\u00f3lida y objetiva con la que comenzar\u00e1 a plantear el inicio de una correcci\u00f3n que permita purgar lecturas de extrema sobrecompra acumulada por parte del MACD semanal.",
+    "lang": "es",
+    "quantities": [
+     "sobrecompra",
+     "macd"
+    ],
+    "direction": [
+     "correcci\u00f3n"
+    ],
+    "horizon": [
+     "semanal"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "NAS100",
+      "US500",
+      "US30",
+      "E35",
+      "BTCUSD",
+      "ETHUSD",
+      "Tesla",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "oro",
+      "petr\u00f3leo",
+      "nasdaq",
+      "s&p 500",
+      "dow jones",
+      "ibex 35",
+      "bitcoin",
+      "ethereum",
+      "tesla",
+      "nvidia"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD",
+      "USDSGD"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR",
+      "mas : policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "29617461118f"
+   }
+  ],
+  "n_claims": 4
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Oro y ETFs: c\u00f3mo posicionarse ante inflaci\u00f3n, tipos bajos y riesgos globales | Asset Managers",
+  "url": "https://www.estrategiasdeinversion.com/fondos/oro-y-etfs-como-posicionarse-ante-inflacion-tipos-n-905977",
+  "published": "2026-09-14T18:12:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "97c8f8c02f2516438fe6",
+  "host": "www.estrategiasdeinversion.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "C\u00f3mo defendernos de la represi\u00f3n financiera: oro y Bitcoin | Estrategias de Inversi\u00f3n",
+  "url": "https://www.estrategiasdeinversion.com/analisis/bolsa-y-mercados/el-experto-opina/como-defendernos-de-la-represion-financiera-oro-n-946307",
+  "published": "2026-09-14T18:12:38+00:00",
+  "symbols": [
+   "NAS100",
+   "US30"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [
+   "https://www.estrategiasdeinversion.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f70a30bd0f4fbf5311ab",
+  "host": "www.estrategiasdeinversion.com",
+  "claims": [
+   {
+    "claim": "P 500 y Nasdaq caen al cierre ante tensiones en Norteam\u00e9rica y Medio Oriente Dow Jones cae 500 puntos en la vuelta al trabajo de Wall Street;",
+    "lang": "es",
+    "quantities": [
+     "cierre"
+    ],
+    "direction": [
+     "cae"
+    ],
+    "horizon": [
+     "cierre"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US30"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "dow jones"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "f823ae8570a8"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "No perder de vista al oro \u00bfrumbo a m\u00e1ximos anuales? | Estrategias de Inversi\u00f3n",
+  "url": "https://www.estrategiasdeinversion.com/analisis/bolsa-y-mercados/informes/no-perder-de-vista-al-oro-rumbo-a-maximos-anuales-n-944369",
+  "published": "2026-09-14T18:12:40+00:00",
+  "symbols": [
+   "NAS100",
+   "US30",
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [
+   "https://www.estrategiasdeinversion.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "2598d89f145d1b2a1b68",
+  "host": "www.estrategiasdeinversion.com",
+  "claims": [
+   {
+    "claim": "P 500 y Nasdaq caen al cierre ante tensiones en Norteam\u00e9rica y Medio Oriente Dow Jones cae 500 puntos en la vuelta al trabajo de Wall Street;",
+    "lang": "es",
+    "quantities": [
+     "cierre"
+    ],
+    "direction": [
+     "cae"
+    ],
+    "horizon": [
+     "cierre"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US30"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "dow jones"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "f823ae8570a8"
+   },
+   {
+    "claim": "Jos\u00e9 Antonio Gonz\u00e1lez, director de an\u00e1lisis t\u00e9cnico de Estrategias de inversi\u00f3n analiza el oro, que en las \u00faltimas semanas tiene movimiento a favor de las compras y objetivos en los m\u00e1ximos anuales.",
+    "lang": "es",
+    "quantities": [
+     "oro",
+     "m\u00e1ximo"
+    ],
+    "direction": [
+     "compra"
+    ],
+    "horizon": [
+     "semana"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "oro"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "24488379fb1b"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "El oro y su fiebre \u00bfsigue siendo una oportunidad de inversi\u00f3n con sus niveles actuales? | Asset Managers",
+  "url": "https://www.estrategiasdeinversion.com/fondos/el-oro-y-su-fiebre-sigue-siendo-una-oportunidad-n-835121",
+  "published": "2026-09-14T18:12:42+00:00",
+  "symbols": [
+   "XAUUSD",
+   "US500",
+   "XAGUSD",
+   "XPTUSD",
+   "XCUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7e3dc2e8e2809b15553d",
+  "host": "www.estrategiasdeinversion.com",
+  "claims": [
+   {
+    "claim": "A largo plazo, el potencial es enorme: \u201cel oro sigue barato frente al S&P 500 y, si repite ciclos anteriores, podr\u00eda llegar a superar los 16.",
+    "lang": "es",
+    "quantities": [
+     "oro"
+    ],
+    "direction": [
+     "largo",
+     "supera"
+    ],
+    "horizon": [
+     "largo plazo"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "US500"
+     ],
+     "mentioned": [
+      "oro",
+      "s&p 500"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "79013ec8a065"
+   },
+   {
+    "claim": "A corto plazo, factores como una mejora en las relaciones comerciales, un d\u00f3lar m\u00e1s fuerte o menores compras del Banco Central de China podr\u00edan presionar a la baja.",
+    "lang": "es",
+    "quantities": [
+     "d\u00f3lar",
+     "banco central"
+    ],
+    "direction": [
+     "corto",
+     "compra"
+    ],
+    "horizon": [
+     "corto plazo"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XPTUSD",
+      "XCUUSD",
+      "US500"
+     ],
+     "mentioned": [
+      "oro",
+      "plata",
+      "platino",
+      "cobre",
+      "s&p 500"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "mas : policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5af419aeff5c"
+   },
+   {
+    "claim": "A la hora de invertir, hay que tener en cuenta que, independientemente de la v\u00eda elegida, es clave entender las cualidades del oro: alta rentabilidad, baja volatilidad, protecci\u00f3n ante riesgos sist\u00e9micos, gran liquidez, buen ratio Sharpe y menores ca\u00eddas.",
+    "lang": "es",
+    "quantities": [
+     "oro",
+     "volatilidad",
+     "liquidez"
+    ],
+    "direction": [
+     "baja"
+    ],
+    "horizon": [
+     "hora"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "oro"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "0b6b041d873f"
+   },
+   {
+    "claim": "Perspectivas para el oro en el largo plazo La demanda de oro de pa\u00edses emergentes , especialmente China y Rusia , ha sido el principal motor del precio en los \u00faltimos 25 a\u00f1os y seguir\u00e1 si\u00e9ndolo hasta final de d\u00e9cada.",
+    "lang": "es",
+    "quantities": [
+     "oro"
+    ],
+    "direction": [
+     "largo"
+    ],
+    "horizon": [
+     "largo plazo"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "oro"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "04d3c13872b4"
+   }
+  ],
+  "n_claims": 4
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "El oro lograr\u00e1 nuevos r\u00e9cords tras alcanzar los 5.000 d\u00f3lares/onza | Estrategias de Inversi\u00f3n",
+  "url": "https://www.estrategiasdeinversion.com/analisis/bolsa-y-mercados/informes/el-oro-superara-los-5000-dolares-por-onza-este-n-883735",
+  "published": "2026-09-14T18:12:44+00:00",
+  "symbols": [
+   "NAS100",
+   "US30",
+   "XAUUSD",
+   "XAGUSD",
+   "XPTUSD",
+   "XTIUSD",
+   "E35",
+   "BTCUSD",
+   "ETHUSD",
+   "Tesla",
+   "NVIDIA"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "inventory",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [
+   "https://www.estrategiasdeinversion.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "efdc5cff961d35c4fe62",
+  "host": "www.estrategiasdeinversion.com",
+  "claims": [
+   {
+    "claim": "P 500 y Nasdaq caen al cierre tras el informe de n\u00f3minas de agosto \u00bfEvitar\u00e1n el Dow Jones y el S&amp;",
+    "lang": "es",
+    "quantities": [
+     "cierre"
+    ],
+    "direction": [
+     "cae"
+    ],
+    "horizon": [
+     "cierre"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US30"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "dow jones"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "4983630524d1"
+   },
+   {
+    "claim": "Siete analistas explican por qu\u00e9 El oro ha vuelto a superar un nivel simb\u00f3lico a principios de esta semana, superando los 5.",
+    "lang": "es",
+    "quantities": [
+     "oro"
+    ],
+    "direction": [
+     "supera"
+    ],
+    "horizon": [
+     "semana"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "oro"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "421dac3baf85"
+   },
+   {
+    "claim": "A largo plazo, y dado su papel creciente en asignaciones estrat\u00e9gicas, el oro tender\u00e1 a estabilizarse en precios m\u00e1s altos que en el pasado.",
+    "lang": "es",
+    "quantities": [
+     "oro"
+    ],
+    "direction": [
+     "largo"
+    ],
+    "horizon": [
+     "largo plazo"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "oro"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "dea271273cae"
+   },
+   {
+    "claim": "La demanda estructural proporciona un soporte s\u00f3lido: compras sostenidas de los bancos centrales, el repunte de los flujos hacia ETFs, la reactivaci\u00f3n del ciclo de relajaci\u00f3n monetaria de la Fed y la posible entrada de nuevos compradores a largo plazo (como aseguradoras en China y fondos de pensiones en India).",
+    "lang": "es",
+    "quantities": [
+     "soporte",
+     "flujo"
+    ],
+    "direction": [
+     "compra",
+     "entrada"
+    ],
+    "horizon": [
+     "largo plazo"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XPTUSD",
+      "XTIUSD",
+      "NAS100",
+      "US30",
+      "E35",
+      "BTCUSD",
+      "ETHUSD",
+      "Tesla",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "oro",
+      "plata",
+      "platino",
+      "petr\u00f3leo",
+      "nasdaq",
+      "dow jones",
+      "ibex 35",
+      "bitcoin",
+      "ethereum",
+      "tesla",
+      "nvidia"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "mas : policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "6f5ac0aacfca"
+   },
+   {
+    "claim": "Los metales preciosos en su conjunto han subido considerablemente y podr\u00edan estar t\u00e9cnicamente sobrecomprados a corto plazo, pero siguen estando infrainvertidos, ya que muchos inversores se perdieron el repunte y ahora buscan oportunidades de entrada.",
+    "lang": "es",
+    "quantities": [
+     "sobrecompra"
+    ],
+    "direction": [
+     "corto",
+     "entrada"
+    ],
+    "horizon": [
+     "corto plazo"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XPTUSD",
+      "XTIUSD",
+      "NAS100",
+      "US30",
+      "E35",
+      "BTCUSD",
+      "ETHUSD",
+      "Tesla",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "oro",
+      "plata",
+      "platino",
+      "petr\u00f3leo",
+      "nasdaq",
+      "dow jones",
+      "ibex 35",
+      "bitcoin",
+      "ethereum",
+      "tesla",
+      "nvidia"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "mas : policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b35e263db61b"
+   }
+  ],
+  "n_claims": 5
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "L\u00e0m ch\u1ee7 cu\u1ed9c ch\u01a1i trading ch\u1ee9ng kho\u00e1n nh\u1edd chi\u1ebfn l\u01b0\u1ee3c qu\u1ea3n l\u00fd ti\u1ec1n h\u1ee3p l\u00fd | VOZ",
+  "url": "https://voz.vn/t/lam-chu-cuoc-choi-trading-chung-khoan-nho-chien-luoc-quan-ly-tien-hop-ly.1093956/",
+  "published": "2026-09-14T18:12:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "policy",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "vi-VN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1c890583ad5e925d51a8",
+  "host": "voz.vn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "ki\u1ebfn th\u1ee9c - Ch\u1ee9ng kho\u00e1n ph\u00e1i sinh - c\u01a1 h\u1ed9i h\u1ea5p d\u1eabn cho nh\u1eefng ai bi\u1ebft n\u1eafm b\u1eaft. | VOZ",
+  "url": "https://voz.vn/t/chung-khoan-phai-sinh-co-hoi-hap-dan-cho-nhung-ai-biet-nam-bat.789144/",
+  "published": "2026-09-14T18:12:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow",
+   "night_session",
+   "orderflow",
+   "policy",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "vi-VN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ab7d13437d10d160cabb",
+  "host": "voz.vn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "th\u1ea3o lu\u1eadn - [CLB] \u0110\u1ea7u T\u01b0 Ch\u1ee9ng kho\u00e1n - d\u1ef1a tr\u00ean s\u1ed1 li\u1ec7u : giao d\u1ecbch / ph\u00e1i sinh/ t\u00e2y l\u00f4ng b\u00e1n r\u00f2ng. | VOZ",
+  "url": "https://voz.vn/t/clb-dau-tu-chung-khoan-dua-tren-so-lieu-giao-dich-phai-sinh-tay-long-ban-rong.1033848/",
+  "published": "2026-09-14T18:12:53+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "momentum",
+   "orderflow",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.75,
+  "lang": "vi-VN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b07619a886a50eda3f7f",
+  "host": "voz.vn",
+  "claims": [
+   {
+    "claim": "Ng\u01b0\u1eddi t\u1ea1o ch\u1ee7 \u0111\u1ec1 Ng\u01b0\u1eddi t\u1ea1o ch\u1ee7 \u0111\u1ec1 Lan Gi\u00e0 [Real]-v2025 Ng\u00e0y b\u1eaft \u0111\u1ea7u Ng\u00e0y b\u1eaft \u0111\u1ea7u 13/11/24 1 2 3 \u2026 \u0110\u1ebfn trang Th\u1ef1c hi\u1ec7n 253 Sau 1/253 \u0110\u1ebfn trang Th\u1ef1c hi\u1ec7n Sau Cu\u1ed1i Lan Gi\u00e0 [Real]-v2025 Senior Member 13/11/24 #1 ch\u00e0o c\u00e1c b\u00e1c, v\u00e0o \u0111\u1ec1 lu\u00f4n cho nhanh N\u1ed9i dung th\u1ea3o lu\u1eadn : d\u1ef1 \u0111o\u00e1n / b\u00e0n lu\u1eadn s\u1ef1 t\u0103ng gi\u1ea3m c\u1ee7a vni , d\u1ef1a tr\u00ean s\u1ed1 li\u1ec7u : ph\u00e1i sinh v\u00e0 s\u1ed1 li\u1ec7u giao d\u1ecbch.",
+    "lang": "vi",
+    "quantities": [
+     "ph\u00e1i sinh"
+    ],
+    "direction": [
+     "t\u0103ng",
+     "gi\u1ea3m"
+    ],
+    "horizon": [
+     "ng\u00e0y"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD"
+     ],
+     "mentioned": [
+      "v\u00e0ng",
+      "b\u1ea1c",
+      "vnd",
+      "pp"
+     ],
+     "transfer_only": [
+      "vnd->fx (VND not quoted)",
+      "pp->energy"
+     ],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "cc017522b825"
+   },
+   {
+    "claim": "Spoiler: gi\u00e1 v\u00e0ng 2025 c\u00f3 ph\u1ea3i l\u00e0 1920 v\u00e0 1965 ng\u00e0y \u0111\u00f3 th\u1ea3o lu\u1eadn B\u00e0i vi\u1ebft trong ch\u1ee7 \u0111\u1ec1 '[CLB] \u0110\u1ea7u T\u01b0 Ch\u1ee9ng kho\u00e1n - d\u1ef1a tr\u00ean s\u1ed1 li\u1ec7u : giao d\u1ecbch / ph\u00e1i sinh/ t\u00e2y l\u00f4ng b\u00e1n r\u00f2ng.",
+    "lang": "vi",
+    "quantities": [
+     "v\u00e0ng",
+     "ch\u1ee9ng kho\u00e1n",
+     "ph\u00e1i sinh"
+    ],
+    "direction": [
+     "b\u00e1n"
+    ],
+    "horizon": [
+     "ng\u00e0y"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "v\u00e0ng"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "6ccc6fc686e7"
+   },
+   {
+    "claim": "84 t\u1ef7 p/s : ps v\u1eabn 8h s\u00e1ng tr\u01b0\u1edbc gi\u1edd G Lan Gi\u00e0 [Real]-v2025 th\u1ea3o lu\u1eadn B\u00e0i vi\u1ebft trong ch\u1ee7 \u0111\u1ec1 '[CLB] \u0110\u1ea7u T\u01b0 Ch\u1ee9ng kho\u00e1n - d\u1ef1a tr\u00ean s\u1ed1 li\u1ec7u : giao d\u1ecbch / ph\u00e1i sinh/ t\u00e2y l\u00f4ng b\u00e1n r\u00f2ng.",
+    "lang": "vi",
+    "quantities": [
+     "ch\u1ee9ng kho\u00e1n",
+     "ph\u00e1i sinh"
+    ],
+    "direction": [
+     "b\u00e1n"
+    ],
+    "horizon": [
+     "gi\u1edd"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD"
+     ],
+     "mentioned": [
+      "v\u00e0ng",
+      "b\u1ea1c",
+      "vnd",
+      "pp"
+     ],
+     "transfer_only": [
+      "vnd->fx (VND not quoted)",
+      "pp->energy"
+     ],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "27383c3b43e6"
+   },
+   {
+    "claim": "' 6/6/25 Ng\u00e0y 6/6/2025 Lan Gi\u00e0 [Real]-v2025 th\u1ea3o lu\u1eadn B\u00e0i vi\u1ebft trong ch\u1ee7 \u0111\u1ec1 '[CLB] \u0110\u1ea7u T\u01b0 Ch\u1ee9ng kho\u00e1n - d\u1ef1a tr\u00ean s\u1ed1 li\u1ec7u : giao d\u1ecbch / ph\u00e1i sinh/ t\u00e2y l\u00f4ng b\u00e1n r\u00f2ng.",
+    "lang": "vi",
+    "quantities": [
+     "ch\u1ee9ng kho\u00e1n",
+     "ph\u00e1i sinh"
+    ],
+    "direction": [
+     "b\u00e1n"
+    ],
+    "horizon": [
+     "ng\u00e0y"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD"
+     ],
+     "mentioned": [
+      "v\u00e0ng",
+      "b\u1ea1c",
+      "vnd",
+      "pp"
+     ],
+     "transfer_only": [
+      "vnd->fx (VND not quoted)",
+      "pp->energy"
+     ],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "e1f046b579dd"
+   }
+  ],
+  "n_claims": 4
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "th\u1ea3o lu\u1eadn - L\u1eadp h\u1ed9i ch\u01a1i Ch\u1ee9ng kho\u00e1n Ph\u00e1i sinh VN30F1M | VOZ",
+  "url": "https://voz.vn/t/lap-hoi-choi-chung-khoan-phai-sinh-vn30f1m.222188/",
+  "published": "2026-09-14T18:12:54+00:00",
+  "symbols": [
+   "XAGUSD",
+   "COFARA"
+  ],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "basis",
+   "mean_reversion",
+   "momentum",
+   "night_session",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "vi-VN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "13c6172e7490b5c9cdec",
+  "host": "voz.vn",
+  "claims": [
+   {
+    "claim": "T\u00f4i hay \u0111\u00e1nh \u0111\u1ea3o chi\u1ec1u v\u00e0 phi\u00ean n\u00e0o rung l\u1eafc \u0111\u00e1nh nhau c\u00e0ng l\u1edbn th\u00ec c\u00e0ng ki\u1ebfm \u0103n nhi\u1ec1u.",
+    "lang": "vi",
+    "quantities": [
+     "\u0111\u1ea3o chi\u1ec1u"
+    ],
+    "direction": [
+     "\u0111\u1ea3o chi\u1ec1u"
+    ],
+    "horizon": [
+     "phi\u00ean"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAGUSD",
+      "COFARA"
+     ],
+     "mentioned": [
+      "b\u1ea1c",
+      "vn30",
+      "c\u00e0 ph\u00ea",
+      "pp"
+     ],
+     "transfer_only": [
+      "vn30->indices (HOSE)",
+      "pp->energy"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5808384691ce"
+   },
+   {
+    "claim": "Nh\u01b0 t\u00f4i theo tr\u01b0\u1eddng ph\u00e1i c\u1ea9n tr\u1ecdng, \u0103n non n\u00ean ch\u1ec9 trade trong ng\u00e0y, ch\u1ec9 theo trend ho\u1eb7c \u0111\u1ee9ng ngo\u00e0i ch\u1ee9 kh\u00f4ng d\u00e1m \u0111\u1ea3o chi\u1ec1u c\u0169ng nh\u01b0 gi\u1eef qua \u0111\u00eam.",
+    "lang": "vi",
+    "quantities": [
+     "\u0111\u1ea3o chi\u1ec1u",
+     "trend"
+    ],
+    "direction": [
+     "\u0111\u1ea3o chi\u1ec1u"
+    ],
+    "horizon": [
+     "ng\u00e0y",
+     "qua \u0111\u00eam"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAGUSD",
+      "COFARA"
+     ],
+     "mentioned": [
+      "b\u1ea1c",
+      "vn30",
+      "c\u00e0 ph\u00ea",
+      "pp"
+     ],
+     "transfer_only": [
+      "vn30->indices (HOSE)",
+      "pp->energy"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "281414a6ad7a"
+   },
+   {
+    "claim": "N\u1ebfu mua c\u1ed5 phi\u1ebfu v\u00e0 n\u1eafm gi\u1eef d\u00e0i h\u1ea1n, th\u00ec \u1edf nh\u1eefng \u0111\u1ee3t th\u1ecb tr\u01b0\u1eddng gi\u1ea3m \u0111i\u1ec3m, thay v\u00ec b\u00e1n ra c\u1ed5 phi\u1ebfu (s\u1ebd m\u1ea5t ph\u00ed v\u00e0 c\u00f3 th\u1ec3 kh\u00f4ng k\u1ecbp mua l\u1ea1i) th\u00ec c\u00f3 th\u1ec3 short ps \u0111\u1ec3 b\u1ea3o v\u1ec7 t\u00e0i kho\u1ea3n.",
+    "lang": "vi",
+    "quantities": [
+     "c\u1ed5 phi\u1ebfu"
+    ],
+    "direction": [
+     "mua",
+     "gi\u1ea3m"
+    ],
+    "horizon": [
+     "d\u00e0i h\u1ea1n"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAGUSD",
+      "COFARA"
+     ],
+     "mentioned": [
+      "b\u1ea1c",
+      "vn30",
+      "c\u00e0 ph\u00ea",
+      "pp"
+     ],
+     "transfer_only": [
+      "vn30->indices (HOSE)",
+      "pp->energy"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5969fadb2424"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "th\u1ea3o lu\u1eadn - [CLB Ch\u1ee9ng kho\u00e1n] Chia s\u1ebb kinh nghi\u1ec7m \u0111\u1ea7u t\u01b0 ch\u1ee9ng kho\u00e1n 2026 - K\u1ef7 nguy\u00ean v\u01b0\u01a1n m\u00ecnh| Trang 6493 | VOZ",
+  "url": "https://voz.vn/t/clb-chung-khoan-chia-se-kinh-nghiem-dau-tu-chung-khoan-2026-ky-nguyen-vuon-minh.1188208/page-6493",
+  "published": "2026-09-14T18:12:56+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "USDX"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "momentum",
+   "orderflow",
+   "policy",
+   "positioning",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "vi-VN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "67e538415e02258c9329",
+  "host": "voz.vn",
+  "claims": [
+   {
+    "claim": "DR Th\u00e0nh vi\u00ean ghi nh\u1eadn th\u1ecb tr\u01b0\u1eddng gi\u1ea3m di\u1ec7n r\u1ed9ng trong phi\u00ean 19/08, thanh kho\u1ea3n c\u01a1 s\u1edf y\u1ebfu;",
+    "lang": "vi",
+    "quantities": [
+     "thanh kho\u1ea3n",
+     "c\u01a1 s\u1edf"
+    ],
+    "direction": [
+     "gi\u1ea3m"
+    ],
+    "horizon": [
+     "trong phi\u00ean"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "USDX"
+     ],
+     "mentioned": [
+      "v\u00e0ng",
+      "b\u1ea1c",
+      "dxy",
+      "vn-index"
+     ],
+     "transfer_only": [
+      "vn-index->indices (HOSE)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "e9e837b8eeb1"
+   },
+   {
+    "claim": "Ph\u00e1i sinh \u0111\u01b0\u1ee3c cho l\u00e0 giao d\u1ecbch s\u00f4i \u0111\u1ed9ng h\u01a1n c\u01a1 s\u1edf, khi\u1ebfn lo ng\u1ea1i bi\u1ebfn \u0111\u1ed9ng tr\u01b0\u1edbc tu\u1ea7n \u0111\u00e1o h\u1ea1n gia t\u0103ng.",
+    "lang": "vi",
+    "quantities": [
+     "ph\u00e1i sinh",
+     "c\u01a1 s\u1edf",
+     "bi\u1ebfn \u0111\u1ed9ng",
+     "\u0111\u00e1o h\u1ea1n"
+    ],
+    "direction": [
+     "t\u0103ng"
+    ],
+    "horizon": [
+     "tu\u1ea7n"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "USDX"
+     ],
+     "mentioned": [
+      "v\u00e0ng",
+      "b\u1ea1c",
+      "dxy",
+      "vn-index"
+     ],
+     "transfer_only": [
+      "vn-index->indices (HOSE)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a56ae1296eb4"
+   },
+   {
+    "claim": "M\u1ed9t th\u00e0nh vi\u00ean n\u00eau kh\u1ed1i ngo\u1ea1i b\u00e1n r\u00f2ng 685 t\u1ef7 \u0111\u1ed3ng trong ng\u00e0y;",
+    "lang": "vi",
+    "quantities": [
+     "kh\u1ed1i ngo\u1ea1i"
+    ],
+    "direction": [
+     "b\u00e1n"
+    ],
+    "horizon": [
+     "ng\u00e0y"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "USDX"
+     ],
+     "mentioned": [
+      "v\u00e0ng",
+      "b\u1ea1c",
+      "dxy",
+      "vn-index"
+     ],
+     "transfer_only": [
+      "vn-index->indices (HOSE)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "73fd0a822e1d"
+   },
+   {
+    "claim": "C\u00f3 lo ng\u1ea1i lu\u1eadt li\u00ean quan nh\u00f3m b\u1ea5t \u0111\u1ed9ng s\u1ea3n c\u00f3 th\u1ec3 \u0111\u01b0\u1ee3c th\u00f4ng qua v\u00e0o th\u00e1ng 10\u201311 v\u00e0 d\u1eabn t\u1edbi b\u00e1n th\u00e1o m\u1ea1nh;",
+    "lang": "vi",
+    "quantities": [
+     "b\u00e1n th\u00e1o"
+    ],
+    "direction": [
+     "b\u00e1n"
+    ],
+    "horizon": [
+     "th\u00e1ng"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "USDX"
+     ],
+     "mentioned": [
+      "v\u00e0ng",
+      "b\u1ea1c",
+      "dxy",
+      "vn-index"
+     ],
+     "transfer_only": [
+      "vn-index->indices (HOSE)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5b6f6ed901f9"
+   },
+   {
+    "claim": "850 B\u1ed9 T\u00e0i ch\u00ednh M\u1ef9 s\u1ebd t\u0103ng quy m\u00f4 mua l\u1ea1i tr\u00e1i phi\u1ebfu d\u00e0i h\u1ea1n \u00edt nh\u1ea5t g\u1ea5p \u0111\u00f4iB\u1ed9 T\u00e0i ch\u00ednh M\u1ef9 th\u00f4ng b\u00e1o s\u1ebd t\u0103ng quy m\u00f4 c\u00e1c ho\u1ea1t \u0111\u1ed9ng mua l\u1ea1i tr\u00e1i phi\u1ebfu d\u00e0i h\u1ea1n \u00edt nh\u1ea5t g\u1ea5p \u0111\u00f4i, bao g\u1ed3m c\u00e1c tr\u00e1i phi\u1ebfu c\u00f3 k\u1ef3 h\u1ea1n t\u1eeb 10 \u0111\u1ebfn 20 n\u0103m v\u00e0 t\u1eeb 20 \u0111\u1ebfn 30 n\u0103m.",
+    "lang": "vi",
+    "quantities": [
+     "tr\u00e1i phi\u1ebfu",
+     "k\u1ef3 h\u1ea1n"
+    ],
+    "direction": [
+     "t\u0103ng",
+     "mua"
+    ],
+    "horizon": [
+     "d\u00e0i h\u1ea1n"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "USDX"
+     ],
+     "mentioned": [
+      "v\u00e0ng",
+      "b\u1ea1c",
+      "dxy",
+      "vn-index"
+     ],
+     "transfer_only": [
+      "vn-index->indices (HOSE)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8a8d6e9a67a9"
+   },
+   {
+    "claim": "Vi\u1ec7c m\u1edf r\u1ed9ng quy m\u00f4 mua l\u1ea1i n\u00e0y ph\u1ea3n \u00e1nh mong mu\u1ed1n c\u1ee7a B\u1ed9 T\u00e0i ch\u00ednh trong vi\u1ec7c cung c\u1ea5p h\u1ed7 tr\u1ee3 thanh kho\u1ea3n m\u1ea1nh m\u1ebd h\u01a1n cho th\u1ecb tr\u01b0\u1eddng tr\u00e1i phi\u1ebfu d\u00e0i h\u1ea1n DXY \u0111ang gi\u1ea3m m\u1ea1nh C\u1ea3m x\u00fac: B\u00e1c S\u0129 T\u00ecnh Y\u00eauu v\u00e0 ilovevietnam98 Dngz_2012 Senior Member 19/8/26 #129.",
+    "lang": "vi",
+    "quantities": [
+     "h\u1ed7 tr\u1ee3",
+     "thanh kho\u1ea3n",
+     "tr\u00e1i phi\u1ebfu"
+    ],
+    "direction": [
+     "mua",
+     "gi\u1ea3m"
+    ],
+    "horizon": [
+     "d\u00e0i h\u1ea1n"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDX"
+     ],
+     "mentioned": [
+      "dxy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "ccc9069dd6d8"
+   },
+   {
+    "claim": "859 TIN N\u00d3NG: L\u1ee3i su\u1ea5t tr\u00e1i phi\u1ebfu kho b\u1ea1c M\u1ef9 k\u1ef3 h\u1ea1n 30 n\u0103m v\u1eeba lao d\u1ed1c xu\u1ed1ng d\u01b0\u1edbi 5,20% sau khi B\u1ed9 T\u00e0i ch\u00ednh t\u0103ng g\u1ea5p \u0111\u00f4i quy m\u00f4 mua l\u1ea1i tr\u00e1i phi\u1ebfu d\u00e0i h\u1ea1n.",
+    "lang": "vi",
+    "quantities": [
+     "l\u1ee3i su\u1ea5t",
+     "tr\u00e1i phi\u1ebfu",
+     "b\u1ea1c",
+     "k\u1ef3 h\u1ea1n"
+    ],
+    "direction": [
+     "t\u0103ng",
+     "mua"
+    ],
+    "horizon": [
+     "d\u00e0i h\u1ea1n"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAGUSD"
+     ],
+     "mentioned": [
+      "b\u1ea1c"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "b26fa2f70e4f"
+   },
+   {
+    "claim": "B\u1ed9 T\u00e0i ch\u00ednh \u0111ang t\u0103ng g\u1ea5p \u0111\u00f4i quy m\u00f4 c\u00e1c ho\u1ea1t \u0111\u1ed9ng n\u00e0y trong l\u0129nh v\u1ef1c k\u1ef3 h\u1ea1n 10 \u0111\u1ebfn 30 n\u0103m t\u1eeb 2 t\u1ef7 USD l\u00ean 4 t\u1ef7 USD m\u1ed7i l\u1ea7n, b\u1eaft \u0111\u1ea7u t\u1eeb ng\u00e0y 9 th\u00e1ng 9 v\u00e0 k\u00e9o d\u00e0i \u0111\u1ebfn ng\u00e0y 4 th\u00e1ng 11.",
+    "lang": "vi",
+    "quantities": [
+     "k\u1ef3 h\u1ea1n",
+     "usd"
+    ],
+    "direction": [
+     "t\u0103ng"
+    ],
+    "horizon": [
+     "ng\u00e0y",
+     "th\u00e1ng"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "USDX"
+     ],
+     "mentioned": [
+      "v\u00e0ng",
+      "b\u1ea1c",
+      "dxy",
+      "vn-index"
+     ],
+     "transfer_only": [
+      "vn-index->indices (HOSE)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "1aa22432c624"
+   }
+  ],
+  "n_claims": 8
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "th\u1ea3o lu\u1eadn - [D\u00e0nh cho ng\u01b0\u1eddi m\u1edbi] B\u00ed k\u00edp h\u01b0\u1edbng \u0111\u1ea7u t\u01b0 ch\u1ee9ng kho\u00e1n chuy\u00ean nghi\u1ec7p 2024 | VOZ",
+  "url": "https://voz.vn/t/danh-cho-nguoi-moi-bi-kip-huong-dau-tu-chung-khoan-chuyen-nghiep-2024.994557/",
+  "published": "2026-09-14T18:12:59+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "flow",
+   "inventory",
+   "momentum",
+   "policy",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "vi-VN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "446f5068f5683dc05e86",
+  "host": "voz.vn",
+  "claims": [
+   {
+    "claim": "\u0110i\u1ec3m mua Pivot v\u00e0 ngh\u1ec7 thu\u1eadt qu\u1ea3n tr\u1ecb v\u1ed1n c\u1ee7a Mark Minervini) + C\u1ea5p \u0111\u1ed9 3: T\u01b0 duy v\u00e0 t\u1ea7m nh\u00ecn vi m\u00f4: \u0111i s\u00e2u v\u00e0o k\u1ef9 n\u0103ng ph\u00e2n t\u00edch di\u1ec5n gi\u1ea3i bi\u1ebfn \u0111\u1ed9ng gi\u00e1, h\u00e0nh vi cung c\u1ea7u ng\u1eafn h\u1ea1n qua \u0111\u1ecdc hi\u1ec3u bi\u1ec3u \u0111\u1ed3: Tr\u01b0\u1eddng ph\u00e1i ph\u00e2n t\u00edch bi\u1ebfn \u0111\u1ed9ng gi\u00e1 v\u00e0 kh\u1ed1i l\u01b0\u1ee3ng VSA, tr\u01b0\u1eddng ph\u00e1i Wyckoff.",
+    "lang": "vi",
+    "quantities": [
+     "bi\u1ebfn \u0111\u1ed9ng",
+     "kh\u1ed1i l\u01b0\u1ee3ng"
+    ],
+    "direction": [
+     "mua"
+    ],
+    "horizon": [
+     "ng\u1eafn h\u1ea1n"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD"
+     ],
+     "mentioned": [
+      "v\u00e0ng",
+      "b\u1ea1c"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "d13466bbc07d"
+   },
+   {
+    "claim": "Cu\u1ed1n \u201cPh\u00e2n t\u00edch ch\u1ee9ng kho\u00e1n\u201d + \u201cNh\u00e0 \u0111\u1ea7u t\u01b0 th\u00f4ng minh\u201d Benjamin Graham Cu\u1ed1n \u201cNgh\u1ec7 thu\u1eadt \u0111\u1ea7u t\u01b0 DhanDho\u201d Mohnish Pabrai Cu\u1ed1n \u201cQuy t\u1eafc s\u1ed1 1\u201d + \u201cPaybacktime Ng\u00e0y \u0111\u00f2i n\u1ee3\u201d Phil Town + \u0110\u1ea7u t\u01b0 t\u0103ng tr\u01b0\u1edfng (\u0111\u00e2y l\u00e0 lo\u1ea1i \u0111\u1ea7u t\u01b0 t\u1ed1i \u01b0u v\u00e0 \u0111em l\u1ea1i l\u1ee3i nhu\u1eadn cao nh\u1ea5t hi\u1ec7n nay).",
+    "lang": "vi",
+    "quantities": [
+     "ch\u1ee9ng kho\u00e1n"
+    ],
+    "direction": [
+     "t\u0103ng"
+    ],
+    "horizon": [
+     "ng\u00e0y"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD"
+     ],
+     "mentioned": [
+      "v\u00e0ng",
+      "b\u1ea1c"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "72367729c295"
+   },
+   {
+    "claim": "Timming room m\u00ecnh v\u1eabn \u0111\u00e1nh s\u00f3ng h\u1ed3i v\u00e0o cu\u1ed1i th\u00e1ng 8 \u0111\u1ea7u th\u00e1ng 9 v\u00e0i tu\u1ea7n, sau \u0111\u00f3 ng\u1ed3i ngo\u00e0i \u0111\u1ee3i TT t\u1ea1o \u0111\u00e1y h\u1eb3n, khi TT t\u1ea1o \u0111\u00e1y xong ch\u00fang ta c\u00f3 1 s\u00f3ng t\u0103ng \u00edt nh\u1ea5t t\u1eeb 3 th\u00e1ng tr\u1edf \u0111i.",
+    "lang": "vi",
+    "quantities": [
+     "s\u00f3ng",
+     "\u0111\u00e1y"
+    ],
+    "direction": [
+     "t\u0103ng"
+    ],
+    "horizon": [
+     "th\u00e1ng",
+     "tu\u1ea7n"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD"
+     ],
+     "mentioned": [
+      "v\u00e0ng",
+      "b\u1ea1c"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "188630d86c5f"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "ki\u1ebfn th\u1ee9c - [CLB Ch\u1ee9ng kho\u00e1n ph\u00e1i sinh (qu\u1ed1c t\u1ebf) ] Chia s\u1ebb kinh nghi\u1ec7m \u0111\u1ea7u t\u01b0 ch\u1ee9ng kho\u00e1n| Trang 5 | VOZ",
+  "url": "https://voz.vn/t/clb-chung-khoan-phai-sinh-quoc-te-chia-se-kinh-nghiem-dau-tu-chung-khoan.497868/page-5",
+  "published": "2026-09-14T18:13:01+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "NAS100",
+   "US500",
+   "AlibabaGroup"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "vi-VN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1d858537362626be75b3",
+  "host": "voz.vn",
+  "claims": [
+   {
+    "claim": "html travisgg Senior Member 11/3/22 #90 Mua c\u1ed5 phi\u1ebfu ch\u1ee9ng kho\u00e1n qu\u1ed1c t\u1ebf kh\u00f4ng bao gi\u1edd c\u00f3 chuy\u1ec7n tr\u1ea3 c\u1ed5 t\u1ee9c b\u1ea1n.",
+    "lang": "vi",
+    "quantities": [
+     "c\u1ed5 phi\u1ebfu",
+     "ch\u1ee9ng kho\u00e1n"
+    ],
+    "direction": [
+     "mua"
+    ],
+    "horizon": [
+     "gi\u1edd"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "NAS100",
+      "US500",
+      "AlibabaGroup"
+     ],
+     "mentioned": [
+      "v\u00e0ng",
+      "b\u1ea1c",
+      "nasdaq",
+      "s&p 500",
+      "php",
+      "alibaba"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "eff349fcea67"
+   },
+   {
+    "claim": "V\u00e0 n\u00f3 l\u00e0 T+2, t\u01b0\u01a1ng t\u1ef1 nh\u01b0 T+3 c\u1ed5 phi\u1ebfu \u1edf Vi\u1ec7t Nam, mua xong th\u00ec 2 ng\u00e0y sau c\u1ed5 phi\u1ebfu m\u1edbi v\u1ec1 t\u00e0i kho\u1ea3n n\u00ean l\u00e0m g\u00ec c\u00f3 CFD \u1edf \u0111\u00e2y travisgg Senior Member 12/3/22 #99 trojan14 \u0111\u00e3 n\u00f3i: V\u00e0 n\u00f3 l\u00e0 T+2, t\u01b0\u01a1ng t\u1ef1 nh\u01b0 T+3 c\u1ed5 phi\u1ebfu \u1edf Vi\u1ec7t Nam, mua xong th\u00ec 2 ng\u00e0y sau c\u1ed5 phi\u1ebfu m\u1edbi v\u1ec1 t\u00e0i kho\u1ea3n n\u00ean l\u00e0m g\u00ec c\u00f3 CFD \u1edf \u0111\u00e2y Xem t\u1ec7p \u0111\u00ednh k\u00e8m 1057158 Nh\u1ea5p \u0111\u1ec3 m\u1edf r\u1ed9ng.",
+    "lang": "vi",
+    "quantities": [
+     "c\u1ed5 phi\u1ebfu"
+    ],
+    "direction": [
+     "mua"
+    ],
+    "horizon": [
+     "t+2",
+     "t+3"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "NAS100",
+      "US500",
+      "AlibabaGroup"
+     ],
+     "mentioned": [
+      "v\u00e0ng",
+      "b\u1ea1c",
+      "nasdaq",
+      "s&p 500",
+      "php",
+      "alibaba"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "7f83a1cc9cd4"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "[Money Booster by KP] &quot;\u0e40\u0e08\u0e32\u0e30\u0e40\u0e17\u0e23\u0e19\u0e14\u0e4c\u0e17\u0e2d\u0e07\u0e04\u0e33! \u0e01\u0e25\u0e22\u0e38\u0e17\u0e18\u0e4c\u0e40\u0e17\u0e23\u0e14\u0e40\u0e2b\u0e19\u0e37\u0e2d\u0e40\u0e01\u0e21\u0e27\u0e34\u0e01\u0e24\u0e15\u0e42\u0e25\u0e01 (\u0e1e\u0e24\u0e28\u0e08\u0e34\u0e01\u0e32\u0e22\u0e19 2024)&quot; \u0e17\u0e2d\u0e07\u0e04\u0e33\u0e40\u0e1b\u0e47\u0e19\u0e2a\u0e34\u0e19\u0e17\u0e23\u0e31\u0e1e\u0e22\u0e4c\u0e17\u0e35\u0e48\u0e16\u0e39\u0e01\u0e1e\u0e39\u0e14\u0e16\u0e36\u0e07\u0e01\u0e31\u0e19\u0e21\u0e32\u0e01\u0e43\u0e19\u0e02\u0e13\u0e30\u0e19\u0e35\u0e49 \u0e42\u0e14\u0e22\u0e23\u0e32\u0e04\u0e32\u0e1e\u0e38\u0e48\u0e07\u0e17\u0e30\u0e25\u0e38 $2,650 \u0e15\u0e48\u0e2d\u0e2d\u0e2d\u0e19\u0e0b\u0e4c \u0e0b\u0e36\u0e48\u0e07\u0e40\u0e1b\u0e47\u0e19\u0e01\u0e32\u0e23\u0e40\u0e1e\u0e34\u0e48\u0e21\u0e02\u0e36\u0e49\u0e19\u0e15\u0e48\u0e2d\u0e40\u0e19\u0e37\u0e48",
+  "url": "https://www.blockdit.com/posts/673e9e244c2b49e42d243b07",
+  "published": "2026-09-14T18:13:04+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "15115c86c62639c405df",
+  "host": "www.blockdit.com",
+  "claims": [
+   {
+    "claim": "\u0e17\u0e2d\u0e07\u0e04\u0e33\u0e40\u0e1b\u0e47\u0e19\u0e2a\u0e34\u0e19\u0e17\u0e23\u0e31\u0e1e\u0e22\u0e4c\u0e17\u0e35\u0e48\u0e16\u0e39\u0e01\u0e1e\u0e39\u0e14\u0e16\u0e36\u0e07\u0e01\u0e31\u0e19\u0e21\u0e32\u0e01\u0e43\u0e19\u0e02\u0e13\u0e30\u0e19\u0e35\u0e49 \u0e42\u0e14\u0e22\u0e23\u0e32\u0e04\u0e32\u0e1e\u0e38\u0e48\u0e07\u0e17\u0e30\u0e25\u0e38 $2,650 \u0e15\u0e48\u0e2d\u0e2d\u0e2d\u0e19\u0e0b\u0e4c \u0e0b\u0e36\u0e48\u0e07\u0e40\u0e1b\u0e47\u0e19\u0e01\u0e32\u0e23\u0e40\u0e1e\u0e34\u0e48\u0e21\u0e02\u0e36\u0e49\u0e19\u0e15\u0e48\u0e2d\u0e40\u0e19\u0e37\u0e48\u0e2d\u0e07\u0e40\u0e1b\u0e47\u0e19\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48 4 \u0e2a\u0e32\u0e40\u0e2b\u0e15\u0e38\u0e2b\u0e25\u0e31\u0e01\u0e04\u0e37\u0e2d\u0e04\u0e27\u0e32\u0e21 Blockdit Logo Blockdit Logo (Mobile) \u0e2a\u0e33\u0e23\u0e27\u0e08 \u0e25\u0e07\u0e17\u0e38\u0e19 \u0e04\u0e33\u0e16\u0e32\u0e21 \u0e40\u0e02\u0e49\u0e32\u0e2a\u0e39\u0e48\u0e23\u0e30\u0e1a\u0e1a \u0e21\u0e35\u0e1a\u0e31\u0e0d\u0e0a\u0e35\u0e2d\u0e22\u0e39\u0e48\u0e41\u0e25\u0e49\u0e27?",
+    "lang": "th",
+    "quantities": [
+     "\u0e17\u0e30\u0e25\u0e38",
+     "\u0e17\u0e2d\u0e07\u0e04\u0e33",
+     "\u0e17\u0e2d\u0e07"
+    ],
+    "direction": [
+     "\u0e02\u0e36\u0e49\u0e19",
+     "\u0e25\u0e07"
+    ],
+    "horizon": [
+     "\u0e27\u0e31\u0e19"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u0e17\u0e2d\u0e07\u0e04\u0e33"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "bf2c28725fb0"
+   },
+   {
+    "claim": "\u0e01\u0e25\u0e22\u0e38\u0e17\u0e18\u0e4c\u0e40\u0e17\u0e23\u0e14\u0e40\u0e2b\u0e19\u0e37\u0e2d\u0e40\u0e01\u0e21\u0e27\u0e34\u0e01\u0e24\u0e15\u0e42\u0e25\u0e01 (\u0e1e\u0e24\u0e28\u0e08\u0e34\u0e01\u0e32\u0e22\u0e19 2024)\" \u0e17\u0e2d\u0e07\u0e04\u0e33\u0e40\u0e1b\u0e47\u0e19\u0e2a\u0e34\u0e19\u0e17\u0e23\u0e31\u0e1e\u0e22\u0e4c\u0e17\u0e35\u0e48\u0e16\u0e39\u0e01\u0e1e\u0e39\u0e14\u0e16\u0e36\u0e07\u0e01\u0e31\u0e19\u0e21\u0e32\u0e01\u0e43\u0e19\u0e02\u0e13\u0e30\u0e19\u0e35\u0e49 \u0e42\u0e14\u0e22\u0e23\u0e32\u0e04\u0e32\u0e1e\u0e38\u0e48\u0e07\u0e17\u0e30\u0e25\u0e38 $2,650 \u0e15\u0e48\u0e2d\u0e2d\u0e2d\u0e19\u0e0b\u0e4c \u0e0b\u0e36\u0e48\u0e07\u0e40\u0e1b\u0e47\u0e19\u0e01\u0e32\u0e23\u0e40\u0e1e\u0e34\u0e48\u0e21\u0e02\u0e36\u0e49\u0e19\u0e15\u0e48\u0e2d\u0e40\u0e19\u0e37\u0e48\u0e2d\u0e07\u0e40\u0e1b\u0e47\u0e19\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48 4 \u0e2a\u0e32\u0e40\u0e2b\u0e15\u0e38\u0e2b\u0e25\u0e31\u0e01\u0e04\u0e37\u0e2d\u0e04\u0e27\u0e32\u0e21\u0e44\u0e21\u0e48\u0e41\u0e19\u0e48\u0e19\u0e2d\u0e19\u0e17\u0e32\u0e07\u0e20\u0e39\u0e21\u0e34\u0e23\u0e31\u0e10\u0e28\u0e32\u0e2a\u0e15\u0e23\u0e4c\u0e41\u0e25\u0e30\u0e04\u0e27\u0e32\u0e21\u0e01\u0e31\u0e07\u0e27\u0e25\u0e40\u0e01\u0e35\u0e48\u0e22\u0e27\u0e01\u0e31\u0e1a\u0e40\u0e28\u0e23\u0e29\u0e10\u0e01\u0e34\u0e08\u0e42\u0e25\u0e01 \u0e17\u0e31\u0e49\u0e07\u0e08\u0e32\u0e01\u0e27\u0e34\u0e01\u0e24\u0e15\u0e01\u0e32\u0e23\u0e13\u0e4c\u0e43\u0e19\u0e23\u0e31\u0e2a\u0e40\u0e0b\u0e35\u0e22-\u0e22\u0e39\u0e40\u0e04\u0e23\u0e19 \u0e04\u0e27\u0e32\u0e21\u0e02\u0e31\u0e14\u0e41\u0e22\u0e49\u0e07\u0e43\u0e19\u0e15\u0e30\u0e27\u0e31\u0e19\u0e2d\u0e2d\u0e01\u0e01\u0e25\u0e32\u0e07 \u0e41\u0e25\u0e30\u0e19\u0e42\u0e22\u0e1a\u0e32\u0e22\u0e14\u0e2d\u0e01\u0e40\u0e1a\u0e35\u0e49\u0e22\u0e02\u0e2d\u0e07\u0e18\u0e19\u0e32\u0e04\u0e32\u0e23\u0e01\u0e25\u0e32\u0e07\u0e2a\u0e2b\u0e23\u0e31\u0e10\u0e2f (Fed) \"\u0e40\u0e08\u0e32\u0e30\u0e40\u0e17\u0e23\u0e19\u0e14\u0e4c\u0e17\u0e2d\u0e07\u0e04\u0e33!",
+    "lang": "th",
+    "quantities": [
+     "\u0e17\u0e30\u0e25\u0e38",
+     "\u0e14\u0e2d\u0e01\u0e40\u0e1a\u0e35\u0e49\u0e22",
+     "\u0e17\u0e2d\u0e07\u0e04\u0e33",
+     "\u0e17\u0e2d\u0e07"
+    ],
+    "direction": [
+     "\u0e02\u0e36\u0e49\u0e19",
+     "\u0e17\u0e30\u0e25\u0e38"
+    ],
+    "horizon": [
+     "\u0e27\u0e31\u0e19"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u0e17\u0e2d\u0e07\u0e04\u0e33"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "0f9ad3343397"
+   },
+   {
+    "claim": "\u0e20\u0e39\u0e21\u0e34\u0e23\u0e31\u0e10\u0e28\u0e32\u0e2a\u0e15\u0e23\u0e4c\u0e15\u0e36\u0e07\u0e40\u0e04\u0e23\u0e35\u0e22\u0e14 \u0e01\u0e32\u0e23\u0e17\u0e35\u0e48\u0e22\u0e39\u0e40\u0e04\u0e23\u0e19\u0e43\u0e0a\u0e49\u0e2d\u0e32\u0e27\u0e38\u0e18\u0e23\u0e30\u0e22\u0e30\u0e44\u0e01\u0e25\u0e08\u0e32\u0e01\u0e15\u0e30\u0e27\u0e31\u0e19\u0e15\u0e01\u0e42\u0e08\u0e21\u0e15\u0e35 \u0e41\u0e25\u0e30\u0e01\u0e32\u0e23\u0e17\u0e35\u0e48\u0e23\u0e31\u0e2a\u0e40\u0e0b\u0e35\u0e22\u0e1b\u0e23\u0e31\u0e1a\u0e1b\u0e23\u0e38\u0e07\u0e19\u0e42\u0e22\u0e1a\u0e32\u0e22\u0e19\u0e34\u0e27\u0e40\u0e04\u0e25\u0e35\u0e22\u0e23\u0e4c\u0e43\u0e2b\u0e49\u0e04\u0e23\u0e2d\u0e1a\u0e04\u0e25\u0e38\u0e21\u0e16\u0e36\u0e07\u0e40\u0e07\u0e37\u0e48\u0e2d\u0e19\u0e44\u0e02\u0e01\u0e32\u0e23\u0e43\u0e0a\u0e49\u0e07\u0e32\u0e19\u0e17\u0e35\u0e48\u0e01\u0e27\u0e49\u0e32\u0e07\u0e02\u0e36\u0e49\u0e19 \u0e2a\u0e48\u0e07\u0e1c\u0e25\u0e43\u0e2b\u0e49\u0e15\u0e25\u0e32\u0e14\u0e40\u0e01\u0e34\u0e14\u0e04\u0e27\u0e32\u0e21\u0e01\u0e31\u0e07\u0e27\u0e25 \u0e41\u0e25\u0e30\u0e19\u0e31\u0e01\u0e25\u0e07\u0e17\u0e38\u0e19\u0e2b\u0e31\u0e19\u0e21\u0e32\u0e16\u0e37\u0e2d\u0e17\u0e2d\u0e07\u0e04\u0e33\u0e0b\u0e36\u0e48\u0e07\u0e40\u0e1b\u0e47\u0e19\u0e2a\u0e34\u0e19\u0e17\u0e23\u0e31\u0e1e\u0e22\u0e4c\u0e17\u0e35\u0e48\u0e1b\u0e25\u0e2d\u0e14\u0e20\u0e31\u0e22 2.",
+    "lang": "th",
+    "quantities": [
+     "\u0e17\u0e2d\u0e07\u0e04\u0e33",
+     "\u0e17\u0e2d\u0e07"
+    ],
+    "direction": [
+     "\u0e02\u0e36\u0e49\u0e19",
+     "\u0e25\u0e07"
+    ],
+    "horizon": [
+     "\u0e27\u0e31\u0e19"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u0e17\u0e2d\u0e07\u0e04\u0e33"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "db6ebba4726f"
+   },
+   {
+    "claim": "25% \u0e43\u0e19\u0e40\u0e14\u0e37\u0e2d\u0e19\u0e18\u0e31\u0e19\u0e27\u0e32\u0e04\u0e21 \u0e41\u0e15\u0e48\u0e01\u0e47\u0e22\u0e31\u0e07\u0e21\u0e35\u0e04\u0e27\u0e32\u0e21\u0e44\u0e21\u0e48\u0e41\u0e19\u0e48\u0e19\u0e2d\u0e19\u0e40\u0e01\u0e35\u0e48\u0e22\u0e27\u0e01\u0e31\u0e1a\u0e01\u0e32\u0e23\u0e15\u0e31\u0e14\u0e2a\u0e34\u0e19\u0e43\u0e08\u0e19\u0e35\u0e49 \u0e0b\u0e36\u0e48\u0e07\u0e2a\u0e48\u0e07\u0e1c\u0e25\u0e43\u0e2b\u0e49\u0e42\u0e2d\u0e01\u0e32\u0e2a\u0e01\u0e32\u0e23\u0e16\u0e37\u0e2d\u0e17\u0e2d\u0e07\u0e04\u0e33\u0e0b\u0e36\u0e48\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35\u0e14\u0e2d\u0e01\u0e40\u0e1a\u0e35\u0e49\u0e22\u0e14\u0e39\u0e19\u0e48\u0e32\u0e2a\u0e19\u0e43\u0e08\u0e21\u0e32\u0e01\u0e02\u0e36\u0e49\u0e19 --- \u0e01\u0e25\u0e22\u0e38\u0e17\u0e18\u0e4c\u0e01\u0e32\u0e23\u0e25\u0e07\u0e17\u0e38\u0e19\u0e17\u0e2d\u0e07\u0e04\u0e33\u0e43\u0e19\u0e0a\u0e48\u0e27\u0e07\u0e19\u0e35\u0e49 1.",
+    "lang": "th",
+    "quantities": [
+     "\u0e14\u0e2d\u0e01\u0e40\u0e1a\u0e35\u0e49\u0e22",
+     "\u0e17\u0e2d\u0e07\u0e04\u0e33",
+     "\u0e17\u0e2d\u0e07"
+    ],
+    "direction": [
+     "\u0e02\u0e36\u0e49\u0e19",
+     "\u0e25\u0e07"
+    ],
+    "horizon": [
+     "\u0e40\u0e14\u0e37\u0e2d\u0e19"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u0e17\u0e2d\u0e07\u0e04\u0e33"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "820433c5075f"
+   }
+  ],
+  "n_claims": 4
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "[MTS GOLD GROUP] \ud83c\udfc6 #\u0e08\u0e31\u0e1a\u0e1b\u0e23\u0e30\u0e40\u0e14\u0e47\u0e19\u0e17\u0e2d\u0e07 #\u0e27\u0e34\u0e40\u0e04\u0e23\u0e32\u0e30\u0e2b\u0e4c\u0e01\u0e25\u0e22\u0e38\u0e17\u0e18\u0e4c \u0e44\u0e14\u0e49\u0e43\u0e19 \ud83d\udca5 MTS GOLD ANALYSIS \u26a1\ufe0f\u0e27\u0e34\u0e40\u0e04\u0e23\u0e32\u0e30\u0e2b\u0e4c\u0e23\u0e32\u0e04\u0e32\u0e17\u0e2d\u0e07\u0e04\u0e33\u0e17\u0e32\u0e07\u0e40\u0e17\u0e04\u0e19\u0e34\u0e04",
+  "url": "https://www.blockdit.com/posts/68a7ec31b84b5c41790b01eb",
+  "published": "2026-09-14T18:13:05+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a1d48f42ed646314cecf",
+  "host": "www.blockdit.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "[Investic Analytics Studio] \u0e01\u0e32\u0e23\u0e43\u0e0a\u0e49 AI \u0e41\u0e25\u0e30\u0e01\u0e25\u0e22\u0e38\u0e17\u0e18\u0e4c\u0e40\u0e17\u0e23\u0e14 Non-Farm \u0e27\u0e34\u0e40\u0e04\u0e23\u0e32\u0e30\u0e2b\u0e4c\u0e23\u0e32\u0e04\u0e32\u0e17\u0e2d\u0e07\u0e04\u0e33\u0e25\u0e48\u0e32\u0e2a\u0e38\u0e14 \u0e1e\u0e23\u0e49\u0e2d\u0e21\u0e40\u0e19\u0e49\u0e19\u0e01\u0e32\u0e23\u0e43\u0e0a\u0e49 AI \u0e43\u0e19\u0e01\u0e32\u0e23\u0e27\u0e34\u0e40\u0e04\u0e23\u0e32\u0e30\u0e2b\u0e4c\u0e08\u0e38\u0e14\u0e40\u0e02\u0e49\u0e32\u0e0b\u0e37\u0e49\u0e2d\u0e41\u0e25\u0e30\u0e08\u0e31\u0e14\u0e01\u0e32\u0e23\u0e04\u0e27\u0e32\u0e21\u0e40\u0e2a\u0e35\u0e48\u0e22\u0e07 \u0e23\u0e27\u0e21\u0e16\u0e36\u0e07\u0e1c\u0e25\u0e01\u0e23\u0e30\u0e17\u0e1a\u0e08\u0e32\u0e01\u0e23\u0e32\u0e22\u0e07\u0e32\u0e19 Non-Farm Payroll \u0e15\u0e48\u0e2d\u0e01\u0e32\u0e23\u0e15\u0e31\u0e14",
+  "url": "https://www.blockdit.com/posts/6784eb6bb7b6b78d0fcf1a3f",
+  "published": "2026-09-14T18:13:07+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "\u0e23\u0e32\u0e22\u0e27\u0e31\u0e19"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5fe0744ec08bfa5f8918",
+  "host": "www.blockdit.com",
+  "claims": [
+   {
+    "claim": "2025 \u0e40\u0e27\u0e25\u0e32 10:31 \u2022 \u0e2b\u0e38\u0e49\u0e19 & \u0e40\u0e28\u0e23\u0e29\u0e10\u0e01\u0e34\u0e08 \u0e01\u0e32\u0e23\u0e43\u0e0a\u0e49 AI \u0e41\u0e25\u0e30\u0e01\u0e25\u0e22\u0e38\u0e17\u0e18\u0e4c\u0e40\u0e17\u0e23\u0e14 Non-Farm \u0e27\u0e34\u0e40\u0e04\u0e23\u0e32\u0e30\u0e2b\u0e4c\u0e23\u0e32\u0e04\u0e32\u0e17\u0e2d\u0e07\u0e04\u0e33\u0e25\u0e48\u0e32\u0e2a\u0e38\u0e14 \u0e1e\u0e23\u0e49\u0e2d\u0e21\u0e40\u0e19\u0e49\u0e19\u0e01\u0e32\u0e23\u0e43\u0e0a\u0e49 AI \u0e43\u0e19\u0e01\u0e32\u0e23\u0e27\u0e34\u0e40\u0e04\u0e23\u0e32\u0e30\u0e2b\u0e4c\u0e08\u0e38\u0e14\u0e40\u0e02\u0e49\u0e32\u0e0b\u0e37\u0e49\u0e2d\u0e41\u0e25\u0e30\u0e08\u0e31\u0e14\u0e01\u0e32\u0e23\u0e04\u0e27\u0e32\u0e21\u0e40\u0e2a\u0e35\u0e48\u0e22\u0e07 \u0e23\u0e27\u0e21\u0e16\u0e36\u0e07\u0e1c\u0e25\u0e01\u0e23\u0e30\u0e17\u0e1a\u0e08\u0e32\u0e01\u0e23\u0e32\u0e22\u0e07\u0e32\u0e19 Non-Farm Payroll \u0e15\u0e48\u0e2d\u0e01\u0e32\u0e23\u0e15\u0e31\u0e14\u0e2a\u0e34\u0e19\u0e43\u0e08\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22\u0e43\u0e19\u0e23\u0e30\u0e22\u0e30\u0e2a\u0e31\u0e49\u0e19\u0e41\u0e25\u0e30\u0e23\u0e30\u0e22\u0e30\u0e22\u0e32\u0e27 \u0e40\u0e23\u0e35\u0e22\u0e19\u0e23\u0e39\u0e49\u0e27\u0e34\u0e18\u0e35\u0e01\u0e32\u0e23\u0e2d\u0e48\u0e32\u0e19\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25 Open Interest \u0e41\u0e25\u0e30\u0e01\u0e32\u0e23\u0e43\u0e0a\u0e49\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e17\u0e32\u0e07\u0e40\u0e28\u0e23\u0e29\u0e10\u0e01\u0e34\u0e08\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e2a\u0e19\u0e31\u0e1a\u0e2a\u0e19\u0e38\u0e19\u0e01\u0e25\u0e22\u0e38\u0e17\u0e18\u0e4c\u0e01\u0e32\u0e23\u0e25\u0e07\u0e17\u0e38\u0e19\u0e43\u0e19\u0e15\u0e25\u0e32\u0e14\u0e17\u0e2d\u0e07\u0e04\u0e33!",
+    "lang": "th",
+    "quantities": [
+     "\u0e17\u0e2d\u0e07\u0e04\u0e33",
+     "\u0e17\u0e2d\u0e07",
+     "\u0e2b\u0e38\u0e49\u0e19",
+     "open interest"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u0e17\u0e2d\u0e07\u0e04\u0e33"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "40c418a41a65"
+   },
+   {
+    "claim": "#\u0e23\u0e32\u0e04\u0e32\u0e17\u0e2d\u0e07\u0e27\u0e31\u0e19\u0e19\u0e35\u0e49 #\u0e41\u0e19\u0e27\u0e42\u0e19\u0e49\u0e21\u0e23\u0e32\u0e04\u0e32\u0e17\u0e2d\u0e07 #\u0e40\u0e17\u0e23\u0e14 #\u0e40\u0e17\u0e23\u0e14\u0e17\u0e2d\u0e07\u0e04\u0e4d\u0e32 #\u0e17\u0e2d\u0e07\u0e04\u0e4d\u0e32 #\u0e27\u0e32\u0e07\u0e41\u0e1c\u0e19\u0e40\u0e17\u0e23\u0e14\u0e17\u0e2d\u0e07 #goldtrading #gold \ud83d\udc49 \u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e44\u0e21\u0e48\u0e43\u0e2b\u0e49\u0e1e\u0e25\u0e32\u0e14\u0e2a\u0e34\u0e17\u0e18\u0e34\u0e1b\u0e23\u0e30\u0e42\u0e22\u0e0a\u0e19\u0e4c\u0e41\u0e25\u0e30\u0e02\u0e48\u0e32\u0e27\u0e2a\u0e32\u0e23\u0e15\u0e48\u0e32\u0e07\u0e46 \u0e17\u0e38\u0e01\u0e17\u0e48\u0e32\u0e19\u0e2a\u0e32\u0e21\u0e32\u0e23\u0e16\u0e25\u0e07\u0e17\u0e30\u0e40\u0e1a\u0e35\u0e22\u0e19\u0e40\u0e02\u0e49\u0e32\u0e23\u0e48\u0e27\u0e21\u0e01\u0e25\u0e38\u0e48\u0e21\u0e04\u0e19\u0e40\u0e17\u0e23\u0e14\u0e17\u0e2d\u0e07\u0e43\u0e19 Line Open Chat \u0e02\u0e2d\u0e07 INVESTIC \u0e44\u0e14\u0e49\u0e17\u0e35\u0e48: https://forms.",
+    "lang": "th",
+    "quantities": [
+     "\u0e41\u0e19\u0e27\u0e42\u0e19\u0e49\u0e21",
+     "\u0e17\u0e2d\u0e07",
+     "open"
+    ],
+    "direction": [
+     "\u0e25\u0e07",
+     "\u0e40\u0e02\u0e49\u0e32"
+    ],
+    "horizon": [
+     "\u0e27\u0e31\u0e19",
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u0e17\u0e2d\u0e07"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "054d79da8683"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "[\u0e15\u0e32\u0e21\u0e1c\u0e21\u0e40\u0e17\u0e23\u0e14 - Crypto &amp; Gold] \ud83d\udcdd \u0e16\u0e2d\u0e14\u0e1a\u0e17\u0e40\u0e23\u0e35\u0e22\u0e19\u0e04\u0e23\u0e34\u0e1b\u0e42\u0e15\u0e40\u0e14\u0e37\u0e2d\u0e19\u0e17\u0e35\u0e48\u0e1c\u0e48\u0e32\u0e19\u0e21\u0e32... \u0e15\u0e25\u0e32\u0e14\u0e2a\u0e27\u0e34\u0e07\u0e14\u0e38\u0e02\u0e19\u0e32\u0e14\u0e19\u0e35\u0e49 \u0e2a\u0e2d\u0e19\u0e2d\u0e30\u0e44\u0e23\u0e40\u0e23\u0e32\u0e1a\u0e49\u0e32\u0e07? \u200b\u0e2a\u0e27\u0e31\u0e2a\u0e14\u0e35\u0e04\u0e23\u0e31\u0e1a\u0e17\u0e38\u0e01\u0e04\u0e19 \u0e42\u0e04\u0e49\u0e0a\u0e1e\u0e35\u0e0a \ud83c\udf51 \u0e08\u0e32\u0e01\u0e40\u0e1e\u0e08 \u0e15\u0e32\u0e21\u0e1c\u0e21\u0e40\u0e17\u0e23\u0e14 - Crypto &amp; Gold \u0e04\u0e23\u0e31\u0e1a! \u0e40\u0e14\u0e37\u0e2d\u0e19\u0e40\u0e21\u0e29\u0e32\u0e22\u0e19\u0e17\u0e35\u0e48\u0e40\u0e1e\u0e34\u0e48\u0e07\u0e08\u0e1a\u0e44\u0e1b\u0e2b\u0e21\u0e32\u0e14\u0e46",
+  "url": "https://www.blockdit.com/posts/69f4a8ce00a887589aee2e4b",
+  "published": "2026-09-14T18:13:10+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0e0bef67ddac32597a23",
+  "host": "www.blockdit.com",
+  "claims": [
+   {
+    "claim": "\u0e40\u0e14\u0e37\u0e2d\u0e19\u0e40\u0e21\u0e29\u0e32\u0e22\u0e19\u0e17\u0e35\u0e48\u0e40\u0e1e\u0e34\u0e48\u0e07\u0e08\u0e1a\u0e44\u0e1b\u0e2b\u0e21\u0e32\u0e14\u0e46 \u0e16\u0e37\u0e2d\u0e40\u0e1b\u0e47\u0e19\u0e40\u0e14\u0e37\u0e2d\u0e19\u0e17\u0e35\u0e48\u0e15\u0e25\u0e32\u0e14\u0e04\u0e23\u0e34\u0e1b\u0e42\u0e15\u0e17\u0e14\u0e2a\u0e2d\u0e1a\u0e08\u0e34\u0e15\u0e43\u0e08\u0e1e\u0e27\u0e01\u0e40\u0e23\u0e32\u0e2d\u0e22\u0e48\u0e32\u0e07\u0e2b\u0e19\u0e31\u0e01\u0e2b\u0e19\u0e48\u0e27\u0e07\u0e04\u0e23\u0e31\u0e1a \u0e21\u0e35\u0e17\u0e31\u0e49\u0e07\u0e08\u0e31\u0e07\u0e2b\u0e27\u0e30\u0e17\u0e38\u0e1a\u0e41\u0e23\u0e07 \u0e25\u0e32\u0e01\u0e01\u0e25\u0e31\u0e1a \u0e41\u0e25\u0e49\u0e27\u0e01\u0e47\u0e44\u0e0b\u0e14\u0e4c\u0e40\u0e27\u0e22\u0e4c\u0e1a\u0e31\u0e48\u0e19\u0e17\u0e2d\u0e19\u0e01\u0e33\u0e25\u0e31\u0e07\u0e43\u0e08 \u200b\u0e27\u0e31\u0e19\u0e19\u0e35\u0e49\u0e40\u0e23\u0e32\u0e21\u0e32\u0e15\u0e01\u0e15\u0e30\u0e01\u0e2d\u0e19\u0e04\u0e27\u0e32\u0e21\u0e04\u0e34\u0e14\u0e01\u0e31\u0e19\u0e04\u0e23\u0e31\u0e1a \u0e27\u0e48\u0e32\u0e40\u0e14\u0e37\u0e2d\u0e19\u0e17\u0e35\u0e48\u0e1c\u0e48\u0e32\u0e19\u0e21\u0e32 \u0e15\u0e25\u0e32\u0e14\u0e2a\u0e2d\u0e19\u0e1a\u0e17\u0e40\u0e23\u0e35\u0e22\u0e19\u0e2d\u0e30\u0e44\u0e23\u0e43\u0e2b\u0e49\u0e40\u0e23\u0e32\u0e40\u0e2d\u0e32\u0e44\u0e1b\u0e43\u0e0a\u0e49\u0e25\u0e38\u0e22\u0e15\u0e48\u0e2d\u0e43\u0e19\u0e40\u0e14\u0e37\u0e2d\u0e19\u0e1e\u0e24\u0e29\u0e20\u0e32\u0e04\u0e21\u0e19\u0e35\u0e49\u0e1a\u0e49\u0e32\u0e07!",
+    "lang": "th",
+    "quantities": [
+     "\u0e44\u0e0b\u0e14\u0e4c\u0e40\u0e27\u0e22\u0e4c"
+    ],
+    "direction": [
+     "\u0e41\u0e23\u0e07"
+    ],
+    "horizon": [
+     "\u0e27\u0e31\u0e19",
+     "\u0e40\u0e14\u0e37\u0e2d\u0e19"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "e366b4438fb0"
+   },
+   {
+    "claim": "\u0e44\u0e21\u0e48\u0e2d\u0e22\u0e48\u0e32\u0e07\u0e19\u0e31\u0e49\u0e19\u0e40\u0e27\u0e25\u0e32\u0e04\u0e33\u0e19\u0e27\u0e13 Performance \u0e41\u0e1a\u0e1a USD-First \u0e15\u0e31\u0e27\u0e40\u0e25\u0e02\u0e01\u0e33\u0e44\u0e23\u0e04\u0e38\u0e13\u0e08\u0e30\u0e40\u0e1e\u0e35\u0e49\u0e22\u0e19 \u0e41\u0e25\u0e30\u0e01\u0e25\u0e32\u0e22\u0e40\u0e1b\u0e47\u0e19\u0e01\u0e32\u0e23\u0e2b\u0e25\u0e2d\u0e01\u0e15\u0e31\u0e27\u0e40\u0e2d\u0e07\u0e04\u0e23\u0e31\u0e1a \u200b2\ufe0f\u20e3 \u0e1e\u0e2d\u0e23\u0e4c\u0e15 Short-Term \"\u0e2b\u0e49\u0e32\u0e21 All-in \u0e44\u0e21\u0e49\u0e40\u0e14\u0e35\u0e22\u0e27\" \u0e40\u0e14\u0e47\u0e14\u0e02\u0e32\u0e14 \u0e1a\u0e17\u0e40\u0e23\u0e35\u0e22\u0e19\u0e04\u0e27\u0e32\u0e21\u0e1c\u0e31\u0e19\u0e1c\u0e27\u0e19\u0e2a\u0e2d\u0e19\u0e43\u0e2b\u0e49\u0e23\u0e39\u0e49\u0e27\u0e48\u0e32 \u0e01\u0e23\u0e32\u0e1f\u0e21\u0e35\u0e2a\u0e27\u0e34\u0e07\u0e2b\u0e25\u0e2d\u0e01\u0e40\u0e2a\u0e21\u0e2d (\u0e42\u0e14\u0e22\u0e40\u0e09\u0e1e\u0e32\u0e30\u0e1b\u0e25\u0e32\u0e22\u0e04\u0e25\u0e37\u0e48\u0e19 C) \u0e43\u0e04\u0e23\u0e17\u0e35\u0e48\u0e21\u0e35\u0e2b\u0e19\u0e49\u0e32\u0e15\u0e31\u0e01\u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a\u0e40\u0e17\u0e23\u0e14\u0e2a\u0e31\u0e49\u0e19 (Short-Term Portfolio) \u0e01\u0e32\u0e23\u0e40\u0e02\u0e49\u0e32\u0e44\u0e21\u0e49\u0e40\u0e14\u0e35\u0e22\u0e27\u0e40\u0e15\u0e47\u0e21\u0e41\u0e21\u0e47\u0e01\u0e0b\u0e4c\u0e04\u0e37\u0e2d\u0e04\u0e27\u0e32\u0e21\u0e40\u0e2a\u0e35\u0e48\u0e22\u0e07\u0e2a\u0e39\u0e07\u0e2a\u0e38\u0e14\u0e04\u0e23\u0e31\u0e1a!",
+    "lang": "th",
+    "quantities": [
+     "\u0e04\u0e27\u0e32\u0e21\u0e1c\u0e31\u0e19\u0e1c\u0e27\u0e19"
+    ],
+    "direction": [
+     "\u0e40\u0e02\u0e49\u0e32",
+     "short"
+    ],
+    "horizon": [
+     "\u0e2a\u0e27\u0e34\u0e07"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "24124d89da98"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "[\u0e2a\u0e32\u0e23\u0e30\u0e40\u0e23\u0e37\u0e48\u0e2d\u0e07 \u0e01\u0e32\u0e23\u0e40\u0e07\u0e34\u0e19] &quot;\u0e40\u0e08\u0e32\u0e30\u0e25\u0e36\u0e01 &#x27;\u0e17\u0e2d\u0e07\u0e04\u0e33&#x27;: \u0e08\u0e32\u0e01\u0e01\u0e23\u0e21\u0e18\u0e23\u0e23\u0e21\u0e4c\u0e1b\u0e23\u0e30\u0e01\u0e31\u0e19\u0e04\u0e27\u0e32\u0e21\u0e40\u0e2a\u0e35\u0e48\u0e22\u0e07 \u0e2a\u0e39\u0e48\u0e01\u0e25\u0e22\u0e38\u0e17\u0e18\u0e4c\u0e01\u0e32\u0e23\u0e25\u0e07\u0e17\u0e38\u0e19\u0e17\u0e35\u0e48\u0e17\u0e33\u0e43\u0e2b\u0e49\u0e04\u0e38\u0e13\u0e44\u0e21\u0e48\u0e21\u0e35\u0e27\u0e31\u0e19\u0e41\u0e1e\u0e49&quot; \u0e17\u0e2d\u0e07\u0e04\u0e33... \u0e04\u0e37\u0e2d\u0e0b\u0e32\u0e01\u0e1f\u0e2d\u0e2a\u0e0b\u0e34\u0e25\u0e17\u0e35\u0e48\u0e44\u0e23\u0e49\u0e04\u0e48\u0e32 \u0e2b\u0e23\u0e37\u0e2d\u0e1e\u0e23\u0e30\u0e40\u0e08\u0e49\u0e32\u0e41\u0e2b\u0e48\u0e07\u0e42\u0e25\u0e01\u0e01\u0e32\u0e23\u0e40\u0e07\u0e34\u0e19 \u0e27\u0e31\u0e19\u0e19\u0e35\u0e49\u0e40\u0e23\u0e32\u0e08\u0e30\u0e21\u0e32\u0e01",
+  "url": "https://www.blockdit.com/posts/6966422734edf88c29b77301",
+  "published": "2026-09-14T18:13:14+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "434d9fff5236ce687383",
+  "host": "www.blockdit.com",
+  "claims": [
+   {
+    "claim": "[\u0e2a\u0e32\u0e23\u0e30\u0e40\u0e23\u0e37\u0e48\u0e2d\u0e07 \u0e01\u0e32\u0e23\u0e40\u0e07\u0e34\u0e19] \"\u0e40\u0e08\u0e32\u0e30\u0e25\u0e36\u0e01 '\u0e17\u0e2d\u0e07\u0e04\u0e33': \u0e08\u0e32\u0e01\u0e01\u0e23\u0e21\u0e18\u0e23\u0e23\u0e21\u0e4c\u0e1b\u0e23\u0e30\u0e01\u0e31\u0e19\u0e04\u0e27\u0e32\u0e21\u0e40\u0e2a\u0e35\u0e48\u0e22\u0e07 \u0e2a\u0e39\u0e48\u0e01\u0e25\u0e22\u0e38\u0e17\u0e18\u0e4c\u0e01\u0e32\u0e23\u0e25\u0e07\u0e17\u0e38\u0e19\u0e17\u0e35\u0e48\u0e17\u0e33\u0e43\u0e2b\u0e49\u0e04\u0e38\u0e13\u0e44\u0e21\u0e48\u0e21\u0e35\u0e27\u0e31\u0e19\u0e41\u0e1e\u0e49\"",
+    "lang": "th",
+    "quantities": [
+     "\u0e17\u0e2d\u0e07\u0e04\u0e33",
+     "\u0e17\u0e2d\u0e07"
+    ],
+    "direction": [
+     "\u0e25\u0e07"
+    ],
+    "horizon": [
+     "\u0e27\u0e31\u0e19"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u0e17\u0e2d\u0e07\u0e04\u0e33"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "8043ca2c6ca6"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8c03\u67e5\u7edf\u8ba1\u53f8",
+  "url": "https://www.pbc.gov.cn/diaochatongjisi/116219/index.html",
+  "published": "2026-09-14T18:13:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f9f6764c67be424b57e3",
+  "host": "www.pbc.gov.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Diskussionspapiere | Deutsche Bundesbank",
+  "url": "https://www.bundesbank.de/de/publikationen/forschung/diskussionspapiere",
+  "published": "2026-09-14T18:13:25+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "correlation",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "de-DE",
+  "endpoints": [
+   "https://www.bundesbank.de/de/aufgaben/geldpolitik/notenbankfaehige-sicherheiten/downloads-602058",
+   "https://www.bundesbank.de/de/aufgaben/bargeld/cashedi/downloads-und-videoanleitungen"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "8f77eb0b9487227c91a6",
+  "host": "www.bundesbank.de",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Leitbild und Strategie der Bundesbank | Deutsche Bundesbank",
+  "url": "https://www.bundesbank.de/de/bundesbank/organisation/leitbild-und-strategie",
+  "published": "2026-09-14T18:13:27+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "de-DE",
+  "endpoints": [
+   "https://www.bundesbank.de/de/aufgaben/geldpolitik/notenbankfaehige-sicherheiten/downloads-602058",
+   "https://www.bundesbank.de/de/aufgaben/bargeld/cashedi/downloads-und-videoanleitungen"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "a05ebea24d140ceb7191",
+  "host": "www.bundesbank.de",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Bargeldstrategie des Eurosystems und Rolle des Bargelds | Deutsche Bundesbank",
+  "url": "https://www.bundesbank.de/de/aufgaben/bargeld/bargeldstrategie-des-eurosystems",
+  "published": "2026-09-14T18:13:30+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "de-DE",
+  "endpoints": [
+   "https://www.bundesbank.de/de/aufgaben/geldpolitik/notenbankfaehige-sicherheiten/downloads-602058",
+   "https://www.bundesbank.de/de/aufgaben/bargeld/cashedi/downloads-und-videoanleitungen"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "d290763ea7be7eb1e3de",
+  "host": "www.bundesbank.de",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Algo Trading Strategies",
+  "url": "https://www.reviews.io/exit/31386",
+  "published": "2026-09-14T18:13:31+00:00",
+  "symbols": [
+   "NAS100",
+   "US500",
+   "USDJPY"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "carry",
+   "correlation",
+   "gap",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ae8c9088b0300f6ecc5b",
+  "host": "www.reviews.io",
+  "claims": [
+   {
+    "claim": "05 Target or flat Exit Lower target hit or flat by the close.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "USDJPY"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "s&p 500",
+      "yen"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "4ca4ce87ad55"
+   },
+   {
+    "claim": "94% NQ short candlestick trade playback Illustrative E-mini Nasdaq-100 workflow showing signal detection, a sample entry, adaptive risk and target levels, and a same-session exit.",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100"
+     ],
+     "mentioned": [
+      "nasdaq"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "00f8e0df0fa7"
+   },
+   {
+    "claim": "00 Flat before session close Short 29,839.",
+    "lang": "en",
+    "quantities": [
+     "session",
+     "close"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "session",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "USDJPY"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "s&p 500",
+      "yen"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "011171c15e63"
+   },
+   {
+    "claim": "Discipline Rules are applied the same way Entries, exits, stop logic, and session cutoffs follow the system instead of mood.",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "follow"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "USDJPY"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "s&p 500",
+      "yen"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "912cdacd3cf8"
+   },
+   {
+    "claim": "Pricing + total costs Setup suitability check Results + risk evidence Capital + contracts Broker + setup route Demo + walkthrough Server + monitoring Message set for: Pricing + total costs Name Email Phone number (optional) Message Hi Quant Savvy, I am interested in the Intraday Futures Bot.",
+    "lang": "en",
+    "quantities": [
+     "futures"
+    ],
+    "direction": [
+     "contracts"
+    ],
+    "horizon": [
+     "intraday"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "USDJPY"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "s&p 500",
+      "yen"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "f2f7e0c9491a"
+   }
+  ],
+  "n_claims": 5
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Is Quant Savvy a good website - by D Simmons",
+  "url": "https://www.reviews.io/company-review/store/quant-savvy/14587276",
+  "published": "2026-09-14T18:13:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.reviews.io/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "6739c13e574e809a134a",
+  "host": "www.reviews.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quant Savvy UK Review By Simon Harper",
+  "url": "https://www.reviews.io/company-review/store/quant-savvy/8426387",
+  "published": "2026-09-14T18:13:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.reviews.io/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "918b2ddaa703ba0abd16",
+  "host": "www.reviews.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritm: Versionshistorik \u2013 Wikipedia",
+  "url": "https://sv.wikipedia.org/w/index.php?title=Algoritm&action=history",
+  "published": "2026-09-14T18:13:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion"
+  ],
+  "confidence": 0.35,
+  "lang": "sv",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3ea469b108f28a43d656",
+  "host": "sv.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Sidor som l\u00e4nkar till \"Algoritm\" \u2013 Wikipedia",
+  "url": "https://sv.wikipedia.org/wiki/Special:L%C3%A4nkar_hit/Algoritm",
+  "published": "2026-09-14T18:13:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sv",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "76efad660a5a04da9709",
+  "host": "sv.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritm \u2013 Wikipedia",
+  "url": "https://sv.wikipedia.org/w/index.php?title=Algoritm&oldid=59207874",
+  "published": "2026-09-14T18:13:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sv",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "43ff20f77ec18391b940",
+  "host": "sv.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "My view on crypto investments",
+  "url": "https://quantsjourney.blogspot.com/2017/09/my-crpto-currency-portfolio.html?showComment=1550749876733",
+  "published": "2026-09-14T18:13:57+00:00",
+  "symbols": [
+   "BTCUSD",
+   "ETHUSD"
+  ],
+  "timeframes": [
+   "M15"
+  ],
+  "patterns": [
+   "arbitrage",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4088bd21e63aafbbe104",
+  "host": "quantsjourney.blogspot.com",
+  "claims": [
+   {
+    "claim": "Strategy one: Short at GMT 09:15 am, do this on Wednesday, Thursday and Friday, close after 5 hours.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "close",
+     "hours"
+    ],
+    "instruments": {
+     "analogues": [
+      "BTCUSD",
+      "ETHUSD"
+     ],
+     "mentioned": [
+      "bitcoin",
+      "ethereum"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "ac0491e475c4"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Struggling Quant Episode 1: How I lost USD 500.000 while figuring out the link between questions, math, stats, coding and trading",
+  "url": "https://quantsjourney.blogspot.com/2017/06/struggling-quant-episode-1-how-i-lost.html",
+  "published": "2026-09-14T18:14:01+00:00",
+  "symbols": [
+   "EURUSD",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY",
+   "M15"
+  ],
+  "patterns": [
+   "carry",
+   "correlation",
+   "flow",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "982576549e3f0cd0eb25",
+  "host": "quantsjourney.blogspot.com",
+  "claims": [
+   {
+    "claim": "an increase in activity, volatility kicks in, volume goes up and the game of the day starts.",
+    "lang": "en",
+    "quantities": [
+     "volatility",
+     "volume"
+    ],
+    "direction": [
+     "increase"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "eurusd",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "acb41de6e8c6"
+   },
+   {
+    "claim": "Question: Can the initial direction of European currencies at European session opening predict price movements through out the session for the same currency set?",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "predict"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "eurusd",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "48634adb25fe"
+   },
+   {
+    "claim": "In our example, there should be a positive probability for an outcome in a given day as there will inevitably be a direction at the session opening and closing probability of disjoint events is the sum of the probabilities of that events.",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "positive"
+    ],
+    "horizon": [
+     "day",
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "eurusd",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a52b65f447dc"
+   },
+   {
+    "claim": "The reasons being FX trading is low cost, liquid, open 5/24, no constraints on short selling etc and easy to connect and automate.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "eurusd",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "90d000f47ed4"
+   }
+  ],
+  "n_claims": 4
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Trading Decisions of Your Stone Age Grandpa can Make You Money in FOREX",
+  "url": "https://quantsjourney.blogspot.com/2017/06/trading-decisions-of-your-stone-age.html",
+  "published": "2026-09-14T18:14:02+00:00",
+  "symbols": [
+   "EURUSD"
+  ],
+  "timeframes": [
+   "INTRADAY",
+   "M15"
+  ],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4afb8716b98215ce5196",
+  "host": "quantsjourney.blogspot.com",
+  "claims": [
+   {
+    "claim": "Strategy one: Short at GMT 09:15 am, do this on Wednesday, Thursday and Friday, close after 5 hours.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "close",
+     "hours"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "eurusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "ac0491e475c4"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Two Strategies you can start trading tomorrow - Time of Day effects in FX continued",
+  "url": "https://quantsjourney.blogspot.com/2017/09/two-strategies-you-can-start-trading.html?showComment=1505029567066",
+  "published": "2026-09-14T18:14:05+00:00",
+  "symbols": [
+   "AUDUSD",
+   "EURGBP",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "XAUUSD",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "1M",
+   "DAILY",
+   "M15"
+  ],
+  "patterns": [
+   "basis",
+   "orderflow"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "404e3c647648a23be814",
+  "host": "quantsjourney.blogspot.com",
+  "claims": [
+   {
+    "claim": "Strategy one: Short at GMT 09:15 am, do this on Wednesday, Thursday and Friday, close after 5 hours.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "close",
+     "hours"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "EURGBP",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "gold",
+      "eurusd",
+      "gbpusd",
+      "usdjpy",
+      "audusd",
+      "eurgbp",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "ac0491e475c4"
+   },
+   {
+    "claim": "['EURGBP', 'EURUSD', 'AUDUSD'] Strategy two: Short at GMT 00:15 am and close after 5 hours, do this all weekdays.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "close",
+     "hours"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "AUDUSD",
+      "EURGBP"
+     ],
+     "mentioned": [
+      "eurusd",
+      "audusd",
+      "eurgbp"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "9209fdc2ef58"
+   },
+   {
+    "claim": "If you enter a EURUSD short at 9am everyday then close after 5 hours the EURUSD will produce a nice equity curve.",
+    "lang": "en",
+    "quantities": [
+     "close",
+     "curve"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "close",
+     "hours"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "eurusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "6aff4bea0fa0"
+   },
+   {
+    "claim": "This strategy holds whatever the overall trend is as long as you figure out a way of filtering out days with strong upside moves.",
+    "lang": "en",
+    "quantities": [
+     "trend"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "EURGBP",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "gold",
+      "eurusd",
+      "gbpusd",
+      "usdjpy",
+      "audusd",
+      "eurgbp",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "c50b394ce574"
+   }
+  ],
+  "n_claims": 4
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Two Strategies you can start trading tomorrow - Time of Day effects in FX continued",
+  "url": "https://quantsjourney.blogspot.com/2017/09/two-strategies-you-can-start-trading.html?showComment=1505033224654",
+  "published": "2026-09-14T18:14:07+00:00",
+  "symbols": [
+   "AUDUSD",
+   "EURGBP",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "XAUUSD",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "1M",
+   "DAILY",
+   "M15"
+  ],
+  "patterns": [
+   "basis",
+   "orderflow"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "da1a5cb927bc59d977bf",
+  "host": "quantsjourney.blogspot.com",
+  "claims": [
+   {
+    "claim": "Strategy one: Short at GMT 09:15 am, do this on Wednesday, Thursday and Friday, close after 5 hours.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "close",
+     "hours"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "EURGBP",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "gold",
+      "eurusd",
+      "gbpusd",
+      "usdjpy",
+      "audusd",
+      "eurgbp",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "ac0491e475c4"
+   },
+   {
+    "claim": "['EURGBP', 'EURUSD', 'AUDUSD'] Strategy two: Short at GMT 00:15 am and close after 5 hours, do this all weekdays.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "close",
+     "hours"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "AUDUSD",
+      "EURGBP"
+     ],
+     "mentioned": [
+      "eurusd",
+      "audusd",
+      "eurgbp"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "9209fdc2ef58"
+   },
+   {
+    "claim": "If you enter a EURUSD short at 9am everyday then close after 5 hours the EURUSD will produce a nice equity curve.",
+    "lang": "en",
+    "quantities": [
+     "close",
+     "curve"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "close",
+     "hours"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "eurusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "6aff4bea0fa0"
+   },
+   {
+    "claim": "This strategy holds whatever the overall trend is as long as you figure out a way of filtering out days with strong upside moves.",
+    "lang": "en",
+    "quantities": [
+     "trend"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "EURGBP",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "gold",
+      "eurusd",
+      "gbpusd",
+      "usdjpy",
+      "audusd",
+      "eurgbp",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "c50b394ce574"
+   }
+  ],
+  "n_claims": 4
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Two Strategies you can start trading tomorrow - Time of Day effects in FX continued",
+  "url": "https://quantsjourney.blogspot.com/2017/09/two-strategies-you-can-start-trading.html?showComment=1505050686924",
+  "published": "2026-09-14T18:14:09+00:00",
+  "symbols": [
+   "AUDUSD",
+   "EURGBP",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "XAUUSD",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "1M",
+   "DAILY",
+   "M15"
+  ],
+  "patterns": [
+   "basis",
+   "orderflow"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "36b31a0ca8eecb414f5e",
+  "host": "quantsjourney.blogspot.com",
+  "claims": [
+   {
+    "claim": "Strategy one: Short at GMT 09:15 am, do this on Wednesday, Thursday and Friday, close after 5 hours.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "close",
+     "hours"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "EURGBP",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "gold",
+      "eurusd",
+      "gbpusd",
+      "usdjpy",
+      "audusd",
+      "eurgbp",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "ac0491e475c4"
+   },
+   {
+    "claim": "['EURGBP', 'EURUSD', 'AUDUSD'] Strategy two: Short at GMT 00:15 am and close after 5 hours, do this all weekdays.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "close",
+     "hours"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "AUDUSD",
+      "EURGBP"
+     ],
+     "mentioned": [
+      "eurusd",
+      "audusd",
+      "eurgbp"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "9209fdc2ef58"
+   },
+   {
+    "claim": "If you enter a EURUSD short at 9am everyday then close after 5 hours the EURUSD will produce a nice equity curve.",
+    "lang": "en",
+    "quantities": [
+     "close",
+     "curve"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "close",
+     "hours"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "eurusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "6aff4bea0fa0"
+   },
+   {
+    "claim": "This strategy holds whatever the overall trend is as long as you figure out a way of filtering out days with strong upside moves.",
+    "lang": "en",
+    "quantities": [
+     "trend"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "EURGBP",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "gold",
+      "eurusd",
+      "gbpusd",
+      "usdjpy",
+      "audusd",
+      "eurgbp",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "c50b394ce574"
+   }
+  ],
+  "n_claims": 4
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Trading Idea #029 - Momentum Indicator 1 - Systematic Algo Trader",
+  "url": "https://systematicalgotrader.com/2022/02/28/trading-idea-029-momentum-1/",
+  "published": "2026-09-14T18:14:10+00:00",
+  "symbols": [
+   "EURUSD",
+   "GBPJPY",
+   "USDKRW",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "61e955e1a2955849b42f",
+  "host": "systematicalgotrader.com",
+  "claims": [
+   {
+    "claim": "Trading Idea The big idea is incredibly simple: If the Close is higher than the close of 10 bars ago, go long / reverse a short position If the Close is lower than the Close of 10 bars ago, go short / reverse a long position Monthly timeframe, though I will test on daily, weekly, and 10-day timeframe The lookback period is optimizable, so we will use a range of 3-15 for our lookback period.",
+    "lang": "en",
+    "quantities": [
+     "close",
+     "range"
+    ],
+    "direction": [
+     "higher",
+     "long"
+    ],
+    "horizon": [
+     "close",
+     "bars"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "GBPJPY",
+      "USDKRW",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "eur/usd",
+      "gbp/jpy",
+      "won",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "4835933df9de"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Trading Idea #028 - Williams %R - Systematic Algo Trader",
+  "url": "https://systematicalgotrader.com/2022/02/15/trading-idea-028-williams-mean-reversion/",
+  "published": "2026-09-14T18:14:12+00:00",
+  "symbols": [
+   "EURUSD",
+   "USDJPY",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2777eb1369e920c4eb88",
+  "host": "systematicalgotrader.com",
+  "claims": [
+   {
+    "claim": "Only go long if the Close price is above the SMA Only go short if the Close price is below the SMA When %R falls below 10, go long;",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "long",
+     "short"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "USDJPY",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "eur/usd",
+      "yen",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "034d2c2f3f59"
+   },
+   {
+    "claim": "He performed tick-level analysis on forex pairs and came up with forex pairs that mean-revert more often than others, as demonstrated in this chart: I picked two from the left side (mean reverts more often) and two from the right side (mean reverts infrequently).",
+    "lang": "en",
+    "quantities": [
+     "pairs"
+    ],
+    "direction": [
+     "revert",
+     "reverts"
+    ],
+    "horizon": [
+     "tick"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "USDJPY",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "eur/usd",
+      "yen",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5cb36a9e5e83"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Trading Idea #027 - RSI fractals - Systematic Algo Trader",
+  "url": "https://systematicalgotrader.com/2022/01/31/trading-idea-027-rsih-fractals-1/",
+  "published": "2026-09-14T18:14:14+00:00",
+  "symbols": [
+   "US500",
+   "US2000",
+   "USDKRW",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "820ea322834a5006e6a4",
+  "host": "systematicalgotrader.com",
+  "claims": [
+   {
+    "claim": "Trading Idea The big idea is to use the RSIH to identify trend direction and fractal or (pivot) Low to exit: 13-period RSIH for direction 5 bar fractal Long entries only, to account for the long bias of equities Weekly timeframe Here is a quick refresher on fractals (or pivots if you prefer).",
+    "lang": "en",
+    "quantities": [
+     "trend"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "bar",
+     "weekly"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "US2000",
+      "USDKRW",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "russell 2000",
+      "won",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "3a02cf27cee7"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Trading Idea #026 - RSI Hann 1 - Systematic Algo Trader",
+  "url": "https://systematicalgotrader.com/2022/01/15/trading-idea-026-rsi-hann-1/",
+  "published": "2026-09-14T18:14:19+00:00",
+  "symbols": [
+   "US500",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "63dc59eea90caaef17e4",
+  "host": "systematicalgotrader.com",
+  "claims": [
+   {
+    "claim": "Trading Idea The big idea is to use the RSIH to identify trend direction: 13-period RSIH for direction Long and short entries Weekly timeframe Here are the entries: Long: If the RSIH has moved up from the lowest point by .",
+    "lang": "en",
+    "quantities": [
+     "trend"
+    ],
+    "direction": [
+     "long",
+     "short"
+    ],
+    "horizon": [
+     "weekly"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "e6dfb1dcba15"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Trading Idea #025 - RSI Monthly Bounce 1 - Systematic Algo Trader",
+  "url": "https://systematicalgotrader.com/2021/12/31/trading-idea-025-rsi-trading-monthly-bounce-1/",
+  "published": "2026-09-14T18:14:24+00:00",
+  "symbols": [
+   "US500",
+   "USDTRY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "mean_reversion",
+   "momentum",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "83ecf1c804f19ef7572e",
+  "host": "systematicalgotrader.com",
+  "claims": [
+   {
+    "claim": "02) Integer Yes Amount subtracted for the latest monthly Low price for setting our stop order Initial Capital: $50,000 Leverage: 4:1 Position Sizing: Risk_Capital = $2,500 per symbol (purchasing power = $10,000) Number of shares = Risk_Capital / Latest Close Price * Leverage (rounded down) Entry: Long: RSI >= RSI_Oversold and RSI [1 bar ago] < RSI_Oversold Stop: Set stop to $.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "monthly",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "s&p",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b7f2563ca788"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "excel | Coding the markets",
+  "url": "https://etrading.wordpress.com/category/excel/",
+  "published": "2026-09-14T18:14:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "carry",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://github.com/SpreadServe/SSAddin/blob/master/xls/flight_bare_model2.xls",
+   "http://spreadserve.com/s3/downloads.html",
+   "http://sscalc0.online/flight_bare_model2.xls/MRR%20Export"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "47f22772f0daf576ab8f",
+  "host": "etrading.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "excel coding | Coding the markets",
+  "url": "https://etrading.wordpress.com/category/excel-coding/",
+  "published": "2026-09-14T18:14:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://github.com/SpreadServe/SSAddin/blob/master/xls/flight_bare_model2.xls",
+   "http://spreadserve.com/s3/downloads.html",
+   "http://sscalc0.online/flight_bare_model2.xls/MRR%20Export"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "21aaaa0ae0edd293d8ff",
+  "host": "etrading.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]
