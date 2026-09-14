@@ -92,9 +92,19 @@ START = datetime(2018, 1, 1, tzinfo=UTC)
 #: TRADEABLE ONLY. Intraday is fetched for symbols the broker lets us OPEN (trade_mode 4); the
 #: 13 CLOSE_ONLY instruments already cost the sweep budget once and there is no reason to buy
 #: them a second, finer-grained dataset the desk can never act on.
+#: (label, terminal constant, days of history). THE WHOLE LADDER BELOW H1, because a chart the
+#: desk does not collect is a chart it can never hunt, and the sweep reads the files.
+#:
+#: WINDOWS SHORTEN AS THE CHART DOES, and the reason is bar COUNT rather than taste. The gates
+#: need 60 trading days; a walk-forward split needs several multiples of that. Every window here
+#: clears it by a wide margin -- M30 730d is ~35k bars, M15 730d ~70k, M5 365d ~105k, M1 180d
+#: ~259k -- while keeping the whole pull near 2 GB against 58 GB free on the box. Taking M1 back
+#: to 2018 would buy no statistical power the gates can spend and would cost tens of GB.
 INTRADAY_TIMEFRAMES: tuple[tuple[str, str, int], ...] = (
+    ("M30", "TIMEFRAME_M30", 730),
     ("M15", "TIMEFRAME_M15", 730),
     ("M5", "TIMEFRAME_M5", 365),
+    ("M1", "TIMEFRAME_M1", 180),
 )
 
 #: An intraday series below this is not worth writing: it cannot carry the 60 trading days the
