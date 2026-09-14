@@ -58,3 +58,44 @@ def test_empty_and_malformed_specs_do_not_raise():
     assert sce._flat_params({}) == {}
     assert sce._flat_params({"params": None}) == {}
     assert sce._flat_params({"params": "nonsense"}) == {}
+
+
+def test_the_parent_mechanism_claim_travels_with_the_variant(tmp_path, monkeypatch):
+    """`economic_prior` refuses a `discovered` cell carrying no mechanism_status.
+
+    Measured 2026-09-14: all 33 certified `discovered` cells carry mechanism_status NAMED on their
+    DOCKET row, and nothing on the `shadow_spec` this generator reads.
+
+        economic_prior(docket row)  -> passed True,  NAMED
+        economic_prior(shadow_spec) -> passed False, STATISTICAL_ONLY
+
+    So every variant of a discovered parent died at the FIRST gate, and 33 of the desk's 58
+    certificates -- the largest family, and all 17 minted that day -- could produce no session or
+    chart variant at all. Carrying the claim is not laundering it: the parent's was examined when
+    the parent certified, and each variant still earns its own evidence through all ten gates.
+    """
+    import json
+
+    d = tmp_path / "data" / "hypotheses"
+    d.mkdir(parents=True)
+    row = {"symbol": "EURCHF", "family": "discovered", "params": {"feature": "dd_24"},
+           "mechanism_status": "NAMED", "mechanism_note": "carry-adjacent reversion"}
+    (d / "external_survivors.json").write_text(json.dumps([row]), encoding="utf-8")
+    monkeypatch.setattr(sce, "DOCKET", d / "external_survivors.json")
+    got = sce._parent_mechanism()
+    cid = sce._cell("EURCHF", "discovered", {"feature": "dd_24"})
+    assert cid in got, "a docket row with a mechanism claim must be findable by its cell id"
+    assert got[cid]["mechanism_status"] == "NAMED"
+    assert got[cid]["mechanism_note"] == "carry-adjacent reversion"
+
+
+def test_a_parent_with_no_claim_inherits_nothing(tmp_path, monkeypatch):
+    """A variant must not acquire an economic prior its parent never had."""
+    import json
+
+    d = tmp_path / "data" / "hypotheses"
+    d.mkdir(parents=True)
+    (d / "external_survivors.json").write_text(
+        json.dumps([{"symbol": "X", "family": "discovered", "params": {}}]), encoding="utf-8")
+    monkeypatch.setattr(sce, "DOCKET", d / "external_survivors.json")
+    assert sce._parent_mechanism() == {}

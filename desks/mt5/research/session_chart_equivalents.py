@@ -183,6 +183,47 @@ def _cell(sym: str, fam: str, params: dict[str, Any]) -> str:
     return f"{sym}.{fam}.{json.dumps(params, sort_keys=True)}"
 
 
+def _parent_mechanism() -> dict[str, dict[str, Any]]:
+    """cell id -> the mechanism claim on the DOCKET row that earned the certificate.
+
+    THE FIELD THAT MAKES A PARENT ADMISSIBLE IS NOT ON THE OBJECT THIS GENERATOR READS.
+    `economic_prior` refuses any cell whose family is `discovered` unless it carries
+    `mechanism_status`, and measured 2026-09-14 all 33 certified `discovered` cells carry
+    `mechanism_status: NAMED` on their DOCKET row while their `shadow_spec` -- the summary this
+    generator builds variants from -- carries nothing:
+
+        economic_prior(docket row)  -> passed True,  NAMED
+        economic_prior(shadow_spec) -> passed False, STATISTICAL_ONLY
+
+    So every variant of a discovered parent died at the FIRST gate with "statistical discovery has
+    no economic prior", and 33 of the desk's 58 certificates -- including all 17 minted that day --
+    could produce no session or chart variant at all. The breadth expansion was structurally
+    blind to its own largest family.
+
+    CARRYING IT IS NOT LAUNDERING AN ECONOMIC PRIOR. The parent's claim was examined and accepted
+    when the parent certified; this generator's entire premise is that a mechanism surviving on
+    one chart in one session is a hypothesis about every (hour, chart) pair, and the MECHANISM is
+    what is being carried across -- not the evidence, which each variant must still earn through
+    all ten gates on its own. A variant whose parent has no claim inherits nothing and is refused
+    exactly as before.
+    """
+    rows = _read(DOCKET)
+    out: dict[str, dict[str, Any]] = {}
+    if not isinstance(rows, list):
+        return out
+    for row in rows:
+        if not isinstance(row, dict) or not row.get("mechanism_status"):
+            continue
+        try:
+            cid = _cell(str(row.get("symbol") or ""), str(row.get("family") or ""),
+                        row.get("params") or {})
+        except Exception:
+            continue
+        out.setdefault(cid, {"mechanism_status": row.get("mechanism_status"),
+                             "mechanism_note": row.get("mechanism_note")})
+    return out
+
+
 def expand() -> dict[str, Any]:
     """Variants of every certified mechanism, at hours and charts it has not been tried on."""
     surv = (_read(SURVIVORS) or {}).get("survivors") or {}
@@ -216,6 +257,7 @@ def expand() -> dict[str, Any]:
 
     new: list[dict[str, Any]] = []
     per_parent: dict[str, int] = {}
+    mech = _parent_mechanism()
     for key, val in surv.items():
         spec = val.get("shadow_spec") or {}
         sym = str(spec.get("symbol") or "").upper()
@@ -265,6 +307,12 @@ def expand() -> dict[str, Any]:
                 "producer": "session_chart_equivalents.py",
                 "parent_certificate": key,
                 "variant_of": why,
+                # THE PARENT'S MECHANISM CLAIM TRAVELS WITH THE VARIANT, because `economic_prior`
+                # refuses a `discovered` cell that carries none -- and the certificate's
+                # shadow_spec does not carry it while its docket row does. Without this, every
+                # variant of the desk's largest certified family died at gate one.
+                **(mech.get(str(key).split(".", 1)[1] if str(key).startswith("external.")
+                            else str(key)) or {}),
                 "first_seen": datetime.now(UTC).isoformat(timespec="seconds"),
             })
 
