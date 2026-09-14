@@ -1,0 +1,671 @@
+[
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/683917",
+  "symbols": [
+   "AUDCAD",
+   "AUDUSD",
+   "CADCHF",
+   "CHFJPY",
+   "EURAUD",
+   "EURCAD",
+   "EURCHF",
+   "EURGBP",
+   "EURSGD",
+   "EURUSD",
+   "GBPAUD",
+   "GBPCAD"
+  ],
+  "found_at": "2026-09-14T17:33:35+00:00",
+  "platform": "mt4",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "long_lived",
+   "algo_survivor",
+   "multi_fx"
+  ],
+  "ev_score": 231.388,
+  "growth_pct": 8686.19,
+  "weeks": 369.0,
+  "pf": 1.9,
+  "max_dd_pct": null,
+  "trades": 2578.0,
+  "win_pct": 1841.0,
+  "algo_pct": 95.0,
+  "subscribers": 1.0,
+  "author": "/en/users/goodook",
+  "author_other_signals": [
+   {
+    "sid": "1560883",
+    "title": "'Scalp IC Markets MT5' by Roman Kartezhnikov",
+    "growth": "812%",
+    "curve_points": 20,
+    "curve_dd": 0.0
+   },
+   {
+    "sid": "2077624",
+    "title": "'Disco FIBO Pamm' by Roman Kartezhnikov",
+    "growth": "693%",
+    "curve_points": 20,
+    "curve_dd": -11.0
+   },
+   {
+    "sid": "2364099",
+    "title": "'Scalp Gold Roboforex' by Roman Kartezhnikov",
+    "growth": "309%",
+    "curve_points": 20,
+    "curve_dd": -8.0
+   }
+  ],
+  "hour_histogram": {
+   "14": 1,
+   "20": 5,
+   "08": 1,
+   "21": 4,
+   "16": 2,
+   "07": 2,
+   "11": 2,
+   "00": 3,
+   "15": 2,
+   "06": 1,
+   "02": 4,
+   "10": 1,
+   "09": 4,
+   "22": 3,
+   "01": 4,
+   "04": 3,
+   "23": 2
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2308093",
+  "symbols": [
+   "AUDCAD"
+  ],
+  "found_at": "2026-09-14T17:33:35+00:00",
+  "platform": "mt4",
+  "phenotypes": [
+   "max_growth",
+   "long_lived",
+   "algo_survivor"
+  ],
+  "ev_score": 5.074,
+  "growth_pct": 293.9,
+  "weeks": 155.0,
+  "pf": 1.9,
+  "max_dd_pct": null,
+  "trades": 1689.0,
+  "win_pct": 1232.0,
+  "algo_pct": 99.0,
+  "subscribers": 12.0,
+  "author": "/en/users/tec_daniel",
+  "author_other_signals": [
+   {
+    "sid": "2262642",
+    "title": "'NoPain MT5' by Daniel Moraes Da Silva",
+    "growth": "2122%",
+    "curve_points": 20,
+    "curve_dd": 0.0
+   },
+   {
+    "sid": "2308095",
+    "title": "'UpFuji MT5' by Daniel Moraes Da Silva",
+    "growth": "106%",
+    "curve_points": 20,
+    "curve_dd": 0.0
+   },
+   {
+    "sid": "2363323",
+    "title": "'UpEverest MT4' by Daniel Moraes Da Silva",
+    "growth": "536%",
+    "curve_points": 20,
+    "curve_dd": 0.0
+   }
+  ],
+  "hour_histogram": {
+   "06": 1,
+   "12": 2,
+   "10": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2349227",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-14T17:33:35+00:00",
+  "platform": "mt4",
+  "phenotypes": [
+   "max_growth",
+   "high_pf",
+   "algo_survivor",
+   "gold"
+  ],
+  "ev_score": 2.231,
+  "growth_pct": 239.79,
+  "weeks": 45.0,
+  "pf": 3.24,
+  "max_dd_pct": null,
+  "trades": 379.0,
+  "win_pct": 287.0,
+  "algo_pct": 100.0,
+  "subscribers": 12.0,
+  "author": "/en/users/kuropatkin",
+  "author_other_signals": [
+   {
+    "sid": "2332166",
+    "title": "'SolarFlare' by Dmitrii Kuropatkin",
+    "growth": "353%",
+    "curve_points": 20,
+    "curve_dd": -2.0
+   },
+   {
+    "sid": "2288980",
+    "title": "'Momentum' by Dmitrii Kuropatkin",
+    "growth": "216%",
+    "curve_points": 20,
+    "curve_dd": -6.0
+   },
+   {
+    "sid": "2332163",
+    "title": "'NebulaEA' by Dmitrii Kuropatkin",
+    "growth": "225%",
+    "curve_points": 20,
+    "curve_dd": -2.0
+   }
+  ],
+  "hour_histogram": {
+   "12": 1,
+   "19": 2,
+   "04": 2,
+   "13": 2,
+   "05": 2,
+   "20": 1,
+   "10": 1,
+   "14": 2,
+   "17": 1,
+   "02": 2,
+   "03": 1,
+   "11": 1,
+   "08": 1,
+   "16": 1,
+   "15": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2381247",
+  "symbols": [
+   "EURUSD"
+  ],
+  "found_at": "2026-09-14T17:33:35+00:00",
+  "platform": "mt4",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "long_lived",
+   "high_pf",
+   "algo_survivor"
+  ],
+  "ev_score": 44.682,
+  "growth_pct": 2349.95,
+  "weeks": 188.0,
+  "pf": 3.6,
+  "max_dd_pct": null,
+  "trades": 1015.0,
+  "win_pct": 753.0,
+  "algo_pct": 96.0,
+  "subscribers": 1.0,
+  "author": "/en/users/agi-amd",
+  "author_other_signals": [
+   {
+    "sid": "2381246",
+    "title": "'AgiFX 5' by I Putu Agi Sumara Jaya",
+    "growth": "245%",
+    "curve_points": 20,
+    "curve_dd": 0.0
+   },
+   {
+    "sid": "2381242",
+    "title": "'AgiFX 1' by I Putu Agi Sumara Jaya",
+    "growth": "51%",
+    "curve_points": 20,
+    "curve_dd": -55.0
+   },
+   {
+    "sid": "2381244",
+    "title": "'AgiFX 3' by I Putu Agi Sumara Jaya",
+    "growth": "235%",
+    "curve_points": 20,
+    "curve_dd": -10.0
+   }
+  ],
+  "hour_histogram": {
+   "08": 1,
+   "07": 4,
+   "00": 2
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2153920",
+  "symbols": [
+   "EURUSD",
+   "GBPUSD",
+   "XAUEUR",
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-14T17:33:35+00:00",
+  "platform": "mt4",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "long_lived",
+   "algo_survivor",
+   "gold",
+   "multi_fx"
+  ],
+  "ev_score": 32.943,
+  "growth_pct": 1952.68,
+  "weeks": 148.0,
+  "pf": 1.56,
+  "max_dd_pct": null,
+  "trades": 419.0,
+  "win_pct": 236.0,
+  "algo_pct": 100.0,
+  "subscribers": 5.0,
+  "author": "/en/users/liehtw",
+  "author_other_signals": [
+   {
+    "sid": "2222743",
+    "title": "'Tick Multiprod' by LU KUEI LIEH",
+    "growth": "3036%",
+    "curve_points": 20,
+    "curve_dd": -2.0
+   },
+   {
+    "sid": "2340704",
+    "title": "'XAUUSD AND XAUEUR' by LU KUEI LIEH",
+    "growth": "309%",
+    "curve_points": 20,
+    "curve_dd": -8.0
+   },
+   {
+    "sid": "2299696",
+    "title": "'Chicken dinner' by LU KUEI LIEH",
+    "growth": "2416%",
+    "curve_points": 20,
+    "curve_dd": -8.0
+   }
+  ],
+  "hour_histogram": {
+   "07": 2,
+   "13": 6,
+   "06": 3,
+   "15": 4,
+   "14": 1,
+   "03": 2,
+   "08": 1,
+   "17": 1,
+   "04": 3,
+   "01": 1,
+   "02": 1,
+   "18": 4,
+   "16": 1,
+   "12": 1,
+   "20": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/138420",
+  "symbols": [
+   "AUDCAD",
+   "AUDCHF",
+   "AUDJPY",
+   "AUDNZD",
+   "AUDUSD",
+   "BTCUSD",
+   "CADCHF",
+   "CADJPY",
+   "CHFJPY",
+   "DOTUSD",
+   "ETHUSD",
+   "EURAUD"
+  ],
+  "found_at": "2026-09-14T17:33:35+00:00",
+  "platform": "mt4",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "long_lived",
+   "algo_survivor",
+   "multi_fx"
+  ],
+  "ev_score": 56.994,
+  "growth_pct": 1725.98,
+  "weeks": 567.0,
+  "pf": 1.42,
+  "max_dd_pct": null,
+  "trades": 3300.0,
+  "win_pct": 2133.0,
+  "algo_pct": 96.0,
+  "subscribers": 1.0,
+  "author": "/en/users/atractor",
+  "author_other_signals": [
+   {
+    "sid": "2049326",
+    "title": "'SFE Impulse' by Joel Juanpere",
+    "growth": "267%",
+    "curve_points": 20,
+    "curve_dd": -14.0
+   },
+   {
+    "sid": "2342175",
+    "title": "'SFE Raw Impulse ICT' by Joel Juanpere",
+    "growth": "17%",
+    "curve_points": 20,
+    "curve_dd": -40.0
+   },
+   {
+    "sid": "2341941",
+    "title": "'SFE Raw Impulse' by Joel Juanpere",
+    "growth": "6%",
+    "curve_points": 20,
+    "curve_dd": -46.0
+   }
+  ],
+  "hour_histogram": {
+   "01": 1,
+   "16": 3,
+   "18": 2,
+   "00": 1,
+   "08": 3,
+   "22": 1,
+   "03": 2,
+   "05": 2,
+   "20": 1,
+   "21": 2,
+   "14": 1,
+   "12": 1,
+   "07": 1,
+   "17": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/1932739",
+  "symbols": [
+   "AUDUSD",
+   "BTCUSD",
+   "EURAUD",
+   "EURCAD",
+   "EURJPY",
+   "EURUSD",
+   "GBPUSD",
+   "TRADER",
+   "USDCHF",
+   "USDJPY",
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-14T17:33:35+00:00",
+  "platform": "mt4",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "long_lived",
+   "algo_survivor",
+   "gold",
+   "multi_fx"
+  ],
+  "ev_score": 70.612,
+  "growth_pct": 2713.98,
+  "weeks": 352.0,
+  "pf": 1.63,
+  "max_dd_pct": null,
+  "trades": 14585.0,
+  "win_pct": 7162.0,
+  "algo_pct": 99.0,
+  "subscribers": 0.0,
+  "author": "/en/users/vayne168",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "02": 1,
+   "08": 2,
+   "12": 2,
+   "03": 1,
+   "04": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/1922647",
+  "symbols": [
+   "EURUSD",
+   "USDCAD",
+   "USDJPY",
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-14T17:33:35+00:00",
+  "platform": "mt4",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "long_lived",
+   "algo_survivor",
+   "gold",
+   "multi_fx"
+  ],
+  "ev_score": 49.853,
+  "growth_pct": 1858.91,
+  "weeks": 374.0,
+  "pf": 1.53,
+  "max_dd_pct": null,
+  "trades": 15549.0,
+  "win_pct": 12078.0,
+  "algo_pct": 99.0,
+  "subscribers": 0.0,
+  "author": "/en/users/kris1002",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "14": 2,
+   "11": 2,
+   "09": 1,
+   "12": 1,
+   "08": 2,
+   "22": 3,
+   "21": 3,
+   "16": 1,
+   "04": 2,
+   "13": 1,
+   "10": 1,
+   "05": 1,
+   "15": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2356872",
+  "symbols": [
+   "EURGBP"
+  ],
+  "found_at": "2026-09-14T17:33:35+00:00",
+  "platform": "mt4",
+  "phenotypes": [
+   "max_growth",
+   "algo_survivor"
+  ],
+  "ev_score": 9.241,
+  "growth_pct": 790.81,
+  "weeks": 71.0,
+  "pf": 1.99,
+  "max_dd_pct": null,
+  "trades": 2965.0,
+  "win_pct": 2221.0,
+  "algo_pct": 100.0,
+  "subscribers": 6.0,
+  "author": "/en/users/valerchik941",
+  "author_other_signals": [
+   {
+    "sid": "2365003",
+    "title": "'Grid 2Profi' by Valerii Stetsenko",
+    "growth": "85%",
+    "curve_points": 20,
+    "curve_dd": 0.0
+   },
+   {
+    "sid": "2377277",
+    "title": "'Grid 2 Revers' by Valerii Stetsenko",
+    "growth": "70%",
+    "curve_points": 20,
+    "curve_dd": -5.0
+   }
+  ],
+  "hour_histogram": {
+   "12": 1,
+   "06": 1,
+   "15": 1,
+   "11": 1,
+   "22": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2329267",
+  "symbols": [
+   "AUDCAD",
+   "AUDNZD",
+   "AUDUSD",
+   "BTCUSD",
+   "ETHUSD",
+   "EURUSD",
+   "GBPCHF",
+   "NZDCAD",
+   "NZDUSD",
+   "USDCAD",
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-14T17:33:35+00:00",
+  "platform": "mt4",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "long_lived",
+   "high_pf",
+   "algo_survivor",
+   "gold",
+   "multi_fx"
+  ],
+  "ev_score": 22.537,
+  "growth_pct": 1378.46,
+  "weeks": 139.0,
+  "pf": 2.0,
+  "max_dd_pct": null,
+  "trades": 2549.0,
+  "win_pct": 1831.0,
+  "algo_pct": 100.0,
+  "subscribers": 0.0,
+  "author": "/en/users/nekto61",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "06": 1,
+   "02": 1,
+   "16": 2,
+   "15": 1,
+   "18": 3,
+   "09": 1,
+   "03": 1,
+   "13": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/1864588",
+  "symbols": [
+   "AUDUSD",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY"
+  ],
+  "found_at": "2026-09-14T17:33:35+00:00",
+  "platform": "mt4",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "long_lived",
+   "high_pf",
+   "algo_survivor",
+   "multi_fx"
+  ],
+  "ev_score": 180.342,
+  "growth_pct": 9509.93,
+  "weeks": 187.0,
+  "pf": 4.05,
+  "max_dd_pct": null,
+  "trades": 1667.0,
+  "win_pct": 1422.0,
+  "algo_pct": 100.0,
+  "subscribers": 0.0,
+  "author": "/en/users/happyforex",
+  "author_other_signals": [
+   {
+    "sid": "1504614",
+    "title": "'EA Happy Breakout VT' by Jaroslav Rajcher",
+    "growth": "1315%",
+    "curve_points": 20,
+    "curve_dd": -8.0
+   },
+   {
+    "sid": "2317138",
+    "title": "'EA Happy Bitcoin M30 VM' by Jaroslav Rajcher",
+    "growth": "1182%",
+    "curve_points": 20,
+    "curve_dd": -2.0
+   },
+   {
+    "sid": "1762388",
+    "title": "'EA Happy Bitcoin M30 TMGM' by Jaroslav Rajcher",
+    "growth": "277%",
+    "curve_points": 20,
+    "curve_dd": -8.0
+   }
+  ],
+  "hour_histogram": {
+   "15": 1,
+   "08": 4,
+   "09": 1,
+   "13": 3,
+   "17": 1,
+   "11": 2,
+   "02": 2,
+   "16": 3,
+   "12": 3,
+   "10": 1
+  }
+ }
+]

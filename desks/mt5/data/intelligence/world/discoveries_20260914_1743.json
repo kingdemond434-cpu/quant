@@ -1,0 +1,505 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Scotiabank: \u201cArgumentos de BCRP para reducir tasa no son claros\u201d, \u00bfpor qu\u00e9 lo hizo? Pol\u00edtica monetaria | ECONOMIA | GESTI\u00d3N",
+  "url": "https://gestion.pe/economia/scotiabank-argumentos-de-bcrp-para-reducir-tasa-no-son-claros-por-que-lo-hizo-politica-monetaria-noticia/",
+  "published": "2026-09-14T17:42:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "policy",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [
+   "https://gestion.pe/economia/agroexportacion-de-peru-europa-pierde-oferta-agro-por-el-clima-y-se-abre-oportunidad-para-nuestro-pais-preparado-noticia/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "65c92e007b07bb68f334",
+  "host": "gestion.pe",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Invertir en la BVL: 6 errores comunes que te alejan de la ganancia | Blogs | GESTI\u00d3N",
+  "url": "https://gestion.pe/blog/invirtiendo-a-futuro/2025/07/invertir-en-la-bvl-6-errores-comunes-que-te-alejan-de-la-ganancia.html",
+  "published": "2026-09-14T17:42:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "policy",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d17a3867d2c6c96623d8",
+  "host": "gestion.pe",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "BVL: Gigante Franklin Templeton y su estrategia para ganar inversionistas peruanos | G-DE-GESTION | GESTI\u00d3N",
+  "url": "https://gestion.pe/g-de-gestion/reportaje/bvl-gigante-franklin-templeton-y-su-estrategia-para-ganar-inversionistas-peruanos-noticia/",
+  "published": "2026-09-14T17:42:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [
+   "https://gestion.pe/economia/agroexportacion-de-peru-europa-pierde-oferta-agro-por-el-clima-y-se-abre-oportunidad-para-nuestro-pais-preparado-noticia/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "64fce1550c7b7ec8e290",
+  "host": "gestion.pe",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "M\u00e1s all\u00e1 del campanazo: esta es la estrategia de Auna en la Bolsa de Valores de Lima | ECONOMIA | GESTI\u00d3N",
+  "url": "https://gestion.pe/economia/empresas/mas-alla-del-campanazo-esta-es-la-estrategia-de-auna-en-la-bolsa-de-valores-de-lima-noticia/",
+  "published": "2026-09-14T17:42:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [
+   "https://gestion.pe/economia/agroexportacion-de-peru-europa-pierde-oferta-agro-por-el-clima-y-se-abre-oportunidad-para-nuestro-pais-preparado-noticia/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "cfd6c320789500d35632",
+  "host": "gestion.pe",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "BVL: Ola de 150,000 personas que ingresan a invertir, \u00bfc\u00f3mo superan el miedo? | TU-DINERO | GESTI\u00d3N",
+  "url": "https://gestion.pe/tu-dinero/bolsa-de-valores-de-lima-ola-de-150000-personas-que-ingresan-a-invertir-como-superan-el-miedo-noticia/",
+  "published": "2026-09-14T17:42:44+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRAD\u00cdA"
+  ],
+  "patterns": [
+   "auction",
+   "momentum",
+   "orderflow",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [
+   "https://gestion.pe/economia/agroexportacion-de-peru-europa-pierde-oferta-agro-por-el-clima-y-se-abre-oportunidad-para-nuestro-pais-preparado-noticia/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "b7c552b593baccdd2d2e",
+  "host": "gestion.pe",
+  "claims": [
+   {
+    "claim": "Con la bisagra que es el cambio de Gobierno, ya es imprescindible que las normas habilitantes comiencen a darse en el inmediato corto plazo\u201d , manifest\u00f3 Zapatero durante el Market & Investments Summit 2026.",
+    "lang": "es",
+    "quantities": [
+     "cambio"
+    ],
+    "direction": [
+     "corto"
+    ],
+    "horizon": [
+     "corto plazo"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "SOYBEAN",
+      "CORN",
+      "WHEAT",
+      "USDBRL"
+     ],
+     "channels": [
+      "el ni\u00f1o: weather/agri report -> grains and BRL"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "24cea3cb5f6f"
+   },
+   {
+    "claim": "GEC Emisiones Zapatero tambi\u00e9n mencion\u00f3 que, en un contexto en el que la liquidez del mercado se redujo por los retiros de las AFP , las emisiones de t\u00edtulos de deuda largo plazo \u2013como bonos\u2013 han disminuido.",
+    "lang": "es",
+    "quantities": [
+     "liquidez",
+     "bono"
+    ],
+    "direction": [
+     "largo"
+    ],
+    "horizon": [
+     "largo plazo"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "SOYBEAN",
+      "CORN",
+      "WHEAT",
+      "USDBRL"
+     ],
+     "channels": [
+      "el ni\u00f1o: weather/agri report -> grains and BRL"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "3cc61d69beaf"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "El Ni\u00f1o: \u00bfcu\u00e1l podr\u00eda ser su impacto en las acciones de la Bolsa de Valores de Lima? | ECONOMIA | GESTI\u00d3N",
+  "url": "https://gestion.pe/economia/mercados/el-nino-cual-podria-ser-su-impacto-en-las-acciones-de-la-bolsa-de-valores-de-lima-noticia/",
+  "published": "2026-09-14T17:42:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://gestion.pe/economia/agroexportacion-de-peru-europa-pierde-oferta-agro-por-el-clima-y-se-abre-oportunidad-para-nuestro-pais-preparado-noticia/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ff486e9ded1219e74481",
+  "host": "gestion.pe",
+  "claims": [
+   {
+    "claim": "\u00danete a nuestro canal Suscr\u00edbete a YouTube Redacci\u00f3n Gesti\u00f3n 22/07/2026 23H45 Una eventual intensificaci\u00f3n del Fen\u00f3meno de El Ni\u00f1o durante el segundo semestre de 2026 podr\u00eda generar una correcci\u00f3n cercana al 12% en el \u00edndice Peru Select, en un horizonte de seis a nueve meses.",
+    "lang": "es",
+    "quantities": [
+     "\u00edndice"
+    ],
+    "direction": [
+     "correcci\u00f3n"
+    ],
+    "horizon": [
+     "mes",
+     "h4"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "SOYBEAN",
+      "CORN",
+      "WHEAT",
+      "USDBRL"
+     ],
+     "channels": [
+      "el ni\u00f1o: weather/agri report -> grains and BRL"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "59d761b913f8"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Factores externos que mueven la BVL: d\u00f3lar, cobre y pol\u00edtica interna | Blogs | GESTI\u00d3N",
+  "url": "https://gestion.pe/blog/invirtiendo-a-futuro/2025/08/factores-externos-que-mueven-la-bvl-dolar-cobre-y-politica-interna.html",
+  "published": "2026-09-14T17:42:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "policy",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5bcb191b1e6f65c6c182",
+  "host": "gestion.pe",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "SpaceX, Alibaba y otros 4 titanes debutan en Bolsa de Lima, \u00bfconviene a peruanos invertir? | TU-DINERO | GESTI\u00d3N",
+  "url": "https://gestion.pe/tu-dinero/spacex-alibaba-y-otros-4-titanes-debutan-en-bolsa-de-lima-conviene-a-peruanos-invertir-noticia/",
+  "published": "2026-09-14T17:42:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [
+   "https://gestion.pe/economia/agroexportacion-de-peru-europa-pierde-oferta-agro-por-el-clima-y-se-abre-oportunidad-para-nuestro-pais-preparado-noticia/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "0cf6a85a6035f2b43064",
+  "host": "gestion.pe",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "BVL: acciones a menos de S/ 20, \u00bfde verdad son una ganga? | TU-DINERO | GESTI\u00d3N",
+  "url": "https://gestion.pe/tu-dinero/bvl-acciones-a-menos-de-s-20-cuantas-debo-comprar-para-realmente-ganar-noticia/",
+  "published": "2026-09-14T17:42:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://gestion.pe/economia/agroexportacion-de-peru-europa-pierde-oferta-agro-por-el-clima-y-se-abre-oportunidad-para-nuestro-pais-preparado-noticia/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f3a3c0fdf33d347f48dc",
+  "host": "gestion.pe",
+  "claims": [
+   {
+    "claim": "El monto m\u00ednimo para que la rentabilidad se sienta \u201c Creo que el monto m\u00ednimo que una persona deber\u00eda tener por acci\u00f3n es entre S/ 2,500 y S/ 3,000 para que realmente haga sentido (invertir en la bolsa) en el largo plazo.",
+    "lang": "es",
+    "quantities": [
+     "m\u00ednimo",
+     "acci\u00f3n"
+    ],
+    "direction": [
+     "largo"
+    ],
+    "horizon": [
+     "largo plazo"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "SOYBEAN",
+      "CORN",
+      "WHEAT",
+      "USDBRL"
+     ],
+     "channels": [
+      "el ni\u00f1o: weather/agri report -> grains and BRL"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "47f2254279af"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Inversiones en bolsa de Lima se aceleran, \u00bflleg\u00f3 la hora de cazar oportunidades seg\u00fan Credicorp? | ECONOMIA | GESTI\u00d3N",
+  "url": "https://gestion.pe/economia/mercados/inversiones-en-bolsa-de-lima-se-aceleran-llego-la-hora-de-cazar-oportunidades-segun-credicorp-noticia/",
+  "published": "2026-09-14T17:42:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [
+   "https://gestion.pe/economia/agroexportacion-de-peru-europa-pierde-oferta-agro-por-el-clima-y-se-abre-oportunidad-para-nuestro-pais-preparado-noticia/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "eb41a5c6e7e71ae4c55c",
+  "host": "gestion.pe",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Estacionalidad del Ibex en la segunda quincena de julio | Estrategias de Inversi\u00f3n",
+  "url": "https://www.estrategiasdeinversion.com/analisis/trading/estacionalidad-del-ibex-en-la-segunda-quincena-n-236535",
+  "published": "2026-09-14T17:43:01+00:00",
+  "symbols": [
+   "NAS100",
+   "US30"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [
+   "https://www.estrategiasdeinversion.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "98bcbbbda27c1b25c1dd",
+  "host": "www.estrategiasdeinversion.com",
+  "claims": [
+   {
+    "claim": "P 500 y Nasdaq caen al cierre ante tensiones en Norteam\u00e9rica y Medio Oriente Dow Jones cae 500 puntos en la vuelta al trabajo de Wall Street;",
+    "lang": "es",
+    "quantities": [
+     "cierre"
+    ],
+    "direction": [
+     "cae"
+    ],
+    "horizon": [
+     "cierre"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US30"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "dow jones"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "f823ae8570a8"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Cotizaciones Bolsa y precios hoy | Estrategias de Inversi\u00f3n",
+  "url": "https://www.estrategiasdeinversion.com/cotizaciones",
+  "published": "2026-09-14T17:43:04+00:00",
+  "symbols": [
+   "NAS100",
+   "US30"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [
+   "https://www.estrategiasdeinversion.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "1dec052a4ab382989741",
+  "host": "www.estrategiasdeinversion.com",
+  "claims": [
+   {
+    "claim": "P 500 y Nasdaq caen al cierre ante tensiones en Norteam\u00e9rica y Medio Oriente Dow Jones cae 500 puntos en la vuelta al trabajo de Wall Street;",
+    "lang": "es",
+    "quantities": [
+     "cierre"
+    ],
+    "direction": [
+     "cae"
+    ],
+    "horizon": [
+     "cierre"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US30"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "dow jones"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "f823ae8570a8"
+   }
+  ],
+  "n_claims": 1
+ }
+]

@@ -1,0 +1,1850 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "https://quantsportal.com",
+  "url": "https://quantsportal.com",
+  "published": "2026-09-14T17:12:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2a3a28951d5ad48ee8c6",
+  "host": "quantsportal.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Mechanical Forex",
+  "url": "https://mechanicalforex.com",
+  "published": "2026-09-14T17:12:24+00:00",
+  "symbols": [
+   "EURUSD",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a0120dae12f0bb0b9d28",
+  "host": "mechanicalforex.com",
+  "claims": [
+   {
+    "claim": "At that point \u2013 close to January 2014 \u2013 we had lost faith in the strategy and believed it would not be working again as it had gone significantly above the maximum level of historical loss we had ever seen, as a matter of fact the maximum drawdown after 2014 was almost 50% higher than the maximum drawdown up until that point.",
+    "lang": "en",
+    "quantities": [
+     "close",
+     "drawdown"
+    ],
+    "direction": [
+     "higher"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "eur/usd",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "ff7c3447d352"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "A book outside currencies, my thoughts on passive investing strategies | Mechanical Forex",
+  "url": "https://mechanicalforex.com/2018/09/a-book-outside-currencies-my-thoughts-on-passive-investing-strategies.html",
+  "published": "2026-09-14T17:12:25+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f0e471e455de5c301405",
+  "host": "mechanicalforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Strategi Forex Terbaik yang Wajib Diketahui Para Trader | KASKUS",
+  "url": "https://www.kaskus.co.id/thread/68589901eec122bfeb0b0b1f/strategi-forex-terbaik-yang-wajib-diketahui-para-trader",
+  "published": "2026-09-14T17:12:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "id",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "af84d6e615aa350c20c6",
+  "host": "www.kaskus.co.id",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Strategi Forex Trading Sederhana | KASKUS",
+  "url": "https://www.kaskus.co.id/thread/53ba4bd2a1cb1792228b45e4/strategi-forex-trading-sederhana",
+  "published": "2026-09-14T17:12:42+00:00",
+  "symbols": [
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "id",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7e6947d185f40c57f0d3",
+  "host": "www.kaskus.co.id",
+  "claims": [
+   {
+    "claim": "jika candle sebelumnya bullish , maka pada saat harga open terbentuk kita buka posisi BUY begitu pula sebaliknya dengan target profit 10 point dan stoploss 10 point, serta ukuran lot 0.",
+    "lang": "id",
+    "quantities": [
+     "candle",
+     "open"
+    ],
+    "direction": [
+     "bullish",
+     "buka posisi"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "gbp/usd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b1c052c4f245"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Strategi Simpel dan Teknik Scalping Forex | KASKUS",
+  "url": "https://www.kaskus.co.id/thread/591531f3d89b0975588b4567/strategi-simpel-dan-teknik-scalping-forex",
+  "published": "2026-09-14T17:12:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "gap",
+   "inventory",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "id",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "989d0d83311b46cce462",
+  "host": "www.kaskus.co.id",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trusted CMA-Licensed Introducing Broker in Dubai, UAE",
+  "url": "https://sfbme.com/",
+  "published": "2026-09-14T17:12:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ce2ce003f88fb93a365c",
+  "host": "sfbme.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "John Ehlers code links",
+  "url": "http://www.davenewberg.com/Trading/EhlersCodes.html",
+  "published": "2026-09-14T17:12:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d61cf2d316bf7e4a8eea",
+  "host": "www.davenewberg.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Better Sine Wave: Hilbert Sine Wave Indicator, Improved",
+  "url": "http://emini-watch.com/trading-indicators/hilbert-sine-wave/",
+  "published": "2026-09-14T17:12:49+00:00",
+  "symbols": [
+   "US500",
+   "EURUSD",
+   "GBPUSD",
+   "Tesla"
+  ],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "night_session"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6cdadf06b8dfd18815d6",
+  "host": "emini-watch.com",
+  "claims": [
+   {
+    "claim": "When the trend reverses, and bars change from white to red (or red to white), Better Sine Wave signals a Sign of Strength (or Weakness), marked with an arrow.",
+    "lang": "en",
+    "quantities": [
+     "trend"
+    ],
+    "direction": [
+     "reverses"
+    ],
+    "horizon": [
+     "bars"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURUSD",
+      "GBPUSD",
+      "Tesla"
+     ],
+     "mentioned": [
+      "s&p500",
+      "eur/usd",
+      "gbp/usd",
+      "tsla"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "712794eed7c6"
+   },
+   {
+    "claim": "Retracement Signal #1 (Pullback to Support/Resistance) In established trend (colored bars confirm direction) Wait for pullback to S/R level Enter when price bounces off S/R with minimal overshoot Target: next S/R level in trend direction 3.",
+    "lang": "en",
+    "quantities": [
+     "pullback",
+     "trend"
+    ],
+    "direction": [
+     "bounces"
+    ],
+    "horizon": [
+     "bars"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURUSD",
+      "GBPUSD",
+      "Tesla"
+     ],
+     "mentioned": [
+      "s&p500",
+      "eur/usd",
+      "gbp/usd",
+      "tsla"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "77a7a5ec2b32"
+   },
+   {
+    "claim": "Tick charts compress low-activity periods (lunch, overnight) and expand high-activity periods (open, close, data releases), creating more consistent cyclical patterns.",
+    "lang": "en",
+    "quantities": [
+     "open",
+     "close"
+    ],
+    "direction": [
+     "expand"
+    ],
+    "horizon": [
+     "tick",
+     "overnight"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURUSD",
+      "GBPUSD",
+      "Tesla"
+     ],
+     "mentioned": [
+      "s&p500",
+      "eur/usd",
+      "gbp/usd",
+      "tsla"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "3e019f39fd3b"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Calendar Strategy: Fed Days | Systematic Investor",
+  "url": "https://systematicinvestor.wordpress.com/2014/05/06/calendar-strategy-fed-days",
+  "published": "2026-09-14T17:12:51+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum",
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5d224e4d1f2b8d6cfec9",
+  "host": "systematicinvestor.wordpress.com",
+  "claims": [
+   {
+    "claim": "Today, I want to follow up with the Calendar Strategy: Option Expiry post.",
+    "lang": "en",
+    "quantities": [
+     "expiry"
+    ],
+    "direction": [
+     "follow"
+    ],
+    "horizon": [
+     "expiry"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "30208030d2d7"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Day Trading with Order Flow \u2013 Ex-Prop trader shares prop firm strategies",
+  "url": "http://www.nobsdaytrading.com/",
+  "published": "2026-09-14T17:12:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "34a0a95ed6c95142171c",
+  "host": "www.nobsdaytrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Calendar Strategy: Option Expiry | Systematic Investor",
+  "url": "http://systematicinvestor.wordpress.com/2014/05/03/calendar-strategy-option-expiry/",
+  "published": "2026-09-14T17:12:55+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6a439c3d45fb3462e483",
+  "host": "systematicinvestor.wordpress.com",
+  "claims": [
+   {
+    "claim": "Calendar Strategy: Option Expiry | Systematic Investor Systematic Investor Systematic Investor Blog Home About Systematic Investor Toolbox Research Shiny Home > Backtesting , R > Calendar Strategy: Option Expiry Calendar Strategy: Option Expiry May 3, 2014 systematicinvestor Leave a comment Go to comments Today, I want to follow up with the Calendar Strategy: Month End post.",
+    "lang": "en",
+    "quantities": [
+     "expiry"
+    ],
+    "direction": [
+     "follow"
+    ],
+    "horizon": [
+     "expiry",
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5b497b93f2da"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u200eMobileTrader FX Trading Online App - App Store",
+  "url": "https://itunes.apple.com/gb/app/mobiletrader-roboforex/id1137639247?mt=8",
+  "published": "2026-09-14T17:12:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-GB",
+  "endpoints": [
+   "https://itunes.apple.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5cd9189ef05747faf661",
+  "host": "itunes.apple.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u200eOANDA - Forex trading App - App Store",
+  "url": "https://app.adjust.com/1bmq613m?redirect_androidhttps%3A%2F%2Fapps.apple.com%2Fus%2Fapp%2Foanda-forex-trading%2Fid370922777",
+  "published": "2026-09-14T17:12:59+00:00",
+  "symbols": [],
+  "timeframes": [
+   "4H",
+   "M1"
+  ],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://app.adjust.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "536820e77d543dcb562d",
+  "host": "app.adjust.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Trading Economics API Documentation",
+  "url": "https://docs.tradingeconomics.com/",
+  "published": "2026-09-14T17:13:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://tradingeconomics.com/api/?source=footer"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "af2e5059f1f18fb7fc53",
+  "host": "docs.tradingeconomics.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Noticias sobre bcrp | GESTI\u00d3N",
+  "url": "https://gestion.pe/noticias/bcrp/",
+  "published": "2026-09-14T17:13:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "momentum",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3649ba3308f7e7be22ae",
+  "host": "gestion.pe",
+  "claims": [
+   {
+    "claim": "Econom\u00eda Redacci\u00f3n Gesti\u00f3n Mercados 17/08/2026 _ 14:45 Tipo de cambio arranca la semana a la baja: \u00bfEn cu\u00e1nto cerr\u00f3 el d\u00f3lar este lunes 17 de agosto?",
+    "lang": "es",
+    "quantities": [
+     "cambio",
+     "d\u00f3lar"
+    ],
+    "direction": [
+     "baja"
+    ],
+    "horizon": [
+     "semana"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "SOYBEAN",
+      "CORN",
+      "WHEAT",
+      "USDBRL"
+     ],
+     "channels": [
+      "el ni\u00f1o: weather/agri report -> grains and BRL"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "1578dea5415b"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "d\u00f3lar: BCRP \u201capret\u00f3 gatillo\u201d para frenar ca\u00edda, \u00bfa cu\u00e1nto bajar\u00eda sin esta intervenci\u00f3n? | TU-DINERO | GESTI\u00d3N",
+  "url": "https://gestion.pe/tu-dinero/dolar-bcrp-apreto-gatillo-para-frenar-caida-a-cuanto-bajaria-sin-esta-intervencion-noticia/",
+  "published": "2026-09-14T17:13:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "momentum",
+   "policy",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d9824104e6389deada28",
+  "host": "gestion.pe",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u00bfPor qu\u00e9 el Sol peruano es una de las monedas m\u00e1s fuertes de Latinoam\u00e9rica? | Te lo cuento f\u00e1cil | blogs | gestion.pe",
+  "url": "https://blogs.gestion.pe/te-lo-cuento-facil/2022/10/por-que-el-sol-peruano-es-una-de-las-monedas-mas-fuertes-de-latinoamerica.html",
+  "published": "2026-09-14T17:13:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "adf4271979567ac245de",
+  "host": "blogs.gestion.pe",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "estrategia trading Archivos | Analizando tus inversiones | blogs | gestion.pe",
+  "url": "https://blogs.gestion.pe/analizandotusinversiones/tag/estrategia-trading",
+  "published": "2026-09-14T17:13:14+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1H"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "336fec74b16b72df5f83",
+  "host": "blogs.gestion.pe",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "bcrp hace intervencion enorme en mercado cambiario para atenuar caida del dolar lo congelara en 3 36 dolar mercado cambiario tipo de cambio en peru | TU-DINERO | GESTI\u00d3N",
+  "url": "https://gestion.pe/tu-dinero/bcrp-hace-intervencion-enorme-en-mercado-cambiario-para-atenuar-caida-del-dolar-lo-congelara-en-3-36-dolar-mercado-cambiario-tipo-de-cambio-en-peru-noticia/",
+  "published": "2026-09-14T17:13:16+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "flow",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [
+   "https://gestion.pe/economia/mincetur-exportaciones-peruanas-podrian-alcanzar-record-historico-de-us-85000-millones-en-2025-noticia/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "66b1c8b79841a815029f",
+  "host": "gestion.pe",
+  "claims": [
+   {
+    "claim": "Composici\u00f3n: Joel Vilcapoma (Diario Gesti\u00f3n) \u00danete a nuestro canal Suscr\u00edbete a YouTube Omar Manrique 23/12/2025 15H01 Las presiones bajistas sobre el precio del d\u00f3lar en el \u00e1mbito global y local se acent\u00faan , pero en el Per\u00fa ahora se topan con una muralla de contenci\u00f3n hasta el momento infranqueable.",
+    "lang": "es",
+    "quantities": [
+     "d\u00f3lar"
+    ],
+    "direction": [
+     "bajista"
+    ],
+    "horizon": [
+     "diario"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD"
+     ],
+     "mentioned": [
+      "oro",
+      "plata"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "187d8ef99737"
+   },
+   {
+    "claim": "Luego de dos meses de letargo, el d\u00f3lar en los mercados internacionales retom\u00f3 a fin de noviembre el curso descendente que lo marc\u00f3 este a\u00f1o (cae 9.",
+    "lang": "es",
+    "quantities": [
+     "d\u00f3lar"
+    ],
+    "direction": [
+     "cae"
+    ],
+    "horizon": [
+     "mes"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD"
+     ],
+     "mentioned": [
+      "oro",
+      "plata"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "9d4b2dfbd324"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "bcr saca tarjeta amarilla con compra de dolares cambiara la tendencia a la baja intervencion del bcr precio del dolar tendencia del dolar tipo de cambio | TU-DINERO | GESTI\u00d3N",
+  "url": "https://gestion.pe/tu-dinero/bcr-saca-tarjeta-amarilla-con-compra-de-dolares-cambiara-la-tendencia-a-la-baja-intervencion-del-bcr-precio-del-dolar-tendencia-del-dolar-tipo-de-cambio-noticia/",
+  "published": "2026-09-14T17:13:18+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XCUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "momentum",
+   "policy",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [
+   "https://gestion.pe/videos/economia/por-que-baja-el-dolar-en-peru-exportaciones-record-explican-el-retroceso-del-tipo-de-cambio-nnav-tvpe-video-noticia/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "1fa035e7226ccc265f74",
+  "host": "gestion.pe",
+  "claims": [
+   {
+    "claim": "BCRP interviene en el mercado cambiario con compra de d\u00f3lares por US$ 104 millones, ante el acelerado retroceso de su cotizaci\u00f3n en los \u00faltimos meses, que puede restar competitividad a algunos sectores.",
+    "lang": "es",
+    "quantities": [
+     "d\u00f3lar",
+     "cot"
+    ],
+    "direction": [
+     "compra",
+     "retroceso"
+    ],
+    "horizon": [
+     "mes"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XCUUSD"
+     ],
+     "mentioned": [
+      "oro",
+      "plata",
+      "cobre"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "159bf8aa1f13"
+   },
+   {
+    "claim": "353 un m\u00ednimo de m\u00e1s de cinco a\u00f1os, momento en que la autoridad monetaria compr\u00f3 US$ 77 millones, con lo que reanim\u00f3 a la divisa que cerr\u00f3 la sesi\u00f3n en S/ 3.",
+    "lang": "es",
+    "quantities": [
+     "m\u00ednimo"
+    ],
+    "direction": [
+     "compr"
+    ],
+    "horizon": [
+     "sesi\u00f3n"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XCUUSD"
+     ],
+     "mentioned": [
+      "oro",
+      "plata",
+      "cobre"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "9042b6d7291d"
+   },
+   {
+    "claim": "Sin embargo, reconoci\u00f3 que el Banco Central interviene porque le preocupa la velocidad a la que el d\u00f3lar ha bajado en las \u00faltimas semanas, en un contexto en el que tambi\u00e9n las AFP alistan ventas de la divisa pues requieren soles para atender los retiros de fondos de sus afiliados, pr\u00f3ximos a comenzar.",
+    "lang": "es",
+    "quantities": [
+     "banco central",
+     "d\u00f3lar"
+    ],
+    "direction": [
+     "baja",
+     "venta"
+    ],
+    "horizon": [
+     "semana"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XCUUSD"
+     ],
+     "mentioned": [
+      "oro",
+      "plata",
+      "cobre"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "93391eef2d15"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "El riesgo silencioso del BCRP | OPINION | GESTI\u00d3N",
+  "url": "https://gestion.pe/opinion/el-riesgo-silencioso-del-bcrp-noticia/",
+  "published": "2026-09-14T17:13:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "policy",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9e569155ec9ef73ba590",
+  "host": "gestion.pe",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Sol peruano fue la moneda m\u00e1s s\u00f3lida de Latinoam\u00e9rica en 2024, destaca el BCRP | Banco Central de Reserva del Per\u00fa | moneda peruana | TU-DINERO | GESTI\u00d3N",
+  "url": "https://gestion.pe/tu-dinero/sol-peruano-fue-la-moneda-mas-solida-de-latinoamerica-en-2024-destaca-el-bcrp-banco-central-de-reserva-del-peru-moneda-peruana-noticia/",
+  "published": "2026-09-14T17:13:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5ffc73f7c22a7495a50b",
+  "host": "gestion.pe",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "BCRP: volatilidad del sol es similar a la del euro y menor que otras divisas de la regi\u00f3n | ECONOMIA | GESTI\u00d3N",
+  "url": "https://gestion.pe/economia/bcrp-volatilidad-del-sol-es-similar-a-la-del-euro-y-menor-que-otras-divisas-de-la-region-noticia/",
+  "published": "2026-09-14T17:13:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "momentum",
+   "policy",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [
+   "https://gestion.pe/economia/exportaciones-no-tradicionales-peruanas-crecieron-34-en-abril-de-2026-segun-el-bcr-noticia/",
+   "https://gestion.pe/economia/bcrp-exportaciones-alcanzarian-los-us-118000-millones-este-ano-noticia/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "3265fe9527db8da609f0",
+  "host": "gestion.pe",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Invertir en la BVL: 6 errores comunes que te alejan de la ganancia | Invirtiendo a futuro | blogs | gestion.pe",
+  "url": "https://blogs.gestion.pe/invirtiendo-a-futuro/2025/07/invertir-en-la-bvl-6-errores-comunes-que-te-alejan-de-la-ganancia.html",
+  "published": "2026-09-14T17:13:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2c6ace37d8b883091706",
+  "host": "blogs.gestion.pe",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Estacionalidad en el Ibex35 | Estrategias de Inversi\u00f3n",
+  "url": "https://www.estrategiasdeinversion.com/analisis/bolsa-y-mercados/acciones-para-invertir/estacionalidad-en-el-ibex35-n-273368",
+  "published": "2026-09-14T17:13:27+00:00",
+  "symbols": [
+   "NAS100",
+   "US30",
+   "XAUUSD",
+   "XTIUSD",
+   "E35",
+   "BTCUSD",
+   "ETHUSD",
+   "Tesla",
+   "NVIDIA"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [
+   "https://www.estrategiasdeinversion.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "a5bafe0f932ed80ce5aa",
+  "host": "www.estrategiasdeinversion.com",
+  "claims": [
+   {
+    "claim": "P 500 y Nasdaq caen al cierre ante tensiones en Norteam\u00e9rica y Medio Oriente Dow Jones cae 500 puntos en la vuelta al trabajo de Wall Street;",
+    "lang": "es",
+    "quantities": [
+     "cierre"
+    ],
+    "direction": [
+     "cae"
+    ],
+    "horizon": [
+     "cierre"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US30"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "dow jones"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "f823ae8570a8"
+   },
+   {
+    "claim": "En resumen, seleccionaremos a FCC para llevar a cabo nuestra operativa basada en la estacionalidad, ya que adem\u00e1s de cumplir con los requisitos de tendencia bajista, impulso bajista y debilidad, es la que mayor probabilidad de caer tiene y mayor rentabilidad negativa media obtenida durante el mes de mayo.",
+    "lang": "es",
+    "quantities": [
+     "estacionalidad",
+     "tendencia",
+     "impulso"
+    ],
+    "direction": [
+     "bajista",
+     "cae"
+    ],
+    "horizon": [
+     "mes"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "NAS100",
+      "US30",
+      "E35",
+      "BTCUSD",
+      "ETHUSD",
+      "Tesla",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "oro",
+      "petr\u00f3leo",
+      "nasdaq",
+      "dow jones",
+      "ibex35",
+      "bitcoin",
+      "ethereum",
+      "tesla",
+      "nvidia"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD",
+      "USDSGD"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR",
+      "mas : policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "d12c373a6d52"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Ibex 35 en tiempo real | Estrategias de Inversi\u00f3n",
+  "url": "https://www.estrategiasdeinversion.com/especial/ibex-35-en-tiempo-real",
+  "published": "2026-09-14T17:13:30+00:00",
+  "symbols": [
+   "NAS100",
+   "US30",
+   "E35"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [
+   "https://www.estrategiasdeinversion.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "8286dda358ffa9ffa40d",
+  "host": "www.estrategiasdeinversion.com",
+  "claims": [
+   {
+    "claim": "P 500 y Nasdaq caen al cierre ante tensiones en Norteam\u00e9rica y Medio Oriente Dow Jones cae 500 puntos en la vuelta al trabajo de Wall Street;",
+    "lang": "es",
+    "quantities": [
+     "cierre"
+    ],
+    "direction": [
+     "cae"
+    ],
+    "horizon": [
+     "cierre"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US30"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "dow jones"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "f823ae8570a8"
+   },
+   {
+    "claim": "An\u00e1lisis a corto plazo El Ibex 35 deber\u00eda vulnerar los 9.",
+    "lang": "es",
+    "quantities": [
+     "ibex"
+    ],
+    "direction": [
+     "corto"
+    ],
+    "horizon": [
+     "corto plazo"
+    ],
+    "instruments": {
+     "analogues": [
+      "E35"
+     ],
+     "mentioned": [
+      "ibex 35"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "08b70749ed6e"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "IBEX 35 hoy - Precios y cotizaciones de la Bolsa en tiempo real | Estrategias de Inversi\u00f3n",
+  "url": "https://www.estrategiasdeinversion.com/cotizaciones/indices/ibex-35",
+  "published": "2026-09-14T17:13:32+00:00",
+  "symbols": [
+   "NAS100",
+   "US30",
+   "E35"
+  ],
+  "timeframes": [
+   "1M",
+   "INTRAD\u00cdA"
+  ],
+  "patterns": [
+   "auction",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "es",
+  "endpoints": [
+   "https://www.estrategiasdeinversion.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "bbec46da3e7a309cef4f",
+  "host": "www.estrategiasdeinversion.com",
+  "claims": [
+   {
+    "claim": "P 500 y Nasdaq caen al cierre ante tensiones en Norteam\u00e9rica y Medio Oriente Dow Jones cae 500 puntos en la vuelta al trabajo de Wall Street;",
+    "lang": "es",
+    "quantities": [
+     "cierre"
+    ],
+    "direction": [
+     "cae"
+    ],
+    "horizon": [
+     "cierre"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US30"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "dow jones"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "f823ae8570a8"
+   },
+   {
+    "claim": "Para que un valor entre a formar parte de la cotizaci\u00f3n del Ibex 35 deber\u00e1 de pasar un periodo de control de seis meses completos antes de cada reuni\u00f3n ordinaria para que un valor sea candidato a acceder a dicho \u00edndice y superar -de esa forma- unos filtros m\u00ednimos.",
+    "lang": "es",
+    "quantities": [
+     "cot",
+     "ibex",
+     "\u00edndice",
+     "m\u00ednimo"
+    ],
+    "direction": [
+     "supera"
+    ],
+    "horizon": [
+     "mes"
+    ],
+    "instruments": {
+     "analogues": [
+      "E35"
+     ],
+     "mentioned": [
+      "ibex 35"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "798b07211af1"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Estrategia sobre el \u00edndice Ibex 35 | Estrategias de Inversi\u00f3n",
+  "url": "https://www.estrategiasdeinversion.com/analisis/bolsa-y-mercados/acciones-para-invertir/estrategia-sobre-el-indice-ibex-35-n-653273",
+  "published": "2026-09-14T17:13:33+00:00",
+  "symbols": [
+   "NAS100",
+   "US30",
+   "XAUUSD",
+   "XTIUSD",
+   "GER40",
+   "FRA40",
+   "E35",
+   "BTCUSD",
+   "ETHUSD",
+   "Tesla",
+   "NVIDIA"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [
+   "https://www.estrategiasdeinversion.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5413f7efcbcd0a4c3235",
+  "host": "www.estrategiasdeinversion.com",
+  "claims": [
+   {
+    "claim": "P 500 y Nasdaq caen al cierre ante tensiones en Norteam\u00e9rica y Medio Oriente Dow Jones cae 500 puntos en la vuelta al trabajo de Wall Street;",
+    "lang": "es",
+    "quantities": [
+     "cierre"
+    ],
+    "direction": [
+     "cae"
+    ],
+    "horizon": [
+     "cierre"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US30"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "dow jones"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "f823ae8570a8"
+   },
+   {
+    "claim": "Por su parte, la lectura de los diferentes indicadores con los que respaldamos la lectura del precio inciden en un gradual deterioro por parte de las compras, generando un entorno de (1) mayor volatilidad, (2) volumen creciente y (3) con sus medias m\u00f3viles de medio y largo plazo atisbando un pr\u00f3ximo corte descendente.",
+    "lang": "es",
+    "quantities": [
+     "volatilidad",
+     "volumen"
+    ],
+    "direction": [
+     "compra",
+     "largo"
+    ],
+    "horizon": [
+     "largo plazo"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "NAS100",
+      "US30",
+      "GER40",
+      "FRA40",
+      "E35",
+      "BTCUSD",
+      "ETHUSD",
+      "Tesla",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "oro",
+      "petr\u00f3leo",
+      "nasdaq",
+      "dow jones",
+      "dax",
+      "cac 40",
+      "ibex 35",
+      "bitcoin",
+      "ethereum",
+      "tesla",
+      "nvidia"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD",
+      "USDSGD"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR",
+      "mas : policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "10e47ed762cb"
+   },
+   {
+    "claim": "Por su parte, la gesti\u00f3n inicial de la posici\u00f3n corta o bajista partir\u00eda de un stop loss a cierre diario por encima del \u00faltimo m\u00e1ximo decreciente que nos deje el precio en el momento de perforaci\u00f3n de los 9.",
+    "lang": "es",
+    "quantities": [
+     "cierre",
+     "m\u00e1ximo"
+    ],
+    "direction": [
+     "bajista",
+     "stop"
+    ],
+    "horizon": [
+     "cierre",
+     "diario"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "NAS100",
+      "US30",
+      "GER40",
+      "FRA40",
+      "E35",
+      "BTCUSD",
+      "ETHUSD",
+      "Tesla",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "oro",
+      "petr\u00f3leo",
+      "nasdaq",
+      "dow jones",
+      "dax",
+      "cac 40",
+      "ibex 35",
+      "bitcoin",
+      "ethereum",
+      "tesla",
+      "nvidia"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD",
+      "USDSGD"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR",
+      "mas : policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "ca4db64d21e5"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Estrategias de Inversi\u00f3n | Tu portal para invertir en Bolsa",
+  "url": "https://www.estrategiasdeinversion.com/",
+  "published": "2026-09-14T17:13:35+00:00",
+  "symbols": [
+   "NAS100",
+   "US30",
+   "XAUUSD",
+   "XCUUSD",
+   "XTIUSD",
+   "US500",
+   "GER40",
+   "EUSTX50",
+   "E35",
+   "BTCUSD",
+   "ETHUSD",
+   "TSMC",
+   "Tesla",
+   "NVIDIA"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [
+   "https://www.estrategiasdeinversion.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f1ab694c92b8a4ddcd2a",
+  "host": "www.estrategiasdeinversion.com",
+  "claims": [
+   {
+    "claim": "P 500 y Nasdaq caen al cierre ante tensiones en Norteam\u00e9rica y Medio Oriente Dow Jones cae 500 puntos en la vuelta al trabajo de Wall Street;",
+    "lang": "es",
+    "quantities": [
+     "cierre"
+    ],
+    "direction": [
+     "cae"
+    ],
+    "horizon": [
+     "cierre"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US30"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "dow jones"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "f823ae8570a8"
+   },
+   {
+    "claim": "16:30 El bono americano a 10 a\u00f1os rompe la cota del 5% por primera vez desde 2023 16:20 Jefferies eleva a Boing a comprar 16:00 As\u00ed se comportan las Big Tech en lo que llevamos de a\u00f1o en Wall Street Agenda M\u00e1s Hora Pa\u00eds Dato 08:30 Precios de producci\u00f3n e importaci\u00f3n Los brokers recomiendan M\u00e1s Valor Recom.",
+    "lang": "es",
+    "quantities": [
+     "bono",
+     "cot"
+    ],
+    "direction": [
+     "rompe",
+     "compra"
+    ],
+    "horizon": [
+     "hora"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XCUUSD",
+      "XTIUSD",
+      "NAS100",
+      "US500",
+      "US30",
+      "GER40",
+      "EUSTX50",
+      "E35",
+      "BTCUSD",
+      "ETHUSD",
+      "TSMC",
+      "Tesla",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "oro",
+      "cobre",
+      "petr\u00f3leo",
+      "nasdaq",
+      "s&p 500",
+      "dow jones",
+      "dax",
+      "euro stoxx",
+      "ibex 35",
+      "bitcoin",
+      "ethereum",
+      "tsmc",
+      "tesla",
+      "nvidia"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "562dd958d9a3"
+   },
+   {
+    "claim": "34,00 LA BOLSA HOY \"Cuatro valores para aprovechar y proteger la cartera en el Ibex 35\" El experto opina Las dos acciones que Warren Buffett est\u00e1 comprando y con potencial a largo plazo An\u00e1lisis macro Ca\u00eddas en las bolsas y recesi\u00f3n para 2027 derivada del shock de oferta en el petr\u00f3leo Actualidad Recomendaciones Un valor del Ibex 35 en m\u00e1ximos, que sube un 92% en el a\u00f1o.",
+    "lang": "es",
+    "quantities": [
+     "ibex",
+     "petr\u00f3leo",
+     "m\u00e1ximo"
+    ],
+    "direction": [
+     "compra",
+     "largo"
+    ],
+    "horizon": [
+     "largo plazo"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD",
+      "E35"
+     ],
+     "mentioned": [
+      "petr\u00f3leo",
+      "ibex 35"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "50ebdec411cf"
+   },
+   {
+    "claim": "y con un potencial del 17% todav\u00eda Pese a recortar su precio Barclays sigue confiando en Inditex: 13% de potencial tras el castigo del mercado Recuperaci\u00f3n en el Ibex 35 Un acci\u00f3n que sube un 8% en tres d\u00edas y con recorrido de doble d\u00edgito Acciones Blackrock incrementa su participaci\u00f3n en Cellnex por encima del 6% Seg\u00fan Renta 4 El S&P 500 tiene v\u00eda libre para alcanzar los 8.",
+    "lang": "es",
+    "quantities": [
+     "ibex",
+     "acci\u00f3n"
+    ],
+    "direction": [
+     "sube"
+    ],
+    "horizon": [
+     "d\u00eda"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "E35"
+     ],
+     "mentioned": [
+      "s&p 500",
+      "ibex 35"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "dce247b55ace"
+   },
+   {
+    "claim": "000 d\u00f3lares El PIB de Reino Unido crece un 0,4\u200b\u200b%\u200b\u200b\u200b\u200b\u200b\u200b\u200b\u200b\u200b\u200b\u200b\u200b\u200b\u200b en julio Las acciones de Nvidia cotizan de forma casi totalmente independiente del sector de los semiconductores en general LFDE OPINA \"El deterioro de las competencias amenaza la productividad y el crecimiento a largo plazo\" J.",
+    "lang": "es",
+    "quantities": [
+     "d\u00f3lar",
+     "cot"
+    ],
+    "direction": [
+     "largo"
+    ],
+    "horizon": [
+     "largo plazo"
+    ],
+    "instruments": {
+     "analogues": [
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "nvidia"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "acddfeaffa5d"
+   }
+  ],
+  "n_claims": 5
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Mayo, junio y agosto, los peores meses para el Ibex 35 desde 2008 | Estrategias de Inversi\u00f3n",
+  "url": "https://www.estrategiasdeinversion.com/actualidad/noticias/bolsa-espana/factor-estacional-mayo-junio-y-agosto-los-peores-n-425159",
+  "published": "2026-09-14T17:13:37+00:00",
+  "symbols": [
+   "NAS100",
+   "US30",
+   "XAUUSD",
+   "XTIUSD",
+   "E35",
+   "BTCUSD",
+   "ETHUSD",
+   "Tesla",
+   "NVIDIA"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [
+   "https://www.estrategiasdeinversion.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c5889279d7888daaafc9",
+  "host": "www.estrategiasdeinversion.com",
+  "claims": [
+   {
+    "claim": "P 500 y Nasdaq caen al cierre ante tensiones en Norteam\u00e9rica y Medio Oriente Dow Jones cae 500 puntos en la vuelta al trabajo de Wall Street;",
+    "lang": "es",
+    "quantities": [
+     "cierre"
+    ],
+    "direction": [
+     "cae"
+    ],
+    "horizon": [
+     "cierre"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US30"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "dow jones"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "f823ae8570a8"
+   },
+   {
+    "claim": "Entre los ciclos alcistas que suelen repetirse apuntan al famoso \u2018rally\u2019 de Navidad, a la estacionalidad de la bolsa antes del verano, a los finales de trimestre y a los primeros d\u00edas de mes.",
+    "lang": "es",
+    "quantities": [
+     "estacionalidad"
+    ],
+    "direction": [
+     "alcista",
+     "rally"
+    ],
+    "horizon": [
+     "trimestre",
+     "d\u00eda"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "NAS100",
+      "US30",
+      "E35",
+      "BTCUSD",
+      "ETHUSD",
+      "Tesla",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "oro",
+      "petr\u00f3leo",
+      "nasdaq",
+      "dow jones",
+      "ibex 35",
+      "bitcoin",
+      "ethereum",
+      "tesla",
+      "nvidia"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD",
+      "USDSGD"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR",
+      "mas : policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "9404cdfe9fb4"
+   },
+   {
+    "claim": "Para los m\u00e1s optimistas y para los que m\u00e1s conf\u00edan en las pautas estacionales de las bolsas siempre existe alg\u00fan dato alentador: julio es el mes que mostr\u00f3 una evoluci\u00f3n m\u00e1s favorable para el Ibex 35 entre 2008 y 2018, al acumular un alza del 2,46%.",
+    "lang": "es",
+    "quantities": [
+     "estacional",
+     "ibex"
+    ],
+    "direction": [
+     "alza"
+    ],
+    "horizon": [
+     "mes"
+    ],
+    "instruments": {
+     "analogues": [
+      "E35"
+     ],
+     "mentioned": [
+      "ibex 35"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "84766b5d6cd6"
+   }
+  ],
+  "n_claims": 3
+ }
+]
