@@ -411,11 +411,20 @@ def clock_breaches() -> dict[str, str]:
     return out
 
 
-def main() -> None:
+def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
+    """Evaluate a set of forward rows and write their ledger.
+
+    PARAMETERISED SO THE PRE-CERTIFICATION LANE REUSES THIS ENGINE RATHER THAN COPYING IT. The
+    defaults are exactly the behaviour this has always had -- certificates plus grandfathered
+    rows, into shadow_state.json -- and `precert_shadow.py` passes its own rows and its own
+    ledger. A second implementation of forward evaluation is the last thing this desk needs: the
+    costs, the bar fetch, the side resolution and the clock-breach fence all live here and all had
+    to be got right once.
+    """
     from mt5desk.engine import run_backtest
 
     meta = json.loads((UNI / "universe.json").read_text(encoding="utf-8"))
-    state_path = SHADOW_DIR / "shadow_state.json"
+    state_path = SHADOW_DIR / ledger
     state = {}
     if state_path.exists():
         try:
@@ -430,9 +439,9 @@ def main() -> None:
     # Grandfathered rows are long by construction -- they predate the side field entirely --
     # and are stated as such rather than left to a default, so every row in `enrolled` has the
     # same arity and the loop below never has to guess which shape it is holding.
-    enrolled = ([(s, w, dict(WINDOWS.get(w, {})), "session_range_breakout", "LONG")
-                 for s, w in SLEEVES]
-                + certified_sleeves())
+    enrolled = rows if rows is not None else (
+        [(s, w, dict(WINDOWS.get(w, {})), "session_range_breakout", "LONG") for s, w in SLEEVES]
+        + certified_sleeves())
     # Keep variants of one symbol adjacent so their bars are loaded once, while never retaining
     # the full multi-symbol history set. The old unbounded h1_cache crossed the service's 400 MB
     # safety ceiling as soon as all certified families became genuinely enrollable.
