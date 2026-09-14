@@ -152,6 +152,8 @@ write_status "RUNNING_CONTROLLER" "Codex holds the fenced lease and is processin
     printf 'It remains authoritative; inspect only the relevant clauses on demand.\n'
     printf '\n=== SINGLE MT5-ONLY MIDNIGHT OPERATING BRIEF ===\n'
     cat ops/midnight_codex_prompt.txt
+    printf '\n=== CANONICAL BREADTH MACHINERY DUTY (SUPERSEDES PROPOSE-ONLY) ===\n'
+    cat docs/research/BREADTH_MACHINERY_MANDATE.md
     printf '\nRUNTIME STATE: deterministic pipeline exit code=%s; controller epoch=%s.\n' \
         "$PIPELINE_RC" "$QUANT_CONTROLLER_EPOCH"
 } >"$PROMPT_FILE"

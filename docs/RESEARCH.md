@@ -1,5 +1,10 @@
 # RESEARCH — the one research mandate (every miner, hunter, digger, generator, screen, test, desk)
 
+**Standing breadth machinery duty (2026-09-14):** read
+`docs/research/BREADTH_MACHINERY_MANDATE.md`. It supersedes the earlier propose-only breadth
+brief: implement and wire measured independence improvements through the shared research path,
+not separate idea registries or certificate-count targets. Capital authority remains unchanged.
+
 **Status: OPERATIVE. Companion to `docs/LAWS.md` (which governs on conflict; the sealed core
 governs both).** This document merges every research mandate the desk has ever issued — the
 Tier-1 controller mandate, the elite-intelligence mandate (all three parts), the digging charter,
