@@ -102,6 +102,62 @@ YEARS = 6
 MIN_BARS = 3000
 
 
+#: Most bars this terminal serves in ONE call. Above it `copy_rates_from_pos` returns None with
+#: `(-2, "Terminal: Invalid params")` -- no exception, no partial result. Measured on Fusion
+#: Markets MT5 2026-09-14: 60,000 succeeds, 120,000 does not.
+MAX_BARS_PER_CALL = 50_000
+
+#: How many bars to ask for per chart. Roughly the same span on each: ~2-3 years of H1 down to a
+#: few months of M1, all clearing the 60 trading days the gates need by a wide margin.
+_WANT = {"M1": 200_000, "M5": 120_000, "M15": 60_000, "M30": 40_000,
+         "H1": 60_000, "H4": 20_000, "D1": 5_000}
+
+
+def _want_bars(tf: str) -> int:
+    return _WANT.get(str(tf).upper(), 40_000)
+
+
+def _pull_bars(mt5, sym: str, code, want: int, start, now):
+    """Up to `want` bars, walking BACKWARD in capped chunks. None when the venue serves nothing.
+
+    A RANGE CALL CANNOT BACK-FILL, AND THAT IS WHY THIS DESK HAD NO INTRADAY BARS.
+    `copy_rates_range` serves only what the terminal has already cached; it does not make the
+    terminal download anything. This loop already asked for every chart on the ladder and had
+    done for weeks -- and below M15 it got nothing back, because no chart for those symbols had
+    ever been opened. The result was recorded honestly as `tf:0/min` and read as "the broker
+    keeps far less M1 than H1", which is true in general and was not what was happening here.
+    Measured 2026-09-14: 299 H1 parquets against FOUR M15 and one M5.
+    `copy_rates_from_pos` triggers the download; the range call survives only as a fallback for
+    a terminal that refuses the positional form.
+
+    AND ONE CALL IS NOT ENOUGH FOR THE FINE CHARTS. The terminal caps a single request, so 50,000
+    M1 bars is about 42 trading days at ~7,200 a week while the gates want 60. The newest chunk is
+    taken by position, each older chunk anchored at the oldest bar already held. Progress is
+    REQUIRED to continue -- a venue that kept returning the same oldest bar would spin forever, so
+    a chunk that adds nothing new means the history is exhausted and what was gathered is what
+    exists.
+    """
+    import numpy as np
+    first = mt5.copy_rates_from_pos(sym, code, 0, min(want, MAX_BARS_PER_CALL))
+    if first is None or len(first) == 0:
+        r = mt5.copy_rates_range(sym, code, start, now)
+        return r if r is not None and len(r) else None
+    chunks, have, oldest = [first], len(first), first[0]["time"]
+    while have < want:
+        older = mt5.copy_rates_from(sym, code, datetime.fromtimestamp(int(oldest), UTC),
+                                    min(want - have, MAX_BARS_PER_CALL))
+        if older is None or len(older) == 0:
+            break
+        new_oldest = older[0]["time"]
+        if new_oldest >= oldest:
+            break                       # no progress: the venue's history ends here
+        chunks.append(older)
+        have += len(older)
+        oldest = new_oldest
+    out = np.concatenate(chunks) if len(chunks) > 1 else chunks[0]
+    return np.unique(out)
+
+
 def min_bars(timeframe: str) -> int:
     """`MIN_BARS` re-expressed as the SAME MARKET TIME on `timeframe`.
 
@@ -177,7 +233,7 @@ def main() -> int:
             if code is None:                      # a broker/terminal without this chart
                 thin.append(f"{tf}:unsupported")
                 continue
-            rates = mt5.copy_rates_range(name, code, start, now)
+            rates = _pull_bars(mt5, name, code, _want_bars(tf), start, now)
             n = 0 if rates is None else len(rates)
             if tf == "H1":
                 h1_rates = rates
