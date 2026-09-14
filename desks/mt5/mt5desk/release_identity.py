@@ -124,6 +124,22 @@ class Identity:
     drift: tuple[str, ...] = ()                # money-path files on disk that differ from the seal
     report: tuple[str, ...] = field(default_factory=tuple)   # non-refusing observations
     at: str = ""
+    # WHAT WAS TESTED, WHAT SIZED THE BOOK, AND WHAT CI SAW (added 2026-09-14).
+    #
+    # This sealed a `release_sha` and stopped. Asked what had been TESTED against that seal it had
+    # no answer -- not null, no field at all -- so "the box runs the sealed code" and "the sealed
+    # code passed its gates" were two claims with only the first measured. Same for the number
+    # that sizes the book: the allocator publishes a posterior-growth certificate on every solve
+    # and the release recorded nothing about which one was in force.
+    #
+    # None here means UNMEASURED and `to_dict` renders it that way rather than as null, because a
+    # null in a provenance record reads as "there wasn't one" when it means "nobody looked"
+    # (L1.28a, WS-005). `ci_run_id` is expected to be UNMEASURED on a box with no CI runner
+    # attached; that is an honest reading of this desk, not a gap to paper over.
+    tested_sha: str | None = None
+    tested_gates: str | None = None
+    allocator_certificate: str | None = None
+    ci_run_id: str | None = None
 
     def allows_new_risk(self) -> bool:
         """The only question the gateway asks. ok AND measured, and not stale when staleness is
@@ -134,6 +150,11 @@ class Identity:
         d = asdict(self)
         d["allows_new_risk"] = self.allows_new_risk()
         d["verdict"] = ("OK" if self.ok else "REFUSED") if self.measured else "UNMEASURED"
+        # An absent provenance field is UNMEASURED, never null. A reader who sees null concludes
+        # there was no certificate; the truth is that nothing looked for one.
+        for k in ("tested_sha", "tested_gates", "allocator_certificate", "ci_run_id"):
+            if d.get(k) is None:
+                d[k] = "UNMEASURED"
         return d
 
 
@@ -263,12 +284,77 @@ def _cfg_stale_refuses(stale_refuses: bool | None) -> bool:
     return os.environ.get(ENV_STALE_REFUSES, "").strip().lower() in ("1", "true", "yes")
 
 
+def _provenance(root: Path) -> dict[str, str | None]:
+    """What was tested, what sized the book, what CI saw. None for each thing nothing measured.
+
+    Every field is READ FROM THE ARTIFACT THAT OWNS IT and never inferred. `tested_sha` comes
+    from the gate attestation `ops/gates.sh` writes, and is deliberately dropped when that run
+    was over a dirty tree -- a gate run on an unclean worktree tested something no commit
+    contains, so quoting its sha would name a subject that does not exist.
+
+    `allocator_certificate` fingerprints the posterior-growth certificate in force, and carries
+    whether its proof actually PASSED. That matters more than the digest: the allocator falls
+    back to the best static baseline when the dynamic solve cannot beat it, and a release that
+    cited a certificate without saying which of those was in force would be citing a number the
+    book is not using.
+    """
+    out: dict[str, str | None] = {"tested_sha": None, "tested_gates": None,
+                                  "allocator_certificate": None, "ci_run_id": None}
+
+    att = root / "data" / "gate_attestation.json"
+    try:
+        d = json.loads(att.read_text("utf-8"))
+    except (OSError, ValueError):
+        d = None
+    if isinstance(d, dict) and d.get("result") == "pass" and d.get("tree_clean"):
+        sha = str(d.get("tested_sha") or "")
+        if _is_sha(sha):
+            out["tested_sha"] = sha
+            out["tested_gates"] = str(d.get("gates") or "")
+
+    alloc = root / "desks" / "mt5" / "reports" / "pf_allocation.json"
+    try:
+        a = json.loads(alloc.read_text("utf-8"))
+    except (OSError, ValueError):
+        a = None
+    if isinstance(a, dict):
+        cert = ((a.get("posterior_growth") or {}).get("certificate")) if isinstance(
+            a.get("posterior_growth"), dict) else None
+        if cert is not None:
+            digest = hashlib.sha256(
+                json.dumps(cert, sort_keys=True, default=str).encode("utf-8")).hexdigest()[:16]
+            _pr = a.get("proof")
+            proof: dict[str, Any] = _pr if isinstance(_pr, dict) else {}
+            passed = bool(proof.get("passed"))
+            src = "dynamic" if passed else str(
+                (a.get("book_fallback") or {}).get("name") or "fallback")
+            out["allocator_certificate"] = (
+                f"{digest}@{a.get('generated_utc') or '?'} proof={'PASSED' if passed else 'FAILED'}"
+                f" book={src}")
+
+    ci = root / "data" / "ci_run.json"
+    try:
+        c = json.loads(ci.read_text("utf-8"))
+    except (OSError, ValueError):
+        c = None
+    if isinstance(c, dict) and c.get("run_id"):
+        out["ci_run_id"] = str(c["run_id"])
+    return out
+
+
 def _write_verdict(ident: Identity, root: Path) -> None:
     """Best effort and never raising: the verdict is the product, the file is its shadow."""
     try:
         p = root / Path(*VERDICT_REL.split("/"))
         p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text(json.dumps(ident.to_dict(), indent=1, default=str), "utf-8")
+        doc = ident.to_dict()
+        # Provenance is merged at WRITE time so a read of the artifact answers "tested against
+        # what?" without a second lookup. Absent values stay UNMEASURED -- to_dict already
+        # rendered them so, and a measured value simply replaces that string.
+        for k, v in _provenance(root).items():
+            if v:
+                doc[k] = v
+        p.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
     except OSError:
         pass
 
@@ -314,8 +400,16 @@ def verdict(root: Path | None = None, *, now: datetime | None = None,
         report.append("release was described from a working tree, not sealed from a commit")
     if rec.get("tested_sha") and rec.get("tested_sha") != release_sha:
         report.append("tested_sha differs from code_sha")
-    common = {"release_sha": release_sha, "age_h": age, "stale": stale, "stale_refuses": refuses,
-              "source": source, "release_id": rec.get("release_id"), "at": at}
+    # Annotated because it is splatted into a dataclass with heterogeneous field types: without
+    # it mypy infers a union from the values and then rejects every field it could not narrow.
+    common: dict[str, Any] = {
+        "release_sha": release_sha, "age_h": age, "stale": stale, "stale_refuses": refuses,
+        "source": source, "release_id": rec.get("release_id"), "at": at,
+        # THE RECORD ALREADY CARRIED THIS and nothing published it -- the line just above compares
+        # `rec["tested_sha"]` to the code sha and appends a report string, so the seal has known
+        # what it was tested against all along and the verdict simply never said.
+        "tested_sha": (str(rec["tested_sha"]) if rec.get("tested_sha") else None),
+    }
 
     if sha is None:
         ident = Identity(ok=False, running_sha=None, measured=False,

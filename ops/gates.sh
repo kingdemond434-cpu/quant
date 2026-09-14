@@ -95,9 +95,15 @@ else
   echo "   lowers them is a breach, so run it before any commit that touches libs/)"
 fi
 
+# ATTEST WHAT WAS TESTED, AND ON WHICH COMMIT. A release that seals a sha and cannot say what
+# passed against it has provenance for the bytes and none for the judgement. Written on RED too:
+# "these gates failed on this sha" is a measurement, and suppressing it would leave the last
+# green attestation standing as though nothing had happened since.
 if [ "$fail" = "0" ]; then
   echo "gates: all green"
+  $PY scripts/gate_attestation.py --gates "$([ "$FULL" = "1" ] && echo full || echo fast)" --result pass || true
 else
   echo "gates: RED -- see above. Do not push."
+  $PY scripts/gate_attestation.py --gates "$([ "$FULL" = "1" ] && echo full || echo fast)" --result fail || true
 fi
 exit "$fail"
