@@ -86,6 +86,9 @@ LEG_LAYER: dict[str, str] = {
     # Whether a data endpoint still serves what it claims is an INFORMATION property -- it decides
     # whether any input exists at all, before any signal is derived from it.
     "source_routes": "information",
+    # Per-sleeve return paths are what a PORTFOLIO view is computed from -- n_eff, covariance,
+    # joint drawdown. Not a signal and not an execution fact.
+    "strategy_paths": "portfolio",
     # sizing: how much
     "capacity": "sizing", "ensemble_optimizer": "sizing",
     # portfolio: how the book is composed

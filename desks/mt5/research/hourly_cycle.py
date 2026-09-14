@@ -1109,6 +1109,27 @@ def source_routes() -> dict:
     return _producer("source_routes", "scripts/check_source_routes.py")
 
 
+def strategy_paths() -> dict:
+    """`strategy_paths`: per-sleeve return paths on one common clock. Four capabilities wait on it.
+
+    dependence_blindness reads 2.93x on a constructed clone book and ~1.0 on an independent one --
+    the discriminator provably works -- and on the REAL book it was UNMEASURED because
+    data/strategy_paths.json did not exist. Without it there is no real n_eff, no covariance
+    denoising, no dependence-aware Monte Carlo, and no answer to whether 190 sleeves are 13 bets.
+
+    I CONCLUDED THIS FILE COULD NOT BE BUILT, FROM THE ROW. The shadow row carries only summaries,
+    so "the data was never recorded" is a reasonable inference and a false one: shadow_forward
+    writes a per-sleeve LEDGER beside every row with entry_time, exit_time, r_multiple and a
+    forward/historical flag, and 173 of them were already on disk. The paths were one directory
+    over the whole time.
+
+    Forward trades only, and one daily grid spanning every sleeve's window -- equal LENGTH is not
+    alignment. The measurement needs 60 common marks and the window is 19, so it rebuilds hourly
+    and becomes available on its own.
+    """
+    return _producer("strategy_paths", "research/strategy_paths.py")
+
+
 def _recertify_canon_claimed() -> dict:
     """`recertify_canon`, but only for a window the queue says is actually uncovered."""
     q, task, why = _claim_one("recertify")
@@ -2020,6 +2041,7 @@ def main() -> None:
     fat = _costed("fill_attribution", fill_attribution)
     c2e = _costed("cost_to_edge", cost_to_edge)
     srt = _costed("source_routes", source_routes)
+    spa = _costed("strategy_paths", strategy_paths)
     ms = _costed("model_skill", model_skill)
     fcx = _costed("forecast_contract", forecast_contract)
     mz = _costed("model_league", model_league)
@@ -2194,6 +2216,7 @@ def main() -> None:
                     "fill_attribution": fat,
                     "cost_to_edge": c2e,
                     "source_routes": srt,
+                    "strategy_paths": spa,
                     "model_skill": ms,
                     "frontier": fr, "refresh_bars": rb, "deep_forest": df,
                     "maintain_miners": mm, "publish_survivors": ps,
