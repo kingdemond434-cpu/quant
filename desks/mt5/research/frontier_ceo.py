@@ -66,15 +66,65 @@ STANDING_QUESTIONS = (
     "As of today, which available AI-assisted research capabilities are we missing that could "
     "discover genuinely independent MT5 edges and improve net geometric growth -- and what "
     "experiment would prove their value?",
+    "As of today, what is the BINDING BOTTLENECK on breadth -- on discovery, on certification, "
+    "and on live sleeves -- and what is the single change that would most widen it? Name the "
+    "axis (chart, session, asset class, mechanism, venue), the measured count on that axis today, "
+    "and the count the change would reach.",
 )
+
+#: THE THIRD QUESTION IS THE PRINCIPAL'S STANDING ORDER OF 2026-09-14, AND IT IS ASKED EVERY DAY
+#: ALONGSIDE THE OTHER TWO -- an addition to the docket, never a replacement for it.
+#:
+#: WHY IT NEEDED ITS OWN QUESTION. Q1 and Q2 ask what CAPABILITY is missing. They were answered
+#: honestly for weeks while the desk's breadth stayed at exactly one axis, because the blockers
+#: were never missing capabilities -- they were wiring faults inside capabilities the desk already
+#: had, and each one presented as an empty result rather than an error:
+#:
+#:   every non-gold sleeve was called with EMPTY PARAMS and returned no signal, for days
+#:   all 20 E8 sleeves were called through a nested envelope and reported NO_SIGNAL
+#:   1,090 session/chart variants were unbuildable for the same envelope reason
+#:   every variant of the largest certified family died at gate one on a dropped field
+#:   the research allocator had no chart or session axis at all, so it could not steer breadth
+#:   the only axis that ever produced a survivor was (H1, asia) -- 1 of 76
+#:
+#: None of those is a capability gap. All six are breadth bottlenecks, and none would have been
+#: surfaced by asking what the desk is missing. So the question is asked in the BOTTLENECK form:
+#: what is binding TODAY, measured, with the count it would reach -- because a bottleneck names
+#: itself in numbers and a missing capability names itself in adjectives.
+#:
+#: BREADTH MEANS ALL THREE STAGES, and the docket must say which one it is attacking:
+#:   DISCOVERY      hypotheses minted per axis -- can the desk even ask the question
+#:   CERTIFICATION  cells judged and passed per axis -- is the question being answered
+#:   DEPLOYMENT     live sleeves and hours covered -- is the answer carrying capital
+#: A gain at one stage that the next stage cannot absorb is not breadth, it is inventory.
 
 #: The desk's own binding constraint, restated so every proposal is ranked against the same bar.
 #: Measured 2026-09-12: 15 funded sleeves behaving as ~8 independent bets (n_eff covariance 7.9),
 #: with the largest mechanism at 60% of the book. Sleeves are not the scarce thing. Independence is.
 BINDING_CONSTRAINT = (
-    "n_eff, not sleeve count. 15 funded sleeves behave as ~7.9 independent bets and the growth "
-    "curve stops paying above 22.5% heat BECAUSE of that concentration. A proposal that adds a "
-    "correlated bet moves nothing; one that adds an orthogonal bet raises the ceiling itself."
+    "n_eff and AXIS COUNT, never sleeve count. Measured 2026-09-14: 65 live sleeves behaving as "
+    "5.6 independent bets; 58 certificates of which ALL 58 are H1/asia -- exactly ONE of 76 "
+    "(chart, session) axes has ever produced a survivor; 28 certificate symbols of which 27 are "
+    "FX or FX-exotic and ONE is a commodity, against 59 non-equity symbols in the mandate that "
+    "hold no certificate at all. A proposal that adds a correlated bet moves nothing. One that "
+    "opens an AXIS the desk has never certified on raises the ceiling itself, and is worth more "
+    "than a better sleeve on the axis it already owns."
+)
+
+#: WHAT COUNTS AS A BREADTH WIN, so Q3 cannot be answered with a number that is not one.
+#:
+#: Sleeve count is not breadth: 65 sleeves at n_eff 5.6 is twelve sleeves of inventory per
+#: independent bet. Certificate count is not breadth either -- 17 were minted on 2026-09-14 and
+#: every one was H1/asia, so the stock grew 29% and the independence did not move at all. The
+#: only numbers that count are the ones that change an AXIS.
+BREADTH_AXES = (
+    "chart: 7 exist (M1 M5 M15 M30 H1 H4 D1), 1 has ever certified",
+    "session: 9 anchors exist, 1 has ever certified (asia)",
+    "asset class: Indices 16, Crypto 14, Commodities 12, Soft 11, Bonds 3, Energy 3 are in the "
+    "hypothesis mandate and hold ZERO certificates between them; single-name equities are "
+    "excluded by the mandate and are not a gap",
+    "mechanism: 3 families hold all 58 certificates",
+    "hours: 7 UTC hours (17-23) carry no forward clock at all",
 )
 
 
