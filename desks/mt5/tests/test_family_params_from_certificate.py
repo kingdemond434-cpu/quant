@@ -97,3 +97,26 @@ def test_an_absent_docket_refuses_rather_than_defaulting(tmp_path, monkeypatch):
     got, why = gw._params_from_certificate(_sleeve("external.AUDCAD.discovered.p=abc123abc123abcd"))
     assert got is None
     assert "no docket" in why
+
+
+def test_the_roster_carries_the_certificate_to_the_executor():
+    """The runtime sleeve dict is BUILT, not passed through -- so anything unnamed is invisible.
+
+    `roster()` constructs a fresh dict for every `family_market` row. It named nine keys and
+    `certificate` was not among them, so the cell id the parameters are recovered and verified
+    against never reached `_family_call_params`. Every downstream fix is inert without this line:
+    measured 2026-09-14, the first pass after recovery landed still logged "certificate names no
+    cell" for all 53 sleeves, because the registry row had one and the runtime dict did not.
+    """
+    from mt5desk.decision_core import roster
+
+    row = {"name": "audcad_discovered_asia_p_7c996ac8456c8919", "symbol": "AUDCAD",
+           "family": "discovered", "selector": "asia", "exec": "family_market",
+           "status": "LIVE", "risk_frac": 0.002,
+           "certificate": {"cell": "external.AUDCAD.discovered.p=7c996ac8456c8919"}}
+    sleeves, _ = roster({}, [row])
+    fam = [s for s in sleeves if s.get("exec") == "family_market"]
+    assert len(fam) == 1
+    cert = fam[0].get("certificate")
+    assert isinstance(cert, dict), "the certificate must reach the executor"
+    assert cert.get("cell") == "external.AUDCAD.discovered.p=7c996ac8456c8919"

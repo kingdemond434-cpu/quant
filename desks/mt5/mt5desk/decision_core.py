@@ -1439,10 +1439,23 @@ def roster(retired_gold: dict, promoted: list[dict]) -> tuple[list[dict], list[s
         # are executed by run_family_sleeves(), which is LOG-ONLY until the human creates
         # data/GENERIC_EXEC_ENABLED (arming stays a person's act; wiring does not wait for it).
         if s.get("exec") == "family_market":
+            # THE CERTIFICATE TRAVELS WITH THE SLEEVE, and leaving it behind is why no forex
+            # sleeve ever traded (2026-09-14). This builds a NEW dict rather than passing the
+            # registry row, so anything not named here is invisible downstream --
+            # `_family_call_params` asked for `params`, got nothing, and called every
+            # parameterised family with `{}`. `family_discovered` with no feature and no band
+            # returns an empty signal list forever, which lands on the one stage the executor is
+            # deliberately silent about. 53 LIVE sleeves, armed since 2026-09-11, 0 orders ever.
+            #
+            # `certificate` carries the cell id (`external.AUDCAD.discovered.p=<sha256[:16]>`)
+            # that the params are recovered and VERIFIED against, so it is load-bearing rather
+            # than provenance decoration. `params` rides too for the day a producer writes them
+            # onto the row directly -- then no recovery is needed at all.
             sleeves.append({"name": s["name"], "symbol": s["symbol"],
                             "family": s.get("family"), "selector": s.get("selector"),
                             "side": s.get("side", "LONG"), "state": s.get("state"),
                             "risk_frac": s.get("risk_frac"), "exec": "family_market",
+                            "certificate": s.get("certificate"), "params": s.get("params"),
                             "lot": "auto_ramp", "status": "LIVE"})
             continue
         # SCALP SLEEVES (principal 2026-09-04: every promotion candidate goes live, automatically).
