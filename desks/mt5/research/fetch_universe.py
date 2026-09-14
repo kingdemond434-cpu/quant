@@ -100,16 +100,78 @@ START = datetime(2018, 1, 1, tzinfo=UTC)
 #: clears it by a wide margin -- M30 730d is ~35k bars, M15 730d ~70k, M5 365d ~105k, M1 180d
 #: ~259k -- while keeping the whole pull near 2 GB against 58 GB free on the box. Taking M1 back
 #: to 2018 would buy no statistical power the gates can spend and would cost tens of GB.
+#: (label, terminal constant, bars to request).
+#:
+#: A COUNT, NOT A DATE RANGE, AND THE REASON IS A TERMINAL QUIRK THAT COSTS THE WHOLE PULL.
+#: `copy_rates_range` serves only bars the terminal has already CACHED; it does not make the
+#: terminal back-fill. Measured 2026-09-14 on the live box: a 730-day range returned 49,535 M15
+#: bars for EURUSD and ZERO M5, because nothing had ever opened an M5 chart for it. The failure
+#: is silent and reads exactly like "the broker has no M5 history for this symbol", which is the
+#: conclusion the desk would have drawn.
+#: `copy_rates_from_pos(sym, tf, 0, N)` asks for the most recent N bars and DOES trigger the
+#: download, so a count is what gets requested and the range survives only as a fallback.
+#:
+#: Counts clear the 60 trading days the gates need by a wide margin on every chart -- at ~120
+#: market hours a week that is ~2.9k M30 bars, 5.8k M15, 17k M5, 86k M1 -- while keeping the pull
+#: near 2 GB against 58 GB free. Deeper M1 buys no power the gates can spend.
 INTRADAY_TIMEFRAMES: tuple[tuple[str, str, int], ...] = (
-    ("M30", "TIMEFRAME_M30", 730),
-    ("M15", "TIMEFRAME_M15", 730),
-    ("M5", "TIMEFRAME_M5", 365),
-    ("M1", "TIMEFRAME_M1", 180),
+    ("M30", "TIMEFRAME_M30", 40_000),
+    ("M15", "TIMEFRAME_M15", 60_000),
+    ("M5", "TIMEFRAME_M5", 120_000),
+    ("M1", "TIMEFRAME_M1", 200_000),
 )
 
 #: An intraday series below this is not worth writing: it cannot carry the 60 trading days the
 #: gates need, and a short file is worse than none because it looks like coverage.
 MIN_INTRADAY_BARS = 5000
+
+
+#: Most bars this terminal will serve in ONE call. Above it `copy_rates_from_pos` returns None
+#: with `(-2, 'Terminal: Invalid params')` -- no exception, no partial result. Measured on Fusion
+#: Markets MT5 2026-09-14: 60,000 succeeds, 120,000 does not.
+#:
+#: THE SILENT SHAPE IS THE DANGER. A request over the cap looks identical to a symbol the broker
+#: has no history for, so asking for 120,000 M5 bars and getting nothing reads as "this venue
+#: does not serve M5" -- a conclusion that would have retired the whole intraday programme on a
+#: parameter mistake.
+MAX_BARS_PER_CALL = 50_000
+
+
+def _pull_bars(mt5, sym: str, tf_const, want: int, now):
+    """Up to `want` bars, walking BACKWARD in capped chunks. None when the venue serves nothing.
+
+    One call cannot reach the depth M1 needs: 50,000 M1 bars is about 42 trading days at ~7,200 a
+    week, and the gates want 60. So the newest chunk is taken by position, then each older chunk
+    is anchored at the oldest bar already held.
+
+    Progress is REQUIRED to continue. A venue that keeps returning the same oldest bar would
+    otherwise spin forever; when a chunk adds nothing new, the history is exhausted and what has
+    been gathered is what exists.
+    """
+    import numpy as np
+    first = mt5.copy_rates_from_pos(sym, tf_const, 0, min(want, MAX_BARS_PER_CALL))
+    if first is None or len(first) == 0:
+        # Only now is a range call worth trying: it cannot back-fill, but a terminal that refuses
+        # the positional form may still serve what it already holds.
+        r = mt5.copy_rates_range(sym, tf_const, now - timedelta(days=730), now)
+        return r if r is not None and len(r) else None
+    chunks = [first]
+    have = len(first)
+    oldest = first[0]["time"]
+    while have < want:
+        older = mt5.copy_rates_from(sym, tf_const, datetime.fromtimestamp(int(oldest), UTC),
+                                    min(want - have, MAX_BARS_PER_CALL))
+        if older is None or len(older) == 0:
+            break
+        new_oldest = older[0]["time"]
+        if new_oldest >= oldest:
+            break                       # no progress: the venue's history ends here
+        chunks.append(older)
+        have += len(older)
+        oldest = new_oldest
+    out = np.concatenate(chunks) if len(chunks) > 1 else chunks[0]
+    out = np.unique(out)                # chunks overlap at the anchor bar
+    return out
 
 
 def _fetch_intraday(mt5, sym: str, info) -> dict[str, dict]:
@@ -123,14 +185,13 @@ def _fetch_intraday(mt5, sym: str, info) -> dict[str, dict]:
     if int(getattr(info, "trade_mode", -1)) != 4:
         return {tf: {"bars": 0, "reason": "NOT_TRADEABLE"} for tf, _, _ in INTRADAY_TIMEFRAMES}
     now = datetime.now(UTC)
-    for label, attr, days in INTRADAY_TIMEFRAMES:
+    for label, attr, want in INTRADAY_TIMEFRAMES:
         tf_const = getattr(mt5, attr, None)
         if tf_const is None:
             out[label] = {"bars": 0, "reason": "TIMEFRAME_UNKNOWN_TO_TERMINAL"}
             continue
-        start = now - timedelta(days=days)
         try:
-            rates = mt5.copy_rates_range(sym, tf_const, start, now)
+            rates = _pull_bars(mt5, sym, tf_const, want, now)
         except Exception as exc:
             out[label] = {"bars": 0, "reason": f"FETCH_FAILED: {type(exc).__name__}"}
             continue
