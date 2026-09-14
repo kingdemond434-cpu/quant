@@ -75,7 +75,13 @@ def scratch_repo(tmp_path: Path) -> Path:
     (repo / "desks/mt5/data/queue.json").write_text(
         '[{"id": "a"}, {"id": "b"}, {"id": "c"}]\n')
     hook = repo / ".git" / "hooks" / "pre-commit"
-    hook.write_text(f"#!/bin/sh\nexec {sys.executable} scripts/moneypath_precommit_guard.py\n")
+    # THE INTERPRETER PATH IS QUOTED AND SLASHED. This hook is run by /bin/sh, and on Windows
+    # `sys.executable` is a backslashed path. sh treats a backslash as an escape, so the
+    # unquoted form reached the shell as `C:UsersAdministrator...python.exe: not found` and
+    # every commit in this fixture failed rc=1 -- nine tests erroring on the SHELL, with nothing
+    # wrong in the guard they exist to check.
+    _exe = str(sys.executable).replace("\\", "/")
+    hook.write_text(f'#!/bin/sh\nexec "{_exe}" scripts/moneypath_precommit_guard.py\n')
     hook.chmod(0o755)
     _git(repo, "add", "-A")
     _git(repo, "commit", "-q", "-m", "base", env=_env(ssh=False))

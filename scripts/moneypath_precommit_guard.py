@@ -205,7 +205,22 @@ def main() -> int:
         shrunk: list[str] = []
         for _name, (abs_path, counter) in watch.items():
             try:
-                rel = str(Path(abs_path).relative_to(ROOT))
+                # POSIX SEPARATORS, BECAUSE GIT SPEAKS THEM AND WINDOWS DOES NOT.
+                #
+                # THIS LAYER HAS NEVER FIRED ON THE BOX THAT TRADES (measured 2026-09-14).
+                # `str(Path(...).relative_to(ROOT))` yields a BACKSLASHED relative path
+                # on Windows, and every key in `staged` comes from git, which always emits
+                # `desks/mt5/data/research_queue.json`. So `rel not in staged` was true for every
+                # watched artifact on every commit, the loop `continue`d each time, and the
+                # earned-evidence ratchet -- the fence that stops a sync silently dropping
+                # certificates -- was inert on the Windows trading box while reading as present.
+                #
+                # IT COULD NOT BE SEEN. The test covering this layer builds a scratch repo
+                # whose pre-commit hook embedded an unquoted Windows interpreter path into
+                # a /bin/sh script, so every commit in the fixture failed rc=1 and all nine
+                # tests ERRORED before reaching an assertion. And the suite as a whole could
+                # not complete at all until today (L0334), so nobody saw the errors either.
+                rel = Path(abs_path).relative_to(ROOT).as_posix()
             except ValueError:
                 continue
             if rel not in staged or staged[rel] == "A":
