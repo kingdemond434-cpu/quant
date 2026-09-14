@@ -915,7 +915,7 @@ def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float,
         res = mt5.order_send(req)
         _lat_ms = round((time.perf_counter() - _t0) * 1000.0, 3)
         code = res.retcode if res else None
-        why = diagnose(code, getattr(res, "comment", "") or "")
+        why = diagnose(code, getattr(res, "comment", "") or "", _send_error(res))
         if why:
             log(f"ORDER FAILED [{sleeve}] {side}: {why}")
         # THE INTENT, RECORDED AT PLACEMENT. Without this line slippage is unknowable: once the
@@ -1921,6 +1921,22 @@ def _docket_rows() -> list[dict[str, object]]:
 _DOCKET_CACHE: list[dict[str, object]] | None = None
 
 
+def _send_error(res: object) -> object:
+    """MT5's `last_error()` when a send came back empty, so the log states a cause it CHECKED.
+
+    `order_send` returns None when the request is refused at the API boundary -- the same shape as
+    `copy_rates_from_pos` returning None with `(-2, 'Terminal: Invalid params')`. Until 2026-09-14
+    the desk logged "the terminal connection is gone" for every such case without asking, and that
+    was measurably wrong: one sleeve's order was ACCEPTED in the same second another's was lost.
+    """
+    if res is not None:
+        return None
+    try:
+        return mt5.last_error()
+    except Exception:
+        return None
+
+
 def _family_call_params(s: dict, family: str, bars: object) -> tuple[dict | None, str]:
     """The keyword params a non-hunt16 certified cell is called with, or (None, reason).
 
@@ -2189,7 +2205,8 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
                        ticket=(getattr(res, "order", None) if res else None), retcode=rc,
                        policy_advice=policy_advice, latency_ms=_lat_ms,
                        **_sleeve_identity(s))
-        log(f"[{name}] FAMILY-EXEC ORDER -> retcode={rc} {diagnose(rc, getattr(res, 'comment', '') or '')} "
+        log(f"[{name}] FAMILY-EXEC ORDER -> retcode={rc} "
+            f"{diagnose(rc, getattr(res, 'comment', '') or '', _send_error(res))} "
             f"| {order_desc}")
         if rc in (10008, 10009):
             srec["open_ttl_until"] = ttl_until
@@ -2517,7 +2534,7 @@ def run_scalp_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
                        slice_depth=(len(plan["entries"]) if is_addon else 1),
                        latency_ms=_lat_ms, **_sleeve_identity(s))
         log(f"[{name}] SCALP-EXEC {'ADD-ON' if is_addon else 'ORDER'} -> retcode={rc} "
-            f"{diagnose(rc, getattr(res, 'comment', '') or '')} | {desc}")
+            f"{diagnose(rc, getattr(res, 'comment', '') or '', _send_error(res))} | {desc}")
         if rc not in (10008, 10009):
             continue
         fill_px = float(getattr(res, "price", 0.0) or price)

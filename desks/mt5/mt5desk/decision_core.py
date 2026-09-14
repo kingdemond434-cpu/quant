@@ -1595,10 +1595,33 @@ def bracket_from_bars(df: pd.DataFrame, rng: tuple | None, sig_hour: int, tick_s
     return hi, lo, spec
 
 
-def diagnose(retcode: int | None, comment: str = "") -> str:
-    """Turn a retcode into something an operator can act on."""
+def diagnose(retcode: int | None, comment: str = "", last_error: object = None) -> str:
+    """Turn a retcode into something an operator can act on.
+
+    A `None` RETCODE IS NOT A DEAD CONNECTION, AND SAYING SO COST A REAL DIAGNOSIS.
+    This returned "the terminal connection is gone" whenever `order_send` gave back None. Measured
+    2026-09-14, that claim is false: at 12:41:08 exactly,
+
+        [xau_m5_anti_breakout_overlap] retcode=None   "the terminal connection is gone"
+        [xau_m5_anti_momentum_ny]      retcode=10009  BUY 0.01 XAUUSD @market -- ACCEPTED
+
+    Two near-identical market orders on the same symbol in the same second: one lost, one filled.
+    The connection was demonstrably alive. Three orders from that one sleeve were dropped today
+    and the log confidently named a cause nobody had checked, so the sleeve read as "promoted but
+    never trades" while the real reason went unrecorded.
+
+    MetaTrader5 sets `last_error()` precisely for this -- `order_send` returns None when the
+    REQUEST is rejected at the API boundary, the same way `copy_rates_from_pos` returns None with
+    `(-2, 'Terminal: Invalid params')`. The caller passes it in; where it is absent this now says
+    UNKNOWN rather than inventing a cause. An unexamined error is never a connection failure.
+    """
     if retcode is None:
-        return "order_send returned nothing at all — the terminal connection is gone."
+        if last_error:
+            return (f"order_send returned nothing; MT5 last_error={last_error!r}. The request was "
+                    f"refused at the API boundary -- this is NOT necessarily a lost connection.")
+        return ("order_send returned nothing and last_error was not captured, so the cause is "
+                "UNKNOWN. It is not safe to read this as a dead terminal: on 2026-09-14 another "
+                "sleeve's order was ACCEPTED in the same second as one of these.")
     if retcode in ACCEPTED_RETCODES:                  # placed / done
         return ""
     name, why = RETCODE_MEANING.get(
