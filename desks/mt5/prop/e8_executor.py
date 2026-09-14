@@ -90,7 +90,18 @@ MAX_SPREAD_FRAC_OF_STOP = 0.25
 
 
 # ------------------------------------------------------------------ bars
-def _frame(api: Any, instrument_id: int) -> Any:
+#: Desk chart -> the resolution string TradeLocker expects, and the unit its lookback is counted
+#: in. THE MAP IS EXPLICIT AND UNKNOWN CHARTS ARE REFUSED: guessing a resolution string would
+#: fetch SOMETHING for every sleeve, and a family that branches on `index.hour` computes a
+#: real-looking signal off the wrong bars rather than raising. On an all-asia book that is the
+#: one error that would look like a strategy.
+_RESOLUTION = {
+    "M1": ("1m", "m"), "M5": ("5m", "m"), "M15": ("15m", "m"), "M30": ("30m", "m"),
+    "H1": ("1H", "H"), "H4": ("4H", "H"), "D1": ("1D", "D"),
+}
+
+
+def _frame(api: Any, instrument_id: int, timeframe: str = "H1") -> Any:
     """TradeLocker history -> the OHLC frame the desk's families expect, or None.
 
     THE COLUMN NAMES AND THE CLOCK ARE THE WHOLE JOB. The venue returns `t,o,h,l,c,v` with `t` in
@@ -103,9 +114,18 @@ def _frame(api: Any, instrument_id: int) -> Any:
         import pandas as pd
     except ImportError:
         return None
+    # THE SLEEVE'S OWN CHART, NOT A CONSTANT (fixed 2026-09-14). This asked for "1H" for every
+    # sleeve. While H1 was the only chart the desk collected that was merely redundant; the
+    # moment an M15 certificate exists it becomes a silent defect -- the executor would evaluate
+    # an M15 mechanism on hourly bars, produce a plausible signal, and place a real order on it.
+    tf = str(timeframe or "H1").upper()
+    res = _RESOLUTION.get(tf)
+    if res is None:
+        return None
+    resolution, unit = res
     try:
-        df = api.get_price_history(instrument_id, resolution="1H",
-                                   lookback_period=f"{LOOKBACK_BARS}H")
+        df = api.get_price_history(instrument_id, resolution=resolution,
+                                   lookback_period=f"{LOOKBACK_BARS}{unit}")
     except Exception:
         return None
     if df is None or len(df) == 0:
@@ -237,10 +257,16 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None) -> dict
             row["why"] = str(exc)[:160]
             doc["sleeves"].append(row)
             continue
-        frame = _frame(venue._raw_api, iid)
+        # The chart travels in the sleeve's params exactly as it does through the gauntlet's
+        # `timeframe_of`, and H1 is the default for every certificate minted before the desk
+        # collected anything else.
+        _tf = str((s.get("params") or {}).get("timeframe") or "H1").upper()
+        row["timeframe"] = _tf
+        frame = _frame(venue._raw_api, iid, _tf)
         if frame is None or len(frame) < 60:
             row["status"] = "NO_BARS"
-            row["why"] = f"history unavailable or too short ({0 if frame is None else len(frame)})"
+            row["why"] = (f"history unavailable or too short on {_tf} "
+                          f"({0 if frame is None else len(frame)})")
             doc["sleeves"].append(row)
             continue
         closed = _last_closed(frame)

@@ -172,13 +172,35 @@ def select(tradeable: set[str] | None = None, max_sleeves: int = MAX_SLEEVES) ->
             live.append(r)
 
     # one row per (mechanism, symbol): the best ev wins, the rest are named as duplicates
-    best: dict[tuple[str, str], dict[str, Any]] = {}
+    # THE CHART IS PART OF THE IDENTITY (fixed 2026-09-14).
+    #
+    # This keyed on (mechanism, symbol) alone, so a session_range_breakout on M15 and its H1
+    # sibling were ONE row and the later one was discarded as a duplicate. That was correct while
+    # H1 was the only chart the desk collected -- two certificates differing in nothing but a
+    # parameter hash really are one bet with two names -- and it becomes wrong the moment the
+    # collector writes M30/M15/M5/M1: an M15 breakout reads different bars, sets a different stop
+    # and fills at different times from the H1 one.
+    #
+    # IT WOULD HAVE CANCELLED THE DIVERSITY IT WAS MEANT TO ENFORCE, silently. The measured case
+    # for collecting intraday at all is that rho falls from 0.58 toward ~0.29 as charts are added,
+    # which on the barrier is worth four days AND takes daily-breach risk from 1.8% to 1.1%.
+    # Collapsing the charts back into one row would have kept the book at 20 H1 sleeves while the
+    # report cheerfully counted the rest as duplicates.
+    #
+    # A DIFFERENT CHART IS NOT A FULLY INDEPENDENT BET and this does not pretend otherwise: the
+    # round-robin below still spreads across MECHANISMS first, so charts of one family can only
+    # fill slots the other mechanisms have not claimed. The chart widens the identity; it does not
+    # promote a family.
+    def _tf(row: dict[str, Any]) -> str:
+        return str((row.get("params") or {}).get("timeframe") or "H1").upper()
+
+    best: dict[tuple[str, str, str], dict[str, Any]] = {}
     dupes = []
     for r in sorted(live, key=lambda x: -(x["ev"] or -9)):
-        k = (r["family"], r["symbol"])
+        k = (r["family"], r["symbol"], _tf(r))
         if k in best:
             dupes.append({**r, "why": f"duplicate of {best[k]['key']} "
-                                      "on the same mechanism+symbol"})
+                                      "on the same mechanism+symbol+chart"})
             continue
         best[k] = r
 
@@ -212,6 +234,10 @@ def select(tradeable: set[str] | None = None, max_sleeves: int = MAX_SLEEVES) ->
         "n_tradeable": len(live),
         "n_blocked_by_venue": len(blocked),
         "n_duplicate_mechanism_symbol": len(dupes),
+        "by_chart": {tf: sum(1 for x in chosen if str((x.get("params") or {}).get(
+            "timeframe") or "H1").upper() == tf)
+            for tf in sorted({str((x.get("params") or {}).get("timeframe") or "H1").upper()
+                              for x in chosen})},
         "n_selected": len(chosen),
         "gross_exposure_if_all_fire": round(len(chosen) * RISK_FRAC, 5),
         "by_mechanism": fams,
