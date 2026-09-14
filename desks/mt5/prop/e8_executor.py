@@ -168,11 +168,18 @@ def _call_params(s: dict, symbol: str = "", bars: object = None) -> dict | None:
     # NAME. Returning `call` regardless would run the family with a feature it cannot resolve and
     # report the resulting silence as "no signal" -- exactly the defect being repaired.
     # ONE FETCH PER DISTINCT INPUT SET, PER PASS. `resolve` loads peer, factor and macro series
-    # from the venue, and sleeves share drivers -- several cells key off the same residual. Called
-    # blind it refetches the identical series for each of them, which took this executor from
-    # about six minutes a pass to eleven when the call was added. The cache key is the symbol, the
-    # family and the exact params: `bars` is derived from the symbol and is one frame per symbol
-    # within a pass, so two sleeves agreeing on all three necessarily resolve to the same inputs.
+    # from the venue and sleeves share drivers, so called blind it refetches identical series.
+    #
+    # THIS IS NOT WHY THE PASS IS SLOW, AND THE FIRST VERSION OF THIS COMMENT SAID IT WAS.
+    # Measured afterwards: `_call_params` costs 0.0s per sleeve, frame fetch 1.7s and signal
+    # computation 1.6s -- about 1.1 minutes of work for twenty sleeves against a pass that takes
+    # fifteen. Roughly fourteen minutes are somewhere none of that touches, and caching this
+    # changed the wall clock not at all. The cache is kept because avoiding a duplicate venue
+    # fetch is correct on its own terms, not because it bought any time.
+    #
+    # The key is the symbol, the family and the exact params: `bars` is derived from the symbol
+    # and is one frame per symbol within a pass, so two sleeves agreeing on all three necessarily
+    # resolve to the same inputs.
     #
     # CLEARED AT THE START OF EVERY PASS (`_INPUT_CACHE.clear()` in the run loop), never across
     # them: these are live series, and a cache that outlived its bar would feed one hour's
