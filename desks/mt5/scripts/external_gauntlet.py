@@ -2078,6 +2078,48 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
         ev = float(arr.mean())
         stages["expected_value"] = {"passed": bool(ev > 0.0), "ev": round(ev, 4)}
 
+        # SWAP, WHICH THE ENGINE DOES NOT MODEL AT ALL (added 2026-09-14).
+        #
+        # `mt5desk.engine.Costs` carries spread_per_lot, commission_per_lot, contract_oz and
+        # quote_per_account -- and nothing else. Grep it for "swap" and it is empty. So every
+        # certificate this desk has ever minted was judged with ZERO overnight financing cost,
+        # and `stress_costs` above stresses that model at 3x, which stresses a cost that was
+        # never counted rather than the one that dominates.
+        #
+        # For an intraday cell that is correct and this gate does nothing. For a family that
+        # holds through rollover BY CONSTRUCTION it is the whole ballgame. Measured on the four
+        # live overnight_gap_decay sleeves, round-trip cost as a fraction of a 2xATR20 stop:
+        # CHFDKK 0.105R, EURNOK 0.127R, GBPNOK 0.202R, GBPMXN 0.246R -- against a +0.135R
+        # expectancy assumption, the last two cost MORE THAN THE ENTIRE EDGE. EURUSD is 0.025R
+        # for scale. All four carry the same parameter hash: one hypothesis replicated onto four
+        # instruments whose cost structure destroys it, at the thinnest liquidity hour of the day.
+        #
+        # A CERTIFICATE JUDGED AT COSTS THE BROKER DOES NOT CHARGE IS NOT EVIDENCE. It is a
+        # well-documented opinion.
+        #
+        # UNMEASURED PASSES, and that is deliberate rather than lax. This needs a live terminal to
+        # read a swap rate; the gauntlet also runs where there is none, and refusing every cell on
+        # a host without MT5 would halt certification entirely instead of charging a cost. The
+        # verdict says UNMEASURED, which is a reading, and the fence binds where it can measure.
+        try:
+            from research.cost_to_edge import verdict as _cost_verdict
+            _refuse, _why, _cost = _cost_verdict(
+                str(c.get("sym") or c.get("symbol") or ""),
+                str(c.get("family") or ""), ev)
+            stages["swap_cost"] = {
+                "passed": not _refuse,
+                "measured": bool(_cost.get("measured")),
+                "total_cost_r": _cost.get("total_cost_r"),
+                "swap_r": _cost.get("swap_r"),
+                "holds_overnight": _cost.get("holds_overnight"),
+                "why": _why or ("cost within the bar" if _cost.get("measured")
+                                else str(_cost.get("why") or "UNMEASURED")),
+            }
+        except Exception as _exc:                                       # noqa: BLE001
+            stages["swap_cost"] = {"passed": True, "measured": False,
+                                   "why": f"UNMEASURED ({type(_exc).__name__}): "
+                                          f"cost could not be priced on this host"}
+
         passed = all(s["passed"] for s in stages.values())
         # WHICH GATE ACTUALLY STOPPED IT, AND WITHOUT THIS THE FUNNEL IS INVISIBLE.
         #

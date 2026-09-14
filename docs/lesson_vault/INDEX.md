@@ -1,6 +1,6 @@
 # Desk lessons
 
-325 lessons, generated from `docs/desk_lessons.jsonl`.
+326 lessons, generated from `docs/desk_lessons.jsonl`.
 
 > [!warning] This vault is a DERIVED VIEW.
 > `docs/desk_lessons.jsonl` is the source of truth and the only thing organs read.
@@ -376,3 +376,4 @@ there dilutes the lessons that do apply.
 - [[l0323-never-accept-the-benign-explanation-for-a-pooled-failu]]
 - [[l0324-before-concluding-data-was-never-recorded-look-beside-]]
 - [[l0325-refusing-an-over-sized-book-is-not-the-conservative-ou]]
+- [[l0326-a-cost-the-backtest-engine-does-not-model-cannot-be-st]]
