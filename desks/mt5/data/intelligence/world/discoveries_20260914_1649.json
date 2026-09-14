@@ -1,0 +1,1152 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "China Industrial Production",
+  "url": "https://tradingeconomics.com/china/industrial-production",
+  "published": "2026-09-14T16:48:52+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XALUSD",
+   "XTIUSD",
+   "UK100",
+   "FRA40",
+   "CA60",
+   "UST10Y"
+  ],
+  "timeframes": [
+   "H1",
+   "M1",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "flow",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [
+   "https://tradingeconomics.com/api/",
+   "https://tradingeconomics.com/api/?source=menu",
+   "https://tradingeconomics.com/api/customers.aspx",
+   "https://tradingeconomics.com/china/exports-yoy",
+   "https://tradingeconomics.com/china/export-prices",
+   "https://tradingeconomics.com/china/electric-car-exports",
+   "https://tradingeconomics.com/china/exports",
+   "https://tradingeconomics.com/china/exports-yuan",
+   "https://tradingeconomics.com/china/exports-by-category",
+   "https://tradingeconomics.com/china/exports-by-country",
+   "https://tradingeconomics.com/china/auto-exports",
+   "https://tradingeconomics.com/api/?source=footer",
+   "https://tradingeconomics.com/api/contact.aspx",
+   "https://tradingeconomics.com/api/?source=calendar",
+   "https://tradingeconomics.com/api/contact.aspx?subject=api+calendar"
+  ],
+  "n_endpoints": 15,
+  "vault_sha": "522551898af18f2bd057",
+  "host": "tradingeconomics.com",
+  "claims": [
+   {
+    "claim": "On a monthly basis, industrial output rose 0.",
+    "lang": "en",
+    "quantities": [
+     "basis"
+    ],
+    "direction": [
+     "rose"
+    ],
+    "horizon": [
+     "monthly"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XALUSD",
+      "XTIUSD",
+      "UK100",
+      "FRA40",
+      "CA60",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "gold",
+      "aluminum",
+      "crude",
+      "ftse 100",
+      "cac 40",
+      "tsx",
+      "ibovespa",
+      "10y yield",
+      "baltic dry"
+     ],
+     "transfer_only": [
+      "ibovespa->indices (B3)",
+      "baltic dry->shipping/freight -> commodity currencies"
+     ],
+     "indirect": [
+      "AUDUSD",
+      "USDZAR",
+      "USDBRL"
+     ],
+     "channels": [
+      "baltic dry: shipping: freight indices -> commodity FX"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "0e41ce00fd2a"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "China Retail Sales YoY",
+  "url": "https://tradingeconomics.com/china/retail-sales-annual",
+  "published": "2026-09-14T16:48:57+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XALUSD",
+   "XTIUSD",
+   "UK100",
+   "FRA40",
+   "CA60",
+   "UST10Y"
+  ],
+  "timeframes": [
+   "M1",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "flow",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [
+   "https://tradingeconomics.com/api/",
+   "https://tradingeconomics.com/api/?source=menu",
+   "https://tradingeconomics.com/api/customers.aspx",
+   "https://tradingeconomics.com/china/exports-yoy",
+   "https://tradingeconomics.com/china/export-prices",
+   "https://tradingeconomics.com/china/electric-car-exports",
+   "https://tradingeconomics.com/china/exports",
+   "https://tradingeconomics.com/china/exports-yuan",
+   "https://tradingeconomics.com/china/exports-by-category",
+   "https://tradingeconomics.com/china/exports-by-country",
+   "https://tradingeconomics.com/china/auto-exports",
+   "https://tradingeconomics.com/api/?source=footer",
+   "https://tradingeconomics.com/api/contact.aspx",
+   "https://tradingeconomics.com/api/?source=calendar",
+   "https://tradingeconomics.com/api/contact.aspx?subject=api+calendar"
+  ],
+  "n_endpoints": 15,
+  "vault_sha": "a7b1ac566bb736a27521",
+  "host": "tradingeconomics.com",
+  "claims": [
+   {
+    "claim": "On a monthly basis, retail sales rose 0.",
+    "lang": "en",
+    "quantities": [
+     "basis"
+    ],
+    "direction": [
+     "rose"
+    ],
+    "horizon": [
+     "monthly"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XALUSD",
+      "XTIUSD",
+      "UK100",
+      "FRA40",
+      "CA60",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "aluminum",
+      "crude",
+      "ftse 100",
+      "cac 40",
+      "tsx",
+      "ibovespa",
+      "10y yield",
+      "baltic dry"
+     ],
+     "transfer_only": [
+      "ibovespa->indices (B3)",
+      "baltic dry->shipping/freight -> commodity currencies"
+     ],
+     "indirect": [
+      "AUDUSD",
+      "USDZAR",
+      "USDBRL"
+     ],
+     "channels": [
+      "baltic dry: shipping: freight indices -> commodity FX"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "31f0a6028ee6"
+   },
+   {
+    "claim": "On a monthly basis, retail sales fell 0.",
+    "lang": "en",
+    "quantities": [
+     "basis"
+    ],
+    "direction": [
+     "fell"
+    ],
+    "horizon": [
+     "monthly"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XALUSD",
+      "XTIUSD",
+      "UK100",
+      "FRA40",
+      "CA60",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "aluminum",
+      "crude",
+      "ftse 100",
+      "cac 40",
+      "tsx",
+      "ibovespa",
+      "10y yield",
+      "baltic dry"
+     ],
+     "transfer_only": [
+      "ibovespa->indices (B3)",
+      "baltic dry->shipping/freight -> commodity currencies"
+     ],
+     "indirect": [
+      "AUDUSD",
+      "USDZAR",
+      "USDBRL"
+     ],
+     "channels": [
+      "baltic dry: shipping: freight indices -> commodity FX"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "36d44d773f34"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "China Fixed Asset Investment",
+  "url": "https://tradingeconomics.com/china/fixed-asset-investment",
+  "published": "2026-09-14T16:49:02+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XALUSD",
+   "XTIUSD",
+   "UK100",
+   "FRA40",
+   "CA60",
+   "UST10Y"
+  ],
+  "timeframes": [
+   "M1",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "flow",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [
+   "https://tradingeconomics.com/api/",
+   "https://tradingeconomics.com/api/?source=menu",
+   "https://tradingeconomics.com/api/customers.aspx",
+   "https://tradingeconomics.com/china/exports-yoy",
+   "https://tradingeconomics.com/china/export-prices",
+   "https://tradingeconomics.com/china/electric-car-exports",
+   "https://tradingeconomics.com/china/exports",
+   "https://tradingeconomics.com/china/exports-yuan",
+   "https://tradingeconomics.com/china/exports-by-category",
+   "https://tradingeconomics.com/china/exports-by-country",
+   "https://tradingeconomics.com/china/auto-exports",
+   "https://tradingeconomics.com/api/?source=footer",
+   "https://tradingeconomics.com/api/contact.aspx",
+   "https://tradingeconomics.com/api/?source=calendar",
+   "https://tradingeconomics.com/api/contact.aspx?subject=api+calendar"
+  ],
+  "n_endpoints": 15,
+  "vault_sha": "18333b8cb2a3ad06b5c2",
+  "host": "tradingeconomics.com",
+  "claims": [
+   {
+    "claim": "00 percent Jul 2026 Related Last Previous Unit Reference 14-Day Reverse Repo Rate 1.",
+    "lang": "en",
+    "quantities": [
+     "rate"
+    ],
+    "direction": [
+     "reverse"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XALUSD",
+      "XTIUSD",
+      "UK100",
+      "FRA40",
+      "CA60",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "gold",
+      "aluminum",
+      "crude",
+      "ftse 100",
+      "cac 40",
+      "tsx",
+      "ibovespa",
+      "10y yield",
+      "baltic dry"
+     ],
+     "transfer_only": [
+      "ibovespa->indices (B3)",
+      "baltic dry->shipping/freight -> commodity currencies"
+     ],
+     "indirect": [
+      "AUDUSD",
+      "USDZAR",
+      "USDBRL"
+     ],
+     "channels": [
+      "baltic dry: shipping: freight indices -> commodity FX"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "78dc9bcca34f"
+   },
+   {
+    "claim": "On a monthly basis, fixed-asset investment fell by 1.",
+    "lang": "en",
+    "quantities": [
+     "basis"
+    ],
+    "direction": [
+     "fell"
+    ],
+    "horizon": [
+     "monthly"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XALUSD",
+      "XTIUSD",
+      "UK100",
+      "FRA40",
+      "CA60",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "gold",
+      "aluminum",
+      "crude",
+      "ftse 100",
+      "cac 40",
+      "tsx",
+      "ibovespa",
+      "10y yield",
+      "baltic dry"
+     ],
+     "transfer_only": [
+      "ibovespa->indices (B3)",
+      "baltic dry->shipping/freight -> commodity currencies"
+     ],
+     "indirect": [
+      "AUDUSD",
+      "USDZAR",
+      "USDBRL"
+     ],
+     "channels": [
+      "baltic dry: shipping: freight indices -> commodity FX"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "169e273618f0"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "China Unemployment Rate",
+  "url": "https://tradingeconomics.com/china/unemployment-rate",
+  "published": "2026-09-14T16:49:06+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XALUSD",
+   "XTIUSD",
+   "UK100",
+   "FRA40",
+   "CA60",
+   "UST10Y"
+  ],
+  "timeframes": [
+   "M1",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "flow",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [
+   "https://tradingeconomics.com/api/",
+   "https://tradingeconomics.com/api/?source=menu",
+   "https://tradingeconomics.com/api/customers.aspx",
+   "https://tradingeconomics.com/china/exports-yoy",
+   "https://tradingeconomics.com/china/export-prices",
+   "https://tradingeconomics.com/china/electric-car-exports",
+   "https://tradingeconomics.com/china/exports",
+   "https://tradingeconomics.com/china/exports-yuan",
+   "https://tradingeconomics.com/china/exports-by-category",
+   "https://tradingeconomics.com/china/exports-by-country",
+   "https://tradingeconomics.com/china/auto-exports",
+   "https://tradingeconomics.com/api/?source=footer",
+   "https://tradingeconomics.com/api/contact.aspx",
+   "https://tradingeconomics.com/api/?source=calendar",
+   "https://tradingeconomics.com/api/contact.aspx?subject=api+calendar"
+  ],
+  "n_endpoints": 15,
+  "vault_sha": "b8a1ac67c4b4841a2bee",
+  "host": "tradingeconomics.com",
+  "claims": [
+   {
+    "claim": "0% in the previous month, while the rate for the migrant labor force rose to 5.",
+    "lang": "en",
+    "quantities": [
+     "rate"
+    ],
+    "direction": [
+     "rose"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XALUSD",
+      "XTIUSD",
+      "UK100",
+      "FRA40",
+      "CA60",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "gold",
+      "aluminum",
+      "crude",
+      "ftse 100",
+      "cac 40",
+      "tsx",
+      "ibovespa",
+      "10y yield",
+      "baltic dry"
+     ],
+     "transfer_only": [
+      "ibovespa->indices (B3)",
+      "baltic dry->shipping/freight -> commodity currencies"
+     ],
+     "indirect": [
+      "AUDUSD",
+      "USDZAR",
+      "USDBRL"
+     ],
+     "channels": [
+      "baltic dry: shipping: freight indices -> commodity FX"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8b70497415bf"
+   },
+   {
+    "claim": "2026-07-15 China Jobless Rate Hits 5-Month Low China's surveyed urban unemployment rate edged lower to 5.",
+    "lang": "en",
+    "quantities": [
+     "rate"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XALUSD",
+      "XTIUSD",
+      "UK100",
+      "FRA40",
+      "CA60",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "gold",
+      "aluminum",
+      "crude",
+      "ftse 100",
+      "cac 40",
+      "tsx",
+      "ibovespa",
+      "10y yield",
+      "baltic dry"
+     ],
+     "transfer_only": [
+      "ibovespa->indices (B3)",
+      "baltic dry->shipping/freight -> commodity currencies"
+     ],
+     "indirect": [
+      "AUDUSD",
+      "USDZAR",
+      "USDBRL"
+     ],
+     "channels": [
+      "baltic dry: shipping: freight indices -> commodity FX"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "1577eb4f1f13"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Japan 20 Year bond Yield - Quote - Chart - Historical Data - News",
+  "url": "https://tradingeconomics.com/japan/20-year-bond-yield",
+  "published": "2026-09-14T16:49:09+00:00",
+  "symbols": [
+   "AUDUSD",
+   "EURUSD",
+   "GBPUSD",
+   "NZDUSD",
+   "US30",
+   "US500",
+   "USDBRL",
+   "USDCAD",
+   "USDCHF",
+   "USDINR",
+   "USDJPY",
+   "USDKRW",
+   "USDMXN",
+   "USDRUB",
+   "USDTRY",
+   "XAUUSD",
+   "XAGUSD",
+   "XCUUSD",
+   "XTIUSD",
+   "XNGUSD",
+   "GER40",
+   "JPN225",
+   "UK100",
+   "FRA40"
+  ],
+  "timeframes": [
+   "1M",
+   "DAILY",
+   "M1"
+  ],
+  "patterns": [
+   "flow",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [
+   "https://tradingeconomics.com/api/",
+   "https://tradingeconomics.com/api/?source=menu",
+   "https://tradingeconomics.com/api/customers.aspx",
+   "https://tradingeconomics.com/api/widgets.aspx?utm_source=anonymous-main-widget",
+   "https://tradingeconomics.com/api/contact.aspx?subject=markets+widget",
+   "https://tradingeconomics.com/japan/export-prices",
+   "https://tradingeconomics.com/japan/exports",
+   "https://tradingeconomics.com/japan/exports-by-category",
+   "https://tradingeconomics.com/japan/exports-by-country",
+   "https://tradingeconomics.com/japan/exports-yoy",
+   "https://tradingeconomics.com/api/?source=footer",
+   "https://tradingeconomics.com/api/contact.aspx",
+   "https://tradingeconomics.com/api/?source=calendar",
+   "https://tradingeconomics.com/api/contact.aspx?subject=api+calendar"
+  ],
+  "n_endpoints": 14,
+  "vault_sha": "11cbceaebea61cdcee95",
+  "host": "tradingeconomics.com",
+  "claims": [
+   {
+    "claim": "01 percentage points increase from the previous session.",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "increase"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XCUUSD",
+      "XTIUSD",
+      "XNGUSD",
+      "US500",
+      "US30",
+      "GER40",
+      "JPN225",
+      "UK100",
+      "FRA40",
+      "CA60",
+      "AUS200",
+      "USDX",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDCHF",
+      "NZDUSD",
+      "USDKRW",
+      "USDINR",
+      "USDBRL",
+      "USDMXN",
+      "USDTRY",
+      "USDRUB",
+      "BTCUSD",
+      "SOYBEAN",
+      "WHEAT",
+      "UST10Y",
+      "Tesla",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "copper",
+      "crude",
+      "natural gas",
+      "us500",
+      "us30",
+      "de40",
+      "jp225",
+      "ftse 100",
+      "cac 40",
+      "tsx",
+      "asx200",
+      "dxy",
+      "sensex",
+      "ibovespa",
+      "eurusd",
+      "gbpusd",
+      "yen",
+      "audusd",
+      "usdcad",
+      "usdchf",
+      "nzdusd",
+      "usdkrw",
+      "usdinr",
+      "usdbrl",
+      "usdmxn",
+      "usdtry",
+      "usdrub",
+      "bitcoin",
+      "soybeans",
+      "wheat",
+      "10-year yield",
+      "tesla",
+      "nvidia",
+      "iron ore",
+      "baltic dry"
+     ],
+     "transfer_only": [
+      "sensex->indices (NSE/BSE)",
+      "ibovespa->indices (B3)",
+      "iron ore->metals/energy",
+      "baltic dry->shipping/freight -> commodity currencies"
+     ],
+     "indirect": [
+      "USDZAR"
+     ],
+     "channels": [
+      "boj: policy: BoJ / MoF intervention -> JPY",
+      "baltic dry: shipping: freight indices -> commodity FX"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "c750e6593150"
+   },
+   {
+    "claim": "00 1987 - 2026 % Daily Related Japanese Shares Fall on AI Safety Concerns Japan Industrial Output Drops for First Time in 4 Months Japan 10-Year Yield Holds Firm Ahead of BOJ Yen Holds Near 7-Month High Japan Producer Prices Rise More than Estimated Japan Business Sentiment Highest Since 2021 BoJ Eyes Further Rate Hikes Amid Persistent Cost Pressures Japan Machine Tool Orders Surge 65.",
+    "lang": "en",
+    "quantities": [
+     "yield",
+     "rate"
+    ],
+    "direction": [
+     "fall",
+     "drops"
+    ],
+    "horizon": [
+     "daily",
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "yen",
+      "10-year yield"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [
+      "boj: policy: BoJ / MoF intervention -> JPY"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "240ee8fd7f70"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Japan Tertiary Industry Index",
+  "url": "https://tradingeconomics.com/japan/tertiary-industry-index",
+  "published": "2026-09-14T16:49:13+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [
+   "flow",
+   "inventory",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://tradingeconomics.com/api/",
+   "https://tradingeconomics.com/api/?source=menu",
+   "https://tradingeconomics.com/api/customers.aspx",
+   "https://tradingeconomics.com/japan/export-prices",
+   "https://tradingeconomics.com/japan/exports",
+   "https://tradingeconomics.com/japan/exports-by-category",
+   "https://tradingeconomics.com/japan/exports-by-country",
+   "https://tradingeconomics.com/japan/exports-yoy",
+   "https://tradingeconomics.com/api/?source=footer",
+   "https://tradingeconomics.com/api/contact.aspx",
+   "https://tradingeconomics.com/api/?source=calendar",
+   "https://tradingeconomics.com/api/contact.aspx?subject=api+calendar"
+  ],
+  "n_endpoints": 12,
+  "vault_sha": "9e081338ec284fe771f7",
+  "host": "tradingeconomics.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Germany Wholesale Prices MoM",
+  "url": "https://tradingeconomics.com/germany/wholesale-prices-mom",
+  "published": "2026-09-14T16:49:17+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [
+   "flow",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://tradingeconomics.com/api/",
+   "https://tradingeconomics.com/api/?source=menu",
+   "https://tradingeconomics.com/api/customers.aspx",
+   "https://tradingeconomics.com/germany/export-prices",
+   "https://tradingeconomics.com/germany/exports",
+   "https://tradingeconomics.com/germany/auto-exports",
+   "https://tradingeconomics.com/germany/exports-by-category",
+   "https://tradingeconomics.com/germany/exports-by-country",
+   "https://tradingeconomics.com/api/?source=footer",
+   "https://tradingeconomics.com/api/contact.aspx",
+   "https://tradingeconomics.com/api/?source=calendar",
+   "https://tradingeconomics.com/api/contact.aspx?subject=api+calendar"
+  ],
+  "n_endpoints": 12,
+  "vault_sha": "ab17429b13465d247020",
+  "host": "tradingeconomics.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Germany Wholesale Prices YoY",
+  "url": "https://tradingeconomics.com/germany/wholesale-prices-yoy",
+  "published": "2026-09-14T16:49:20+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XTIUSD",
+   "XNGUSD",
+   "GER40",
+   "UK100",
+   "FRA40",
+   "CA60",
+   "COFARA",
+   "USCOCOA",
+   "UST10Y"
+  ],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [
+   "basis",
+   "flow",
+   "inventory",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [
+   "https://tradingeconomics.com/api/",
+   "https://tradingeconomics.com/api/?source=menu",
+   "https://tradingeconomics.com/api/customers.aspx",
+   "https://tradingeconomics.com/germany/export-prices",
+   "https://tradingeconomics.com/germany/exports",
+   "https://tradingeconomics.com/germany/auto-exports",
+   "https://tradingeconomics.com/germany/exports-by-category",
+   "https://tradingeconomics.com/germany/exports-by-country",
+   "https://tradingeconomics.com/api/?source=footer",
+   "https://tradingeconomics.com/api/contact.aspx",
+   "https://tradingeconomics.com/api/?source=calendar",
+   "https://tradingeconomics.com/api/contact.aspx?subject=api+calendar"
+  ],
+  "n_endpoints": 12,
+  "vault_sha": "a2318ecb72d2f282d27e",
+  "host": "tradingeconomics.com",
+  "claims": [
+   {
+    "claim": "On a monthly basis, wholesale prices fell 0.",
+    "lang": "en",
+    "quantities": [
+     "basis"
+    ],
+    "direction": [
+     "fell"
+    ],
+    "horizon": [
+     "monthly"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "XNGUSD",
+      "GER40",
+      "UK100",
+      "FRA40",
+      "CA60",
+      "COFARA",
+      "USCOCOA",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "gold",
+      "crude",
+      "natural gas",
+      "dax",
+      "ftse 100",
+      "cac 40",
+      "tsx",
+      "ibovespa",
+      "coffee",
+      "cocoa",
+      "10-year yield",
+      "baltic dry"
+     ],
+     "transfer_only": [
+      "ibovespa->indices (B3)",
+      "baltic dry->shipping/freight -> commodity currencies"
+     ],
+     "indirect": [
+      "EURUSD",
+      "USDMXN",
+      "AUDUSD",
+      "USDZAR",
+      "USDBRL"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR",
+      "remittances: policy/flow: Banxico, remittances -> MXN",
+      "baltic dry: shipping: freight indices -> commodity FX"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "6d78ceb6863d"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Saudi Arabia Inflation Rate MoM",
+  "url": "https://tradingeconomics.com/saudi-arabia/inflation-rate-mom",
+  "published": "2026-09-14T16:49:22+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "flow",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://tradingeconomics.com/api/",
+   "https://tradingeconomics.com/api/?source=menu",
+   "https://tradingeconomics.com/api/customers.aspx",
+   "https://tradingeconomics.com/saudi-arabia/exports",
+   "https://tradingeconomics.com/saudi-arabia/exports-by-category",
+   "https://tradingeconomics.com/saudi-arabia/exports-by-country",
+   "https://tradingeconomics.com/saudi-arabia/exports-yoy",
+   "https://tradingeconomics.com/saudi-arabia/non-oil-exports",
+   "https://tradingeconomics.com/saudi-arabia/oil-exports",
+   "https://tradingeconomics.com/api/?source=footer",
+   "https://tradingeconomics.com/api/contact.aspx",
+   "https://tradingeconomics.com/api/?source=calendar",
+   "https://tradingeconomics.com/api/contact.aspx?subject=api+calendar"
+  ],
+  "n_endpoints": 13,
+  "vault_sha": "9a29f7794e1cfc718dfe",
+  "host": "tradingeconomics.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Saudi Arabia Inflation Rate",
+  "url": "https://tradingeconomics.com/saudi-arabia/inflation-cpi",
+  "published": "2026-09-14T16:49:24+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XTIUSD",
+   "UK100",
+   "FRA40",
+   "CA60",
+   "UST10Y"
+  ],
+  "timeframes": [
+   "M1",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "flow",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [
+   "https://tradingeconomics.com/api/",
+   "https://tradingeconomics.com/api/?source=menu",
+   "https://tradingeconomics.com/api/customers.aspx",
+   "https://tradingeconomics.com/saudi-arabia/exports",
+   "https://tradingeconomics.com/saudi-arabia/exports-by-category",
+   "https://tradingeconomics.com/saudi-arabia/exports-by-country",
+   "https://tradingeconomics.com/saudi-arabia/exports-yoy",
+   "https://tradingeconomics.com/saudi-arabia/non-oil-exports",
+   "https://tradingeconomics.com/saudi-arabia/oil-exports",
+   "https://tradingeconomics.com/api/?source=footer",
+   "https://tradingeconomics.com/api/contact.aspx",
+   "https://tradingeconomics.com/api/?source=calendar",
+   "https://tradingeconomics.com/api/contact.aspx?subject=api+calendar"
+  ],
+  "n_endpoints": 13,
+  "vault_sha": "5833fcd729de5f41bbe4",
+  "host": "tradingeconomics.com",
+  "claims": [
+   {
+    "claim": "00 2000 - 2026 percent Monthly 2018=100 Compare: Inflation Rate by Country News Stream Saudi Arabia Inflation Unchanged for Third Month The annual inflation rate in Saudi Arabia rose by 1.",
+    "lang": "en",
+    "quantities": [
+     "rate"
+    ],
+    "direction": [
+     "rose"
+    ],
+    "horizon": [
+     "monthly",
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "UK100",
+      "FRA40",
+      "CA60",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "gold",
+      "crude",
+      "ftse 100",
+      "cac 40",
+      "tsx",
+      "tasi",
+      "ibovespa",
+      "10-year yield",
+      "baltic dry"
+     ],
+     "transfer_only": [
+      "tasi->indices (Gulf exchanges)",
+      "ibovespa->indices (B3)",
+      "baltic dry->shipping/freight -> commodity currencies"
+     ],
+     "indirect": [
+      "USDMXN",
+      "AUDUSD",
+      "USDZAR",
+      "USDBRL"
+     ],
+     "channels": [
+      "remittances: policy/flow: Banxico, remittances -> MXN",
+      "baltic dry: shipping: freight indices -> commodity FX"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "07d7fe39fb6f"
+   },
+   {
+    "claim": "On a monthly basis, consumer prices rose 0.",
+    "lang": "en",
+    "quantities": [
+     "basis"
+    ],
+    "direction": [
+     "rose"
+    ],
+    "horizon": [
+     "monthly"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "UK100",
+      "FRA40",
+      "CA60",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "gold",
+      "crude",
+      "ftse 100",
+      "cac 40",
+      "tsx",
+      "tasi",
+      "ibovespa",
+      "10-year yield",
+      "baltic dry"
+     ],
+     "transfer_only": [
+      "tasi->indices (Gulf exchanges)",
+      "ibovespa->indices (B3)",
+      "baltic dry->shipping/freight -> commodity currencies"
+     ],
+     "indirect": [
+      "USDMXN",
+      "AUDUSD",
+      "USDZAR",
+      "USDBRL"
+     ],
+     "channels": [
+      "remittances: policy/flow: Banxico, remittances -> MXN",
+      "baltic dry: shipping: freight indices -> commodity FX"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "c1240aa91c2a"
+   }
+  ],
+  "n_claims": 2
+ }
+]
