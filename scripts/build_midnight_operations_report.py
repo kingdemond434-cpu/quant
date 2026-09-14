@@ -162,8 +162,24 @@ def _conservation(root: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     # THE POINT IS NOT A SMALLER NUMBER. It is that `lost` should mean "the ledger dropped
     # something" and nothing else, or the one alarm that would catch a real loss is permanently
     # swamped by the backlog.
+    # THE CURRENT REPORT IS ONE SWEEP, NOT THE RECORD (second correction, 2026-09-14).
+    #
+    # `universal_gates_external.json` is OVERWRITTEN every sweep: it holds this hour's verdicts and
+    # no history. So "in the docket, judged once, no verdict row today" describes almost every cell
+    # the desk has ever ruled -- 14,698 of them -- and calling those LOST was the same mistake as
+    # calling the backlog lost, one layer down.
+    #
+    # `gate_verdict_index.json` is the persistent per-cell record the gauntlet appends on change,
+    # written precisely because the report was being thrown away once an hour. A cell there HAS a
+    # standing verdict whether or not this hour re-judged it.
+    #
+    # LOST NOW MEANS WHAT IT SAYS: judged at some point (`gauntlet_seen_cells`) and holding no
+    # verdict anywhere -- not in this sweep, not in the index. That is a record the ledger dropped,
+    # and it is the only thing a conservation check should ever fail on.
     seen_doc = _read(desk / "data" / "hypotheses" / "gauntlet_seen_cells.json", {})
     seen = set(seen_doc) if isinstance(seen_doc, dict) else set(seen_doc or ())
+    index_doc = _read(desk / "data" / "hypotheses" / "gate_verdict_index.json", {})
+    indexed = set(index_doc) if isinstance(index_doc, dict) else set(index_doc or ())
     buckets: Counter[str] = Counter()
     lost: list[str] = []
     deepening: list[str] = []
@@ -174,6 +190,10 @@ def _conservation(root: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]:
             if fam in untestable:
                 buckets["deepening"] += 1
                 deepening.append(cell)
+            elif cell in indexed:
+                # A standing verdict exists in the persistent index; this sweep simply did not
+                # re-judge it. Accounted for, and not re-tested every hour by design.
+                buckets["rejected"] += 1
             elif cell in seen:
                 buckets["lost"] += 1
                 lost.append(cell)
