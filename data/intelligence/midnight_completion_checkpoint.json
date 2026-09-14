@@ -3,18 +3,13 @@
  "schema_version": 1,
  "stages": {
   "canonical_external_pipeline": {
-   "command": [
-    "systemctl",
-    "--user",
-    "start",
-    "quant-external-pipeline.service"
-   ],
-   "passes_completed": 0,
-   "started_at": "2026-09-14T21:12:21.489985+00:00",
-   "status": "RUNNING"
+   "finished_at": "2026-09-14T22:05:08.031890+00:00",
+   "passes_completed": 1,
+   "returncode": 1,
+   "status": "FAILED"
   },
   "certificate_projection": {
-   "finished_at": "2026-09-14T19:56:52.439048+00:00",
+   "finished_at": "2026-09-14T22:05:48.737549+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -26,16 +21,16 @@
    "status": "DONE"
   },
   "external_queue_projection": {
-   "finished_at": "2026-09-14T18:05:09.387166+00:00",
+   "finished_at": "2026-09-14T22:05:24.913474+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "external_queue_reconciliation": {
-   "finished_at": "2026-09-14T19:56:38.028977+00:00",
+   "finished_at": "2026-09-14T22:05:43.344505+00:00",
    "passes_completed": 1,
-   "returncode": 124,
-   "status": "FAILED"
+   "returncode": 0,
+   "status": "DONE"
   },
   "forward_clock_fence": {
    "finished_at": "2026-09-14T19:58:47.335098+00:00",
@@ -62,10 +57,15 @@
    "status": "FAILED"
   },
   "fusion_state_pull": {
-   "finished_at": "2026-09-14T19:57:30.739532+00:00",
-   "passes_completed": 1,
-   "returncode": 0,
-   "status": "DONE"
+   "command": [
+    "systemctl",
+    "--user",
+    "start",
+    "quant-desk-pull.service"
+   ],
+   "passes_completed": 0,
+   "started_at": "2026-09-14T22:05:51.553286+00:00",
+   "status": "RUNNING"
   },
   "mechanism_independence": {
    "finished_at": "2026-09-14T19:58:24.268664+00:00",
@@ -86,5 +86,5 @@
    "status": "DONE"
   }
  },
- "updated_at": "2026-09-14T21:12:21.489985+00:00"
+ "updated_at": "2026-09-14T22:05:51.553286+00:00"
 }
