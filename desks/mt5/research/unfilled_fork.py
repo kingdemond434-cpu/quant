@@ -32,7 +32,7 @@ from __future__ import annotations
 
 import json
 from collections import Counter
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -42,10 +42,31 @@ INTENTS = BASE / "data" / "order_intents.jsonl"
 UNIVERSE = BASE / "data" / "universe"
 OUT = BASE / "reports" / "UNFILLED_FORK.json"
 
-#: How long a bracket rests before it expires, when the record does not say. The gateway places
-#: session brackets with a broker-side expiry; where that is absent this is the honest default
-#: and it is REPORTED, so a reader can see the verdict rests on an assumption.
-DEFAULT_TTL_HOURS = 12.0
+#: Fallback window length, used ONLY when the real deadline cannot be derived.
+#:
+#: THE FIRST RUN USED TWELVE HOURS AND THAT WAS WRONG. `decision_core.bracket_deadline` derives
+#: the real expiry from the armed windows -- asia 07:00->13:00 (6h, dies when London opens),
+#: london_am 13:00->17:00 (4h), afternoon 17:00->19:30 (2.5h, dies at the force-close). A flat
+#: twelve hours let a level touched long after the bracket had expired count as a missed fill,
+#: which inflates TOUCHED and invents an execution defect out of an order that no longer existed.
+#: The deadline is now asked for per sleeve and this is only the floor under an unknown window.
+DEFAULT_TTL_HOURS = 6.0
+
+
+def _deadline(sleeve: str, window: str, start):
+    """The real bracket expiry for this sleeve, or the fallback ceiling.
+
+    Asked of `bracket_deadline` so there is ONE rule: adding a window changes the answer here
+    automatically and no second table can drift from the armed one.
+    """
+    try:
+        import sys
+        sys.path.insert(0, str(BASE))
+        from mt5desk.decision_core import bracket_deadline
+        return bracket_deadline(sleeve, window or None, now=start)
+    except Exception:
+        from datetime import timedelta as _td
+        return start + _td(hours=DEFAULT_TTL_HOURS)
 
 #: Charts to look for, finest first. A stop triggers intrabar, so the finer the bar the less the
 #: answer depends on the bar boundary -- M1 resolves a wick that H1 would smear into a range.
@@ -134,8 +155,10 @@ def fork() -> dict[str, Any]:
                         "why": "no accepted-at timestamp, level, symbol or side on the record"})
             results.append(rec)
             continue
-        end = start + timedelta(hours=DEFAULT_TTL_HOURS)
+        win = str(f.get("window") or intent.get("window") or "")
+        end = _deadline(str(rec.get("sleeve") or ""), win, start)
         rec["window"] = [start.isoformat(timespec="seconds"), end.isoformat(timespec="seconds")]
+        rec["ttl_hours"] = round((end - start).total_seconds() / 3600.0, 2)
         if sym not in cache:
             cache[sym] = _bars(sym)
         df = cache[sym]
@@ -163,7 +186,9 @@ def fork() -> dict[str, Any]:
         "rule": ("an order is asked about ONLY between acceptance and expiry. Scanning all of "
                  "history would find almost every level touched eventually -- look-ahead dressed "
                  "as diagnosis. High/low is used, never close: a stop triggers intrabar."),
-        "assumed_ttl_hours": DEFAULT_TTL_HOURS,
+        "ttl_source": ("decision_core.bracket_deadline per sleeve; the armed windows, not a "
+                       "flat constant"),
+        "fallback_ttl_hours": DEFAULT_TTL_HOURS,
         "n_unfilled": len(results),
         "census": dict(census),
         "share_touched": round(census.get("TOUCHED", 0) / n, 4),
