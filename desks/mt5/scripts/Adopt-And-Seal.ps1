@@ -73,7 +73,31 @@ if (-not (Test-Path $py)) {
     else { "$((Get-Date).ToUniversalTime().ToString('u')) adopt-and-seal: no python interpreter found (.venv, py, python)"; exit 2 }
 }
 
-function Log([string] $m) { "$((Get-Date).ToUniversalTime().ToString('u')) adopt-and-seal: $m" }
+# EVERY LINE ALSO GOES TO A FILE, BECAUSE A SCHEDULED TASK'S STDOUT GOES NOWHERE (2026-09-14).
+#
+# THIS SCRIPT IS THE BOX'S ONLY CODE-DELIVERY PATH and its sole failure report was the exit code
+# `schtasks` records. Measured today: MT5-AdoptRelease sat at `Last Result: 1` across consecutive
+# hours while the box silently ran code older than the branch -- and the one instruction in
+# CLAUDE.md for this case, "if the box is not adopting, that task is the first thing to check",
+# had nothing to check. Every reason this script can fail (a partial adoption, a lost mutex, no
+# interpreter, a refused seal) was written to a stdout that no scheduled run has.
+#
+# Appending is deliberate: the interesting question is never "what happened on the last run" but
+# "when did this start failing", and only a history answers it. Failing to write the log NEVER
+# fails the adoption -- an unwritable log is a lost diagnostic, not a reason to stop delivering
+# code to a live trading box.
+$script:AdoptLog = Join-Path $PSScriptRoot "..\logs\adopt_and_seal.log"
+try {
+    $null = New-Item -ItemType Directory -Force -Path (Split-Path $script:AdoptLog) -ErrorAction Stop
+} catch { $script:AdoptLog = $null }
+
+function Log([string] $m) {
+    $line = "$((Get-Date).ToUniversalTime().ToString('u')) adopt-and-seal: $m"
+    if ($script:AdoptLog) {
+        try { Add-Content -Path $script:AdoptLog -Value $line -Encoding utf8 -ErrorAction Stop } catch { }
+    }
+    $line
+}
 
 # ------------------------------------------- 0. never adopt under a ShadowSync that is running
 # TWO GIT WRITERS IN ONE REPOSITORY IN THE SAME SECOND (2026-09-08). MT5-ShadowSync repeats every
