@@ -774,6 +774,41 @@ YIELD_MAX_SHARE = 0.45
 YIELD_MIN_SHARE = 0.15
 
 
+#: Gate failures that mean UNDER-POWERED rather than REFUTED. A cell failing only these cleared
+#: pbo, cpcv, walk_forward, lockbox, reality_check_spa and stress_costs -- it is a real effect
+#: measured on too few observations to clear a bar charging 597 trials.
+POWER_ONLY_GATES = frozenset({"deflated_sharpe", "expected_value", "in_sample_screen"})
+
+#: What a power-deficient cell is worth when it has a downstream consumer but that consumer has
+#: not yet produced a survivor to measure against.
+#:
+#: THIS NUMBER IS A BOOTSTRAP AND SAYS SO. It is replaced by measurement the moment the weak-signal
+#: lane reports its own conversion (`_combination_credit` reads it), because a declared constant
+#: deciding allocation is exactly what `_family_yield`'s own prior comment warns against. A half
+#: credit is the deliberate middle: crediting 1.0 would claim combination converts as reliably as
+#: solo certification, which is unmeasured; crediting 0.0 is what the desk did until today, and
+#: that is the bug this replaces, not a safe default.
+COMBINATION_CREDIT_BOOTSTRAP = 0.5
+
+
+def _combination_credit(root: Path | None = None) -> float:
+    """What one power-deficient cell is worth, MEASURED from the weak-signal lane where possible.
+
+    Survivors the combination lane produced, per power-deficient member it consumed. Until that
+    lane has run and reported, the bootstrap stands and the caller is told which it used.
+    """
+    base = root or REPORTS.parent
+    try:
+        w = json.loads((base / "reports" / "weak_signal_compiler.json").read_text("utf-8"))
+    except (OSError, ValueError):
+        return COMBINATION_CREDIT_BOOTSTRAP
+    members = float(w.get("n_members") or 0.0)
+    won = float(w.get("cells_proposed") or 0.0)
+    if members <= 0:
+        return COMBINATION_CREDIT_BOOTSTRAP
+    return max(0.0, min(1.0, won / members))
+
+
 def _family_yield(root: Path | None = None) -> dict[str, float]:
     """Survivors per RULED cell, per family, shrunk toward the desk's own average.
 
@@ -788,12 +823,39 @@ def _family_yield(root: Path | None = None) -> dict[str, float]:
     except (OSError, ValueError):
         return {}
     ruled: dict[str, int] = {}
+    # POWER-DEFICIENT CELLS ARE OUTPUT, NOT WASTE -- AS OF THE HOUR weak_signals GOT A CLOCK.
+    #
+    # THIS ALLOCATOR WAS STARVING ITS OWN BEST SUPPLIER. Yield was survivors-per-ruled-cell, and a
+    # survivor meant a cell passing all ten gates ALONE. By that definition `pca_residual` scores
+    # 0.0 (0 of 230) and `cross_asset_residual` 0.0 (0 of 816), so both were trimmed to the floor.
+    # Measured on the trading box 2026-09-14, those same two families are the RICHEST source of
+    # cells that failed only on power: pca_residual 131 of 230, the highest rate on the desk.
+    #
+    # That zero was correct while nothing consumed a power-deficient cell. `weak_signals` now runs
+    # hourly and consumes exactly them, so the numerator was measuring the wrong thing the moment
+    # that leg landed: it asked "did this family certify alone", when the question allocation turns
+    # on is "did this family produce anything a downstream consumer can use". Leaving it would have
+    # had the gauntlet defund the combination lane's raw material at the same hour the lane opened.
+    #
+    # THIS RAISES ALLOCATION, IT DOES NOT CAP ANYTHING (Rule 1). No family's share falls by fiat;
+    # the numerator gains a term that was always positive, so families with power-deficient output
+    # rise and the total docket built is unchanged. More independent positive-Elog bets inside the
+    # same budget is the whole point.
+    power_def: dict[str, int] = {}
     for v in g.get("verdicts") or []:
         if not isinstance(v, dict) or v.get("unmeasured"):
             continue
         fam = str(v.get("family") or "")
-        if fam:
-            ruled[fam] = ruled.get(fam, 0) + 1
+        if not fam:
+            continue
+        ruled[fam] = ruled.get(fam, 0) + 1
+        stages = v.get("stages") or v.get("gates") or {}
+        if not isinstance(stages, dict) or not stages:
+            continue
+        failed = {k for k, gg in stages.items()
+                  if isinstance(gg, dict) and gg.get("passed") is False}
+        if failed and failed <= POWER_ONLY_GATES:
+            power_def[fam] = power_def.get(fam, 0) + 1
     try:
         s = json.loads((base / "reports" / "UNIVERSAL_SURVIVORS.json").read_text("utf-8"))
     except (OSError, ValueError):
@@ -803,15 +865,20 @@ def _family_yield(root: Path | None = None) -> dict[str, float]:
         fam = str(((val or {}).get("shadow_spec") or {}).get("family") or "")
         if fam:
             surv[fam] = surv.get(fam, 0) + 1
-    fams = set(ruled) | set(surv)
+    credit = _combination_credit(root)
+    fams = set(ruled) | set(surv) | set(power_def)
+
+    def _num(f: str) -> float:
+        return surv.get(f, 0) + credit * power_def.get(f, 0)
     # THE PRIOR IS THE DESK'S OWN AGGREGATE, MEASURED NOW. A declared constant would go stale the
     # moment the desk got better or worse at converting cells, and would quietly become the thing
     # deciding allocation on a day when every family underperformed it.
-    tot_s, tot_r = sum(surv.values()), sum(ruled.values())
+    tot_s = sum(_num(f) for f in fams)
+    tot_r = sum(ruled.values())
     house = (tot_s / tot_r) if tot_r else 0.0
     pa = max(house, 1e-6) * YIELD_PRIOR_STRENGTH
     pb = YIELD_PRIOR_STRENGTH - pa
-    return {f: (surv.get(f, 0) + pa) / (ruled.get(f, 0) + pa + pb) for f in fams}
+    return {f: (_num(f) + pa) / (ruled.get(f, 0) + pa + pb) for f in fams}
 
 
 def _house_yield() -> float:

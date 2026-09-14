@@ -826,6 +826,13 @@ def _producer(name: str, script: str,
 #: the budget to finish; the gauntlet already does the other (never-judged cells sort first).
 LEG_BUDGET_SEC: dict[str, int] = {
     "enrol_clocks": 2_700,
+    # THE FOUR ACTIVATION LEGS ARE SEARCHES, NOT RENDERERS. `weak_signals` rebuilds member
+    # signals for up to 24 members across 67 symbols and its own `run()` already self-limits at
+    # 2400s; a cycle budget below that would kill it at the same prefix every hour, which is the
+    # failure `enrol_clocks` was raised for. The other three get room to reach their data.
+    "weak_signals": 2_700,
+    "residual_factors": 1_800,
+    "exogenous_search": 1_200,
 }
 
 
@@ -1128,6 +1135,66 @@ def strategy_paths() -> dict:
     and becomes available on its own.
     """
     return _producer("strategy_paths", "research/strategy_paths.py")
+
+
+def weak_signal_ensembles() -> dict:
+    """`weak_signals`: combine the cells that failed ONLY on power. Selection's discard pile.
+
+    THE DESK CERTIFIES INDIVIDUALLY AND THEREFORE THROWS AWAY ITS OWN RAW MATERIAL. Ten gates are
+    applied to each cell alone; a cell that clears every validity gate -- pbo, cpcv, walk_forward,
+    lockbox, reality_check_spa, stress_costs -- and fails only deflated_sharpe or expected_value
+    is not refuted. It is a real effect measured on too few observations to clear a bar charging
+    597 trials. Under selection it is a failure. Under combination it is the INPUT, because k
+    weak members with low mutual correlation carry a t-stat growing with sqrt(k) while no member's
+    own edge has to move.
+
+    IT WAS BUILT AND NEVER RUN BY ANYTHING. 284 lines, zero clock references, and `power_deficient`
+    read a `gates` field the gauntlet has never written, so it reported "0 combinations" on a
+    docket holding 560 qualifying cells across 67 eligible symbols. Unwired AND silently empty is
+    how a capability stays invisible: the artifact said there was nothing to do.
+    """
+    return _producer("weak_signals", "research/weak_signal_compiler.py")
+
+
+def residual_factors() -> dict:
+    """`residual_factors`: cross-sectional residuals, the family with candidates and no sleeves.
+
+    786 residual candidates have been mined and ZERO residual sleeves are live; all 61 live
+    sleeves are session, gap or carry. Left unrun, that zero reads as "residuals do not work on
+    this venue" -- a conclusion the desk has never actually tested, because the engine that
+    measures them has no clock. Running it makes the zero a MEASUREMENT instead of a silence.
+    """
+    return _producer("residual_factors", "research/factor_residual_engine.py")
+
+
+def markout() -> dict:
+    """`markout`: adverse selection in the desk's OWN fills. Are we the desperate party?
+
+    The desk cannot take the other side of somebody's forced liquidation -- but it can detect
+    when it is SUPPLYING one, and that is the same measurement read the other way round. A markout
+    curve that runs consistently against the fill says this book is the liquidity being taken.
+
+    WHAT IT CURRENTLY MEASURES IS ZERO, AND THE REASON IS THE FINDING. 282 decisions, 275 not
+    taken, of which 274 are `release_identity_refused` -- refused before a price was ever computed,
+    so there is no counterfactual to replay. The organ is sound and the ledger was empty because
+    the identity fence was rejecting everything upstream of it. That fence is fixed; this accrues
+    from here, which is exactly why it needs a clock rather than a one-off run.
+    """
+    return _producer("markout", "research/counterfactual_markout.py")
+
+
+def exogenous_search() -> dict:
+    """`exogenous_search`: the licensed absurd-variable lane, run under the sealed trial count.
+
+    Most desks cannot afford undirected search because their multiple-testing correction is
+    nominal. This one's is not: `n_trials` is a SEALED campaign constant (597) and the
+    deflated-Sharpe charge is paid whatever the search looked at, so an exogenous variable with
+    no economic story costs the same as one with a story and is judged by the same bar.
+
+    A LANE THAT FINDS NOTHING STILL PAYS. "We looked across this budget and there was nothing"
+    is a real answer and belongs in `negative_knowledge`; silence does not.
+    """
+    return _producer("exogenous_search", "research/unknown_unknowns.py")
 
 
 def _recertify_canon_claimed() -> dict:
@@ -2042,6 +2109,10 @@ def main() -> None:
     c2e = _costed("cost_to_edge", cost_to_edge)
     srt = _costed("source_routes", source_routes)
     spa = _costed("strategy_paths", strategy_paths)
+    wse = _costed("weak_signals", weak_signal_ensembles)
+    rfx = _costed("residual_factors", residual_factors)
+    mko = _costed("markout", markout)
+    exo = _costed("exogenous_search", exogenous_search)
     ms = _costed("model_skill", model_skill)
     fcx = _costed("forecast_contract", forecast_contract)
     mz = _costed("model_league", model_league)
@@ -2217,6 +2288,10 @@ def main() -> None:
                     "cost_to_edge": c2e,
                     "source_routes": srt,
                     "strategy_paths": spa,
+                    "weak_signals": wse,
+                    "residual_factors": rfx,
+                    "markout": mko,
+                    "exogenous_search": exo,
                     "model_skill": ms,
                     "frontier": fr, "refresh_bars": rb, "deep_forest": df,
                     "maintain_miners": mm, "publish_survivors": ps,

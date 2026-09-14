@@ -41,10 +41,12 @@ for p in (str(_DESK), str(_DESK / "research"), str(_DESK / "scripts")):
         sys.path.insert(0, p)
 
 from research import proposer_common as pc  # noqa: E402
+from research.frontier_identity import cell_id  # noqa: E402
 
 SOURCE = "weak_signal_ensemble"
 REPORT = _DESK / "reports" / "weak_signal_compiler.json"
 GATES = _DESK / "reports" / "universal_gates_external.json"
+DOCKET = _DESK / "data" / "hypotheses" / "external_survivors.json"
 POWER_GATES = frozenset({"deflated_sharpe", "expected_value", "in_sample_screen"})
 MAX_MEMBERS = 24
 MIN_MEMBERS = 4
@@ -53,28 +55,88 @@ N_BLOCKS = 4
 THRESHOLDS = (0.3, 0.5, 0.7)
 
 
+def _docket_by_cell() -> dict[str, dict]:
+    """cell id -> the docket row that MINTED it, which is the only place params survive.
+
+    A verdict row names its cell as `XAUUSD@M5.momentum_volgate.p=44136fa355b3678a`. The `p=`
+    field is a SHA256 DIGEST of the parameters, not the parameters -- it is one-way, so no member
+    signal can be rebuilt from a verdict alone. The docket is the other half of that pair, and
+    `frontier_identity.cell_id` is the desk's own identity function, so recomputing it over the
+    docket joins the two EXACTLY rather than by a guessed key. Measured 2026-09-14: 23,053 docket
+    rows give 23,041 distinct ids and every one of the 560 power-deficient verdicts joins, 100%.
+    """
+    try:
+        rows = json.loads(DOCKET.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(rows, list):
+        return {}
+    out: dict[str, dict] = {}
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        try:
+            key = cell_id({**row, "sym": row.get("symbol"), "family": row.get("family"),
+                           "params": row.get("params")})
+        except Exception:
+            continue
+        out.setdefault(key, row)
+    return out
+
+
 def power_deficient(max_per_symbol: int = MAX_MEMBERS) -> dict[str, list[dict]]:
-    """symbol -> member cells that passed every validity gate and failed only power gates."""
+    """symbol -> member cells that passed every validity gate and failed only power gates.
+
+    THIS READ THE WRONG FIELD AND RETURNED NOTHING FOR AS LONG AS IT HAS EXISTED. It asked each
+    verdict for `gates`; the gauntlet has always written `stages`. `.get("gates") or {}` is not an
+    error -- it is an empty dict -- so `failed` was empty for every row, `if not failed: continue`
+    skipped all of them, and the compiler reported "0 symbols with members, 0 combinations, 0
+    proposed" on a docket that had material. Measured on the trading box 2026-09-14: 7,831
+    verdicts, 0 carrying `gates`, 7,831 carrying `stages`, and 560 cells that failed ONLY power
+    gates across 67 symbols with at least MIN_MEMBERS each.
+
+    WHAT THOSE 560 ARE IS THE WHOLE POINT. A cell that clears every validity gate -- pbo, cpcv,
+    walk_forward, lockbox, reality_check_spa, stress_costs -- and fails only on POWER is not a
+    refuted hypothesis. It is a real effect measured on too few observations to clear a deflated
+    Sharpe bar that charges 597 trials. Under selection each one is a failure and is thrown away.
+    Under combination they are the raw material, because the power deficit is exactly what
+    aggregation repairs: k weak members with low mutual correlation carry a t-stat that scales
+    with sqrt(k) while the per-member edge does not have to move at all.
+
+    `stages` is read first and `gates` kept as a fallback, so a future schema that renames it back
+    does not silently re-empty this the way the original did.
+    """
     try:
         doc = json.loads(GATES.read_text("utf-8"))
     except (OSError, ValueError):
         return {}
+    docket = _docket_by_cell()
     out: dict[str, list[dict]] = {}
     for v in doc.get("verdicts") or []:
         if not isinstance(v, dict) or v.get("unmeasured"):
             continue
-        gates = v.get("gates") or {}
-        failed = {k for k, g in gates.items() if isinstance(g, dict) and g.get("passed") is False}
+        stages = v.get("stages") or v.get("gates") or {}
+        if not isinstance(stages, dict) or not stages:
+            continue
+        failed = {k for k, g in stages.items() if isinstance(g, dict) and g.get("passed") is False}
         if not failed or not failed <= POWER_GATES:
             continue
         sym = str(v.get("sym") or v.get("symbol") or "")
         fam = str(v.get("family") or "")
-        params = v.get("params") or {}
         if not sym or not fam or fam == "ensemble":
             continue
-        out.setdefault(sym, []).append({"symbol": sym, "family": fam, "params": dict(params),
-                                        "sharpe": float((gates.get("in_sample_screen") or {})
-                                                        .get("sharpe") or 0.0)})
+        # PARAMS COME FROM THE DOCKET, NEVER FROM THE VERDICT. The verdict carries a digest; a
+        # member built with `{}` because the real params could not be found is a DIFFERENT
+        # strategy wearing the cell's name, and it would be combined under that name.
+        row = docket.get(str(v.get("cell") or ""))
+        if row is None:
+            continue
+        params = row.get("params")
+        out.setdefault(sym, []).append({
+            "symbol": sym, "family": fam,
+            "params": dict(params) if isinstance(params, dict) else {},
+            "cell": str(v.get("cell") or ""),
+            "sharpe": float((stages.get("in_sample_screen") or {}).get("sharpe") or 0.0)})
     for sym in out:
         out[sym] = sorted(out[sym], key=lambda m: -abs(m["sharpe"]))[:max_per_symbol]
     return out
@@ -86,13 +148,13 @@ def _runner_factory(meta: dict):
         try:
             from external_gauntlet import build_cell
             fn, kwargs = build_cell(symbol, family, params, meta, df)
-        except Exception:                                        # noqa: BLE001
+        except Exception:
             return []
         if fn is None:
             return []
         try:
             return fn(df, **kwargs)
-        except Exception:                                        # noqa: BLE001
+        except Exception:
             return []
     return _run
 
@@ -249,6 +311,11 @@ def run(symbols: list[str] | None = None, budget_s: float = 2400.0) -> dict:
     ) for r in proposals]
     report = {"generated_at": datetime.now(tz=UTC).isoformat(),
               "symbols_with_members": len(pool), "tests_run": len(rows),
+              # THE MEMBER COUNT IS PUBLISHED SO THE GAUNTLET CAN STOP GUESSING. `_family_yield`
+              # credits a power-deficient cell at a BOOTSTRAP until this lane reports its own
+              # conversion; cells_proposed / n_members is that conversion, so publishing it
+              # replaces a declared constant with a measurement on the first run that has one.
+              "n_members": sum(len(v) for v in pool.values()),
               "cells_proposed": len(proposals), "skipped": skipped,
               "proposals": proposals, "all": rows,
               "member_source": str(GATES),

@@ -107,6 +107,16 @@ vocabulary. Do not decide something the desk already decided.
   that touches a path both machines write, run `git merge-base --is-ancestor origin/<desk>
   origin/desk-sync-clean`; if false, merge here (desk first-parent, box versions of box-written
   state) and push the SAME commit to `desk-sync-clean`, the desk branch and seats-and-chain.
+  **THAT RULE IS CURRENTLY UNCASHABLE AND THE CHECK ABOVE IS THE ONE THAT TELLS YOU (2026-09-14).**
+  `desk-sync-clean` was RE-CREATED AS AN ORPHAN on 2026-09-11 19:43 (`8b4e3315de9` is the branch
+  ROOT, not a commit on a shared history), so the two branches have NO merge base:
+  `--is-ancestor` can never return true, `git diff A...B` fails with "no merge base", and no merge
+  converges them. Do not attempt one. MEASURE INSTEAD, with two-dot diffs: 195 code files differ,
+  100 live-only, 3 desk-sync-clean-only, 92 shared with live newer on every one sampled. Port the
+  few files where the orphan is genuinely ahead (done for `world_frontier.py` and
+  `pull_desk_state.sh` in 6fad5195076) and treat the rest as stale. AND TEST ANY PORT ON THIS BOX:
+  the frontier fix used `os.replace` onto a read-only destination, which is legal on POSIX and
+  raises WinError 5 on Windows -- it passed on the VPS and would have broken the box that trades.
   `quant-unit-health` (every 10 min) copies `ops/quant-*.{service,timer}` into the VPS's
   systemd user dir and daemon-reloads, so a pushed timer change is live within the hour of the
   VPS taking the commit; it never enables or disables units.

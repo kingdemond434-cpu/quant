@@ -11,6 +11,8 @@ import importlib.util
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[3]
 _spec = importlib.util.spec_from_file_location(
     "_gaunt", ROOT / "desks" / "mt5" / "scripts" / "external_gauntlet.py")
@@ -70,3 +72,61 @@ def test_an_unmeasured_family_is_credited_with_the_house_average(monkeypatch) ->
     a, b = report["brand_new"], report["also_new"]
     assert a["share_of_budget"] == b["share_of_budget"], (
         "with no evidence, two families must be treated identically")
+
+
+def test_power_deficient_cells_count_toward_family_yield(tmp_path):
+    """A family whose cells fail ONLY on power must not score zero yield.
+
+    THE ALLOCATOR WAS STARVING ITS OWN BEST SUPPLIER. Yield was survivors-per-ruled-cell where a
+    survivor meant passing all ten gates ALONE, so `pca_residual` scored 0.0 (0 of 230) and was
+    trimmed to the floor -- while being the richest family on the desk for cells that failed only
+    on power (131 of 230), which is precisely what the weak-signal lane consumes. That zero was
+    right while nothing consumed those cells and became wrong the hour `weak_signals` got a clock.
+    """
+    import json
+    import sys
+    from pathlib import Path
+
+    desk = Path(__file__).resolve().parents[1]
+    for p in (str(desk), str(desk / "scripts"), str(desk / "research")):
+        if p not in sys.path:
+            sys.path.insert(0, p)
+    import external_gauntlet as eg
+
+    reports = tmp_path / "reports"
+    reports.mkdir()
+    power_only = {"deflated_sharpe": {"passed": False}, "pbo": {"passed": True}}
+    refuted = {"pbo": {"passed": False}}
+    verdicts = ([{"family": "pca_residual", "stages": power_only} for _ in range(10)]
+                + [{"family": "dead_family", "stages": refuted} for _ in range(10)])
+    (reports / "universal_gates_external.json").write_text(
+        json.dumps({"verdicts": verdicts}), encoding="utf-8")
+    (reports / "UNIVERSAL_SURVIVORS.json").write_text(json.dumps({"survivors": {}}),
+                                                      encoding="utf-8")
+
+    y = eg._family_yield(root=tmp_path)
+    assert y["pca_residual"] > y["dead_family"], (
+        "a family producing power-deficient cells must outrank one producing refuted cells")
+    # And the refuted family is not punished below the prior -- a refutation is information too,
+    # it is simply not raw material for combination.
+    assert y["dead_family"] > 0.0
+
+
+def test_combination_credit_is_measured_when_the_lane_has_reported(tmp_path):
+    """The bootstrap is replaced by the weak-signal lane's own conversion once it exists."""
+    import json
+    import sys
+    from pathlib import Path
+
+    desk = Path(__file__).resolve().parents[1]
+    for p in (str(desk), str(desk / "scripts")):
+        if p not in sys.path:
+            sys.path.insert(0, p)
+    import external_gauntlet as eg
+
+    reports = tmp_path / "reports"
+    reports.mkdir()
+    assert eg._combination_credit(root=tmp_path) == eg.COMBINATION_CREDIT_BOOTSTRAP
+    (reports / "weak_signal_compiler.json").write_text(
+        json.dumps({"n_members": 200, "cells_proposed": 30}), encoding="utf-8")
+    assert eg._combination_credit(root=tmp_path) == pytest.approx(0.15)

@@ -25,7 +25,7 @@ REMOTE=contabo-mt5
 ok=0
 
 scp -pq "$REMOTE:C:/opt/quant/web/desk_state.json" web/desk_state.json.tmp 2>/dev/null \
-  && mv web/desk_state.json.tmp web/desk_state.json && ok=1
+  && ok=1
 
 # Pull every state producer consumed by the read-only watchdog. Omitting shadow_health meant the
 # VPS could have current sleeve ledgers but keep judging yesterday's aggregate health; omitting
@@ -99,6 +99,37 @@ for f in universal_gates_external.json recertification_audit.json; do
   scp -pq "$REMOTE:C:/opt/quant/desks/mt5/reports/$f" "desks/mt5/reports/$f.tmp" 2>/dev/null \
     && mv "desks/mt5/reports/$f.tmp" "desks/mt5/reports/$f"
 done
+
+# The public projection reads the issue board from disk, not from the pulled dashboard.
+# Carry its original evidence and the canary report; never restamp a stopped producer.
+# ISSUE_EVIDENCE_PULL_BEGIN
+for f in ISSUE_BOARD.json ADVERSARY.json; do
+  _report="desks/mt5/reports/$f"
+  if scp -pq "$REMOTE:C:/opt/quant/$_report" "$_report.tmp" 2>/dev/null; then
+    if .venv/bin/python - "$_report.tmp" <<'PYJSON'
+import json
+import sys
+from datetime import datetime
+
+try:
+    with open(sys.argv[1], encoding="utf-8") as source:
+        report = json.load(source)
+    stamp = report["measured_at"]
+    datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+    if not isinstance(report, dict):
+        raise ValueError("report is not an object")
+except (OSError, ValueError, KeyError, TypeError, AttributeError):
+    sys.exit(1)
+PYJSON
+    then
+      mv -f "$_report.tmp" "$_report"
+    else
+      echo "pull refused invalid $f; keeping last valid evidence"
+    fi
+  fi
+  rm -f "$_report.tmp"
+done
+# ISSUE_EVIDENCE_PULL_END
 
 # THE DOCKET ITSELF. Every breadth, ROI and backlog judgement made on this box reads
 # external_survivors.json, and it was never on the pull list -- it arrived only when a fixer
@@ -253,7 +284,7 @@ PY
 fi
 rm -f "$_UT" 2>/dev/null || true
 
-rm -f web/desk_state.json.tmp desks/mt5/reports/shadow/*.tmp desks/mt5/reports/*.tmp 2>/dev/null
+rm -f desks/mt5/reports/shadow/*.tmp desks/mt5/reports/*.tmp 2>/dev/null
 if [ "$ok" = "1" ]; then
   # The trading-box snapshot preserves account telemetry, but its shadow rows may retain
   # historical promotion provenance.  Rebuild the public view from the freshly pulled
@@ -262,10 +293,12 @@ if [ "$ok" = "1" ]; then
   # terminal, so this is a projection-only repair: it neither changes sleeve state nor submits
   # orders.  A failed projection is a failed pull, because serving an unsafe interpretation is
   # not a successful publication.
-  if ! .venv/bin/python scripts/build_zentech_state.py >/dev/null; then
+  if ! QUANT_DESK_PULL_SNAPSHOT=web/desk_state.json.tmp \
+      .venv/bin/python scripts/build_zentech_state.py >/dev/null; then
     echo "$(date -u +%FT%TZ) PULL FAILED -- dashboard projection rebuild failed"
     exit 1
   fi
+  rm -f web/desk_state.json.tmp
   echo "$(date -u +%FT%TZ) desk state pulled"
 else
   echo "$(date -u +%FT%TZ) PULL FAILED -- serving last good copy; the page's age field shows it"
