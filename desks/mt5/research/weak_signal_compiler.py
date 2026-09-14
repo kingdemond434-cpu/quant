@@ -29,6 +29,7 @@ import argparse
 import json
 import sys
 import time
+from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -142,20 +143,52 @@ def power_deficient(max_per_symbol: int = MAX_MEMBERS) -> dict[str, list[dict]]:
     return out
 
 
+#: Why members could not be built, counted by cause. A bare `except: return []` is indistinguishable
+#: from "this family genuinely produced no signals", and that is exactly how the previous bug hid.
+BUILD_FAILURES: Counter = Counter()
+
+
 def _runner_factory(meta: dict):
-    """A member-signal builder that goes through the gauntlet's own cell construction."""
+    """A member-signal builder that goes through the gauntlet's own cell construction.
+
+    IT UNPACKED A TWO-TUPLE FROM A FUNCTION THAT RETURNS A DICT, AND THE bare `except` ATE IT.
+    `build_cell` returns `{"sym","family","params","timeframe","df","sigs","costs",...}` -- nine
+    keys, with the signals ALREADY BUILT -- or None when the cell is unbuildable. Every other
+    caller in the repo treats it as a dict; this one alone did `fn, kwargs = build_cell(...)`,
+    which raises `ValueError: too many values to unpack (expected 2, got 9)` on every single
+    member. `except Exception: return []` turned that into an empty signal list, so the lane
+    reported "93 symbols with members, 0 combinations -- members could not be built", which reads
+    like a data problem rather than a call-signature error.
+
+    That is the SECOND interface drift in this one file: `power_deficient` read a `gates` key that
+    became `stages`, and this read a 2-tuple that became a dict. Both were silent, both looked
+    like emptiness, and neither could be seen from the artifact. So failures are now COUNTED by
+    cause and published -- an organ that cannot build its inputs must say why, not return [].
+    """
     def _run(symbol: str, family: str, params: dict, df: pd.DataFrame):
         try:
             from external_gauntlet import build_cell
-            fn, kwargs = build_cell(symbol, family, params, meta, df)
-        except Exception:
-            return []
-        if fn is None:
+        except Exception as exc:
+            BUILD_FAILURES[f"import build_cell: {type(exc).__name__}"] += 1
             return []
         try:
-            return fn(df, **kwargs)
-        except Exception:
+            obj = build_cell(symbol, family, params, meta, df)
+        except Exception as exc:
+            BUILD_FAILURES[f"{family}: {type(exc).__name__}: {str(exc)[:60]}"] += 1
             return []
+        if obj is None:
+            # The gauntlet's own refusal -- an unbuildable cell, e.g. a chart it will not resample
+            # onto. That is a verdict, not an error, and it is counted separately from a crash.
+            BUILD_FAILURES[f"{family}: build_cell refused the cell"] += 1
+            return []
+        if not isinstance(obj, dict):
+            BUILD_FAILURES[f"{family}: build_cell returned {type(obj).__name__}"] += 1
+            return []
+        sigs = obj.get("sigs")
+        if not sigs:
+            BUILD_FAILURES[f"{family}: built but produced no signals"] += 1
+            return []
+        return sigs
     return _run
 
 
@@ -316,6 +349,10 @@ def run(symbols: list[str] | None = None, budget_s: float = 2400.0) -> dict:
               # conversion; cells_proposed / n_members is that conversion, so publishing it
               # replaces a declared constant with a measurement on the first run that has one.
               "n_members": sum(len(v) for v in pool.values()),
+              # WHY MEMBERS DID NOT BUILD, BY CAUSE. Two interface drifts in this file have now
+              # presented as "0 combinations" with no way to tell a call-signature error from a
+              # family that genuinely has no signal. This is the difference, published.
+              "build_failures": dict(BUILD_FAILURES.most_common(20)),
               "cells_proposed": len(proposals), "skipped": skipped,
               "proposals": proposals, "all": rows,
               "member_source": str(GATES),
