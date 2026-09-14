@@ -76,6 +76,9 @@ LEG_LAYER: dict[str, str] = {
     # Generating a mechanism's other-session and other-chart equivalents is asking WHEN it works,
     # which is a timing question even though the output is a research candidate.
     "session_chart_expansion": "timing",
+    # Whether an artifact's own stamp advances is a MEASUREMENT property of the desk, not a
+    # property of any strategy -- it belongs with the other self-measurement legs.
+    "stamp_freshness": "information",
     # sizing: how much
     "capacity": "sizing", "ensemble_optimizer": "sizing",
     # portfolio: how the book is composed

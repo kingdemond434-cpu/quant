@@ -1036,6 +1036,27 @@ def session_chart_expansion() -> dict:
     return _producer("session_chart_expansion", "research/session_chart_equivalents.py", "--apply")
 
 
+def stamp_freshness() -> dict:
+    """`stamp_freshness`: artifacts that are REWRITTEN but not RE-STAMPED.
+
+    An organ rewrites its artifact every pass and leaves the timestamp inside it wherever it last
+    landed. The file is fresh, the stamp is ancient, and every consumer that reads the stamp --
+    which is most of them, because a file mtime is destroyed by a checkout or a sync -- is told
+    the organ is dead.
+
+    NO EXISTING CHECK COULD SEE IT. `organ_contract` and `never_stale` judge by FILE AGE, so a
+    rewritten-but-unstamped artifact passes them cleanly; `build_zentech_state` reads the internal
+    STAMP, so the dashboard shows it dead. Neither looks at both numbers, and the contradiction
+    between them IS the finding.
+
+    FIRST RUN: two. `shadow_state.json` rewritten 0.0h ago carrying a stamp 434.8h old -- the one
+    artifact the forward lane's own health check reads, which is why heal_forward_lane had been
+    reporting "engine last evaluated this row 434.1h ago" about rows evaluated minutes earlier.
+    And `anomaly_cursor.json`, 41h of lag, which nobody had noticed at all.
+    """
+    return _producer("stamp_freshness", "scripts/check_stamp_freshness.py")
+
+
 def _recertify_canon_claimed() -> dict:
     """`recertify_canon`, but only for a window the queue says is actually uncovered."""
     q, task, why = _claim_one("recertify")
@@ -1943,6 +1964,7 @@ def main() -> None:
     orth = _costed("orthogonality", orthogonality)
     sess = _costed("session_allocation", session_allocation)
     sxp = _costed("session_chart_expansion", session_chart_expansion)
+    stf = _costed("stamp_freshness", stamp_freshness)
     ms = _costed("model_skill", model_skill)
     fcx = _costed("forecast_contract", forecast_contract)
     mz = _costed("model_league", model_league)
@@ -2113,6 +2135,7 @@ def main() -> None:
                     "orthogonality": orth,
                     "session_allocation": sess,
                     "session_chart_expansion": sxp,
+                    "stamp_freshness": stf,
                     "model_skill": ms,
                     "frontier": fr, "refresh_bars": rb, "deep_forest": df,
                     "maintain_miners": mm, "publish_survivors": ps,

@@ -1,6 +1,6 @@
 # Desk lessons
 
-319 lessons, generated from `docs/desk_lessons.jsonl`.
+320 lessons, generated from `docs/desk_lessons.jsonl`.
 
 > [!warning] This vault is a DERIVED VIEW.
 > `docs/desk_lessons.jsonl` is the source of truth and the only thing organs read.
@@ -21,7 +21,7 @@ there dilutes the lessons that do apply.
 - #governance (30)
 - #ops (21)
 - #statistics (17)
-- #measurement (14)
+- #measurement (15)
 - #research (14)
 - #verification (13)
 - #design (13)
@@ -37,6 +37,7 @@ there dilutes the lessons that do apply.
 - #frontier (6)
 - #fences (5)
 - #windows (5)
+- #staleness (5)
 - #breadth (5)
 - #monitoring (4)
 - #ci (4)
@@ -44,7 +45,6 @@ there dilutes the lessons that do apply.
 - #coverage (4)
 - #free-data (4)
 - #sizing (4)
-- #staleness (4)
 - #money-path (4)
 - #research-loop (4)
 - #accounting (3)
@@ -370,3 +370,4 @@ there dilutes the lessons that do apply.
 - [[l0317-a-job-that-is-truncated-and-restarts-from-the-same-end]]
 - [[l0318-if-a-file-is-named-heal-it-must-act-a-healer-that-only]]
 - [[l0319-before-declining-to-do-more-of-something-because-it-is]]
+- [[l0320-when-an-artifact-carries-two-freshness-fields-one-will]]
