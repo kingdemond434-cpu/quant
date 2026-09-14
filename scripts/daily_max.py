@@ -151,10 +151,28 @@ def _validate_allowlist() -> None:
 _validate_allowlist()
 
 
-def _run_audit() -> list[dict]:
-    """Run the sweep and return its live defects, each already scoped REPO/RUNTIME."""
-    subprocess.run([sys.executable, str(ROOT / "scripts/max_audit.py")],
-                   cwd=ROOT, capture_output=True, text=True, timeout=1800, check=False)
+def _run_audit(regenerate: bool = True) -> list[dict]:
+    """The sweep's live defects, each already scoped REPO/RUNTIME. Re-running it is OPTIONAL.
+
+    A DRY RUN MUST NOT LAUNCH A THIRTY-MINUTE SUBPROCESS, and it did. `main` called this before
+    it looked at `--dry-run`, so `daily_max.py --dry-run` -- documented as "show what would be
+    attempted; run no remediation" -- spawned a full `max_audit.py` sweep with `timeout=1800`.
+
+    WHAT THAT COST WAS THE COVERAGE RATCHET, measured 2026-09-14. `tests/scripts/test_daily_max.py
+    ::test_dry_run_attempts_nothing` asserts exactly the property this violated; it calls
+    `D.main()` with `--dry-run`, the sweep starts, and pytest-timeout kills the SESSION at that
+    test. The suite therefore never reaches the end, `coverage.json` is never written, and
+    `./ops/gates.sh --full` reports "coverage-floors: cannot read coverage.json" -- so L1.50, a
+    ratchet the desk calls a law, has been uncashable behind one unguarded subprocess. The test
+    named the defect in its own title and could not fail on it, because it hung instead.
+
+    Reading the LAST report keeps the dry run useful: it answers "what would this attempt against
+    what the desk currently knows", which is the question a dry run is for. An absent report is an
+    empty defect list, which is what it already degraded to.
+    """
+    if regenerate:
+        subprocess.run([sys.executable, str(ROOT / "scripts/max_audit.py")],
+                       cwd=ROOT, capture_output=True, text=True, timeout=1800, check=False)
     try:
         return json.loads(AUDIT_REPORT.read_text("utf-8")).get("live", [])
     except (OSError, json.JSONDecodeError):
@@ -180,7 +198,8 @@ def main() -> int:
     a = ap.parse_args()
 
     ledger = AlertLedger(LEDGER)
-    defects = _run_audit()
+    # A DRY RUN READS THE LAST SWEEP; it does not start one. See `_run_audit`.
+    defects = _run_audit(regenerate=not a.dry_run)
     seen: set[str] = set()
 
     for d in defects:
