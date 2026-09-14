@@ -388,6 +388,20 @@ def _cost_basis() -> dict[str, dict]:
     for r in doc.get("kept_realized_fills") or []:
         if isinstance(r, dict) and r.get("symbol"):
             out[str(r["symbol"])] = {"basis": "REALIZED_FILLS", "ratio": 1.0}
+    # THE COMPLETE MAP FIRST. `corrected` is published as a reader's sample -- 60 rows of 191 --
+    # and reading the sample told this fence that eleven of the sixteen proposal targets had
+    # never been measured, when every one of them sat in the 131 rows the truncation dropped.
+    # A sampled artifact does not report a smaller answer, it reports a DIFFERENT one.
+    for sym, r in (doc.get("by_symbol") or {}).items():
+        if not isinstance(r, dict) or out.get(str(sym), {}).get("basis") == "REALIZED_FILLS":
+            continue
+        try:
+            old_pts, new_pts = float(r.get("old") or 0.0), float(r.get("new") or 0.0)
+        except (TypeError, ValueError):
+            continue
+        ratio = (new_pts / old_pts) if old_pts > 0 else float("inf")
+        out[str(sym)] = {"basis": "REMEASURED", "ratio": round(ratio, 2), "ratio_raw": ratio,
+                         "registry_pts": old_pts, "remeasured_pts": new_pts, "suspect": False}
     for bucket in ("corrected", "made_cheaper", "suspect"):
         for r in doc.get(bucket) or []:
             if not isinstance(r, dict) or not r.get("symbol"):

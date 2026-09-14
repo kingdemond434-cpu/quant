@@ -83,3 +83,29 @@ def test_an_unreadable_provenance_report_does_not_block_everything(tmp_path, mon
     """A missing report must degrade to UNMEASURED, never refuse the whole engine's output."""
     monkeypatch.setattr(fre, "SPREAD_PROVENANCE", tmp_path / "nope.json")
     assert fre._cost_basis() == {}
+
+
+def test_the_complete_map_is_preferred_over_the_readers_sample(tmp_path, monkeypatch):
+    """`corrected` is published as 60 rows of 191. Reading the sample invents UNMEASURED verdicts.
+
+    Measured 2026-09-14: eleven of the sixteen proposal targets sat in the 131 rows the truncation
+    dropped, so the fence read every one as never-measured and let them through. A sampled
+    artifact does not report a smaller answer -- it reports a DIFFERENT one, and silently.
+    """
+    _provenance(tmp_path, monkeypatch, {
+        "n_corrected": 191,
+        "corrected": [{"symbol": "INSAMPLE", "old": 10.0, "new": 200.0}],
+        "by_symbol": {"INSAMPLE": {"old": 10.0, "new": 200.0},
+                      "TRUNCATED": {"old": 5.0, "new": 400.0}}})
+    b = fre._cost_basis()
+    assert "TRUNCATED" in b, "a symbol outside the published sample must still be seen"
+    assert b["TRUNCATED"]["ratio"] == pytest.approx(80.0)
+    assert b["TRUNCATED"]["ratio"] >= fre.MAX_SPREAD_UNDERSTATEMENT
+    assert b["INSAMPLE"]["ratio"] == pytest.approx(20.0)
+
+
+def test_a_realized_fill_still_wins_against_the_complete_map(tmp_path, monkeypatch):
+    _provenance(tmp_path, monkeypatch, {
+        "kept_realized_fills": [{"symbol": "EURUSD"}],
+        "by_symbol": {"EURUSD": {"old": 1.0, "new": 900.0}}})
+    assert fre._cost_basis()["EURUSD"]["basis"] == "REALIZED_FILLS"

@@ -210,6 +210,24 @@ def run(apply: bool = False, write: bool = True) -> dict[str, Any]:
         "suspect": suspect[:40],
         "corrected": corrected[:60],
         "unmeasured": dict(sorted(unmeasured.items())[:40]),
+        # THE COMPLETE MAP, BECAUSE A TRUNCATED LIST IS READ AS AN ABSENCE BY MACHINES.
+        #
+        # The three lists above are a READER'S sample -- `corrected[:60]` of 191 is the right
+        # length for a person and the wrong length for anything that consumes this file.
+        # Measured 2026-09-14: `factor_residual_engine` now refuses to propose a cell whose
+        # target's spread was re-derived materially wider than the registry value it priced
+        # against, and it reads this artifact to find out. Eleven of its sixteen proposals --
+        # ZARJPY, GBPHUF, NZDHUF, NOKSEK, SEKJPY, NOKJPY, CHFNOK, EURRUB, GBPMXN, USDRUB,
+        # EURILS -- were re-measured and sat in the 131 rows the truncation dropped, so the
+        # fence classified every one of them as UNMEASURED and let them through. A sampled
+        # artifact does not report a smaller set; it reports a DIFFERENT ANSWER, and the caller
+        # cannot tell. The same shape as the NOAA rename: absence indistinguishable from a
+        # quiet world.
+        #
+        # This is one small object per symbol over 251 symbols. There is no reason to sample it.
+        "by_symbol": {r["symbol"]: {"old": r.get("old"), "new": r.get("new"),
+                                    "bucket": r.get("_bucket", "corrected")}
+                      for r in corrected},
         "kept_realized_fills": sorted(kept_better),
         "n_fills_overridden": len(fills_overridden),
         "fills_overridden": fills_overridden,
