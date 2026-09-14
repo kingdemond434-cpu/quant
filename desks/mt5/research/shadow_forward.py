@@ -502,7 +502,7 @@ def main() -> None:
         try:
             from universe_policy import lane, may_hypothesise
             _allowed, _lane = may_hypothesise(sym), lane(sym)
-        except Exception:                                            # noqa: BLE001
+        except Exception:
             _allowed, _lane = True, ""      # no policy module: enrol exactly as before
         if not _allowed:
             st["status"] = "REFUSED_BY_UNIVERSE_POLICY"
@@ -997,7 +997,24 @@ def main() -> None:
             slog(f"{key}: SLEEVE BLOCKED -- {detail}; this row is not evaluated this pass and "
                  f"every other sleeve continues")
             slog(traceback.format_exc())
+    # TWO TIMESTAMP FIELDS, ONE MAINTAINED, AND CONSUMERS READ THE OTHER (fixed 2026-09-14).
+    #
+    # This set `last_run` (a DATE) on every pass and left `updated_at` wherever it had last been
+    # written. Measured tonight: the file was rewritten 0.4h ago carrying
+    # `updated_at: 2026-08-27T00:01:46` -- frozen for EIGHTEEN DAYS while the rows inside it were
+    # current to the minute.
+    #
+    # IT WAS NOT COSMETIC. `heal_forward_lane` reports STALE_ATTEMPT from this field, so it was
+    # announcing "engine last evaluated this row 434.1h ago" about rows the engine had just
+    # evaluated -- 434.1h being exactly the age of this stamp. A health check that says an organ
+    # is eighteen days dead while it runs every thirty minutes is worse than no health check: it
+    # trains the reader to discount the one row that will eventually be true.
+    #
+    # A date is not a timestamp. `last_run` cannot distinguish a pass at 00:01 from one at 23:59,
+    # which is why it could look maintained while carrying no usable freshness at all. Both are
+    # written now, and `updated_at` carries the time.
     state["last_run"] = today
+    state["updated_at"] = datetime.now(UTC).isoformat(timespec="seconds")
     state["configured_sleeves"] = len(enrolled)
     state["gate_blocked_sleeves"] = 0
     state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
