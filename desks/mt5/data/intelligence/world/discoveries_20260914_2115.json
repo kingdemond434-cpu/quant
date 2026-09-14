@@ -1,0 +1,806 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritma ekspektasi-maksimisasi - Wikipedia bahasa Indonesia, ensiklopedia bebas",
+  "url": "https://id.wikipedia.org/w/index.php?title=Algoritma_ekspektasi-maksimisasi&oldid=28443392",
+  "published": "2026-09-14T21:12:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "id",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "80cd3d4c84683d3ed6be",
+  "host": "id.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Kutip Halaman Ini - Wikipedia bahasa Indonesia, ensiklopedia bebas",
+  "url": "https://id.wikipedia.org/w/index.php?title=Istimewa:Kutip&page=Algoritma_ekspektasi-maksimisasi&id=28443392&wpFormIdentifier=titleform",
+  "published": "2026-09-14T21:13:00+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "id",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "adbf1ff18c100de22563",
+  "host": "id.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritma ekspektasi-maksimisasi - Wikipedia bahasa Indonesia, ensiklopedia bebas",
+  "url": "https://id.wikipedia.org/w/index.php?title=Algoritma_ekspektasi-maksimisasi&useparsoid=0",
+  "published": "2026-09-14T21:13:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "id",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "49429cce944a71d15b53",
+  "host": "id.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Pembuat buku - Wikipedia bahasa Indonesia, ensiklopedia bebas",
+  "url": "https://id.wikipedia.org/w/index.php?title=Istimewa:Buku&bookcmd=book_creator&referer=Algoritma+ekspektasi-maksimisasi",
+  "published": "2026-09-14T21:13:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "id",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "700ac1274b6c628422e4",
+  "host": "id.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Indicadores diarios",
+  "url": "https://si3.bcentral.cl/Indicadoressiete/secure/ListaSerie.aspx?param=VQB3AE4ASwBDAHcAagBRACMALQBHAGEAUQBtAGkAaQBaAGEAbgA3AEwAdgAkAHIAcwBCAHkAVgB6AFYAbwB6AGwAXwBzAG0AbQBSAFMAOABFAHQAaAAxAFkAOAAtAHkAeQAtAGIARQBaAFQA",
+  "published": "2026-09-14T21:13:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6d19b5f206e606a3fe3c",
+  "host": "si3.bcentral.cl",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Indicadores diarios",
+  "url": "https://si3.bcentral.cl/Indicadoressiete/secure/ListaSerie.aspx?param=bgBMAFQARQBSAEwAcQBCAHQALQBpAGsAQgA0AHIAcgBHAGsAZABOAFAASgAzAHoAagBsAHgAQwBzAEMAdQBzAEkAbwBqAEUARwB6ADAAWABJAFkANwBuAEoATgBCAEgAZgAzAFoAeABKAEgALQBGAEYALQAyAGYAaQB5AA==",
+  "published": "2026-09-14T21:13:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9374afcf632e60d66934",
+  "host": "si3.bcentral.cl",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritm \u2013 Vikipeedia",
+  "url": "https://et.wikipedia.org/w/index.php?title=Algoritm&oldid=6901701",
+  "published": "2026-09-14T21:13:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "et",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c5c691c1a5853e07c4a7",
+  "host": "et.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritm \u2013 Vikipeedia",
+  "url": "https://et.wikipedia.org/w/index.php?title=Algoritm&useparsoid=0",
+  "published": "2026-09-14T21:14:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "et",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7a0bb51c68fc8d82fadb",
+  "host": "et.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Raamatu koostamine \u2013 Vikipeedia",
+  "url": "https://et.wikipedia.org/w/index.php?title=Eri:Raamat&bookcmd=book_creator&referer=Algoritm",
+  "published": "2026-09-14T21:14:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "et",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5f26a4d6ab52348c268d",
+  "host": "et.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo - Wikipedia, ang malayang ensiklopedya",
+  "url": "https://tl.wikipedia.org/w/index.php?title=Algoritmo&oldid=2084360",
+  "published": "2026-09-14T21:14:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "tl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ca77c5cbda4a48f63958",
+  "host": "tl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Sipiin - Wikipedia, ang malayang ensiklopedya",
+  "url": "https://tl.wikipedia.org/w/index.php?title=Natatangi:Sipiin&page=Algoritmo&id=2084360&wpFormIdentifier=titleform",
+  "published": "2026-09-14T21:14:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "tl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7855fb957c621ab10f8c",
+  "host": "tl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo - Wikipedia, ang malayang ensiklopedya",
+  "url": "https://tl.wikipedia.org/w/index.php?title=Algoritmo&useparsoid=0",
+  "published": "2026-09-14T21:14:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "tl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2211272cb2e2e0dc5007",
+  "host": "tl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Statistics - International Cocoa Organization",
+  "url": "https://www.icco.org/statistics/",
+  "published": "2026-09-14T21:14:21+00:00",
+  "symbols": [
+   "USCOCOA"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "flow",
+   "inventory"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0b245ba91d386dbcb53f",
+  "host": "www.icco.org",
+  "claims": [
+   {
+    "claim": "The document is graphically illustrated and provides analysis of front-month cocoa futures contract prices denominated in U.",
+    "lang": "en",
+    "quantities": [
+     "futures"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "USCOCOA"
+     ],
+     "mentioned": [
+      "cocoa"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "9994bdc7421b"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "CBOE Australia (ex Chi-X) to offer Australian futures trading | Aussie Stock Forums",
+  "url": "https://www.aussiestockforums.com/threads/cboe-australia-ex-chi-x-to-offer-australian-futures-trading.36966/",
+  "published": "2026-09-14T21:14:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b22125de3fc7580ef967",
+  "host": "www.aussiestockforums.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "futures trading | Aussie Stock Forums",
+  "url": "https://www.aussiestockforums.com/tags/futures-trading/",
+  "published": "2026-09-14T21:14:23+00:00",
+  "symbols": [
+   "HK50",
+   "JPN225",
+   "UK100",
+   "AUDUSD"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "momentum"
+  ],
+  "confidence": 0.95,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bd2dc42579a3b4d83231",
+  "host": "www.aussiestockforums.com",
+  "claims": [
+   {
+    "claim": "keki Thread 22 January 2017 broker day trading futures futures trading trading platform Replies: 16 Forum: Derivatives The ASF Futures Playbook - A collection of plays to develop on your own This thread hopefully will serve as a repository of favorite plays for the various futures contracts we all trade.",
+    "lang": "en",
+    "quantities": [
+     "futures"
+    ],
+    "direction": [
+     "contracts"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "HK50",
+      "JPN225",
+      "UK100",
+      "AUDUSD"
+     ],
+     "mentioned": [
+      "hang seng",
+      "nikkei",
+      "ftse",
+      "aussie"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "67dfc86181be"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "CBOE Australia (ex Chi-X) to offer Australian futures trading | Aussie Stock Forums",
+  "url": "https://www.aussiestockforums.com/threads/cboe-australia-ex-chi-x-to-offer-australian-futures-trading.36966/latest?new=1",
+  "published": "2026-09-14T21:14:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0a0b823cb3f8ab706965",
+  "host": "www.aussiestockforums.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "CBOE Australia (ex Chi-X) to offer Australian futures trading | Aussie Stock Forums",
+  "url": "https://www.aussiestockforums.com/threads/cboe-australia-ex-chi-x-to-offer-australian-futures-trading.36966/post-1169895",
+  "published": "2026-09-14T21:14:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "efed4f4cd2b84f890ff2",
+  "host": "www.aussiestockforums.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "CBOE Australia (ex Chi-X) to offer Australian futures trading | Aussie Stock Forums",
+  "url": "https://www.aussiestockforums.com/threads/cboe-australia-ex-chi-x-to-offer-australian-futures-trading.36966/post-1172155",
+  "published": "2026-09-14T21:14:31+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1d48fac9941d0c5ed598",
+  "host": "www.aussiestockforums.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Revista Hispatrading - X-Trader.net",
+  "url": "https://www.x-trader.net/author/revista-hispatrading/",
+  "published": "2026-09-14T21:14:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "48b8ee6f7aef7f52b99d",
+  "host": "www.x-trader.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "C\u00f3mo Elegir el Mejor Per\u00edodo Para los Indicadores",
+  "url": "https://www.x-trader.net/como-elegir-el-mejor-periodo-para-los-indicadores/",
+  "published": "2026-09-14T21:14:36+00:00",
+  "symbols": [
+   "US500",
+   "GER40",
+   "E35"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "mean_reversion",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fc1daaa08df12beab508",
+  "host": "www.x-trader.net",
+  "claims": [
+   {
+    "claim": "Por ejemplo, impulso de 12 meses en acciones, reversi\u00f3n a corto plazo de 1 mes, oscilador estoc\u00e1stico con K igual a 13 y D a 3, etc.",
+    "lang": "es",
+    "quantities": [
+     "impulso",
+     "reversi\u00f3n"
+    ],
+    "direction": [
+     "corto"
+    ],
+    "horizon": [
+     "mes",
+     "corto plazo"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "GER40",
+      "E35"
+     ],
+     "mentioned": [
+      "s&p 500",
+      "dax",
+      "ibex"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "df0171d1eb24"
+   },
+   {
+    "claim": "La idea clave es elegir un mayor n\u00famero de indicadores para encontrar el \u201cpromedio de buen desempe\u00f1o\u201d basado en el backtest m\u00e1s largo o para optimizar la elecci\u00f3n de indicadores cada mes con base en el desempe\u00f1o pasado.",
+    "lang": "es",
+    "quantities": [
+     "base"
+    ],
+    "direction": [
+     "largo"
+    ],
+    "horizon": [
+     "mes"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "GER40",
+      "E35"
+     ],
+     "mentioned": [
+      "s&p 500",
+      "dax",
+      "ibex"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "7f7c10b50d98"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Comportamiento de las Estrategias Tras Su Publicaci\u00f3n",
+  "url": "https://www.x-trader.net/comportamiento-de-las-estrategias-tras-su-publicacion/",
+  "published": "2026-09-14T21:14:40+00:00",
+  "symbols": [
+   "US500",
+   "GER40",
+   "E35"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "momentum",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e0eba420764dc4bcfe66",
+  "host": "www.x-trader.net",
+  "claims": [
+   {
+    "claim": "Por ejemplo, en el art\u00edculo de Huang (2009), Real-Time Proftability of Published Anomalies: An Out-of-Sample Test (Rentabilidad en Tiempo Real de Anomal\u00edas Publicadas: una Prueba Fuera de Muestra) se considera una estrategia a largo plazo con un universo de anomal\u00edas publicadas y, cada a\u00f1o, se selecciona de forma recurrente a los que tienen mejor rendimiento durante un tiempo determinado.",
+    "lang": "es",
+    "quantities": [
+     "rendimiento"
+    ],
+    "direction": [
+     "largo"
+    ],
+    "horizon": [
+     "largo plazo"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "GER40",
+      "E35"
+     ],
+     "mentioned": [
+      "spy",
+      "dax",
+      "ibex"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b5b0dd046f51"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "El Indicador MACD Momentum Ratio",
+  "url": "https://www.x-trader.net/el-indicador-macd-momentum-ratio/",
+  "published": "2026-09-14T21:14:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "gap",
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a51d4e156bc2e5bf2fe1",
+  "host": "www.x-trader.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading - General - X-Trader.net",
+  "url": "https://www.x-trader.net/category/articulos/trading-general/",
+  "published": "2026-09-14T21:14:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "13bd5e2dc751e844317b",
+  "host": "www.x-trader.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading en General - X-Trader.net - El Foro de los Traders",
+  "url": "https://www.x-trader.net/foro/viewforum.php?f=9&sid=7646ea90b15271085a0f575ec0801d91",
+  "published": "2026-09-14T21:14:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [
+   "https://www.x-trader.net/foro/mobiquo/smartbanner/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "8f9901c1fc96f2ffc1fb",
+  "host": "www.x-trader.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Operativa Sistem\u00e1tica sobre el DAX con Capitalizaci\u00f3n Compuesta - X-Trader.net - El Foro de los Traders",
+  "url": "https://www.x-trader.net/foro/viewtopic.php?t=22427&sid=7646ea90b15271085a0f575ec0801d91",
+  "published": "2026-09-14T21:14:48+00:00",
+  "symbols": [
+   "XAUUSD",
+   "GER40"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "momentum",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [
+   "https://www.x-trader.net/foro/mobiquo/smartbanner/manifest.json",
+   "https://www.x-trader.net/foro/download/file.php?id=43518&amp;sid=46db170e9af5b7a24308eb83f4b2ce1a",
+   "https://www.x-trader.net/foro/download/file.php?id=43520&amp;sid=46db170e9af5b7a24308eb83f4b2ce1a&amp;mode=view",
+   "https://www.x-trader.net/foro/download/file.php?id=43521&amp;sid=46db170e9af5b7a24308eb83f4b2ce1a&amp;mode=view",
+   "https://www.x-trader.net/foro/download/file.php?id=43524&amp;sid=46db170e9af5b7a24308eb83f4b2ce1a&amp;mode=view"
+  ],
+  "n_endpoints": 5,
+  "vault_sha": "ccb8cbb5fbb4f577e3e1",
+  "host": "www.x-trader.net",
+  "claims": [
+   {
+    "claim": "El objetivo es reflejar una evoluci\u00f3n del capital realista y sostenible a largo plazo, en lugar de basarse en el rendimiento m\u00e1ximo alcanzable.",
+    "lang": "es",
+    "quantities": [
+     "rendimiento",
+     "m\u00e1ximo"
+    ],
+    "direction": [
+     "largo"
+    ],
+    "horizon": [
+     "largo plazo"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "GER40"
+     ],
+     "mentioned": [
+      "oro",
+      "dax",
+      "php"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "mas : policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "e7383b304a7e"
+   },
+   {
+    "claim": "Un posible desarrollo a largo plazo podr\u00eda ser: Fase inicial: CFD del DAX/German 40 \u2193 Fase intermedia: futuros Micro-DAX o Mini-DAX \u2193 Con un capital suficientemente elevado: futuros FDAX a trav\u00e9s de Eurex La metodolog\u00eda de la estrategia no tendr\u00eda que cambiar.",
+    "lang": "es",
+    "quantities": [
+     "dax"
+    ],
+    "direction": [
+     "largo"
+    ],
+    "horizon": [
+     "largo plazo"
+    ],
+    "instruments": {
+     "analogues": [
+      "GER40"
+     ],
+     "mentioned": [
+      "dax"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "adf4a699a177"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "https://fto-2.gitbook.io/fto-indicators-docs/download-indicator-examples.md",
+  "url": "https://fto-2.gitbook.io/fto-indicators-docs/download-indicator-examples.md",
+  "published": "2026-09-14T21:14:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3a0eb8815088aa96dc3e",
+  "host": "fto-2.gitbook.io",
+  "claims": [],
+  "n_claims": 0
+ }
+]
