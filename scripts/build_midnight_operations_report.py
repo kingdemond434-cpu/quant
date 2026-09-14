@@ -89,6 +89,30 @@ def _failure_clusters(verdicts: list[dict[str, Any]]) -> list[dict[str, Any]]:
             for cause, cells in sorted(clusters.items(), key=lambda item: -len(item[1]))]
 
 
+def _untestable_families(root: Path) -> dict[str, str]:
+    """Families the gauntlet MEASURED as producing zero judgeable cells, from its own report.
+
+    Re-derived here rather than imported so this report stays runnable on a checkout without the
+    desk package importable, and data-driven for the same reason the original is: a hardcoded
+    list would keep excusing a family after it became judgeable.
+
+    The rule is the compiler's: the last sweep built at least five of the family's cells and
+    judged NONE of them. Measured 2026-08-27 across carry 193/193, event_reaction 113/113,
+    calendar_month 2/2 and lvc_asia_london 3/3.
+    """
+    gate = _read(root / "desks" / "mt5" / "reports" / "universal_gates_external.json", {})
+    per_fam: dict[str, list[int]] = defaultdict(list)
+    for v in gate.get("verdicts", []) or []:
+        if not isinstance(v, dict):
+            continue
+        parts = str(v.get("cell") or "").split(".")
+        if len(parts) < 2:
+            continue
+        per_fam[parts[1]].append(1 if v.get("judged") or v.get("passed") is not None else 0)
+    return {fam: f"{len(rows)} built, none judged"
+            for fam, rows in per_fam.items() if len(rows) >= 5 and not any(rows)}
+
+
 def _conservation(root: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     desk = root / "desks" / "mt5"
     docket = _read(desk / "data" / "hypotheses" / "external_survivors.json", [])
@@ -98,13 +122,39 @@ def _conservation(root: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     gate = _read(desk / "reports" / "universal_gates_external.json", {})
     verdicts = [row for row in gate.get("verdicts", []) if isinstance(row, dict)]
     by_cell = {str(row.get("cell")): row for row in verdicts if row.get("cell")}
+    # A CELL ROUTED TO DEEPENING IS ACCOUNTED FOR, NOT LOST (fixed 2026-09-14).
+    #
+    # `lost` meant "the docket holds this cell and the gauntlet published no verdict for it", and
+    # for most cells that is exactly right. But the compiler DELIBERATELY withholds whole families
+    # from judgement: `structurally_untestable_families()` measures which families built cells and
+    # judged none of them -- every cell under the 60 trading days the gates need -- and routes
+    # them to the deepening queue instead. Its own docstring says "Routing them to the DEEPENING
+    # queue is not a rejection: it is the statement that these parameterizations need widening
+    # before any gate can rule".
+    #
+    # So the desk's most careful piece of routing arrived here as its most alarming number. All 13
+    # reported lost were `lvc_asia_london` at one parameter hash across 13 symbols -- one family,
+    # one parameterization, every instance. Random attrition does not look like that, and the
+    # shape was the clue that nothing had been dropped at all.
+    #
+    # THE POINT IS NOT TO MAKE THE NUMBER ZERO. A cell withheld from judgement and a cell that
+    # fell out of the ledger are different events that a conservation check exists to tell apart,
+    # and they were rendering identically (WS-005). `deepening` is now its own bucket with its own
+    # cells named, so `lost` means what it says: unaccounted, and still a hard failure at one.
+    untestable = _untestable_families(root)
     buckets: Counter[str] = Counter()
     lost: list[str] = []
+    deepening: list[str] = []
     for cell in cells:
         row = by_cell.get(cell)
         if row is None:
-            buckets["lost"] += 1
-            lost.append(cell)
+            fam = cell.split(".")[1] if "." in cell else ""
+            if fam in untestable:
+                buckets["deepening"] += 1
+                deepening.append(cell)
+            else:
+                buckets["lost"] += 1
+                lost.append(cell)
         elif row.get("passed") is True:
             buckets["tested"] += 1
         elif row.get("passed") is False:
@@ -114,9 +164,11 @@ def _conservation(root: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]:
         else:
             buckets["blocked"] += 1
     discovered = len(cells)
-    accounted = sum(buckets[name] for name in ("tested", "queued", "rejected", "blocked"))
+    accounted = sum(buckets[name]
+                    for name in ("tested", "queued", "rejected", "blocked", "deepening"))
     return ({
-        "formula": "discovered = tested + queued + rejected + blocked; lost must equal zero",
+        "formula": ("discovered = tested + queued + rejected + blocked + deepening; "
+                    "lost must equal zero"),
         "discovered": discovered,
         "tested": buckets["tested"],
         "queued": buckets["queued"],
@@ -126,6 +178,9 @@ def _conservation(root: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]:
         "lost": buckets["lost"],
         "balanced": discovered == accounted and not lost,
         "lost_cells": lost[:100],
+        "deepening": buckets["deepening"],
+        "deepening_cells": deepening[:100],
+        "deepening_families": untestable,
         "resumable_deferred": int(gate.get("n_cells_deferred_build_budget") or 0),
         "cell_checkpoint": "content-addressed external_gauntlet series cache by cell+data-day",
     }, verdicts)
