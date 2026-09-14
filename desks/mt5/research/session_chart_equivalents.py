@@ -91,16 +91,28 @@ _SESSION_HOURS: dict[str, tuple[int, ...]] = {
 #: its London and Asia equivalents exactly as an Asia one gets its NY equivalents. The desk's
 #: certificates happen to be mostly Asia today; the rule is not.
 #:
-#: SIXTEEN COVERS THE FULL CROSS-PRODUCT -- eight other anchor hours plus up to six other charts
-#: -- so a parent is never truncated before its own session and chart sets are complete. At six,
-#: the first run spent three of six slots re-hunting Asia and never reached ny_open or ny_mid.
+#: THE FULL CROSS-PRODUCT: every anchor hour against every chart the symbol has. Nine hours and
+#: up to seven charts is 63 per parent, and a parent is never truncated before its own set is
+#: complete.
 #:
-#: THE COST IS REAL AND IT IS SMALL HERE. Each cell added raises the deflated-Sharpe bar every
-#: other cell must clear. 66 parents at twelve is ~790 cells against a docket of 21,692, so the
-#: trial count rises about 4% -- while `discovered` alone already carries 17,171 of those cells at
-#: 2.0 survivors per 1,000. Spending 4% more trials on variants of mechanisms measured at 105.6
-#: per 1,000 is the opposite of the mistake that put 61% of the charge on single-name equities.
-MAX_PER_PARENT = 16
+#: I CAPPED THIS AT SIX, THEN TWELVE, THEN SIXTEEN AGAINST A COST THAT DOES NOT EXIST. The stated
+#: reason was that each added cell raises the deflated-Sharpe bar every other cell must clear.
+#: Measured on the live report: `n_trials` is 597 and `sr0` is 0.3786 for ALL 4,235 judged cells,
+#: identically. The charge is a SEALED CAMPAIGN CONSTANT (gate_spec.yaml
+#: `fixed_campaign_trials`), not a function of docket size, so proposing more candidates costs
+#: nothing at the margin. And the sealed basis is
+#: `ceil(null_calibrated_participation_ratio_effective_cells * 7)` -- the EFFECTIVE count -- so
+#: even a scaling charge would absorb correlated session and chart siblings rather than billing
+#: them as independent bets. That was the whole point of the 2026-08-27 fix.
+#:
+#: THE REAL CONSTRAINT IS THE BUILD WINDOW, and it is why this expands CERTIFICATES ONLY. The
+#: gauntlet has ~45 minutes an hour. 66 certificates at 63 variants is ~4,000 cells, which the
+#: yield allocator will reach because their parent families return 105.6 survivors per 1,000
+#: ruled cells. The same cross-product over all 22,143 docket candidates would be ~1.2 MILLION,
+#: swamping the queue for months to test variants of things that have never passed anything. The
+#: choice is about compute, not statistics, and saying so correctly matters: the wrong reason
+#: would have kept this capped forever.
+MAX_PER_PARENT = 63
 
 
 def _read(p: Path, default: Any = None) -> Any:
@@ -182,16 +194,29 @@ def expand() -> dict[str, Any]:
             continue
         base = {k: v for k, v in spec.items()
                 if k not in ("symbol", "family", "selector", "is_universe", "hunt")}
+        # THE CROSS-PRODUCT, not two separate lists. An M15 breakout at 13:00 is a different bet
+        # from an H1 breakout at 13:00 AND from an M15 breakout at 07:00; emitting hours and
+        # charts as independent one-dimensional variations asks neither question. A mechanism
+        # that survives on one chart in one session is a hypothesis about every (hour, chart)
+        # pair, and the desk now holds the bars to ask.
         variants: list[tuple[dict[str, Any], str]] = []
-        for hp in sess_params.get(fam, []):
-            for h in hours:
-                if base.get(hp) == h:
-                    continue                       # the parent already trades this hour
-                variants.append(({**base, hp: h}, ANCHOR_HOURS[h]))
-        for ch in _charts_for(sym):
-            if str(base.get("timeframe") or "H1").upper() == ch:
+        charts = _charts_for(sym) or [str(base.get("timeframe") or "H1").upper()]
+        hour_params = sess_params.get(fam, [])
+        for ch in charts:
+            chart_base = base if str(base.get("timeframe") or "H1").upper() == ch else {
+                **base, "timeframe": ch}
+            if not hour_params:
+                # A family with no hour parameter still varies by chart -- it simply cannot be
+                # moved between sessions, which is a property of the mechanism, not a gap.
+                if chart_base is not base:
+                    variants.append((chart_base, f"chart_{ch}"))
                 continue
-            variants.append(({**base, "timeframe": ch}, f"chart_{ch}"))
+            for hp in hour_params:
+                for h in hours:
+                    if base.get(hp) == h and chart_base is base:
+                        continue               # this is the parent itself
+                    variants.append(({**chart_base, hp: h},
+                                     f"{ANCHOR_HOURS[h]}@{ch}"))
 
         for params, why in variants:
             if per_parent.get(key, 0) >= MAX_PER_PARENT:
