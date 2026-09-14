@@ -116,7 +116,8 @@ def measured_spread(sym: str) -> tuple[float | None, str, dict[str, Any]]:
     }
 
 
-def run(apply: bool = False, write: bool = True) -> dict[str, Any]:
+def run(apply: bool = False, write: bool = True,
+        widening_only: bool = False) -> dict[str, Any]:
     try:
         doc = json.loads(REGISTRY.read_text("utf-8"))
     except (OSError, ValueError) as exc:
@@ -128,6 +129,7 @@ def run(apply: bool = False, write: bool = True) -> dict[str, Any]:
     corrected: list[dict[str, Any]] = []
     stamped_same: list[str] = []
     cheaper: list[dict[str, Any]] = []
+    applied_syms: list[str] = []
     suspect: list[dict[str, Any]] = []
     kept_better: list[str] = []
     #: `realized_fills` rows overridden because the fills value is implausible against its own
@@ -190,16 +192,41 @@ def run(apply: bool = False, write: bool = True) -> dict[str, Any]:
                 cheaper.append(entry)
             if old_f is not None and old_f > 0 and max(got / old_f, old_f / got) > SUSPECT_RATIO:
                 suspect.append(entry)
-        if apply:
+        # THE TWO DIRECTIONS ARE NOT THE SAME DECISION, and `--apply` treated them as one.
+        #
+        # A correction that WIDENS a spread can only make the desk charge itself more: every
+        # certificate priced against the old number was too generous, and re-pricing can only
+        # retire claims, never mint them. Measured 2026-09-14: 74 of 191 re-measured symbols
+        # carry a registry spread of ZERO -- USDRUB 0 -> 2582.5, EURRUB 0 -> 250, NOKSEK 0 -> 39
+        # -- and 26.3% of the judged docket (1,803 of 6,854 cells) was evaluated at zero spread
+        # cost because of it. Nothing on the live book is affected; the exposure is research
+        # pricing, which is where claims are minted.
+        #
+        # A correction that NARROWS one is the opposite act: it makes previously-uneconomic
+        # cells look tradeable, which is the shape of a desk talking itself into an edge. Those
+        # are exactly the rows whose medians are zero-inflated -- GBPCHF prices 46% of its
+        # full-session bars, so its median lands in the near-zero cluster while its p75 is 150.
+        #
+        # `--apply-widening-only` lets the conservative half be taken WITHOUT the half that needs
+        # a person to look at each row. It is not a lesser `--apply`; it is the half whose
+        # direction of error is knowable in advance.
+        if apply and (not widening_only or old_f is None or got > old_f):
             row["median_spread_pts"] = got
             prov = row.setdefault("_provenance", {})
-            prov["median_spread_pts"] = {"at": now, "source": SOURCE, "was": old_f}
+            prov["median_spread_pts"] = {"at": now, "source": SOURCE, "was": old_f,
+                                         "mode": "widening_only" if widening_only else "full"}
+            applied_syms.append(sym)
 
     if apply and write:
         REGISTRY.write_text(json.dumps(doc, indent=1, sort_keys=True) + "\n", "utf-8")
 
     out = {
         "status": "MEASURED", "generated_utc": now, "applied": bool(apply),
+        "apply_mode": ("widening_only" if (apply and widening_only) else
+                       "full" if apply else "report_only"),
+        "n_applied": len(applied_syms),
+        "n_zero_registry_spread": sum(
+            1 for e in corrected if (e.get("old") or 0) == 0),
         "n_symbols": len(rows),
         "n_corrected": len(corrected), "n_already_correct": len(stamped_same),
         "n_kept_realized_fills": len(kept_better), "n_unmeasured": len(unmeasured),
@@ -246,11 +273,17 @@ def run(apply: bool = False, write: bool = True) -> dict[str, Any]:
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    ap.add_argument("--apply-widening-only", action="store_true",
+                    help="apply ONLY the corrections that make a symbol more expensive. The "
+                         "direction of error is knowable in advance for these: a wider spread "
+                         "can only retire claims, never mint them. The narrowing half needs a "
+                         "person to look at each row and is left alone.")
     ap.add_argument("--apply", action="store_true",
                     help="write the registry (default: report only)")
     ap.add_argument("--no-write", action="store_true", help="do not write the report either")
     a = ap.parse_args(argv)
-    r = run(apply=a.apply, write=not a.no_write)
+    r = run(apply=a.apply or a.apply_widening_only, write=not a.no_write,
+            widening_only=a.apply_widening_only)
     if r.get("status") != "MEASURED":
         print(f"REFUSED: {r.get('why')}")
         return 1
@@ -271,8 +304,14 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  CORRECTED: {r['n_corrected']}")
         for c in r["corrected"][:12]:
             print(f"    {c['symbol']:12s} {c['old']} -> {c['new']}  ({c['n_priced']} priced bars)")
-    if not a.apply:
-        print("  REPORT ONLY -- nothing written to the registry. Re-run with --apply to repair.")
+    if not (a.apply or a.apply_widening_only):
+        print(f"  {r['n_zero_registry_spread']} symbol(s) carry a registry spread of ZERO and are "
+              f"therefore priced at no cost at all.")
+        print("  REPORT ONLY -- nothing written to the registry.")
+        print("    --apply-widening-only   take the conservative half (charges MORE, never less)")
+        print("    --apply                 take both halves; the narrowing half needs review")
+    else:
+        print(f"  APPLIED {r['n_applied']} symbol(s) in mode {r['apply_mode']}")
     return 0
 
 
