@@ -1,6 +1,6 @@
 # Desk lessons
 
-320 lessons, generated from `docs/desk_lessons.jsonl`.
+321 lessons, generated from `docs/desk_lessons.jsonl`.
 
 > [!warning] This vault is a DERIVED VIEW.
 > `docs/desk_lessons.jsonl` is the source of truth and the only thing organs read.
@@ -30,9 +30,9 @@ there dilutes the lessons that do apply.
 - #testing (10)
 - #data (8)
 - #mining (8)
+- #execution (7)
 - #silent-failure (7)
 - #wiring (7)
-- #execution (6)
 - #provenance (6)
 - #frontier (6)
 - #fences (5)
@@ -371,3 +371,4 @@ there dilutes the lessons that do apply.
 - [[l0318-if-a-file-is-named-heal-it-must-act-a-healer-that-only]]
 - [[l0319-before-declining-to-do-more-of-something-because-it-is]]
 - [[l0320-when-an-artifact-carries-two-freshness-fields-one-will]]
+- [[l0321-a-broker-reporting-stops-level-0-is-saying-it-has-no-m]]

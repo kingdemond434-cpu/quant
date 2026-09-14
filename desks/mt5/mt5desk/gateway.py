@@ -852,7 +852,26 @@ def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float,
 
     for side in ("buy_stop", "sell_stop"):
         s = spec[side]
-        if _t is not None and _lvl > 0:
+        # STOPS_LEVEL ZERO MEANS NO MINIMUM DISTANCE, NOT "ANY PRICE IS LEGAL" (fixed 2026-09-14).
+        #
+        # This was guarded `and _lvl > 0`, and Fusion reports trade_stops_level 0 on every symbol
+        # -- XAUUSD, EURUSD, AUDNZD all measured at 0. So `entry_is_legal` was NEVER CALLED on
+        # this broker, and the function whose own docstring says "THE CAUSE OF EVERY 10015 THIS
+        # DESK HAS SEEN" was switched off on exactly the venue the desk trades.
+        #
+        # The SIDE requirement is unconditional and has nothing to do with the distance band: a
+        # buy_stop below the ask is not a stop order at all, it is a limit order wearing the wrong
+        # name, and MT5 rejects it outright. `entry_is_legal` already handles a zero band
+        # correctly -- band becomes 0 and `gap < 0` still bites -- so the guard was the only thing
+        # standing between the desk and three of its eight rejections.
+        #
+        # MEASURED on the live intent ledger: every 10015 was a buy_stop below the ask.
+        #     buy_stop 4407.85 vs ask 4408.13   (0.28 below)
+        #     buy_stop 4407.85 vs ask 4408.09   (0.24 below)
+        #     buy_stop 4357.47 vs ask 4371.25  (13.78 below)
+        # Price had run past the range high between the range completing and the order going out,
+        # which is the ordinary behaviour of a breakout, not an anomaly.
+        if _t is not None:
             legal, why_illegal = entry_is_legal(
                 float(s["price"]), side, float(_t.bid), float(_t.ask), _point, _lvl)
             if not legal:
