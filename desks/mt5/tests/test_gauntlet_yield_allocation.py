@@ -130,3 +130,58 @@ def test_combination_credit_is_measured_when_the_lane_has_reported(tmp_path):
     (reports / "weak_signal_compiler.json").write_text(
         json.dumps({"n_members": 200, "cells_proposed": 30}), encoding="utf-8")
     assert eg._combination_credit(root=tmp_path) == pytest.approx(0.15)
+
+
+def test_an_unmeasured_axis_is_floored_and_takes_from_nobody(tmp_path, monkeypatch):
+    """A chart that has never produced a survivor scores yield 0 and would never be built again.
+
+    Measured 2026-09-14: all 58 certificates are H1/asia. Per chart, judged H1 7,193 against
+    H4 40 / M15 36 / M5 33, and PASSED is H1 10 with every other chart at zero. So every non-H1
+    axis has a measured yield of exactly zero -- they produced no survivor because they were
+    barely built, and were barely built because they produced no survivor. Exploitation cannot
+    discover an axis it has no data on.
+
+    The floor is APPENDED after the family trim: nothing already kept is dropped.
+    """
+    import sys
+    from pathlib import Path
+
+    desk = Path(__file__).resolve().parents[1]
+    for p in (str(desk), str(desk / "scripts")):
+        if p not in sys.path:
+            sys.path.insert(0, p)
+    import external_gauntlet as eg
+
+    monkeypatch.setattr(eg, "_axis_yield", lambda root=None: {("H1", "-"): 12})
+    monkeypatch.setattr(eg, "EXPLORATION_MIN_CELLS", 5)
+    specs = ([{"sym": "X", "family": "f", "params": {"timeframe": "H1"}} for _ in range(30)]
+             + [{"sym": "X", "family": "f", "params": {"timeframe": "M15"}} for _ in range(30)])
+    keep = specs[:3]                      # the trim kept only H1 cells
+    added, record = eg._explore_unmeasured_axes(specs, keep)
+    charts = {eg._axis_of(s)[0] for s in added}
+    assert "M15" in charts, "an unmeasured chart must be floored into the sweep"
+    assert "H1" not in charts, "a chart with survivors is governed by yield, not the floor"
+    assert all(any(a is k for k in keep) is False for a in added), "the floor must not re-add kept cells"
+    assert record, "the floor must publish why it fired"
+
+
+def test_the_floor_never_removes_a_kept_cell(tmp_path, monkeypatch):
+    """Rule 1: nothing currently earning may lose a build to exploration."""
+    import sys
+    from pathlib import Path
+
+    desk = Path(__file__).resolve().parents[1]
+    for p in (str(desk), str(desk / "scripts")):
+        if p not in sys.path:
+            sys.path.insert(0, p)
+    import external_gauntlet as eg
+
+    monkeypatch.setattr(eg, "_axis_yield", lambda root=None: {})
+    monkeypatch.setattr(eg, "EXPLORATION_MIN_CELLS", 3)
+    specs = [{"sym": "X", "family": "f", "params": {"timeframe": t}}
+             for t in ("H1", "H1", "M5", "M5", "M5", "M5")]
+    keep = [specs[0]]
+    before = list(keep)
+    added, _ = eg._explore_unmeasured_axes(specs, keep)
+    assert all(b in keep for b in before)
+    assert len(added) >= 1

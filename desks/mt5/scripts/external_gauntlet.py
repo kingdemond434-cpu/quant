@@ -887,6 +887,107 @@ def _house_yield() -> float:
     return (sum(y.values()) / len(y)) if y else 0.0
 
 
+#: CELLS PER UNMEASURED AXIS THE SWEEP BUILDS NO MATTER WHAT ITS YIELD SAYS.
+#:
+#: WHY A YIELD ALLOCATOR CANNOT FIX BREADTH ON ITS OWN, and this is the whole argument. Yield is
+#: survivors per ruled cell. Measured 2026-09-14, every one of the desk's 58 certificates is H1
+#: and asia -- one chart, one session -- and the per-chart record reads:
+#:
+#:     judged   H1 7,193 | H4 40  D1 39  M15 36  M30 34  M5 33  M1 30
+#:     passed   H1    10 | everything else 0
+#:
+#: So every non-H1 chart has a measured yield of EXACTLY ZERO, and a yield-keyed allocator hands
+#: zero-yield axes the floor and moves on. They have produced no survivor because they have barely
+#: been built, and they will barely be built because they have produced no survivor. Exploitation
+#: cannot discover an axis it has no data on; it is the same self-sealing trap as a live sleeve
+#: held at zero heat because "capital requires a measured marginal".
+#:
+#: THIS FLOOR IS ADDITIVE AND TAKES FROM NOBODY (Rule 1, and the standing order on
+#: aggressiveness). It APPENDS cells the family trim did not already keep; no family's share is
+#: reduced, and nothing currently earning loses a single build. That is affordable because the
+#: build budget is not binding -- the sweep reports `n_cells_deferred_build_budget: 0` -- so an
+#: unmeasured axis costs compute that was otherwise idle rather than compute that was earning.
+#:
+#: FORTY IS A SAMPLE, NOT A GESTURE. Below roughly this many cells an axis cannot distinguish "no
+#: edge here" from "not asked", so a smaller floor would buy the appearance of exploration and
+#: none of its information. An axis that reaches a survivor stops being unmeasured and is
+#: thereafter allocated on its measured yield like everything else -- the floor is a door, not a
+#: subsidy.
+EXPLORATION_MIN_CELLS = int(os.environ.get("GAUNTLET_EXPLORATION_MIN_CELLS", "40"))
+
+
+def _axis_of(spec: dict) -> tuple[str, str]:
+    """(chart, session anchor) -- the two axes on which this desk has no diversity at all.
+
+    Read through `timeframe_of`, the same function `cell_id` uses, so an axis label can never
+    disagree with the identity the docket and the gauntlet already share.
+    """
+    params = dict(spec.get("params") or {})
+    try:
+        chart = str(timeframe_of(params, str(spec.get("family") or ""))).upper()
+    except Exception:
+        chart = str(params.get("timeframe") or "H1").upper()
+    anchor = "-"
+    for k in ("range_start", "selector", "session", "hour", "anchor_hour"):
+        if k in params and params[k] is not None:
+            anchor = f"{k}={params[k]}"
+            break
+    if anchor == "-":
+        anchor = str(spec.get("selector") or "-")
+    return chart, anchor
+
+
+def _axis_yield(root: Path | None = None) -> dict[tuple[str, str], int]:
+    """Survivors per (chart, anchor). An axis absent here has never produced one."""
+    base = root or REPORTS.parent
+    try:
+        s = json.loads((base / "reports" / "UNIVERSAL_SURVIVORS.json").read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    out: dict[tuple[str, str], int] = {}
+    for val in (s.get("survivors") or {}).values():
+        spec = (val or {}).get("shadow_spec") or {}
+        if not spec:
+            continue
+        ax = _axis_of(spec)
+        out[ax] = out.get(ax, 0) + 1
+    return out
+
+
+def _explore_unmeasured_axes(specs: list[dict], keep: list[dict]) -> tuple[list[dict], dict]:
+    """Top `keep` up so every UNMEASURED (chart, anchor) axis gets a real sample this sweep.
+
+    Never removes. Returns the appended cells and a per-axis record of what was added and why,
+    which is the missed-growth line the governance requires of any allocation decision.
+    """
+    measured = _axis_yield()
+    kept_ids = {id(s) for s in keep}
+    by_axis: dict[tuple[str, str], list[dict]] = {}
+    for sp in specs:
+        by_axis.setdefault(_axis_of(sp), []).append(sp)
+    added: list[dict] = []
+    record: dict[str, dict] = {}
+    for ax, rows in sorted(by_axis.items(), key=lambda kv: -len(kv[1])):
+        have = sum(1 for r in rows if id(r) in kept_ids)
+        if measured.get(ax, 0) > 0:
+            continue                       # this axis has a survivor: yield governs it
+        short = EXPLORATION_MIN_CELLS - have
+        if short <= 0:
+            continue
+        spare = [r for r in rows if id(r) not in kept_ids][:short]
+        if not spare:
+            continue
+        added.extend(spare)
+        record[f"{ax[0]}|{ax[1]}"] = {
+            "docket": len(rows), "already_kept": have, "added_by_floor": len(spare),
+            "survivors_on_this_axis": 0,
+            "why": ("unmeasured axis: no survivor has ever been minted here, so its yield is 0 "
+                    "and the yield allocator would never build it. Floored so the desk can tell "
+                    "'no edge' from 'never asked'."),
+        }
+    return added, record
+
+
 def allocate_by_yield(specs: list[dict]) -> tuple[list[dict], dict[str, dict]]:
     """Trim the docket so the build budget lands on the families that produce survivors.
 
@@ -952,6 +1053,13 @@ def allocate_by_yield(specs: list[dict]) -> tuple[list[dict], dict[str, dict]]:
                        "share_of_budget": round(share, 4),
                        "capped_by_ceiling": bool(share >= YIELD_MAX_SHARE),
                        "held_by_floor": bool(len(take) <= int(YIELD_MIN_SHARE * len(rows)))}
+    # THE EXPLORATION FLOOR, APPLIED AFTER THE TRIM AND TAKING FROM NOBODY. The family split above
+    # is exploitation: it sends budget where survivors have come from. That is correct and it is
+    # why every certificate this desk holds is H1/asia -- the axes it has never sampled score zero
+    # and are never sampled again. This appends cells on UNMEASURED (chart, anchor) axes so the
+    # desk can distinguish "no edge there" from "never asked".
+    explored, axes = _explore_unmeasured_axes(specs, keep)
+    keep.extend(explored)
     # PUBLISHED, because an allocation nobody can read is not an allocation anyone can argue with
     # -- the capital side has pf_allocation.json for exactly this and the research side had
     # nothing. Best effort: a research sweep must never die because a report file is unwritable.
@@ -968,6 +1076,18 @@ def allocate_by_yield(specs: list[dict]) -> tuple[list[dict], dict[str, dict]]:
             "prior_strength_cells": YIELD_PRIOR_STRENGTH,
             "docket_total": len(specs), "built_this_sweep": len(keep),
             "by_family": report,
+            # THE MISSED-GROWTH LINE, INVERTED: what exploitation alone would NOT have built.
+            "exploration": {
+                "rule": ("an axis (chart, session anchor) that has never produced a survivor has "
+                         "a measured yield of exactly zero, so the yield split would never build "
+                         "it again. These cells are APPENDED after the trim -- no family's share "
+                         "is reduced and nothing earning loses a build. Affordable because the "
+                         "build budget is not binding."),
+                "min_cells_per_unmeasured_axis": EXPLORATION_MIN_CELLS,
+                "n_axes_floored": len(axes),
+                "n_cells_added": len(explored),
+                "by_axis": axes,
+            },
         }, indent=1), encoding="utf-8")
     except OSError:
         pass
@@ -2182,7 +2302,7 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
                 "why": _why or ("cost within the bar" if _cost.get("measured")
                                 else str(_cost.get("why") or "UNMEASURED")),
             }
-        except Exception as _exc:                                       # noqa: BLE001
+        except Exception as _exc:
             stages["swap_cost"] = {"passed": True, "measured": False,
                                    "why": f"UNMEASURED ({type(_exc).__name__}): "
                                           f"cost could not be priced on this host"}
