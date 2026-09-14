@@ -24,3 +24,4 @@ the principal twice believed VPS auth was complete when it was not; ~/.claude_to
 - [[l0240-a-guard-in-the-caller-is-invisible-from-the-callee-bef]]
 - [[l0241-when-you-correct-a-check-s-text-because-you-learned-it]]
 - [[l0249-a-signature-that-takes-trailing-arguments-as-one-tuple]]
+- [[l0325-refusing-an-over-sized-book-is-not-the-conservative-ou]]

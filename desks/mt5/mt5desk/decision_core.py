@@ -911,8 +911,37 @@ def allocator_heat(base: Path, now: float | None = None) -> tuple[float | None, 
         # overshoot deploys LESS than the allocator asked for and never more. A book genuinely
         # hotter than its bar -- past `_HEAT_FILL_TOL`, one basis point of heat -- is refused
         # exactly as before, with the same reason naming the same numbers.
-        if not (0.0 < total <= cap + _HEAT_FILL_TOL):
-            return None, f"allocator heat {total:.4f} outside (0, {cap:.2f}] ({cap_why})"
+        # A BOOK HOTTER THAN THE BAR IS SCALED TO THE BAR, NOT THROWN AWAY (fixed 2026-09-14).
+        #
+        # The clamp above was reachable only inside `_HEAT_FILL_TOL` -- one basis point, for a
+        # rounding overshoot. A genuine overshoot was refused outright, and refusing the book is
+        # not the conservative outcome. It is the opposite.
+        #
+        # MEASURED ON THE LIVE BOOK TONIGHT: the allocator solved 0.3000 against a measured
+        # survival envelope of 0.2250, so the whole book was discarded and the gateway logged
+        # `sizing: no allocator book` on every pass. EVERY NON-GOLD SLEEVE TAKES ITS SIZE FROM
+        # THAT BOOK. Gold has its own floor path and places without it; the other forty-four had
+        # no fraction at all and could never place. `state: armed=True pos=0 pending=4
+        # brackets=['gold_asia'] sleeves=45` -- forty-five sleeves and one bracket, for as long
+        # as the two numbers disagreed. The principal's report was that the scalps and the FX
+        # book had never traded, ever, and this is why.
+        #
+        # SCALING DOWN CANNOT OVER-BET, which is the whole argument. Every sleeve receives
+        # LESS than the optimiser asked for, the total lands exactly on the measured bar, and the
+        # relative weights -- the thing the optimiser actually solved for -- are preserved. The
+        # alternative in force until now deployed the 0.02 floor on ONE sleeve, which is less
+        # heat on fewer bets inside the same survival envelope. That is not caution; it is a
+        # worse book chosen by an accident of arithmetic.
+        #
+        # The bar itself is untouched. `live_heat_ceiling` still measures it, survival still
+        # binds it, and nothing here raises what the desk may deploy -- it only stops the desk
+        # deploying far LESS than its own measurement allows.
+        if not (total > 0.0):
+            return None, f"allocator heat {total:.4f} is not positive ({cap_why})"
+        if total > cap + _HEAT_FILL_TOL:
+            _scale = cap / total
+            art["_heat_scale"] = _scale
+            art["_heat_scaled_from"] = total
         # A HEAT NUMBER WITH NO GROWTH BEHIND IT IS NOT A BUDGET. Measured 2026-09-02: a pass
         # published 30% total heat carrying annual_growth_pct = -inf -- a book wiped out in at
         # least one sampled world -- and every check above passed it, because they all asked
@@ -926,7 +955,8 @@ def allocator_heat(base: Path, now: float | None = None) -> tuple[float | None, 
         # still has to be armed and fresh. The clamp buys it nothing except not being discarded.
         budget = min(total, cap)
         why = f"allocator book ({age / 60:.0f} min old, binding={heat.get('binding')}"
-        why += (f"; fill {total:.6f} clamped to the {cap:.4f} bar it filled to)"
+        why += (f"; solve {total:.4f} SCALED to the measured {cap:.4f} bar, relative weights "
+                f"preserved, every sleeve sized below what the optimiser asked)"
                 if budget < total else ")")
         return budget, why
     except Exception as exc:
@@ -999,12 +1029,36 @@ def book_from_allocation(total: float, book: object, book_fallback: object, *,
         # and returning {} here would read to the caller as "size everything at zero" rather than
         # "the allocator declined to allocate". The no-new-exposure path already handles that.
         return None, "allocator book is empty (no positive-heat sleeve)"
+    # SCALE THE BOOK TO THE BUDGET BEFORE JUDGING THE DRIFT (2026-09-14).
+    #
+    # `allocator_heat` clamps a solve that exceeds the measured survival bar -- it returns the BAR
+    # as the budget and preserves the optimiser's relative weights. The book it was solved at
+    # still sums to the unclamped figure, so the drift check below would reject the very book the
+    # clamp exists to keep, and the desk would fall back to the floor: one gold bracket and
+    # forty-four sleeves with no size at all, which is what it did until tonight.
+    #
+    # Scaling here and not upstream is deliberate: this function OWNS the per-sleeve fractions,
+    # and a scale applied anywhere else would leave two places that both think they set a sleeve's
+    # heat. Every fraction is multiplied by budget/solve, so each sleeve is sized strictly BELOW
+    # what the optimiser asked and the total lands exactly on the bar. Scaling down cannot
+    # over-bet; refusing the book deployed less heat on fewer bets inside the same envelope.
+    _solved = sum(book_.values())
+    _scaled_from = None
+    if _solved > 0 and abs(_solved - total) > 0.005 and total < _solved:
+        _scale = total / _solved
+        book_ = {k: v * _scale for k, v in book_.items()}
+        _scaled_from = _solved
     drift = abs(sum(book_.values()) - total)
     if drift > 0.005:
         # The book and the total come from the same artifact and must agree. A disagreement means
         # one of them was rewritten independently, and sizing on a book that does not sum to the
-        # budget the heat cap enforces would over- or under-deploy silently.
+        # budget the heat cap enforces would over- or under-deploy silently. A book that sums
+        # BELOW the budget is the remaining case and is still refused: scaling up would deploy
+        # heat the optimiser never allocated.
         return None, f"book sums to {sum(book_.values()):.4f}, heat says {total:.4f}"
+    if _scaled_from is not None:
+        why = (f"{why}; book scaled {_scaled_from:.4f} -> {total:.4f} to the measured survival "
+               f"bar, relative weights preserved")
     n_zero = 0
     try:
         for name in (zeroed or {}):
