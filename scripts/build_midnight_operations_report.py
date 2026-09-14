@@ -146,6 +146,24 @@ def _conservation(root: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     # and they were rendering identically (WS-005). `deepening` is now its own bucket with its own
     # cells named, so `lost` means what it says: unaccounted, and still a hard failure at one.
     untestable = _untestable_families(root)
+    # A CELL THE SWEEP HAS NOT REACHED YET IS PENDING, NOT LOST (fixed 2026-09-14).
+    #
+    # `lost` meant "in the docket, no verdict row", which silently counted every candidate the
+    # hourly sweep had not got to. Measured tonight: docket 22,131 against 6,447 judged, so the
+    # check reported 15,525 LOST -- a number that says nothing about conservation and everything
+    # about throughput. It also grows every time the desk adds candidates, so proposing new work
+    # made the provenance check look like it was haemorrhaging.
+    #
+    # `gauntlet_seen_cells.json` is the record that separates them: it holds every cell id this
+    # desk has EVER judged. A cell in that set with no verdict row today was judged and its
+    # verdict has gone -- that is a genuine conservation failure and still fails at one. A cell
+    # never in it has simply not been built yet.
+    #
+    # THE POINT IS NOT A SMALLER NUMBER. It is that `lost` should mean "the ledger dropped
+    # something" and nothing else, or the one alarm that would catch a real loss is permanently
+    # swamped by the backlog.
+    seen_doc = _read(desk / "data" / "hypotheses" / "gauntlet_seen_cells.json", {})
+    seen = set(seen_doc) if isinstance(seen_doc, dict) else set(seen_doc or ())
     buckets: Counter[str] = Counter()
     lost: list[str] = []
     deepening: list[str] = []
@@ -156,9 +174,11 @@ def _conservation(root: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]:
             if fam in untestable:
                 buckets["deepening"] += 1
                 deepening.append(cell)
-            else:
+            elif cell in seen:
                 buckets["lost"] += 1
                 lost.append(cell)
+            else:
+                buckets["pending"] += 1
         elif row.get("passed") is True:
             buckets["tested"] += 1
         elif row.get("passed") is False:
@@ -168,11 +188,11 @@ def _conservation(root: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]:
         else:
             buckets["blocked"] += 1
     discovered = len(cells)
-    accounted = sum(buckets[name]
-                    for name in ("tested", "queued", "rejected", "blocked", "deepening"))
+    accounted = sum(buckets[name] for name in
+                    ("tested", "queued", "rejected", "blocked", "deepening", "pending"))
     return ({
-        "formula": ("discovered = tested + queued + rejected + blocked + deepening; "
-                    "lost must equal zero"),
+        "formula": ("discovered = tested + queued + rejected + blocked + deepening + "
+                    "pending; lost must equal zero"),
         "discovered": discovered,
         "tested": buckets["tested"],
         "queued": buckets["queued"],
@@ -183,6 +203,7 @@ def _conservation(root: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]:
         "balanced": discovered == accounted and not lost,
         "lost_cells": lost[:100],
         "deepening": buckets["deepening"],
+        "pending": buckets["pending"],
         "deepening_cells": deepening[:100],
         "deepening_families": untestable,
         "resumable_deferred": int(gate.get("n_cells_deferred_build_budget") or 0),

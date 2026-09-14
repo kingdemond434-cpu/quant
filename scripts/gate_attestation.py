@@ -33,10 +33,44 @@ def _git(*args: str) -> str:
     return r.stdout.strip() if r.returncode == 0 else ""
 
 
+#: Paths whose dirtiness says nothing about what CODE was tested. Mirrors
+#: `libs/ops/release.py:STATE_PREFIXES`, duplicated so this script runs on a bare checkout.
+_STATE_PREFIXES = ("desks/mt5/data/", "desks/mt5/reports/", "desks/mt5/logs/",
+                   "data/", "reports/", "logs/", "web/", "docs/")
+
+
+def _is_state(rel: str) -> bool:
+    return any(rel.startswith(pre) for pre in _STATE_PREFIXES)
+
+
 def attest(gates: str, result: str) -> dict[str, object]:
     sha = _git("rev-parse", "HEAD")
-    # `--` guards a repo whose HEAD is a path-shaped ref; porcelain is empty exactly when clean.
-    dirty = [ln for ln in _git("status", "--porcelain").splitlines() if ln.strip()]
+    # CLEAN MEANS CLEAN ON CODE, NOT ON EVERYTHING (fixed 2026-09-14).
+    #
+    # This counted any dirty path, so `tree_clean` was false on every run of this desk and
+    # `tested_sha` was therefore dropped every time -- the release artifact reported UNMEASURED
+    # forever while the gates were green on a known commit. The mirror carries thousands of
+    # modified state files at all times because the trading box owns them and pushes them up;
+    # that is the normal condition here, not a dirty worktree.
+    #
+    # A modified ledger, report or log cannot change what the interpreter executed. A modified
+    # .py can, and still voids the claim. Narrowing the test to code paths is what makes the
+    # attestation able to say anything at all, and it gives up nothing it was actually checking.
+    # UNTRACKED FILES ARE NOT PART OF ANY COMMIT, so an untracked .ps1 scratch file cannot change
+    # what the gates executed on a given sha. An untracked .py can -- it could shadow an import --
+    # so that one still voids the claim. The repo root carries a pile of stray scripts from past
+    # sessions; treating those as "the tree is dirty" would make this field permanently useless,
+    # which is how a check ends up being ignored rather than fixed.
+    dirty = []
+    for ln in _git("status", "--porcelain").splitlines():
+        if not ln.strip():
+            continue
+        code, rel = ln[:2], ln[3:].strip().strip('"')
+        if _is_state(rel):
+            continue
+        if code.strip() == "??" and not rel.endswith(".py"):
+            continue
+        dirty.append(ln)
     return {
         "at": datetime.now(UTC).isoformat(timespec="seconds"),
         "tested_sha": sha or None,
@@ -44,8 +78,9 @@ def attest(gates: str, result: str) -> dict[str, object]:
         "result": result,
         "tree_clean": not dirty,
         "dirty_paths": len(dirty),
-        "note": ("tested_sha is HEAD when the run finished. tree_clean false means the run tested "
-                 "a tree no commit contains, so the sha names a neighbourhood, not the subject"),
+        "note": ("tested_sha is HEAD when the run finished. tree_clean considers CODE paths "
+                 "only -- a modified ledger cannot change what the interpreter executed, while a "
+                 "modified .py voids the claim and still sets this false"),
     }
 
 

@@ -71,11 +71,11 @@ def test_report_balances_every_screen_and_measures_forward_truth(tmp_path: Path)
     # here is deepening -- no family in this fixture has five unjudged builds -- so the bucket is
     # empty and `lost` still means unaccounted.
     assert report["candidate_conservation"] == {
-        "formula": ("discovered = tested + queued + rejected + blocked + deepening; "
-                    "lost must equal zero"),
+        "formula": ("discovered = tested + queued + rejected + blocked + deepening + "
+                    "pending; lost must equal zero"),
         "discovered": 4, "tested": 1, "queued": 1, "rejected": 1, "blocked": 1,
         "accounted": 4, "lost": 0, "balanced": True, "lost_cells": [],
-        "deepening": 0, "deepening_cells": [], "deepening_families": {},
+        "deepening": 0, "pending": 0, "deepening_cells": [], "deepening_families": {},
         "resumable_deferred": 1,
         "cell_checkpoint": "content-addressed external_gauntlet series cache by cell+data-day",
     }
@@ -89,17 +89,46 @@ def test_report_balances_every_screen_and_measures_forward_truth(tmp_path: Path)
     }
 
 
-def test_report_calls_an_unverdict_ed_screen_lost(tmp_path: Path) -> None:
+def test_a_cell_that_was_judged_and_lost_its_verdict_is_LOST(tmp_path: Path) -> None:
+    """`lost` must mean the ledger DROPPED something, and nothing else.
+
+    It used to mean "in the docket, no verdict row", which counted every candidate the hourly
+    sweep had not reached yet. Measured 2026-09-14 that was 15,525 of a 22,131-cell docket -- a
+    number about throughput, not conservation, which grew every time the desk proposed new work.
+    A provenance check that rises when research speeds up is not measuring provenance.
+
+    `gauntlet_seen_cells.json` separates them: it records every cell ever judged. In that set with
+    no verdict today means the verdict vanished; never in it means never built.
+    """
+    desk = tmp_path / "desks" / "mt5"
+    cell = {"symbol": "EURUSD", "family": "x", "params": {}}
+    _write(desk / "data" / "hypotheses" / "external_survivors.json", [cell])
+    _write(desk / "reports" / "universal_gates_external.json",
+           {"n_cells_discovered": 1, "verdicts": []})
+    # It WAS judged once -- so its absence today is a real loss.
+    _write(desk / "data" / "hypotheses" / "gauntlet_seen_cells.json",
+           {reporter._cell_id(cell): "2026-08-01T00:00:00Z"})
+
+    report = reporter.build(tmp_path, {}, datetime(2026, 8, 29, tzinfo=UTC))
+    assert report["candidate_conservation"]["lost"] == 1
+    assert report["candidate_conservation"]["balanced"] is False
+
+
+def test_a_cell_never_built_is_PENDING_and_conservation_still_holds(tmp_path: Path) -> None:
+    """The same cell, never judged, must not raise a conservation alarm."""
     desk = tmp_path / "desks" / "mt5"
     _write(desk / "data" / "hypotheses" / "external_survivors.json", [
         {"symbol": "EURUSD", "family": "x", "params": {}}
     ])
-    _write(desk / "reports" / "universal_gates_external.json", {
-        "n_cells_discovered": 1, "verdicts": []
-    })
+    _write(desk / "reports" / "universal_gates_external.json",
+           {"n_cells_discovered": 1, "verdicts": []})
+    # No seen-cells file at all: nothing has ever been judged on this tree.
+
     report = reporter.build(tmp_path, {}, datetime(2026, 8, 29, tzinfo=UTC))
-    assert report["candidate_conservation"]["lost"] == 1
-    assert report["candidate_conservation"]["balanced"] is False
+    cons = report["candidate_conservation"]
+    assert cons["lost"] == 0, "a backlog is not a loss"
+    assert cons["pending"] == 1
+    assert cons["balanced"] is True
 
 
 def test_gauntlet_records_missing_data_and_build_failures_instead_of_dropping_them() -> None:
@@ -146,8 +175,11 @@ def test_a_structurally_untestable_family_is_deepening_and_not_lost(tmp_path: Pa
     cons, _ = reporter._conservation(tmp_path)
 
     assert cons["deepening"] == 6, "the measured-untestable family belongs in its own bucket"
-    assert cons["lost"] == 1, "a family with no such record is still genuinely lost"
+    # The orphan cell was never judged and is not in gauntlet_seen_cells, so it is PENDING
+    # rather than lost -- "lost" now means the ledger dropped a verdict it once held.
+    assert cons["lost"] == 0, "a never-built cell is pending, not lost"
+    assert cons["pending"] == 1, "and it must be counted somewhere"
     assert "lvc_asia_london" in cons["deepening_families"]
     # The formula must actually hold, or the bucket is decoration.
     assert cons["accounted"] + cons["lost"] == cons["discovered"]
-    assert cons["balanced"] is False, "one truly lost cell still fails the check"
+    assert cons["balanced"] is True, "nothing was dropped, so conservation holds"
