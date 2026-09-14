@@ -1014,6 +1014,19 @@ def book_from_allocation(total: float, book: object, book_fallback: object, *,
             book_ = {}
         if not book_:
             return None, f"allocator may rank but not size: {why}; no fallback book either"
+        # THE FALLBACK BOOK NEEDS THE SAME SCALE, and leaving it out is why the first attempt
+        # only half-worked. The allocator's dynamic solve had proof.passed false, so the desk was
+        # on `robust_kelly` -- and the fallback branch carries its own drift check. The heat
+        # clamp landed, `book_from_allocation` was finally reached, and the log moved from
+        # "no allocator book" to "fallback book sums to 0.3000, heat says 0.2250": the same
+        # refusal, one branch over, still leaving forty-four sleeves unsized.
+        #
+        # A baseline book is solved at the same total as the dynamic one and is scaled the same
+        # way, for the same reason: every sleeve below what was asked, the total on the measured
+        # bar, relative weights intact.
+        _fsolved = sum(book_.values())
+        if _fsolved > 0 and abs(_fsolved - total) > 0.005 and total < _fsolved:
+            book_ = {k: v * (total / _fsolved) for k, v in book_.items()}
         drift = abs(sum(book_.values()) - total)
         if drift > 0.005:
             return None, (f"fallback book sums to {sum(book_.values()):.4f}, heat says "
