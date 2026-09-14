@@ -64,10 +64,11 @@ _DESK = Path(__file__).resolve().parents[1]
 if str(_DESK) not in sys.path:
     sys.path.insert(0, str(_DESK))
 
-from mt5desk.causal_residual import causal_residual                      # noqa: E402
-from mt5desk.economic_drivers import DriverSet, universe_driver_sets     # noqa: E402
-from mt5desk.engine import Costs                                         # noqa: E402
-from research.multiplicity import deflate_t, expected_max_z              # noqa: E402
+from mt5desk.causal_residual import causal_residual  # noqa: E402
+from mt5desk.economic_drivers import DriverSet, universe_driver_sets  # noqa: E402
+from mt5desk.engine import Costs  # noqa: E402
+
+from research.multiplicity import deflate_t, expected_max_z  # noqa: E402
 
 UNI = _DESK / "data" / "universe"
 INTEL = _DESK / "data" / "intelligence" / "factor_residual"
@@ -347,6 +348,75 @@ def measure(ds: DriverSet, ret: pd.DataFrame, cost_frac: float,
     return rows
 
 
+
+#: How much wider a symbol's RE-MEASURED spread may be than the registry value this engine priced
+#: against before its expectancy is treated as fiction. Two is generous: it is a doubling of the
+#: only cost term, and every proposal here is a mean-reversion cell whose gross edge is a few
+#: basis points.
+MAX_SPREAD_UNDERSTATEMENT = 2.0
+
+SPREAD_PROVENANCE = _DESK / "reports" / "SPREAD_PROVENANCE.json"
+
+
+def _cost_basis() -> dict[str, dict]:
+    """symbol -> what the desk actually knows about the cost this engine priced against.
+
+    WHY THIS EXISTS, MEASURED 2026-09-14. `_cost_frac` reads `median_spread_pts` out of the
+    universe registry. `repair_universe_spreads` re-derives that number from each symbol's own H1
+    spread column and publishes the difference -- and for the exotic crosses this engine likes,
+    the difference is not a rounding error:
+
+        CHFHUF     224 ->  16,990   75.8x   (also flagged SUSPECT)
+        CHFPLN      16 ->     174   10.9x
+        CHFSEK      33 ->     339   10.3x
+        AUDHUF   1,616 ->  11,400    7.1x
+        CHFDKK      24 ->      45    1.9x
+
+    Those five were the ONLY proposal targets that had been re-measured at all, and every one of
+    them is understated. CHFHUF was proposed with `cost_frac` 5.4e-05 against a gross of 1.9e-03;
+    at 75.8x the cost the net is NEGATIVE. The cell would have gone to the gauntlet and the
+    forward engine "with no new wiring", and automatic promotion is a standing order.
+
+    A `realized_fills` row is trusted whatever the inference says -- an execution beats an
+    inference, which is the rule `repair_universe_spreads` already applies to itself.
+    """
+    try:
+        doc = json.loads(SPREAD_PROVENANCE.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    out: dict[str, dict] = {}
+    for r in doc.get("kept_realized_fills") or []:
+        if isinstance(r, dict) and r.get("symbol"):
+            out[str(r["symbol"])] = {"basis": "REALIZED_FILLS", "ratio": 1.0}
+    for bucket in ("corrected", "made_cheaper", "suspect"):
+        for r in doc.get(bucket) or []:
+            if not isinstance(r, dict) or not r.get("symbol"):
+                continue
+            sym = str(r["symbol"])
+            if out.get(sym, {}).get("basis") == "REALIZED_FILLS":
+                continue
+            try:
+                old, new = float(r.get("old") or 0.0), float(r.get("new") or 0.0)
+            except (TypeError, ValueError):
+                continue
+            ratio = (new / old) if old > 0 else float("inf")
+            # COMPARE THE RAW RATIO, AND LET `suspect` STICK. Comparing an unrounded ratio
+            # against a previously ROUNDED one silently lost the flag: a symbol listed in both
+            # `corrected` and `suspect` with the same numbers gives 75.848 >= 75.85 == False, so
+            # the suspect pass never overwrote the corrected one and the worst symbol on the
+            # board was reported as an ordinary correction. Suspicion is a property of the
+            # SYMBOL, not of whichever bucket happened to be read last.
+            prev = out.get(sym, {})
+            was_suspect = bool(prev.get("suspect"))
+            if ratio >= float(prev.get("ratio_raw", 0.0)):
+                out[sym] = {"basis": "REMEASURED", "ratio": round(ratio, 2), "ratio_raw": ratio,
+                            "registry_pts": old, "remeasured_pts": new,
+                            "suspect": was_suspect or bucket == "suspect"}
+            elif bucket == "suspect":
+                out[sym]["suspect"] = True
+    return out
+
+
 def _candidate(row: dict, n_tests: int, t_def: float) -> dict:
     """One proposal in the miner-discovery contract: family, params, symbol, evidence.
 
@@ -430,11 +500,36 @@ def run(targets: list[str] | None = None, shuffle: bool = False,
     # count is what the best of them has to beat. Counting only the winners would be the exact
     # error the deflated Sharpe exists to correct.
     n_tests = len(rows)
+    _basis = _cost_basis()
     for row in rows:
         row["n_tests_sweep"] = n_tests
         row["t_deflated_sweep"] = round(deflate_t(row["t_gross"], n_tests), 3)
         row["proposed"] = bool(row["clears_cost"] and row["t_deflated_sweep"] > PROPOSE_T
                                and row["n_independent"] >= MIN_INDEPENDENT)
+        # THE COST THIS ROW CLEARED MAY BE A NUMBER THE DESK ALREADY KNOWS IS WRONG.
+        # `clears_cost` compares gross against `_cost_frac`, which reads the registry's
+        # median_spread_pts -- and the desk's own spread-provenance leg publishes, every hour,
+        # how far that value is from the one re-derived from the symbol's bars. Proposing on a
+        # spread understated 75x is not aggression, it is arithmetic on a known-bad input, and
+        # the resulting net is negative rather than large. Refusing it RAISES robust forward
+        # E[log W] (Rule 1) because the claim it suppresses has negative expectancy, and the
+        # refusal is published with the ratio that caused it rather than applied silently.
+        _cb = _basis.get(str(row["target"]))
+        row["cost_basis"] = (_cb or {}).get("basis", "UNMEASURED")
+        row["cost_basis_ratio"] = (_cb or {}).get("ratio")
+        _ratio = float((_cb or {}).get("ratio") or 1.0)
+        _understated = bool(_cb and _cb.get("basis") == "REMEASURED"
+                            and _ratio >= MAX_SPREAD_UNDERSTATEMENT)
+        if _understated:
+            row["not_proposed_why"] = (
+                f"cost basis is not trustworthy: this cell was priced against the registry's "
+                f"{_cb.get('registry_pts')} pts, and repair_universe_spreads re-derives "
+                f"{_cb.get('remeasured_pts')} pts from the symbol's own bars -- "
+                f"{_cb.get('ratio')}x wider"
+                + (" and FLAGGED SUSPECT" if _cb.get("suspect") else "")
+                + f". Gross {row['gross_per_trade']:.6f} against a cost re-scaled by that ratio "
+                  f"is not a positive edge. Charged as a trial, published, never donated.")
+            row["proposed"] = False
         # A BOOK ROW IS A MEASUREMENT, NEVER A RECIPE. `family_inputs.resolve` rebuilds a
         # cross_asset_residual cell by loading each `factor_symbols` name's parquet and there is
         # none for the book, so a candidate naming it could not be rebuilt by the gauntlet or the
@@ -463,6 +558,20 @@ def run(targets: list[str] | None = None, shuffle: bool = False,
         "tests_run": n_tests,
         "expected_max_z": round(expected_max_z(n_tests), 3),
         "propose_threshold_t_deflated": PROPOSE_T,
+        # THE MISSED-GROWTH LINE THE GOVERNANCE REQUIRES of any refusal (GROWTH_GOVERNANCE Rule 1).
+        # What this engine would have donated had the cost basis held, named, so the refusal is
+        # auditable and is repaired by FIXING THE SPREADS rather than by lowering the bar.
+        "refused_on_cost_basis": [
+            {"cell": r["cell"], "t_deflated_sweep": r["t_deflated_sweep"],
+             "gross_per_trade": r["gross_per_trade"],
+             "cost_basis_ratio": r.get("cost_basis_ratio"), "why": r.get("not_proposed_why")}
+            for r in rows
+            if r.get("cost_basis") == "REMEASURED" and not r["proposed"]
+            and r["clears_cost"] and r["t_deflated_sweep"] > PROPOSE_T
+            and r["n_independent"] >= MIN_INDEPENDENT],
+        "cost_basis_census": {
+            b: sum(1 for r in rows if r.get("cost_basis") == b)
+            for b in ("REALIZED_FILLS", "REMEASURED", "UNMEASURED")},
         "cells_proposed": len(best),
         "skipped": skipped,
         "windows": {"beta_win": BETA_WIN, "z_win": Z_WIN, "horizons": list(HORIZONS),
