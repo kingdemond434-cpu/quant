@@ -1,0 +1,1854 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Downloads | atoast2trading",
+  "url": "https://atoast2trading.wordpress.com/downloads/",
+  "published": "2026-09-14T06:12:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://atoast2trading.wordpress.com/downloads/feed/",
+   "https://atoast2trading.wordpress.com/downloads/",
+   "https://atoast2trading.wordpress.com/downloads/?share=twitter",
+   "https://atoast2trading.wordpress.com/downloads/#print?share=print",
+   "https://atoast2trading.wordpress.com/downloads/?share=linkedin",
+   "https://atoast2trading.wordpress.com/downloads/#respond",
+   "https://wordpress.com/abuse/?report_url=https://atoast2trading.wordpress.com/downloads/"
+  ],
+  "n_endpoints": 7,
+  "vault_sha": "31c9ee545e15e1b92cd7",
+  "host": "atoast2trading.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "RoboForex Trading Platforms - download for PC, web and mobile - RoboForex",
+  "url": "https://roboinvesting.pro/forex-trading/terminals/download/",
+  "published": "2026-09-14T06:12:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboinvesting.pro/manifest.json?v=1788266027",
+   "https://roboinvesting.pro/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/ru-kk/forex-trading/terminals/download/",
+   "https://roboforex.com/forex-trading/terminals/download/",
+   "https://roboforex.com/es/forex-trading/terminals/download/",
+   "https://th.roboforex.com/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/vn/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/uz/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/kk/forex-trading/terminals/download/",
+   "https://roboforex.com/ph/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/ru-uz/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/vn/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/es/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/ph/forex-trading/terminals/download/",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 15,
+  "vault_sha": "a07088cc1e4c396370d4",
+  "host": "roboinvesting.pro",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Plataformas de trading RoboForex - descarga para PC, web y m\u00f3vil - RoboForex",
+  "url": "https://roboinvesting.pro/es/forex-trading/terminals/download/",
+  "published": "2026-09-14T06:12:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://roboinvesting.pro/manifest.json?v=1788266027",
+   "https://roboinvesting.pro/es/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/ru-kk/forex-trading/terminals/download/",
+   "https://roboforex.com/forex-trading/terminals/download/",
+   "https://roboforex.com/es/forex-trading/terminals/download/",
+   "https://th.roboforex.com/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/vn/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/uz/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/kk/forex-trading/terminals/download/",
+   "https://roboforex.com/ph/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/ru-uz/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/vn/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/ph/forex-trading/terminals/download/",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 15,
+  "vault_sha": "e8f3a4d12d7d59537b6a",
+  "host": "roboinvesting.pro",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "N\u1ec1n t\u1ea3ng giao d\u1ecbch RoboForex - t\u1ea3i v\u1ec1 cho PC, web v\u00e0 di \u0111\u1ed9ng - RoboForex",
+  "url": "https://roboinvesting.pro/vn/forex-trading/terminals/download/",
+  "published": "2026-09-14T06:12:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "session"
+  ],
+  "confidence": 0.55,
+  "lang": "vi",
+  "endpoints": [
+   "https://roboinvesting.pro/manifest.json?v=1788266027",
+   "https://roboinvesting.pro/vn/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/ru-kk/forex-trading/terminals/download/",
+   "https://roboforex.com/forex-trading/terminals/download/",
+   "https://roboforex.com/es/forex-trading/terminals/download/",
+   "https://th.roboforex.com/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/vn/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/uz/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/kk/forex-trading/terminals/download/",
+   "https://roboforex.com/ph/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/ru-uz/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/es/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/ph/forex-trading/terminals/download/",
+   "https://my.roboforex.pro/vn/help/download-center/"
+  ],
+  "n_endpoints": 15,
+  "vault_sha": "d46e457e13cb3ea596f4",
+  "host": "roboinvesting.pro",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Mga Trading Platform ng RoboForex - i-download para sa PC, web at mobile - RoboForex",
+  "url": "https://roboinvesting.pro/ph/forex-trading/terminals/download/",
+  "published": "2026-09-14T06:12:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboinvesting.pro/manifest.json?v=1788266027",
+   "https://roboinvesting.pro/ph/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/ru-kk/forex-trading/terminals/download/",
+   "https://roboforex.com/forex-trading/terminals/download/",
+   "https://roboforex.com/es/forex-trading/terminals/download/",
+   "https://th.roboforex.com/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/vn/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/uz/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/kk/forex-trading/terminals/download/",
+   "https://roboforex.com/ph/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/ru-uz/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/es/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/vn/forex-trading/terminals/download/",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 15,
+  "vault_sha": "88ad32bc4b272e88d995",
+  "host": "roboinvesting.pro",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0422\u043e\u0440\u0433\u043e\u0432\u044b\u0435 \u043f\u043b\u0430\u0442\u0444\u043e\u0440\u043c\u044b RoboForex - \u0441\u043a\u0430\u0447\u0430\u0442\u044c \u0434\u043b\u044f \u041f\u041a, \u0432\u0435\u0431 \u0438 \u043c\u043e\u0431\u0438\u043b\u044c\u043d\u044b\u0445 \u0443\u0441\u0442\u0440\u043e\u0439\u0441\u0442\u0432 - RoboForex",
+  "url": "https://roboinvesting.pro/ru-kk/forex-trading/terminals/download/",
+  "published": "2026-09-14T06:12:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "ru-kk",
+  "endpoints": [
+   "https://roboinvesting.pro/manifest.json?v=1788266027",
+   "https://roboinvesting.pro/ru-kk/forex-trading/terminals/download/",
+   "https://roboforex.com/forex-trading/terminals/download/",
+   "https://roboforex.com/es/forex-trading/terminals/download/",
+   "https://th.roboforex.com/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/vn/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/uz/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/kk/forex-trading/terminals/download/",
+   "https://roboforex.com/ph/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/ru-uz/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/es/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/vn/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/ph/forex-trading/terminals/download/",
+   "https://my.roboinvesting.pro/kk/help/download-center/"
+  ],
+  "n_endpoints": 15,
+  "vault_sha": "8b8f153cc613f9d12851",
+  "host": "roboinvesting.pro",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Trading | Online Forex Trading | OANDA | US",
+  "url": "https://www1.oanda.com/lang/en/forex-trading/analysis/open-position-ratios",
+  "published": "2026-09-14T06:12:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "77ec4166d610d30f4c25",
+  "host": "www1.oanda.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "RoboForex \u0441\u0430\u0443\u0434\u0430 \u043f\u043b\u0430\u0442\u0444\u043e\u0440\u043c\u0430\u043b\u0430\u0440\u044b - PC, \u0432\u0435\u0431 \u0436\u04d9\u043d\u0435 \u043c\u043e\u0431\u0438\u043b\u044c\u0434\u0456 \u049b\u04b1\u0440\u044b\u043b\u0493\u044b\u043b\u0430\u0440 \u04af\u0448\u0456\u043d \u0436\u04af\u043a\u0442\u0435\u043f \u0430\u043b\u044b\u04a3\u044b\u0437 - RoboForex",
+  "url": "https://roboinvesting.pro/kk/forex-trading/terminals/download/",
+  "published": "2026-09-14T06:12:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "kk",
+  "endpoints": [
+   "https://roboinvesting.pro/manifest.json?v=1788266027",
+   "https://roboinvesting.pro/kk/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/ru-kk/forex-trading/terminals/download/",
+   "https://roboforex.com/forex-trading/terminals/download/",
+   "https://roboforex.com/es/forex-trading/terminals/download/",
+   "https://th.roboforex.com/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/vn/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/uz/forex-trading/terminals/download/",
+   "https://roboforex.com/ph/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/ru-uz/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/es/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/vn/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/ph/forex-trading/terminals/download/",
+   "https://my.roboinvesting.pro/kk/help/download-center/"
+  ],
+  "n_endpoints": 15,
+  "vault_sha": "30386399c9329897fe46",
+  "host": "roboinvesting.pro",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "atoast2trading | part time trader, using volume analysis and statistcal arbitrage, mainly ES, DAX with an interest in EUR, USD, Fixed Income &amp; Gold. &quot;The achieve of; the mastery of the thing.",
+  "url": "https://atoast2trading.wordpress.com/",
+  "published": "2026-09-14T06:12:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "flow",
+   "gap",
+   "momentum",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://atoast2trading.wordpress.com/downloads/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "6fc1d8006c6bc9c287b8",
+  "host": "atoast2trading.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "About me (updated) | atoast2trading",
+  "url": "https://atoast2trading.wordpress.com/about-me/",
+  "published": "2026-09-14T06:12:25+00:00",
+  "symbols": [
+   "XAUUSD",
+   "US500",
+   "GER40"
+  ],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://atoast2trading.wordpress.com/downloads/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "aeae44b5b8a40622ed66",
+  "host": "atoast2trading.wordpress.com",
+  "claims": [
+   {
+    "claim": "I found myself at the end of a contract during summer 2011 and began doing this on a full time daily basis since June 2011.",
+    "lang": "en",
+    "quantities": [
+     "basis"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "US500",
+      "GER40"
+     ],
+     "mentioned": [
+      "gold",
+      "s&p500",
+      "dax"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "025479b3cc56"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Books that are useful | atoast2trading",
+  "url": "https://atoast2trading.wordpress.com/books-that-are-useful/",
+  "published": "2026-09-14T06:12:27+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "momentum",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://atoast2trading.wordpress.com/downloads/",
+   "https://atoast2trading.wordpress.com/wp-content/uploads/2014/11/download.jpg",
+   "https://atoast2trading.wordpress.com/wp-content/uploads/2014/11/download-1.jpg"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "d14bbbdeb9b82b5088cb",
+  "host": "atoast2trading.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Contact | atoast2trading",
+  "url": "https://atoast2trading.wordpress.com/contact/",
+  "published": "2026-09-14T06:12:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://atoast2trading.wordpress.com/downloads/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "a0a08ea89e612ce4b93d",
+  "host": "atoast2trading.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Key posts | atoast2trading",
+  "url": "https://atoast2trading.wordpress.com/key-posts/",
+  "published": "2026-09-14T06:12:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "momentum",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://atoast2trading.wordpress.com/downloads/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "e1d205ae7041cfd2cd9f",
+  "host": "atoast2trading.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Twitter | atoast2trading",
+  "url": "https://atoast2trading.wordpress.com/twitter/",
+  "published": "2026-09-14T06:12:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://atoast2trading.wordpress.com/downloads/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "d0e2fcf431b1ab07a6f1",
+  "host": "atoast2trading.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithmic Trading | Kyle Balkissoon",
+  "url": "https://kylebalkissoon.wordpress.com/category/algorithmic-trading/",
+  "published": "2026-09-14T06:12:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b591af14eb7190ca044f",
+  "host": "kylebalkissoon.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Effective Number of Bets of Risk Parity Strategies and Tactical Risk Parity by ENB | Kyle Balkissoon",
+  "url": "https://kylebalkissoon.wordpress.com/2014/04/16/effective-number-of-bets-of-risk-parity-strategies-and-tactical-risk-parity-by-enb/",
+  "published": "2026-09-14T06:12:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "34545495428ac29c8aa2",
+  "host": "kylebalkissoon.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantitative Analysis | Kyle Balkissoon",
+  "url": "https://kylebalkissoon.wordpress.com/category/quantitative-analysis/",
+  "published": "2026-09-14T06:12:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7215b0495f7bfa6b46c2",
+  "host": "kylebalkissoon.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading on the Sharpe Ratio using quantstrat | Kyle Balkissoon",
+  "url": "https://kylebalkissoon.wordpress.com/2013/06/07/trading-on-the-sharpe-ratio-using-quantstrat/",
+  "published": "2026-09-14T06:12:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e17980d76290fb4df3b1",
+  "host": "kylebalkissoon.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Testing a Faberlike Timing Strategy on the SP500 | Kyle Balkissoon",
+  "url": "https://kylebalkissoon.wordpress.com/2012/07/19/testing-a-faberlike-timing-strategy-on-the-sp500/",
+  "published": "2026-09-14T06:12:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3a039bab5e34826166eb",
+  "host": "kylebalkissoon.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "A Trader Journal: Enhancing TA trading rules performance using filtered Price Bars",
+  "url": "http://atraderdiary.blogspot.com/2013/08/enhancing-ta-trading-rules-performance.html",
+  "published": "2026-09-14T06:12:49+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "inventory",
+   "mean_reversion",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2d5a7285ce0699a5759b",
+  "host": "atraderdiary.blogspot.com",
+  "claims": [
+   {
+    "claim": "Short Term System: 2 day run mean reversion Rules: Long 100% in SPX at the market close of a trading day when index has been down 2 days in a row.",
+    "lang": "en",
+    "quantities": [
+     "mean reversion",
+     "close"
+    ],
+    "direction": [
+     "short",
+     "long"
+    ],
+    "horizon": [
+     "day",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spx"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "c5d500ac66cd"
+   },
+   {
+    "claim": "Short 100% in SPX at the market close of a trading day when index has been up 2 day in a row.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "close",
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spx"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "21b5e38bba3c"
+   },
+   {
+    "claim": "Long Term System: Price Channel Trading Rules: Switch to long when close is greater then m day price channel high.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "close",
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spx"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8bd1c37476b6"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Generative AI to quantify uncertainty in weather forecasting",
+  "url": "http://blog.research.google/2024/03/generative-ai-to-quantify-uncertainty.html",
+  "published": "2026-09-14T06:12:52+00:00",
+  "symbols": [
+   "US2000",
+   "USDTRY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.ecmwf.int/en/forecasts/dataset/ecmwf-reanalysis-v5"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "e8b9e83c8ebdec4b5253",
+  "host": "blog.research.google",
+  "claims": [
+   {
+    "claim": "Some of our recent innovations include MetNet-3 , Google's high-resolution forecasts up to 24-hours into the future, and GraphCast , a weather model that can predict weather up to 10 days ahead.",
+    "lang": "en",
+    "quantities": [
+     "weather"
+    ],
+    "direction": [
+     "predict"
+    ],
+    "horizon": [
+     "hours",
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "US2000",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "russell",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "ef84c78d139e"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "IBKR Quant Home | IBKR Campus",
+  "url": "https://interactivebrokers.eu/campus/quant",
+  "published": "2026-09-14T06:12:54+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.eu/campus/traders-academy/api/",
+   "https://ibkrcampus.eu/campus/traders-academy/api/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "8229c215de1af2c4e628",
+  "host": "interactivebrokers.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Educators | Student Trading Lab | IBKR Campus",
+  "url": "https://interactivebrokers.eu/campus/stl/",
+  "published": "2026-09-14T06:12:56+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.eu/campus/traders-academy/api/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f64fec87b9ebc9b3c32b",
+  "host": "interactivebrokers.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Fundamentals and Metal Futures | Trading Lesson",
+  "url": "https://www.interactivebrokers.eu/campus/trading-lessons/fundamentals-and-metal-futures/",
+  "published": "2026-09-14T06:12:58+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.eu/campus/traders-academy/api/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ce0287278e2cc9943831",
+  "host": "www.interactivebrokers.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Micro Metal Products | Trading Course | Traders&#039; Academy",
+  "url": "https://www.interactivebrokers.eu/campus/trading-course/micro-metal-products",
+  "published": "2026-09-14T06:13:01+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.eu/campus/traders-academy/api/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "bd66e9b8cde09004c881",
+  "host": "www.interactivebrokers.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "TRADING ECONOMICS | 20 million INDICATORS FROM 196 COUNTRIES",
+  "url": "http://www.tradingeconomics.com/",
+  "published": "2026-09-14T06:13:02+00:00",
+  "symbols": [
+   "AUDUSD",
+   "EURUSD",
+   "GBPUSD",
+   "NZDUSD",
+   "US30",
+   "US500",
+   "USDBRL",
+   "USDCAD",
+   "USDCHF",
+   "USDINR",
+   "USDJPY",
+   "USDKRW",
+   "USDMXN",
+   "USDRUB",
+   "XAUUSD",
+   "XAGUSD",
+   "XCUUSD",
+   "XTIUSD",
+   "XNGUSD",
+   "NAS100",
+   "GER40",
+   "JPN225",
+   "CA60",
+   "AUS200"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [
+   "http://www.tradingeconomics.com/api/",
+   "http://www.tradingeconomics.com/api/?source=menu",
+   "http://www.tradingeconomics.com/api/customers.aspx",
+   "https://tradingeconomics.com/api/widgets.aspx?utm_source=anonymous-main-widget",
+   "https://tradingeconomics.com/api/contact.aspx?subject=markets+widget",
+   "http://www.tradingeconomics.com/api/?source=footer"
+  ],
+  "n_endpoints": 6,
+  "vault_sha": "87df1bdd5bbf44cbf006",
+  "host": "www.tradingeconomics.com",
+  "claims": [
+   {
+    "claim": "4% in August, the same as in July and in line with forecasts, while monthly CPI rose 0.",
+    "lang": "en",
+    "quantities": [
+     "cpi"
+    ],
+    "direction": [
+     "rose"
+    ],
+    "horizon": [
+     "monthly"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XCUUSD",
+      "XTIUSD",
+      "XNGUSD",
+      "NAS100",
+      "US500",
+      "US30",
+      "GER40",
+      "JPN225",
+      "CA60",
+      "AUS200",
+      "USDX",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDCHF",
+      "NZDUSD",
+      "USDKRW",
+      "USDINR",
+      "USDBRL",
+      "USDMXN",
+      "USDRUB",
+      "BTCUSD",
+      "SOYBEAN",
+      "WHEAT",
+      "Tesla",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "copper",
+      "crude",
+      "natural gas",
+      "nasdaq",
+      "s&p 500",
+      "dow",
+      "de40",
+      "nikkei 225",
+      "tsx",
+      "asx200",
+      "dollar index",
+      "sensex",
+      "eurusd",
+      "gbpusd",
+      "usdjpy",
+      "audusd",
+      "usdcad",
+      "usdchf",
+      "nzdusd",
+      "usdkrw",
+      "usdinr",
+      "usdbrl",
+      "usdmxn",
+      "usdrub",
+      "bitcoin",
+      "soybeans",
+      "wheat",
+      "tesla",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "sensex->indices (NSE/BSE)"
+     ],
+     "indirect": [
+      "XBRUSD",
+      "USDNOK"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY",
+      "strait of hormuz: energy flow: OPEC / inventories / chokepoints -> oil, CAD, NOK"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "f640dd19566f"
+   },
+   {
+    "claim": "6 hours ago US Futures Drop on AI Safety Concerns US stock futures fell on Monday amid rising concerns over the safety of artificial intelligence development, while investors turned their attention to the Federal Reserve\u2019s policy meeting this week.",
+    "lang": "en",
+    "quantities": [
+     "futures"
+    ],
+    "direction": [
+     "drop",
+     "fell"
+    ],
+    "horizon": [
+     "hours",
+     "week"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "673ce6554938"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Jamie Gritton's MI Backtester",
+  "url": "http://www.backtest.org/",
+  "published": "2026-09-14T06:13:03+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a582cd5eb5f0b9a8f14e",
+  "host": "www.backtest.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Backtest Portfolio Asset Allocation",
+  "url": "https://www.portfoliovisualizer.com/backtest-portfolio",
+  "published": "2026-09-14T06:13:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4c7e03abf5f541921cc8",
+  "host": "www.portfoliovisualizer.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Wiley-VCH - The Evaluation and Optimization of Trading Strategies",
+  "url": "https://www.wiley-vch.de/en/areas-interest/finance-economics-law/finance-investments-13fi/trading-13fi4/the-evaluation-and-optimization-of-trading-strategies-978-0-470-12801-5",
+  "published": "2026-09-14T06:13:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en-gb",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "18dd5e7801de7f4d37d7",
+  "host": "www.wiley-vch.de",
+  "claims": [
+   {
+    "claim": "Edition March 2008 368 Pages, Hardcover Wiley & Sons Ltd Short Description Technical analysis allows traders to study market action and future movement through the use of charts to track price, volume, and open interest.",
+    "lang": "en",
+    "quantities": [
+     "volume",
+     "open interest"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "XAUUSD",
+      "EURUSD",
+      "USDJPY"
+     ],
+     "channels": [
+      "cot report: positioning: CFTC -> FX and gold"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "31bece341a87"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Kernel quantile based estimation of expected shortfall - Journal of Risk",
+  "url": "https://www.risk.net/journal-risk/2161066/kernel-quantile-based-estimation-expected-shortfall",
+  "published": "2026-09-14T06:13:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f2ec0aa5f33a9ee0a995",
+  "host": "www.risk.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The domain algoholic.eu is for sale - DropCatch.ai",
+  "url": "http://algoholic.eu/",
+  "published": "2026-09-14T06:13:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4af8e1b76c9e5b750be5",
+  "host": "algoholic.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quant Corner",
+  "url": "http://quantcorner.wordpress.com/",
+  "published": "2026-09-14T06:13:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6fb6d8789c1ac1f9ca71",
+  "host": "quantcorner.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The Black Bottle's Forex",
+  "url": "http://blackbottleforex.blogspot.com/",
+  "published": "2026-09-14T06:13:14+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2aae9204371e41092da4",
+  "host": "blackbottleforex.blogspot.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Prepare to be Wrong",
+  "url": "http://tradingcrude.blogspot.com/",
+  "published": "2026-09-14T06:13:14+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b4b7ec88fa9cc5d93518",
+  "host": "tradingcrude.blogspot.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "The forexbird",
+  "url": "http://forexbird.blogspot.com/",
+  "published": "2026-09-14T06:13:16+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XTIUSD",
+   "US500",
+   "EURUSD",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "42cf4bc5eae189eb0ad0",
+  "host": "forexbird.blogspot.com",
+  "claims": [
+   {
+    "claim": "I had to close it at my max acceptable loss, -9 ticks and then price reversed (as always happens).",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "reversed"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "US500",
+      "EURUSD",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "gold",
+      "crude",
+      "s&p",
+      "eur/usd",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b30b7baa009e"
+   },
+   {
+    "claim": "comments Labels: E-mini trading , trade analysis Friday, August 26, 2011 End of week Quick gains and the priviledge to close for Friday and week early.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "gains"
+    ],
+    "horizon": [
+     "week",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "US500",
+      "EURUSD",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "gold",
+      "crude",
+      "s&p",
+      "eur/usd",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "dd3b30ecfbf3"
+   },
+   {
+    "claim": "I traded just 2 contracts in a lazy, post-holidays session, while euro was completely flat .",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "contracts"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "US500",
+      "EURUSD",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "gold",
+      "crude",
+      "s&p",
+      "eur/usd",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "e956e64e3169"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Trading the Odds | A statistical approach to profit in the US equity markets, trading the markets like professional card counters are playing Blackjack or expert poker players are playing Poker.",
+  "url": "http://tradingtheodds.wordpress.com/",
+  "published": "2026-09-14T06:13:20+00:00",
+  "symbols": [
+   "US500",
+   "NAS100"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "gap",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bf243d0ac7748450f828",
+  "host": "tradingtheodds.wordpress.com",
+  "claims": [
+   {
+    "claim": "0% of its\u2019s intraday gains until the close on two consecutive sessions \u2018 and \u2018 the SPY posted an intraday high at least +1.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "gains"
+    ],
+    "horizon": [
+     "intraday",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "8b780b4ccc8d"
+   },
+   {
+    "claim": "25% of its\u2019s gains until the close to finally close near the low (max.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "gains"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a1f56dcc9d85"
+   },
+   {
+    "claim": "98% below Thursday\u2019s close for the supposed weakness (based on probabilities and odds concerning the latter setup mentioned above) early in the session, but recouped all of it\u2019s losses again to finally close higher +0.",
+    "lang": "en",
+    "quantities": [
+     "close",
+     "session"
+    ],
+    "direction": [
+     "higher"
+    ],
+    "horizon": [
+     "close",
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5d3f1cb24a9f"
+   },
+   {
+    "claim": "65% for the week, and although this might be nothing to write home about, it finally fulfilled the bullish \u2018 NYSE divergence \u2018 setup which was triggered on last Friday\u2019s close (5 consecutive sessions with a NYSE TRIN above 1), where it (correctly) seemed that the path of least resistance for the last week would still be be up , not down ( see my post Trading the Odds on Monday \u2013 June 8, 2009 ).",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "bullish"
+    ],
+    "horizon": [
+     "week",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "470568fc323a"
+   },
+   {
+    "claim": "____ On Friday\u2019s session market breadth was notably negative with NYSE Advancing Issues/Declining Issues at 0.",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "negative"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b26dbaa648d0"
+   },
+   {
+    "claim": "07 is remarkably undercut by almost all setups listed above, means the magnitude of change on a potential (probable) lower close regularly significantly exceeds the magnitude of change on a potential higher close (limited upside versus significant downside potential).",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "higher"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "283d51cffc84"
+   },
+   {
+    "claim": "________________________________ Bottom line: With respect to Monday\u2019s session and based on the respective probabilities and odds concerning those setups which were triggered on Friday\u2019s close, the outlook is negative , and I\u2019d be hesitant concerning any \u2018buying the dip\u2019 approach on Monday.",
+    "lang": "en",
+    "quantities": [
+     "session",
+     "close"
+    ],
+    "direction": [
+     "negative",
+     "dip"
+    ],
+    "horizon": [
+     "session",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5dc877786053"
+   },
+   {
+    "claim": "82% above Wednesday\u2019s close and again reversed course (as it was the case on Wednesday\u2019s sessions), the index closed up +0.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "reversed"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "408c6eefc210"
+   }
+  ],
+  "n_claims": 12
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "HPC-QuantLib",
+  "url": "http://hpcquantlib.wordpress.com/",
+  "published": "2026-09-14T06:13:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "correlation",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "951b328cb4ff59eb1f01",
+  "host": "hpcquantlib.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cumulative IBS Indicator | European Edges",
+  "url": "http://europeanedges.wordpress.com/2013/01/13/cumulative-ibs-indicator/",
+  "published": "2026-09-14T06:13:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "10e28dc8d8574622d311",
+  "host": "europeanedges.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Using IBS and RSI for Short-Term Mean Reversion Trading &#8211; Journeys of a Bumbling Trader",
+  "url": "http://whatheheckaboom.wordpress.com/2014/01/02/using-ibs-and-rsi-for-short-term-mean-reversion-trading/",
+  "published": "2026-09-14T06:13:23+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "mean_reversion"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b7b5eb1eb66f7e7456fb",
+  "host": "whatheheckaboom.wordpress.com",
+  "claims": [
+   {
+    "claim": "A Trader Journal looked at performance in bull and bear markets Go long at the open the next day, if IBS < 25%.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open",
+     "next day"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "04adf19f9012"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Intelligent Trading",
+  "url": "http://intelligenttradingtech.blogspot.ca/",
+  "published": "2026-09-14T06:13:24+00:00",
+  "symbols": [],
+  "timeframes": [
+   "D1",
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "gap",
+   "momentum",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "http://inside-r.org/r-doc/utils/read.csv",
+   "http://inside-r.org/r-doc/utils/write.csv"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "cd473df3ff7e4ac283d1",
+  "host": "intelligenttradingtech.blogspot.ca",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Quantifiable Edges",
+  "url": "http://quantifiableedges.blogspot.ca/",
+  "published": "2026-09-14T06:13:25+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "NAS100",
+   "US500",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "gap",
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "241e155f6dc7b8c92b11",
+  "host": "quantifiableedges.blogspot.ca",
+  "claims": [
+   {
+    "claim": "If you are a daytrader with a long position, this might be a good day to close up shop 15 minutes early\u2026 Posted by Rob Hanna at 12:02 PM No comments: Labels: Intraday , Quantitative Study , seasonality Friday, December 27, 2013 VXO Is Suggesting An Immediate Pullback - Or None At All Thursday we again saw the VIX and VXO close well below their recent mean.",
+    "lang": "en",
+    "quantities": [
+     "close",
+     "pullback",
+     "vix"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "day",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "NAS100",
+      "US500",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "nasdaq",
+      "spy",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "3f7123ea774c"
+   },
+   {
+    "claim": "View my complete profile Labels Quantitative Study (683) seasonality (75) gaps (61) VIX (48) Breadth (43) volume (43) CBI (40) Fed Study (30) IBD Follow Through Day (24) Subscriber Letter (14) reversal bar (12) Intraday (11) Using Quantifiable Edges (11) Spyx (10) Capitulation (7) System (7) NYSE Net New Highs (6) Trend Vs.",
+    "lang": "en",
+    "quantities": [
+     "vix",
+     "volume",
+     "reversal",
+     "trend"
+    ],
+    "direction": [
+     "follow"
+    ],
+    "horizon": [
+     "day",
+     "bar"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "NAS100",
+      "US500",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "nasdaq",
+      "spy",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "501411f3012b"
+   }
+  ],
+  "n_claims": 2
+ }
+]
