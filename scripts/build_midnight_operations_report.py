@@ -90,27 +90,31 @@ def _failure_clusters(verdicts: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 
 def _untestable_families(root: Path) -> dict[str, str]:
-    """Families the gauntlet MEASURED as producing zero judgeable cells, from its own report.
+    """Families the gauntlet MEASURED as producing zero judgeable cells.
 
-    Re-derived here rather than imported so this report stays runnable on a checkout without the
-    desk package importable, and data-driven for the same reason the original is: a hardcoded
-    list would keep excusing a family after it became judgeable.
+    THIS MIRRORS `miner_candidate_compiler.structurally_untestable_families()` AND MUST KEEP
+    MIRRORING IT. The rule is that family's: the last sweep produced at least five verdicts for
+    it and EVERY one was `unmeasured` -- built, and under the 60 trading days the gates need.
 
-    The rule is the compiler's: the last sweep built at least five of the family's cells and
-    judged NONE of them. Measured 2026-08-27 across carry 193/193, event_reaction 113/113,
-    calendar_month 2/2 and lvc_asia_london 3/3.
+    It is re-derived rather than imported because this report runs on checkouts where the desk
+    package is not importable, and because the compiler's copy resolves its own BASE path while
+    this one must answer for an arbitrary root (the tests pass a tmp_path). That duplication is
+    a real cost and it has already been paid once: the first version of this function keyed on
+    the CELL ID and on `passed`, while the compiler keys on the `family` FIELD and on
+    `unmeasured`. Same intent, different inputs, and it silently returned {} against a live
+    report -- which is precisely the failure L0312 records about two implementations of one
+    measurement. If the rule changes, change it in both, and the test below is what notices.
     """
     gate = _read(root / "desks" / "mt5" / "reports" / "universal_gates_external.json", {})
-    per_fam: dict[str, list[int]] = defaultdict(list)
+    per_fam: dict[str, list[int]] = {}
     for v in gate.get("verdicts", []) or []:
         if not isinstance(v, dict):
             continue
-        parts = str(v.get("cell") or "").split(".")
-        if len(parts) < 2:
-            continue
-        per_fam[parts[1]].append(1 if v.get("judged") or v.get("passed") is not None else 0)
-    return {fam: f"{len(rows)} built, none judged"
-            for fam, rows in per_fam.items() if len(rows) >= 5 and not any(rows)}
+        fam = str(v.get("family") or "?")
+        n_all, n_unm = per_fam.setdefault(fam, [0, 0])
+        per_fam[fam] = [n_all + 1, n_unm + (1 if v.get("unmeasured") else 0)]
+    return {fam: f"last sweep built {n} cell(s), judged 0 -- parameters need DEEPENING"
+            for fam, (n, unm) in per_fam.items() if n >= 5 and unm == n}
 
 
 def _conservation(root: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]:

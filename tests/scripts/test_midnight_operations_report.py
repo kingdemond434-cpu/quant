@@ -135,7 +135,12 @@ def test_a_structurally_untestable_family_is_deepening_and_not_lost(tmp_path: Pa
         # Built, never judged: `passed` absent entirely, which is what "no gate could rule" looks
         # like. The six give the family its measured record; none of them is a verdict row for
         # the docket cells, so every docket cell still arrives here with row is None.
-        "verdicts": [{"cell": f"{sym}.lvc_asia_london.p=x", "stages": {}}
+        # The compiler's rule keys on the `family` FIELD and on `unmeasured`, NOT on the cell
+        # id and not on `passed`. The first version of the mirror got that wrong and returned {}
+        # against the live report while passing a test that used its own vocabulary -- so this
+        # fixture deliberately speaks the gauntlet's.
+        "verdicts": [{"cell": f"{sym}.lvc_asia_london.p=x", "family": "lvc_asia_london",
+                      "unmeasured": True, "stages": {}}
                      for sym in ("A", "B", "C", "D", "E", "F")],
     })
     cons, _ = reporter._conservation(tmp_path)
