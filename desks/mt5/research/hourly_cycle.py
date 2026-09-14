@@ -1197,6 +1197,23 @@ def exogenous_search() -> dict:
     return _producer("exogenous_search", "research/unknown_unknowns.py")
 
 
+def stop_reverse_census() -> dict:
+    """`stop_reverse`: count the times one price level paid twice, and entries into a dislocation.
+
+    NAMED SO IT BECOMES COUNTABLE, NOT SO IT BECOMES A RULE. On 2026-09-11 a 60-point M1 wick took
+    a gold long's stop and, because the bracket's sell_stop sat at that level, opened a short at
+    the same price in the SAME SECOND -- at the low tick. Price was fully back six minutes later.
+    Two losses of ~72 EUR from one round trip that ended where it began.
+
+    There is no OCO, no cooldown and no opposite-leg cancellation in the gateway, so a wick through
+    a stop is structurally guaranteed to open the reverse at the worst tick. Three such events in
+    thirty days, net -30.20 -- but ONE of them earned +42.08, so an OCO would have cost that too.
+    Three is not a sample, and building the fix now would fit execution logic to a handful of
+    minutes (L0330). This leg counts, so that a fourth and fifth make it evidence.
+    """
+    return _producer("stop_reverse", "research/stop_reverse_census.py")
+
+
 def _recertify_canon_claimed() -> dict:
     """`recertify_canon`, but only for a window the queue says is actually uncovered."""
     q, task, why = _claim_one("recertify")
@@ -2113,6 +2130,7 @@ def main() -> None:
     rfx = _costed("residual_factors", residual_factors)
     mko = _costed("markout", markout)
     exo = _costed("exogenous_search", exogenous_search)
+    srx = _costed("stop_reverse", stop_reverse_census)
     ms = _costed("model_skill", model_skill)
     fcx = _costed("forecast_contract", forecast_contract)
     mz = _costed("model_league", model_league)
@@ -2292,6 +2310,7 @@ def main() -> None:
                     "residual_factors": rfx,
                     "markout": mko,
                     "exogenous_search": exo,
+                    "stop_reverse": srx,
                     "model_skill": ms,
                     "frontier": fr, "refresh_bars": rb, "deep_forest": df,
                     "maintain_miners": mm, "publish_survivors": ps,

@@ -98,6 +98,8 @@ LEG_LAYER: dict[str, str] = {
     "residual_factors": "prediction",
     "markout": "execution",
     "exogenous_search": "information",
+    # `stop_reverse` asks what the desk's own orders did to it at the venue -- execution.
+    "stop_reverse": "execution",
     # AND FIVE LEGS WERE STILL UNMAPPED WHEN THOSE FOUR LANDED (2026-09-14). The registry's own
     # comment records fifteen of these in 2026-09-10 and the same drift had recurred, so the test
     # this file exists to satisfy was red before this session touched it. Mapped by what each
