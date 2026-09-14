@@ -1,0 +1,655 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "https://egx.com.eg/downloads/Bulletins/330076_2.pdf",
+  "url": "https://egx.com.eg/downloads/Bulletins/330076_2.pdf",
+  "published": "2026-09-14T04:12:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4bb008b79ab0680adc25",
+  "host": "egx.com.eg",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Google News",
+  "url": "http://news.google.com/archivesearch?&as_src=-newswire+-wire+-presswire+-PR+-release+-wikipedia&q=%22Algoritms%22",
+  "published": "2026-09-14T04:12:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "http://news.google.com/_/DotsSplashUi/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "432ae885b6af52dedd54",
+  "host": "news.google.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo - Vicipedia",
+  "url": "https://lfn.wikipedia.org/w/index.php?title=Algoritmo&oldid=14493",
+  "published": "2026-09-14T04:12:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "lfn",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "689a39d9e6cc7babe8a9",
+  "host": "lfn.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Informa per \"Algoritmo\" - Vicipedia",
+  "url": "https://lfn.wikipedia.org/w/index.php?title=Algoritmo&action=info",
+  "published": "2026-09-14T04:12:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "lfn",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4ce455049c041350a213",
+  "host": "lfn.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Refere a esta paje - Vicipedia",
+  "url": "https://lfn.wikipedia.org/w/index.php?title=Spesial:CiteThisPage&page=Algoritmo&id=14493&wpFormIdentifier=titleform",
+  "published": "2026-09-14T04:12:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "lfn",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fd5d90d37d21ad629ac6",
+  "host": "lfn.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Usor es impedida - Vicipedia",
+  "url": "https://lfn.wikipedia.org/w/index.php?title=Spesial:UrlShortener&url=https%3A%2F%2Flfn.wikipedia.org%2Fwiki%2FAlgoritmo",
+  "published": "2026-09-14T04:12:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "lfn",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "660dd7bfbe2a6b52491a",
+  "host": "lfn.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo - Vicipedia",
+  "url": "https://lfn.wikipedia.org/w/index.php?title=Algoritmo&useparsoid=0",
+  "published": "2026-09-14T04:12:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "lfn",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3350ebcb6358fb930ca3",
+  "host": "lfn.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Creor de libro - Vicipedia",
+  "url": "https://lfn.wikipedia.org/w/index.php?title=Spesial:Book&bookcmd=book_creator&referer=Algoritmo",
+  "published": "2026-09-14T04:12:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "lfn",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "53dc749f6acec12fb728",
+  "host": "lfn.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmu - Wikipedia",
+  "url": "https://sc.wikipedia.org/w/index.php?title=Algoritmu&oldid=188872",
+  "published": "2026-09-14T04:12:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sc",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f5e0916f566d07098ac1",
+  "host": "sc.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Informatziones pro \"Algoritmu\" - Wikipedia",
+  "url": "https://sc.wikipedia.org/w/index.php?title=Algoritmu&action=info",
+  "published": "2026-09-14T04:12:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sc",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9e7015e196a79478dc86",
+  "host": "sc.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cite This Page - Wikipedia",
+  "url": "https://sc.wikipedia.org/w/index.php?title=Ispetziale:CiteThisPage&page=Algoritmu&id=188872&wpFormIdentifier=titleform",
+  "published": "2026-09-14T04:12:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sc",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "740d22239fca935124c2",
+  "host": "sc.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "S'impitadore est istadu bloccadu - Wikipedia",
+  "url": "https://sc.wikipedia.org/w/index.php?title=Ispetziale:UrlShortener&url=https%3A%2F%2Fsc.wikipedia.org%2Fwiki%2FAlgoritmu",
+  "published": "2026-09-14T04:12:31+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sc",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d9eeb07faa52309e8e57",
+  "host": "sc.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmu - Wikipedia",
+  "url": "https://sc.wikipedia.org/w/index.php?title=Algoritmu&useparsoid=0",
+  "published": "2026-09-14T04:12:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sc",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dfc60c358dc04ef4c795",
+  "host": "sc.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Creadore de libros - Wikipedia",
+  "url": "https://sc.wikipedia.org/w/index.php?title=Ispetziale:Book&bookcmd=book_creator&referer=Algoritmu",
+  "published": "2026-09-14T04:12:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sc",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9eb0a1b9004f2195d9b8",
+  "host": "sc.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritm sahifasining manbasini ko\u02bbrish - Vikipediya",
+  "url": "https://uz.wikipedia.org/w/index.php?title=Algoritm&action=edit",
+  "published": "2026-09-14T04:12:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "uz",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b27c3e53e89bb681d53e",
+  "host": "uz.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u201eAlgoritm\u201cga bog\u02bblangan sahifalar - Vikipediya",
+  "url": "https://uz.wikipedia.org/wiki/Maxsus:WhatLinksHere/Algoritm",
+  "published": "2026-09-14T04:12:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "uz",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "01bed39f26533116a0e2",
+  "host": "uz.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritm - Vikipediya",
+  "url": "https://uz.wikipedia.org/w/index.php?title=Algoritm&oldid=6067014",
+  "published": "2026-09-14T04:12:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "uz",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3be3203154ac93da9a2d",
+  "host": "uz.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Aktierna som g\u00e5tt b\u00e4st och s\u00e4mst f\u00f6rsta halv\u00e5ret 2026",
+  "url": "https://blogg.avanza.se/aktierna-som-gatt-bast-och-samst-forsta-halvaret-2026/",
+  "published": "2026-09-14T04:12:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "sv-SE",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "282155902588ad32343d",
+  "host": "blogg.avanza.se",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Reviews and Vendors - NexusFi",
+  "url": "https://nexusfi.com/trading-reviews-vendors/",
+  "published": "2026-09-14T04:13:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://nexusfi.com/download/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5a15b194441ea5b11167",
+  "host": "nexusfi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Platforms and Indicators - NexusFi",
+  "url": "https://nexusfi.com/platforms-indicators/",
+  "published": "2026-09-14T04:13:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://nexusfi.com/download/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "32208a4f997099e32516",
+  "host": "nexusfi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Elite Trading Journals - NexusFi",
+  "url": "https://nexusfi.com/elite-trading-journals/",
+  "published": "2026-09-14T04:13:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://nexusfi.com/download/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c4207906ca4bf652b9e3",
+  "host": "nexusfi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "2019 Dow E-Mini YM Trading Journal | NexusFi Forum",
+  "url": "https://nexusfi.com/showthread.php?t=46257",
+  "published": "2026-09-14T04:13:11+00:00",
+  "symbols": [
+   "XTIUSD",
+   "US500",
+   "US30",
+   "US2000",
+   "USDKRW",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "carry",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5ef175bbf585dae720eb",
+  "host": "nexusfi.com",
+  "claims": [
+   {
+    "claim": "End of the Week Results for our trading of YM: 1 long open position Down $1356.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "week",
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD",
+      "US500",
+      "US30",
+      "US2000",
+      "USDKRW",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "wti",
+      "s&p 500",
+      "dow",
+      "russell",
+      "won",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "XBRUSD",
+      "USDCAD",
+      "USDNOK"
+     ],
+     "channels": [
+      "hormuz: energy flow: OPEC / inventories / chokepoints -> oil, CAD, NOK"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "57d2fe16085d"
+   },
+   {
+    "claim": "Within the hour another short entry was triggered, which is still open.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "hour",
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD",
+      "US500",
+      "US30",
+      "US2000",
+      "USDKRW",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "wti",
+      "s&p 500",
+      "dow",
+      "russell",
+      "won",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "XBRUSD",
+      "USDCAD",
+      "USDNOK"
+     ],
+     "channels": [
+      "hormuz: energy flow: OPEC / inventories / chokepoints -> oil, CAD, NOK"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "2b414066e73d"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Would a node-based workflow for automated trading be useful? | NexusFi Forum",
+  "url": "https://nexusfi.com/showthread.php?t=62093",
+  "published": "2026-09-14T04:13:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "88db53f2d2cf5a581316",
+  "host": "nexusfi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "BluSky Trading - The Funded Futures Prop Firm For Serious Traders",
+  "url": "https://blusky.pro",
+  "published": "2026-09-14T04:13:16+00:00",
+  "symbols": [],
+  "timeframes": [
+   "15M",
+   "DAILY"
+  ],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "048fd6c19c253e542569",
+  "host": "blusky.pro",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "RoboForex: Truy c\u1eadp Th\u1ecb tr\u01b0\u1eddng T\u00e0i ch\u00ednh &amp; B\u1eaft \u0111\u1ea7u Giao d\u1ecbch Ngay - RoboForex",
+  "url": "https://start.roboforex.pro/vn/?a=crgt",
+  "published": "2026-09-14T04:13:32+00:00",
+  "symbols": [
+   "EURUSD",
+   "GBPUSD",
+   "US500",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "vi",
+  "endpoints": [
+   "https://start.roboforex.pro/manifest.json?v=1788266027",
+   "https://start.roboforex.pro/vn/forex-trading/terminals/download/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "f68fdc68a2eba7b837d0",
+  "host": "start.roboforex.pro",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "RoboForex O\u2018zbekiston: Moliyaviy bozorlarga kirish va savdoni hoziroq boshlang - RoboForex",
+  "url": "https://start.roboforex.pro/uz/?a=crgt",
+  "published": "2026-09-14T04:13:34+00:00",
+  "symbols": [
+   "EURUSD",
+   "GBPUSD",
+   "US500",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.55,
+  "lang": "uz",
+  "endpoints": [
+   "https://start.roboforex.pro/manifest.json?v=1788266027",
+   "https://start.roboforex.pro/uz/forex-trading/terminals/download/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "3b14a02e18dd283338d8",
+  "host": "start.roboforex.pro",
+  "claims": [],
+  "n_claims": 0
+ }
+]
