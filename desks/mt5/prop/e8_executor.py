@@ -101,7 +101,12 @@ _RESOLUTION = {
 }
 
 
-def _call_params(s: dict) -> dict:
+#: Why the last reconstruction refused, per sleeve tag -- so NO_INPUTS carries its reason instead
+#: of joining NO_SIGNAL as another silent outcome.
+_LAST_INPUT_REFUSAL: dict = {}
+
+
+def _call_params(s: dict, symbol: str = "", bars: object = None) -> dict | None:
     """The parameters a certified E8 cell is actually called with.
 
     TWENTY SLEEVES REPORTED NO_SIGNAL EVERY PASS AND THIS IS WHY (measured 2026-09-14). The E8
@@ -141,12 +146,35 @@ def _call_params(s: dict) -> dict:
     if isinstance(inner, dict):
         raw = inner
     try:
-        from mt5desk.family_inputs import strip_identity_keys
-        return dict(strip_identity_keys("", raw))
+        from mt5desk.family_inputs import resolve, strip_identity_keys
     except Exception:
         return {k: v for k, v in raw.items()
                 if k not in ("timeframe", "peer_symbol", "factor_symbols",
                              "input_symbol", "input_source")}
+    call = dict(strip_identity_keys("", raw))
+    if bars is None:
+        return call
+    # AND THE NAMED INPUTS MUST BE LOADED, NOT PASSED AS NAMES. Five of the twenty book sleeves
+    # produced ZERO signals even with their parameters restored, because a `discovered` cell whose
+    # feature is `ext_resid_EURGBP_z` needs that residual SERIES, and stripping identity keys only
+    # removes the name -- it does not fetch the thing. `family_inputs.resolve` is the same
+    # reconstruction `build_cell` and the gateway both use; a fourth copy here is the drift this
+    # desk keeps paying for.
+    #
+    # FAIL CLOSED: a cell whose inputs cannot be rebuilt returns None and the caller refuses it by
+    # NAME. Returning `call` regardless would run the family with a feature it cannot resolve and
+    # report the resulting silence as "no signal" -- exactly the defect being repaired.
+    try:
+        extra, why = resolve(str(symbol), str(s.get("family") or ""), raw, bars)
+    except Exception as exc:
+        _LAST_INPUT_REFUSAL[str(s.get("tag") or symbol)] = (
+            f"input reconstruction raised ({type(exc).__name__}: {str(exc)[:80]})")
+        return None
+    if extra is None:
+        _LAST_INPUT_REFUSAL[str(s.get("tag") or symbol)] = str(why)[:160]
+        return None
+    call.update(extra)
+    return call
 
 
 def _frame(api: Any, instrument_id: int, timeframe: str = "H1") -> Any:
@@ -318,7 +346,13 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None) -> dict
             doc["sleeves"].append(row)
             continue
         closed = _last_closed(frame)
-        params = _call_params(s)
+        params = _call_params(s, s.get("symbol") or "", closed)
+        if params is None:
+            row["status"] = "NO_INPUTS"
+            row["why"] = _LAST_INPUT_REFUSAL.get(
+                str(s.get("tag") or s.get("symbol") or ""), "inputs could not be rebuilt")
+            doc["sleeves"].append(row)
+            continue
         try:
             signals = func(closed, **params) if params else func(closed)
         except Exception as exc:
