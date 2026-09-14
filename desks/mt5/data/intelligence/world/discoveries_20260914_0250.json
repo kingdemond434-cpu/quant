@@ -1,0 +1,368 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "https://egx.com.eg/downloads/Bulletins/330076_2.pdf",
+  "url": "https://egx.com.eg/downloads/Bulletins/330076_2.pdf",
+  "published": "2026-09-14T02:49:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "553c2309c463fbd4793f",
+  "host": "egx.com.eg",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Google News",
+  "url": "http://news.google.com/archivesearch?&as_src=-newswire+-wire+-presswire+-PR+-release+-wikipedia&q=%22Algoritms%22",
+  "published": "2026-09-14T02:49:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "http://news.google.com/_/DotsSplashUi/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "989f551fc9679c160194",
+  "host": "news.google.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithm - Wikipedia",
+  "url": "https://hif.wikipedia.org/w/index.php?title=Algorithm&oldid=311727",
+  "published": "2026-09-14T02:49:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "hif",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4cfa3e238a39d9d97cba",
+  "host": "hif.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\"Algorithm\" ke khatir jaankari - Wikipedia",
+  "url": "https://hif.wikipedia.org/w/index.php?title=Algorithm&action=info",
+  "published": "2026-09-14T02:49:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "hif",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "56a51cd3892d739beff6",
+  "host": "hif.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cite This Page - Wikipedia",
+  "url": "https://hif.wikipedia.org/w/index.php?title=khaas:CiteThisPage&page=Algorithm&id=311727&wpFormIdentifier=titleform",
+  "published": "2026-09-14T02:49:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "hif",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a4d8d00c7f7a45e4daf9",
+  "host": "hif.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Sadasya ke rok dewa gais hai - Wikipedia",
+  "url": "https://hif.wikipedia.org/w/index.php?title=khaas:UrlShortener&url=https%3A%2F%2Fhif.wikipedia.org%2Fwiki%2FAlgorithm",
+  "published": "2026-09-14T02:49:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "hif",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "cb92d2caf99b9744a83a",
+  "host": "hif.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithm - Wikipedia",
+  "url": "https://hif.wikipedia.org/w/index.php?title=Algorithm&useparsoid=0",
+  "published": "2026-09-14T02:49:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "hif",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "41b31071cab39d81fc6f",
+  "host": "hif.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Book banae waala - Wikipedia",
+  "url": "https://hif.wikipedia.org/w/index.php?title=khaas:Book&bookcmd=book_creator&referer=Algorithm",
+  "published": "2026-09-14T02:49:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "hif",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0415ce9ae3a1626aa989",
+  "host": "hif.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Download as PDF - Wikipedia",
+  "url": "https://hif.wikipedia.org/w/index.php?title=khaas:DownloadAsPdf&page=Algorithm&action=show-download-screen",
+  "published": "2026-09-14T02:49:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "hif",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6fb6ad2504ae932179ed",
+  "host": "hif.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithm - Wikipedia",
+  "url": "https://hif.wikipedia.org/w/index.php?title=Algorithm&printable=yes",
+  "published": "2026-09-14T02:49:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "hif",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bdd0a4fdf708d0f1bdf4",
+  "host": "hif.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithm - Wikipedia",
+  "url": "https://hif.wikipedia.org/w/index.php?title=Algorithm&mobileaction=toggle_view_mobile",
+  "published": "2026-09-14T02:49:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "hif",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ea379cf4ea6a5f22bbd5",
+  "host": "hif.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Sadasya ke rok dewa gais hai - Wikipedia",
+  "url": "https://hif.wikipedia.org/wiki/khaas:UrlShortener?url=https%3A%2F%2Fauth.wikimedia.org%2Fhifwiki%2Fw%2Findex.php%3Ftitle%3Dkhaas%3ACreateAccount%26centralauthLoginToken%3D56b48c0c5b710b67a3ca93850019b5a1%26returnto%3DAlgorithm%26useformat%3Ddesktop%26usesul3%3D1",
+  "published": "2026-09-14T02:49:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "hif",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5aff597a8621ed037fae",
+  "host": "hif.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Category:Algorithms - Wikimedia Commons",
+  "url": "https://commons.wikimedia.org/wiki/Category:Algorithms?uselang=lmo",
+  "published": "2026-09-14T02:49:48+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [
+   "auction",
+   "carry",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "lmo",
+  "endpoints": [
+   "https://kmlexport.toolforge.org/?project=commons&amp;article=Category%3AAlgorithms"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "197dbaa5a94d9f2f8ffa",
+  "host": "commons.wikimedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Category:Algorithms - Wikimedia Commons",
+  "url": "https://commons.wikimedia.org/wiki/Category:Algorithms?uselang=ro",
+  "published": "2026-09-14T02:49:52+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [
+   "auction",
+   "carry",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "ro",
+  "endpoints": [
+   "https://kmlexport.toolforge.org/?project=commons&amp;article=Category%3AAlgorithms"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "fa2bdaa709b5cc8bd80b",
+  "host": "commons.wikimedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Category:Algorithms: Revision history - Wikimedia Commons",
+  "url": "https://commons.wikimedia.org/w/index.php?title=Category:Algorithms&action=history",
+  "published": "2026-09-14T02:50:04+00:00",
+  "symbols": [],
+  "timeframes": [
+   "MN"
+  ],
+  "patterns": [
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0845288cc92aedeb2228",
+  "host": "commons.wikimedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Pages that link to \"Category:Algorithms\" - Wikimedia Commons",
+  "url": "https://commons.wikimedia.org/wiki/Special:WhatLinksHere/Category:Algorithms",
+  "published": "2026-09-14T02:50:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "985adddd1fc5127b90e8",
+  "host": "commons.wikimedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Category:Algorithms - Wikimedia Commons",
+  "url": "https://commons.wikimedia.org/w/index.php?title=Category:Algorithms&oldid=1271899047",
+  "published": "2026-09-14T02:50:11+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [
+   "auction",
+   "carry",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://kmlexport.toolforge.org/?project=commons&amp;article=Category%3AAlgorithms"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f841ec7274f461a86670",
+  "host": "commons.wikimedia.org",
+  "claims": [],
+  "n_claims": 0
+ }
+]
