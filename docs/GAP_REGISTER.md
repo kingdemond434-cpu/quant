@@ -2040,3 +2040,86 @@ aggregate totals are not proof of native observations, exact certificates or mig
 - Separate open blockers: acquired registry and compiler outputs remain root-owned; compiler
   memory pressure and acquisition per-series persistence require their own bounded repair.
   No stopped process, reset trial history, changed forward start or new survivor is claimed.
+
+Measured postconditions for `hourly-discovery:publication`, 2026-09-14T00:59:07Z:
+
+```json
+{
+  "IMPLEMENTED": "a419d7fb8",
+  "TESTED": {"local_focused": 27, "hel8_focused": 27, "release_gates": "ALL_GREEN"},
+  "CANONICALLY_MERGED": "origin/desk-sync-clean@a419d7fb8",
+  "DEPLOYED": {"host": "ubuntu-8gb-fsn1-1", "commit": "1ebf524a6", "serving_host_commit": "94fddb8f3"},
+  "RUNTIME_VERIFIED": {
+    "producer": "scheduled quant-hourly-discovery.service, started 00:47:54Z",
+    "conversion_ledger": {"before": "2026-09-05T14:36:50Z", "after": "2026-09-14T00:58:44Z", "stages": 10, "binding_rate": 0.0},
+    "prospector": {"after": "2026-09-14T00:58:31.828718Z", "ranked_sources": 16, "published_targets": 16},
+    "consumer": "trial_allocator.target_stage(): measured_at=2026-09-14T00:58:44+00:00, aimed_correctly=true",
+    "consumer_mode": "real reader invoked read-only; full scheduled allocator run not yet observed",
+    "full_hourly_pass_finished": false
+  },
+  "conversion_publication_defect": "RUNTIME_VERIFIED",
+  "prospector_end_to_end": "OPEN_MISSING_CRAWLER_CONSUMER",
+  "new_backtests": 0,
+  "new_gate_judgments": 0,
+  "new_survivors": 0,
+  "new_native_forward_observations_verified": 0,
+  "proof": "data/cro_ai_logs/midnight_20260914_epoch210/publication-proof.json",
+  "next_action": "Finish the same hourly run's outcome check; repair acquisition registry/per-series publication and compiler bounded persistence; implement the declared prospector consumer only through the existing crawler extension. Preserve running work."
+}
+```
+
+Code hashes on hel8 match canonical: data_prospector.py
+`edca8c25b8a822034909d69c7f4dfe10db1578669f579584c9182a4fe6158a5d`,
+conversion_ledger.py `9ba0587715046d640cbafc64cbb9011ab8b3ee1e4319ae7d5c64fe800ca554a7`.
+The first host commit `c49f3212f` was empty because its SSH precommit guard restored the code;
+hash checks detected it. The existing documented `QUANT_ALLOW_SSH_PY=1` override completed the
+principal-authorized canonical deployment; no guard changed. Before snapshots and raw source
+are retained beside the proof. Local serving-host evidence is also under
+`data/cro_ai_logs/midnight_20260914_epoch150/`.
+
+Additional observed blockers, not blanket repair claims:
+- Scheduled timeout left transition_alpha PID 3846064 and anomaly_factory PID 3852364 reparented
+  to PID 1105 after the wrapper advanced. Exact repair target: process-group timeout cleanup in
+  hourly_discovery, preserving completed outputs and unrelated workers. No process killed here.
+- Public desk HTTP 200 at 00:55Z still embeds September 3 midnight evidence and September 11
+  issue evidence. Source-alias cutover remains gated on migration identity/history acceptance.
+- hel8 max-push queue/completion/handoff pointers exist but date August 20; serving-host copies
+  are missing. They are stale/missing, never current success. Tier-1 report 00:50:52Z still has
+  zero rows scouted, three DISCOVERED and no proven/in-flight candidates.
+
+Daily frontier continuation, retrieved **2026-09-14 UTC**: reverified the
+[BoE release of 11 August 2026](https://www.bankofengland.co.uk/markets/london-foreign-exchange-joint-standing-committee/results-of-the-semi-annual-fx-turnover-survey-april-2026).
+No newer release found in this bounded query; complete historical coverage remains unmeasured.
+Actually acquired its official April 2026 workbook after the browser rejected the XLSX content
+handler: ordinary HTTP GET succeeded, 142,554 bytes, SHA256
+`f94a88a099fe46900206e2e5aacffa9304d51487fdafbabadfbafbbe6024df86`, ZIP/XML integrity valid,
+18 worksheets. Dimensions: instrument, currency pair, counterparty, execution method, maturity;
+units distinguish daily average from monthly USD millions. Preserved as `boe-apr2026.xlsx`
+with `boe-acquisition.json` in both evidence directories above.
+
+Disposition: **ACQUIRED_RAW_NOT_DATA_READY**, continuation of the existing hedge-demand study,
+not a new family. The official reporting guidelines distinguish price-setting-dealer geography
+from BIS sales-office geography; blindly pooling the two would change the measured population.
+This is a falsifiable data-identity challenge, not an alpha finding. Require original publication
+vintages, sufficient semiannual history, availability timestamps, native Fusion spread/bar inputs
+and a canonical XLSX/PIT adapter before backtesting publication-lagged transition predictions.
+Retain only if OOS incremental prediction, placebo controls, unchanged gates and net marginal
+portfolio contribution justify costs. No reconstructed vintages, coarser native substitutes or
+assumed independent edge. Owner/next trigger: shared acquisition queue after the current
+compiler/publication recovery; exact source and requirements are in the acquisition record.
+
+Migration read-only follow-up at 2026-09-14T01:01Z, new Windows
+`vmi3571445`, `C:/opt/quant`, HEAD `80ece30480b043c7a46ffde9979c0c931482b712`:
+102/102 September 12 snapshot identities remain, zero changed forward starts; current snapshot
+has 228 rows. Thirteen prior entries have larger n; three have lower n: USDCAD ru_240 h6
+1->0, AUDUSD dd_12 h3 21->20, EURGBP ru_24 h3 23->20 (all same ACTIVE status and start).
+Exact keys and snapshots: serving host `midnight_20260914_epoch150/new-shadow-comparison.json`
+and `new-shadow.json`. Migration acceptance remains OPEN until original per-trade ledgers,
+revocations, frozen parameters and native identity explain these differences; counts alone are
+not newly verified evidence. No clock, trade, allocation or authority was modified.
+
+The refreshed conversion report is a **fresh computation over mixed-age source artifacts**:
+queue verdict windows end September 12, while the separate certificate artifact reports 125 rows.
+Neither that raw certificate count nor the report's zero queue-derived pass count is an independent
+validity audit. Preserve the source windows and reconcile identities; never turn publication
+recovery into a claim that the underlying research evidence is current or all gates are sound.
