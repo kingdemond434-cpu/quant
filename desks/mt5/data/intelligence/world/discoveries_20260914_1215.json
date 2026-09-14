@@ -1,0 +1,1148 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "FX\u53d6\u5f15\u306b\u304b\u304b\u308b\u624b\u6570\u6599\u3068\u306f\uff1f - \u307f\u3093\u304b\u3076\uff08\u30de\u30ac\u30b8\u30f3\uff09",
+  "url": "https://mag.minkabu.jp/fx-beginner/fx-lesson/fx-lesson-spread",
+  "published": "2026-09-14T12:13:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b93fdfc5d1f55af61b11",
+  "host": "mag.minkabu.jp",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "FX\u306e\u53d6\u5f15\u6642\u9593 - \u6642\u9593\u5e2f\u3054\u3068\u306e\u5e02\u5834\u306e\u7279\u5fb4\u3092\u62bc\u3055\u3048\u3088\u3046\uff01 - \u307f\u3093\u304b\u3076\uff08\u30de\u30ac\u30b8\u30f3\uff09",
+  "url": "https://mag.minkabu.jp/fx-beginner/fx-lesson/fx-trading-time",
+  "published": "2026-09-14T12:13:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "seasonality",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d973ceaf3cab33821524",
+  "host": "mag.minkabu.jp",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u30ec\u30d0\u30ec\u30c3\u30b8\u3092\u610f\u8b58\u3057\u3066\u53d6\u5f15\u3057\u3088\u3046 - \u307f\u3093\u304b\u3076\uff08\u30de\u30ac\u30b8\u30f3\uff09",
+  "url": "https://mag.minkabu.jp/fx-beginner/fx-lesson/fx-lesson-leverage",
+  "published": "2026-09-14T12:13:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4d380d91a54d6dbb285b",
+  "host": "mag.minkabu.jp",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\u5148\u7269\u53d6\u5f15\u521d\u5fc3\u8005[\u5165\u9580\u30b3\u30e9\u30e0\u30fb\u7528\u8a9e\u96c6] - \u307f\u3093\u304b\u3076\u5148\u7269",
+  "url": "https://fu.minkabu.jp/beginner/",
+  "published": "2026-09-14T12:13:28+00:00",
+  "symbols": [
+   "XNGUSD",
+   "JPN225"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "correlation",
+   "flow",
+   "inventory",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6ea05145ea8809d5a6ab",
+  "host": "fu.minkabu.jp",
+  "claims": [
+   {
+    "claim": "33% \u30cb\u30e5\u30fc\u30b9\u30a2\u30af\u30bb\u30b9\u30e9\u30f3\u30ad\u30f3\u30b0 \u4e00\u89a7 1 \u7d9a\u843d\u3001\u4e88\u60f3\u4ee5\u4e0a\u306e\u7c73\uff30\uff23\uff25\u4fa1\u683c\u6307\u6570\u3067\uff1d\uff2e\uff39\u91d1\u6982\u6cc1 \u5546\u54c1 08/27(\u6728) 05:32 2 \u524d\u5f15\u3051\u306e\u5e02\u5834\u4eba\u6c17\u30e9\u30f3\u30ad\u30f3\u30b0 \u2026 \u30d5\u30b8\u30af\u30e9\u3001\u30ad\u30aa\u30af\u30b7\u30a2\u3001\u6751\u7530\u88fd\u4f5c\u6240 (11:33) \u5e02\u6cc1 08/17(\u6708) 11:34 3 \u6771\u4eac\u91d1 NY\u91d1\u5148\u306e\u4e0a\u6607\u304c\u652f\u3048 \u5546\u54c1 08/17(\u6708) 10:50 4 \uff2e\uff39\u91d1\u30fb\u9280\u5e02\u6cc1\uff1d\u7d9a\u4f38\u3001\u91d1\u306f\u5b89\u5168\u8cc7\u7523\u3068\u3057\u3066\u6295\u6a5f\u7684\u306a\u8cb7\u3044\u304c\u7d9a\u304d\u5927\u5e45\u9ad8 \u5546\u54c1 08/22(\u571f) 06:45 5 \uff2e\uff39\u91d1\u30fb\u9280\u5e02\u6cc1\uff1d\u6025\u53cd\u767a\u3001\u7c73\u8ca1\u52d9\u7701\u306e\u8cb7\u3044\u5165\u308c\u30aa\u30da\u500d\u5897\u767a\u8868\u3067 \u5546\u54c1 08/20(\u6728) 06:02 \u4eca\u65e5\u306e\u5e02\u6cc1 \u6307\u6570\u540d \u73fe\u5728\u5024 \u524d\u65e5\u6bd4 \u65e5\u7d4c\u5e73\u5747 {{n_ttf.",
+    "lang": "ja",
+    "quantities": [
+     "\u91d1",
+     "\u65e5\u7d4c",
+     "\u9280"
+    ],
+    "direction": [
+     "\u8cb7\u3044",
+     "\u4e0a\u6607"
+    ],
+    "horizon": [
+     "\u65e5",
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "XNGUSD",
+      "JPN225"
+     ],
+     "mentioned": [
+      "ttf",
+      "\u65e5\u7d4c\u5e73\u5747"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "ce1a7e775b0f"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\u5148\u7269\u53d6\u5f15\u521d\u5fc3\u8005[\u5165\u9580\u30b3\u30e9\u30e0\u30fb\u7528\u8a9e\u96c6] - \u307f\u3093\u304b\u3076\u5148\u7269",
+  "url": "https://fu.minkabu.jp/beginner/?utm_source=mintame&utm_medium=sidenavi&utm_campaign=textlink",
+  "published": "2026-09-14T12:13:30+00:00",
+  "symbols": [
+   "XNGUSD",
+   "JPN225"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "correlation",
+   "flow",
+   "inventory",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3f672f9db20319184a18",
+  "host": "fu.minkabu.jp",
+  "claims": [
+   {
+    "claim": "33% \u30cb\u30e5\u30fc\u30b9\u30a2\u30af\u30bb\u30b9\u30e9\u30f3\u30ad\u30f3\u30b0 \u4e00\u89a7 1 \u7d9a\u843d\u3001\u4e88\u60f3\u4ee5\u4e0a\u306e\u7c73\uff30\uff23\uff25\u4fa1\u683c\u6307\u6570\u3067\uff1d\uff2e\uff39\u91d1\u6982\u6cc1 \u5546\u54c1 08/27(\u6728) 05:32 2 \u524d\u5f15\u3051\u306e\u5e02\u5834\u4eba\u6c17\u30e9\u30f3\u30ad\u30f3\u30b0 \u2026 \u30d5\u30b8\u30af\u30e9\u3001\u30ad\u30aa\u30af\u30b7\u30a2\u3001\u6751\u7530\u88fd\u4f5c\u6240 (11:33) \u5e02\u6cc1 08/17(\u6708) 11:34 3 \u6771\u4eac\u91d1 NY\u91d1\u5148\u306e\u4e0a\u6607\u304c\u652f\u3048 \u5546\u54c1 08/17(\u6708) 10:50 4 \uff2e\uff39\u91d1\u30fb\u9280\u5e02\u6cc1\uff1d\u7d9a\u4f38\u3001\u91d1\u306f\u5b89\u5168\u8cc7\u7523\u3068\u3057\u3066\u6295\u6a5f\u7684\u306a\u8cb7\u3044\u304c\u7d9a\u304d\u5927\u5e45\u9ad8 \u5546\u54c1 08/22(\u571f) 06:45 5 \uff2e\uff39\u91d1\u30fb\u9280\u5e02\u6cc1\uff1d\u6025\u53cd\u767a\u3001\u7c73\u8ca1\u52d9\u7701\u306e\u8cb7\u3044\u5165\u308c\u30aa\u30da\u500d\u5897\u767a\u8868\u3067 \u5546\u54c1 08/20(\u6728) 06:02 \u4eca\u65e5\u306e\u5e02\u6cc1 \u6307\u6570\u540d \u73fe\u5728\u5024 \u524d\u65e5\u6bd4 \u65e5\u7d4c\u5e73\u5747 {{n_ttf.",
+    "lang": "ja",
+    "quantities": [
+     "\u91d1",
+     "\u65e5\u7d4c",
+     "\u9280"
+    ],
+    "direction": [
+     "\u8cb7\u3044",
+     "\u4e0a\u6607"
+    ],
+    "horizon": [
+     "\u65e5",
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "XNGUSD",
+      "JPN225"
+     ],
+     "mentioned": [
+      "ttf",
+      "\u65e5\u7d4c\u5e73\u5747"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "ce1a7e775b0f"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Seventeen Trade Methods That I Don&#8217;t Really Understand &#8211; The Financial Hacker",
+  "url": "http://www.financial-hacker.com/seventeen-popular-trade-strategies-that-i-dont-really-understand/",
+  "published": "2026-09-14T12:13:34+00:00",
+  "symbols": [
+   "US500",
+   "EURUSD",
+   "USDKRW",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "positioning",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [
+   "https://financial-hacker.com/hackerscripts.zip",
+   "https://financial-hacker.com/hacking3.zip",
+   "https://financial-hacker.com/scripts2025.zip",
+   "https://financial-hacker.com/scripts2024.zip",
+   "https://financial-hacker.com/scripts2023.zip",
+   "https://financial-hacker.com/scripts2022.zip",
+   "https://financial-hacker.com/scripts2021.zip",
+   "https://financial-hacker.com/scripts2020.zip",
+   "https://financial-hacker.com/scripts2018.zip",
+   "https://financial-hacker.com/scripts2017.zip",
+   "https://financial-hacker.com/scripts2016.zip",
+   "https://financial-hacker.com/scripts2015.zip",
+   "https://financial-hacker.com/tag/api/"
+  ],
+  "n_endpoints": 13,
+  "vault_sha": "c7e76745504a513ad78e",
+  "host": "www.financial-hacker.com",
+  "claims": [
+   {
+    "claim": "The move will then increase the balance by x pips and reduce the open trade value by about n/2 * x pips, causing an overall equity drawdown of (n/2-1) * x pips.",
+    "lang": "en",
+    "quantities": [
+     "open",
+     "drawdown"
+    ],
+    "direction": [
+     "increase"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURUSD",
+      "USDKRW",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "s&p500",
+      "eur/usd",
+      "won",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "c78a7b997a92"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Build Better Strategies! Part 2: Model-Based Systems &#8211; The Financial Hacker",
+  "url": "http://www.financial-hacker.com/build-better-strategies-part-2-model-based-systems/",
+  "published": "2026-09-14T12:13:36+00:00",
+  "symbols": [
+   "US500",
+   "EURUSD",
+   "USDDKK"
+  ],
+  "timeframes": [
+   "DAILY",
+   "H1",
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "breakout",
+   "correlation",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "night_session",
+   "policy",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [
+   "https://financial-hacker.com/hacking4.zip",
+   "https://financial-hacker.com/hacking3.zip",
+   "https://financial-hacker.com/scripts2026.zip",
+   "https://financial-hacker.com/scripts2025.zip",
+   "https://financial-hacker.com/scripts2024.zip",
+   "https://financial-hacker.com/scripts2023.zip",
+   "https://financial-hacker.com/scripts2022.zip",
+   "https://financial-hacker.com/scripts2021.zip",
+   "https://financial-hacker.com/scripts2020.zip",
+   "https://financial-hacker.com/scripts2018.zip",
+   "https://financial-hacker.com/scripts2017.zip",
+   "https://financial-hacker.com/scripts2016.zip",
+   "https://financial-hacker.com/scripts2015.zip",
+   "https://financial-hacker.com/tag/api/"
+  ],
+  "n_endpoints": 14,
+  "vault_sha": "f7605fdfff469e4d7aea",
+  "host": "www.financial-hacker.com",
+  "claims": [
+   {
+    "claim": "A model: [pmath size=16]y_t ~=~ y_{t-1} ~-~ 1/{1+lambda}(y_{t-1}- hat{y}) ~+~ epsilon[/pmath] [pmath size=16]y_t[/pmath] = price at bar t [pmath size=16]hat{y}[/pmath] = fair price [pmath size=16]lambda[/pmath] = half-life factor [pmath size=16]epsilon[/pmath] = some random noise term The higher the half-life factor, the weaker is the mean reversion.",
+    "lang": "en",
+    "quantities": [
+     "factor",
+     "mean reversion"
+    ],
+    "direction": [
+     "higher"
+    ],
+    "horizon": [
+     "bar"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURUSD",
+      "USDDKK"
+     ],
+     "mentioned": [
+      "s&p500",
+      "eur/usd",
+      "eur/dkk"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "478280b14dcb"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The Trend Experiment &#8211; The Financial Hacker",
+  "url": "http://www.financial-hacker.com/trend-and-exploiting-it/",
+  "published": "2026-09-14T12:13:38+00:00",
+  "symbols": [],
+  "timeframes": [
+   "H1",
+   "H4",
+   "M15",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://financial-hacker.com/hackerscripts.zip",
+   "https://financial-hacker.com/hacking3.zip",
+   "https://financial-hacker.com/scripts2024.zip",
+   "https://financial-hacker.com/scripts2023.zip",
+   "https://financial-hacker.com/scripts2022.zip",
+   "https://financial-hacker.com/scripts2021.zip",
+   "https://financial-hacker.com/scripts2020.zip",
+   "https://financial-hacker.com/scripts2018.zip",
+   "https://financial-hacker.com/scripts2017.zip",
+   "https://financial-hacker.com/scripts2016.zip",
+   "https://financial-hacker.com/scripts2015.zip",
+   "https://financial-hacker.com/tag/api/"
+  ],
+  "n_endpoints": 12,
+  "vault_sha": "0bc578119f27e39b75cf",
+  "host": "www.financial-hacker.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Build Better Strategies! Part 3: The Development Process &#8211; The Financial Hacker",
+  "url": "http://www.financial-hacker.com/build-better-strategies-part-3-the-development-process/",
+  "published": "2026-09-14T12:13:42+00:00",
+  "symbols": [
+   "EURUSD",
+   "XAGUSD",
+   "US500",
+   "USDKRW",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "1H",
+   "D1",
+   "DAILY",
+   "INTRADAY",
+   "M1"
+  ],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [
+   "https://financial-hacker.com/hacking4.zip",
+   "https://financial-hacker.com/hacking3.zip",
+   "https://financial-hacker.com/scripts2026.zip",
+   "https://financial-hacker.com/scripts2025.zip",
+   "https://financial-hacker.com/scripts2024.zip",
+   "https://financial-hacker.com/scripts2023.zip",
+   "https://financial-hacker.com/scripts2022.zip",
+   "https://financial-hacker.com/scripts2021.zip",
+   "https://financial-hacker.com/scripts2020.zip",
+   "https://financial-hacker.com/scripts2018.zip",
+   "https://financial-hacker.com/scripts2017.zip",
+   "https://financial-hacker.com/scripts2016.zip",
+   "https://financial-hacker.com/scripts2015.zip",
+   "https://financial-hacker.com/tag/api/"
+  ],
+  "n_endpoints": 14,
+  "vault_sha": "c29c490f36ca8fb3c645",
+  "host": "www.financial-hacker.com",
+  "claims": [
+   {
+    "claim": "The test time should be long enough for trades to properly open and close, and small enough for the parameters to stay valid.",
+    "lang": "en",
+    "quantities": [
+     "open",
+     "close"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAGUSD",
+      "US500",
+      "EURUSD",
+      "USDKRW",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "xagusd",
+      "spy",
+      "eur/usd",
+      "won",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "58690e8b5607"
+   },
+   {
+    "claim": "Get the indicator working with a test system after a long coding session.",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAGUSD",
+      "US500",
+      "EURUSD",
+      "USDKRW",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "xagusd",
+      "spy",
+      "eur/usd",
+      "won",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "d4770c7c5c37"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "DealBook - The New York Times",
+  "url": "http://dealbook.blogs.nytimes.com/2010/10/25/sorkin-so-what-is-insider-trading/?hp",
+  "published": "2026-09-14T12:13:47+00:00",
+  "symbols": [
+   "XTIUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d7dbe274aae584a048fc",
+  "host": "dealbook.blogs.nytimes.com",
+  "claims": [
+   {
+    "claim": "By Gregory Schmidt Oil Prices Surge as Stocks and Bonds Wobble Crude oil hit its highest levels in months, bond yields continued to rise and stocks fell for a fourth consecutive session as investors worried about energy supplies and inflation.",
+    "lang": "en",
+    "quantities": [
+     "stocks",
+     "session"
+    ],
+    "direction": [
+     "surge",
+     "rise"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD"
+     ],
+     "mentioned": [
+      "crude"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "b1e6d4903e3b"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u682a\u306e\u624b\u6570\u6599\u6bd4\u8f03\u30e9\u30f3\u30ad\u30f3\u30b0 - \u30cd\u30c3\u30c8\u8a3c\u5238\u6bd4\u8f03 | \u307f\u3093\u304b\u3076 (\u307f\u3093\u306a\u306e\u682a\u5f0f)",
+  "url": "https://minkabu.jp/hikaku/fee.html",
+  "published": "2026-09-14T12:13:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "71244d89c57fdb249ebe",
+  "host": "minkabu.jp",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\u30cd\u30c3\u30c8\u8a3c\u5238\u4f1a\u793e\u306e\u30c8\u30ec\u30fc\u30c9\u30c4\u30fc\u30eb\u3092\u30e9\u30f3\u30ad\u30f3\u30b0 - \u30cd\u30c3\u30c8\u8a3c\u5238\u6bd4\u8f03 | \u307f\u3093\u304b\u3076 (\u307f\u3093\u306a\u306e\u682a\u5f0f)",
+  "url": "https://minkabu.jp/hikaku/tool.html",
+  "published": "2026-09-14T12:14:00+00:00",
+  "symbols": [
+   "US30",
+   "XCUUSD",
+   "XTIUSD",
+   "HK50",
+   "NAS100",
+   "US500",
+   "GER40",
+   "JPN225",
+   "UK100",
+   "FRA40",
+   "AUS200"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a59ecb9f71b11131865b",
+  "host": "minkabu.jp",
+  "claims": [
+   {
+    "claim": "\u30d5\u30a9\u30f3\u30c8\u306e\u5927\u304d\u3055\u5909\u66f4 3\u6bb5\u968e\u306b\u5909\u66f4\u53ef\u80fd(\u5c0f\u30fb\u4e2d\u30fb\u5927) \u305d\u306e\u4ed6\u7279\u5fb4[1] \u8cb7\u3044\u3068\u58f2\u308a\u306e\u5f37\u3055\u304c\u5206\u304b\u308b\u300c\u682a\u5f0f\u540c\u4e00\u6c17\u914d\u7d04\u5b9a\u60c5\u5831\u300d\u3068\u5f53\u65e5\u306e\u8cb7\u3044\u5727\u529b\u304c\u308f\u304b\u308b\u300c\u682a\u4fa1\u5f37\u5ea6\u5206\u6790\u300d\u304c\u4fbf\u5229 \u305d\u306e\u4ed6\u7279\u5fb4[2] \u30d5\u30eb\u677f\u306e\u6a19\u6e96\u5b9f\u88c5 \u305d\u306e\u4ed6\u7279\u5fb4[3] \u74b0\u5883 \u30c0\u30a6\u30f3\u30ed\u30fc\u30c9\u578b \u30a2\u30d7\u30ea\u30b1\u30fc\u30b7\u30e7\u30f3 \u5bfe\u8c61OS/\u30d6\u30e9\u30a6\u30b6 \u3010OS\u3011 : Windows 10 , 11 \u3010\u30e1\u30e2\u30ea\u3011 512MB\u4ee5\u4e0a \u5229\u7528\u6599\u30fb\u6761\u4ef6 \u7121\u6599 \u25b6 \u60c5\u5831\u5207\u308a\u66ff\u3048 \u30d5\u30eb\u677f\u60c5\u5831\u642d\u8f09\u306e\u6ce8\u6587\u7279\u5316\u30c4\u30fc\u30eb\u300c\u30b9\u30fc\u30d1\u30fc\u306f\u3061\u3085\u3046\u541b\u300d \u30d5\u30eb\u677f\u60c5\u5831\u304c\u6a19\u6e96\u5b9f\u88c5\u3055\u308c\u3066\u3044\u308b\u300c\u30b9\u30fc\u30d1\u30fc\u306f\u3063\u3061\u3085\u3046\u541b\u300d\u306f\u57fa\u672c\u6a5f\u80fd\u3082\u3082\u3061\u308d\u3093\u3067\u3059\u304c, \u300c\u682a\u4fa1\u5f37\u5ea6\u5206\u6790\u300d\u3084\u300c\u682a\u5f0f\u540c\u4e00\u6c17\u914d\u7d04\u5b9a\u60c5\u5831\u300d\u306a\u3069\u72ec\u81ea\u306e\u30c4\u30fc\u30eb\u3068\u3057\u3066\u306e\u9b45\u529b\u3082\u517c\u306d\u5099\u3048\u3066\u3044\u307e\u3059\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u677f",
+     "\u6c17\u914d",
+     "\u30c0\u30a6"
+    ],
+    "direction": [
+     "\u8cb7\u3044",
+     "\u58f2\u308a"
+    ],
+    "horizon": [
+     "\u5206",
+     "\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "US30"
+     ],
+     "mentioned": [
+      "\u30c0\u30a6"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "8e622307c006"
+   },
+   {
+    "claim": "\u8cb7\u3044\u3068\u58f2\u308a\u306e\u5f37\u3055\u304c\u5206\u304b\u308b\u300c\u682a\u5f0f\u540c\u4e00\u6c17\u914d\u7d04\u5b9a\u60c5\u5831\u300d\u3068\u5f53\u65e5\u306e\u8cb7\u3044\u5727\u529b\u304c\u308f\u304b\u308b\u300c\u682a\u4fa1\u5f37\u5ea6\u5206\u6790\u300d\u304c\u4fbf\u5229 \u5404\u7a2e\u60c5\u5831\u753b\u9762\u304b\u3089\u30af\u30ea\u30c3\u30af\u3057\u305f\u6307\u5024\u3067\u767a\u6ce8\u753b\u9762\u304c\u958b\u304d\u307e\u3059\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u6c17\u914d"
+    ],
+    "direction": [
+     "\u8cb7\u3044",
+     "\u58f2\u308a"
+    ],
+    "horizon": [
+     "\u5206",
+     "\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "XCUUSD",
+      "XTIUSD",
+      "HK50",
+      "NAS100",
+      "US500",
+      "US30",
+      "GER40",
+      "JPN225",
+      "UK100",
+      "FRA40",
+      "AUS200"
+     ],
+     "mentioned": [
+      "\u9285",
+      "wti",
+      "\u30cf\u30f3\u30bb\u30f3",
+      "nasdaq",
+      "s&p500",
+      "\u30c0\u30a6",
+      "dax",
+      "\u65e5\u7d4c225",
+      "ftse",
+      "cac40",
+      "s&p/asx",
+      "china a50",
+      "topix",
+      "nifty"
+     ],
+     "transfer_only": [
+      "china a50->indices (China A-share)",
+      "topix->indices (TSE)",
+      "nifty->indices (NSE/BSE)"
+     ],
+     "indirect": [
+      "USDJPY"
+     ],
+     "channels": [
+      "\u6295\u4fe1: flow: Japanese outbound investment -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "679b3d7e7d9d"
+   },
+   {
+    "claim": "\u697d\u5929RSS\u306b\u3088\u308b, \u682a\u4fa1\u30c7\u30fc\u30bf\u3092EXCEL\u3067\u306e\u72ec\u81ea\u7ba1\u7406 \u65b0\u9ad8\u5024/\u5b89\u5024\u66f4\u65b0\u9298\u67c4\u3084\u30b9\u30c8\u30c3\u30d7\u9ad8/\u5b89\u66f4\u65b0\u9298\u67c4\u304c\u30ea\u30a2\u30eb\u30bf\u30a4\u30e0\u81ea\u52d5\u66f4\u65b0\u3067\u8868\u793a \u65b0\u9ad8\u5024/\u5b89\u5024\u66f4\u65b0\u9298\u67c4\u3084\u30b9\u30c8\u30c3\u30d7\u9ad8/\u5b89\u66f4\u65b0\u9298\u67c4, \u677e\u4e95\u8a3c\u5238\u30aa\u30ea\u30b8\u30ca\u30eb\u306e\u30c7\u30a4\u30c8\u30ec\u9069\u6027\u30e9\u30f3\u30ad\u30f3\u30b0\u9298\u67c4\u304c\u30ea\u30a2\u30eb\u30bf\u30a4\u30e0\u81ea\u52d5\u66f4\u65b0\u3067\u8868\u793a \u4e3b\u306b\u7dca\u6025\u6642\u306e\u30ea\u30b9\u30af\u56de\u907f\u7528\u3068\u3057\u3066\u5168\u9298\u67c4\u306e\u6210\u884c\u6c7a\u6e08\u6a5f\u80fd\u3092\u642d\u8f09 \u30d5\u30eb\u677f\u306e\u6a19\u6e96\u5b9f\u88c5 \u65b0\u9ad8\u5024/\u5b89\u5024\u66f4\u65b0\u9298\u67c4\u3084\u30b9\u30c8\u30c3\u30d7\u9ad8/\u5b89\u66f4\u65b0\u9298\u67c4\u304c\u30ea\u30a2\u30eb\u30bf\u30a4\u30e0\u81ea\u52d5\u66f4\u65b0\u3067\u8868\u793a \u767b\u9332\u3057\u305f\u9298\u67c4\u30ea\u30b9\u30c8\u306e\u30c1\u30e3\u30fc\u30c8\u3092\u307e\u3068\u3081\u3066\u8868\u793a\u53ef\u80fd \u5229\u98df\u3044\u30fb\u640d\u5207\u308a\u6642\u306e\u5909\u52d5\u30a2\u30e9\u30fc\u30c8\u8a2d\u5b9a\u304c\u53ef\u80fd \u305d\u306e\u4ed6\u7279\u5fb4[3] \u59cb\u5024\u304c\u524d\u65e5\u7d42\u5024\u3088\u308a\u30823%\u4ee5\u4e0a\u9ad8\u3044, \u307e\u305f\u306f\u5b89\u3044\u5834\u5408\u306b\u300cG\u300d\u30de\u30fc\u30af\u3092\u8868\u793a\u3059\u308b\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u677f",
+     "\u9ad8\u5024",
+     "\u5b89\u5024"
+    ],
+    "direction": [
+     "\u640d\u5207\u308a",
+     "\u6c7a\u6e08"
+    ],
+    "horizon": [
+     "\u65e5",
+     "\u30c7\u30a4\u30c8\u30ec"
+    ],
+    "instruments": {
+     "analogues": [
+      "XCUUSD",
+      "XTIUSD",
+      "HK50",
+      "NAS100",
+      "US500",
+      "US30",
+      "GER40",
+      "JPN225",
+      "UK100",
+      "FRA40",
+      "AUS200"
+     ],
+     "mentioned": [
+      "\u9285",
+      "wti",
+      "\u30cf\u30f3\u30bb\u30f3",
+      "nasdaq",
+      "s&p500",
+      "\u30c0\u30a6",
+      "dax",
+      "\u65e5\u7d4c225",
+      "ftse",
+      "cac40",
+      "s&p/asx",
+      "china a50",
+      "topix",
+      "nifty"
+     ],
+     "transfer_only": [
+      "china a50->indices (China A-share)",
+      "topix->indices (TSE)",
+      "nifty->indices (NSE/BSE)"
+     ],
+     "indirect": [
+      "USDJPY"
+     ],
+     "channels": [
+      "\u6295\u4fe1: flow: Japanese outbound investment -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "45173a228d33"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\u4fe1\u7528\u53d6\u5f15\u53e3\u5ea7\u306e\u304a\u3059\u3059\u3081\u30e9\u30f3\u30ad\u30f3\u30b0 - \u30cd\u30c3\u30c8\u8a3c\u5238\u6bd4\u8f03 | \u307f\u3093\u304b\u3076 (\u307f\u3093\u306a\u306e\u682a\u5f0f)",
+  "url": "https://minkabu.jp/hikaku/credit.html",
+  "published": "2026-09-14T12:14:05+00:00",
+  "symbols": [
+   "US30"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "beb1b52cc7e94290bd23",
+  "host": "minkabu.jp",
+  "claims": [
+   {
+    "claim": "\u3055\u3089\u306b\u65e5\u8a08\u308a\u306e\u8cb7\u3044\u65b9\u91d1\u5229\u30fb\u8cb8\u682a\u6599\u304c\u7d04\u5b9a\u4ee3\u91d1\u306b\u95a2\u308f\u3089\u305a0%\uff01",
+    "lang": "ja",
+    "quantities": [
+     "\u91d1"
+    ],
+    "direction": [
+     "\u8cb7\u3044"
+    ],
+    "horizon": [
+     "\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "US30"
+     ],
+     "mentioned": [
+      "\u30c0\u30a6"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDJPY"
+     ],
+     "channels": [
+      "\u6295\u4fe1: flow: Japanese outbound investment -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "34c6bc703152"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Build Better Strategies! &#8211; The Financial Hacker",
+  "url": "http://www.financial-hacker.com/build-better-strategies/",
+  "published": "2026-09-14T12:14:13+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "flow",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://financial-hacker.com/hackerscripts.zip",
+   "https://financial-hacker.com/hacking3.zip",
+   "https://financial-hacker.com/scripts2024.zip",
+   "https://financial-hacker.com/scripts2023.zip",
+   "https://financial-hacker.com/scripts2022.zip",
+   "https://financial-hacker.com/scripts2021.zip",
+   "https://financial-hacker.com/scripts2020.zip",
+   "https://financial-hacker.com/scripts2018.zip",
+   "https://financial-hacker.com/scripts2017.zip",
+   "https://financial-hacker.com/scripts2016.zip",
+   "https://financial-hacker.com/scripts2015.zip",
+   "https://financial-hacker.com/tag/api/"
+  ],
+  "n_endpoints": 12,
+  "vault_sha": "5738f9e6eeeca6f1e60c",
+  "host": "www.financial-hacker.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Das B\u00f6rsenhackerbuch: Finanziell unabh\u00e4ngig durch algorithmische Handelssysteme : Lotter, Johann Christian: Amazon.de: B\u00fccher",
+  "url": "http://www.amazon.de/Das-B%C3%B6rsenhackerbuch-Finanziell-algorithmische-Handelssysteme/dp/1530310784",
+  "published": "2026-09-14T12:14:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory"
+  ],
+  "confidence": 0.35,
+  "lang": "de-de",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1a4fc83132d32b8d5544",
+  "host": "www.amazon.de",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Better Strategies 4: Machine Learning &#8211; The Financial Hacker",
+  "url": "http://www.financial-hacker.com/build-better-strategies-part-4-machine-learning/",
+  "published": "2026-09-14T12:14:20+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "M1"
+  ],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "carry",
+   "correlation",
+   "flow",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://financial-hacker.com/hackerscripts.zip",
+   "https://financial-hacker.com/hacking3.zip",
+   "https://financial-hacker.com/scripts2024.zip",
+   "https://financial-hacker.com/scripts2023.zip",
+   "https://financial-hacker.com/scripts2022.zip",
+   "https://financial-hacker.com/scripts2021.zip",
+   "https://financial-hacker.com/scripts2020.zip",
+   "https://financial-hacker.com/scripts2018.zip",
+   "https://financial-hacker.com/scripts2017.zip",
+   "https://financial-hacker.com/scripts2016.zip",
+   "https://financial-hacker.com/scripts2015.zip",
+   "https://financial-hacker.com/tag/api/"
+  ],
+  "n_endpoints": 12,
+  "vault_sha": "2ef412eed068a6881add",
+  "host": "www.financial-hacker.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Aktier, Fonder, Swingtrading &amp; Daytrading \u2013 Strategier och Teknisk Analys | Samuelssons Rapport",
+  "url": "http://samuelssonsrapport.se/trend-indicators/",
+  "published": "2026-09-14T12:14:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "95237b4bb3c27f88b2f9",
+  "host": "samuelssonsrapport.se",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The MVCI (Whatever That Means) Indicator | Jay On The Markets",
+  "url": "http://tinyurl.com/pjcw6z6",
+  "published": "2026-09-14T12:14:40+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "45fd7ce570e0b6cbd042",
+  "host": "tinyurl.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "http://www.stellartradingsystems.com",
+  "url": "http://www.stellartradingsystems.com",
+  "published": "2026-09-14T12:14:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b0473829036830d869ee",
+  "host": "www.stellartradingsystems.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u9999\u6e2f\u4ea4\u6613\u6240\u96c6\u5718",
+  "url": "http://www.hkexgroup.com/?sc_lang=zh-HK",
+  "published": "2026-09-14T12:14:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "zh-HK",
+  "endpoints": [
+   "https://www.hkexgroup.com/-/media/HKEX-Group-Site/Ir/Monthly-market-highlights/HKEX-HK-market-monthly-highlight-statistics-(Updated-to-Aug-2026).xlsx",
+   "https://www.hkexgroup.com/Corporate-Governance/Download-List?sc_lang=zh-HK"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "36aa95410316c82cc2e1",
+  "host": "www.hkexgroup.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Praxisnah traden: von der Idee bis zur Order | stock3",
+  "url": "https://as.stock3.com/redi?sid=403784&kid=8714963&bid=26491335",
+  "published": "2026-09-14T12:14:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "de",
+  "endpoints": [
+   "https://as.stock3.com/site.webmanifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c9055a4faf5cf37c207e",
+  "host": "as.stock3.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The Market Is Never Going To Close - TrendLabs",
+  "url": "https://links.mb.trendlabs.com/s/c/zRUOy7BtCpt2zhRDWZGzqBNQ4HHqO9dvYddQvgUtach849or_5SEIGDuIxMg3nGMkqRaVvlFRf68qJx1hn_nKA-mbciEqOLTMxmdx8cixYwchIjVkRpNkh3cfRc_2-J_9GNyhHqQr7lS--u3b7f7LOCojKYgc_pmDSzZxpu2DSow5Ul3-JSUgsu5jTBFrhTrnaoqO4T_VHd3ap9LMD5CagN3uqSeLNMYacQEdX5iGjbre2Zs44T0ETWotzjM5Je8yfs93NHxwZjZyNy0JoaCop0D3CLrH5aS1mjtfKh7XBSgPKl34TxCETo_kr9QIxd26u7qwuJx1jG5AR2DOT8Obi-SIzNOg1dTMChXK_FkA7UxWO6YbJBWVeoJAVeWzvPY_ML-Z_1CQJnMqsDKyWAWA8A5zJz_ElpLQPh5A0k9VuIxp58j_FMKPYM-jpoNN8CppGTlDvZQe_9N78DMYGregPgXCGYErDOLWUvXrt2KFITKuDzYxPE5HDg8Ex90An3hvcjxIuQvAmz3WuLkjNy9CldPuDBZpdQWxpYukmUNMrB7vf0bvFXA5YPHk9NgzL8wWdeOFzZfO1381d7rfUF4vvspTPJH3MGZ5Bmxok8kds7jTRhEjmIJePGp8Z2-juI1Xl3-ZUdHgBl6GNj_BVqPb1gxOynCMAyYyzb8lv3V1hmNm0jpq3k-8EKGRcspiZq87djrtakb5pgxAB409rnAtGXv0VN-DS7MWI1J38UsceBSu6s3yFsJf7gmQMj9iwi7z-rXBCY/ffI7bNG_jkmEHu8A48vyQC_d-EytEDeX/24",
+  "published": "2026-09-14T12:14:59+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "834984998c0c91ee8598",
+  "host": "links.mb.trendlabs.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Conclus\u00f5es do Conselho de Administra\u00e7\u00e3o Sobre a Execu\u00e7\u00e3o da Estrat\u00e9gia da CONAB \u2014 Companhia Nacional de Abastecimento",
+  "url": "https://www.gov.br/conab/pt-br/acesso-a-informacao/institucional/gestao-estrategica/conclusoes-do-consad-estrategia",
+  "published": "2026-09-14T12:15:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-br",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "892211254f3fddfe8b3a",
+  "host": "www.gov.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantitativo F\u00edsico de Pessoal \u2014 Companhia Nacional de Abastecimento",
+  "url": "https://www.gov.br/conab/pt-br/acesso-a-informacao/empregados-publicos/gestao-de-pessoas/quantitativo-fisico-de-pessoal",
+  "published": "2026-09-14T12:15:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-br",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9b9b7f7291e05fe8cfdf",
+  "host": "www.gov.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Solicitar renegocia\u00e7\u00e3o de d\u00edvidas - Fam\u00edlias",
+  "url": "https://www.gov.br/pt-br/servicos/solicitar-renegociacao-de-dividas-familias?origem=destaque_inst",
+  "published": "2026-09-14T12:15:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-br",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "41dfa3ce1079e38a4c90",
+  "host": "www.gov.br",
+  "claims": [],
+  "n_claims": 0
+ }
+]
