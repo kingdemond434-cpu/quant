@@ -145,6 +145,36 @@ def session_params() -> dict[str, list[str]]:
     return out
 
 
+def _flat_params(spec: dict[str, Any]) -> dict[str, Any]:
+    """The parent's parameters FLAT, because `build_cell` takes them flat and nothing said so.
+
+    EVERY VARIANT THIS GENERATOR HAS EVER EMITTED WAS UNBUILDABLE (measured 2026-09-14). A
+    certificate's `shadow_spec` carries the docket envelope -- `{"condition": null, "params":
+    {...}}` -- and copying it through produced variants whose params read:
+
+        {"condition": null, "params": {"rr": 1.5, "wait_bars": 12}, "range_start": 19}
+
+    `build_cell` is then handed `condition=` and `params=` instead of `rr=` and `wait_bars=`, and
+    refuses. The gauntlet recorded all 1,090 of them as NOT_RUN_BUILD_FAILED, so 996
+    session_range_breakout variants, 63 overnight_gap_decay, 26 spread_state and 5 carry sat on
+    the docket for days without one gate ever running on them. They did not fail -- they were
+    never asked. Unwrapped, the same cells build and carry ~3,600 signals each.
+
+    This is the SAME envelope fault `e8_executor._call_params` was carrying, in a different
+    producer, found the same afternoon. The shape is worth recognising: a docket row and a family
+    signature disagree about one level of nesting, and the disagreement presents as a refusal that
+    nothing reads.
+
+    Unwrapped by SHAPE, not by family, so a producer writing flat params keeps working.
+    """
+    out = dict(spec or {})
+    inner = out.pop("params", None)
+    out.pop("condition", None)
+    if isinstance(inner, dict):
+        out.update(inner)
+    return out
+
+
 def _charts_for(symbol: str) -> list[str]:
     return [c for c in _CHARTS if (UNIVERSE / f"{symbol}_{c}.parquet").exists()]
 
@@ -192,8 +222,9 @@ def expand() -> dict[str, Any]:
         fam = str(spec.get("family") or "")
         if not sym or not fam:
             continue
-        base = {k: v for k, v in spec.items()
-                if k not in ("symbol", "family", "selector", "is_universe", "hunt")}
+        base = _flat_params({k: v for k, v in spec.items()
+                             if k not in ("symbol", "family", "selector",
+                                          "is_universe", "hunt")})
         # THE CROSS-PRODUCT, not two separate lists. An M15 breakout at 13:00 is a different bet
         # from an H1 breakout at 13:00 AND from an M15 breakout at 07:00; emitting hours and
         # charts as independent one-dimensional variations asks neither question. A mechanism
