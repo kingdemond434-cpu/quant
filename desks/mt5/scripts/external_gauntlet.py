@@ -2771,6 +2771,22 @@ def main():
     # because they are work not yet done; stamping those would drop them out of the new-first
     # queue without anyone having looked at them, which is the exact shape of a cell that
     # silently stops being tested.
+    # THE VERDICT IS MADE DURABLE BEFORE THE CELL IS CALLED JUDGED, and the order used to be the
+    # other way round. `_save_seen_cells` stamped here while `_append_gate_ledger` ran 33 lines
+    # later inside a `_safe(...)`, so a sweep that died, was killed by the memory guard, or simply
+    # raised between the two left cells marked JUDGED with no verdict anywhere -- which is exactly
+    # what the conservation ledger calls LOST.
+    #
+    # MEASURED 2026-09-14: 10 lost cells, every one `discovered`, and all ten carrying the SAME
+    # seen-stamp `2026-09-12T03:19:08+00:00`. One interrupted sweep, one instant, ten cells that
+    # can never be re-judged (they are no longer new) and can never be accounted for (they hold no
+    # verdict). `lost` is the desk's only alarm for a dropped record, and this ordering was
+    # manufacturing the very thing it watches for.
+    #
+    # Stamping AFTER means the worst case is a cell judged twice, which costs one rotation slot.
+    # Stamping BEFORE meant the worst case was a cell lost forever. Those are not symmetric.
+    _gate_ledger_result = _safe(lambda: _append_gate_ledger(result.get("verdicts") or []),
+                                "gate_ledger")
     _save_seen_cells(_seen, {str(v.get("cell") or "")
                              for v in (result.get("verdicts") or [])
                              if isinstance(v, dict) and v.get("passed") is not None})
@@ -2804,8 +2820,9 @@ def main():
             str(v.get("terminal_gate")) for v in _v if isinstance(v, dict)).most_common())
         result["n_curable_by_forward"] = sum(
             1 for v in _v if isinstance(v, dict) and v.get("curable_by_forward"))
-        result["gate_ledger"] = _safe(lambda: _append_gate_ledger(result["verdicts"]),
-                                      "gate_ledger")
+        # Written above, BEFORE the seen-cells stamp -- see the note there. Reported here so the
+        # artifact's shape is unchanged for every consumer.
+        result["gate_ledger"] = _gate_ledger_result
 
     # Save. REPRODUCTION WRITES ITS OWN FILE AND NOTHING ELSE. This report is read by the
     # research-health fence and the funnel census; a one-cell re-run overwriting it would make the
