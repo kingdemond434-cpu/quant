@@ -161,4 +161,4 @@ checkout or count a feature-branch push as deployment. Preserve dirty work and h
 never force-push or auto-resolve live-authority conflicts. Verify adopted hashes and real consumers.
 Checkpoint unpublished/unadopted work and precise next actions. Report before/after issues, tested/
 judged/rejected/blocked cells, certificates, measured clocks, tests and deployment proof. No essays.
-Maximize validated conversion, never guaranteed survivors, forced clock counts or promised deadlines.
+Maximize validated conversion, never guaranteed survivor output, forced clock counts or promised deadlines.
