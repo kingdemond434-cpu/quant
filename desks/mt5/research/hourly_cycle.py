@@ -262,7 +262,7 @@ def record_tape() -> dict:
     for label, call in (("tape", lambda: _tape_main()), ("triangle", lambda: _triangle_main())):
         try:
             rc = call()
-        except Exception as exc:                                        # noqa: BLE001
+        except Exception as exc:
             print(f"tick tape {label} FAILED: {type(exc).__name__}: {exc}", flush=True)
             results[f"{label}_error"] = f"{type(exc).__name__}: {exc}"
             codes.append(1)
@@ -307,7 +307,7 @@ def publish_state() -> dict:
                             "-ExecutionPolicy", "Bypass", "-File", str(script)],
                            capture_output=True, text=True, cwd=str(REPO),
                            timeout=600, check=False)
-    except Exception as exc:                                            # noqa: BLE001
+    except Exception as exc:
         print(f"publish_state FAILED to start: {type(exc).__name__}: {exc}", flush=True)
         return {"error": f"{type(exc).__name__}: {exc}"}
     tail = (r.stdout or r.stderr or "").strip().splitlines()[-3:]
@@ -685,7 +685,7 @@ def _costed(name: str, fn):
     """
     try:
         from libs.ops.compute_ledger import close_run, open_run
-    except Exception as exc:                                            # noqa: BLE001
+    except Exception as exc:
         # LOUD, NOT SILENT (theirs, 2026-09-10). `compute_ledger` says in its own words that a
         # denominator which fails silently is a scaling law nobody can draw; this was the import
         # that could fail without a word.
@@ -705,7 +705,7 @@ def _costed(name: str, fn):
         if close_run and run is not None:
             close_run(run, outcome="interrupted")
         raise
-    except BaseException as exc:                                        # noqa: BLE001
+    except BaseException as exc:
         detail = f"{type(exc).__name__}: {exc}"
         if close_run and run is not None:
             close_run(run, outcome=detail[:200])
@@ -765,7 +765,7 @@ def _emit_leg(name: str, outcome: str) -> None:
     try:
         from libs.ops.events import leg_events
         leg_events(name, outcome)
-    except Exception as exc:                                            # noqa: BLE001
+    except Exception as exc:
         print(f"  event for {name} not recorded: {type(exc).__name__}: {exc}", flush=True)
 
 
@@ -811,6 +811,24 @@ def _producer(name: str, script: str,
     return _producer_impl(name, script, tuple(flat))
 
 
+#: Legs whose job is to CLOSE A GAP rather than search, and how long each may take.
+#:
+#: A search leg is fine to truncate: it samples, and next hour it samples again. An ENROLMENT pass
+#: is not, and the difference cost the desk eighty-four forward clocks. `shadow_forward` walks the
+#: authorized runs and enrols the ones without a clock; at 720s it was killed partway through the
+#: same prefix EVERY hour, so the tail could never be reached -- not once, not eventually. Eighty-
+#: four certificates that had cleared all ten gates sat accruing nothing, indefinitely, while the
+#: leg reported as scheduled and running.
+#:
+#: THE SHAPE TO RECOGNISE: a truncated job that restarts from the same end is not slow, it is
+#: BROKEN, and it looks identical to slow on every dashboard. Either the pass must finish, or it
+#: must consume its backlog first so that truncation still makes progress. `shadow_forward` gets
+#: the budget to finish; the gauntlet already does the other (never-judged cells sort first).
+LEG_BUDGET_SEC: dict[str, int] = {
+    "enrol_clocks": 2_700,
+}
+
+
 def _producer_impl(name: str, script: str, args: tuple[str, ...] = ()) -> dict:
     """The body: resolve the script against both roots and run it under the cycle budget.
 
@@ -835,14 +853,15 @@ def _producer_impl(name: str, script: str, args: tuple[str, ...] = ()) -> dict:
         return {"exit_code": None, "status": "MISSING",
                 "why": f"{script} exists under neither {BASE} nor {REPO}",
                 "at": datetime.now(UTC).isoformat()}
+    budget = LEG_BUDGET_SEC.get(name, SEARCH_BUDGET_SEC)
     try:
         r = subprocess.run([sys.executable, "-u", "-W", "ignore", str(target), *args],
                            capture_output=True, text=True, cwd=str(root),
-                           timeout=SEARCH_BUDGET_SEC, check=False)
+                           timeout=budget, check=False)
         return {"exit_code": r.returncode, "tail": (r.stdout or r.stderr or "")[-300:],
-                "at": datetime.now(UTC).isoformat()}
+                "budget_s": budget, "at": datetime.now(UTC).isoformat()}
     except subprocess.TimeoutExpired:
-        return {"exit_code": None, "timeout_s": SEARCH_BUDGET_SEC,
+        return {"exit_code": None, "timeout_s": budget,
                 "note": f"{name} exceeded its cycle budget and was stopped; its partial work is "
                         f"whatever it had already written",
                 "at": datetime.now(UTC).isoformat()}

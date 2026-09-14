@@ -456,6 +456,35 @@ def main() -> int:
               f"with a forward clock: {report['idle']['with_clock']}, idle: {idle_n}")
         for n in report["idle"]["idle"][:10]:
             print(f"    IDLE {n} -- authorized to run forward, no clock exists")
+        # A HEALER THAT ONLY DIAGNOSES IS A REPORT (fixed 2026-09-14).
+        #
+        # This found idle certificates, named them, exited 1 and enrolled none -- for weeks. The
+        # file is called heal_forward_lane and the one failure it is named for was the one it
+        # left alone. Measured tonight: 84 of 186 authorized runs had no clock, every one already
+        # through all ten gates, accruing nothing.
+        #
+        # WHY THE HOURLY ENROLLER DID NOT COVER IT. `enrol_clocks` runs `shadow_forward` under
+        # the cycle's 720s search budget and was killed partway through the same prefix EVERY
+        # hour, so the tail was never reached -- not once. That is now fixed at the source
+        # (LEG_BUDGET_SEC), and this is the second line of defence: whatever the schedule does,
+        # a certificate cannot sit clockless once this has run.
+        #
+        # ENROLLING GRANTS NOTHING. A forward clock is a SHADOW lane and shadow lanes hold no
+        # order authority; starting one resumes MEASUREMENT. Promotion still demands a
+        # certificate and a mature clock, so the only thing this can do is let evidence accrue --
+        # which is the thing its absence was preventing.
+        rc, out = _run([sys.executable, "-u", "-W", "ignore",
+                        str(ROOT / "desks" / "mt5" / "research" / "shadow_forward.py")],
+                       timeout=2_700)
+        after = _idle_certificates()
+        healed_n = int(idle_n) - int(after.get("idle_count") or 0)
+        report["idle_healed"] = {"enrolled": healed_n, "exit_code": rc,
+                                 "idle_before": idle_n,
+                                 "idle_after": after.get("idle_count"),
+                                 "tail": out[-200:]}
+        report["idle"] = after
+        idle_n = after.get("idle_count")
+        print(f"    -> enrolment pass: {healed_n} clock(s) started, {idle_n} still idle")
     unt = report["idle"].get("untradeable_count") or 0
     if unt:
         print(f"\n  UNTRADEABLE ({unt}) -- certified on a symbol this desk cannot trade or "

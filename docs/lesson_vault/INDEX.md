@@ -1,6 +1,6 @@
 # Desk lessons
 
-316 lessons, generated from `docs/desk_lessons.jsonl`.
+318 lessons, generated from `docs/desk_lessons.jsonl`.
 
 > [!warning] This vault is a DERIVED VIEW.
 > `docs/desk_lessons.jsonl` is the source of truth and the only thing organs read.
@@ -18,23 +18,23 @@ there dilutes the lessons that do apply.
 
 ## Tags
 
-- #governance (28)
+- #governance (29)
 - #ops (21)
 - #statistics (17)
 - #research (14)
+- #measurement (13)
 - #verification (13)
 - #design (13)
-- #measurement (12)
 - #priors (11)
 - #validation (10)
 - #testing (10)
 - #data (8)
 - #mining (8)
 - #silent-failure (7)
+- #wiring (7)
 - #execution (6)
 - #provenance (6)
 - #frontier (6)
-- #wiring (6)
 - #fences (5)
 - #windows (5)
 - #breadth (5)
@@ -367,3 +367,5 @@ there dilutes the lessons that do apply.
 - [[l0314-a-sentinel-that-means-both-not-measured-and-no-restric]]
 - [[l0315-git-add-fails-the-whole-invocation-rc-128-pathspec-did]]
 - [[l0316-always-pass-encoding-utf-8-errors-replace-when-capturi]]
+- [[l0317-a-job-that-is-truncated-and-restarts-from-the-same-end]]
+- [[l0318-if-a-file-is-named-heal-it-must-act-a-healer-that-only]]
