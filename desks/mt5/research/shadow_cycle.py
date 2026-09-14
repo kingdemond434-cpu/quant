@@ -132,6 +132,28 @@ def _read(path: Path) -> dict:
         return {}
 
 
+def _family_of_key(key: str) -> str:
+    """The mechanism a shadow key names. Keys are minted, so this reads a field, not a guess."""
+    k = str(key)
+    if "." in k:                       # SYMBOL.family.selector#params
+        parts = k.split("#", 1)[0].split(".")
+        return parts[1] if len(parts) > 1 else ""
+    parts = k.split("_p_", 1)[0].split("_")   # symbol_family_selector_p_hash
+    return "_".join(parts[1:-1]) if len(parts) > 2 else ""
+
+
+def _hash_of_key(key: str) -> str:
+    """The parameter signature a shadow key carries, or "" when it is unparameterised."""
+    import re as _re
+    m = _re.search(r"_p_([0-9a-f]{8,})$", str(key))
+    if m:
+        return m.group(1)
+    if "#" in str(key):
+        import hashlib as _h
+        return _h.sha256(str(key).split("#", 1)[1].encode("utf-8")).hexdigest()[:16]
+    return ""
+
+
 def _param_hash(row: object) -> str:
     """The parameter signature a forward row carries, or "" when it has none.
 
@@ -258,6 +280,19 @@ def run() -> tuple[dict, int]:
     rows += [(scalp.get("sleeves") or {})[key] for key in represented_scalp]
     rows += [qquant[key] for key in represented_qquant]
     active_rows = [row for row in rows if not _terminal_status(row.get("status"))]
+    # THE FAMILY AND THE PARAMETER HASH LIVE IN THE KEY, NOT IN THE ROW (fixed 2026-09-14).
+    #
+    # The first version of these fields read `row.get("family")` and `row.get("params")` and
+    # reported n_mechanisms 0 and n_distinct_param_hashes 0 against 183 live rows -- a confident
+    # zero, which is the precise failure these fields were added to expose. Shadow keys are minted
+    # as `SYMBOL.family.selector#params` or `symbol_family_selector_p_<hash>`, so the identity is
+    # in the key and the row carries only the accrued evidence.
+    _active_keys = [k for k in (list(represented_legacy) + list(represented_scalp)
+                                + list(represented_qquant))
+                    if not _terminal_status((legacy.get(k) or (scalp.get("sleeves") or {}).get(k)
+                                             or qquant.get(k) or {}).get("status"))]
+    _n_mechs = len({_family_of_key(k) for k in _active_keys if _family_of_key(k)})
+    _n_hashes = len({_hash_of_key(k) for k in _active_keys if _hash_of_key(k)})
     terminal_rows = [row for row in rows if _terminal_status(row.get("status"))]
     certified = (int(legacy.get("configured_sleeves", 0) or 0)
                  + int(scalp.get("configured_sleeves", 0) or 0)
@@ -303,10 +338,8 @@ def run() -> tuple[dict, int]:
         # Three counts, because they answer three different questions and collapsing them is how
         # the confusion started: how many ROWS, how many distinct PARAMETERISATIONS, how many
         # distinct MECHANISMS. The gap between the first and the last is the replication factor.
-        "n_distinct_param_hashes": len({
-            _param_hash(row) for row in active_rows if _param_hash(row)}),
-        "n_mechanisms": len({
-            str(row.get("family") or "") for row in active_rows if row.get("family")}),
+        "n_distinct_param_hashes": _n_hashes,
+        "n_mechanisms": _n_mechs,
         "retired_shadow_sleeves": len(terminal_rows),
         "quarantined_uncertified_candidates": (
             int(legacy.get("gate_blocked_sleeves", 0) or 0)

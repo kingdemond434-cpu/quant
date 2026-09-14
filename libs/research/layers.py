@@ -79,6 +79,10 @@ LEG_LAYER: dict[str, str] = {
     # Whether an artifact's own stamp advances is a MEASUREMENT property of the desk, not a
     # property of any strategy -- it belongs with the other self-measurement legs.
     "stamp_freshness": "information",
+    # Why an order filled or did not is an EXECUTION measurement, and it is the binding stage.
+    "fill_attribution": "execution",
+    # What a sleeve pays to trade belongs with execution too: it is a cost, not a signal.
+    "cost_to_edge": "execution",
     # sizing: how much
     "capacity": "sizing", "ensemble_optimizer": "sizing",
     # portfolio: how the book is composed

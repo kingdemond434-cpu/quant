@@ -1057,6 +1057,40 @@ def stamp_freshness() -> dict:
     return _producer("stamp_freshness", "scripts/check_stamp_freshness.py")
 
 
+def fill_attribution() -> dict:
+    """`fill_attribution`: why every order became a fill or did not. The BINDING stage.
+
+    conversion_ledger picks the binding constraint by its own rule and the answer is not in
+    research: order -> fill is 1.9%. 52 orders, 34 unfilled, 10 rejected, 1 filled. Breadth
+    multiplied by a 1.9% fill rate is still 1.9%.
+
+    NOTHING READ THE REASON CODES. order_intents.jsonl recorded a broker retcode per attempt and
+    no artifact ever parsed them, so every statement about why orders do not fill was a guess
+    standing beside a file that held the answer.
+
+    It also names a defect nobody had: the two execution ledgers CANNOT be row-joined.
+    fill_corpus carries intent_id and status, order_intents carries retcode and no intent_id, and
+    the only shared field is ticket -- which is 0 on every rejection, so the rows that most need
+    explaining are exactly the ones that cannot be joined.
+    """
+    return _producer("fill_attribution", "research/fill_attribution.py")
+
+
+def cost_to_edge() -> dict:
+    """`cost_to_edge`: what each live sleeve PAYS to trade, against what it earns.
+
+    THE ENGINE MODELS NO SWAP. mt5desk.engine.Costs carries spread and commission and nothing
+    else, so every certificate was judged with zero financing cost. For an intraday sleeve that
+    is correct; for overnight_gap_decay, which holds through rollover BY CONSTRUCTION, the
+    dominant cost was never charged.
+
+    Measured on the four live overnight sleeves: GBPMXN 0.246R and GBPNOK 0.202R round trip
+    against a +0.135R expectancy assumption -- cost exceeding the entire edge. EURUSD is 0.025R
+    for scale, and all four carry the same parameter hash.
+    """
+    return _producer("cost_to_edge", "research/cost_to_edge.py")
+
+
 def _recertify_canon_claimed() -> dict:
     """`recertify_canon`, but only for a window the queue says is actually uncovered."""
     q, task, why = _claim_one("recertify")
@@ -1965,6 +1999,8 @@ def main() -> None:
     sess = _costed("session_allocation", session_allocation)
     sxp = _costed("session_chart_expansion", session_chart_expansion)
     stf = _costed("stamp_freshness", stamp_freshness)
+    fat = _costed("fill_attribution", fill_attribution)
+    c2e = _costed("cost_to_edge", cost_to_edge)
     ms = _costed("model_skill", model_skill)
     fcx = _costed("forecast_contract", forecast_contract)
     mz = _costed("model_league", model_league)
@@ -2136,6 +2172,8 @@ def main() -> None:
                     "session_allocation": sess,
                     "session_chart_expansion": sxp,
                     "stamp_freshness": stf,
+                    "fill_attribution": fat,
+                    "cost_to_edge": c2e,
                     "model_skill": ms,
                     "frontier": fr, "refresh_bars": rb, "deep_forest": df,
                     "maintain_miners": mm, "publish_survivors": ps,
