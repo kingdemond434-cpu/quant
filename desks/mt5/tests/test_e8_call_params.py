@@ -63,3 +63,45 @@ def test_a_missing_or_malformed_params_block_is_empty_not_a_crash():
     assert e8._call_params({}) == {}
     assert e8._call_params({"params": None}) == {}
     assert e8._call_params({"params": "nonsense"}) == {}
+
+
+def test_resolved_inputs_are_cached_within_a_pass(monkeypatch):
+    """`resolve` hits the venue for peer, factor and macro series, and sleeves share drivers.
+
+    Called blind it refetches the identical series for every cell that names it, which took this
+    executor from about six minutes a pass to eleven when the call was added. Two sleeves agreeing
+    on symbol, family and params must resolve ONCE.
+    """
+    calls = []
+
+    def _fake_resolve(sym, family, params, bars):
+        calls.append((sym, family))
+        return {"extra": {"series": 1}}, ""
+
+    import mt5desk.family_inputs as fi
+    monkeypatch.setattr(fi, "resolve", _fake_resolve)
+    e8._INPUT_CACHE.clear()
+    s = {"symbol": "EURAUD", "family": "discovered",
+         "params": {"params": {"feature": "ext_residz_AUDCAD", "band": [0.0, 0.1]}}}
+    a = e8._call_params(s, "EURAUD", bars=object())
+    b = e8._call_params(dict(s), "EURAUD", bars=object())
+    assert a == b
+    assert len(calls) == 1, f"resolve must be called once for identical inputs, got {len(calls)}"
+
+
+def test_the_cache_does_not_outlive_the_pass():
+    """A cache that outlives its bar feeds this hour's decision from last hour's data."""
+    e8._INPUT_CACHE["stale"] = ({"extra": "old"}, "")
+    e8._INPUT_CACHE.clear()
+    assert e8._INPUT_CACHE == {}
+
+
+def test_a_refusal_is_cached_as_a_refusal_not_dropped(monkeypatch):
+    """A cell whose inputs cannot be rebuilt must stay refused on the second call too."""
+    import mt5desk.family_inputs as fi
+    monkeypatch.setattr(fi, "resolve", lambda *a, **k: (None, "peer bars unavailable"))
+    e8._INPUT_CACHE.clear()
+    s = {"symbol": "X", "family": "discovered", "tag": "T",
+         "params": {"params": {"feature": "f"}}}
+    assert e8._call_params(s, "X", bars=object()) is None
+    assert e8._call_params(dict(s), "X", bars=object()) is None

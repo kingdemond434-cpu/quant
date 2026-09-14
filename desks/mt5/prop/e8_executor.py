@@ -105,6 +105,9 @@ _RESOLUTION = {
 #: of joining NO_SIGNAL as another silent outcome.
 _LAST_INPUT_REFUSAL: dict = {}
 
+#: Resolved venue inputs for one PASS only. Cleared at the top of every run -- see `_call_params`.
+_INPUT_CACHE: dict = {}
+
 
 def _call_params(s: dict, symbol: str = "", bars: object = None) -> dict | None:
     """The parameters a certified E8 cell is actually called with.
@@ -164,12 +167,32 @@ def _call_params(s: dict, symbol: str = "", bars: object = None) -> dict | None:
     # FAIL CLOSED: a cell whose inputs cannot be rebuilt returns None and the caller refuses it by
     # NAME. Returning `call` regardless would run the family with a feature it cannot resolve and
     # report the resulting silence as "no signal" -- exactly the defect being repaired.
+    # ONE FETCH PER DISTINCT INPUT SET, PER PASS. `resolve` loads peer, factor and macro series
+    # from the venue, and sleeves share drivers -- several cells key off the same residual. Called
+    # blind it refetches the identical series for each of them, which took this executor from
+    # about six minutes a pass to eleven when the call was added. The cache key is the symbol, the
+    # family and the exact params: `bars` is derived from the symbol and is one frame per symbol
+    # within a pass, so two sleeves agreeing on all three necessarily resolve to the same inputs.
+    #
+    # CLEARED AT THE START OF EVERY PASS (`_INPUT_CACHE.clear()` in the run loop), never across
+    # them: these are live series, and a cache that outlived its bar would feed one hour's
+    # decision from the previous hour's data -- a silent staleness far worse than the refetch.
+    _key = (str(symbol), str(s.get("family") or ""),
+            json.dumps(raw, sort_keys=True, default=str))
+    if _key in _INPUT_CACHE:
+        extra, why = _INPUT_CACHE[_key]
+        if extra is None:
+            _LAST_INPUT_REFUSAL[str(s.get("tag") or symbol)] = str(why)[:160]
+            return None
+        call.update(extra)
+        return call
     try:
         extra, why = resolve(str(symbol), str(s.get("family") or ""), raw, bars)
     except Exception as exc:
         _LAST_INPUT_REFUSAL[str(s.get("tag") or symbol)] = (
             f"input reconstruction raised ({type(exc).__name__}: {str(exc)[:80]})")
         return None
+    _INPUT_CACHE[_key] = (extra, why)
     if extra is None:
         _LAST_INPUT_REFUSAL[str(s.get("tag") or symbol)] = str(why)[:160]
         return None
@@ -312,6 +335,10 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None) -> dict
     from mt5desk.families import get_family_func
 
     sent = considered = 0
+    # A CACHE THAT OUTLIVES ITS BAR IS WORSE THAN THE REFETCH IT SAVES. Cleared here so every pass
+    # resolves its inputs from this hour's data and never from the last one's.
+    _INPUT_CACHE.clear()
+    _LAST_INPUT_REFUSAL.clear()
     for s in book.get("sleeves", []):
         sym, fam = s["symbol"], s["family"]
         tag = f"{TAG}{fam[:6]}{sym}"[:31]
