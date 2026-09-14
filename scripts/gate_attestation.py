@@ -20,17 +20,32 @@ import json
 import subprocess
 import sys
 from datetime import UTC, datetime
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "data" / "gate_attestation.json"
 
 
 def _git(*args: str) -> str:
-    """UTF-8 explicitly: `text=True` alone decodes with the locale and dies in a reader thread."""
+    """UTF-8 explicitly: `text=True` alone decodes with the locale and dies in a reader thread.
+
+    AND ONLY THE TRAILING NEWLINE IS STRIPPED, because `.strip()` ATE A LEADING SPACE AND THAT IS
+    WHY `tested_sha` HAS ALWAYS BEEN UNMEASURED.
+
+    `git status --porcelain` emits a TWO-CHARACTER status field, and a worktree-only change has a
+    SPACE in the first column: " M desks/mt5/data/compute_ledger.jsonl". Stripping the whole
+    output removes that leading space from the FIRST line only, so `ln[3:]` then skips one
+    character too many and the path arrives as "esks/mt5/data/compute_ledger.jsonl". `_is_state`
+    cannot match a path with its first letter missing, so a STATE file was counted as dirty CODE
+    on every run -- `tree_clean` false, `tested_sha` dropped, and the release artifact reporting
+    UNMEASURED forever while the gates were green on a known commit.
+
+    One character, in a helper, silently converting "the desk's ledgers moved" into "the code
+    under test is unknown". Columns are data here; only the trailing newline may go.
+    """
     r = subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True,
                        encoding="utf-8", errors="replace", timeout=60, check=False)
-    return r.stdout.strip() if r.returncode == 0 else ""
+    return r.stdout.rstrip("\n") if r.returncode == 0 else ""
 
 
 #: Paths whose dirtiness says nothing about what CODE was tested. Mirrors
@@ -41,6 +56,47 @@ _STATE_PREFIXES = ("desks/mt5/data/", "desks/mt5/reports/", "desks/mt5/logs/",
 
 def _is_state(rel: str) -> bool:
     return any(rel.startswith(pre) for pre in _STATE_PREFIXES)
+
+
+def _tracked_py() -> set[str]:
+    """Every .py git actually tracks, as posix paths -- the set an untracked file could shadow."""
+    return {ln.strip() for ln in _git("ls-files", "*.py").splitlines() if ln.strip()}
+
+
+def _shadows_a_real_module(rel: str, tracked: set[str]) -> bool:
+    """Could this UNTRACKED .py change what an import resolves to?
+
+    THE ORIGINAL RULE WAS SOUND AND TOO BROAD, AND IT COST THE FIELD ENTIRELY. Any untracked .py
+    voided `tree_clean`, so `tested_sha` was dropped on every run this desk has ever made -- the
+    release reported UNMEASURED forever while the gates were green on a known commit. The repo
+    root and desks/mt5 carry two dozen stray diagnostics from past sessions (annual.py, boxid.py,
+    clockdiag.py, famcount.py, ...) and none of them is ever imported by anything.
+
+    A .py FILE CHANGES AN IMPORT ONLY BY NAME COLLISION. `import clockdiag` appears nowhere, so
+    clockdiag.py cannot alter what the interpreter executed no matter how dirty it makes the
+    status output. What CAN alter it is an untracked file whose module name matches a TRACKED
+    module reachable on the same path -- that one genuinely shadows, and still voids the claim.
+
+    So the test is the actual property rather than a proxy for it: does this file's importable
+    name collide with a tracked module in the same package directory? Deleting the operator's
+    scratch files to satisfy a proxy would have been the wrong fix, and weakening the check to
+    "ignore all untracked" would have been worse -- it would have given up the guarantee the
+    field exists to make.
+    """
+    p = PurePosixPath(rel)
+    stem = p.stem
+    if stem in ("__init__", "conftest"):
+        return True                       # these change package behaviour wherever they sit
+    parent = str(p.parent)
+    for t in tracked:
+        tp = PurePosixPath(t)
+        if tp.suffix != ".py" or str(tp) == rel:
+            continue
+        # A collision only matters within the same directory -- that is where an import of this
+        # name would resolve to the untracked file instead of the tracked one.
+        if tp.stem == stem and str(tp.parent) == parent:
+            return True
+    return False
 
 
 def attest(gates: str, result: str) -> dict[str, object]:
@@ -68,8 +124,14 @@ def attest(gates: str, result: str) -> dict[str, object]:
         code, rel = ln[:2], ln[3:].strip().strip('"')
         if _is_state(rel):
             continue
-        if code.strip() == "??" and not rel.endswith(".py"):
-            continue
+        if code.strip() == "??":
+            # An untracked file is in no commit. It can only change what the gates executed by
+            # SHADOWING a tracked module of the same name in the same package -- see
+            # `_shadows_a_real_module`. Anything else is a scratch file nothing imports.
+            if not rel.endswith(".py"):
+                continue
+            if not _shadows_a_real_module(rel, _tracked_py()):
+                continue
         dirty.append(ln)
     return {
         "at": datetime.now(UTC).isoformat(timespec="seconds"),
