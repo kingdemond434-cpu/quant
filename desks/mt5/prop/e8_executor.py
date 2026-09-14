@@ -364,8 +364,23 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None) -> dict
         last_bar = closed.index[-1]
         fresh = [g for g in (signals or []) if getattr(g, "time", None) == last_bar]
         if not fresh:
+            # NO_SIGNAL MEANT TWO OPPOSITE THINGS AND NAMED NEITHER: "this family produced forty
+            # signals, none on the bar I am judging" and "this family produced nothing at all".
+            # That conflation is what hid a book-wide outage for days -- every sleeve was called
+            # with empty params, returned an empty list, and reported NO_SIGNAL exactly as a quiet
+            # market does. The counts below are what tell the two apart on the NEXT pass rather
+            # than after another investigation.
             row["status"] = "NO_SIGNAL"
             row["last_bar"] = str(last_bar)
+            row["n_signals_in_window"] = len(signals or [])
+            _times = [getattr(g, "time", None) for g in (signals or [])]
+            _times = [t for t in _times if t is not None]
+            row["last_signal_seen"] = str(max(_times)) if _times else None
+            # THE BAR THE SIGNAL CARRIES vs THE BAR BEING JUDGED, as the equality actually sees
+            # them. If a feed or a dtype ever makes these differ while looking identical in a log,
+            # this is the line that shows it.
+            row["bar_repr"] = f"{last_bar!r}"
+            row["last_signal_repr"] = f"{max(_times)!r}" if _times else None
             doc["sleeves"].append(row)
             continue
         g = fresh[-1]
