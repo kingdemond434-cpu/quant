@@ -990,6 +990,33 @@ def session_allocation() -> dict:
     return _producer("session_allocation", "research/session_allocator.py")
 
 
+def session_chart_expansion() -> dict:
+    """`session_chart_expansion`: every proven mechanism, asked about every other hour and chart.
+
+    STANDING RULE, not a one-off sweep. A mechanism certified in one session is a hypothesis
+    about the other eight, and a mechanism certified on one chart is a hypothesis about the other
+    six. Nothing on this desk ever asked either question, which is why seven of twenty-four UTC
+    hours carried no forward clock and every scalp sleeve was `xau_*`.
+
+    EVERY PARENT, NOT JUST THE ASIA ONES. The desk's certificates happen to be mostly Asia today;
+    the rule is not. An NY mechanism gets its London and Asia equivalents on the same pass.
+
+    HOURS ARE RANKED BY MEASURED COVERAGE, so the budget goes where there are no clocks rather
+    than back into the session the desk already owns. The first run showed why that matters: at a
+    cap of six it spent three slots re-hunting Asia and never reached ny_open or ny_mid at all.
+    As London and NY fill, they stop being cheap and Asia becomes eligible again -- the loop
+    closes rather than permanently condemning a session.
+
+    IT PROPOSES AND NOTHING MORE. No certificate, no authority, no size: every variant clears the
+    same ten gates as anything else on the docket. The cost is a real one -- each cell raises the
+    deflated-Sharpe bar every other cell must clear -- and it is bounded per parent for that
+    reason. 451 cells against a docket of 21,692 is a 2.1% rise in the trial count, spent on
+    variants of mechanisms measured at 105.6 survivors per 1,000 ruled cells while `discovered`
+    returns 2.0.
+    """
+    return _producer("session_chart_expansion", "research/session_chart_equivalents.py", "--apply")
+
+
 def _recertify_canon_claimed() -> dict:
     """`recertify_canon`, but only for a window the queue says is actually uncovered."""
     q, task, why = _claim_one("recertify")
@@ -1896,6 +1923,7 @@ def main() -> None:
     lkp = _costed("lake_promote", lake_promote)
     orth = _costed("orthogonality", orthogonality)
     sess = _costed("session_allocation", session_allocation)
+    sxp = _costed("session_chart_expansion", session_chart_expansion)
     ms = _costed("model_skill", model_skill)
     fcx = _costed("forecast_contract", forecast_contract)
     mz = _costed("model_league", model_league)
@@ -2065,6 +2093,7 @@ def main() -> None:
                     "research_exchange_score": rxs, "lake_promote": lkp,
                     "orthogonality": orth,
                     "session_allocation": sess,
+                    "session_chart_expansion": sxp,
                     "model_skill": ms,
                     "frontier": fr, "refresh_bars": rb, "deep_forest": df,
                     "maintain_miners": mm, "publish_survivors": ps,

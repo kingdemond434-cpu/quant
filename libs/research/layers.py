@@ -73,6 +73,9 @@ LEG_LAYER: dict[str, str] = {
     # WHICH HOURS the desk has an edge in is a TIMING question, not a sizing one -- this leg
     # measures and allocates nothing, and stacking it on pf_allocator would shrink twice.
     "session_allocation": "timing",
+    # Generating a mechanism's other-session and other-chart equivalents is asking WHEN it works,
+    # which is a timing question even though the output is a research candidate.
+    "session_chart_expansion": "timing",
     # sizing: how much
     "capacity": "sizing", "ensemble_optimizer": "sizing",
     # portfolio: how the book is composed
