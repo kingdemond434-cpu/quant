@@ -1,0 +1,310 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "https://egx.com.eg/downloads/Bulletins/330076_2.pdf",
+  "url": "https://egx.com.eg/downloads/Bulletins/330076_2.pdf",
+  "published": "2026-09-14T01:11:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2990e3c4ab1b2b2bd7e2",
+  "host": "egx.com.eg",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Google News",
+  "url": "http://news.google.com/archivesearch?&as_src=-newswire+-wire+-presswire+-PR+-release+-wikipedia&q=%22Algoritms%22",
+  "published": "2026-09-14T01:11:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "http://news.google.com/_/DotsSplashUi/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "7fc8826b966bc78daa9a",
+  "host": "news.google.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo - Wikipedio",
+  "url": "https://io.wikipedia.org/w/index.php?title=Algoritmo&veaction=edit",
+  "published": "2026-09-14T01:11:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "io",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a3bdcc1898a4555877d8",
+  "host": "io.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo: Historio di la redakto - Wikipedio",
+  "url": "https://io.wikipedia.org/w/index.php?title=Algoritmo&action=history",
+  "published": "2026-09-14T01:11:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "mean_reversion"
+  ],
+  "confidence": 0.35,
+  "lang": "io",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f8bb9201557f6a5e4dd7",
+  "host": "io.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo - Wikipedio",
+  "url": "https://io.wikipedia.org/w/index.php?title=Algoritmo&oldid=1113347",
+  "published": "2026-09-14T01:11:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "io",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "430d800e8e6501099ffe",
+  "host": "io.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Informi por Algoritmo - Wikipedio",
+  "url": "https://io.wikipedia.org/w/index.php?title=Algoritmo&action=info",
+  "published": "2026-09-14T01:11:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "io",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "19ea60112bc9c15b7754",
+  "host": "io.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Citar - Wikipedio",
+  "url": "https://io.wikipedia.org/w/index.php?title=Specala:Citar&page=Algoritmo&id=1113347&wpFormIdentifier=titleform",
+  "published": "2026-09-14T01:11:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "io",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3f64ff19f9aac12e749e",
+  "host": "io.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo - Wikipedio",
+  "url": "https://io.wikipedia.org/w/index.php?title=Algoritmo&useparsoid=0",
+  "published": "2026-09-14T01:11:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "io",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a654ed3f800b56ce9dcc",
+  "host": "io.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Kreero di libri - Wikipedio",
+  "url": "https://io.wikipedia.org/w/index.php?title=Specala:Libro&bookcmd=book_creator&referer=Algoritmo",
+  "published": "2026-09-14T01:11:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "io",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fb86d65447d7071fb965",
+  "host": "io.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo - Wikipedio",
+  "url": "https://io.wikipedia.org/w/index.php?title=Algoritmo&printable=yes",
+  "published": "2026-09-14T01:11:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "io",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3ed51c3929e72cf9c58e",
+  "host": "io.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmo - Wikipedio",
+  "url": "https://io.wikipedia.org/w/index.php?title=Algoritmo&mobileaction=toggle_view_mobile",
+  "published": "2026-09-14T01:11:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "io",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5b0b1640eb94188ba846",
+  "host": "io.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Disputatio:Algorithmus - Vicipaedia",
+  "url": "https://la.wikipedia.org/wiki/Disputatio:Algorithmus",
+  "published": "2026-09-14T01:12:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "la",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "43b0f6ed15bc7273bfec",
+  "host": "la.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithmus - Vicipaedia",
+  "url": "https://la.wikipedia.org/w/index.php?title=Algorithmus&veaction=edit",
+  "published": "2026-09-14T01:12:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "la",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "74911373be34f978084e",
+  "host": "la.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Fontem paginae Algorithmus inspicere - Vicipaedia",
+  "url": "https://la.wikipedia.org/w/index.php?title=Algorithmus&action=edit",
+  "published": "2026-09-14T01:12:08+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [
+   "flow",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "la",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "12b7d4ec686e230aded1",
+  "host": "la.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithmus - Vicipaedia",
+  "url": "https://la.wikipedia.org/w/index.php?title=Algorithmus&oldid=3798977",
+  "published": "2026-09-14T01:12:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "la",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c60e9508992ad4492d17",
+  "host": "la.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ }
+]
