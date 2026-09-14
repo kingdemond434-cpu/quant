@@ -101,6 +101,54 @@ _RESOLUTION = {
 }
 
 
+def _call_params(s: dict) -> dict:
+    """The parameters a certified E8 cell is actually called with.
+
+    TWENTY SLEEVES REPORTED NO_SIGNAL EVERY PASS AND THIS IS WHY (measured 2026-09-14). The E8
+    guard was green -- `may_open: true`, equity 100,000, day_pnl 0, 2,500 to the daily floor --
+    the lane was armed, twenty sleeves were considered, and `n_sent` was 0 with every row reading
+    NO_SIGNAL. The signals were never computed with the cell's parameters.
+
+    TWO FAULTS, EITHER ONE FATAL ALONE.
+
+    1. THE PARAMS ARE NESTED. `e8_book` writes the docket row's own shape through:
+
+           "params": {"condition": null,
+                      "params": {"feature": "dd_24", "band": [0.75, 0.9],
+                                 "horizon": 6, "side": -1}}
+
+       The executor spread the OUTER dict, so `family_discovered` would have been offered
+       `condition=` and `params=` -- neither of which it takes -- instead of feature/band/
+       horizon/side.
+
+    2. THE FILTER KEPT ONLY SCALARS. `isinstance(v, (int, float, str, bool))` drops `condition`
+       (None) and the inner dict, leaving `{}` -- so the call fell through to the unparameterised
+       `func(closed)` branch and produced nothing, silently. And the filter would have been fatal
+       even with the nesting fixed: `band` is a LIST, and a `discovered` cell without its band
+       selects no rows at all.
+
+    `strip_identity_keys` is the desk's own rule for which params name an INPUT rather than
+    parameterise a family, and `_family_call_params` in the gateway uses it for the same purpose.
+    Using it here keeps one reconstruction rather than a fourth copy to drift -- the drift this
+    desk keeps paying for.
+    """
+    raw = s.get("params") or {}
+    if not isinstance(raw, dict):
+        return {}
+    # UNWRAP ONE LEVEL when the row carries the docket's {condition, params} envelope. Checked by
+    # SHAPE, not by family name: a future producer writing flat params must keep working.
+    inner = raw.get("params")
+    if isinstance(inner, dict):
+        raw = inner
+    try:
+        from mt5desk.family_inputs import strip_identity_keys
+        return dict(strip_identity_keys("", raw))
+    except Exception:
+        return {k: v for k, v in raw.items()
+                if k not in ("timeframe", "peer_symbol", "factor_symbols",
+                             "input_symbol", "input_source")}
+
+
 def _frame(api: Any, instrument_id: int, timeframe: str = "H1") -> Any:
     """TradeLocker history -> the OHLC frame the desk's families expect, or None.
 
@@ -270,8 +318,7 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None) -> dict
             doc["sleeves"].append(row)
             continue
         closed = _last_closed(frame)
-        params = {k: v for k, v in (s.get("params") or {}).items()
-                  if isinstance(v, (int, float, str, bool))}
+        params = _call_params(s)
         try:
             signals = func(closed, **params) if params else func(closed)
         except Exception as exc:

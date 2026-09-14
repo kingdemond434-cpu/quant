@@ -400,7 +400,7 @@ def allocator_book() -> tuple[dict[str, float] | None, str]:
             if mix.get("status") == "BLENDED" and mix.get("book"):
                 by_name = {str(k): float(v) for k, v in mix["book"].items() if float(v) > 0.0}
                 src, swhy = "blend", mix["why"]
-        except Exception as exc:                                         # noqa: BLE001
+        except Exception as exc:
             # A broken ensemble must never cost the desk the book `select` already chose.
             swhy = f"{swhy}; ensemble unavailable ({type(exc).__name__}: {exc})"
         if by_name:
@@ -452,7 +452,7 @@ def venue_heat_cap() -> tuple[float | None, str]:
     """
     try:
         acc = _prov.current_account(mt5.account_info())
-    except Exception as exc:                                    # noqa: BLE001 -- see docstring
+    except Exception as exc:
         acc = None
         _ = exc
     return _acct.venue_heat_cap(acc, BASE.parent.parent)
@@ -665,7 +665,7 @@ def _release_id() -> str:
     try:
         from libs.ops.release import release_id
         return release_id()
-    except Exception:                                           # noqa: BLE001
+    except Exception:
         return "unreleased"
 
 
@@ -693,7 +693,7 @@ def _record_decision(**row) -> None:
     row.setdefault("state_vector_id", _state_vector_id())
     try:
         row.setdefault("release_id", _release_id())
-    except Exception:                                       # noqa: BLE001
+    except Exception:
         row.setdefault("release_id", "unreleased")
     row.setdefault("size_mult", 1.0)
     row.setdefault("execution",
@@ -730,7 +730,7 @@ def _decision_portfolio_context(sleeve) -> dict:
             return {"book": None, "why": why}
         return {"h": book.get(str(sleeve or "")), "n_book": len(book),
                 "total_heat": round(sum(float(v) for v in book.values()), 6), "why": why}
-    except Exception as exc:                                # noqa: BLE001
+    except Exception as exc:
         return {"book": None, "why": f"{type(exc).__name__}: {exc}"}
 
 
@@ -814,7 +814,7 @@ def _record_intent(**row) -> str | None:
         row.setdefault("state_vector_id", _state_vector_id())
         try:
             row.setdefault("release_id", _release_id())
-        except Exception:                                   # noqa: BLE001
+        except Exception:
             row.setdefault("release_id", "unreleased")
         with contextlib.suppress(Exception):
             row.setdefault("intent_id", _intent_id(row.get("symbol"), row.get("sleeve"),
@@ -1524,7 +1524,7 @@ def _policy_advice(symbol: str, side: int, entry_ref: float, tick, sym, dist: fl
         from mt5desk.execution_policy import choose
         return choose(exec_context(symbol, side, entry_ref, tick, dist, g, lot),
                       _fill_surface())
-    except Exception as exc:                                    # noqa: BLE001
+    except Exception as exc:
         return {"policy": "MARKET", "why": f"advice unavailable: {type(exc).__name__}"}
 
 
@@ -1547,7 +1547,7 @@ def _fill_surface():
                     if ln.strip()] if INTENTS.exists() else []
             fs = fill_surface.FillSurface().fit(rows) if rows else None
             _SURFACE = fs if fs is not None else False
-        except Exception as exc:                                # noqa: BLE001
+        except Exception as exc:
             log(f"fill surface unavailable ({type(exc).__name__}: {exc}); spread prior only")
             _SURFACE = False
     return _SURFACE or None
@@ -1571,7 +1571,7 @@ def _netting_book():
         try:
             from mt5desk import netting
             _BOOK = netting.TheoreticalBook()
-        except Exception as exc:                                # noqa: BLE001
+        except Exception as exc:
             log(f"netting book unavailable ({type(exc).__name__}: {exc}); pass runs without it")
             _BOOK = False
     return _BOOK or None
@@ -1586,7 +1586,7 @@ def _book_target(name: str, symbol: str, lots_signed: float, reason: str,
     try:
         book.set_target(name, symbol, float(lots_signed), reason=reason,
                         at=datetime.now(tz=UTC), price=price)
-    except Exception as exc:                                    # noqa: BLE001
+    except Exception as exc:
         log(f"[{name}] netting target not recorded ({type(exc).__name__}: {exc})")
 
 
@@ -1598,7 +1598,7 @@ def _book_fill(name: str, symbol: str, lots_signed: float, price: float) -> None
         return
     try:
         book.fill(name, symbol, float(lots_signed), float(price), at=datetime.now(tz=UTC))
-    except Exception as exc:                                    # noqa: BLE001
+    except Exception as exc:
         log(f"[{name}] netting fill not recorded ({type(exc).__name__}: {exc})")
 
 
@@ -1614,7 +1614,7 @@ def _record_exec_outcome(symbol: str, side: int, lot: float, entry_ref: float, t
         plan = execution_registry.market(intent_of(ctx), surface=_fill_surface())
         execution_registry.record_outcome(plan, [(float(lot), float(fill_price))],
                                           at=datetime.now(tz=UTC))
-    except Exception as exc:                                    # noqa: BLE001
+    except Exception as exc:
         log(f"execution outcome not recorded for {symbol} ({type(exc).__name__}: {exc})")
 
 
@@ -1648,7 +1648,7 @@ def _net_routes(symbols: set[str]) -> None:
             if abs(terminal - ledger) > 1e-9:
                 log(f"[netting] {symbol} ledger {ledger:+.2f} vs terminal {terminal:+.2f} lots"
                     f" -- broker-side exits or pre-ledger fills; reported, not corrected")
-        except Exception as exc:                                # noqa: BLE001
+        except Exception as exc:
             log(f"[netting] {symbol} route unmeasured ({type(exc).__name__}: {exc})")
 
 
@@ -1800,7 +1800,7 @@ def _family_chart(s: dict) -> tuple[str, object, int]:
     an H1 one and naming H1 explicitly would rename all of them at once. So an old row resolves to
     exactly what it resolved to before, including its 400-bar read.
     """
-    tf = str(((s.get("params") or {}).get("timeframe") or "H1")).upper()
+    tf = str((s.get("params") or {}).get("timeframe") or "H1").upper()
     attr = _FAMILY_TF_ATTR.get(tf)
     if attr is None or not hasattr(mt5, attr):
         return tf, None, 0                       # caller refuses the row by name; never guesses
@@ -1822,7 +1822,7 @@ def _family_constructor(family: str) -> tuple[object | None, str | None]:
     try:
         from mt5desk import executables
         return executables.resolve_family(family), executables.population_of(family)
-    except Exception as exc:                                            # noqa: BLE001
+    except Exception as exc:
         log(f"FAMILY-EXEC: executables unavailable ({type(exc).__name__}: {exc})")
         return None, None
 
@@ -1832,8 +1832,93 @@ def _family_takes_side(fn: object) -> bool:
     try:
         from mt5desk.family_call import accepts_side
         return accepts_side(fn)
-    except Exception:                                                   # noqa: BLE001
+    except Exception:
         return False
+
+
+def _params_from_certificate(s: dict[str, object]) -> tuple[dict[str, object] | None, str]:
+    """The certified parameters for a sleeve whose registry row does not carry them.
+
+    NO FOREX SLEEVE HAS EVER SENT AN ORDER, AND THIS IS WHY (measured 2026-09-14). Every one of
+    the 53 `family_market` rows is LIVE, armed (`GENERIC_EXEC_ENABLED` present since 2026-09-11),
+    admitted by the heat cap and sized -- and `order_intents.jsonl` holds 59 intents of which
+    NOT ONE is on a non-gold symbol. `_family_call_params` read `s["params"]`; not one of the 53
+    rows has that key, so every sleeve was called with `{}`.
+
+        audcad_discovered_asia_p_7c996ac8456c8919
+        certified params: {"feature": "ext_resid_EURGBP_z", "band": [0.9, 1.0],
+                           "horizon": 1, "side": -1}
+        called with:      {}
+        signals over 400 bars: 0
+
+    `family_discovered` unparameterised selects no feature and no band, so it returns an empty
+    signal list forever. That lands on stage `no_signal`, which `run_family_sleeves` is
+    DELIBERATELY silent about -- "the ordinary quiet outcome" -- so 53 sleeves produced nothing,
+    every hour, for days, and the log said exactly nothing about it. One FAMILY-EXEC line exists
+    in the entire gateway log.
+
+    THE PARAMS ARE ONE-WAY IN THE NAME AND RECOVERABLE FROM THE DOCKET. The certificate names its
+    cell `external.AUDCAD.discovered.p=7c996ac8456c8919`, where the `p=` field is a SHA256 digest
+    of the parameters. `frontier_identity.cell_id` is the desk's own identity function, so
+    recomputing it across `external_survivors.json` joins the two exactly: 47 of the 53 sleeves
+    recover their certified params this way.
+
+    AND THE RECONSTRUCTION IS VERIFIED, NOT TRUSTED. Whatever the docket hands back is hashed and
+    must reproduce the certificate's own cell id before it is used. That is what makes an EMPTY
+    result safe to accept when it is genuine -- `audchf_overnight_gap_decay_asia_p_44136fa355b3678a`
+    really is parameterised `{}`, and 44136fa355b3678a really is the digest of `{}` -- while an
+    empty result that does NOT hash back is refused. Without that check this function would
+    re-introduce the original defect for any sleeve it failed to join: calling a parameterised
+    family with nothing, which is "trading a lookalike strategy under a certified sleeve's name",
+    the defect class `resolve_family_order` already refuses by name elsewhere.
+    """
+    cert = s.get("certificate")
+    cell = str((cert or {}).get("cell") or "") if isinstance(cert, dict) else ""
+    if not cell:
+        return None, "registry row carries no params and its certificate names no cell"
+    want = cell.split(".", 1)[1] if cell.startswith("external.") else cell
+    try:
+        from research.frontier_identity import cell_id
+    except Exception as exc:
+        return None, f"frontier_identity unavailable ({type(exc).__name__}: {exc})"
+    docket = _docket_rows()
+    if not docket:
+        return None, f"no docket on this box to recover params for cell {want!r}"
+    for row in docket:
+        try:
+            got = cell_id({**row, "sym": row.get("symbol"), "family": row.get("family"),
+                           "params": row.get("params")})
+        except Exception:
+            continue
+        if got != want:
+            continue
+        found = row.get("params")
+        found = dict(found) if isinstance(found, dict) else {}
+        # VERIFIED, not merely found: the digest must reproduce the certified identity.
+        if cell_id({"sym": row.get("symbol"), "family": row.get("family"),
+                    "params": found}) != want:
+            return None, (f"docket row for {want!r} does not hash back to its own cell id; "
+                          f"refusing to trade unverified parameters")
+        return found, ""
+    return None, (f"certified cell {want!r} is not in the docket on this box, so its parameters "
+                  f"cannot be reconstructed; refusing to trade the family unparameterised")
+
+
+def _docket_rows() -> list[dict[str, object]]:
+    """`external_survivors.json`, cached for the life of the process. ~23k rows, read once."""
+    global _DOCKET_CACHE
+    if _DOCKET_CACHE is None:
+        try:
+            rows = json.loads(
+                (BASE / "data" / "hypotheses" / "external_survivors.json").read_text("utf-8"))
+            _DOCKET_CACHE = ([r for r in rows if isinstance(r, dict)]
+                             if isinstance(rows, list) else [])
+        except (OSError, ValueError):
+            _DOCKET_CACHE = []
+    return _DOCKET_CACHE
+
+
+_DOCKET_CACHE: list[dict[str, object]] | None = None
 
 
 def _family_call_params(s: dict, family: str, bars: object) -> tuple[dict | None, str]:
@@ -1850,14 +1935,19 @@ def _family_call_params(s: dict, family: str, bars: object) -> tuple[dict | None
     nothing beyond bars -- and is not a gap.
     """
     params = dict(s.get("params") or {})
+    if not params:
+        recovered, why = _params_from_certificate(s)
+        if recovered is None:
+            return None, why
+        params = dict(recovered)
     try:
         from mt5desk.family_inputs import resolve, strip_identity_keys
-    except Exception as exc:                                            # noqa: BLE001
+    except Exception as exc:
         return None, f"family_inputs unavailable ({type(exc).__name__}: {exc})"
     try:
         call_params = strip_identity_keys(family, params)
         extra, why = resolve(str(s["symbol"]), family, params, bars)
-    except Exception as exc:                                            # noqa: BLE001
+    except Exception as exc:
         return None, f"input reconstruction raised ({type(exc).__name__}: {exc})"
     if extra is None:
         return None, why
@@ -3088,7 +3178,7 @@ def main() -> None:
                     _record_decision(sleeve=s["name"], symbol=s["symbol"], side=None, lot=lot,
                                      price=None, sl=None, tp=None, taken=False,
                                      reason="release_identity_refused", detail=spec)
-                except Exception as exc:                        # noqa: BLE001
+                except Exception as exc:
                     log(f"release-refusal record failed (non-fatal) [{s['name']}]: "
                         f"{type(exc).__name__}: {exc}")
                 continue
