@@ -83,6 +83,9 @@ LEG_LAYER: dict[str, str] = {
     "fill_attribution": "execution",
     # What a sleeve pays to trade belongs with execution too: it is a cost, not a signal.
     "cost_to_edge": "execution",
+    # Whether a data endpoint still serves what it claims is an INFORMATION property -- it decides
+    # whether any input exists at all, before any signal is derived from it.
+    "source_routes": "information",
     # sizing: how much
     "capacity": "sizing", "ensemble_optimizer": "sizing",
     # portfolio: how the book is composed

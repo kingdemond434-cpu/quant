@@ -1091,6 +1091,24 @@ def cost_to_edge() -> dict:
     return _producer("cost_to_edge", "research/cost_to_edge.py")
 
 
+def source_routes() -> dict:
+    """`source_routes`: is each data endpoint still there, or has it moved and started lying?
+
+    A MOVED ENDPOINT DOES NOT REPORT AN ERROR, IT REPORTS ABSENCE. This repo's own history: NOAA
+    renamed CurrentSummaries.json to CurrentStorms.json, the old path answered with a 404 page as
+    HTML behind HTTP 200, and the miner read it as "no active storms" with four hurricanes live.
+
+    So the probe asks whether the body is still the SHAPE the caller declared, not merely whether
+    something answered. HTTP 200 carrying HTML where JSON was declared is MOVED, and MOVED is the
+    only fatal verdict -- an honest non-200 is loud and self-announcing.
+
+    FIRST RUN: gld_holdings 404 (a written fetcher aimed at a dead URL) and dukascopy 503, while
+    sge_quotations answers JSON -- so fetch_sge_premium is idle rather than broken. That
+    distinction is the whole point, and nothing else on the desk could make it.
+    """
+    return _producer("source_routes", "scripts/check_source_routes.py")
+
+
 def _recertify_canon_claimed() -> dict:
     """`recertify_canon`, but only for a window the queue says is actually uncovered."""
     q, task, why = _claim_one("recertify")
@@ -2001,6 +2019,7 @@ def main() -> None:
     stf = _costed("stamp_freshness", stamp_freshness)
     fat = _costed("fill_attribution", fill_attribution)
     c2e = _costed("cost_to_edge", cost_to_edge)
+    srt = _costed("source_routes", source_routes)
     ms = _costed("model_skill", model_skill)
     fcx = _costed("forecast_contract", forecast_contract)
     mz = _costed("model_league", model_league)
@@ -2174,6 +2193,7 @@ def main() -> None:
                     "stamp_freshness": stf,
                     "fill_attribution": fat,
                     "cost_to_edge": c2e,
+                    "source_routes": srt,
                     "model_skill": ms,
                     "frontier": fr, "refresh_bars": rb, "deep_forest": df,
                     "maintain_miners": mm, "publish_survivors": ps,
