@@ -744,6 +744,169 @@ def partition_at_economic_prior(specs: list[dict],
 CACHE_DIR = REPORTS / "gauntlet_cache"
 
 
+#: How strongly the build budget follows measured family yield. 0 spends uniformly (the old
+#: behaviour); 1 spends strictly in proportion to the shrunk posterior. Between the two, because
+#: a family's yield is an estimate and the desk must keep buying information about the families
+#: it has not yet measured well.
+YIELD_ALLOCATION_STRENGTH = float(os.environ.get("GAUNTLET_YIELD_STRENGTH", "0.70"))
+
+#: Strength of the Beta prior, in cells. a+b is how many of a family's OWN ruled cells it takes to
+#: move it off the house average; a/(a+b) is the house average itself and is MEASURED each sweep
+#: rather than declared (`_house_yield`). 100 cells is deliberately slow: `session_range_breakout`
+#: earned its 105-per-1,000 on 142 cells, so a family needs a comparable record before the
+#: allocator believes an extreme number rather than a lucky one.
+YIELD_PRIOR_STRENGTH = 100.0
+
+#: No family may take more than this share of one sweep, however well it has done. The capital
+#: allocator has `hard_ceiling` for the same reason and it is not timidity: a yield estimate is
+#: drawn from the cells the desk CHOSE to build, so letting the leader take everything closes the
+#: loop that would have told it it was wrong. The desk also cannot certify a portfolio out of one
+#: family -- n_eff collapses to 1/rho and the E8 barrier is priced on INDEPENDENT mechanisms, so
+#: a sweep that produced only session_range_breakout survivors would buy certificates it cannot
+#: diversify with.
+YIELD_MAX_SHARE = 0.45
+
+#: No family may be squeezed below this share of its own docket, however badly it has done.
+#: EXPLORATION IS NOT CHARITY HERE: a family that has ruled 200 cells for zero survivors may still
+#: be one parameterisation away from working, and the desk cannot learn that from cells it never
+#: builds. It is also the fence against a feedback loop -- starve a family completely and its
+#: yield can never update, so a single bad epoch would condemn it permanently.
+YIELD_MIN_SHARE = 0.15
+
+
+def _family_yield(root: Path | None = None) -> dict[str, float]:
+    """Survivors per RULED cell, per family, shrunk toward the desk's own average.
+
+    Ruled, not judged: a cell the gates could not rule on (`unmeasured` -- under the 60 trading
+    days they need) says nothing about the family's productivity, and counting it as a failure
+    would condemn exactly the families whose parameterisations need widening rather than
+    discarding.
+    """
+    base = root or REPORTS.parent
+    try:
+        g = json.loads((base / "reports" / "universal_gates_external.json").read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    ruled: dict[str, int] = {}
+    for v in g.get("verdicts") or []:
+        if not isinstance(v, dict) or v.get("unmeasured"):
+            continue
+        fam = str(v.get("family") or "")
+        if fam:
+            ruled[fam] = ruled.get(fam, 0) + 1
+    try:
+        s = json.loads((base / "reports" / "UNIVERSAL_SURVIVORS.json").read_text("utf-8"))
+    except (OSError, ValueError):
+        s = {}
+    surv: dict[str, int] = {}
+    for val in (s.get("survivors") or {}).values():
+        fam = str(((val or {}).get("shadow_spec") or {}).get("family") or "")
+        if fam:
+            surv[fam] = surv.get(fam, 0) + 1
+    fams = set(ruled) | set(surv)
+    # THE PRIOR IS THE DESK'S OWN AGGREGATE, MEASURED NOW. A declared constant would go stale the
+    # moment the desk got better or worse at converting cells, and would quietly become the thing
+    # deciding allocation on a day when every family underperformed it.
+    tot_s, tot_r = sum(surv.values()), sum(ruled.values())
+    house = (tot_s / tot_r) if tot_r else 0.0
+    pa = max(house, 1e-6) * YIELD_PRIOR_STRENGTH
+    pb = YIELD_PRIOR_STRENGTH - pa
+    return {f: (surv.get(f, 0) + pa) / (ruled.get(f, 0) + pa + pb) for f in fams}
+
+
+def _house_yield() -> float:
+    """Survivors per ruled cell across every family -- what an unmeasured family is credited."""
+    y = _family_yield()
+    return (sum(y.values()) / len(y)) if y else 0.0
+
+
+def allocate_by_yield(specs: list[dict]) -> tuple[list[dict], dict[str, dict]]:
+    """Trim the docket so the build budget lands on the families that produce survivors.
+
+    THE BUDGET WAS BEING SPENT WHERE THE CELLS WERE, NOT WHERE THE SURVIVORS WERE. Measured on
+    the live desk 2026-09-14, survivors per 1,000 RULED cells:
+
+        session_range_breakout  105.6   (15 of 142)
+        overnight_gap_decay      60.9   (12 of 197)
+        carry                     8.7   (1 of 115)
+        discovered                2.0   (33 of 16,270)
+        cross_asset_residual      0.0   (0 of 816)
+        relative_value            0.0   (0 of 363)
+        vol_transition            0.0   (0 of 249)
+        correlation_regime        0.0   (0 of 249)
+        pca_residual              0.0   (0 of 230)
+        turn_of_month             0.0   (0 of 146)
+
+    `session_range_breakout` is fifty-two times more productive per cell than `discovered`, and
+    `discovered` was taking 84% of every sweep. The two families that produced 27 of the desk's
+    66 survivors shared 339 cells between them. Nothing chose that: the sweep builds in symbol-
+    rotation order and `discovered` simply has the most cells, so the docket's SHAPE was the
+    allocation policy.
+
+    WHY A QUOTA AND NOT A REORDER. Cells are sorted so one symbol's charts stay contiguous,
+    because the frame cache is what makes a build cheap; sorting by family first would reload
+    frames once per yield band. Trimming each family's share leaves that ordering exactly as it
+    is and changes only how much of each family the hour reaches.
+
+    THE SHARES ARE DERIVED, NEVER DECLARED. Each family's share is its shrunk posterior yield
+    blended with a uniform share at `YIELD_ALLOCATION_STRENGTH`, floored at `YIELD_MIN_SHARE`
+    of its own docket. A family with no record is credited with the house average, so a new
+    family is neither condemned nor privileged before it has evidence.
+
+    This does not reduce the sweep's total work; it redirects it. Nothing is dropped from the
+    docket -- a trimmed cell keeps its place for a later hour, exactly as a deferred one does.
+    """
+    if not specs:
+        return specs, {}
+    yields = _family_yield()
+    by_fam: dict[str, list[dict]] = {}
+    for sp in specs:
+        by_fam.setdefault(str(sp.get("family") or "?"), []).append(sp)
+    # A FAMILY WITH NO RECORD IS CREDITED WITH THE HOUSE AVERAGE, measured from the same artifacts
+    # in the same breath. Crediting it with zero would starve every new family at birth; crediting
+    # it with the best family's rate would let an untested one displace a proven one.
+    prior = _house_yield()
+    raw = {f: max(yields.get(f, prior), 1e-9) for f in by_fam}
+    tot = sum(raw.values()) or 1.0
+    n_fam = len(by_fam)
+    keep: list[dict] = []
+    report: dict[str, dict] = {}
+    for fam, rows in by_fam.items():
+        share = (YIELD_ALLOCATION_STRENGTH * (raw[fam] / tot)
+                 + (1.0 - YIELD_ALLOCATION_STRENGTH) / n_fam)
+        # A share is of the WHOLE docket; a family holding fewer cells than its share simply
+        # keeps all of them and the surplus flows to the others through the floor below.
+        share = min(share, YIELD_MAX_SHARE)
+        want = max(int(round(share * len(specs))), int(YIELD_MIN_SHARE * len(rows)), 1)
+        take = rows[:want]
+        keep.extend(take)
+        report[fam] = {"docket": len(rows), "built_this_sweep": len(take),
+                       "yield_per_1k_ruled": round(raw[fam] * 1000, 2),
+                       "share_of_budget": round(share, 4),
+                       "capped_by_ceiling": bool(share >= YIELD_MAX_SHARE),
+                       "held_by_floor": bool(len(take) <= int(YIELD_MIN_SHARE * len(rows)))}
+    # PUBLISHED, because an allocation nobody can read is not an allocation anyone can argue with
+    # -- the capital side has pf_allocation.json for exactly this and the research side had
+    # nothing. Best effort: a research sweep must never die because a report file is unwritable.
+    try:
+        out = REPORTS / "RESEARCH_ALLOCATION.json"
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps({
+            "generated_utc": datetime.now(UTC).isoformat(timespec="seconds"),
+            "rule": ("share of the build budget per family: shrunk posterior survivors-per-ruled-"
+                     "cell, blended with uniform at YIELD_ALLOCATION_STRENGTH, floored at "
+                     "YIELD_MIN_SHARE of the family's own docket and capped at YIELD_MAX_SHARE"),
+            "strength": YIELD_ALLOCATION_STRENGTH,
+            "floor_share": YIELD_MIN_SHARE, "ceiling_share": YIELD_MAX_SHARE,
+            "prior_strength_cells": YIELD_PRIOR_STRENGTH,
+            "docket_total": len(specs), "built_this_sweep": len(keep),
+            "by_family": report,
+        }, indent=1), encoding="utf-8")
+    except OSError:
+        pass
+    return keep, report
+
+
 #: When each symbol's cells were last BUILT (not merely considered). The rotation key.
 BUILD_CURSOR = REPORTS.parent / "data" / "hypotheses" / "gauntlet_build_cursor.json"
 
@@ -2217,9 +2380,22 @@ def main():
                         str(sp.get("sym") or ""),
                         timeframe_of(sp.get("params"), str(sp.get("family") or "")),
                         str(sp.get("family") or "")))
+    # ALLOCATE THE HOUR BY MEASURED YIELD, AFTER the never-judged cells are already at the front.
+    # Order decides what gets reached; the quota decides how much of each family the hour spends
+    # itself on. Applied here rather than before the sort so a never-judged cell keeps its
+    # priority -- judging a cell for the first time is still the only thing a sweep does that can
+    # change what the desk knows, whatever family it belongs to.
+    _before = len(eligible_specs)
+    eligible_specs, _alloc = allocate_by_yield(eligible_specs)
     _n_new = sum(1 for sp in eligible_specs if _is_new(sp) == 0)
     print(f"  docket order: {_n_new} never-judged cell(s) first, then "
           f"{len(eligible_specs) - _n_new} in symbol-rotation order")
+    if _alloc:
+        print(f"  yield allocation: {len(eligible_specs)} of {_before} cell(s) this sweep "
+              f"(strength {YIELD_ALLOCATION_STRENGTH:.2f}, floor {YIELD_MIN_SHARE:.0%})")
+        for _f, _r in sorted(_alloc.items(), key=lambda kv: -kv[1]["yield_per_1k_ruled"])[:8]:
+            print(f"    {_f:26} {_r['built_this_sweep']:6}/{_r['docket']:<6} "
+                  f"yield/1k {_r['yield_per_1k_ruled']:8.2f}  share {_r['share_of_budget']:.3f}")
     # PARALLEL PRE-WARM, BEFORE THE LOOP THAT HAS ALWAYS RUN. Workers build the uncached cells
     # into the on-disk cache in this exact order until the build budget is spent; the loop
     # below then finds them and takes its cached branch, and defers whatever the pool did not
