@@ -1,0 +1,455 @@
+[
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Uncertain Volatility Model - Option Pricing R code help",
+  "url": "https://quant.stackexchange.com/questions/76496/uncertain-volatility-model-option-pricing-r-code-help",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-14T07:05:13+00:00",
+  "score": 0,
+  "tags": [
+   "option-pricing",
+   "volatility",
+   "black-scholes",
+   "programming",
+   "uncertain-volatility"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Tired of struggling with Pine Script?",
+  "url": "https://quant.stackexchange.com/questions/85843/tired-of-struggling-with-pine-script",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-14T07:05:13+00:00",
+  "score": -3,
+  "tags": [
+   "pairs-trading"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Seeking data source for index constituents and changes",
+  "url": "https://quant.stackexchange.com/questions/37982/seeking-data-source-for-index-constituents-and-changes",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-14T07:05:13+00:00",
+  "score": 2,
+  "tags": [
+   "programming",
+   "index",
+   "indexes"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Optimising returns weighted by Sharpe ratio in the context of Supervised Learning",
+  "url": "https://quant.stackexchange.com/questions/60233/optimising-returns-weighted-by-sharpe-ratio-in-the-context-of-supervised-learnin",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-14T07:05:13+00:00",
+  "score": 1,
+  "tags": [
+   "optimization",
+   "sharpe-ratio",
+   "machine-learning"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Does using volatility surfaces instead of constant vol dismisses you from scaling your vol terms in d1/2?",
+  "url": "https://quant.stackexchange.com/questions/85591/does-using-volatility-surfaces-instead-of-constant-vol-dismisses-you-from-scalin",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-14T07:05:13+00:00",
+  "score": 0,
+  "tags": [
+   "options",
+   "black-scholes",
+   "derivatives",
+   "cryptocurrency"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Pairs trading/Cointegration confusion",
+  "url": "https://quant.stackexchange.com/questions/63848/pairs-trading-cointegration-confusion",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-14T07:05:13+00:00",
+  "score": 0,
+  "tags": [
+   "cointegration",
+   "pairs-trading",
+   "optimal-hedge-ratio"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "PRIIPs Stress Scenario calculation category 2",
+  "url": "https://quant.stackexchange.com/questions/57537/priips-stress-scenario-calculation-category-2",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-14T07:05:13+00:00",
+  "score": 0,
+  "tags": [
+   "priips"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Standardizing non-standard cyclical data (e.g., Luni-Solar / Panchang metrics) as features in execution &amp; signal pipelines",
+  "url": "https://quant.stackexchange.com/questions/85841/standardizing-non-standard-cyclical-data-e-g-luni-solar-panchang-metrics-a",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-14T07:05:13+00:00",
+  "score": -1,
+  "tags": [
+   "time-series",
+   "algorithmic-trading",
+   "backtesting"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Application of risk-free rate in sharpe ratio over long time periods",
+  "url": "https://quant.stackexchange.com/questions/85772/application-of-risk-free-rate-in-sharpe-ratio-over-long-time-periods",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-14T07:05:13+00:00",
+  "score": 0,
+  "tags": [
+   "sharpe-ratio",
+   "risk-free"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Relationship between Beta distribution and its inverse",
+  "url": "https://quant.stackexchange.com/questions/80382/relationship-between-beta-distribution-and-its-inverse",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-14T07:05:13+00:00",
+  "score": 0,
+  "tags": [
+   "risk-neutral-measure",
+   "statistics",
+   "probability",
+   "distribution"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Treasury futures Net Basis / Implied Repo Rate",
+  "url": "https://quant.stackexchange.com/questions/85840/treasury-futures-net-basis-implied-repo-rate",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-14T07:05:13+00:00",
+  "score": 0,
+  "tags": [
+   "futures",
+   "treasuries",
+   "basis"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "How would one calculate yield to first call for a debt security which is currently and always callable?",
+  "url": "https://quant.stackexchange.com/questions/79113/how-would-one-calculate-yield-to-first-call-for-a-debt-security-which-is-current",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-14T07:05:13+00:00",
+  "score": 0,
+  "tags": [
+   "fixed-income",
+   "yield",
+   "callable-bonds",
+   "debt"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "In-sample volatility measurement",
+  "url": "https://quant.stackexchange.com/questions/45682/in-sample-volatility-measurement",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-14T07:05:13+00:00",
+  "score": 3,
+  "tags": [
+   "volatility",
+   "garch",
+   "standard-deviation"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Vega P&amp;L Attribution",
+  "url": "https://quant.stackexchange.com/questions/85839/vega-pl-attribution",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-14T07:05:13+00:00",
+  "score": 0,
+  "tags": [
+   "pnl"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Does FICC pay the seller out of its own pocket before it gets paid by the buyer?",
+  "url": "https://quant.stackexchange.com/questions/85838/does-ficc-pay-the-seller-out-of-its-own-pocket-before-it-gets-paid-by-the-buyer",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-14T07:05:13+00:00",
+  "score": 0,
+  "tags": [
+   "fixed-income",
+   "market-microstructure",
+   "treasury",
+   "settlement"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "GARCH(1,1)-M MLE optimization with fmincon in R",
+  "url": "https://quant.stackexchange.com/questions/51645/garch1-1-m-mle-optimization-with-fmincon-in-r",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-14T07:05:13+00:00",
+  "score": 8,
+  "tags": [
+   "options",
+   "programming",
+   "time-series",
+   "garch",
+   "estimation"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Mathematical derivation of FRTB SA framework for market risk capital requirements",
+  "url": "https://quant.stackexchange.com/questions/85837/mathematical-derivation-of-frtb-sa-framework-for-market-risk-capital-requirement",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-14T07:05:13+00:00",
+  "score": 0,
+  "tags": [
+   "risk",
+   "risk-management",
+   "basel",
+   "market-risk",
+   "expected-shortfall"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Is the older London Call (privilege), different from European Call?",
+  "url": "https://quant.stackexchange.com/questions/85832/is-the-older-london-call-privilege-different-from-european-call",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-14T07:05:13+00:00",
+  "score": 0,
+  "tags": [
+   "options",
+   "call",
+   "european",
+   "american"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Mid price vs micro price for IV calculation",
+  "url": "https://quant.stackexchange.com/questions/85835/mid-price-vs-micro-price-for-iv-calculation",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-14T07:05:13+00:00",
+  "score": 0,
+  "tags": [
+   "volatility"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Credit loss data (discounted)",
+  "url": "https://quant.stackexchange.com/questions/70041/credit-loss-data-discounted",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-14T07:05:13+00:00",
+  "score": 1,
+  "tags": [
+   "credit-risk",
+   "recovery"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Pricing curve for corporate bonds from EU, US, and GB?",
+  "url": "https://quant.stackexchange.com/questions/85834/pricing-curve-for-corporate-bonds-from-eu-us-and-gb",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-14T07:05:13+00:00",
+  "score": 0,
+  "tags": [
+   "bond",
+   "yield-curve",
+   "libor",
+   "rfr"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "not understanding ATR calculation",
+  "url": "https://quant.stackexchange.com/questions/79174/not-understanding-atr-calculation",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-14T07:05:13+00:00",
+  "score": -1,
+  "tags": [
+   "risk-management",
+   "position-sizing",
+   "atr"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Dupire (Local Vol with Imp Vol)",
+  "url": "https://quant.stackexchange.com/questions/61661/dupire-local-vol-with-imp-vol",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-14T07:05:13+00:00",
+  "score": 3,
+  "tags": [
+   "volatility",
+   "volatility-surface",
+   "implied",
+   "local"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Backtesting: what happens to real-executed order if mine fills instead?",
+  "url": "https://quant.stackexchange.com/questions/37080/backtesting-what-happens-to-real-executed-order-if-mine-fills-instead",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-14T07:05:13+00:00",
+  "score": 5,
+  "tags": [
+   "quant-trading-strategies",
+   "backtesting",
+   "strategy"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "How is anything bespoke priced and traded?",
+  "url": "https://quant.stackexchange.com/questions/85824/how-is-anything-bespoke-priced-and-traded",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-14T07:05:13+00:00",
+  "score": 0,
+  "tags": [
+   "options"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "How to ascertain/establish certainty of a portfolio rebalancing strategy?",
+  "url": "https://quant.stackexchange.com/questions/39265/how-to-ascertain-establish-certainty-of-a-portfolio-rebalancing-strategy",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-14T07:05:13+00:00",
+  "score": 2,
+  "tags": [
+   "portfolio-optimization",
+   "portfolio",
+   "strategy",
+   "rebalancing"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "What to predict in delta-gamma hedging?",
+  "url": "https://quant.stackexchange.com/questions/79069/what-to-predict-in-delta-gamma-hedging",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-14T07:05:13+00:00",
+  "score": 0,
+  "tags": [
+   "options",
+   "delta-hedging",
+   "delta",
+   "gamma"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Reconstructing the CRR model knowing put and call prices",
+  "url": "https://quant.stackexchange.com/questions/76463/reconstructing-the-crr-model-knowing-put-and-call-prices",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-14T07:05:13+00:00",
+  "score": 0,
+  "tags": [
+   "option-pricing",
+   "european-options"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Using options theta and delta for calculating leverage over underlying?",
+  "url": "https://quant.stackexchange.com/questions/80328/using-options-theta-and-delta-for-calculating-leverage-over-underlying",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-14T07:05:13+00:00",
+  "score": 0,
+  "tags": [
+   "options",
+   "greeks",
+   "delta",
+   "leverage",
+   "theta"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Constructing Factor Mimicking Portfolios",
+  "url": "https://quant.stackexchange.com/questions/83891/constructing-factor-mimicking-portfolios",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-14T07:05:13+00:00",
+  "score": 2,
+  "tags": [
+   "factor-models",
+   "factor-investing"
+  ]
+ }
+]
