@@ -1,6 +1,6 @@
 # Desk lessons
 
-322 lessons, generated from `docs/desk_lessons.jsonl`.
+323 lessons, generated from `docs/desk_lessons.jsonl`.
 
 > [!warning] This vault is a DERIVED VIEW.
 > `docs/desk_lessons.jsonl` is the source of truth and the only thing organs read.
@@ -28,8 +28,8 @@ there dilutes the lessons that do apply.
 - #priors (11)
 - #validation (10)
 - #testing (10)
+- #execution (9)
 - #data (8)
-- #execution (8)
 - #mining (8)
 - #silent-failure (7)
 - #wiring (7)
@@ -373,3 +373,4 @@ there dilutes the lessons that do apply.
 - [[l0320-when-an-artifact-carries-two-freshness-fields-one-will]]
 - [[l0321-a-broker-reporting-stops-level-0-is-saying-it-has-no-m]]
 - [[l0322-when-two-ledgers-describe-the-same-event-find-the-one-]]
+- [[l0323-never-accept-the-benign-explanation-for-a-pooled-failu]]
