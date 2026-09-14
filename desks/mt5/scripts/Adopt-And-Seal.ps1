@@ -126,11 +126,39 @@ while ((Get-ScheduledTask -TaskName "MT5-ShadowSync" -ErrorAction SilentlyContin
 # keeps it through the seal commit: Adopt-Release is a child process, but the lock is ours, and
 # the sync yields on it. An abandoned mutex (a writer that died holding it) is a grant, not a
 # wedge. Nine minutes, as above.
-$script:GitWriterMutex = New-Object System.Threading.Mutex($false, "Local\MT5-GitWriter")
+# AND A MUTEX WE COULD NOT CREATE IS NOT A MUTEX SOMEBODY ELSE HOLDS (2026-09-15).
+#
+# `New-Object System.Threading.Mutex` throws UnauthorizedAccessException when the named object
+# already exists and the caller's token cannot open it with default rights -- which is exactly the
+# case here: the scheduled tasks run under S4U principals and an interactive/SSH session does not.
+# The throw left $script:GitWriterMutex NULL, `.WaitOne()` then failed non-terminating with
+# InvokeMethodOnNull, $gotLock stayed $false, and the script reported
+#
+#     "another git writer holds Local\MT5-GitWriter after 9 min; not adopting under it"
+#
+# having waited zero seconds and having no idea whether anyone held it. The refusal was right and
+# the reason was invented -- the same shape as "the terminal connection is gone", which was also
+# a guess this desk printed as fact. An operator reading the log is sent to look for a phantom
+# writer, and the number 9 is a lie about a wait that never happened.
+$script:GitWriterMutex = $null
+$mutexWhy = ""
+try {
+    $script:GitWriterMutex = New-Object System.Threading.Mutex($false, "Local\MT5-GitWriter")
+} catch {
+    $mutexWhy = $_.Exception.GetType().Name + ": " + $_.Exception.Message
+}
 $gotLock = $false
+if ($null -eq $script:GitWriterMutex) {
+    Log ("could not OPEN Local\MT5-GitWriter (" + $mutexWhy + ") -- this is not evidence that " +
+         "another writer holds it; the lock could not be examined at all. Not adopting.")
+    exit 6
+}
 try { $gotLock = $script:GitWriterMutex.WaitOne(540000) }
 catch [System.Threading.AbandonedMutexException] { $gotLock = $true }
-if (-not $gotLock) { Log "another git writer holds Local\MT5-GitWriter after 9 min; not adopting under it"; exit 6 }
+if (-not $gotLock) {
+    Log "another git writer held Local\MT5-GitWriter for the full 9 min; not adopting under it"
+    exit 6
+}
 
 # ---------------------------------------------------------------- 1. adopt the branch's tree
 $adoptScript = Join-Path $desk "scripts\Adopt-Release.ps1"
