@@ -73,7 +73,9 @@ RETIRE (fully automatic):
 The armed gold book is NOT managed here (hunt5 authority, armed by human).
 """
 
+import hashlib
 import json
+import re
 import math
 import sys
 import time
@@ -1005,6 +1007,73 @@ def _evidence_shrink(row: dict | None) -> tuple[float | None, str]:
     return f, f"S={s:.2f} over {days:.0f} forward day(s)"
 
 
+#: How many LIVE sleeves may share one parameter signature.
+#:
+#: ORTHOGONALITY WAS MEASURED AND NOT BINDING, which is the difference between knowing a book is
+#: concentrated and having a book that is not. Measured 2026-09-14: parameter hash
+#: `44136fa355b3678a` held FOUR live sleeves -- chfdkk, eurnok, gbpmxn, gbpnok -- the identical
+#: overnight_gap_decay parameter set on four exotics in the same session. Earlier in the campaign
+#: it held twelve. That is ONE hypothesis promoted four times, and every consumer counted it as
+#: four bets.
+#:
+#: IT IS THE MOST DANGEROUS NUMBER ON THE DESK. `n_effective` is 5.592 against a ceiling of
+#: 1/rho = 6.1 -- the book is already AT its ceiling, so each replication adds gross exposure and
+#: no diversification whatever. A drawdown in that parameter set arrives on four sleeves at once,
+#: on four wide-spread high-swap crosses, at the thinnest liquidity hour of the day.
+#:
+#: TWO, NOT ONE. A second instrument is a genuine out-of-sample test of the same parameters and
+#: the desk should be allowed to hold it; a third and fourth are replication dressed as breadth.
+#: The refusal is STANDBY, never RETIRED -- the sleeve keeps its clock and its evidence, and
+#: becomes promotable the moment a sibling retires. Nothing is destroyed, only un-funded.
+PARAM_HASH_MAX_LIVE = 2
+
+
+def _live_param_hashes() -> dict[str, list[str]]:
+    """param signature -> the LIVE sleeve names already holding it."""
+    out: dict[str, list[str]] = {}
+    try:
+        doc = json.loads((BASE / "data" / "sleeves.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return out
+    rows = doc.get("sleeves") if isinstance(doc, dict) else doc
+    for r in (rows or []):
+        if not isinstance(r, dict) or str(r.get("status") or "").upper() != "LIVE":
+            continue
+        name = str(r.get("name") or "")
+        m = re.search(r"_p_([0-9a-f]{8,})$", name)
+        h = m.group(1) if m else ""
+        if not h:
+            params = r.get("params")
+            if isinstance(params, dict) and params:
+                h = hashlib.sha256(json.dumps(params, sort_keys=True, default=str)
+                                   .encode("utf-8")).hexdigest()[:16]
+        if h:
+            out.setdefault(h, []).append(name)
+    return out
+
+
+def param_hash_saturated(name: str, params: object = None) -> tuple[bool, str]:
+    """Does this sleeve's parameter signature already hold its share of the live book?
+
+    Returns (refuse, why). A sleeve ALREADY LIVE under this signature does not count against
+    itself -- re-affirming an existing row must never be read as a new replication.
+    """
+    m = re.search(r"_p_([0-9a-f]{8,})$", str(name))
+    h = m.group(1) if m else ""
+    if not h and isinstance(params, dict) and params:
+        h = hashlib.sha256(json.dumps(params, sort_keys=True, default=str)
+                           .encode("utf-8")).hexdigest()[:16]
+    if not h:
+        return False, ""
+    siblings = [n for n in _live_param_hashes().get(h, []) if n != str(name)]
+    if len(siblings) < PARAM_HASH_MAX_LIVE:
+        return False, ""
+    return True, (f"parameter signature {h} already holds {len(siblings)} live sleeve(s) "
+                  f"({', '.join(siblings[:3])}): same hypothesis, not a new bet. n_eff is at "
+                  f"its 1/rho ceiling, so a replication adds exposure and no diversification. "
+                  f"STANDBY not retired -- promotable when a sibling goes")
+
+
 def capital_verdict(view: dict, name: str, *, symbol: str = "", family: str = "",
                     selector: str = "", streak: int = 0,
                     first_promotion: bool = True) -> dict:
@@ -1058,6 +1127,13 @@ def capital_verdict(view: dict, name: str, *, symbol: str = "", family: str = ""
     if not (frac > 0.0):
         out["status"] = "STANDBY"
         out["why"] = f"admitted but sized at zero: {why_frac}"
+        return out
+    # ORTHOGONALITY, BINDING. Measured everywhere on this desk and enforced nowhere until now.
+    saturated, why_sat = param_hash_saturated(name)
+    if saturated:
+        out["status"] = "STANDBY"
+        out["param_hash_saturated"] = True
+        out["why"] = why_sat
         return out
     out.update({"status": "LIVE", "risk_frac": frac,
                 # BOTH NUMBERS, because they can legitimately differ: the gateway sizes a funded

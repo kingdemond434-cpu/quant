@@ -132,6 +132,27 @@ def _read(path: Path) -> dict:
         return {}
 
 
+def _param_hash(row: object) -> str:
+    """The parameter signature a forward row carries, or "" when it has none.
+
+    A ROW'S IDENTITY IS ITS PARAMETERS, NOT ITS SYMBOL. Two sleeves on different instruments with
+    the same parameter set are one hypothesis tested twice, and counting them as two is how a
+    dashboard reports four times the breadth the book actually holds.
+    """
+    if not isinstance(row, dict):
+        return ""
+    for k in ("param_hash", "params_hash", "p"):
+        v = row.get(k)
+        if isinstance(v, str) and v:
+            return v
+    params = row.get("params")
+    if isinstance(params, dict) and params:
+        import hashlib
+        return hashlib.sha256(
+            json.dumps(params, sort_keys=True, default=str).encode("utf-8")).hexdigest()[:16]
+    return ""
+
+
 def _terminal_status(value: object) -> bool:
     status = str(value or "").upper()
     return any(status == prefix or status.startswith(prefix + "_") for prefix in (
@@ -266,6 +287,26 @@ def run() -> tuple[dict, int]:
         "configured_sleeves": len(active_rows),
         "represented_sleeves": len(active_rows),
         "certified_sleeves_total": certified,
+        # THE DASHBOARD SAID 61 AND THE TRUTH WAS ABOUT SIX (added 2026-09-14).
+        #
+        # A sleeve count is not a breadth measure. Measured on the live book: one parameter hash,
+        # `44136fa355b3678a`, held FOUR sleeves -- chfdkk, eurnok, gbpmxn, gbpnok -- the identical
+        # overnight_gap_decay parameter set on four exotics in the same session. Earlier, twelve.
+        # That is one bet counted four times, and `certified_sleeves_total` reports it as four.
+        #
+        # `n_eff` already measures this properly (5.59 against a 1/rho ceiling of 6.1) but it
+        # lives in portfolio_evidence, which nothing on the health tile reads. So the number the
+        # principal sees on the board grew from 23 to 61 while effective breadth stayed flat --
+        # a number that looks maintained while carrying no usable information, which is the exact
+        # defect class `check_stamp_freshness` was written for.
+        #
+        # Three counts, because they answer three different questions and collapsing them is how
+        # the confusion started: how many ROWS, how many distinct PARAMETERISATIONS, how many
+        # distinct MECHANISMS. The gap between the first and the last is the replication factor.
+        "n_distinct_param_hashes": len({
+            _param_hash(row) for row in active_rows if _param_hash(row)}),
+        "n_mechanisms": len({
+            str(row.get("family") or "") for row in active_rows if row.get("family")}),
         "retired_shadow_sleeves": len(terminal_rows),
         "quarantined_uncertified_candidates": (
             int(legacy.get("gate_blocked_sleeves", 0) or 0)
