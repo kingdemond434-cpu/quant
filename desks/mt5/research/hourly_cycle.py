@@ -1214,6 +1214,31 @@ def stop_reverse_census() -> dict:
     return _producer("stop_reverse", "research/stop_reverse_census.py")
 
 
+def forward_reconcile_leg() -> dict:
+    """`forward_reconcile`: retire orphan clocks EVERY HOUR, because they accrue every hour.
+
+    A DAILY CADENCE COULD NOT KEEP UP AND THE SHORTFALL WAS INVISIBLE. `forward_reconcile` runs
+    once a day as MT5-ForwardReconcile, and its whole log is two lines: 81 actions, then 167.
+    Run by hand on 2026-09-14 it took 190 more -- {'IDENTITY_UNFROZEN': 42, 'RETIRED_ORPHAN':
+    190} -- and the retirement count is CLIMBING pass over pass (40 -> 125 -> 190). Orphans are
+    minted continuously: 17 certificates landed in one day and every re-key orphans the ledger
+    row it replaced.
+
+    WHAT THE BACKLOG COST. `heal_forward_lane` reported 186 STALLED rows, 183 of them
+    STALE_ATTEMPT with "engine last evaluated this row 453.8h ago" -- nineteen days of rows that
+    LOOKED alive, held a clock, and accrued nothing. Retiring the orphans took STALLED from 186
+    to 4 in a single pass. The forward lane is the desk's only source of out-of-sample evidence,
+    so a stalled row is not cosmetic: it is a certificate that can never mature.
+
+    AND IT FAILS SOFT BY DESIGN, which is why the backlog was silent -- `run_forward_reconcile.cmd`
+    says so in its own header: "unreadable enrolment disables retirement for the pass". A pass
+    that retires nothing and a pass that had nothing to retire write the same log line. Hourly
+    cadence does not fix that ambiguity; it bounds the damage to an hour instead of a day while
+    the census below makes the backlog itself visible.
+    """
+    return _producer("forward_reconcile", "research/forward_reconcile.py")
+
+
 def _recertify_canon_claimed() -> dict:
     """`recertify_canon`, but only for a window the queue says is actually uncovered."""
     q, task, why = _claim_one("recertify")
@@ -2131,6 +2156,7 @@ def main() -> None:
     mko = _costed("markout", markout)
     exo = _costed("exogenous_search", exogenous_search)
     srx = _costed("stop_reverse", stop_reverse_census)
+    fwr = _costed("forward_reconcile", forward_reconcile_leg)
     ms = _costed("model_skill", model_skill)
     fcx = _costed("forecast_contract", forecast_contract)
     mz = _costed("model_league", model_league)
@@ -2311,6 +2337,7 @@ def main() -> None:
                     "markout": mko,
                     "exogenous_search": exo,
                     "stop_reverse": srx,
+                    "forward_reconcile": fwr,
                     "model_skill": ms,
                     "frontier": fr, "refresh_bars": rb, "deep_forest": df,
                     "maintain_miners": mm, "publish_survivors": ps,

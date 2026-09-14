@@ -100,6 +100,9 @@ LEG_LAYER: dict[str, str] = {
     "exogenous_search": "information",
     # `stop_reverse` asks what the desk's own orders did to it at the venue -- execution.
     "stop_reverse": "execution",
+    # `forward_reconcile` keeps the forward lane's roster true -- which clock may accrue
+    # evidence and which is an orphan. That is portfolio bookkeeping, not prediction.
+    "forward_reconcile": "portfolio",
     # AND FIVE LEGS WERE STILL UNMAPPED WHEN THOSE FOUR LANDED (2026-09-14). The registry's own
     # comment records fifteen of these in 2026-09-10 and the same drift had recurred, so the test
     # this file exists to satisfy was red before this session touched it. Mapped by what each
