@@ -27,6 +27,7 @@ from __future__ import annotations
 import json
 import re
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -52,7 +53,7 @@ def _run(incoming: dict[str, object], local: dict[str, object], tmp: Path) -> tu
     b.write_text(json.dumps(local), "utf-8")
     src = tmp / "guard.py"
     src.write_text(_guard_source(), "utf-8")
-    p = subprocess.run(["python3", str(src), str(a), str(b)], capture_output=True, text=True,
+    p = subprocess.run([sys.executable, str(src), str(a), str(b)], capture_output=True, text=True,
                        check=False, timeout=60)
     return p.returncode, p.stdout
 
@@ -141,7 +142,7 @@ def test_an_unreadable_incoming_copy_is_refused(tmp_path: Path) -> None:
     b.write_text(json.dumps(_reg(251)), "utf-8")
     src = tmp_path / "guard.py"
     src.write_text(_guard_source(), "utf-8")
-    p = subprocess.run(["python3", str(src), str(a), str(b)], capture_output=True, text=True,
+    p = subprocess.run([sys.executable, str(src), str(a), str(b)], capture_output=True, text=True,
                        check=False, timeout=60)
     assert p.returncode != 0, "a mid-write or truncated file must never become the local truth"
 
@@ -153,6 +154,6 @@ def test_a_non_object_incoming_copy_is_refused(tmp_path: Path, bad: str) -> None
     b.write_text(json.dumps(_reg(251)), "utf-8")
     src = tmp_path / "guard.py"
     src.write_text(_guard_source(), "utf-8")
-    p = subprocess.run(["python3", str(src), str(a), str(b)], capture_output=True, text=True,
+    p = subprocess.run([sys.executable, str(src), str(a), str(b)], capture_output=True, text=True,
                        check=False, timeout=60)
     assert p.returncode != 0

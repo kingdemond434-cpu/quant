@@ -16,6 +16,7 @@ before.
 from __future__ import annotations
 
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -37,7 +38,7 @@ def _commit(repo: Path, rel: str, body: str, subject: str) -> None:
 
 
 def _run(repo: Path) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(["python3", str(_TOOL), "--root", str(repo)], cwd=repo,
+    return subprocess.run([sys.executable, str(_TOOL), "--root", str(repo)], cwd=repo,
                           capture_output=True, text=True, check=False)
 
 
@@ -69,7 +70,7 @@ def test_the_measured_launder_is_named_and_healable(repo: Path) -> None:
     assert "desks/mt5/research/organ.py" in out.stdout
     assert "CLEAN-REVERT" in out.stdout, "nothing was authored on top -- this is the healable half"
 
-    healed = subprocess.run(["python3", str(_TOOL), "--heal", "--root", str(repo)], cwd=repo,
+    healed = subprocess.run([sys.executable, str(_TOOL), "--heal", "--root", str(repo)], cwd=repo,
                             capture_output=True, text=True, check=False)
     assert "healed" in healed.stdout
     assert (repo / "desks/mt5/research/organ.py").read_text("utf-8") == _AUTHORED
@@ -90,7 +91,7 @@ def test_a_rewrite_on_top_is_REVIEW_and_is_never_auto_healed(repo: Path) -> None
     assert "CLEAN-REVERT" not in out.stdout
     assert out.returncode == 0, "a row nobody can close mechanically must not hold the gate red"
 
-    subprocess.run(["python3", str(_TOOL), "--heal", "--root", str(repo)], cwd=repo,
+    subprocess.run([sys.executable, str(_TOOL), "--heal", "--root", str(repo)], cwd=repo,
                    capture_output=True, text=True, check=False)
     assert (repo / "desks/mt5/research/organ.py").read_text("utf-8") == newer, \
         "--heal overwrote a post-sync rewrite: the tool became the defect it detects"
