@@ -1,0 +1,354 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "KBpedia: Algorithm Reference Concept",
+  "url": "https://kbpedia.org/knowledge-graph/reference-concept/?uri=Algorithm",
+  "published": "2026-09-14T14:13:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://kbpedia.org/resources/downloads/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "751c136e3fa128f1d567",
+  "host": "kbpedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Dictionary of Algorithms and Data Structures",
+  "url": "http://www.nist.gov/dads/",
+  "published": "2026-09-14T14:13:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d4b849091f5ba0af8d14",
+  "host": "www.nist.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Uppslagsverk - NE.se",
+  "url": "http://www.ne.se/uppslagsverk/encyklopedi/l\u00e5ng/algoritm",
+  "published": "2026-09-14T14:13:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion"
+  ],
+  "confidence": 0.35,
+  "lang": "sv",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "81b992f1d467fd6c685e",
+  "host": "www.ne.se",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cultureel Woordenboek - Wiskunde ~ algoritme",
+  "url": "https://www.cultureelwoordenboek.nl/wiskunde/algoritme",
+  "published": "2026-09-14T14:13:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "nl",
+  "endpoints": [
+   "https://www.cultureelwoordenboek.nl/navigatie/images/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "3d2bbcc0362b5ead9524",
+  "host": "www.cultureelwoordenboek.nl",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmi - Enciclopedia - Treccani",
+  "url": "https://www.treccani.it/enciclopedia/algoritmi_(Enciclopedia-dei-ragazzi)",
+  "published": "2026-09-14T14:13:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.35,
+  "lang": "it",
+  "endpoints": [
+   "https://www.treccani.it/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ab2569054e49800ca788",
+  "host": "www.treccani.it",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithm - Encyclopedia of Mathematics",
+  "url": "https://encyclopediaofmath.org/wiki/Algorithm",
+  "published": "2026-09-14T14:13:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c72883b69b66d46de8c5",
+  "host": "encyclopediaofmath.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "algoritme \u2013 Store norske leksikon",
+  "url": "https://wikidata-externalid-url.toolforge.org/?p=4342&url_prefix=https://snl.no/&id=algoritme",
+  "published": "2026-09-14T14:13:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory"
+  ],
+  "confidence": 0.35,
+  "lang": "no",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c0e4aca9b1b757ef7fb3",
+  "host": "wikidata-externalid-url.toolforge.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithmus | Journalistikon",
+  "url": "https://journalistikon.de/algorithmus",
+  "published": "2026-09-14T14:14:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "de",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6e1f08ac6a37d62c68ba",
+  "host": "journalistikon.de",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "algoritme - Specifikation, korrekthed, effektivitet - Lex",
+  "url": "https://wikidata-externalid-url.toolforge.org/?p=8313&url_prefix=https://lex.dk/&id=algoritme",
+  "published": "2026-09-14T14:14:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "da",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5a25675525ad5a981d8b",
+  "host": "wikidata-externalid-url.toolforge.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "algorithm | MetaSat",
+  "url": "https://schema.space/metasat/algorithm",
+  "published": "2026-09-14T14:14:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "momentum",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://schema.space/metasat/dataSet",
+   "https://schema.space/metasat/download",
+   "https://schema.space/metasat/downloadURL"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "d1041c90c3f34c27d246",
+  "host": "schema.space",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "ODLIS A",
+  "url": "https://wikidata-externalid-url.toolforge.org/?p=9374&url_prefix=https://products.abc-clio.com/ODLIS/odlis_&id=a.aspx%23algorithm",
+  "published": "2026-09-14T14:14:28+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "flow",
+   "gap",
+   "inventory",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "http://www.adobe.com/downloads/",
+   "https://wikidata-externalid-url.toolforge.org/odlis_e.html#export"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "3a45ba879ef79bb6d0d5",
+  "host": "wikidata-externalid-url.toolforge.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "algorithm",
+  "url": "https://planetmath.org/Algorithm",
+  "published": "2026-09-14T14:14:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "10016abe643fed467eba",
+  "host": "planetmath.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Definition:Algorithm - ProofWiki",
+  "url": "https://proofwiki.org/wiki/Definition%3AAlgorithm",
+  "published": "2026-09-14T14:14:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ba8b65274c6db75b06ce",
+  "host": "proofwiki.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "https://robbinstrading.com/r/stonex-online-application-wcc/",
+  "url": "https://robbinstrading.com/r/stonex-online-application-wcc/",
+  "published": "2026-09-14T14:14:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d46096a2a48f09a24a13",
+  "host": "robbinstrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "User Registration - Dorman Trading Portal",
+  "url": "https://robbinstrading.com/r/dorman-online-account-application-wcc-accounts/",
+  "published": "2026-09-14T14:15:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4bf68e551c6e18465846",
+  "host": "robbinstrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "https://hackernoon.com/founder-interviews-lucas-liew-of-algotrading101-250a58b50e34",
+  "url": "https://hackernoon.com/founder-interviews-lucas-liew-of-algotrading101-250a58b50e34",
+  "published": "2026-09-14T14:15:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "77355cd336e7b68e0a67",
+  "host": "hackernoon.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]
