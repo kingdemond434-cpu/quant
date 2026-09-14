@@ -18,5 +18,44 @@
   "start_verified": false,
   "end_verified": false,
   "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UC7NJLsf6IonOy8QI8gt5BeA",
+  "channel": "Trading with DaviddTech",
+  "video_id": "GtB-i71EyOo",
+  "published": "2026-09-14T13:00:01Z",
+  "title": "I Gave 3 AI Trading Bots the Same Rules\u2026 Only The BEST Survived",
+  "description": "\ud83d\udc49 **Learn AI trading bots and algo trading with us:**  \nJoin the DaviddTech community: https://www.skool.com/daviddtech/about\n\nI gave ChatGPT, Claude and Grok the same starting prompts and one week to build the most profitable trading strategies they could.\n\nBut finding promising backtests was only part of the challenge. Some agents stopped early, usage limits interrupted the experiment, and the leaderboard winner wasn\u2019t necessarily my first choice for everyday use.\n\nIn this full step-by-step guide, I show you how to build your own AI trading desk, connect the backtesting tools, create a strategy dashboard and run the same experiment yourself.\n\n\n\ud83d\udcca Strategy Incubation Tracker: https://docs.google.com/spreadsheets/d/1sMSKL-uul9R1QyIcDWV7SiO35JJQYuuaw9h3CWb51i4/edit?usp=sharing\n\n\n\ud83c\udfc6 **AI Trading Arena & Setup Prompts:**  \nAccess the Arena and prompts: https://aitradingarena.com/\n\n\ud83d\udee0\ufe0f **Free Backtesting Tools:**  \nTradingKit.com: https://tradingkit.com/\n\n\ud83d\udd11 Watch for the password that appears on screen to access the prompts shown in the video.\n\n\n---\n\n## In this video you\u2019ll discover:\n\n\u2705 How to set up an AI trading desk with ChatGPT, Claude or Grok  \n\u2705 How to connect TradingKit\u2019s MCP tools and run your first strategy backtest  \n\u2705 How to build a dashboard for returns, drawdown, trade history and strategy comparisons  \n\u2705 The dashboard, onboarding and one-week experiment prompts I use  \n\u2705 What happened when agents stopped working or hit their usage limits  \n\u2705 How the models compared on strategy results and reported token usage  \n\u2705 How to export a strategy into TradingView\u2019s Pine Script editor  \n\u2705 Why out-of-sample checks, forward testing and buy-and-hold comparisons matter before risking real money  \n\nYou can follow along with **one AI agent**\u2014you don\u2019t need subscriptions to all three. TradingKit is free; your chosen AI subscription and TradingView access may involve costs.\n\n---\n\n## \u23f0 Video Chapters\n\n0:00 \u2013 Three AI Models, One Week: The Challenge  \n0:30 \u2013 What We\u2019re Building ",
+  "links": [
+   "https://www.skool.com/daviddtech/about",
+   "https://docs.google.com/spreadsheets/d/1sMSKL-uul9R1QyIcDWV7SiO35JJQYuuaw9h3CWb51i4/edit?usp=sharing",
+   "https://aitradingarena.com/",
+   "https://tradingkit.com/"
+  ],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UCzk-gkLLlb0s5BnJv9XQKeQ",
+  "channel": "IQ Capital TV ",
+  "video_id": "atI4m5F1SOY",
+  "published": "2026-09-14T13:01:22Z",
+  "title": "NEW YORK SESSION LIVE! | IQ Capital TV | Monday 9/14/26",
+  "description": "Welcome to IQ Capital TV!\nReal markets with real setups, real risk management, real results!\n\n\ud83d\ude80THE BIGGEST PROP EVENT OF THE YEAR!\ud83d\ude80\n\n\ud83d\udcc5 17th September\n\nGet ready for a major event you won\u2019t want to miss! \ud83d\udd25\n\n\ud83c\udde9\ud83c\uddea https://www.iqcapital.io/de/launch-event?aff=TJ\n\n\ud83c\uddec\ud83c\udde7 https://www.iqcapital.io/launch-event?aff=STREAM\n\n\ud83d\udd25 Save the date. Be there. Don\u2019t miss it!\n\n\ud83d\ude80 Get funded with the #1 Prop Firm - start with just $9 for Crypto & Futures \ud83d\udc49 https://www.iqcapital.io/?aff=STREAM\n\n\ud83d\udc49 Join Our Official Discord Community:    / discord  \n\nVisit and follow us on our social media accounts:\n\nX (Twitter): https://x.com/IQCapital_io\nInstagram:    / iqcapitalof.  . \n\n\ud83d\udccc Risk Disclaimer:\nIQ Capital provides educational and informational content only and does not offer financial, investment, or trading advice. IQ Capital operates as a proprietary trading firm; traders do not invest their own capital. Trading occurs in simulated evaluation environments or proprietary funded accounts under defined rules and risk limits. Trading leveraged instruments involves substantial risk and may result in the loss of all allocated capital. No strategy, rule set, or evaluation guarantees profitability. Past performance, payouts, and testimonials are not indicative of future results. Examples may reflect hypothetical or simulated performance. Traders act at their own discretion and are solely responsible for trading decisions, risk management, and legal, tax, and regulatory compliance. IQ Capital assumes no liability for losses arising from the use of its content or services.\n\n\n\ud83c\udf99\ufe0f Neu im Streaming oder bereit f\u00fcr den n\u00e4chsten Schritt? Schau dir StreamYard an und erhalte $10 Rabatt! \ud83d\ude0d https://streamyard.com/pal/d/6588736983859200",
+  "links": [
+   "https://www.iqcapital.io/de/launch-event?aff=TJ",
+   "https://www.iqcapital.io/launch-event?aff=STREAM",
+   "https://www.iqcapital.io/?aff=STREAM",
+   "https://x.com/IQCapital_io",
+   "https://streamyard.com/pal/d/6588736983859200"
+  ],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
  }
 ]

@@ -1,0 +1,571 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Systematischer DAX-Handel mit Compound-Kapitalentwicklung - VTAD",
+  "url": "https://www.vtad.de/systematischer-dax-handel-mit-compound-kapitalentwicklung/",
+  "published": "2026-09-14T13:27:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "de",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "df75e724193b9cf65547",
+  "host": "www.vtad.de",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Systematischer DAX-Handel mit Compound-Kapitalentwicklung - VTAD",
+  "url": "https://www.vtad.de/systematischer-dax-handel-mit-compound-kapitalentwicklung-3/",
+  "published": "2026-09-14T13:27:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "de",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e7d9d38e568988bc37a3",
+  "host": "www.vtad.de",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Systematischer DAX-Handel mit Compound-Kapitalentwicklung - VTAD",
+  "url": "https://www.vtad.de/systematischer-dax-handel-mit-compound-kapitalentwicklung-4/",
+  "published": "2026-09-14T13:27:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "de",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5223c184c6bf80c58afc",
+  "host": "www.vtad.de",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Systematischer DAX-Handel mit Compound-Kapitalentwicklung - VTAD",
+  "url": "https://www.vtad.de/kopie-von-systematischer-dax-handel-mit-compound-kapitalentwicklung/",
+  "published": "2026-09-14T13:27:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "de",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "191f129c17b0d8a146d0",
+  "host": "www.vtad.de",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Check results for 'quantreg'",
+  "url": "https://www.R-project.org/nosvn/R.check/r-oldrel-windows-x86_64/quantreg-00check.html",
+  "published": "2026-09-14T13:28:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c6c60820bd49c6d06a67",
+  "host": "www.R-project.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Check results for 'quantreg'",
+  "url": "https://www.r-project.org/nosvn/R.check/r-devel-linux-x86_64-debian-clang/quantreg-00check.html",
+  "published": "2026-09-14T13:28:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "37dde7f2e3a19127dc9f",
+  "host": "www.r-project.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Check results for 'quantreg'",
+  "url": "https://www.r-project.org/nosvn/R.check/r-devel-linux-x86_64-debian-gcc/quantreg-00check.html",
+  "published": "2026-09-14T13:28:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a37d29fe7ff524c0fb1b",
+  "host": "www.r-project.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Check results for 'quantreg'",
+  "url": "https://www.r-project.org/nosvn/R.check/r-devel-linux-x86_64-fedora-clang/quantreg-00check.html",
+  "published": "2026-09-14T13:28:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5d8dc3ffb147344b9b3f",
+  "host": "www.r-project.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Check results for 'quantreg'",
+  "url": "https://www.r-project.org/nosvn/R.check/r-devel-linux-x86_64-fedora-gcc/quantreg-00check.html",
+  "published": "2026-09-14T13:28:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4309c409b8ec7ece577e",
+  "host": "www.r-project.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Check results for 'quantreg'",
+  "url": "https://www.r-project.org/nosvn/R.check/r-devel-windows-x86_64/quantreg-00check.html",
+  "published": "2026-09-14T13:28:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fd8ac07874ffec0c9f11",
+  "host": "www.r-project.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Get access to Forex Power TradingView Indicator - 100% free",
+  "url": "https://www.findbettertrades.com/fbt-free-indicator-forex-power-indicator?aff=7101e814b48f2f39d846f83a1847d6c2ddf76e9d3306df9fcb61be9fab4b912c",
+  "published": "2026-09-14T13:28:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b2aa546e74de9ba7bdd1",
+  "host": "www.findbettertrades.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Get access to Fusion AI TradingView Indicator - 100% free",
+  "url": "https://www.findbettertrades.com/fusion-ai-tradingview-indicator?aff=7101e814b48f2f39d846f83a1847d6c2ddf76e9d3306df9fcb61be9fab4b912c",
+  "published": "2026-09-14T13:28:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "419ada468af80631c8e3",
+  "host": "www.findbettertrades.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Free Indicator Offer",
+  "url": "https://www.findbettertrades.com/free-indicator?aff=7101e814b48f2f39d846f83a1847d6c2ddf76e9d3306df9fcb61be9fab4b912c",
+  "published": "2026-09-14T13:28:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fd389be554482e24c915",
+  "host": "www.findbettertrades.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u0646\u0638\u0627\u0645 \u0627\u0644\u062a\u062f\u0627\u0648\u0644 \u0627\u0644\u0628\u062f\u064a\u0644 - \u0648\u064a\u0643\u064a\u0628\u064a\u062f\u064a\u0627",
+  "url": "https://ar.wikipedia.org/wiki/%D9%86%D8%B8%D8%A7%D9%85_%D8%A7%D9%84%D8%AA%D8%AF%D8%A7%D9%88%D9%84_%D8%A7%D9%84%D8%A8%D8%AF%D9%8A%D9%84",
+  "published": "2026-09-14T13:28:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "ar",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8655029465437ef8c58f",
+  "host": "ar.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "KBpedia: ClusteringAlgorithm Reference Concept",
+  "url": "https://kbpedia.org/knowledge-graph/reference-concept/?uri=ClusteringAlgorithm",
+  "published": "2026-09-14T13:28:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://kbpedia.org/resources/downloads/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ce03267c49d457def2e5",
+  "host": "kbpedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Search &#x27;Algorithm&#x27; on etymonline",
+  "url": "https://www.etymonline.com/search?q=Algorithm",
+  "published": "2026-09-14T13:28:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.etymonline.com/download/app"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "7f482ed8659fd673847b",
+  "host": "www.etymonline.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Dictionary of Algorithms and Data Structures",
+  "url": "https://www.nist.gov/dads/",
+  "published": "2026-09-14T13:28:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "59130ae0fac3ada2b25b",
+  "host": "www.nist.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "algoritme \u2013 Store norske leksikon",
+  "url": "https://snl.no/algoritme",
+  "published": "2026-09-14T13:28:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory"
+  ],
+  "confidence": 0.35,
+  "lang": "no",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3436cd71291455e743d2",
+  "host": "snl.no",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "algoritme - Specifikation, korrekthed, effektivitet - Lex",
+  "url": "https://lex.dk/algoritme",
+  "published": "2026-09-14T13:28:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "da",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d2a55c3d098843bfffe0",
+  "host": "lex.dk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Uppslagsverk - NE.se",
+  "url": "https://www.ne.se/uppslagsverk/encyklopedi/l\u00e5ng/algoritm",
+  "published": "2026-09-14T13:28:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion"
+  ],
+  "confidence": 0.35,
+  "lang": "sv",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3b253bf6e7c6e49d40ee",
+  "host": "www.ne.se",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Newest &#39;algorithm&#39; Questions - Stack Overflow",
+  "url": "https://stackoverflow.com/tags/algorithm",
+  "published": "2026-09-14T13:28:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a45656179426fbc45e90",
+  "host": "stackoverflow.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Newest &#39;algorithms&#39; Questions - Computer Science Stack Exchange",
+  "url": "https://cs.stackexchange.com/tags/algorithms",
+  "published": "2026-09-14T13:28:38+00:00",
+  "symbols": [
+   "XAGUSD",
+   "USDTRY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "841933f72e4014c98a9a",
+  "host": "cs.stackexchange.com",
+  "claims": [
+   {
+    "claim": "Newest 'algorithms' Questions - Computer Science Stack Exchange Skip to main content 184 communities for the curious Computer Science is part of Stack Overflow\u2019s open communities: specialist spaces where curiosity is welcome, knowledge is shared freely, and the best answers rise to the top.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "rise"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAGUSD",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "silver",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b993af236277"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Newest &#39;algorithms&#39; Questions - TeX - LaTeX Stack Exchange",
+  "url": "https://tex.stackexchange.com/tags/algorithms",
+  "published": "2026-09-14T13:28:39+00:00",
+  "symbols": [
+   "USDKRW",
+   "USDTRY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "cd5740bcb66288de7a2c",
+  "host": "tex.stackexchange.com",
+  "claims": [
+   {
+    "claim": "Newest 'algorithms' Questions - TeX - LaTeX Stack Exchange Skip to main content 184 communities for the curious TeX - LaTeX is part of Stack Overflow\u2019s open communities: specialist spaces where curiosity is welcome, knowledge is shared freely, and the best answers rise to the top.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "rise"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDKRW",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "won",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "4995e55a9db3"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "LODE 2.0 - Semantic Artefact Viewer",
+  "url": "http://purl.org/spar/fabio/Algorithm",
+  "published": "2026-09-14T13:29:00+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e31b89d43bc50405eb2a",
+  "host": "purl.org",
+  "claims": [],
+  "n_claims": 0
+ }
+]
