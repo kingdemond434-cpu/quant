@@ -1,0 +1,136 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The Problem with Forex Fundamental Analysis &#8211; InvestMacro FX",
+  "url": "http://countingpips.com/fx/2011/03/06/the-problem-with-forex-fundamental-analysis/",
+  "published": "2026-09-14T10:50:01+00:00",
+  "symbols": [
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b8d101a247cb1e803df2",
+  "host": "countingpips.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "FXCM vs. CFTC | Forex Forum - EarnForex",
+  "url": "http://www.earnforex.com/forum/f10/fxcm-vs-cftc-435/",
+  "published": "2026-09-14T10:50:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "correlation",
+   "momentum",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0aa25ed70adabcc5d6c3",
+  "host": "www.earnforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Investor Education &amp; Resources | NFA",
+  "url": "http://www.nfa.futures.org/forex_training/content/coverpage.htm",
+  "published": "2026-09-14T10:50:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "http://www.nfa.futures.org/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "953bbeb601215c9e6f14",
+  "host": "www.nfa.futures.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Live Forex Analysis, Currency Rates, Economic Calendar, Technical Forecast, Fundamental News, Free Trading Signals. Best. USD Dollar, EUR Euro, JPY Yen, GBP Pound, CHF Swiss Franc, CAD Canadian Dollar",
+  "url": "http://www.actionforex.com/",
+  "published": "2026-09-14T10:50:19+00:00",
+  "symbols": [
+   "AUDUSD",
+   "EURAUD",
+   "EURCHF",
+   "EURGBP",
+   "EURJPY",
+   "EURUSD",
+   "GBPJPY",
+   "GBPUSD",
+   "NZDUSD",
+   "USDCAD",
+   "USDCHF",
+   "USDJPY"
+  ],
+  "timeframes": [
+   "4H",
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "gap",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8e3e369b87f0f4d54a6d",
+  "host": "www.actionforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Educators",
+  "url": "http://www.tradingeducators.com/",
+  "published": "2026-09-14T10:50:50+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "mean_reversion",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en-gb",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "95968252e99b90dd3359",
+  "host": "www.tradingeducators.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]
