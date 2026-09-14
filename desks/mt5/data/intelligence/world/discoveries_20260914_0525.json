@@ -1,0 +1,1253 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Gi\u1ea5y t\u1edd - RoboForex",
+  "url": "https://start.roboforex.pro/vn/about/company/documents/",
+  "published": "2026-09-14T05:24:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "vi",
+  "endpoints": [
+   "https://start.roboforex.pro/manifest.json?v=1788266027",
+   "https://my.roboforex.pro/vn/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "31eff25532fc9ef1e888",
+  "host": "start.roboforex.pro",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "N\u1ec1n t\u1ea3ng giao d\u1ecbch RoboForex - t\u1ea3i v\u1ec1 cho PC, web v\u00e0 di \u0111\u1ed9ng - RoboForex",
+  "url": "https://start.roboforex.pro/vn/forex-trading/terminals/download/",
+  "published": "2026-09-14T05:24:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "session"
+  ],
+  "confidence": 0.55,
+  "lang": "vi",
+  "endpoints": [
+   "https://start.roboforex.pro/manifest.json?v=1788266027",
+   "https://start.roboforex.pro/vn/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/ru-kk/forex-trading/terminals/download/",
+   "https://roboforex.com/forex-trading/terminals/download/",
+   "https://roboforex.com/es/forex-trading/terminals/download/",
+   "https://th.roboforex.com/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/uz/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/kk/forex-trading/terminals/download/",
+   "https://roboforex.com/ph/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/ru-uz/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/es/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/ph/forex-trading/terminals/download/",
+   "https://my.roboforex.pro/vn/help/download-center/"
+  ],
+  "n_endpoints": 14,
+  "vault_sha": "32df45ca87b37fec10b4",
+  "host": "start.roboforex.pro",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Hujjatlar - RoboForex",
+  "url": "https://start.roboforex.pro/uz/about/company/documents/",
+  "published": "2026-09-14T05:24:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "uz",
+  "endpoints": [
+   "https://start.roboforex.pro/manifest.json?v=1788266027",
+   "https://my.roboforex.pro/uz/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "b15d627d982d2b9d45d0",
+  "host": "start.roboforex.pro",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "RoboForex savdo platformalari - PC, veb va mobil uchun yuklab oling - RoboForex",
+  "url": "https://start.roboforex.pro/uz/forex-trading/terminals/download/",
+  "published": "2026-09-14T05:24:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "uz",
+  "endpoints": [
+   "https://start.roboforex.pro/manifest.json?v=1788266027",
+   "https://start.roboforex.pro/uz/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/ru-kk/forex-trading/terminals/download/",
+   "https://roboforex.com/forex-trading/terminals/download/",
+   "https://roboforex.com/es/forex-trading/terminals/download/",
+   "https://th.roboforex.com/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/vn/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/kk/forex-trading/terminals/download/",
+   "https://roboforex.com/ph/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/ru-uz/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/es/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/ph/forex-trading/terminals/download/",
+   "https://my.roboforex.pro/uz/help/download-center/"
+  ],
+  "n_endpoints": 14,
+  "vault_sha": "5dc3a21261bd5d5a6b9e",
+  "host": "start.roboforex.pro",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "https://egx.com.eg/downloads/Bulletins/330076_2.pdf",
+  "url": "https://egx.com.eg/downloads/Bulletins/330076_2.pdf",
+  "published": "2026-09-14T05:24:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "749d4aa8c874706a955d",
+  "host": "egx.com.eg",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Calend\u00e1rio econ\u00f4mico: Super Quarta com decis\u00f5es monet\u00e1rias s\u00e3o destaques da semana",
+  "url": "https://www.infomoney.com.br/mercados/calendario-economico-super-quarta-com-decisoes-monetarias-sao-destaques-da-semana/",
+  "published": "2026-09-14T05:24:33+00:00",
+  "symbols": [
+   "NAS100"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e9e2d5dd27ee3d6555ce",
+  "host": "www.infomoney.com.br",
+  "claims": [
+   {
+    "claim": "Continua depois da publicidade Brasil A agenda dom\u00e9stica come\u00e7a a semana com a divulga\u00e7\u00e3o do Relat\u00f3rio Focus pelo Banco Central, \u00e0s 8h25.",
+    "lang": "pt",
+    "quantities": [
+     "banco central"
+    ],
+    "direction": [
+     "continua"
+    ],
+    "horizon": [
+     "semana"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "ibovespa"
+     ],
+     "transfer_only": [
+      "ibovespa->indices (B3)"
+     ],
+     "indirect": [
+      "USDX",
+      "US500",
+      "USDBRL"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities",
+      "selic: flow/policy: Brazil (BCB, soy, iron ore) -> BRL"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "9e68d2a3e4bb"
+   },
+   {
+    "claim": "Continua depois da publicidade Mais tarde, ainda na quarta, \u00e0s 18h30, est\u00e1 previsto o an\u00fancio da taxa b\u00e1sica de juros, prevista para 13,75%.",
+    "lang": "pt",
+    "quantities": [
+     "taxa",
+     "juros"
+    ],
+    "direction": [
+     "continua"
+    ],
+    "horizon": [
+     "tarde"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "ibovespa"
+     ],
+     "transfer_only": [
+      "ibovespa->indices (B3)"
+     ],
+     "indirect": [
+      "USDX",
+      "US500",
+      "USDBRL"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities",
+      "selic: flow/policy: Brazil (BCB, soy, iron ore) -> BRL"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "50fcad228613"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "China \u00e9 &#8220;dilema mais dif\u00edcil&#8221; para desacelerar IA, diz CEO da Anthropic",
+  "url": "https://www.infomoney.com.br/business/china-e-dilema-mais-dificil-para-desacelerar-ia-diz-ceo-da-anthropic/",
+  "published": "2026-09-14T05:24:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "64056c3a08f8341e3d3d",
+  "host": "www.infomoney.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Crise diplom\u00e1tica entre EUA e Brasil trava coopera\u00e7\u00e3o contra crime organizado",
+  "url": "https://www.infomoney.com.br/business/global/crise-diplomatica-entre-eua-e-brasil-trava-cooperacao-contra-crime-organizado/",
+  "published": "2026-09-14T05:24:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "breakout",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e42457e6e0ab7a7bace5",
+  "host": "www.infomoney.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "RoboForex: Truy c\u1eadp Th\u1ecb tr\u01b0\u1eddng T\u00e0i ch\u00ednh &amp; B\u1eaft \u0111\u1ea7u Giao d\u1ecbch Ngay - RoboForex",
+  "url": "https://start.roboforex.pro/vn/",
+  "published": "2026-09-14T05:24:43+00:00",
+  "symbols": [
+   "EURUSD",
+   "GBPUSD",
+   "US500",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "vi",
+  "endpoints": [
+   "https://start.roboforex.pro/manifest.json?v=1788266027",
+   "https://start.roboforex.pro/vn/forex-trading/terminals/download/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "9b18f635870499b9aaea",
+  "host": "start.roboforex.pro",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "RoboForex O\u2018zbekiston: Moliyaviy bozorlarga kirish va savdoni hoziroq boshlang - RoboForex",
+  "url": "https://start.roboforex.pro/uz/",
+  "published": "2026-09-14T05:24:45+00:00",
+  "symbols": [
+   "EURUSD",
+   "GBPUSD",
+   "US500",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.55,
+  "lang": "uz",
+  "endpoints": [
+   "https://start.roboforex.pro/manifest.json?v=1788266027",
+   "https://start.roboforex.pro/uz/forex-trading/terminals/download/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "6047d6fcacb1aedd3dff",
+  "host": "start.roboforex.pro",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "T\u00e0i kho\u1ea3n giao d\u1ecbch RoboForex - Pro, Prime, ECN, ProCent, RST v\u1edbi \u0111i\u1ec1u ki\u1ec7n minh b\u1ea1ch - RoboForex",
+  "url": "https://start.roboforex.pro/vn/forex-trading/trading/trading-accounts/",
+  "published": "2026-09-14T05:24:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.35,
+  "lang": "vi",
+  "endpoints": [
+   "https://start.roboforex.pro/manifest.json?v=1788266027",
+   "https://start.roboforex.pro/vn/forex-trading/terminals/download/",
+   "https://my.roboforex.pro/vn/help/download-center/"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "6839d6a18866b7b44da9",
+  "host": "start.roboforex.pro",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "T\u00e0i s\u1ea3n c\u1ee7a, C\u00f4ng c\u1ee5 t\u00e0i ch\u00ednh - RoboForex",
+  "url": "https://start.roboforex.pro/vn/forex-trading/assets/other-assets/",
+  "published": "2026-09-14T05:24:50+00:00",
+  "symbols": [
+   "XAGUSD",
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "vi",
+  "endpoints": [
+   "https://start.roboforex.pro/manifest.json?v=1788266027",
+   "https://my.roboforex.pro/vn/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "b2a74bc89e5112fbf21b",
+  "host": "start.roboforex.pro",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Savdo aktivlari, Moliyaviy instrumentlar - RoboForex",
+  "url": "https://start.roboforex.pro/uz/forex-trading/assets/other-assets/",
+  "published": "2026-09-14T05:24:52+00:00",
+  "symbols": [
+   "XAGUSD",
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "uz",
+  "endpoints": [
+   "https://start.roboforex.pro/manifest.json?v=1788266027",
+   "https://my.roboforex.pro/uz/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "1c8d1c41f23972ec7156",
+  "host": "start.roboforex.pro",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "RoboForex N\u1ec1n t\u1ea3ng giao d\u1ecbch - WebTrader &amp; MobileTrader - RoboForex",
+  "url": "https://start.roboforex.pro/vn/forex-trading/terminals/webtrader/",
+  "published": "2026-09-14T05:24:54+00:00",
+  "symbols": [
+   "EURUSD",
+   "GBPUSD",
+   "US500",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "momentum",
+   "night_session",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "vi",
+  "endpoints": [
+   "https://start.roboforex.pro/manifest.json?v=1788266027",
+   "https://my.roboforex.pro/vn/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "4b994f983aad88171561",
+  "host": "start.roboforex.pro",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "RoboForex Savdo platformasi - WebTrader &amp; MobileTrader - RoboForex",
+  "url": "https://start.roboforex.pro/uz/forex-trading/terminals/webtrader/",
+  "published": "2026-09-14T05:24:57+00:00",
+  "symbols": [
+   "EURUSD",
+   "GBPUSD",
+   "US500",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "uz",
+  "endpoints": [
+   "https://start.roboforex.pro/manifest.json?v=1788266027",
+   "https://my.roboforex.pro/uz/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "bde0ad5749b563960031",
+  "host": "start.roboforex.pro",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "N\u1ec1n t\u1ea3ng MetaTrader 4 (MT4) - t\u1ea3i v\u1ec1 cho PC, web v\u00e0 di \u0111\u1ed9ng - RoboForex",
+  "url": "https://start.roboforex.pro/vn/forex-trading/platforms/metatrader4-mt4/",
+  "published": "2026-09-14T05:24:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "vi",
+  "endpoints": [
+   "https://start.roboforex.pro/manifest.json?v=1788266027",
+   "https://my.roboforex.pro/vn/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "89c783482b26f89309ab",
+  "host": "start.roboforex.pro",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "MetaTrader 4 (MT4) platformasi - PC, veb va mobil uchun yuklab oling - RoboForex",
+  "url": "https://start.roboforex.pro/uz/forex-trading/platforms/metatrader4-mt4/",
+  "published": "2026-09-14T05:25:00+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.35,
+  "lang": "uz",
+  "endpoints": [
+   "https://start.roboforex.pro/manifest.json?v=1788266027",
+   "https://my.roboforex.pro/uz/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "83204cedff0c2a333a0e",
+  "host": "start.roboforex.pro",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "N\u1ec1n t\u1ea3ng MetaTrader 5 (MT5) - t\u1ea3i v\u1ec1 cho PC, web v\u00e0 di \u0111\u1ed9ng - RoboForex",
+  "url": "https://start.roboforex.pro/vn/forex-trading/platforms/metatrader5-mt5/",
+  "published": "2026-09-14T05:25:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "vi",
+  "endpoints": [
+   "https://start.roboforex.pro/manifest.json?v=1788266027",
+   "https://my.roboforex.pro/vn/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "9b4fc198b07300bfb04f",
+  "host": "start.roboforex.pro",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "MetaTrader 5 (MT5) platformasi - PC, veb va mobil uchun yuklab oling - RoboForex",
+  "url": "https://start.roboforex.pro/uz/forex-trading/platforms/metatrader5-mt5/",
+  "published": "2026-09-14T05:25:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.35,
+  "lang": "uz",
+  "endpoints": [
+   "https://start.roboforex.pro/manifest.json?v=1788266027",
+   "https://my.roboforex.pro/uz/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "dc24effe9bc2d24ae93c",
+  "host": "start.roboforex.pro",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Nu ut\u00f6kar vi handeln i USA \u2013 s\u00e5 nyttjar du de nya \u00f6ppettiderna!",
+  "url": "https://blogg.avanza.se/nu-utokar-vi-handeln-i-usa-sa-nyttjar-du-de-nya-oppettiderna/",
+  "published": "2026-09-14T05:25:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "sv-SE",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5d37cf8d11f8b23536a6",
+  "host": "blogg.avanza.se",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Dekalog Blog: intraday forex",
+  "url": "https://dekalogblog.blogspot.com/search/label/intraday%20forex",
+  "published": "2026-09-14T05:25:08+00:00",
+  "symbols": [
+   "EURUSD",
+   "GBPUSD",
+   "USDCAD",
+   "NAS100",
+   "US500",
+   "USDKRW",
+   "BTCUSD"
+  ],
+  "timeframes": [
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "breakout",
+   "mean_reversion",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "policy",
+   "positioning",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en-GB",
+  "endpoints": [
+   "https://dekalogblog.blogspot.com/2024/06/downloading-dukascopy-tick-data-with.html",
+   "http://www.calculatinginvestor.com/2013/09/19/downloading-batch-returns/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "189dc87feee3838f8558",
+  "host": "dekalogblog.blogspot.com",
+  "claims": [
+   {
+    "claim": "The green equity curve is a similar cumulative sum of the tick returns based on going long/short when the basic indicator crosses above/below its zero line.",
+    "lang": "en",
+    "quantities": [
+     "curve"
+    ],
+    "direction": [
+     "long",
+     "short"
+    ],
+    "horizon": [
+     "tick"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "EURUSD",
+      "GBPUSD",
+      "USDCAD",
+      "USDKRW",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "s&p500",
+      "eurusd",
+      "gbpusd",
+      "usdcad",
+      "won",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "e11eaed62d83"
+   },
+   {
+    "claim": "5 ] are MACDs of 2 bar fast and 4 bar slow simple moving averages (respectively a fast minus slow MACD and slow minus fast MACD - short term trend following vs.",
+    "lang": "en",
+    "quantities": [
+     "trend"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "bar"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "EURUSD",
+      "GBPUSD",
+      "USDCAD",
+      "USDKRW",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "s&p500",
+      "eurusd",
+      "gbpusd",
+      "usdcad",
+      "won",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "c44dd8f9c27d"
+   },
+   {
+    "claim": "For the targets I used the sign of the slope of a sliding, centred smooth of the OHLC bar opens, on the premise that the first trade opportunity would be acted upon at the opening price following a buy/sell signal calculated on the close of a bar.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "buy",
+     "sell"
+    ],
+    "horizon": [
+     "bar",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "EURUSD",
+      "GBPUSD",
+      "USDCAD",
+      "USDKRW",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "s&p500",
+      "eurusd",
+      "gbpusd",
+      "usdcad",
+      "won",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "898d32d567a1"
+   },
+   {
+    "claim": "Starting with the basics, if we imagine a Doji bar , for every up (down) tick there must be a corresponding and opposing down (up) tick for the bar to open and close at the exact same price and therefore we can split the tick volume for the bar equally between buy and sell tick volumes.",
+    "lang": "en",
+    "quantities": [
+     "open",
+     "close",
+     "volume"
+    ],
+    "direction": [
+     "buy",
+     "sell"
+    ],
+    "horizon": [
+     "bar",
+     "tick"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "EURUSD",
+      "GBPUSD",
+      "USDCAD",
+      "USDKRW",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "s&p500",
+      "eurusd",
+      "gbpusd",
+      "usdcad",
+      "won",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "3db6680d7bd9"
+   },
+   {
+    "claim": "The next step step is to \"smear\" these buy and sell volumes equally across the whole range of the bar and then take the difference: e.",
+    "lang": "en",
+    "quantities": [
+     "range"
+    ],
+    "direction": [
+     "buy",
+     "sell"
+    ],
+    "horizon": [
+     "bar"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "EURUSD",
+      "GBPUSD",
+      "USDCAD",
+      "USDKRW",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "s&p500",
+      "eurusd",
+      "gbpusd",
+      "usdcad",
+      "won",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "1a9373883d07"
+   },
+   {
+    "claim": "The final step is to volume normalise the above calculations by using the total 10 minute bar tick volume such that tick differences within bars that have higher total tick volume have a greater weight than those in low tick volume bars.",
+    "lang": "en",
+    "quantities": [
+     "volume"
+    ],
+    "direction": [
+     "higher"
+    ],
+    "horizon": [
+     "minute",
+     "bar"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "EURUSD",
+      "GBPUSD",
+      "USDCAD",
+      "USDKRW",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "s&p500",
+      "eurusd",
+      "gbpusd",
+      "usdcad",
+      "won",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "ce7813487fac"
+   },
+   {
+    "claim": "higher normalised tick volumes at different tick levels imply a higher, net trader positioning at these levels, and changes over time in this positioning are approximated by the exponential forgetting factor.",
+    "lang": "en",
+    "quantities": [
+     "positioning",
+     "factor"
+    ],
+    "direction": [
+     "higher"
+    ],
+    "horizon": [
+     "tick"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "EURUSD",
+      "GBPUSD",
+      "USDCAD",
+      "USDKRW",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "s&p500",
+      "eurusd",
+      "gbpusd",
+      "usdcad",
+      "won",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "bbf610f74e88"
+   },
+   {
+    "claim": "Taken together these observations could have been used as a nice short set-up targeting, for example, the then currently lower level of vwap, which in fact was subsequently hit with the day closing at this level.",
+    "lang": "en",
+    "quantities": [
+     "vwap"
+    ],
+    "direction": [
+     "short",
+     "lower"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "EURUSD",
+      "GBPUSD",
+      "USDCAD",
+      "USDKRW",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "s&p500",
+      "eurusd",
+      "gbpusd",
+      "usdcad",
+      "won",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "1ce7d256aa4b"
+   }
+  ],
+  "n_claims": 12
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Dekalog Blog: Expressing an Indicator in Neural Net Form, Part 3.",
+  "url": "https://dekalogblog.blogspot.com/2025/11/expressing-indicator-in-neural-net-form.html",
+  "published": "2026-09-14T05:25:09+00:00",
+  "symbols": [
+   "EURUSD",
+   "NAS100",
+   "US500",
+   "BTCUSD"
+  ],
+  "timeframes": [
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "breakout",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en-GB",
+  "endpoints": [
+   "http://www.calculatinginvestor.com/2013/09/19/downloading-batch-returns/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "172f4e9a7d66929fd0da",
+  "host": "dekalogblog.blogspot.com",
+  "claims": [
+   {
+    "claim": "The green equity curve is a similar cumulative sum of the tick returns based on going long/short when the basic indicator crosses above/below its zero line.",
+    "lang": "en",
+    "quantities": [
+     "curve"
+    ],
+    "direction": [
+     "long",
+     "short"
+    ],
+    "horizon": [
+     "tick"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "EURUSD",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "s&p500",
+      "eurusd",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "e11eaed62d83"
+   },
+   {
+    "claim": "5 ] are MACDs of 2 bar fast and 4 bar slow simple moving averages (respectively a fast minus slow MACD and slow minus fast MACD - short term trend following vs.",
+    "lang": "en",
+    "quantities": [
+     "trend"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "bar"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "EURUSD",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "s&p500",
+      "eurusd",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "c44dd8f9c27d"
+   },
+   {
+    "claim": "ai Open Source Asset Pricing Partially Derivative Pattern Recognition Tools Quantitative Finance Quantpedia Spectral Analysis Time Series Analysis (with R code) Trading System Synthesis and Boosting Wall Street Currents Blogroll Quantified Strategies Short The Close, Cover At The Next Open (Strategy) 5 days ago R-bloggers ahead (Time Series Forecasting with uncertainty quantification) gets a lot",
+    "lang": "en",
+    "quantities": [
+     "open",
+     "close"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "open",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "EURUSD",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "s&p500",
+      "eurusd",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "598e16732f39"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "L2/L3 data for backtesting | NexusFi Forum",
+  "url": "https://nexusfi.com/showthread.php?t=62141&goto=newpost",
+  "published": "2026-09-14T05:25:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "609117ce304516cbded6",
+  "host": "nexusfi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Attack of the Robots - An Algo Journal | NexusFi Forum",
+  "url": "https://nexusfi.com/showthread.php?t=46621",
+  "published": "2026-09-14T05:25:17+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "carry",
+   "momentum",
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4af1695d40776b0c477c",
+  "host": "nexusfi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "2019 Dow E-Mini YM Trading Journal | NexusFi Forum",
+  "url": "https://nexusfi.com/trading-journals/46257-2019-dow-e-mini-ym-mini-sized-dow-futures-contract-trading-journal.html",
+  "published": "2026-09-14T05:25:19+00:00",
+  "symbols": [
+   "US500",
+   "US30",
+   "USDKRW",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "carry",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "aac6a399e47216ddf34d",
+  "host": "nexusfi.com",
+  "claims": [
+   {
+    "claim": "End of the Week Results for our trading of YM: 1 long open position Down $1356.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "week",
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "US30",
+      "USDKRW",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "s&p 500",
+      "dow",
+      "won",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "57d2fe16085d"
+   },
+   {
+    "claim": "Within the hour another short entry was triggered, which is still open.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "hour",
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "US30",
+      "USDKRW",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "s&p 500",
+      "dow",
+      "won",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "2b414066e73d"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Reviews and Vendors - Page 3 - NexusFi",
+  "url": "https://nexusfi.com/trading-reviews-vendors/index3.html",
+  "published": "2026-09-14T05:25:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://nexusfi.com/download/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "54fefe5a0a27c0b31832",
+  "host": "nexusfi.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]
