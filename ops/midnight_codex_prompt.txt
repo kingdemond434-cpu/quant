@@ -154,15 +154,11 @@ allocation/promotion authority, clear risk holds, loosen gates or auto-resolve l
 defects. REPAIRED requires measured postconditions, not exit zero. Avoid restart loops; retain
 unresolved blocker and escalation evidence. Missing data never counts as a passing observation.
 
-Commit coherent fixes, run deployment gates, preserve concurrent work, sync through the established
-GitHub/VPS/Contabo workflow and verify running hashes and downstream artifacts. Local patches are
-not deployed fixes. Leave durable resumable checkpoints and a concise morning before/after ledger:
-Canonically integrate tested repairs into the shared authoritative lineage, not permanent private
-forks. Fetch and reconcile the latest builders' changes, merge only verified compatible work,
-preserve unrelated dirty state, push through existing conventions and verify the corresponding
-VPS/Contabo consumers. Never force-push or auto-resolve conflicting live authority. Record any
-unsynced repair explicitly so the next controller can finish the same change without duplication.
-issues closed, cells tested/judged/rejected/blocked, valid certificates, measured active clocks,
-freshness, tests, commits, deployment proof and exact remaining dependencies. No essays.
-Aim for complete accounting and maximum validated conversion, never guaranteed survivor output,
-forced 60-clock targets, 100% miner survivor yield or a promise all work fits one night.
+ORIGIN-FIRST DELIVERY: read ops/midnight_delivery_contract.txt before any deployment or dispatch.
+Publish tested coherent commits to GitHub origin, reconcile the canonical adoption branch, then
+let each host's approved adopter consume that exact release. Never scp tracked source into a live
+checkout or count a feature-branch push as deployment. Preserve dirty work and host-owned evidence;
+never force-push or auto-resolve live-authority conflicts. Verify adopted hashes and real consumers.
+Checkpoint unpublished/unadopted work and precise next actions. Report before/after issues, tested/
+judged/rejected/blocked cells, certificates, measured clocks, tests and deployment proof. No essays.
+Maximize validated conversion, never guaranteed survivors, forced clock counts or promised deadlines.

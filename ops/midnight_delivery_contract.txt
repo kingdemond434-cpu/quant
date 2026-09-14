@@ -1,0 +1,32 @@
+MIDNIGHT DELIVERY AND WORK PLACEMENT — principal order 2026-09-14
+
+One operation, one canonical source of code: GitHub origin. Work in an isolated checkout under
+the controller lease; inspect current builders' changes, test coherent commits and run release
+gates. Push a reviewable branch, reconcile compatible work into the branch the approved adopter
+actually consumes, then verify the remote commit. A private branch alone is not delivery.
+Do not overwrite tracked production source with scp, local edits or blind git restores. Never
+force-push, bypass release protections, discard dirty work or reset host-owned runtime evidence.
+
+The big Windows box adopts via its existing MT5-AdoptRelease / Adopt-And-Seal process. Discover
+its current branch and host mapping, verify the approved release is present there, and observe
+adoption result, installed file hashes and downstream scheduled output. Respect its Git-writer
+mutex and live execution owner. Do not create another executor, alter capital authority or
+restart trading merely to deploy a prompt. An adoption failure is an open deployment defect,
+not a reason to patch around origin. Record target, commit, adopter result and runtime proof.
+
+WORK PLACEMENT: the big box owns memory-heavy miner_candidate_compiler, text-to-candidate
+conversion, deepening, exact symbol/rule extraction and candidate backtests/gauntlet computation.
+The 8 GB research box owns network-bound crawling, source discovery and lawful data acquisition.
+Use measured available RAM and existing worker budgets, not quoted total RAM or hardcoded row
+counts; preserve headroom for the gateway and forward evidence. Stream/checkpoint large inputs;
+more RAM does not excuse unbounded materialization or unwritable outputs. Reuse existing workers
+and shared provenance/queue identities. Transfer data via existing durable intake/sync contracts,
+with checksums and consumed cursors; no duplicate processing or parallel registries.
+
+Do not run heavy conversion on the small reasoning host as an implicit fallback. If a designated
+host is unavailable, keep acquisition and independent safe work running; checkpoint exact pending
+jobs for authorized recovery without resetting completed cells. Authentication denial is a real
+blocker: publish the tested code to origin, record adoption pending, and never bypass key/access
+restrictions or claim it is deployed. Verify the research host's approved pull/adoption separately.
+Changing this mandate does not prove workers moved: record configured actions, execution host,
+last successful run, fresh output and actual next-stage consumption before marking placement fixed.
