@@ -1,0 +1,38 @@
+[
+  {
+    "source": "central_bank",
+    "bank": "ECB",
+    "currency": "EUR",
+    "feed": "https://www.ecb.europa.eu/rss/press.html",
+    "published_utc": "2026-09-14T09:15:00+00:00",
+    "title": "Isabel Schnabel: Macroeconomic, fiscal and financial stability in a shock-prone world",
+    "link": "https://www.ecb.europa.eu//press/key/date/2026/html/ecb.sp260914~0ffd556bc8.en.pdf",
+    "policy_signals": [],
+    "instruments": [
+      "EURUSD",
+      "EURJPY",
+      "EURGBP",
+      "EURAUD",
+      "EURCHF"
+    ]
+  },
+  {
+    "source": "central_bank",
+    "bank": "BoJ",
+    "currency": "JPY",
+    "feed": "https://www.boj.or.jp/en/rss/whatsnew.xml",
+    "published_utc": "2026-09-14T08:00:00+00:00",
+    "title": "Japanese Government Bonds Held by the Bank of Japan",
+    "link": "http://www.boj.or.jp/en/statistics/boj/other/mei/release/2026/mei260910.xlsx",
+    "policy_signals": [],
+    "instruments": [
+      "USDJPY",
+      "EURJPY",
+      "GBPJPY",
+      "AUDJPY",
+      "CADJPY",
+      "CHFJPY",
+      "NZDJPY"
+    ]
+  }
+]

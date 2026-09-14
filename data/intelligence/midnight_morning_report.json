@@ -30,86 +30,86 @@
  },
  "compute_efficiency": {
   "allocation_rule": "unfinished canonical cells first; among discretionary research organs prefer measured certificate yield per CPU-hour",
-  "certificates_added": -67,
-  "certificates_per_cpu_hour": -30869.506456,
-  "measured_cpu_hours": 0.00217,
+  "certificates_added": 0,
+  "certificates_per_cpu_hour": 0.0,
+  "measured_cpu_hours": 0.004088,
   "stage_rows": [
    {
     "certificate_delta": 0,
     "cpu_seconds": 0.0,
-    "duration_seconds": 2264.224,
+    "duration_seconds": 7200.409,
     "name": "canonical_external_pipeline"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 3.278014,
-    "duration_seconds": 54.625,
+    "cpu_seconds": 1.524305,
+    "duration_seconds": 32.148,
     "name": "external_queue_projection"
    },
    {
-    "certificate_delta": -59,
-    "cpu_seconds": null,
-    "duration_seconds": 2692.574,
+    "certificate_delta": 0,
+    "cpu_seconds": 3.803141,
+    "duration_seconds": 19.85,
     "name": "external_queue_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.922409,
-    "duration_seconds": 1531.965,
+    "cpu_seconds": 0.070034,
+    "duration_seconds": 3.383,
     "name": "certificate_projection"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.260653,
-    "duration_seconds": 33.853,
+    "cpu_seconds": 0.221482,
+    "duration_seconds": 10.368,
     "name": "fusion_state_pull"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 1.245084,
-    "duration_seconds": 6.963,
+    "cpu_seconds": 6.826725,
+    "duration_seconds": 5985.429,
     "name": "forward_identity_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.07908,
-    "duration_seconds": 3.082,
+    "cpu_seconds": 0.089228,
+    "duration_seconds": 6.646,
     "name": "forward_clock_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 1.12353,
-    "duration_seconds": 4.774,
+    "cpu_seconds": 1.225565,
+    "duration_seconds": 11.152,
     "name": "forward_lane_heal"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.0,
-    "duration_seconds": 7.464,
+    "cpu_seconds": 0.066427,
+    "duration_seconds": 13.161,
     "name": "zero_capital_shadow_forward"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.369571,
-    "duration_seconds": 2.427,
+    "cpu_seconds": 0.327489,
+    "duration_seconds": 7.82,
     "name": "mechanism_independence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.095846,
-    "duration_seconds": 2.067,
+    "cpu_seconds": 0.12188,
+    "duration_seconds": 4.479,
     "name": "same_day_fence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.316011,
-    "duration_seconds": 3.184,
+    "cpu_seconds": 0.347947,
+    "duration_seconds": 8.285,
     "name": "certificate_yield_fence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.123338,
-    "duration_seconds": 3.491,
+    "cpu_seconds": 0.091767,
+    "duration_seconds": 5.48,
     "name": "forward_clock_fence"
    }
   ]
@@ -224,15 +224,14 @@
    "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY"
   ]
  },
- "generated_at": "2026-09-14T05:38:08.330401+00:00",
+ "generated_at": "2026-09-14T09:51:41.728945+00:00",
  "headline": {
   "candidates_discovered": 20186,
   "candidates_lost": 13,
-  "certificates_added": -67,
+  "certificates_added": 0,
   "forward_clocks": 165,
   "hard_failures": [
    "canonical_external_pipeline",
-   "external_queue_reconciliation",
    "forward_identity_reconciliation",
    "forward_clock_reconciliation",
    "forward_lane_heal"
@@ -465,7 +464,7 @@
    "why": "N_eff is the participation ratio of the correlation eigenvalues: it cannot be inflated by adding a variant of something already held. Unmeasured pairs are assumed FULLY correlated, the conservative direction."
   },
   "forward_sleeves_with_observations": 30,
-  "measured_at": "2026-09-14T05:37:48+00:00",
+  "measured_at": "2026-09-14T09:50:57+00:00",
   "note": "Forward-phase observations only. Historical rows are excluded: allocation is a forward decision and may not be informed by evidence gathered during selection."
  },
  "rerouting": {
@@ -476,7 +475,7 @@
  "resource_execution": {
   "collision_control": "systemd uses one quant-external-pipeline.service instance; hourly and midnight starts cannot duplicate the heavy worker",
   "external_pipeline_memory_max": "1500M",
-  "mem_available_mb": 2909.3,
+  "mem_available_mb": 3026.3,
   "remote_control": "desk-box job locks and per-stage timeouts remain authoritative"
  },
  "schema_version": 1,
