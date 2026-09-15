@@ -2286,11 +2286,44 @@ def resolve_family_order(st: dict, s: dict, equity: float,
         _vmin = float(getattr(sym, "volume_min", 0.01) or 0.01)
         _vstep = float(getattr(sym, "volume_step", 0.01) or 0.01)
         _scaled = float(lot) * leg_mult
-        # THE VENUE'S FLOOR IS NOT A SUGGESTION and the principal's 0.02 gold floor is not
-        # negotiable: damping never rounds a real order down to nothing. An order the balance
-        # would shrink below the minimum is sent AT the minimum, which is the smallest thing the
-        # venue will accept, not a refusal dressed as sizing.
-        lot = max(_vmin, round(_scaled / _vstep) * _vstep)
+        # DAMPING IS INERT AT THE VENUE FLOOR, AND ON THIS ACCOUNT ALMOST EVERYTHING IS AT IT.
+        #
+        # This rounded up to `volume_min` on the reasoning that the floor is not a suggestion.
+        # True for a single order and false for a crowded one: an equity of ~600 EUR sizes nearly
+        # every sleeve at the 0.01 minimum already, so multiplying by 0.55 and flooring returns
+        # 0.01 unchanged. Three sleeves on one leg then send three IDENTICAL minimum orders and
+        # the balance has done nothing at all.
+        #
+        # MEASURED 2026-09-16: EURCHF sell 0.01 three times at 00:16:37, each -1.34; twice more
+        # at 00:11:10, each -1.10. One bet, charged three times, at the one size the damping
+        # cannot reduce.
+        #
+        # So when the leg is CROWDED and the damped order would fall below the venue minimum, the
+        # honest answer is not the minimum -- it is NOT THIS ONE. The bet is already held; a
+        # fourth copy at the smallest tradeable size adds spread and no exposure worth having.
+        # This is the same rule `book_zeroed` established for the allocator: "hold none of this"
+        # must be able to mean zero rather than arriving as a floor.
+        #
+        # IT ONLY EVER REFUSES A DUPLICATE. `leg_mult >= 1` (a fresh or neutral leg) never takes
+        # this path, so a sleeve opening ground the book does not hold is unaffected, and the
+        # first sleeve on any leg always trades.
+        # THE TEST IS ON THE LOT THE VENUE WILL SEE, not on the unrounded figure. Measured while
+        # writing this: a damped 0.0125 looks larger than the 0.01 floor and rounds to exactly
+        # 0.01, so comparing the raw number let the second and third copies through while
+        # reporting that they had been damped. What matters is whether the order ARRIVES at the
+        # minimum, because that is the size that cannot be reduced any further.
+        _final = max(_vmin, round(_scaled / _vstep) * _vstep)
+        _held = leg_balance.already_held(s["symbol"], side, mt5.positions_get() or [], pending)
+        if _held > 0 and _final <= _vmin + 1e-12:
+            return {"ok": False, "stage": "duplicate_at_floor", "considered": True,
+                    "sep": " ",
+                    "why": (f"refused: {_held:g} lot(s) already "
+                            f"{'long' if side > 0 else 'short'} {s['symbol']} and this order "
+                            f"prices at the venue minimum {_vmin:g}, which cannot be sized down "
+                            f"-- a second copy at the floor buys spread, not exposure. "
+                            f"{leg_why}"),
+                    "mark": bool(step.mark), "last_bar": last_bar, "note": step.note}
+        lot = _final
     except Exception as exc:                                        # noqa: BLE001
         # UNMEASURED IS 1.0, NEVER A SILENT SHRINK: a decomposition that cannot be trusted must
         # not quietly become a reason to trade smaller.
