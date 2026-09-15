@@ -24,6 +24,7 @@ both is belt and braces, not a race.
 """
 from __future__ import annotations
 
+import os
 import sys
 import time
 from pathlib import Path
@@ -37,6 +38,70 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
 #: Seconds between passes. The gateway's own work is bar-driven, so this only decides how soon
 #: after a bar closes the desk looks -- not how often it trades.
 INTERVAL_S = 60
+
+#: RECYCLE ABOVE THIS RESIDENT SET, in MB. A LOOP IS NOT A TASK, AND THIS IS THE DIFFERENCE.
+#:
+#: `MT5-Gateway` ran one pass per process, so every frame cache, every pandas block and every
+#: MT5 handle the pass allocated went back to the OS when it exited. That reclamation was free
+#: and invisible, and turning the pass into a resident `while True` silently removed it.
+#:
+#: MEASURED 2026-09-15: the resident started at 416 MB and reached 1,907 MB within the hour on a
+#: box with 8 GB total, while `external_gauntlet` needs ~1,200 MB to start and stands down
+#: without it. A background job was killed by the OS for memory in the same window. The gateway
+#: was not leaking because of a bug in a pass; it was leaking because nothing ever ended.
+#:
+#: So the loop ends itself and lets the keep-alive trigger start a clean one. `MT5-GatewayResident`
+#: fires every 10 minutes and the named-mutex singleton means the restart is a no-op while a
+#: healthy loop holds the slot -- so exiting here is the ONLY thing needed, and the gap is at
+#: most one trigger. A pass is idempotent and the PID-aware lock is released on exit, so nothing
+#: is half-done across the boundary.
+RECYCLE_RSS_MB = float(os.environ.get("GATEWAY_RECYCLE_RSS_MB", "900"))
+
+#: A ceiling on passes even if the RSS reading is unavailable. At 60s a pass this is ~2 hours.
+RECYCLE_AFTER_PASSES = int(os.environ.get("GATEWAY_RECYCLE_PASSES", "120"))
+
+
+def _rss_mb() -> float | None:
+    """This process's resident set in MB, or None when it cannot be read.
+
+    None is a real answer: an unreadable counter must not be treated as 0 (which would never
+    recycle) nor as huge (which would recycle every pass). The pass ceiling covers that case.
+    """
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        class _PMC(ctypes.Structure):
+            _fields_ = [("cb", wintypes.DWORD),
+                        ("PageFaultCount", wintypes.DWORD),
+                        ("PeakWorkingSetSize", ctypes.c_size_t),
+                        ("WorkingSetSize", ctypes.c_size_t),
+                        ("QuotaPeakPagedPoolUsage", ctypes.c_size_t),
+                        ("QuotaPagedPoolUsage", ctypes.c_size_t),
+                        ("QuotaPeakNonPagedPoolUsage", ctypes.c_size_t),
+                        ("QuotaNonPagedPoolUsage", ctypes.c_size_t),
+                        ("PagefileUsage", ctypes.c_size_t),
+                        ("PeakPagefileUsage", ctypes.c_size_t)]
+
+        # THE SIGNATURES ARE DECLARED, AND WITHOUT THEM THIS SILENTLY RETURNS NOTHING. ctypes
+        # defaults an undeclared return to C int, so `GetCurrentProcess`'s 64-bit pseudo-handle
+        # is TRUNCATED before it is passed on -- the call then fails with ok=0 and sets no error
+        # code, which reads exactly like "this box cannot report RSS". Measured here: undeclared
+        # returned ok=0 from both psapi and kernel32; declared returns ok=1 and a real figure.
+        # A recycle guard that always measures None is a recycle guard that never fires.
+        k = ctypes.windll.kernel32
+        k.GetCurrentProcess.restype = wintypes.HANDLE
+        fn = k.K32GetProcessMemoryInfo          # kernel32 forwarder: no psapi.dll dependency
+        fn.argtypes = [wintypes.HANDLE, ctypes.POINTER(_PMC), wintypes.DWORD]
+        fn.restype = wintypes.BOOL
+
+        c = _PMC()
+        c.cb = ctypes.sizeof(_PMC)
+        if not fn(k.GetCurrentProcess(), ctypes.byref(c), c.cb):
+            return None
+        return float(c.WorkingSetSize) / (1024.0 * 1024.0)
+    except Exception:
+        return None
 
 #: The singleton's name. Held for the life of the process, so a second copy started by the
 #: keep-alive task exits instead of stacking.
@@ -78,8 +143,23 @@ def main() -> int:
         return 0
     import run_gateway_loop
 
+    passes = 0
     while True:
         started = time.monotonic()
+        passes += 1
+        rss = _rss_mb()
+        if (rss is not None and rss >= RECYCLE_RSS_MB) or passes > RECYCLE_AFTER_PASSES:
+            # END CLEANLY BETWEEN PASSES, never inside one. The keep-alive trigger starts a fresh
+            # loop within ten minutes and the singleton makes that a no-op if one is already up.
+            try:
+                from mt5desk import gateway
+                gateway.log(f"RESIDENT: recycling after {passes} pass(es) at "
+                            f"{'unmeasured' if rss is None else f'{rss:.0f}MB'} resident "
+                            f"(limit {RECYCLE_RSS_MB:.0f}MB / {RECYCLE_AFTER_PASSES} passes); "
+                            f"the keep-alive trigger starts a clean one")
+            except Exception:
+                pass
+            return 0
         try:
             run_gateway_loop.main()
         except Exception as exc:
