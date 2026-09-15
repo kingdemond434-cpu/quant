@@ -30,6 +30,7 @@ from __future__ import annotations
 import contextlib
 import hashlib
 import json
+import re
 import sys
 import time
 from datetime import UTC, datetime, timedelta
@@ -1881,6 +1882,31 @@ def _params_from_certificate(s: dict[str, object]) -> tuple[dict[str, object] | 
         from research.frontier_identity import cell_id
     except Exception as exc:
         return None, f"frontier_identity unavailable ({type(exc).__name__}: {exc})"
+    # A BARE CELL NAME IS NOT AN UNKNOWN PARAMETERISATION -- IT IS THE DEFAULT ONE, and refusing
+    # it kept every session_range_breakout sleeve out of the market (measured 2026-09-15).
+    #
+    # `cell_id` ALWAYS appends a parameter field: empty params render as
+    # `CADJPY.session_range_breakout.p=44136fa355b3678a`. The certificates for these sleeves are
+    # named `external.CADJPY.session_range_breakout` with no suffix at all, so the docket join
+    # below can never match them -- not because the row is missing, but because the two names are
+    # built by different rules. Five sleeves (CADJPY, EURJPY, GBPJPY, USDJPY, XAUUSD) refused
+    # every pass with "not in the docket on this box", which reads as a data gap and is a naming
+    # mismatch.
+    #
+    # THE ACCEPTANCE IS STILL VERIFIED, on the same rule the docket path uses: `{}` is accepted
+    # only when hashing it reproduces the cell id the bare name would have had. So this admits the
+    # genuine default parameterisation and still refuses anything whose identity does not check.
+    if "." in want and not re.search(r"\.(p=|[a-z_]+=)", want):
+        try:
+            derived = cell_id({"sym": want.split(".", 1)[0],
+                               "family": want.split(".", 1)[1], "params": {}})
+        except Exception as exc:
+            return None, f"cannot derive the default identity for {want!r} ({type(exc).__name__})"
+        if derived.startswith(want + ".p="):
+            return {}, ""
+        return None, (f"{want!r} names no parameters and the default identity {derived!r} does "
+                      f"not extend it; refusing to guess a parameterisation")
+
     docket = _docket_rows()
     if not docket:
         return None, f"no docket on this box to recover params for cell {want!r}"

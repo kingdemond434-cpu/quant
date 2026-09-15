@@ -148,6 +148,33 @@ def _call_params(s: dict, symbol: str = "", bars: object = None) -> dict | None:
     inner = raw.get("params")
     if isinstance(inner, dict):
         raw = inner
+    # AND `condition` IS AN ENVELOPE KEY EVEN WHEN THE ENVELOPE HAS NO `params` HALF.
+    # Measured 2026-09-15 against the live E8 account: four sleeves returned
+    # `TypeError: family_session_range_breakout() got an unexpected keyword argument 'condition'`
+    # because `e8_book` writes `"params": {"condition": null}` -- the envelope with its second
+    # half absent. The unwrap above only fires when `params` is a dict, so on that shape `raw`
+    # keeps `condition` and it is spread into the family call as a keyword no family takes.
+    #
+    # `condition` names the REGIME a cell was certified in; it is docket metadata and never a
+    # family parameter, so it is dropped on every shape rather than only on the nested one. This
+    # is the same {condition, params} envelope fault the desk has now found in five producers,
+    # and the reason it keeps recurring is that each fix handled the shape in front of it.
+    raw = {k: v for k, v in raw.items() if k != "condition"}
+    # AND `side` ARRIVES AS A WORD WHERE THE FAMILIES TAKE A SIGN. The qquant certificates carry
+    # `"side": "SHORT"` because that is how the hunt named it; every family in `families.py`
+    # compares `side` numerically, so the string reaches a `>` and raises
+    # `'>' not supported between instances of 'str' and 'int'` -- which the caller records as
+    # SIGNAL_ERROR and a reader mistakes for a broken strategy rather than a broken word.
+    #
+    # Coerced here rather than in the families: the families' contract is already numeric and
+    # correct, and the desk's own convention is +1 long / -1 short (see `engine.Signal.side`).
+    # An unrecognised word is left ALONE so it surfaces as an error instead of silently becoming
+    # a long position -- guessing a direction is the one wrong answer available here.
+    _side = raw.get("side")
+    if isinstance(_side, str):
+        _sign = {"SHORT": -1, "SELL": -1, "S": -1, "LONG": 1, "BUY": 1, "L": 1}.get(_side.upper())
+        if _sign is not None:
+            raw = dict(raw, side=_sign)
     try:
         from mt5desk.family_inputs import resolve, strip_identity_keys
     except Exception:
