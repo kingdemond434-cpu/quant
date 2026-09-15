@@ -1,5 +1,5 @@
 {
- "note": "The ASIA HARD-DATA PLANE. `deep_forest_sources.json` holds the PRACTITIONER forest -- 502 grounds where people say what they believe, which are hypothesis generators and never evidence. This file holds the other half: official, exchange, physical and flow data, where the number itself is the observation. The two are kept apart on purpose. A forum post and an SHFE warehouse receipt are both public Chinese information and they earn completely different treatment: one mints a hypothesis, the other can settle one. Adding a source here means declaring an MT5 transmission path for it -- a dataset with no path into a tradable instrument is not collected, however interesting, because trial count is a shared cost (LAWS: TWO LANES) and an unroutable feed spends it for nothing. REGION ROUTING RULE (principal, 2026-09-15), which has now held for China, Japan, SE Asia, MENA and LatAm: mine a region for DATA when it PRODUCES OR TRANSITS something the desk trades; mine it for STRATEGIES only when it TRADES what the desk trades, legally, with mandatory disclosure. Japan is the only region scoring on both columns -- retail FX is legal, enormous, MT5-native, and TFX publishes exchange data. China, Chile, Peru, Brazil, Dubai and Turkey are PRODUCERS: take the data, never the strategies, because nothing there trades this desk's venue. Russia/CIS is the one corpus worth mining for mechanisms without a data claim, because it is the largest MT5 corpus in the world and its authors trade this same terminal. SE Asian and MENA retail crowds have no disclosure: mechanisms only, claims never.",
+ "note": "The ASIA HARD-DATA PLANE. `deep_forest_sources.json` holds the PRACTITIONER forest -- 502 grounds where people say what they believe, which are hypothesis generators and never evidence. This file holds the other half: official, exchange, physical and flow data, where the number itself is the observation. The two are kept apart on purpose. A forum post and an SHFE warehouse receipt are both public Chinese information and they earn completely different treatment: one mints a hypothesis, the other can settle one. Adding a source here means declaring an MT5 transmission path for it -- a dataset with no path into a tradable instrument is not collected, however interesting, because trial count is a shared cost (LAWS: TWO LANES) and an unroutable feed spends it for nothing. REGION ROUTING RULE (principal, 2026-09-15), which has now held for China, Japan, SE Asia, MENA and LatAm: mine a region for DATA when it PRODUCES OR TRANSITS something the desk trades; mine it for STRATEGIES only when it TRADES what the desk trades, legally, with mandatory disclosure. Japan is the only region scoring on both columns -- retail FX is legal, enormous, MT5-native, and TFX publishes exchange data. China, Chile, Peru, Brazil, Dubai and Turkey are PRODUCERS: take the data, never the strategies, because nothing there trades this desk's venue. Russia/CIS is the one corpus worth mining for mechanisms without a data claim, because it is the largest MT5 corpus in the world and its authors trade this same terminal. SE Asian and MENA retail crowds have no disclosure: mechanisms only, claims never. NO_TABLE IS A ROUTE PROBLEM, NOT A PARSER PROBLEM. A JavaScript-rendered statistics portal serves an empty shell to a fetcher; its data lives at a JSON endpoint the page calls. Auto-discovery from the saved HTML does not find these -- the endpoints are in JS bundles, not the page -- so the remedy is a DECLARED url per source, verified once with a real request. cfets_fixing was fixed this way on 2026-09-15; abs_trade, boj_timeseries and krx_open_api were probed and returned 404/404/403, so they stay NO_TABLE rather than carrying an invented address.",
  "boundary": "PUBLIC OR LICENSED ONLY, and this is a hard line rather than a preference. Nothing here bypasses authentication, a paywall, a robots directive, a private group or an access control; nothing impersonates a user; no source is material non-public information. `access` declares what each needs, and a keyed or paid source that has no key configured reports UNCONFIGURED -- never a failed probe, and never a silent skip.",
  "planes": {
   "cn_hard": {
@@ -231,8 +231,8 @@
    "id": "cfets_fixing",
    "plane": "cn_hard",
    "name": "CFETS / ChinaMoney RMB central parity and index",
-   "url": "https://www.chinamoney.com.cn/english/bmkcpr/",
-   "expect": "any",
+   "url": "https://www.chinamoney.com.cn/r/cms/www/chinamoney/data/fx/ccpr.json",
+   "expect": "json",
    "access": "public",
    "cadence": "daily",
    "pit": {
@@ -244,7 +244,8 @@
     "AUDUSD",
     "USDJPY"
    ],
-   "mechanism": "the fixing SURPRISE -- parity against the model-implied level -- is the policy signal; the level itself is not"
+   "mechanism": "the fixing SURPRISE -- parity against the model-implied level -- is the policy signal; the level itself is not",
+   "route_note": "the PORTAL page carries no table -- it is JavaScript-rendered -- and its data comes from this JSON endpoint. Verified HTTP 200 application/json 2026-09-15. A NO_TABLE verdict from asia_parser means exactly this: the source needs a DECLARED api route, not a cleverer parser."
   },
   {
    "id": "chinabond_curve",

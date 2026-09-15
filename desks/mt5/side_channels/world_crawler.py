@@ -86,6 +86,48 @@ HOST_GAP_S = 2.0
 MAX_FRONTIER = 40_000
 
 
+#: Fetches a source must have HAD before it is evictable. Under this it is unmeasured, and
+#: evicting the unmeasured is how a frontier becomes a monument to whatever it happened to see
+#: first -- the exact failure the two-level shrinkage exists to prevent one layer down.
+EVICT_MIN_FETCHES = 3
+
+
+def _evict_one(sources: dict) -> bool:
+    """Make room by dropping the worst MEASURED dud. True when the frontier has space after.
+
+    A FLAT CAP IS FIRST-COME-FIRST-SERVED, AND THAT IS THE WRONG AUCTION. At 40,000 entries every
+    new link was DROPPED, so a URL discovered in week one and fetched five times for nothing
+    outranked one discovered today and never tried -- purely by arrival order. Nothing about that
+    ordering is evidence.
+
+    It matters much more now than it did: `index_discovery` returns ~583 addresses per run
+    instead of per hour of crawling, so the cap binds almost immediately and the frontier freezes
+    against exactly the ground the indexes were added to reach.
+
+    So the cap becomes a budget on SIZE rather than a lottery on arrival: the lowest-yielding
+    source that has actually been MEASURED (>= EVICT_MIN_FETCHES fetches, zero candidates and zero
+    leads) is evicted to make room. A source nobody has tried is never evicted -- absence of
+    evidence is not evidence of no yield (L1.28a) -- and when nothing qualifies the caller drops
+    and counts, exactly as before.
+    """
+    worst_key = None
+    worst = None
+    for k, s in sources.items():
+        fetches = int(getattr(s, "fetches", 0) or 0)
+        if fetches < EVICT_MIN_FETCHES:
+            continue
+        yielded = float(getattr(s, "candidates", 0) or 0) + float(getattr(s, "leads", 0) or 0)
+        if yielded > 0:
+            continue
+        # Among proven duds, the one that has consumed the most fetches for nothing.
+        if worst is None or fetches > worst:
+            worst, worst_key = fetches, k
+    if worst_key is None:
+        return False
+    sources.pop(worst_key, None)
+    return True
+
+
 def log(msg: str) -> None:
     print(f"[{datetime.now(tz=UTC):%H:%M:%S}] {msg}", flush=True)
 
@@ -862,7 +904,7 @@ def frontier_seeds() -> tuple[str, ...]:
         sys.path.insert(0, str(BASE))
         from frontier_intel import registry as _registry
         return _registry.crawl_seeds()
-    except Exception as exc:                                            # noqa: BLE001
+    except Exception as exc:
         log(f"frontier seeds unavailable ({type(exc).__name__}: {exc}) -- crawling without them")
         return ()
 
@@ -937,7 +979,7 @@ def crawl(budget: int = DEFAULT_FETCHES, run_budget_s: int = RUN_BUDGET_S,
         # RECURSION: every page read is also read for where to go next. This is the whole
         # difference between a crawler and a list of miners.
         for href, anchor in page["links"]:
-            if len(sources) >= MAX_FRONTIER:
+            if len(sources) >= MAX_FRONTIER and not _evict_one(sources):
                 dropped += 1
                 continue
             if wf.worth_following(href, anchor) and wf.add(sources, href, via=src.url):
@@ -962,6 +1004,9 @@ def crawl(budget: int = DEFAULT_FETCHES, run_budget_s: int = RUN_BUDGET_S,
         # THE CAP IS REPORTED, NOT SILENT. A crawler that quietly stops discovering because it
         # hit a bound looks exactly like a web that ran out of pages (L1.28a).
         "frontier_cap": MAX_FRONTIER,
+        "frontier_eviction": ("at the cap the lowest-yielding MEASURED dud is evicted to make "
+                              "room; an unfetched source is never evicted, and when nothing "
+                              "qualifies the new link is dropped and counted as before"),
         "note": ("Rows are LEADS in the miner-discovery contract. No family or params is emitted: "
                  "miner_candidate_compiler admits an executable candidate only from a page that "
                  "names a registered family explicitly, and guessing one from a buzzword is the "

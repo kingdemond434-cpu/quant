@@ -42,10 +42,13 @@ fetched at all.
 from __future__ import annotations
 
 import argparse
+import concurrent.futures as cf
 import gzip
 import hashlib
 import json
+import os
 import sys
+import threading
 import time
 import urllib.error
 import urllib.parse
@@ -73,6 +76,10 @@ MAX_BYTES = 8 * 1024 * 1024
 #: Seconds between fetches of the SAME HOST. Politeness is not optional on public endpoints, and
 #: a collector that hammers a government portal gets the desk blocked from it permanently.
 HOST_DELAY_S = 2.0
+#: Hosts fetched at once. Politeness is per HOST and is preserved exactly by a per-host lock, so
+#: workers only ever overlap DIFFERENT servers. Eight hides the timeouts without making this desk
+#: a nuisance to a dozen government sites at once.
+WORKERS = int(os.environ.get("ASIA_COLLECTOR_WORKERS", "8"))
 #: Cadence -> seconds before a source is due again. A daily statistic fetched hourly is twenty-
 #: three wasted requests and one rate-limit away from a ban.
 DUE_AFTER = {
@@ -358,29 +365,57 @@ def main(argv: list[str] | None = None) -> int:
                   f"{s.get('access')!s:8} {str(s.get('url'))[:60]}")
         return 0
 
+    # CONCURRENT ACROSS HOSTS, STRICTLY SERIAL WITHIN ONE.
+    #
+    # The serial loop this replaces was the reason a pass could not finish. Eighty-five sources at
+    # up to 25s of timeout each is thirty-five minutes of WALL CLOCK in the worst case, against a
+    # budget of ten -- so whichever sources happened to sit behind the slow ones were DEFERRED
+    # every pass, forever, exactly the starvation the gauntlet's build order suffers from. And the
+    # sources most likely to be slow are government portals, which is most of this registry.
+    #
+    # Politeness is per HOST, not global, and that is the whole reason this is safe: HOST_DELAY_S
+    # exists so one server is not hammered, and it is preserved exactly -- a per-host lock plus
+    # the same gap. Two different hosts were never in contention, and waiting two seconds between
+    # safe.gov.cn and rba.gov.au bought nothing but wall clock.
+    #
+    # WORKERS ARE FEW ON PURPOSE. Eight is enough to hide the timeouts and small enough that the
+    # box's memory and this desk's reputation with a dozen government sites both survive it.
     started = time.monotonic()
-    last_host: dict[str, float] = {}
-    rows: list[dict[str, Any]] = []
-    for s in todo:
+    rows: list[Any] = [None] * len(todo)
+    host_locks: dict[str, threading.Lock] = {}
+    host_last: dict[str, float] = {}
+    guard = threading.Lock()
+
+    def _slot(host: str) -> threading.Lock:
+        with guard:
+            return host_locks.setdefault(host, threading.Lock())
+
+    def _one(i: int, s: dict[str, Any]) -> None:
         if time.monotonic() - started > args.budget:
-            rows.append({"id": s.get("id"), "status": "DEFERRED",
-                         "why": "pass budget exhausted; due again next pass"})
-            continue
+            rows[i] = {"id": s.get("id"), "status": "DEFERRED",
+                       "why": "pass budget exhausted; due again next pass"}
+            return
         host = urllib.parse.urlsplit(str(s.get("url") or "")).netloc
-        wait = HOST_DELAY_S - (time.monotonic() - last_host.get(host, -1e9))
-        if wait > 0:
-            time.sleep(min(wait, HOST_DELAY_S))
-        last_host[host] = time.monotonic()
-        prev = state.get(str(s.get("id"))) or {}
-        rec = collect_one(s, timeout=args.timeout,
-                          validators=prev.get("validators") if isinstance(prev, dict) else None)
-        rows.append(rec)
+        with _slot(host):
+            wait = HOST_DELAY_S - (time.monotonic() - host_last.get(host, -1e9))
+            if wait > 0:
+                time.sleep(min(wait, HOST_DELAY_S))
+            host_last[host] = time.monotonic()
+            prev = state.get(str(s.get("id"))) or {}
+            rec = collect_one(s, timeout=args.timeout,
+                              validators=prev.get("validators") if isinstance(prev, dict) else None)
+        rows[i] = rec
         keep = {"last_attempt_epoch": time.time(), "last_status": rec.get("status")}
         # A 304 keeps the OLD validators: they are what proved the page unchanged, and replacing
         # them with nothing would make the next pass unconditional for no reason.
         keep["validators"] = (rec.get("validators")
                               or (prev.get("validators") if isinstance(prev, dict) else None) or {})
-        state[str(s.get("id"))] = keep
+        with guard:
+            state[str(s.get("id"))] = keep
+
+    with cf.ThreadPoolExecutor(max_workers=WORKERS) as pool:
+        list(pool.map(lambda t: _one(*t), list(enumerate(todo))))
+    rows = [r for r in rows if r is not None]
 
     _write_atomic(STATE, json.dumps(state, indent=1))
     census = Counter(str(r.get("status")) for r in rows)
