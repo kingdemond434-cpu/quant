@@ -1098,6 +1098,45 @@ def cost_to_edge() -> dict:
     return _producer("cost_to_edge", "research/cost_to_edge.py")
 
 
+def swap_rejudge() -> dict:
+    """`swap_rejudge`: every certificate re-priced against the financing it was never charged.
+
+    THE ENGINE NOW CHARGES SWAP (Costs.swap_per_lot_per_night, 2026-09-15) and that only protects
+    certificates minted from now on. The 58 already holding forward clocks were judged by an
+    engine that charged zero, so this re-prices each against the venue's published swap points and
+    the nights its OWN ledger says its trades crossed -- mean, not median, because the number it
+    is charged against is an expectancy and the trades that hold are part of it.
+
+    Measured 2026-09-15 over 58: 57 SURVIVES, 1 AT_RISK, 0 COST_NEGATIVE. The book is Asia-session
+    H1 and mostly exits before rollover; the worst is GBPJPY at 27.5% of its edge. That is the
+    answer being cheap rather than the fence being loose -- the same pass on the four live
+    overnight_gap_decay sleeves is where `cost_to_edge` finds cost exceeding the whole edge.
+    """
+    return _producer("swap_rejudge", "research/swap_rejudge.py")
+
+
+def asia_plane() -> dict:
+    """`asia_plane`: every Asian ground converted into gauntlet cells, or named as converting to none.
+
+    THE RULE (principal, 2026-09-15): every ground the desk ever covers must have machinery that
+    turns it into cells. Not a collector, not a dashboard tile -- CELLS, judged or explicitly
+    blocked on a named feed. A source that reaches no gauntlet is indistinguishable from a source
+    nobody added, and this desk has had both and could not tell them apart.
+
+    The hard-data half of the Asian surface: 45 official, exchange, physical, flow, genome and
+    alternative sources, kept apart from `deep_forest_miner`'s 502 PRACTITIONER grounds because a
+    forum post and an SHFE warehouse receipt earn completely different treatment -- one mints a
+    hypothesis, the other can settle one.
+
+    Measured on its first pass: 45 sources -> 393 cells, 100% compiling as STRUCTURED_HYPOTHESIS,
+    16 instruments, 0 unconverted grounds, 4 transports declared as carrying other sources rather
+    than minting their own, and 16 declared targets NAMED as not quoted on this account.
+    """
+    return _producer("asia_plane", "research/asia_plane.py")
+
+
+
+
 def source_routes() -> dict:
     """`source_routes`: is each data endpoint still there, or has it moved and started lying?
 
@@ -2149,6 +2188,8 @@ def main() -> None:
     stf = _costed("stamp_freshness", stamp_freshness)
     fat = _costed("fill_attribution", fill_attribution)
     c2e = _costed("cost_to_edge", cost_to_edge)
+    swr = _costed("swap_rejudge", swap_rejudge)
+    asp = _costed("asia_plane", asia_plane)
     srt = _costed("source_routes", source_routes)
     spa = _costed("strategy_paths", strategy_paths)
     wse = _costed("weak_signals", weak_signal_ensembles)
@@ -2330,6 +2371,8 @@ def main() -> None:
                     "stamp_freshness": stf,
                     "fill_attribution": fat,
                     "cost_to_edge": c2e,
+                    "swap_rejudge": swr,
+                    "asia_plane": asp,
                     "source_routes": srt,
                     "strategy_paths": spa,
                     "weak_signals": wse,

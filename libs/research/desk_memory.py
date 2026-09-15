@@ -100,7 +100,19 @@ LEDGER = _ROOT / "docs/desk_lessons.jsonl"
 #: Corpus discipline still binds, just where it belongs: `broken_enforcement` and the retirement
 #: path, not a silent truncation at read time. `DESK_MEMORY_BUDGET_CHARS` overrides for a caller
 #: whose context is genuinely tight.
-_FULL_CORPUS_CHARS = 130_000
+#:
+#: RAISED 130k -> 190k ON 2026-09-15, and the trigger is the whole reason this note exists. The
+#: corpus reached 338 lessons and `reach()` reported 335 reached, 1 UNREACHED, 0 lost: adding
+#: L0338 silently displaced L0288, which then reached no organ at all. That is the exact failure
+#: this constant was raised to 130k to end -- a ceiling set against a corpus size, on a corpus
+#: that grows by design. A budget that fits TODAY'S corpus is a budget that will drop tomorrow's
+#: lesson, and it will do it without saying so.
+#:
+#: So the floor is now sized off the corpus ON DISK rather than a remembered number: 293,746 raw
+#: chars render to well under this, and `check_lesson_reach` fails the suite the moment
+#: `unreached` is non-zero again, which is the part that makes the property survive the next
+#: hundred lessons instead of the next ten.
+_FULL_CORPUS_CHARS = 190_000
 BUDGET_CHARS = int(os.environ.get("DESK_MEMORY_BUDGET_CHARS") or _FULL_CORPUS_CHARS)
 
 #: What it cost the desk NOT to know this. The scale is about consequence, never about how

@@ -54,15 +54,45 @@ class Costs:
     #: Defaults to 1.0, which is exactly today's arithmetic, so no existing call site changes
     #: silently. `from_symbol()` sets it from tick_value and is the only correct constructor.
     quote_per_account: float = 1.0
+    #: OVERNIGHT FINANCING PER LOT PER NIGHT, in the same convention as `spread_per_lot`
+    #: (points x tick_size x contract_size), found missing 2026-09-15.
+    #:
+    #: THE ENGINE CHARGED ZERO SWAP ON EVERY CERTIFICATE THIS DESK HAS EVER MINTED. Grep this
+    #: module before the change and "swap" returns nothing. For an intraday sleeve that is
+    #: correct and costs nothing; for `overnight_gap_decay`, which holds through rollover BY
+    #: CONSTRUCTION, the one cost that dominates the family was never charged.
+    #:
+    #: AND THE NUMBER WAS ALREADY ON DISK. `universe.json` carries `swap_long`/`swap_short` for
+    #: 248 of 251 symbols and has since the registry was built -- the same shape as
+    #: `strategy_paths`, where the data sat one directory over while the desk recorded that it
+    #: could not be measured. `from_symbol()` reads it; nothing else has to.
+    #:
+    #: THE WORSE SIDE, ALWAYS. A sleeve may be long or short and the desk does not get to pick
+    #: the cheaper financing after the fact. GBPMXN pays -324.72 points long against +39.11
+    #: short: charging the favourable side prices a trade the book cannot guarantee it is taking.
+    #:
+    #: Defaults to 0.0, which is exactly today's arithmetic, so no existing call site re-prices
+    #: silently -- the same discipline `quote_per_account` and `spread_pts` document above, and
+    #: for the same reason: this class is on the money path.
+    swap_per_lot_per_night: float = 0.0
 
     def per_oz_roundtrip(self) -> float:
         """Round-trip cost per lot, in the convention the engine divides by `contract_oz`.
 
         The commission is converted from account currency into that convention; the spread is
         already in it. See `quote_per_account`.
+
+        SWAP IS NOT HERE ON PURPOSE. Spread and commission are paid ONCE per round trip and are
+        constants of the trade; financing is paid PER NIGHT and is a function of how long the
+        trade was held. Folding it into a round-trip constant would charge a scalp the same
+        financing as a week-long hold. See `financing()`.
         """
         return (self.spread_per_lot
                 + self.commission_per_lot * 2.0 * float(self.quote_per_account))
+
+    def financing(self, nights: float) -> float:
+        """Overnight financing for `nights` rollovers, in the `per_oz_roundtrip` convention."""
+        return float(self.swap_per_lot_per_night) * float(nights)
 
     def stressed(self, spread_mult: float) -> Costs:
         """A cost-stress variant of THIS cost model -- widen the spread, keep everything else.
@@ -131,9 +161,18 @@ class Costs:
         # 1.0 and is REPORTED rather than assumed away: see scripts/check_universe_registry.py.
         tv = float(meta.get("tick_value", 0.0) or 0.0)
         qpa = (cs * ts / tv) if (tv > 0 and cs > 0 and ts > 0) else 1.0
+        # FINANCING, FROM THE REGISTRY THE DESK ALREADY KEEPS. swap_long/swap_short are quoted in
+        # POINTS per lot per night, so `pts * tick_size * contract_size` lands them in exactly the
+        # convention `spread_per_lot` uses and the engine divides back out. The worse side is
+        # charged; see `swap_per_lot_per_night`. A symbol with no swap fields charges zero, which
+        # is today's arithmetic and is REPORTED as unpriced rather than assumed free --
+        # `scripts/check_swap_pricing.py` is what stops that silence becoming a clean verdict.
+        swap_pts = max(abs(float(meta.get("swap_long", 0.0) or 0.0)),
+                       abs(float(meta.get("swap_short", 0.0) or 0.0)))
         return cls(spread_per_lot=max(spread * mult, 0.05),
                    commission_per_lot=commission_per_lot, contract_oz=cs,
-                   quote_per_account=qpa)
+                   quote_per_account=qpa,
+                   swap_per_lot_per_night=swap_pts * ts * cs)
 
 
 @dataclass
@@ -228,6 +267,50 @@ class BacktestResult:
             "avg_loss_r": float(losses.mean()) if len(losses) else 0.0,
             "max_dd_r": max_dd,
         }
+
+
+#: UTC hour of the broker's rollover. Fusion's server runs UTC+2 in winter and UTC+3 in summer,
+#: so server midnight is 22:00 UTC or 21:00 UTC. 21 is used and the choice is deliberately the
+#: EARLIER one: it can only count a rollover a position did not quite reach, never miss one it
+#: paid. A cost model that errs must err expensive.
+ROLLOVER_HOUR_UTC = 21
+#: Weekday whose rollover carries three days' financing, because its value date spans the
+#: weekend. Monday=0, so 2 is Wednesday -- the standard FX convention on every retail venue.
+TRIPLE_SWAP_WEEKDAY = 2
+
+
+def rollovers_between(t0: pd.Timestamp, t1: pd.Timestamp) -> float:
+    """Financing nights charged for a position held from `t0` to `t1`.
+
+    WHY THIS IS NOT `(t1 - t0).days`. A trade opened 20:00 and closed 22:00 crosses ONE rollover
+    and pays a full night on two hours of exposure; a trade opened 22:00 and closed the next
+    18:00 crosses NONE and pays nothing on twenty hours. Financing is charged at an INSTANT, not
+    pro rata, and a duration-based charge gets both of those backwards.
+
+    Wednesday's rollover counts three, which is not a detail: it is 43% of a week's financing on
+    one instant, and the families that hold through a Wednesday night pay it every week.
+
+    A naive timestamp is read as UTC. That is the same assumption the rest of this engine makes
+    of the universe parquets, and stating it here keeps it from being made twice differently.
+    """
+    if t0 is None or t1 is None:
+        return 0.0
+    a, b = pd.Timestamp(t0), pd.Timestamp(t1)
+    if a.tzinfo is not None:
+        a = a.tz_convert("UTC").tz_localize(None)
+    if b.tzinfo is not None:
+        b = b.tz_convert("UTC").tz_localize(None)
+    if not (b > a):
+        return 0.0
+    nights = 0.0
+    # The first rollover instant at or after the entry.
+    cur = a.normalize() + pd.Timedelta(hours=ROLLOVER_HOUR_UTC)
+    if cur <= a:
+        cur = cur + pd.Timedelta(days=1)
+    while cur <= b:
+        nights += 3.0 if cur.weekday() == TRIPLE_SWAP_WEEKDAY else 1.0
+        cur = cur + pd.Timedelta(days=1)
+    return nights
 
 
 def run_backtest(
@@ -445,6 +528,15 @@ def run_backtest(
             r += add_frac * (exit_price - fill_px) / stop_dist * side
             units += add_frac
         r -= per_oz_cost * units / stop_dist
+        # FINANCING, PER NIGHT ACTUALLY CROSSED. Zero for every intraday sleeve, which is why
+        # this changes nothing for the scalp lane and is decisive for the overnight one. It is
+        # charged on the whole stack (`units`), the same size the spread is charged on.
+        if costs.swap_per_lot_per_night:
+            nights = rollovers_between(pd.Timestamp(idx[fill_bar]),
+                                       pd.Timestamp(idx[min(fill_bar + bars_held - 1,
+                                                            len(idx) - 1)]))
+            if nights:
+                r -= (costs.financing(nights) / costs.contract_oz) * units / stop_dist
         trades.append(
             Trade(
                 entry_time=pd.Timestamp(idx[fill_bar]),
