@@ -744,8 +744,545 @@ def partition_at_economic_prior(specs: list[dict],
 CACHE_DIR = REPORTS / "gauntlet_cache"
 
 
+#: How strongly the build budget follows measured family yield. 0 spends uniformly (the old
+#: behaviour); 1 spends strictly in proportion to the shrunk posterior. Between the two, because
+#: a family's yield is an estimate and the desk must keep buying information about the families
+#: it has not yet measured well.
+YIELD_ALLOCATION_STRENGTH = float(os.environ.get("GAUNTLET_YIELD_STRENGTH", "0.70"))
+
+#: Strength of the Beta prior, in cells. a+b is how many of a family's OWN ruled cells it takes to
+#: move it off the house average; a/(a+b) is the house average itself and is MEASURED each sweep
+#: rather than declared (`_house_yield`). 100 cells is deliberately slow: `session_range_breakout`
+#: earned its 105-per-1,000 on 142 cells, so a family needs a comparable record before the
+#: allocator believes an extreme number rather than a lucky one.
+YIELD_PRIOR_STRENGTH = 100.0
+
+#: No family may take more than this share of one sweep, however well it has done. The capital
+#: allocator has `hard_ceiling` for the same reason and it is not timidity: a yield estimate is
+#: drawn from the cells the desk CHOSE to build, so letting the leader take everything closes the
+#: loop that would have told it it was wrong. The desk also cannot certify a portfolio out of one
+#: family -- n_eff collapses to 1/rho and the E8 barrier is priced on INDEPENDENT mechanisms, so
+#: a sweep that produced only session_range_breakout survivors would buy certificates it cannot
+#: diversify with.
+YIELD_MAX_SHARE = 0.45
+
+#: No family may be squeezed below this share of its own docket, however badly it has done.
+#: EXPLORATION IS NOT CHARITY HERE: a family that has ruled 200 cells for zero survivors may still
+#: be one parameterisation away from working, and the desk cannot learn that from cells it never
+#: builds. It is also the fence against a feedback loop -- starve a family completely and its
+#: yield can never update, so a single bad epoch would condemn it permanently.
+YIELD_MIN_SHARE = 0.15
+
+
+#: Gate failures that mean UNDER-POWERED rather than REFUTED. A cell failing only these cleared
+#: pbo, cpcv, walk_forward, lockbox, reality_check_spa and stress_costs -- it is a real effect
+#: measured on too few observations to clear a bar charging 597 trials.
+POWER_ONLY_GATES = frozenset({"deflated_sharpe", "expected_value", "in_sample_screen"})
+
+#: What a power-deficient cell is worth when it has a downstream consumer but that consumer has
+#: not yet produced a survivor to measure against.
+#:
+#: THIS NUMBER IS A BOOTSTRAP AND SAYS SO. It is replaced by measurement the moment the weak-signal
+#: lane reports its own conversion (`_combination_credit` reads it), because a declared constant
+#: deciding allocation is exactly what `_family_yield`'s own prior comment warns against. A half
+#: credit is the deliberate middle: crediting 1.0 would claim combination converts as reliably as
+#: solo certification, which is unmeasured; crediting 0.0 is what the desk did until today, and
+#: that is the bug this replaces, not a safe default.
+COMBINATION_CREDIT_BOOTSTRAP = 0.5
+
+
+def _combination_credit(root: Path | None = None) -> float:
+    """What one power-deficient cell is worth, MEASURED from the weak-signal lane where possible.
+
+    Survivors the combination lane produced, per power-deficient member it consumed. Until that
+    lane has run and reported, the bootstrap stands and the caller is told which it used.
+    """
+    base = root or REPORTS.parent
+    try:
+        w = json.loads((base / "reports" / "weak_signal_compiler.json").read_text("utf-8"))
+    except (OSError, ValueError):
+        return COMBINATION_CREDIT_BOOTSTRAP
+    members = float(w.get("n_members") or 0.0)
+    won = float(w.get("cells_proposed") or 0.0)
+    if members <= 0:
+        return COMBINATION_CREDIT_BOOTSTRAP
+    return max(0.0, min(1.0, won / members))
+
+
+def _family_yield(root: Path | None = None) -> dict[str, float]:
+    """Survivors per RULED cell, per family, shrunk toward the desk's own average.
+
+    Ruled, not judged: a cell the gates could not rule on (`unmeasured` -- under the 60 trading
+    days they need) says nothing about the family's productivity, and counting it as a failure
+    would condemn exactly the families whose parameterisations need widening rather than
+    discarding.
+    """
+    base = root or REPORTS.parent
+    try:
+        g = json.loads((base / "reports" / "universal_gates_external.json").read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    ruled: dict[str, int] = {}
+    # POWER-DEFICIENT CELLS ARE OUTPUT, NOT WASTE -- AS OF THE HOUR weak_signals GOT A CLOCK.
+    #
+    # THIS ALLOCATOR WAS STARVING ITS OWN BEST SUPPLIER. Yield was survivors-per-ruled-cell, and a
+    # survivor meant a cell passing all ten gates ALONE. By that definition `pca_residual` scores
+    # 0.0 (0 of 230) and `cross_asset_residual` 0.0 (0 of 816), so both were trimmed to the floor.
+    # Measured on the trading box 2026-09-14, those same two families are the RICHEST source of
+    # cells that failed only on power: pca_residual 131 of 230, the highest rate on the desk.
+    #
+    # That zero was correct while nothing consumed a power-deficient cell. `weak_signals` now runs
+    # hourly and consumes exactly them, so the numerator was measuring the wrong thing the moment
+    # that leg landed: it asked "did this family certify alone", when the question allocation turns
+    # on is "did this family produce anything a downstream consumer can use". Leaving it would have
+    # had the gauntlet defund the combination lane's raw material at the same hour the lane opened.
+    #
+    # THIS RAISES ALLOCATION, IT DOES NOT CAP ANYTHING (Rule 1). No family's share falls by fiat;
+    # the numerator gains a term that was always positive, so families with power-deficient output
+    # rise and the total docket built is unchanged. More independent positive-Elog bets inside the
+    # same budget is the whole point.
+    power_def: dict[str, int] = {}
+    for v in g.get("verdicts") or []:
+        if not isinstance(v, dict) or v.get("unmeasured"):
+            continue
+        fam = str(v.get("family") or "")
+        if not fam:
+            continue
+        ruled[fam] = ruled.get(fam, 0) + 1
+        stages = v.get("stages") or v.get("gates") or {}
+        if not isinstance(stages, dict) or not stages:
+            continue
+        failed = {k for k, gg in stages.items()
+                  if isinstance(gg, dict) and gg.get("passed") is False}
+        if failed and failed <= POWER_ONLY_GATES:
+            power_def[fam] = power_def.get(fam, 0) + 1
+    try:
+        s = json.loads((base / "reports" / "UNIVERSAL_SURVIVORS.json").read_text("utf-8"))
+    except (OSError, ValueError):
+        s = {}
+    surv: dict[str, int] = {}
+    for val in (s.get("survivors") or {}).values():
+        fam = str(((val or {}).get("shadow_spec") or {}).get("family") or "")
+        if fam:
+            surv[fam] = surv.get(fam, 0) + 1
+    credit = _combination_credit(root)
+    fams = set(ruled) | set(surv) | set(power_def)
+
+    def _num(f: str) -> float:
+        return surv.get(f, 0) + credit * power_def.get(f, 0)
+    # THE PRIOR IS THE DESK'S OWN AGGREGATE, MEASURED NOW. A declared constant would go stale the
+    # moment the desk got better or worse at converting cells, and would quietly become the thing
+    # deciding allocation on a day when every family underperformed it.
+    tot_s = sum(_num(f) for f in fams)
+    tot_r = sum(ruled.values())
+    house = (tot_s / tot_r) if tot_r else 0.0
+    pa = max(house, 1e-6) * YIELD_PRIOR_STRENGTH
+    pb = YIELD_PRIOR_STRENGTH - pa
+    return {f: (_num(f) + pa) / (ruled.get(f, 0) + pa + pb) for f in fams}
+
+
+def _house_yield() -> float:
+    """Survivors per ruled cell across every family -- what an unmeasured family is credited."""
+    y = _family_yield()
+    return (sum(y.values()) / len(y)) if y else 0.0
+
+
+#: CELLS PER UNMEASURED AXIS THE SWEEP BUILDS NO MATTER WHAT ITS YIELD SAYS.
+#:
+#: WHY A YIELD ALLOCATOR CANNOT FIX BREADTH ON ITS OWN, and this is the whole argument. Yield is
+#: survivors per ruled cell. Measured 2026-09-14, every one of the desk's 58 certificates is H1
+#: and asia -- one chart, one session -- and the per-chart record reads:
+#:
+#:     judged   H1 7,193 | H4 40  D1 39  M15 36  M30 34  M5 33  M1 30
+#:     passed   H1    10 | everything else 0
+#:
+#: So every non-H1 chart has a measured yield of EXACTLY ZERO, and a yield-keyed allocator hands
+#: zero-yield axes the floor and moves on. They have produced no survivor because they have barely
+#: been built, and they will barely be built because they have produced no survivor. Exploitation
+#: cannot discover an axis it has no data on; it is the same self-sealing trap as a live sleeve
+#: held at zero heat because "capital requires a measured marginal".
+#:
+#: THIS FLOOR IS ADDITIVE AND TAKES FROM NOBODY (Rule 1, and the standing order on
+#: aggressiveness). It APPENDS cells the family trim did not already keep; no family's share is
+#: reduced, and nothing currently earning loses a single build. That is affordable because the
+#: build budget is not binding -- the sweep reports `n_cells_deferred_build_budget: 0` -- so an
+#: unmeasured axis costs compute that was otherwise idle rather than compute that was earning.
+#:
+#: FORTY IS A SAMPLE, NOT A GESTURE. Below roughly this many cells an axis cannot distinguish "no
+#: edge here" from "not asked", so a smaller floor would buy the appearance of exploration and
+#: none of its information. An axis that reaches a survivor stops being unmeasured and is
+#: thereafter allocated on its measured yield like everything else -- the floor is a door, not a
+#: subsidy.
+EXPLORATION_MIN_CELLS = int(os.environ.get("GAUNTLET_EXPLORATION_MIN_CELLS", "40"))
+
+
+def _axis_of(spec: dict) -> tuple[str, str]:
+    """(chart, session anchor) -- the two axes on which this desk has no diversity at all.
+
+    Read through `timeframe_of`, the same function `cell_id` uses, so an axis label can never
+    disagree with the identity the docket and the gauntlet already share.
+    """
+    params = dict(spec.get("params") or {})
+    try:
+        chart = str(timeframe_of(params, str(spec.get("family") or ""))).upper()
+    except Exception:
+        chart = str(params.get("timeframe") or "H1").upper()
+    anchor = "-"
+    for k in ("range_start", "selector", "session", "hour", "anchor_hour"):
+        if k in params and params[k] is not None:
+            anchor = f"{k}={params[k]}"
+            break
+    if anchor == "-":
+        anchor = str(spec.get("selector") or "-")
+    return chart, anchor
+
+
+def _axis_yield(root: Path | None = None) -> dict[tuple[str, str], int]:
+    """Survivors per (chart, anchor). An axis absent here has never produced one."""
+    base = root or REPORTS.parent
+    try:
+        s = json.loads((base / "reports" / "UNIVERSAL_SURVIVORS.json").read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    out: dict[tuple[str, str], int] = {}
+    for val in (s.get("survivors") or {}).values():
+        spec = (val or {}).get("shadow_spec") or {}
+        if not spec:
+            continue
+        ax = _axis_of(spec)
+        out[ax] = out.get(ax, 0) + 1
+    return out
+
+
+def _explore_unmeasured_axes(specs: list[dict], keep: list[dict]) -> tuple[list[dict], dict]:
+    """Top `keep` up so every UNMEASURED (chart, anchor) axis gets a real sample this sweep.
+
+    Never removes. Returns the appended cells and a per-axis record of what was added and why,
+    which is the missed-growth line the governance requires of any allocation decision.
+    """
+    measured = _axis_yield()
+    kept_ids = {id(s) for s in keep}
+    by_axis: dict[tuple[str, str], list[dict]] = {}
+    for sp in specs:
+        by_axis.setdefault(_axis_of(sp), []).append(sp)
+    added: list[dict] = []
+    record: dict[str, dict] = {}
+    for ax, rows in sorted(by_axis.items(), key=lambda kv: -len(kv[1])):
+        have = sum(1 for r in rows if id(r) in kept_ids)
+        if measured.get(ax, 0) > 0:
+            continue                       # this axis has a survivor: yield governs it
+        short = EXPLORATION_MIN_CELLS - have
+        if short <= 0:
+            continue
+        spare = [r for r in rows if id(r) not in kept_ids][:short]
+        if not spare:
+            continue
+        added.extend(spare)
+        record[f"{ax[0]}|{ax[1]}"] = {
+            "docket": len(rows), "already_kept": have, "added_by_floor": len(spare),
+            "survivors_on_this_axis": 0,
+            "why": ("unmeasured axis: no survivor has ever been minted here, so its yield is 0 "
+                    "and the yield allocator would never build it. Floored so the desk can tell "
+                    "'no edge' from 'never asked'."),
+        }
+    return added, record
+
+
+#: Families that are ORTHOGONAL BY CONSTRUCTION. A PCA residual is, by definition, the part the
+#: common factors do not explain; a relative-value spread is two legs whose shared factor has been
+#: differenced away. They are the only families on this desk that attack rho directly.
+ORTHOGONAL_FAMILIES = ("cross_asset_residual", "relative_value", "correlation_regime",
+                       "pca_residual", "triangle")
+#: Cells from those families that MUST be judged each sweep, whatever their yield says.
+ORTHOGONALITY_MIN_CELLS = int(os.environ.get("GAUNTLET_ORTHOGONALITY_MIN_CELLS", "60"))
+
+
+def _stamped_but_unjudged() -> set[str]:
+    """Cell ids the sweep STAMPED as seen while recording no verdict for them.
+
+    Read from `universal_gates_external.json`: a verdict row with empty `stages` was never
+    computed -- the build budget died before it -- whatever its seen-stamp says. Returning these
+    as NEW puts them back at the front of the build order, which is the only way a cell trapped
+    behind its own stamp is ever reached again.
+
+    Fails OPEN (empty set) on any read problem: an unreadable report must not silently re-promote
+    the whole docket to the front and starve the genuinely-new cells instead.
+    """
+    try:
+        doc = json.loads((REPORTS / "universal_gates_external.json").read_text("utf-8"))
+    except (OSError, ValueError):
+        return set()
+    out: set[str] = set()
+    for v in doc.get("verdicts") or []:
+        if not isinstance(v, dict) or v.get("stages"):
+            continue
+        try:
+            out.add(cell_id({"sym": v.get("sym"), "family": v.get("family"),
+                             "params": v.get("params") or {}}))
+        except Exception:
+            continue
+        cid = v.get("cell_id") or v.get("id")
+        if isinstance(cid, str) and cid:
+            out.add(cid)
+    return out
+
+
+def _orthogonality_floor(specs: list[dict], keep: list[dict]) -> tuple[list[dict], dict]:
+    """Guarantee the rho-reducing families a sample, because their yield is 0 and always will be.
+
+    WHAT THE MEASUREMENT ACTUALLY SAID, 2026-09-15, after two wrong readings of it. The docket
+    holds 1,596 residual and relative-value candidates and ZERO have certified. The first reading
+    was "never judged" -- taken from the docket, which carries no verdict field at all. The second
+    was "judged and failed". Both were wrong, and the gates report says so plainly: 1,544 of 1,598
+    carry `stages: {}`, `days: 0`, `passed: null` and
+    `downstream_status: NOT_RUN_BUILD_BUDGET_DEFERRED`. They were QUEUED AND NEVER REACHED. Only
+    54 were ever computed (34 failed in_sample_screen, 19 deflated_sharpe, 1 observations).
+
+    The allocator is not the cause: it already keeps 1,339 of them. The cause was the seen-stamp
+    trap `_is_new` now closes. This floor is the SECOND line rather than the fix -- it guarantees
+    the rho-reducing families a sample if the yield trim ever does stop keeping them, which is
+    exactly what the trim is designed to do once a family has been ruled on and produced nothing.
+    It appends and takes from nobody, and when the trim already keeps enough it adds zero and says
+    so.
+
+    WHY THAT TERM IS THE ONLY ONE THAT MATTERS. n_eff = N / (1 + (N-1)rho). At the book's measured
+    rho ~= 0.165, n_eff is 5.59 on 61 sleeves and the CEILING is 1/rho = 6.1. Adding 939 more
+    sleeves at the same correlation buys 0.49 of one effective bet. No number of sources, cells or
+    certificates moves past 6.1; only rho does. Every certified family this desk holds is a
+    directional price-pattern family -- session_range_breakout 20, discovered 24,
+    overnight_gap_decay 12, carry 1 -- which is six kinds of structural sameness and is precisely
+    what rho measures.
+
+    So this floor is not fairness between families. It is the only lever on the binding constraint
+    that the desk already owns, sitting unjudged in its own docket.
+    """
+    kept_ids = {id(s) for s in keep}
+    rows = [s for s in specs if str(s.get("family") or "") in ORTHOGONAL_FAMILIES]
+    have = sum(1 for r in rows if id(r) in kept_ids)
+    short = ORTHOGONALITY_MIN_CELLS - have
+    if not rows or short <= 0:
+        return [], {"docket": len(rows), "already_kept": have, "added_by_floor": 0,
+                    "why": "the yield trim already keeps enough orthogonal-family cells"}
+    spare = [r for r in rows if id(r) not in kept_ids][:short]
+    return spare, {
+        "docket": len(rows), "already_kept": have, "added_by_floor": len(spare),
+        "families": list(ORTHOGONAL_FAMILIES),
+        "why": ("orthogonal-by-construction families have never been judged, so their yield is 0 "
+                "and the allocator would never build them. n_eff is capped at 1/rho = 6.1 and "
+                "only rho moves it; these are the only families that attack rho directly."),
+    }
+
+
+def allocate_by_yield(specs: list[dict]) -> tuple[list[dict], dict[str, dict]]:
+    """Trim the docket so the build budget lands on the families that produce survivors.
+
+    THE BUDGET WAS BEING SPENT WHERE THE CELLS WERE, NOT WHERE THE SURVIVORS WERE. Measured on
+    the live desk 2026-09-14, survivors per 1,000 RULED cells:
+
+        session_range_breakout  105.6   (15 of 142)
+        overnight_gap_decay      60.9   (12 of 197)
+        carry                     8.7   (1 of 115)
+        discovered                2.0   (33 of 16,270)
+        cross_asset_residual      0.0   (0 of 816)
+        relative_value            0.0   (0 of 363)
+        vol_transition            0.0   (0 of 249)
+        correlation_regime        0.0   (0 of 249)
+        pca_residual              0.0   (0 of 230)
+        turn_of_month             0.0   (0 of 146)
+
+    `session_range_breakout` is fifty-two times more productive per cell than `discovered`, and
+    `discovered` was taking 84% of every sweep. The two families that produced 27 of the desk's
+    66 survivors shared 339 cells between them. Nothing chose that: the sweep builds in symbol-
+    rotation order and `discovered` simply has the most cells, so the docket's SHAPE was the
+    allocation policy.
+
+    WHY A QUOTA AND NOT A REORDER. Cells are sorted so one symbol's charts stay contiguous,
+    because the frame cache is what makes a build cheap; sorting by family first would reload
+    frames once per yield band. Trimming each family's share leaves that ordering exactly as it
+    is and changes only how much of each family the hour reaches.
+
+    THE SHARES ARE DERIVED, NEVER DECLARED. Each family's share is its shrunk posterior yield
+    blended with a uniform share at `YIELD_ALLOCATION_STRENGTH`, floored at `YIELD_MIN_SHARE`
+    of its own docket. A family with no record is credited with the house average, so a new
+    family is neither condemned nor privileged before it has evidence.
+
+    This does not reduce the sweep's total work; it redirects it. Nothing is dropped from the
+    docket -- a trimmed cell keeps its place for a later hour, exactly as a deferred one does.
+    """
+    if not specs:
+        return specs, {}
+    yields = _family_yield()
+    by_fam: dict[str, list[dict]] = {}
+    for sp in specs:
+        by_fam.setdefault(str(sp.get("family") or "?"), []).append(sp)
+    # A FAMILY WITH NO RECORD IS CREDITED WITH THE HOUSE AVERAGE, measured from the same artifacts
+    # in the same breath. Crediting it with zero would starve every new family at birth; crediting
+    # it with the best family's rate would let an untested one displace a proven one.
+    prior = _house_yield()
+    raw = {f: max(yields.get(f, prior), 1e-9) for f in by_fam}
+    tot = sum(raw.values()) or 1.0
+    n_fam = len(by_fam)
+    keep: list[dict] = []
+    report: dict[str, dict] = {}
+    for fam, rows in by_fam.items():
+        share = (YIELD_ALLOCATION_STRENGTH * (raw[fam] / tot)
+                 + (1.0 - YIELD_ALLOCATION_STRENGTH) / n_fam)
+        # A share is of the WHOLE docket; a family holding fewer cells than its share simply
+        # keeps all of them and the surplus flows to the others through the floor below.
+        share = min(share, YIELD_MAX_SHARE)
+        want = max(int(round(share * len(specs))), int(YIELD_MIN_SHARE * len(rows)), 1)
+        take = rows[:want]
+        keep.extend(take)
+        report[fam] = {"docket": len(rows), "built_this_sweep": len(take),
+                       "yield_per_1k_ruled": round(raw[fam] * 1000, 2),
+                       "share_of_budget": round(share, 4),
+                       "capped_by_ceiling": bool(share >= YIELD_MAX_SHARE),
+                       "held_by_floor": bool(len(take) <= int(YIELD_MIN_SHARE * len(rows)))}
+    # THE EXPLORATION FLOOR, APPLIED AFTER THE TRIM AND TAKING FROM NOBODY. The family split above
+    # is exploitation: it sends budget where survivors have come from. That is correct and it is
+    # why every certificate this desk holds is H1/asia -- the axes it has never sampled score zero
+    # and are never sampled again. This appends cells on UNMEASURED (chart, anchor) axes so the
+    # desk can distinguish "no edge there" from "never asked".
+    explored, axes = _explore_unmeasured_axes(specs, keep)
+    keep.extend(explored)
+    # THE ORTHOGONALITY FLOOR, on the same footing and for a sharper reason. The exploration floor
+    # above buys AXES the desk has never sampled; this buys the only families that attack rho,
+    # which is the single term n_eff is capped by (1/rho = 6.1 on this book). Also takes from
+    # nobody: it appends.
+    orthogonal, ortho_record = _orthogonality_floor(specs, keep)
+    keep.extend(orthogonal)
+    # PUBLISHED, because an allocation nobody can read is not an allocation anyone can argue with
+    # -- the capital side has pf_allocation.json for exactly this and the research side had
+    # nothing. Best effort: a research sweep must never die because a report file is unwritable.
+    try:
+        out = REPORTS / "RESEARCH_ALLOCATION.json"
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps({
+            "generated_utc": datetime.now(UTC).isoformat(timespec="seconds"),
+            "rule": ("share of the build budget per family: shrunk posterior survivors-per-ruled-"
+                     "cell, blended with uniform at YIELD_ALLOCATION_STRENGTH, floored at "
+                     "YIELD_MIN_SHARE of the family's own docket and capped at YIELD_MAX_SHARE"),
+            "strength": YIELD_ALLOCATION_STRENGTH,
+            "floor_share": YIELD_MIN_SHARE, "ceiling_share": YIELD_MAX_SHARE,
+            "prior_strength_cells": YIELD_PRIOR_STRENGTH,
+            "docket_total": len(specs), "built_this_sweep": len(keep),
+            "by_family": report,
+            # THE MISSED-GROWTH LINE, INVERTED: what exploitation alone would NOT have built.
+            "exploration": {
+                "rule": ("an axis (chart, session anchor) that has never produced a survivor has "
+                         "a measured yield of exactly zero, so the yield split would never build "
+                         "it again. These cells are APPENDED after the trim -- no family's share "
+                         "is reduced and nothing earning loses a build. Affordable because the "
+                         "build budget is not binding."),
+                "min_cells_per_unmeasured_axis": EXPLORATION_MIN_CELLS,
+                "orthogonality_floor": ortho_record,
+                "min_cells_orthogonal_families": ORTHOGONALITY_MIN_CELLS,
+                "n_axes_floored": len(axes),
+                "n_cells_added": len(explored),
+                "by_axis": axes,
+            },
+        }, indent=1), encoding="utf-8")
+    except OSError:
+        pass
+    return keep, report
+
+
 #: When each symbol's cells were last BUILT (not merely considered). The rotation key.
 BUILD_CURSOR = REPORTS.parent / "data" / "hypotheses" / "gauntlet_build_cursor.json"
+
+#: Every cell id this desk has ever JUDGED, and when it was first judged. The NEW-FIRST key.
+#:
+#: WHY A SECOND CURSOR. The build cursor rotates by SYMBOL, which is right for converging a
+#: standing docket: whatever an hour misses is at the front of the next one. It is wrong for a
+#: NEW cell, because a freshly converted candidate on an already-built symbol inherits that
+#: symbol's recent timestamp and sorts to the BACK -- behind ~20,000 cells the desk has already
+#: judged, in a rotation that takes ~6.4 hours to come round.
+#:
+#: That is the wrong trade. Re-judging a cell whose daily series gained one point since
+#: yesterday reproduces yesterday's verdict; judging a cell for the FIRST time is the only thing
+#: a sweep does that can change what the desk knows. So never-judged cells go first, always, and
+#: the symbol rotation orders everything behind them exactly as before.
+SEEN_CELLS = REPORTS.parent / "data" / "hypotheses" / "gauntlet_seen_cells.json"
+
+
+#: WHICH GATE KILLED WHICH CELL, kept across sweeps (2026-09-12).
+#:
+#: The verdicts already carry `terminal_gate`. They were written to universal_gates_external.json
+#: and OVERWRITTEN every sweep, so the desk held this hour's rejections and no history at all --
+#: which is why `negative_knowledge` had to report "likely failure gate: UNMEASURED, no artifact
+#: on this box records which gate rejected which cell". It was there and it was being thrown away
+#: once an hour.
+#:
+#: APPEND ONLY ON CHANGE, which is what keeps this bounded. Re-judging 21,000 cells an hour and
+#: appending every verdict would write half a million rows a day to say nothing new; a cell whose
+#: verdict is unchanged is not information. The index below holds the last recorded verdict per
+#: cell, and a row is written only when the verdict differs from it -- so the ledger's growth is
+#: the rate at which the desk CHANGES ITS MIND, which is exactly the quantity worth storing.
+GATE_LEDGER = REPORTS.parent / "data" / "hypotheses" / "gate_verdict_ledger.jsonl"
+GATE_INDEX = REPORTS.parent / "data" / "hypotheses" / "gate_verdict_index.json"
+
+
+def _append_gate_ledger(verdicts: list) -> dict:
+    """Record each cell's terminal gate, once per change. Never raises -- this is bookkeeping."""
+    try:
+        idx = json.loads(GATE_INDEX.read_text("utf-8"))
+        if not isinstance(idx, dict):
+            idx = {}
+    except (OSError, ValueError):
+        idx = {}
+    now = datetime.now(tz=UTC).isoformat(timespec="seconds")
+    rows = []
+    for v in verdicts:
+        if not isinstance(v, dict):
+            continue
+        cell = str(v.get("cell") or "")
+        if not cell:
+            continue
+        gate = str(v.get("terminal_gate") or ("PASSED" if v.get("passed") else "UNKNOWN"))
+        key = f"{gate}|{1 if v.get('passed') else 0}"
+        if idx.get(cell) == key:
+            continue
+        idx[cell] = key
+        rows.append({"at": now, "cell": cell, "sym": v.get("sym"), "family": v.get("family"),
+                     "passed": bool(v.get("passed")), "terminal_gate": gate,
+                     "downstream_status": v.get("downstream_status")})
+    if not rows:
+        return {"appended": 0, "known": len(idx)}
+    try:
+        GATE_LEDGER.parent.mkdir(parents=True, exist_ok=True)
+        with GATE_LEDGER.open("a", encoding="utf-8") as fh:
+            for r in rows:
+                fh.write(json.dumps(r, default=str) + chr(10))
+        GATE_INDEX.write_text(json.dumps(idx, indent=0, sort_keys=True), encoding="utf-8")
+    except OSError as exc:
+        return {"appended": 0, "known": len(idx), "error": str(exc)[:120]}
+    return {"appended": len(rows), "known": len(idx)}
+
+
+def _seen_cells() -> dict[str, str]:
+    """cell id -> ISO time it was first judged. Unreadable reads as EMPTY, which is the safe
+    direction: every cell then looks new, the sweep judges in cursor order as it always did, and
+    one rotation is spent -- never a cell that stops being judged (L1.28a)."""
+    try:
+        doc = json.loads(SEEN_CELLS.read_text("utf-8"))
+        return {str(k): str(v) for k, v in doc.items()} if isinstance(doc, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def _save_seen_cells(seen: dict[str, str], judged: set[str]) -> None:
+    """Record the cells this sweep actually judged, so they stop counting as new."""
+    fresh = {c for c in judged if c and c not in seen}
+    if not fresh:
+        return
+    now = datetime.now(tz=UTC).isoformat(timespec="seconds")
+    seen.update(dict.fromkeys(fresh, now))
+    try:
+        SEEN_CELLS.parent.mkdir(parents=True, exist_ok=True)
+        SEEN_CELLS.write_text(json.dumps(seen, indent=0, sort_keys=True), encoding="utf-8")
+        print(f"  seen-cells: +{len(fresh)} first-judged this sweep ({len(seen)} known)")
+    except OSError as exc:
+        print(f"  seen-cells NOT saved ({exc}); next sweep re-prioritises these as new")
 
 
 def _build_cursor() -> dict[str, str]:
@@ -931,17 +1468,31 @@ def _prewarm_cache(specs: list, meta: dict, deadline: float) -> dict:
     """
     from concurrent.futures import FIRST_COMPLETED, ProcessPoolExecutor, wait
 
+    # `built_symbols` IS THE ROTATION KEY, and its absence broke the rotation completely.
+    # MEASURED 2026-09-11: the pool warmed 2,012 cells while the serial loop reported
+    # `built_fresh = 0`, so `_built_syms` stayed EMPTY, so `_save_build_cursor` returned at its
+    # `if not built` guard and the cursor was never stamped. The next sweep therefore sorted by
+    # an unchanged cursor, put the same head of the docket first again, and left the same 11,146
+    # cells deferred -- 20,352 unique cells with only 7,923 ever reaching the matrix, every hour,
+    # forever. The docstring above worries about precisely this ("rebuild the head of the docket
+    # every hour and never reach the tail") and guards the pool's ORDER, which was never the
+    # problem: the pool built in the right order and nothing recorded that it had.
     summary = {"workers": WORKERS, "submitted": 0, "warmed": 0, "hit": 0, "failed": 0,
-               "unreached": 0, "seconds": 0.0, "failures": {}}
+               "unreached": 0, "seconds": 0.0, "failures": {}, "built_symbols": set()}
     t0 = time.time()
     it = iter(specs)
     pending: dict = {}
+    #: future -> spec, kept past the `pending.pop` so the completion handler can still name the
+    #: symbol it just built. `pending` is popped before the result is read.
+    pending_spec: dict = {}
     with ProcessPoolExecutor(max_workers=WORKERS) as pool:
         def _submit_next() -> bool:
             sp = next(it, None)
             if sp is None:
                 return False
-            pending[pool.submit(_warm_one, sp, meta)] = sp
+            _fut = pool.submit(_warm_one, sp, meta)
+            pending[_fut] = sp
+            pending_spec[_fut] = sp
             summary["submitted"] += 1
             return True
 
@@ -967,6 +1518,13 @@ def _prewarm_cache(specs: list, meta: dict, deadline: float) -> dict:
                 st = str(r.get("status") or "ERROR")
                 if st == "WARMED":
                     summary["warmed"] += 1
+                    # WARMED only, never HIT: the cursor records when a symbol's cells were last
+                    # BUILT, and a cache hit spends no build budget. Stamping hits would push
+                    # cheap symbols to the back and starve the expensive ones that need the slot.
+                    _sp = pending_spec.get(f) or {}
+                    _s = str(_sp.get("sym") or "")
+                    if _s:
+                        summary["built_symbols"].add(_s)
                 elif st == "HIT":
                     summary["hit"] += 1
                 else:
@@ -1676,7 +2234,8 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
     # bets) was charged as fully independent: a HARSHER bar than the sealed policy, hidden
     # inside the gate, on the one door every hourly candidate walks through (found 2026-08-27
     # when the principal asked "are you sure we use the same tests for all of these").
-    # `charged_trial_count` fails closed to raw*7 whenever the census cannot measure.
+    from research.gate_policy import fail_closed_trial_count
+    # `charged_trial_count` fails closed to POLICY's number whenever the census cannot measure.
     try:
         from mt5desk.canonical import calibrated_census_report
         from research.gate_policy import charged_trial_count
@@ -1686,7 +2245,7 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
         n_trials, _trial_basis = charged_trial_count(
             matrix.shape[1], _census.get("n_effective"), _census.get("method"))
     except Exception as _exc:
-        n_trials = max(2, math.ceil(matrix.shape[1] * TRIALS_MULTIPLIER))
+        n_trials = fail_closed_trial_count(matrix.shape[1])  # spec: fail_closed_to fixed_campaign_trials(597), NOT the batch tax
         _trial_basis = f"raw_cells_x7_fail_closed ({type(_exc).__name__})"
         _census = {"unavailable": str(_exc)[:120]}
 
@@ -1799,10 +2358,81 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
         ev = float(arr.mean())
         stages["expected_value"] = {"passed": bool(ev > 0.0), "ev": round(ev, 4)}
 
+        # SWAP, WHICH THE ENGINE DOES NOT MODEL AT ALL (added 2026-09-14).
+        #
+        # `mt5desk.engine.Costs` carries spread_per_lot, commission_per_lot, contract_oz and
+        # quote_per_account -- and nothing else. Grep it for "swap" and it is empty. So every
+        # certificate this desk has ever minted was judged with ZERO overnight financing cost,
+        # and `stress_costs` above stresses that model at 3x, which stresses a cost that was
+        # never counted rather than the one that dominates.
+        #
+        # For an intraday cell that is correct and this gate does nothing. For a family that
+        # holds through rollover BY CONSTRUCTION it is the whole ballgame. Measured on the four
+        # live overnight_gap_decay sleeves, round-trip cost as a fraction of a 2xATR20 stop:
+        # CHFDKK 0.105R, EURNOK 0.127R, GBPNOK 0.202R, GBPMXN 0.246R -- against a +0.135R
+        # expectancy assumption, the last two cost MORE THAN THE ENTIRE EDGE. EURUSD is 0.025R
+        # for scale. All four carry the same parameter hash: one hypothesis replicated onto four
+        # instruments whose cost structure destroys it, at the thinnest liquidity hour of the day.
+        #
+        # A CERTIFICATE JUDGED AT COSTS THE BROKER DOES NOT CHARGE IS NOT EVIDENCE. It is a
+        # well-documented opinion.
+        #
+        # UNMEASURED PASSES, and that is deliberate rather than lax. This needs a live terminal to
+        # read a swap rate; the gauntlet also runs where there is none, and refusing every cell on
+        # a host without MT5 would halt certification entirely instead of charging a cost. The
+        # verdict says UNMEASURED, which is a reading, and the fence binds where it can measure.
+        try:
+            from research.cost_to_edge import verdict as _cost_verdict
+            _refuse, _why, _cost = _cost_verdict(
+                str(c.get("sym") or c.get("symbol") or ""),
+                str(c.get("family") or ""), ev)
+            stages["swap_cost"] = {
+                "passed": not _refuse,
+                "measured": bool(_cost.get("measured")),
+                "total_cost_r": _cost.get("total_cost_r"),
+                "swap_r": _cost.get("swap_r"),
+                "holds_overnight": _cost.get("holds_overnight"),
+                "why": _why or ("cost within the bar" if _cost.get("measured")
+                                else str(_cost.get("why") or "UNMEASURED")),
+            }
+        except Exception as _exc:
+            stages["swap_cost"] = {"passed": True, "measured": False,
+                                   "why": f"UNMEASURED ({type(_exc).__name__}): "
+                                          f"cost could not be priced on this host"}
+
         passed = all(s["passed"] for s in stages.values())
+        # WHICH GATE ACTUALLY STOPPED IT, AND WITHOUT THIS THE FUNNEL IS INVISIBLE.
+        #
+        # `stages` has carried every gate's verdict all along and the row never said which one
+        # was terminal, so `_append_gate_ledger` fell through to its "UNKNOWN" default. Measured
+        # 2026-09-13 on the box: 20,806 of 21,663 ledger rows read UNKNOWN. The desk could not
+        # answer "why did this cell fail" for 96% of everything it has ever judged.
+        #
+        # THAT IS NOT A REPORTING NICETY, IT IS THE BOTTLENECK ITSELF. `gate_fails` counts how
+        # often each gate refused ANY cell -- deflated_sharpe 18,372, cpcv 15,848,
+        # in_sample_screen 15,787 -- and a cell can fail several, so those counts cannot say
+        # which cells would pass everything ELSE. Only the terminal gate can, and it is the
+        # question every throughput decision turns on: a cell whose sole obstacle is the
+        # multiplicity charge is a candidate for the forward cure the gate spec already grants
+        # (`cure_by_forward: true`), while a cell that also fails cpcv and walk_forward is not.
+        #
+        # `stages` is insertion-ordered in evaluation order, so the FIRST failure is the one that
+        # stopped it. Recorded as `failed_gates` too, because "died at deflated_sharpe having
+        # passed everything else" and "died at deflated_sharpe and four others" are the same
+        # terminal gate and completely different prospects.
+        _failed = [k for k, v in stages.items() if not v.get("passed")]
         verdicts.append({
             "cell": cid, "sym": c["sym"], "family": c["family"],
-            "days": len(arr), "passed": passed, "stages": stages
+            "days": len(arr), "passed": passed, "stages": stages,
+            "terminal_gate": ("PASSED" if passed else _failed[0]),
+            "failed_gates": _failed,
+            "n_failed_gates": len(_failed),
+            # THE CURE LANE'S ELIGIBILITY, computed where the evidence is rather than re-derived
+            # by a reader. The gate spec grants `cure_by_forward` on deflated_sharpe, so a cell
+            # that fails ONLY that one has cleared every other test this desk applies and is
+            # exactly what forward evidence was meant to adjudicate.
+            "curable_by_forward": (not passed and len(_failed) == 1
+                                   and _failed[0] == "deflated_sharpe"),
         })
 
     # A DROPPED CELL IS A MEASURED OUTCOME, NOT A DISAPPEARANCE (L1.28a / WS-005). Cells whose
@@ -2053,15 +2683,65 @@ def main():
     # reason. Verdicts are unaffected -- cells are independent and judged by the same matrix.
     _cursor = _build_cursor()
     _built_syms: set[str] = set()
+    _seen = _seen_cells()
+
+    _unjudged = _stamped_but_unjudged()
+
+    def _is_new(sp: dict) -> int:
+        """0 for a cell this desk has never JUDGED, 1 otherwise. Cheap: no frame is loaded.
+
+        A SEEN-STAMP IS NOT A VERDICT, AND CONFLATING THEM STARVED 1,544 CELLS FOREVER.
+        Measured 2026-09-15: every `cross_asset_residual`, `relative_value`, `correlation_regime`
+        and `pca_residual` row in the gates report carries `stages: {}`, `days: 0`,
+        `passed: null` and `downstream_status: NOT_RUN_BUILD_BUDGET_DEFERRED` -- the sweep's
+        build budget was exhausted before the cell was computed. 1,544 of 1,598.
+
+        That is a SELF-SUSTAINING trap, and it is GAP #27's residue. Until 4a3b7bb05460 the sweep
+        wrote the seen-stamp BEFORE the verdict was durable, so a cell the budget never reached
+        still got stamped. The stamp makes `_is_new` return 1, which sorts the cell behind every
+        genuinely-new one, which guarantees the budget never reaches it, which leaves it
+        unjudged -- forever, with the report calling it "work not yet done". Fixing the write
+        ORDER stops new instances; it cannot free the ones already stamped.
+
+        So newness is now measured against the VERDICT LEDGER as well as the stamp: a cell whose
+        recorded verdict has no stages is treated as never judged, because it was never judged.
+        This is the same distinction the desk draws everywhere else tonight -- a status asserted
+        where it could be read.
+        """
+        try:
+            cid = cell_id({"sym": sp.get("sym"), "family": sp.get("family"),
+                           "params": sp.get("params") or {}})
+        except Exception:
+            return 0
+        if cid not in _seen:
+            return 0
+        return 0 if cid in _unjudged else 1
     # CHART GROUPS STAY CONTIGUOUS INSIDE SYMBOL GROUPS, for the same reason symbol groups stay
     # contiguous at all: the frame cache is what makes the build cheap, and one symbol's M5 and
     # H1 frames are two different entries in it.
     eligible_specs = sorted(
         eligible_specs,
-        key=lambda sp: (_cursor.get(str(sp.get("sym") or ""), ""),
+        key=lambda sp: (_is_new(sp),
+                        _cursor.get(str(sp.get("sym") or ""), ""),
                         str(sp.get("sym") or ""),
                         timeframe_of(sp.get("params"), str(sp.get("family") or "")),
                         str(sp.get("family") or "")))
+    # ALLOCATE THE HOUR BY MEASURED YIELD, AFTER the never-judged cells are already at the front.
+    # Order decides what gets reached; the quota decides how much of each family the hour spends
+    # itself on. Applied here rather than before the sort so a never-judged cell keeps its
+    # priority -- judging a cell for the first time is still the only thing a sweep does that can
+    # change what the desk knows, whatever family it belongs to.
+    _before = len(eligible_specs)
+    eligible_specs, _alloc = allocate_by_yield(eligible_specs)
+    _n_new = sum(1 for sp in eligible_specs if _is_new(sp) == 0)
+    print(f"  docket order: {_n_new} never-judged cell(s) first, then "
+          f"{len(eligible_specs) - _n_new} in symbol-rotation order")
+    if _alloc:
+        print(f"  yield allocation: {len(eligible_specs)} of {_before} cell(s) this sweep "
+              f"(strength {YIELD_ALLOCATION_STRENGTH:.2f}, floor {YIELD_MIN_SHARE:.0%})")
+        for _f, _r in sorted(_alloc.items(), key=lambda kv: -kv[1]["yield_per_1k_ruled"])[:8]:
+            print(f"    {_f:26} {_r['built_this_sweep']:6}/{_r['docket']:<6} "
+                  f"yield/1k {_r['yield_per_1k_ruled']:8.2f}  share {_r['share_of_budget']:.3f}")
     # PARALLEL PRE-WARM, BEFORE THE LOOP THAT HAS ALWAYS RUN. Workers build the uncached cells
     # into the on-disk cache in this exact order until the build budget is spent; the loop
     # below then finds them and takes its cached branch, and defers whatever the pool did not
@@ -2072,6 +2752,9 @@ def main():
     _prewarm = None
     if WORKERS > 1 and len(eligible_specs) > 1:
         _prewarm = _prewarm_cache(eligible_specs, meta, _build_t0 + FRESH_BUILD_BUDGET_SEC)
+        # THE POOL'S BUILDS COUNT AS BUILDS. Without this the cursor never advances and the
+        # docket never rotates -- see `_prewarm_cache.summary["built_symbols"]`.
+        _built_syms |= set(_prewarm.get("built_symbols") or ())
     # STAGE 0, REPORT-ONLY (V8). `stage0_prefilter` says why it cannot be more than that here:
     # a spec carries no return stream, and the cells that do (cached series) have already paid
     # their build. It judges every cached series on the loop's cached branch below, counts what
@@ -2200,6 +2883,30 @@ def main():
     result["prewarm"] = _prewarm
     result["peak_rss_mb"] = round(_rss_mb(), 1)
     _save_build_cursor(_cursor, _built_syms)
+    # A CELL COUNTS AS SEEN ONLY WHEN IT WAS JUDGED, never when it was deferred or blocked.
+    # `deferred_verdicts` and `blocked_verdicts` carry `passed: None` and a reason precisely
+    # because they are work not yet done; stamping those would drop them out of the new-first
+    # queue without anyone having looked at them, which is the exact shape of a cell that
+    # silently stops being tested.
+    # THE VERDICT IS MADE DURABLE BEFORE THE CELL IS CALLED JUDGED, and the order used to be the
+    # other way round. `_save_seen_cells` stamped here while `_append_gate_ledger` ran 33 lines
+    # later inside a `_safe(...)`, so a sweep that died, was killed by the memory guard, or simply
+    # raised between the two left cells marked JUDGED with no verdict anywhere -- which is exactly
+    # what the conservation ledger calls LOST.
+    #
+    # MEASURED 2026-09-14: 10 lost cells, every one `discovered`, and all ten carrying the SAME
+    # seen-stamp `2026-09-12T03:19:08+00:00`. One interrupted sweep, one instant, ten cells that
+    # can never be re-judged (they are no longer new) and can never be accounted for (they hold no
+    # verdict). `lost` is the desk's only alarm for a dropped record, and this ordering was
+    # manufacturing the very thing it watches for.
+    #
+    # Stamping AFTER means the worst case is a cell judged twice, which costs one rotation slot.
+    # Stamping BEFORE meant the worst case was a cell lost forever. Those are not symmetric.
+    _gate_ledger_result = _safe(lambda: _append_gate_ledger(result.get("verdicts") or []),
+                                "gate_ledger")
+    _save_seen_cells(_seen, {str(v.get("cell") or "")
+                             for v in (result.get("verdicts") or [])
+                             if isinstance(v, dict) and v.get("passed") is not None})
     result["build_rotation"] = {
         "symbols_built_this_run": len(_built_syms),
         "symbols_in_cursor": len(_cursor),
@@ -2218,6 +2925,21 @@ def main():
     result.setdefault("gate_fails", {})["economic_prior"] = (
         int(result.get("gate_fails", {}).get("economic_prior", 0)) + len(prior_rejections)
     )
+    # THE GATE LEDGER (2026-09-12). Reproduction writes its own file and touches no shared
+    # record, exactly as the report and the cursors already do.
+    if not _repro_active():
+        # THE FUNNEL'S OWN ANSWER, on the report rather than only in the ledger: where cells
+        # died, and how many died at ONE gate only -- which is the population the forward cure
+        # was written for and which nothing could count before today.
+        import collections as _c
+        _v = result.get("verdicts") or []
+        result["terminal_gates"] = dict(_c.Counter(
+            str(v.get("terminal_gate")) for v in _v if isinstance(v, dict)).most_common())
+        result["n_curable_by_forward"] = sum(
+            1 for v in _v if isinstance(v, dict) and v.get("curable_by_forward"))
+        # Written above, BEFORE the seen-cells stamp -- see the note there. Reported here so the
+        # artifact's shape is unchanged for every consumer.
+        result["gate_ledger"] = _gate_ledger_result
 
     # Save. REPRODUCTION WRITES ITS OWN FILE AND NOTHING ELSE. This report is read by the
     # research-health fence and the funnel census; a one-cell re-run overwriting it would make the
