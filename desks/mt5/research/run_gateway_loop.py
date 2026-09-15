@@ -47,13 +47,57 @@ LOCK = Path(__file__).resolve().parents[1] / "data" / "gateway.lock"
 LOCK.parent.mkdir(parents=True, exist_ok=True)
 
 
+#: A lock older than this whose OWNER IS GONE is stale. Only used when the pid is unreadable or
+#: the platform cannot be asked -- the pid check is the real test.
+LOCK_MAX_MIN = 45
+
+
+def _holder_alive(pid: int) -> bool:
+    """Is the process that wrote the lock still running? Unknown counts as ALIVE.
+
+    Failing towards "alive" is the safe direction: a second gateway pass placing orders beside a
+    live one is worse than a pass skipped.
+    """
+    if pid <= 0:
+        return False
+    try:
+        import subprocess
+        r = subprocess.run(["tasklist", "/FI", f"PID eq {pid}", "/NH"],
+                           capture_output=True, text=True, timeout=15, check=False)
+        return str(pid) in (r.stdout or "")
+    except Exception:
+        return True
+
+
 def main() -> None:
+    # THE LOCK IS NOW PID-AWARE, AND THE OLD ONE WAS THE REASON THE BOX RAN OUT OF MEMORY.
+    #
+    # It stole any lock older than five minutes. That was fine while a pass took seconds -- most
+    # sleeves refused instantly on unresolvable parameters. Once the forex sleeves actually
+    # started computing signals a pass began taking MINUTES, so every five minutes a second copy
+    # stole the lock and started while the first was still working, on a task that fires every
+    # minute. Measured 2026-09-15: EIGHT concurrent `run_gateway_loop` processes, one of them 138
+    # minutes old holding 588 MB, on a box with 1.2 GB free -- and three background jobs killed by
+    # the OS for memory pressure. Fixing the strategies made the stacking worse, which is the
+    # signature of a timeout standing in for a liveness check.
+    #
+    # Duration is not evidence of death. The owner's PID is: a lock whose writer is still running
+    # is held, however long the pass takes, and one whose writer is gone is free immediately
+    # rather than after an arbitrary wait.
     if LOCK.exists():
+        raw = ""
+        try:
+            raw = LOCK.read_text(encoding="utf-8").strip()
+        except OSError:
+            pass
+        pid = int(raw) if raw.isdigit() else 0
         age_min = (__import__("time").time() - LOCK.stat().st_mtime) / 60
-        if age_min < 5:
-            return  # another pass is running (or crashed <5 min ago)
-        LOCK.unlink(missing_ok=True)  # stale lock: steal it
-    LOCK.write_text("locked", encoding="utf-8")
+        if pid and _holder_alive(pid):
+            return                                    # the owner is genuinely still working
+        if not pid and age_min < LOCK_MAX_MIN:
+            return                                    # legacy lock with no pid: fall back to age
+        LOCK.unlink(missing_ok=True)                  # owner gone, or unreadable and ancient
+    LOCK.write_text(str(__import__("os").getpid()), encoding="utf-8")
     try:
         gateway.main()
         from datetime import datetime, timezone  # noqa: PLC0415
