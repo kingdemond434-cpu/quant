@@ -15,7 +15,7 @@
    "status": "DONE"
   },
   "certificate_yield_fence": {
-   "finished_at": "2026-09-15T10:11:16.547740+00:00",
+   "finished_at": "2026-09-15T13:51:14.418585+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -33,28 +33,25 @@
    "status": "DONE"
   },
   "forward_clock_fence": {
-   "finished_at": "2026-09-15T10:11:21.080796+00:00",
+   "finished_at": "2026-09-15T13:51:25.887773+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "DONE"
   },
   "forward_clock_reconciliation": {
-   "finished_at": "2026-09-15T10:10:42.058390+00:00",
+   "finished_at": "2026-09-15T13:50:21.583554+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "forward_identity_reconciliation": {
-   "command": [
-    "/home/quant/quant-platform/.venv/bin/python",
-    "desks/mt5/research/forward_reconcile.py"
-   ],
-   "passes_completed": 0,
-   "started_at": "2026-09-15T12:41:22.352240+00:00",
-   "status": "RUNNING"
+   "finished_at": "2026-09-15T13:50:11.074626+00:00",
+   "passes_completed": 1,
+   "returncode": 0,
+   "status": "DONE"
   },
   "forward_lane_heal": {
-   "finished_at": "2026-09-15T10:10:51.904927+00:00",
+   "finished_at": "2026-09-15T13:50:36.443683+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "FAILED"
@@ -66,23 +63,23 @@
    "status": "DONE"
   },
   "mechanism_independence": {
-   "finished_at": "2026-09-15T10:11:10.646314+00:00",
+   "finished_at": "2026-09-15T13:50:59.440538+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "same_day_fence": {
-   "finished_at": "2026-09-15T10:11:14.142040+00:00",
+   "finished_at": "2026-09-15T13:51:06.628699+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "DONE"
   },
   "zero_capital_shadow_forward": {
-   "finished_at": "2026-09-15T10:11:03.838185+00:00",
+   "finished_at": "2026-09-15T13:50:49.658117+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   }
  },
- "updated_at": "2026-09-15T12:41:22.352240+00:00"
+ "updated_at": "2026-09-15T13:51:25.887773+00:00"
 }
