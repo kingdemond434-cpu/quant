@@ -1,0 +1,29 @@
+[
+ {
+  "source": "deep_forest",
+  "kind": "dataset",
+  "title": "Московская биржа определила лучших частных инвесторов 2023 года",
+  "url": "https://www.moex.com/n66767",
+  "published": "2026-09-15T01:52:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.4,
+  "lang": "ru",
+  "endpoints": [
+   "https://fs.moex.com/f/19487/pobediteli-rozygryshey-lchi-2023.xlsx"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5f61c19705043eb6b1ce",
+  "host": "www.moex.com",
+  "ground": "ЛЧИ конкурс Московской биржи",
+  "region": "ru",
+  "cluster": "ru",
+  "dataset_class": null,
+  "available_time": "2026-09-15T01:52:38+00:00",
+  "ingested_time": "2026-09-15T01:52:38+00:00",
+  "source_hash": "5f61c19705043eb6b1ce",
+  "claims": [],
+  "n_claims": 0
+ }
+]

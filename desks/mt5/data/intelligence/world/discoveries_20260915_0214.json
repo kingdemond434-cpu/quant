@@ -1,0 +1,415 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Conformal Prediction in Quantitative Finance - VertoxQuant",
+  "url": "https://www.vertoxquant.com/p/conformal-prediction",
+  "published": "2026-09-15T02:12:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ef91ab502c5aa983da22",
+  "host": "www.vertoxquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "A Common Sense Guide to Volatility Trading [Code Included]",
+  "url": "https://www.quant-galore.com/p/a-common-sense-guide-to-volatility",
+  "published": "2026-09-15T02:13:08+00:00",
+  "symbols": [
+   "USDKRW"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "gap",
+   "inventory",
+   "mean_reversion",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.alphanume.com/datasets"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "e489a8de7b7ef8416513",
+  "host": "www.quant-galore.com",
+  "claims": [
+   {
+    "claim": "The pattern is about as clean as anything you\u2019ll see in markets: Names entering the top decile of their own IV range saw implied vol fall about -18% over the next month, on average.",
+    "lang": "en",
+    "quantities": [
+     "range"
+    ],
+    "direction": [
+     "fall"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDKRW"
+     ],
+     "mentioned": [
+      "won"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "cb0a339212f5"
+   },
+   {
+    "claim": "The flagship version of this is the conditioned premium sell, and it runs in five steps: Pull the universe from IV/HV Premium for the day, settled rows only ( only_final=true ), so you\u2019re not trading off a provisional intraday print.",
+    "lang": "en",
+    "quantities": [
+     "premium"
+    ],
+    "direction": [
+     "sell"
+    ],
+    "horizon": [
+     "day",
+     "intraday"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDKRW"
+     ],
+     "mentioned": [
+      "won"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "ffe8a16bd8ee"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The Right Way to Use AI in Trading (This Week) - by Simon M",
+  "url": "https://algoadvantage.substack.com/p/the-right-way-to-use-ai-in-trading",
+  "published": "2026-09-15T02:13:10+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9948bf03cce4b6795430",
+  "host": "algoadvantage.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Fast Option Pricing using Fourier Transform - VertoxQuant",
+  "url": "https://www.vertoxquant.com/p/fast-option-pricing-using-fourier",
+  "published": "2026-09-15T02:13:13+00:00",
+  "symbols": [],
+  "timeframes": [
+   "MN"
+  ],
+  "patterns": [
+   "basis",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d19f7d8fc345ef6f62ff",
+  "host": "www.vertoxquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "053 - Martyn Tinsley - Walk Forward Correlation: A New Tool for Robust Strategy Design!",
+  "url": "https://algoadvantage.substack.com/p/053-martyn-tinsley-walk-forward-correlation",
+  "published": "2026-09-15T02:13:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7ed97368436be673d13d",
+  "host": "algoadvantage.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "The Effective Number of Tested Strategies - VertoxQuant",
+  "url": "https://www.vertoxquant.com/p/the-effective-number-of-tested-strategies",
+  "published": "2026-09-15T02:13:36+00:00",
+  "symbols": [
+   "XTIUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://download.ssrn.com/19/05/30/ssrn_id2460551_code87814.pdf?response-content-disposition=inline&amp;X-Amz-Security-Token=IQoJb3JpZ2luX2VjEJn%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIHWbneth2mI6u1rupjNkDmsC24r7YhYtKqwzBrCdrBu1AiEA0WU%2B4iCvwSVB5ONW7ALjmPrdNS6r5OrCqrozPtwM%2FQIqvQUIYRAEGgwzMDg0NzUzMDEyNTciDCm525KNaW%2F%2FvbobXiqaBbM%2F10wzVAYLOFWs%2FBdHXoSs6z5TXKBRa4bQHQy6BIHTYZVfS6SLO4RbFKq5vL90d4VompUznee4RwIw3OsdFEJI2pEHmfDfklheeL8yN1MV8f4DR%2FRVhgvD2%2BPW3PPDL5HVERXsgHm9zDsPg7kkNifeAJBJEq%2FAvLsXA5j0Rib7JO3LWuDD6p0hCGU80x9345MhtxoyeZqCp5xndHj9UPhQzihMHPCRTH3KF3BFCCCB9OU3NPk7LNRcKGFo79dmnBdYnwqG7vhmLKp79MSxpeCQ%2BwEHl%2BKWF5tSlsVUOcQ8BwpbXT%2BfV8JQ6AM1MWAwy8XBAQ26FyrzzyqRsMuztXukttYEqyoybKKfzlF3bsXFk9fwF%2BWIMXm7C7SGxjC6NlGGgOQlE%2BI3jrbtm3zWMhMOeZK8ECyHe693vpzCW3fBsDhgi4GV%2BZIdQQKd%2BCoUoEHYQazMy6wku2sj9gG8PkNwIuLSLLIkcLdzCE1cmk6xZlHSEGGHKPZSpw4vHsw5m4xKnZOiquQlJGyHeIvvrl9yIjLVWdfInTlvvIp%2BK5CBvgVeP4Cx%2FKTUL4NmDx%2FB8ho5hfl2So6vKLFCy6B56b1oVoDPcCV5tMnRMk8yjy591i84Ulf2C5zphuEs4IYOLbGuTI9eqnUD57ifgOxnb%2B305GtO0nv6giMHgywu5O6pPH6IYH6vdxLxOnbbU8pjOad10Q53Wb2jQ39%2B0MZhbaprdcfinrz2wBoZZC6CmWsZzsbj5apKFAkGVOXXrmB4tihcRCtGsDfkD5P%2BpYJeZX%2FjqWR4VyqN4tFHvtjmXKP6C%2BMzpt5aej2KSZBR7po%2BCFm4%2BxkUl4DcucaL3fMJN4bNj9SOCakqON8ObGeWgsStFK9c0eFuv2hSSzC355fQBjqxAQoG21%2Ba57fWqweZ7Kb8BR1WXwhe7bE20M0VSwGZL5HZdsLE0mio22kgEM5%2BxQbVyKClcKNBkL%2B5RuwOmF5jJsxmf4N09LHgKWodjBVIMD549%2BnebRGLp%2BxbQNtfg9kNKJO%2FzmJFGzyqU%2B07e0H7cvz%2Fl3mAsntZUcRyWCxYsOc0OS03J88Xj9%2FFrqVA3nWoCL9tftQpH6CjtMFLjBAoVp7UrXYJdpxhA49yGnCh5PyVEA%3D%3D&amp;X-Amz-Algorithm=AWS4-HMAC-SHA256&amp;X-Amz-Date=20260514T164544Z&amp;X-Amz-SignedHeaders=host&amp;X-Amz-Expires=300&amp;X-Amz-Credential=ASIAUPUUPRWES6RLE2DD%2F20260514%2Fus-east-1%2Fs3%2Faws4_request&amp;X-Amz-Signature=83dcbd6f904a7443203ec090e39e9feccf55d87f98e12cc0830d61f80c432d91&amp;abstractId=2460551"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "fbadd8e47f283066451e",
+  "host": "www.vertoxquant.com",
+  "claims": [
+   {
+    "claim": "gg/X7TsxKNbXg Quick reminder that I\u2019m now open for consulting and short-term engagements.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD"
+     ],
+     "mentioned": [
+      "brent"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "e840b20d524e"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "052 - Martyn Tinsley - Beyond the BackTest - by Simon M",
+  "url": "https://algoadvantage.substack.com/p/052-martyn-tinsley-beyond-the-backtest",
+  "published": "2026-09-15T02:13:37+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "gap",
+   "inventory",
+   "mean_reversion",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "be34d9727178ce63782f",
+  "host": "algoadvantage.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Backtests Lie: Building a Stress-Test Framework for ML Trading Signals",
+  "url": "https://www.vertoxquant.com/p/backtests-lie",
+  "published": "2026-09-15T02:13:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f33c789177fe458a865f",
+  "host": "www.vertoxquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Looking Inside The Black Box - VertoxQuant",
+  "url": "https://www.vertoxquant.com/p/looking-inside-the-black-box",
+  "published": "2026-09-15T02:13:41+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "correlation",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "15d52d177c628a924fb5",
+  "host": "www.vertoxquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Tasks - Strategy Quant",
+  "url": "https://roadmap.strategyquant.com/projects/all/tasks",
+  "published": "2026-09-15T02:13:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "gap",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "531dd4d57cc7541658a6",
+  "host": "roadmap.strategyquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "A Junior Quant&#x27;s Guide to Event-Driven Trading",
+  "url": "https://www.quant-galore.com/p/a-junior-quants-guide-to-event-driven",
+  "published": "2026-09-15T02:14:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "night_session"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2cafc4c9cd77ce45cd06",
+  "host": "www.quant-galore.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Brave New Backtest - Robot Wealth",
+  "url": "https://robotwealth.com/brave-new-backtest/",
+  "published": "2026-09-15T02:14:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "auction",
+   "carry",
+   "correlation",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "40c1ea042d2cc770af89",
+  "host": "robotwealth.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "A Quant&#x27;s Guide to Cross-Section Maxxing [Code Included]",
+  "url": "https://www.quant-galore.com/p/a-quants-guide-to-cross-section-maxxing",
+  "published": "2026-09-15T02:14:09+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://cdn.cboe.com/api/global/us_indices/governance/Volatility_Index_Methodology_Selected_SPX_Target_Expected_Volatility_Term_Indices.pdf"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "d80770b7fab0b52afab0",
+  "host": "www.quant-galore.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]
