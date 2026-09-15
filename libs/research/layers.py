@@ -86,6 +86,7 @@ LEG_LAYER: dict[str, str] = {
     "swap_rejudge": "execution",
     "asia_plane": "information",
     "sge_premium": "information",
+    "asia_collector": "information",
     "empty_cluster_forcer": "prediction",
     "asia_transmission": "information",
     # Whether a data endpoint still serves what it claims is an INFORMATION property -- it decides
