@@ -1031,6 +1031,43 @@ def book_from_allocation(total: float, book: object, book_fallback: object, *,
         if drift > 0.005:
             return None, (f"fallback book sums to {sum(book_.values()):.4f}, heat says "
                           f"{total:.4f}")
+        # THE SOLVE'S ZEROS BIND ON THIS PATH TOO, AND LEAVING THEM OFF LEAKED HEAT PAST THE
+        # BUDGET (measured 2026-09-15).
+        #
+        # This branch used to carry no zeros, reasoning that a baseline book is a different
+        # allocation and does not inherit the dynamic solve's refusals. That is true of the
+        # baseline's OWN weights and false of everything it is silent about: a rostered sleeve in
+        # neither the baseline book nor the zero list reads as `from_book = False` in the gateway
+        # and is sized by `promoted_lot` -> `clamp_risk_frac`, which FLOORS at BASE_RISK_FRAC.
+        # That floor is applied OUTSIDE the allocator's total, so every such sleeve added heat the
+        # budget never granted.
+        #
+        # MEASURED THE SAME DAY: 261 of 318 passes took this branch (82%) -- "dynamic weights
+        # withheld: allocator did not beat the baselines" -- while the dynamic solve had already
+        # excluded AUDUSD_discovered_asia (forward -0.574R), AUDNZD_discovered_asia,
+        # AUDCAD_discovered_asia, USDZAR_overnight_gap_decay_continuous and EURCHF_discovered_asia
+        # from its book. Excluded by the optimiser, funded anyway by the fall-through, and they
+        # are exactly the sleeves whose round trips closed at TTL for spread.
+        #
+        # THIS DOES NOT SHRINK THE BOOK, which is why it is allowed at all. Zeros do not change
+        # the book's sum, so the drift check above is unaffected and the deployed heat is
+        # identical; what stops is the UNBUDGETED base fraction those names were drawing on top
+        # of it. And the baseline's own choices are untouched: a name the fallback book funds is
+        # never zeroed here, however the dynamic solve scored it.
+        if zeroed:
+            try:
+                names = [str(k) for k in (zeroed or [])]
+            except TypeError:
+                names = []
+            added = 0
+            for nm in names:
+                if nm not in book_:
+                    book_[nm] = 0.0
+                    added += 1
+            if added:
+                return book_, (f"floor deployed with baseline {fb.get('name', '?')} "
+                               f"({sum(1 for v in book_.values() if v > 0)} funded, {added} held "
+                               f"at zero by this solve); dynamic weights withheld: {why}")
         return book_, (f"floor deployed with baseline {fb.get('name', '?')} "
                        f"({len(book_)} sleeve(s)); dynamic weights withheld: {why}")
     try:
