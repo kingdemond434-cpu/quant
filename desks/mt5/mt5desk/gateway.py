@@ -1903,8 +1903,22 @@ def _params_from_certificate(s: dict[str, object]) -> tuple[dict[str, object] | 
     family with nothing, which is "trading a lookalike strategy under a certified sleeve's name",
     the defect class `resolve_family_order` already refuses by name elsewhere.
     """
+    # THE CERTIFICATE FIELD CARRIES TWO SHAPES, and only one of them was read. Measured across
+    # the registry 2026-09-15: 53 rows hold a dict (with `cell` inside), 3 hold a bare string,
+    # 9 hold nothing.
+    #
+    # A STRING IS ONLY A CELL WHEN IT LOOKS LIKE ONE. The three string rows say `forward_clock`,
+    # which names the lane that promoted them, NOT a cell -- so accepting any string here would
+    # feed `forward_clock` into the identity check and turn a clear "names no cell" into a
+    # confusing docket miss. A cell identity is always dotted (`external.CADJPY.session_range_
+    # breakout`, `AUDCAD.discovered.p=7c99...`), so the dot is the test.
     cert = s.get("certificate")
-    cell = str((cert or {}).get("cell") or "") if isinstance(cert, dict) else ""
+    if isinstance(cert, dict):
+        cell = str(cert.get("cell") or "")
+    elif isinstance(cert, str) and "." in cert:
+        cell = cert.strip()
+    else:
+        cell = ""
     if not cell:
         return None, "registry row carries no params and its certificate names no cell"
     want = cell.split(".", 1)[1] if cell.startswith("external.") else cell
