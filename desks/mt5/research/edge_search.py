@@ -122,7 +122,7 @@ def _close(symbol: str):
     """
     import pandas as pd
 
-    path = UNIVERSE / f"{symbol}_H1.parquet"
+    path = UNIVERSE / f"{symbol}_{CHART}.parquet"
     if not path.exists():
         return None
     try:
@@ -735,16 +735,52 @@ def select_diverse(candidates: list[dict], k: int = SELECT_K) -> list[dict]:
     return chosen
 
 
+#: THE CHART THIS RUN HUNTS ON, allocated rather than assumed.
+#:
+#: This module hard-coded `{symbol}_H1.parquet` in four places, and it is 74% of every candidate
+#: the desk has ever proposed -- 19,996 of 26,925 docket rows, all H1. So three quarters of the
+#: funnel could only ever feed the ONE axis that already holds 56 of 56 certificates, while the
+#: universe carries near-equal parquet coverage on every rung of the ladder (H1 299, D1 250,
+#: H4 248, M15 248, M30 248, M5 248, M1 236) and `orthogonal_sweep` already interleaves its
+#: (symbol, chart) pairs evenly. The ground was there; nothing asked it a question.
+#:
+#: `chart_allocator` weights hunting INVERSE to how much of the docket each chart already holds
+#: and bounds H1 on both sides, so H1 goes from 91.7% of the docket to 15% of effort and the six
+#: axes that have never produced a certificate get ~14% each. Sampled per run, not round-robin,
+#: so parallel runs spread and a truncated schedule still covers the ladder.
+#:
+#: EDGE_SEARCH_CHART pins it for a deliberate single-chart run; absent, the allocator decides.
+def _run_chart() -> str:
+    import os
+    pin = os.environ.get("EDGE_SEARCH_CHART")
+    if pin:
+        return str(pin).upper()
+    try:
+        from research.chart_allocator import pick
+        return pick()[0]
+    except Exception:
+        try:
+            from chart_allocator import pick
+            return pick()[0]
+        except Exception:
+            # NO ALLOCATOR MEANS THE OLD BEHAVIOUR, never a guess at a chart whose data may be
+            # absent: H1 is the one rung every symbol is known to carry.
+            return "H1"
+
+
+CHART = _run_chart()
+
+
 def search_symbol(symbol: str, extra: dict | None = None) -> dict:
     import pandas as pd
 
-    path = UNIVERSE / f"{symbol}_H1.parquet"
+    path = UNIVERSE / f"{symbol}_{CHART}.parquet"
     if not path.exists():
         return {"symbol": symbol, "status": "NO_BARS"}
     df = pd.read_parquet(path)
     if len(df) < 2000:
         return {"symbol": symbol, "status": "TOO_FEW_BARS", "bars": len(df)}
-    all_syms = sorted(p.stem.replace("_H1", "") for p in UNIVERSE.glob("*_H1.parquet"))
+    all_syms = sorted(p.stem.replace(f"_{CHART}", "") for p in UNIVERSE.glob(f"*_{CHART}.parquet"))
     resolved = dict(extra or {})
     try:
         resolved.update(resolve_inputs(symbol, df.index, all_syms))
@@ -841,7 +877,7 @@ def _emit(now: datetime, symbols: list[str], results: list[dict[str, object]],
 def main(symbols: list[str] | None = None) -> int:
     now = datetime.now(tz=UTC)
     if symbols is None:
-        symbols = sorted(p.stem.replace("_H1", "") for p in UNIVERSE.glob("*_H1.parquet"))
+        symbols = sorted(p.stem.replace(f"_{CHART}", "") for p in UNIVERSE.glob(f"*_{CHART}.parquet"))
         # MINED GROUND FIRST. The miners and the moat spent the week pointing at particular
         # symbols; searching those before the rest is the entire conversion step that was
         # missing -- otherwise mining and searching run in the same desk and never meet, which
@@ -1039,11 +1075,24 @@ def main(symbols: list[str] | None = None) -> int:
                                  "with evidence or refute it -- never trade it unnamed"),
                 })
                 continue
+            # THE CHART TRAVELS IN THE PARAMS, AND ONLY WHEN IT IS NOT H1 -- the same asymmetry
+            # `orthogonal_sweep` applies, for the same reason. `params` is what the cache key, the
+            # cell id, the certificate and the forward clock are all derived from, so this is the
+            # one place the chart has to be recorded for every one of them to be right at once.
+            # H1 stays ABSENT so that every id this desk already holds stays byte-identical.
+            #
+            # OMITTING IT WOULD BE WORSE THAN NOT SWEEPING AT ALL. `timeframe_of` reads H1 by
+            # absence, so a D1-derived hypothesis with no timeframe key is a D1 edge certified and
+            # then traded on hourly bars -- a different strategy under the certificate's name,
+            # which is the exact defect the family executor refuses everywhere else.
+            _params = {"feature": row["feature"], "band": row["band"],
+                       "horizon": row["horizon"], "side": row["side"]}
+            if CHART != "H1":
+                _params["timeframe"] = CHART
             hypotheses.append({
                 "symbol": sym,
                 "family": "discovered",
-                "params": {"feature": row["feature"], "band": row["band"],
-                           "horizon": row["horizon"], "side": row["side"]},
+                "params": _params,
                 "n": row["n_oos"], "t_stat": row["t_stat"],
                 "exp_r": row["sharpe_like"],
                 "source": f"edge_search:{row['feature']}",
