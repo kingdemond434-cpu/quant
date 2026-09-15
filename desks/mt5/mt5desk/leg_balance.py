@@ -89,6 +89,34 @@ def leg_shares(exposures: Mapping[str, float]) -> tuple[dict[str, float], float]
     return legs, gross
 
 
+def already_held(symbol: str, side: int, positions: Any,
+                 pending: Mapping[str, float] | None = None) -> float:
+    """Signed lots ALREADY held on this exact (symbol, side), open or decided this pass.
+
+    THE DUPLICATE TEST, SEPARATE FROM THE CROWDING TEST, because they fail differently. Crowding
+    is a matter of degree and is answered by sizing; a duplicate at the venue's MINIMUM LOT
+    cannot be answered by sizing at all, because there is nothing below the minimum to shrink to.
+    On an account near 600 EUR almost every sleeve is already at 0.01, so the multiplier returns
+    0.55, the floor returns 0.01, and the order goes out unchanged.
+
+    MEASURED 2026-09-16: EURCHF sell 0.01 three times at 00:16:37, each -1.34; twice more at
+    00:11:10, each -1.10. Three certificates that happen to agree are still ONE bet on the CHF
+    leg, and at the floor the book takes it three times at three times the spread.
+    """
+    held = 0.0
+    want = 1.0 if side > 0 else -1.0
+    for p in positions or []:
+        if str(getattr(p, "symbol", "") or "") != symbol:
+            continue
+        sgn = 1.0 if int(getattr(p, "type", 0)) == 0 else -1.0
+        if sgn == want:
+            held += float(getattr(p, "volume", 0.0) or 0.0)
+    q = float((pending or {}).get(symbol, 0.0))
+    if q * want > 0:
+        held += abs(q)
+    return held
+
+
 def multiplier(symbol: str, side: int, positions: Any,
                pending: Mapping[str, float] | None = None) -> tuple[float, str]:
     """How much of a full-size order this symbol should get, given what the book already holds.
