@@ -344,6 +344,33 @@ def lot_for_risk(venue: Any, symbol: str, stop_dist: float, risk_usd: float) -> 
 
 
 # ------------------------------------------------------------------ the pass
+def _quantise(lot: float, venue: Any, symbol: str) -> float:
+    """Floor `lot` to the venue's lot step, exactly, and never below its minimum.
+
+    Shares `lot_for_risk`'s rule because a lot that is legal when sized and illegal after a
+    multiplier is the same rejection in a different place: the venue refuses anything that is not
+    an exact multiple of its step, and binary float arithmetic produces 1.1400000000000001 from
+    114 * 0.01.
+    """
+    from decimal import Decimal
+    try:
+        d = venue.details(symbol)
+        vmin = float(venue.min_lot(symbol))
+    except Exception:                                               # noqa: BLE001
+        return float(lot)
+    step = None
+    for k in ("lotStep", "volumeStep", "step"):
+        v = d.get(k)
+        if isinstance(v, (int, float)) and v > 0:
+            step = float(v)
+            break
+    if not step:
+        return float(max(lot, vmin))
+    ds = Decimal(str(step))
+    q = float((Decimal(str(lot)) / ds).to_integral_value(rounding="ROUND_FLOOR") * ds)
+    return float(max(q, vmin))
+
+
 def run(venue: Any, *, armed: bool = False, now: datetime | None = None) -> dict[str, Any]:
     from prop import e8_guard
 
@@ -392,6 +419,29 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None) -> dict
         sd = str(p.get("side") or p.get("Side") or "").lower()
         if iid is not None and sd:
             open_keys.add((int(iid), sd))
+
+    # THE LEG BOOK, IN SYMBOLS. `leg_balance` decomposes currency pairs, so the venue's instrument
+    # ids have to be mapped back to the names the decomposition understands; `_by_key` is the
+    # catalogue the venue itself reported at connect time, inverted here rather than guessed.
+    _iid_to_sym = {int(v): k for k, v in getattr(venue, "_by_key", {}).items()}
+
+    class _Pos:
+        """The shape `leg_balance.book_exposures` reads: symbol, volume, MT5-style type."""
+        __slots__ = ("symbol", "volume", "type")
+
+        def __init__(self, symbol: str, volume: float, typ: int) -> None:
+            self.symbol, self.volume, self.type = symbol, volume, typ
+
+    _leg_positions = []
+    for p in venue.positions():
+        iid = p.get("tradableInstrumentId") or p.get("instrumentId") or p.get("id")
+        nm = _iid_to_sym.get(int(iid)) if iid is not None else None
+        if not nm:
+            continue
+        qty = float(p.get("qty") or p.get("quantity") or 0.0)
+        _leg_positions.append(_Pos(nm, abs(qty),
+                                   0 if str(p.get("side") or "").lower() == "buy" else 1))
+    _pending_legs: dict[str, float] = {}
 
     from mt5desk.families import get_family_func
 
@@ -520,6 +570,30 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None) -> dict
             row["status"] = "UNSIZEABLE"
             doc["sleeves"].append(row)
             continue
+        # CURRENCY-LEG BALANCE, the same two-sided rule the MT5 gateway applies, and it matters
+        # MORE here. This account has a hard 8% drawdown and a voluntary 0.75% daily stand-down:
+        # a book that is six positions deep on one currency does not lose six small amounts, it
+        # loses one large one and ends the trading day. On 2026-09-15 the sent orders were EURCHF
+        # short and USDCAD short together -- both short the non-USD leg against a dollar move.
+        #
+        # It damps an order piling onto a held leg and BOOSTS one opening a leg the book does not
+        # hold, so the risk budget is spent on more independent bets rather than reduced.
+        # `pending` carries what this pass has already decided to send, because every sleeve here
+        # is judged before any of them is placed.
+        try:
+            from mt5desk import leg_balance
+            _lm, _lw = leg_balance.multiplier(sym, 1 if side == "buy" else -1,
+                                              _leg_positions, pending=_pending_legs)
+            lot = _quantise(lot * _lm, venue, sym)
+            row["leg_mult"], row["leg_why"] = float(_lm), _lw
+        except Exception as exc:                                    # noqa: BLE001
+            # UNMEASURED IS 1.0. A decomposition that cannot be trusted must never become a
+            # silent reason to trade smaller.
+            row["leg_mult"], row["leg_why"] = 1.0, f"UNMEASURED ({type(exc).__name__}: {exc})"
+        if not (lot > 0):
+            row["status"] = "UNSIZEABLE"
+            doc["sleeves"].append(row)
+            continue
         # THE DAILY FLOOR IS CHECKED AGAINST THE WHOLE BOOK, not one order at a time. Twenty
         # sleeves firing together is twenty simultaneous risks, and a per-order check would wave
         # each one through on its own merits into a floor none of them breaches alone.
@@ -534,6 +608,8 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None) -> dict
                 row["order_id"] = venue.place(sym, side, lot, stop=float(g.stop),
                                               take_profit=float(g.target))
                 row["status"] = "SENT"
+                _pending_legs[sym] = (_pending_legs.get(sym, 0.0)
+                                      + (1.0 if side == "buy" else -1.0) * float(lot))
             except Exception as exc:
                 row["status"] = "REJECTED"
                 row["why"] = f"{type(exc).__name__}: {str(exc)[:140]}"
