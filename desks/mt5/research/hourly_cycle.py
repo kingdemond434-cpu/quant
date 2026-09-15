@@ -1179,6 +1179,22 @@ def asia_collector() -> dict:
     return _producer("asia_collector", "research/asia_collector.py")
 
 
+def asia_parser() -> dict:
+    """`asia_parser`: one parser bank keyed by payload SHAPE, not one per source.
+
+    `asia_collector` vaulted bytes for 43 of 85 sources and every one sat at NEEDS_PARSER --
+    fetched and read by nothing, the whole regional programme stalled one move short of a series.
+    Writing 43 parsers would rot at 43 rates and block the 44th source, so the census decides the
+    design: 40 of 44 payloads are HTML, 3 PDF, 1 JSON. One HTML parser covers forty.
+
+    A table-less statistics portal is an INDEX, not a failure: its payload is the .csv/.xlsx links
+    it points at, which go back to the collector as new addresses. Measured first pass: 14 PARSED,
+    9 INDEX_PAGE, 21 NO_TABLE, and 63 endpoints handed back.
+    """
+    return _producer("asia_parser", "research/asia_parser.py")
+
+
+
 
 
 
@@ -2238,6 +2254,7 @@ def main() -> None:
     asp = _costed("asia_plane", asia_plane)
     sge = _costed("sge_premium", sge_premium)
     aco = _costed("asia_collector", asia_collector)
+    apr = _costed("asia_parser", asia_parser)
     srt = _costed("source_routes", source_routes)
     spa = _costed("strategy_paths", strategy_paths)
     wse = _costed("weak_signals", weak_signal_ensembles)
@@ -2423,6 +2440,7 @@ def main() -> None:
                     "asia_plane": asp,
                     "sge_premium": sge,
                     "asia_collector": aco,
+                    "asia_parser": apr,
                     "source_routes": srt,
                     "strategy_paths": spa,
                     "weak_signals": wse,

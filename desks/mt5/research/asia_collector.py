@@ -222,7 +222,8 @@ def _parse(body: bytes, expect: str, source_id: str) -> dict[str, Any]:
                     "whole difference between NEEDS_PARSER and BLOCKED_ON_DATA")}
 
 
-def collect_one(src: dict[str, Any], timeout: float = 25.0) -> dict[str, Any]:
+def collect_one(src: dict[str, Any], timeout: float = 25.0,
+                validators: dict[str, str] | None = None) -> dict[str, Any]:
     """One source, one verdict. Never raises: an unfetched source is named, never assumed empty."""
     sid = str(src.get("id") or "")
     url = str(src.get("url") or "")
@@ -247,17 +248,38 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0) -> dict[str, Any]:
                            "is a hard line and this desk does not work around a stated term"})
         return rec
 
-    req = urllib.request.Request(url, headers={
-        "User-Agent": "quant-desk-collector/1.0 (+public data collection)",
-        "Accept": "*/*",
-    })
+    # CONDITIONAL GET. A 304 costs a round trip and no body, and most of these sources publish
+    # daily or monthly against a pass that may run hourly -- so the default behaviour is to
+    # re-download an unchanged page over and over. The validators come from the LAST successful
+    # fetch of this exact source, stored beside its cadence in collector_state.
+    #
+    # A 304 IS A RESULT, NOT A MISS: it says the vault's newest blob is still current, which is
+    # exactly what a point-in-time store wants to hear. It is recorded as UNCHANGED so a reader
+    # can tell "nothing new" from "nothing fetched", which is the same distinction this file
+    # draws everywhere else.
+    headers = {"User-Agent": "quant-desk-collector/1.0 (+public data collection)",
+               "Accept": "*/*"}
+    if isinstance(validators, dict):
+        if validators.get("etag"):
+            headers["If-None-Match"] = str(validators["etag"])
+        if validators.get("last_modified"):
+            headers["If-Modified-Since"] = str(validators["last_modified"])
+    req = urllib.request.Request(url, headers=headers)
     try:
         with urllib.request.urlopen(req, timeout=timeout, context=_TLS) as r:
             status = int(getattr(r, "status", 0) or 0)
             ctype = str(r.headers.get("Content-Type") or "").lower()
+            etag = r.headers.get("ETag")
+            last_mod = r.headers.get("Last-Modified")
             body = r.read(MAX_BYTES)
     except urllib.error.HTTPError as e:
         code = int(getattr(e, "code", 0) or 0)
+        if code == 304:
+            rec.update({"status": "UNCHANGED", "http": 304,
+                        "why": ("the source has not changed since the last fetch (conditional "
+                                "GET). The vault's newest blob is still current -- nothing new, "
+                                "which is not the same as nothing fetched.")})
+            return rec
         rec.update({"status": "HTTP_ERROR", "http": code,
                     "why": (f"HTTP {code}" if code not in (401, 403)
                             else f"HTTP {code}: authentication or access control, not a route "
@@ -289,6 +311,10 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0) -> dict[str, Any]:
                     "why": f"only {len(body)} bytes: reachable and carrying nothing"})
         return rec
 
+    # Stored for the NEXT pass's conditional GET. Absent headers simply mean no validator, and
+    # the next fetch is unconditional -- correct, and never a silent skip.
+    rec["validators"] = {k: v for k, v in
+                         (("etag", etag), ("last_modified", last_mod)) if v}
     rec["vault"] = _vault(sid, body, url, ctype)
     parsed = _parse(body, expect, sid)
     rec["parse"] = parsed
@@ -345,10 +371,16 @@ def main(argv: list[str] | None = None) -> int:
         if wait > 0:
             time.sleep(min(wait, HOST_DELAY_S))
         last_host[host] = time.monotonic()
-        rec = collect_one(s, timeout=args.timeout)
+        prev = state.get(str(s.get("id"))) or {}
+        rec = collect_one(s, timeout=args.timeout,
+                          validators=prev.get("validators") if isinstance(prev, dict) else None)
         rows.append(rec)
-        state[str(s.get("id"))] = {"last_attempt_epoch": time.time(),
-                                   "last_status": rec.get("status")}
+        keep = {"last_attempt_epoch": time.time(), "last_status": rec.get("status")}
+        # A 304 keeps the OLD validators: they are what proved the page unchanged, and replacing
+        # them with nothing would make the next pass unconditional for no reason.
+        keep["validators"] = (rec.get("validators")
+                              or (prev.get("validators") if isinstance(prev, dict) else None) or {})
+        state[str(s.get("id"))] = keep
 
     _write_atomic(STATE, json.dumps(state, indent=1))
     census = Counter(str(r.get("status")) for r in rows)

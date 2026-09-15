@@ -1882,6 +1882,24 @@ def _params_from_certificate(s: dict[str, object]) -> tuple[dict[str, object] | 
         from research.frontier_identity import cell_id
     except Exception as exc:
         return None, f"frontier_identity unavailable ({type(exc).__name__}: {exc})"
+    # A qquant CELL CARRIES ITS SIDE IN ITS NAME, and the family takes it as a REQUIRED argument.
+    # `qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY` is a
+    # space-separated descriptor, not a dotted identity, and the sleeve's `params` is null -- so
+    # the docket join below cannot apply and the family raises
+    # `dav_range_filter_adx() missing 1 required positional argument: 'side'`. Measured
+    # 2026-09-15: one sleeve of 49, the only forex sleeve still failing after the bare-cell fix.
+    #
+    # The word is read from the cell and converted to the desk's numeric convention (+1 long,
+    # -1 short; see `engine.Signal.side`). An unrecognised descriptor falls through to the normal
+    # path rather than guessing a direction.
+    if cell.startswith("qquant.") or " " in want:
+        words = want.replace(".", " ").split()
+        sign = next((v for w in words
+                     for k, v in (("SHORT", -1), ("SELL", -1), ("LONG", 1), ("BUY", 1))
+                     if w.upper() == k), None)
+        if sign is not None:
+            return {"side": sign}, ""
+
     # A BARE CELL NAME IS NOT AN UNKNOWN PARAMETERISATION -- IT IS THE DEFAULT ONE, and refusing
     # it kept every session_range_breakout sleeve out of the market (measured 2026-09-15).
     #
