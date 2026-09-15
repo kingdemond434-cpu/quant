@@ -1156,6 +1156,30 @@ def sge_premium() -> dict:
     return _producer("sge_premium", "research/fetch_sge_premium.py")
 
 
+def asia_collector() -> dict:
+    """`asia_collector`: ONE generic collector for every registered source. No bespoke fetchers.
+
+    THE LAW (principal, 2026-09-15): if any declared data is ever blocked because nobody wrote a
+    collector for it, that is a FLAW. 750 of 774 Asia cells were BLOCKED_ON_DATA, each waiting on
+    a fetcher nobody had written -- and writing 89 of them would rot at 89 different rates and
+    guarantee the 90th source was blocked the day it was added.
+
+    The registry already declares the address, the SHAPE, the cadence and what needs a key, so the
+    collector is DRIVEN BY IT and a new source is collected the hour it is declared. Everything is
+    vaulted point-in-time under its content hash; a 200 with the wrong shape is ROUTE_CHANGED (the
+    NOAA failure), a missing key is UNCONFIGURED rather than a silent skip, and a robots DISALLOW
+    is refused rather than worked around.
+
+    Measured on its first pass, 85 sources: 43 NEEDS_PARSER (bytes on disk, parser downstream),
+    25 HTTP_ERROR (real 404s naming URLs to correct), 12 UNCONFIGURED, 3 BLOCKED_BY_ROBOTS,
+    1 UNREACHABLE, 1 ROUTE_CHANGED. Using certifi's CA bundle took UNREACHABLE from 26 to 1: the
+    `self-signed certificate` failures were TLS interception on this host's egress, not broken
+    government sites.
+    """
+    return _producer("asia_collector", "research/asia_collector.py")
+
+
+
 
 
 
@@ -2213,6 +2237,7 @@ def main() -> None:
     swr = _costed("swap_rejudge", swap_rejudge)
     asp = _costed("asia_plane", asia_plane)
     sge = _costed("sge_premium", sge_premium)
+    aco = _costed("asia_collector", asia_collector)
     srt = _costed("source_routes", source_routes)
     spa = _costed("strategy_paths", strategy_paths)
     wse = _costed("weak_signals", weak_signal_ensembles)
@@ -2397,6 +2422,7 @@ def main() -> None:
                     "swap_rejudge": swr,
                     "asia_plane": asp,
                     "sge_premium": sge,
+                    "asia_collector": aco,
                     "source_routes": srt,
                     "strategy_paths": spa,
                     "weak_signals": wse,
