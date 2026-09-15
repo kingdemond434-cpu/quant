@@ -2045,7 +2045,8 @@ def _family_call_params(s: dict, family: str, bars: object) -> tuple[dict | None
     return call_params, ""
 
 
-def resolve_family_order(st: dict, s: dict, equity: float) -> dict:
+def resolve_family_order(st: dict, s: dict, equity: float,
+                         pending: dict[str, float] | None = None) -> dict:
     """The order this family sleeve would send THIS pass, priced -- read-only, no state written.
 
     THE SAME MOVE THE BRACKET LANE MADE, ONE LANE OVER (external audit round 3, 2026-09-09).
@@ -2182,7 +2183,8 @@ def resolve_family_order(st: dict, s: dict, equity: float) -> dict:
     try:
         from mt5desk import leg_balance
         leg_mult, leg_why = leg_balance.multiplier(s["symbol"], side,
-                                                   mt5.positions_get() or [])
+                                                   mt5.positions_get() or [],
+                                                   pending=pending)
         _vmin = float(getattr(sym, "volume_min", 0.01) or 0.01)
         _vstep = float(getattr(sym, "volume_step", 0.01) or 0.01)
         _scaled = float(lot) * leg_mult
@@ -2957,6 +2959,12 @@ def main() -> None:
     # than on a house average. The gateway already records every bracket it places; not reading
     # them back meant the one number that decides how much heat a leg costs was the only number
     # the cap did not have.
+    # WHAT THIS PASS HAS ALREADY DECIDED TO SEND, keyed by symbol and signed by side. Every
+    # sleeve is resolved before any is sent, so without this each one sees the book as it was
+    # when the pass STARTED -- and two sleeves on the same instrument both read an empty leg and
+    # both take the full fresh-leg boost. That is precisely the doubled EURCHF 0.05 and USDCHF
+    # 0.02 pairs that went out in the same second on 2026-09-15 and lost together.
+    _pending_legs: dict[str, float] = {}
     for _s in sleeves:
         _spec = (st.get("brackets", {}).get(_s["name"]) or {}).get("spec")
         _d = stop_distance(_spec) if _spec else None
@@ -3078,11 +3086,16 @@ def main() -> None:
             # the venue's lot floor round it. `resolve_family_order` writes no state, so the
             # signal MARK is left for the executor to apply if it acts.
             try:
-                _plan = resolve_family_order(st, _s, equity)
+                _plan = resolve_family_order(st, _s, equity, pending=_pending_legs)
             except Exception as _exc:
                 _plan = {"ok": False, "stage": "resolve_failed",
                          "why": f"{type(_exc).__name__}: {_exc}"}
             if _plan.get("ok"):
+                # BOOK IT AGAINST THE REST OF THIS PASS. A sleeve that has been resolved WILL be
+                # sent by `run_family_sleeves`, so from here on it is part of the book every
+                # later sleeve is measured against.
+                _pending_legs[_s["symbol"]] = (_pending_legs.get(_s["symbol"], 0.0)
+                                               + float(_plan["side"]) * float(_plan["lot"]))
                 try:
                     _s["q_charge"] = realised_q(equity, _plan["dist"], _s["symbol"],
                                                 _plan["sym"], lot=_plan["lot"])

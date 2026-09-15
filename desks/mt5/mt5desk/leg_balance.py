@@ -89,14 +89,28 @@ def leg_shares(exposures: Mapping[str, float]) -> tuple[dict[str, float], float]
     return legs, gross
 
 
-def multiplier(symbol: str, side: int, positions: Any) -> tuple[float, str]:
+def multiplier(symbol: str, side: int, positions: Any,
+               pending: Mapping[str, float] | None = None) -> tuple[float, str]:
     """How much of a full-size order this symbol should get, given what the book already holds.
 
     `side` is +1 long / -1 short, the desk's convention. Returns (multiplier, reason) and the
     reason is always worth logging: a sleeve that is damped needs to say which leg damped it, or
     the next session re-discovers this the expensive way.
+
+    `pending` IS WHAT MAKES THIS WORK WITHIN A SINGLE PASS, and without it the whole thing has a
+    hole big enough to drive the original incident through. The gateway resolves EVERY sleeve's
+    order before it sends ANY of them, so all of them see the same snapshot of open positions.
+    Two EURCHF sleeves resolving in the same pass therefore both observe an empty CHF leg and
+    both size at the full 1.45x fresh-leg boost -- which is exactly the doubled EURCHF 0.05 and
+    USDCHF 0.02 pairs that went out in the same second on 2026-09-15 and lost together.
+
+    So the caller accumulates what it has already decided to send this pass, keyed by symbol and
+    signed by side, and passes it here. Crowding is then measured against the book the venue will
+    ACTUALLY hold once the pass completes, not the one it held when the pass began.
     """
     exposures = book_exposures(positions)
+    for sym, lots in (pending or {}).items():
+        exposures[sym] = exposures.get(sym, 0.0) + float(lots)
     legs, gross = leg_shares(exposures)
     if not legs or gross <= 0:
         return 1.0, "leg balance 1.00: book has no decomposable exposure yet"
