@@ -1,9 +1,9 @@
 {
- "generated_utc": "2026-09-15T05:39:18.636124+00:00",
- "live_sha": "00c69643c412d10f442f1228fd9ac3ae3ddd593f",
- "code_sha": "00c69643c412d10f442f1228fd9ac3ae3ddd593f",
- "parent_sha": "957af136d26ced10b718697c24230d669ae2a601",
- "tree_sha": "ff069940d43164d7834e0f8d016c0ea33be09e43",
+ "generated_utc": "2026-09-15T06:04:31.627749+00:00",
+ "live_sha": "0f54177e639398af8ffc254e6b1db77c5f811179",
+ "code_sha": "0f54177e639398af8ffc254e6b1db77c5f811179",
+ "parent_sha": "6af5f0bd61750843e64fc9a62d7e4d37a37537bc",
+ "tree_sha": "a2b5f7655ca99fdb4098c9a8c075ccdae3433158",
  "config_hash": "e0d1bfe75cb0d2c3",
  "survivor_registry_hash": "cd4132b75d14bf4e",
  "allocator_hash": "6840f7029e143f86",
@@ -84,10 +84,10 @@
   "desks/mt5/reports/shadow/shadow_health.json",
   "desks/mt5/reports/shadow/shadow_state.json"
  ],
- "release_id": "c86ac67bc631",
+ "release_id": "63f8c56724bd",
  "sealed": true,
- "sealed_at": "2026-09-15T05:39:18.636124+00:00",
- "sealed_by": "operator: git path fix 2026-09-15",
+ "sealed_at": "2026-09-15T06:04:31.627749+00:00",
+ "sealed_by": "operator: resident gateway 2026-09-15",
  "ci_run_id": null,
  "tested_sha": null,
  "worktree_dirty": [
@@ -166,10 +166,12 @@
   "desks/mt5/data/intelligence/tradingview_scripts/rollup_20260904.jsonl.gz",
   "desks/mt5/data/intelligence/weather/rollup_20260904.jsonl.gz",
   "desks/mt5/data/intelligence/world/rollup_20260904.jsonl.gz",
+  "desks/mt5/data/live_ledger.jsonl",
   "desks/mt5/data/moat_coverage.json",
   "desks/mt5/data/pf_allocator_cache/worlds.npz",
   "desks/mt5/data/release_identity.json",
   "desks/mt5/data/sleeve_registry.json",
+  "desks/mt5/data/sleeves.json",
   "desks/mt5/data/stall_watch.json",
   "desks/mt5/logs/signal_gate_console.txt",
   "desks/mt5/reports/CAPABILITY_STATUS.json",
@@ -188,6 +190,6 @@
   "desks/mt5/reports/universe_registry_repair.json",
   "web/desk_state.json"
  ],
- "previous_code_sha": "1e975b00f2d096595598f535cde1dcee92e9bed7",
- "previous_release_id": "db58c372c591"
+ "previous_code_sha": "00c69643c412d10f442f1228fd9ac3ae3ddd593f",
+ "previous_release_id": "c86ac67bc631"
 }

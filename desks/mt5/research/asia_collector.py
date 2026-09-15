@@ -229,11 +229,54 @@ def _parse(body: bytes, expect: str, source_id: str) -> dict[str, Any]:
                     "whole difference between NEEDS_PARSER and BLOCKED_ON_DATA")}
 
 
+def _parses_as(body: bytes, expect: str) -> bool:
+    """Does a small body parse as its declared type? Used only to spare valid tiny payloads."""
+    text = body.decode("utf-8", errors="replace").strip()
+    if not text:
+        return False
+    if expect == "json":
+        try:
+            json.loads(text)
+        except ValueError:
+            return False
+        return True
+    if expect == "xml":
+        return text.startswith("<")
+    if expect == "csv":
+        return "," in text or '\n' in text
+    return len(text) > 8
+
+
+def _resolve_url(src: dict[str, Any]) -> str:
+    """Expand date placeholders in a source's url.
+
+    EXCHANGE ENDPOINTS ARE DATED, AND A STATIC REGISTRY CANNOT SAY SO. CFFEX publishes each
+    session at `/sj/hqsj/rtj/<YYYYMM>/<DD>/index.xml`; SHFE, DCE and INE are the same shape. A
+    registry holding one frozen URL can only ever fetch one day, so these read as NO_TABLE
+    forever while their data sits one path segment away.
+
+    Placeholders are `{yyyymm}`, `{yyyy}`, `{mm}`, `{dd}` and `{yyyy-mm-dd}`, resolved against
+    today minus `url_lag_days` (default 1, because a session's file appears after it closes).
+    A url with no placeholder is returned untouched, so nothing existing changes.
+    """
+    from datetime import timedelta
+    url = str(src.get("url") or "")
+    if "{" not in url:
+        return url
+    lag = src.get("url_lag_days")
+    # UTC, not local: an exchange file is published against a calendar day, and a box in a
+    # different timezone must not ask for tomorrow's session or re-fetch yesterday's twice.
+    days = int(lag) if isinstance(lag, (int, float)) else 1
+    d = (datetime.now(UTC) - timedelta(days=days)).date()
+    return (url.replace("{yyyymm}", f"{d:%Y%m}").replace("{yyyy-mm-dd}", f"{d:%Y-%m-%d}")
+               .replace("{yyyy}", f"{d:%Y}").replace("{mm}", f"{d:%m}").replace("{dd}", f"{d:%d}"))
+
+
 def collect_one(src: dict[str, Any], timeout: float = 25.0,
                 validators: dict[str, str] | None = None) -> dict[str, Any]:
     """One source, one verdict. Never raises: an unfetched source is named, never assumed empty."""
     sid = str(src.get("id") or "")
-    url = str(src.get("url") or "")
+    url = _resolve_url(src)
     expect = str(src.get("expect") or "any")
     access = str(src.get("access") or "public")
     rec: dict[str, Any] = {"id": sid, "plane": src.get("plane"), "url": url, "expect": expect,
@@ -313,9 +356,16 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
         rec.update({"status": "ROUTE_CHANGED",
                     "why": f"content-type {ctype!r} does not match declared {expect!r}"})
         return rec
-    if len(body) < 64:
+    # SIZE IS NOT THE TEST -- SHAPE IS. The 64-byte floor exists to catch an endpoint that answers
+    # 200 with nothing, and it wrongly condemned a valid one: Riksbank's latest-observation route
+    # returns `{"date":"2026-09-14","value":9.76625}`, which is 37 bytes of perfectly good data
+    # and was marked ROUTE_CHANGED -- the same class of false verdict this collector exists to
+    # prevent, committed by the guard itself. A body that PARSES as its declared type is data at
+    # any size; only an unparseable tiny body is empty.
+    if len(body) < 64 and not _parses_as(body, expect):
         rec.update({"status": "ROUTE_CHANGED",
-                    "why": f"only {len(body)} bytes: reachable and carrying nothing"})
+                    "why": (f"only {len(body)} bytes and it does not parse as {expect}: "
+                            f"reachable and carrying nothing")})
         return rec
 
     # Stored for the NEXT pass's conditional GET. Absent headers simply mean no validator, and
