@@ -1,0 +1,394 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "576: Trading For A Living - 8 Years Later (Moritz Czubatinski) - Desire To Trade",
+  "url": "https://www.desiretotrade.com/576-trading-for-a-living-8-years-later-moritz-czubatinski/",
+  "published": "2026-09-15T05:14:30+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4fc1f975c804b905bf70",
+  "host": "www.desiretotrade.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "575: The Master of Chart Analysis (35+ Years Trading) - Daryl Guppy - Desire To Trade",
+  "url": "https://www.desiretotrade.com/575-the-master-of-chart-analysis-35-years-trading-daryl-guppy/",
+  "published": "2026-09-15T05:14:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "93744a88a4e4e5055862",
+  "host": "www.desiretotrade.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Penelusuran Buku Lanjutan",
+  "url": "https://books.google.co.id/advanced_book_search?q=statistika+dan+algoritma+em&hl=id",
+  "published": "2026-09-15T05:14:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "929b35ad248ca4e30ea3",
+  "host": "books.google.co.id",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "DATA MINING: Teori dan Aplikasi Weka - Fricles Ariwisanto Sianturi, Paska Marto Hasugian, Agustina Simangunsong, Berto Nadeak - Google Buku",
+  "url": "https://books.google.co.id/books?id=MWcHEAAAQBAJ&newbks=1&newbks_redir=0&dq=statistika+dan+algoritma+em&hl=id&source=gbs_navlinks_s",
+  "published": "2026-09-15T05:14:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://books.google.co.id/books/download/DATA_MINING.bibtex?id=MWcHEAAAQBAJ&amp;hl=id&amp;output=bibtex",
+   "https://books.google.co.id/books/download/DATA_MINING.enw?id=MWcHEAAAQBAJ&amp;hl=id&amp;output=enw",
+   "https://books.google.co.id/books/download/DATA_MINING.ris?id=MWcHEAAAQBAJ&amp;hl=id&amp;output=ris"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "9f2971edf2bc1891ba8e",
+  "host": "books.google.co.id",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithm -- from Wolfram MathWorld",
+  "url": "https://mathworld.wolfram.com/Algorithm.html",
+  "published": "2026-09-15T05:14:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "944e52095ddda331613e",
+  "host": "mathworld.wolfram.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "https://xueqiu.com/1823705863/372440573",
+  "url": "https://xueqiu.com/1823705863/372440573",
+  "published": "2026-09-15T05:14:46+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1H",
+   "4H"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e2febbea38c13237c6b6",
+  "host": "xueqiu.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "https://xueqiu.com/1823705863/365760430",
+  "url": "https://xueqiu.com/1823705863/365760430",
+  "published": "2026-09-15T05:14:50+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1H",
+   "4H"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "35772add16e1291977b3",
+  "host": "xueqiu.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "https://xueqiu.com/1823705863/365761044",
+  "url": "https://xueqiu.com/1823705863/365761044",
+  "published": "2026-09-15T05:14:55+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1H",
+   "4H"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4dd0d91f596e1d0a7cba",
+  "host": "xueqiu.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "https://xueqiu.com/8989432902/353846577",
+  "url": "https://xueqiu.com/8989432902/353846577",
+  "published": "2026-09-15T05:15:00+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1H",
+   "4H"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5e2425bc809b5b684d35",
+  "host": "xueqiu.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "https://xueqiu.com/1823705863/334872332",
+  "url": "https://xueqiu.com/1823705863/334872332",
+  "published": "2026-09-15T05:15:04+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1H",
+   "4H"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2a56a446cf21c29f923d",
+  "host": "xueqiu.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "https://xueqiu.com/1823705863/120399519",
+  "url": "https://xueqiu.com/1823705863/120399519",
+  "published": "2026-09-15T05:15:07+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1H",
+   "4H"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9ca59d3460eabd21c2eb",
+  "host": "xueqiu.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "https://xueqiu.com/1433930265/49501490",
+  "url": "https://xueqiu.com/1433930265/49501490",
+  "published": "2026-09-15T05:15:11+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1H",
+   "4H"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fc8048610909f39ab080",
+  "host": "xueqiu.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithms | Brilliant Math &amp; Science Wiki",
+  "url": "https://brilliant.org/wiki/algorithm/",
+  "published": "2026-09-15T05:15:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "69ae1bf01a9f8c9fd1a5",
+  "host": "brilliant.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Kategorie:Algoritmes - Wikipedia",
+  "url": "https://af.wikipedia.org/wiki/Kategorie:Algoritmes",
+  "published": "2026-09-15T05:15:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "af",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b80d190af5d289c716fd",
+  "host": "af.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Bespreking:Algoritme - Wikipedia",
+  "url": "https://af.wikipedia.org/wiki/Bespreking:Algoritme",
+  "published": "2026-09-15T05:15:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "af",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bc31e5e6b39b04872986",
+  "host": "af.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritme: Weergawegeskiedenis - Wikipedia",
+  "url": "https://af.wikipedia.org/w/index.php?title=Algoritme&action=history",
+  "published": "2026-09-15T05:15:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "af",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dd7f886f50dcc9b58893",
+  "host": "af.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Entrar - Wikipedia",
+  "url": "https://ast.wikipedia.org/w/index.php?title=Especial:Entrar&returnto=Algoritmu",
+  "published": "2026-09-15T05:15:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "ast",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2455d1844c7ab72bc3a2",
+  "host": "ast.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmu: Historial de revisiones - Wikipedia",
+  "url": "https://ast.wikipedia.org/w/index.php?title=Algoritmu&action=history",
+  "published": "2026-09-15T05:15:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "mean_reversion"
+  ],
+  "confidence": 0.35,
+  "lang": "ast",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6558c4cd71049e109ac9",
+  "host": "ast.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ }
+]
