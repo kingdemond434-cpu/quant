@@ -496,8 +496,8 @@
    "id": "cffex_daily",
    "plane": "cn_hard",
    "name": "CFFEX financial futures daily and positioning",
-   "url": "http://www.cffex.com.cn/ccpm/",
-   "expect": "any",
+   "url": "http://www.cffex.com.cn/sj/hqsj/rtj/{yyyymm}/{dd}/index.xml",
+   "expect": "xml",
    "access": "public",
    "cadence": "daily",
    "pit": {
@@ -509,7 +509,9 @@
     "HK50",
     "USDCNH"
    ],
-   "mechanism": "index basis and member positioning are the onshore risk state that leads the HK and offshore expression"
+   "mechanism": "index basis and member positioning are the onshore risk state that leads the HK and offshore expression",
+   "url_lag_days": 1,
+   "route_note": "the session file is DATED -- a static url can only ever fetch one day. Verified HTTP 200 application/xml with <dailydatas> 2026-09-15"
   },
   {
    "id": "akshare",
@@ -1096,8 +1098,8 @@
    "id": "cffex_member_rank",
    "plane": "participant",
    "name": "CFFEX member transaction and position rankings",
-   "url": "http://www.cffex.com.cn/ccpm/",
-   "expect": "any",
+   "url": "http://www.cffex.com.cn/sj/ccpm/{yyyymm}/{dd}/index.xml",
+   "expect": "xml",
    "access": "public",
    "cadence": "daily",
    "pit": {
@@ -1109,7 +1111,9 @@
     "USDCNH",
     "AUS200"
    ],
-   "mechanism": "top-member long and short positioning CHANGES, and the dispersion between them. Concentration divergence against price is the squeeze setup; the net position is the number everyone already reads"
+   "mechanism": "top-member long and short positioning CHANGES, and the dispersion between them. Concentration divergence against price is the squeeze setup; the net position is the number everyone already reads",
+   "url_lag_days": 1,
+   "route_note": "same dated shape as the daily file; member position rankings"
   },
   {
    "id": "cffex_option_stats",
@@ -1471,8 +1475,8 @@
    "id": "riksbank_series",
    "plane": "scheduled_flow",
    "name": "Sveriges Riksbank rates and FX",
-   "url": "https://www.riksbank.se/en-gb/statistics/",
-   "expect": "any",
+   "url": "https://api.riksbank.se/swea/v1/Observations/Latest/SEKUSDPMI",
+   "expect": "json",
    "access": "public",
    "cadence": "daily",
    "pit": {
@@ -1484,14 +1488,15 @@
     "USDSEK",
     "CHFSEK"
    ],
-   "mechanism": "the policy and FX-reserve series for a currency the book holds and has never researched"
+   "mechanism": "the policy and FX-reserve series for a currency the book holds and has never researched",
+   "route_note": "the portal is JavaScript-rendered; SWEA is the documented API. Verified HTTP 200 json 2026-09-15: {\"date\":\"2026-09-14\",\"value\":9.76625}"
   },
   {
    "id": "nationalbanken_dkk",
    "plane": "scheduled_flow",
    "name": "Danmarks Nationalbank intervention and the EUR peg",
-   "url": "https://www.nationalbanken.dk/en/statistics",
-   "expect": "any",
+   "url": "https://api.statbank.dk/v1/tableinfo/DNVALD?format=JSON",
+   "expect": "json",
    "access": "public",
    "cadence": "monthly",
    "pit": {
@@ -1504,7 +1509,8 @@
     "USDDKK"
    ],
    "mechanism": "DKK IS PEGGED TO THE EUR and managed far tighter than its ERM II band, so the intervention record is the peg's own stress gauge -- and CHFDKK is approximately CHFEUR wearing a different ticker, with a wider spread and worse financing. That is an orthogonality question about a LIVE SLEEVE, not a new hypothesis",
-   "why": "the desk's param-hash quota catches the same parameters on different symbols. It does NOT catch different symbols that are the same underlying, which is what a currency peg makes them"
+   "why": "the desk's param-hash quota catches the same parameters on different symbols. It does NOT catch different symbols that are the same underlying, which is what a currency peg makes them",
+   "route_note": "Statistics Denmark's statbank API. Verified HTTP 200 json 2026-09-15 (DNVALD = Valutakurser, the DKK exchange-rate table)"
   },
   {
    "id": "banxico_series",
@@ -1823,7 +1829,7 @@
    "id": "abs_trade",
    "plane": "oceania",
    "name": "ABS Australian international trade",
-   "url": "https://www.abs.gov.au/statistics/economy/international-trade",
+   "url": "https://data.api.abs.gov.au/rest/dataflow/ABS?format=jsondata",
    "expect": "any",
    "access": "public",
    "cadence": "monthly",
@@ -1836,7 +1842,8 @@
     "AUDJPY",
     "XAUUSD"
    ],
-   "mechanism": "iron ore, coal, LNG and gold exports, overwhelmingly to China. This is the RECEIVING end of the chain china_customs measures from the buying end -- the same tonnage counted twice by two governments, which is a cross-check no single source provides"
+   "mechanism": "iron ore, coal, LNG and gold exports, overwhelmingly to China. This is the RECEIVING end of the chain china_customs measures from the buying end -- the same tonnage counted twice by two governments, which is a cross-check no single source provides",
+   "route_note": "the ABS Data API (SDMX). Verified HTTP 200 2026-09-15; the portal page itself carries no table"
   },
   {
    "id": "sydney_week_open",
