@@ -1,9 +1,9 @@
 {
- "generated_utc": "2026-09-15T05:24:09.727292+00:00",
- "live_sha": "1e975b00f2d096595598f535cde1dcee92e9bed7",
- "code_sha": "1e975b00f2d096595598f535cde1dcee92e9bed7",
- "parent_sha": "1a978f86b1b214f5d82ac3cea7cd252d1ca9bb61",
- "tree_sha": "93d0c20d663c70382cb5d16427078d69b8c0ec7e",
+ "generated_utc": "2026-09-15T05:39:18.636124+00:00",
+ "live_sha": "00c69643c412d10f442f1228fd9ac3ae3ddd593f",
+ "code_sha": "00c69643c412d10f442f1228fd9ac3ae3ddd593f",
+ "parent_sha": "957af136d26ced10b718697c24230d669ae2a601",
+ "tree_sha": "ff069940d43164d7834e0f8d016c0ea33be09e43",
  "config_hash": "e0d1bfe75cb0d2c3",
  "survivor_registry_hash": "cd4132b75d14bf4e",
  "allocator_hash": "6840f7029e143f86",
@@ -84,17 +84,14 @@
   "desks/mt5/reports/shadow/shadow_health.json",
   "desks/mt5/reports/shadow/shadow_state.json"
  ],
- "release_id": "db58c372c591",
+ "release_id": "c86ac67bc631",
  "sealed": true,
- "sealed_at": "2026-09-15T05:24:09.727292+00:00",
- "sealed_by": "operator: gateway lock 2026-09-15",
+ "sealed_at": "2026-09-15T05:39:18.636124+00:00",
+ "sealed_by": "operator: git path fix 2026-09-15",
  "ci_run_id": null,
  "tested_sha": null,
  "worktree_dirty": [
-  "desks/mt5/data/forward_reconcile.json",
   "desks/mt5/data/gateway_state.json",
-  "desks/mt5/data/hypotheses/gauntlet_build_cursor.json",
-  "desks/mt5/data/intelligence/aaii/rollup_20260904.jsonl.gz",
   "desks/mt5/data/intelligence/academic/rollup_20260904.jsonl.gz",
   "desks/mt5/data/intelligence/amarkets/rollup_20260904.jsonl.gz",
   "desks/mt5/data/intelligence/anomaly_cursor.json",
@@ -191,6 +188,6 @@
   "desks/mt5/reports/universe_registry_repair.json",
   "web/desk_state.json"
  ],
- "previous_code_sha": "b779b6898eddc1b1696b853ba8e0f5dbd935f8e0",
- "previous_release_id": "5a49bed690d4"
+ "previous_code_sha": "1e975b00f2d096595598f535cde1dcee92e9bed7",
+ "previous_release_id": "db58c372c591"
 }
