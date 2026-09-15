@@ -103,6 +103,36 @@ PAUSED = BASE / "data" / "GATEWAY_PAUSED"
 TERMINAL = terminal_path()
 MAGIC = 341953
 
+#: The longest order comment THIS terminal accepts. MEASURED, not documented.
+#:
+#: MetaTrader documents 31 characters and the gateway truncated to `[:31]` accordingly. The
+#: terminal on this box refuses 30 and above: probed 2026-09-15 with `order_check` (which
+#: validates a request without sending it) across lengths 0..33, every length to 29 returned
+#: retcode 0 and every length from 30 returned None with
+#: `last_error=(-2, 'Invalid "comment" argument')`.
+#:
+#: THIS IS WHY NO FOREX SLEEVE HAD EVER TRADED. A family sleeve's name is long --
+#: `chfnok_carry_asia_p_98d776f3e210d3e2` -- so `f"DW{name}"[:31]` produced EXACTLY 31 characters
+#: for every one of them, and the terminal refused every order at the API boundary. The gold
+#: book's names are short (`DWgold_asia`, 11 characters), so gold placed normally all week and
+#: the failure looked like "forex has no signals" rather than "forex cannot be sent".
+#:
+#: The bound is a property of the terminal, so it is measured here and used everywhere a tag is
+#: built -- the comment is also the tag that matches a sleeve to its open positions, and a
+#: truncation that differs between the send path and the match path would orphan positions.
+COMMENT_MAX = 29
+
+
+def order_comment(name: str) -> str:
+    """The order comment (and position tag) for a sleeve, at this terminal's measured bound.
+
+    One function so the SEND path and the MATCH path cannot disagree: `_sleeve_positions` finds a
+    sleeve's positions by comparing this exact string to `position.comment`, so if the two were
+    truncated differently the desk would open a position it could never afterwards recognise as
+    its own -- and would then re-open it on the next pass, forever.
+    """
+    return f"DW{name}"[:COMMENT_MAX]
+
 #: How far back record_trades looks for closed deals it has not yet written. Deals are deduped
 #: by the venue's own ticket, so a wider window costs a list scan and cannot double-count. It
 #: exists because the previous day-wide window silently lost every fill the gateway did not see
@@ -906,7 +936,7 @@ def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float,
             "type_filling": mt5.ORDER_FILLING_RETURN,
             "deviation": 20,
             "magic": MAGIC,
-            "comment": f"DW{sleeve}",
+            "comment": order_comment(sleeve),
         }
         # LATENCY, MEASURED IN PLACE (2026-09-08): the wall clock around the one call that
         # reaches the venue. `decision_dataset` has read `latency_ms` off the intent since it was
@@ -1075,7 +1105,7 @@ def scalp_position_tags(sleeves: list[dict]) -> frozenset[str]:
     """The order-comment tags of the scalp lane's positions: the ones the gold book's end-of-day
     close must leave alone. Every lane tags its positions `DW<sleeve name>` (`place_bracket`,
     `run_scalp_sleeves`), so the tag is the lane."""
-    return frozenset(f"DW{s['name']}"[:31] for s in sleeves
+    return frozenset(order_comment(s["name"]) for s in sleeves
                      if s.get("exec") == "scalp_market" and s.get("name"))
 
 
@@ -2060,7 +2090,12 @@ def resolve_family_order(st: dict, s: dict, equity: float) -> dict:
     h1 = mt5.copy_rates_from_pos(s["symbol"], tf_const, 0, n_bars)
     if h1 is None or len(h1) < 60:
         return {"ok": False, "stage": "no_bars", "why": f"{tf} bars unavailable; skipped"}
-    closed = h1_frame(h1).iloc[:-1]
+    # `frame` KEEPS THE FORMING BAR; `closed` drops it. Both are needed and they are not
+    # interchangeable: every decision below is made on CLOSED data only, but the family's own
+    # loop bound is `len(d) - 1`, so it can only emit on `last_bar` if one more bar exists after
+    # it in the frame it is handed. See `family_signal_step`'s `signal_bars` for the measurement.
+    frame = h1_frame(h1)
+    closed = frame.iloc[:-1]
     call_params: dict | None = None
     if population == "hunt16":
         # ONE DECISION A DAY AT THE CERTIFIED HOUR.
@@ -2084,12 +2119,33 @@ def resolve_family_order(st: dict, s: dict, equity: float) -> dict:
     srec = (st.get("generic") or {}).get(name) or {}
     step = family_signal_step(closed, last_bar, last_signal_bar=srec.get("last_signal_bar"),
                               want_state=s.get("state"), side=side, family_fn=fam_fn,
-                              day_states_fn=day_states, call_params=call_params)
+                              day_states_fn=day_states, call_params=call_params,
+                              signal_bars=frame)
     if step.signal is None:
         return {"ok": False, "stage": "no_signal", "why": step.note or "no signal on this bar",
                 "mark": bool(step.mark), "last_bar": last_bar, "note": step.note,
                 "considered": True}
     g = step.signal
+    # THE SIGNAL'S OWN SIDE OWNS THE BRACKET IT CARRIES (measured 2026-09-15).
+    #
+    # `side` above comes from the SLEEVE: `1 if str(s.get("side", "LONG")).upper() == "LONG"`.
+    # Most family rows declare no side at all, so that expression reads the default and returns
+    # LONG -- while the family itself decides direction per signal (`family_overnight_gap_decay`
+    # computes `side = -1 if gap > 0 else 1`, fading whichever way the gap went). When the family
+    # emitted a SHORT, the gateway sent a BUY carrying that short's stop and target:
+    #
+    #   BUY 0.02 USDCHF @market sl=0.81948 tp=0.81500   (entry 0.81795)
+    #
+    # -- stop ABOVE the entry and target BELOW it, which is a sell bracket on a buy order. The
+    # venue refused every one with retcode 10016 "Invalid stops: the SL or TP is inside the
+    # stops/freeze distance from the entry", and that message is true but describes the symptom:
+    # the levels are not too close, they are on the wrong sides, because the direction and the
+    # bracket came from two different decisions.
+    #
+    # `g.side` is the one that cannot disagree with `g.stop` and `g.target`, so it is the one the
+    # order follows. For a sleeve that DOES declare a side this changes nothing: `family_call`
+    # already filtered the family to that side, so `g.side` equals it.
+    side = int(getattr(g, "side", side) or side)
     tick = mt5.symbol_info_tick(s["symbol"])
     sym = mt5.symbol_info(s["symbol"])
     if tick is None or sym is None:
@@ -2259,7 +2315,7 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
             "action": mt5.TRADE_ACTION_DEAL, "symbol": s["symbol"], "volume": lot,
             "type": mt5.ORDER_TYPE_BUY if side == 1 else mt5.ORDER_TYPE_SELL,
             "price": entry_ref, "sl": float(g.stop), "tp": float(g.target),
-            "deviation": 20, "magic": MAGIC, "comment": f"DW{name}"[:31],
+            "deviation": 20, "magic": MAGIC, "comment": order_comment(name),
         })
         _lat_ms = round((time.perf_counter() - _t0) * 1000.0, 3)
         rc = res.retcode if res else None
@@ -2292,7 +2348,7 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
 
 def _sleeve_positions(symbol: str, name: str) -> list:
     """Open positions this sleeve owns: the order comment is the sleeve's tag."""
-    tag = f"DW{name}"[:31]
+    tag = order_comment(name)
     return [p for p in (mt5.positions_get(symbol=symbol) or [])
             if str(getattr(p, "comment", "") or "") == tag]
 
@@ -2316,7 +2372,7 @@ def close_sleeve_positions(st: dict, symbol: str, name: str) -> None:
                      else mt5.ORDER_TYPE_BUY),
             "position": p.ticket,
             "price": tick.bid if p.type == mt5.POSITION_TYPE_BUY else tick.ask,
-            "deviation": 20, "magic": MAGIC, "comment": f"DW{name}"[:31],
+            "deviation": 20, "magic": MAGIC, "comment": order_comment(name),
         })
         log(f"[{name}] CLOSE ticket {p.ticket} -> retcode={res.retcode if res else None}")
 
@@ -2586,7 +2642,7 @@ def run_scalp_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
             "action": mt5.TRADE_ACTION_DEAL, "symbol": s["symbol"], "volume": per,
             "type": mt5.ORDER_TYPE_BUY if side == 1 else mt5.ORDER_TYPE_SELL,
             "price": price, "sl": stop, "tp": tp,
-            "deviation": 20, "magic": MAGIC, "comment": f"DW{name}"[:31],
+            "deviation": 20, "magic": MAGIC, "comment": order_comment(name),
         })
         _lat_ms = round((time.perf_counter() - _t0) * 1000.0, 3)
         rc = res.retcode if res else None

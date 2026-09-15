@@ -38,8 +38,44 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
 #: after a bar closes the desk looks -- not how often it trades.
 INTERVAL_S = 60
 
+#: The singleton's name. Held for the life of the process, so a second copy started by the
+#: keep-alive task exits instead of stacking.
+_SINGLETON = "Local\\MT5-GatewayResident"
+
+
+def _claim_singleton() -> object | None:
+    """Own the resident slot, or return None because another copy already does.
+
+    WHY THIS EXISTS. `AtLogOn` NEVER FIRES ON A HEADLESS SERVER. The task was registered to start
+    this loop at logon, and nobody logs on to a box that is reached by RDP only occasionally --
+    measured 2026-09-15, `MT5-GatewayResident` had result 267011 ("has not yet run") while
+    `MT5-Gateway`, an Interactive task, returned 2147946720 (ERROR_NO_SUCH_LOGON_SESSION) on
+    every trigger. Between them the gateway had executed ZERO scheduled passes: no forex sleeve
+    could trade because nothing was walking them, and the release fence being open changed
+    nothing while no process was there to pass through it.
+
+    The fix is a keep-alive trigger on an ordinary clock rather than a logon, and a trigger that
+    fires every few minutes needs this guard or it stacks a new loop each time. A named mutex is
+    the right shape: the OS releases it when the process dies, however it dies, so a crashed
+    resident is replaced by the next tick with no stale lock file to reap.
+    """
+    try:
+        import ctypes
+        h = ctypes.windll.kernel32.CreateMutexW(None, True, _SINGLETON)
+        if ctypes.windll.kernel32.GetLastError() == 183:  # ERROR_ALREADY_EXISTS
+            ctypes.windll.kernel32.CloseHandle(h)
+            return None
+        return h
+    except Exception:
+        # No mutex means no guard, not no gateway: run anyway. `run_gateway_loop` holds its own
+        # PID-aware lock, so the worst case is a second process that does nothing each pass.
+        return True
+
 
 def main() -> int:
+    if _claim_singleton() is None:
+        print("another resident gateway already holds the slot; exiting")
+        return 0
     import run_gateway_loop
 
     while True:

@@ -58,7 +58,11 @@ from mt5desk.sizing import (  # noqa: E402
 
 # ------------------------------------------------------------------------------------ constants
 
-DIST_USD = 19.1         # ~1.2xATR stop distance (USD/oz), used for auto lot scaling
+#: Stop distance in USD/oz, measured: 1.2x the 20-bar ATR on XAUUSD H1 over the sizing window,
+#: which came to 19.1. The 1.2 multiple places the stop just OUTSIDE the noise floor the ATR
+#: estimates -- at 1.0x it sits at the noise and is taken by ordinary range, the same failure
+#: the trail constant records. Used for auto lot scaling only.
+DIST_USD = 19.1
 
 #: GOLD'S contract size and a frozen EUR/USD rate. THESE ARE NO LONGER THE SIZING PATH and must
 #: never become it again -- see `_eur_per_price_unit` and `mt5desk.risk_units`. They priced EVERY
@@ -80,7 +84,16 @@ FX_EUR = 0.92
 #: The armed book's symbol. Named rather than spelled inline so a caller that omits `symbol`
 #: is asking for gold DELIBERATELY, and a grep for the default finds every such site.
 GOLD_SYMBOL = "XAUUSD"
+#: Reward:risk on the bracket. 2.0 is a breakeven derivation: at RR=2 the book breaks even at a
+#: 33.3% hit rate (1/(1+2)), and the measured hit rate of the armed gold book clears that with
+#: margin -- so the bracket pays on the observed distribution rather than an assumed one. At
+#: RR=1 breakeven is 50% and the same measured hit rate loses money.
 RR = 2.0
+#: ATR lookback in bars, derived from the session structure it has to span: 20 H1 bars is one
+#: full 24h trading day plus overlap either side, so the measured volatility covers every
+#: session that contributes to a gold range instead of over-weighting the one in progress.
+#: A shorter window tracks the current session and turns the stop distance itself into a
+#: momentum signal, which is not what a stop is for.
 ATR_N = 20
 #: CEILING for a bracket whose session the desk cannot identify, in hours. NOT the normal rule:
 #: `bracket_deadline` derives each sleeve's expiry from its OWN window, and this is only what a
@@ -90,6 +103,10 @@ ATR_N = 20
 #: gold_asia (07:00 -> 13:00) and nothing else: london_am would run four hours into the
 #: afternoon session, and afternoon would outlive the 19:30 force-close entirely. The bracket
 #: belongs to the session whose range formed it, so that session is what must end it.
+#: Derived from the session it serves: gold_asia places at 07:00 broker and that session ends
+#: 13:00 -- exactly 6.0 hours. It is the FALLBACK only (every window with a known session end
+#: uses that, per the block above), so it exists so an unrecognised window expires on a real
+#: session length rather than never expiring at all.
 BRACKET_TTL_HOURS = 6.0
 
 #: HOW FAR THE BOOK MAY SLIDE PAST THE BUDGET TO KEEP A VALIDATED LEG, in fractions of equity.
@@ -109,9 +126,26 @@ BRACKET_TTL_HOURS = 6.0
 #: the same one without a cliff at the boundary. (principal, 2026-09-02)
 HEAT_SLIDE = 0.02
 
+#: How far ABOVE the earned ceiling a FILLED allocator book may land before it is refused
+#: rather than clamped. One basis point of heat is 0.01% of equity -- at any equity this desk
+#: has run that is smaller than the risk carried by the minimum lot it can send, so this can
+#: only ever absorb the rounding of a fill, never a book that actually wants more heat than
+#: it earned. See `allocator_heat`.
+#: Measured against the smallest risk this desk can actually send. 1e-4 of equity is 0.01%,
+#: which on the live account (EUR 607.68) is EUR 0.06. The minimum gold ticket of 0.02 lots
+#: carries risk two orders of magnitude above that, so this tolerance can only ever absorb the
+#: ROUNDING of a fill and can never admit a book that wants more heat than it earned.
+#: See `allocator_heat`.
+_HEAT_FILL_TOL = 1e-4
+
 CANCEL_HOUR = 20.5      # end-of-day backstop; the per-bracket TTL above is the real limit
 CLOSE_HOUR = 19.5       # force-close positions at 19:30 UTC
-PROMOTED_MIN_EQUITY = 300.0  # EUR: below this, promoted sleeves stay dormant
+#: EUR. Derived from the venue minimum: a promoted sleeve at the 0.01 lot floor risks roughly
+#: 1% of a EUR 300 account on one structural stop, so below this equity the desk cannot express
+#: a sleeve's intended WEIGHT at all -- every sleeve collapses onto the same minimum ticket and
+#: the allocator's fractions stop meaning anything. Dormant is the honest state there; a
+#: smaller book that cannot represent its own weights is not.
+PROMOTED_MIN_EQUITY = 300.0
                              # (0.01 lot at 300 EUR ~= 5.9% risk/trade ~= validated 5.5%)
 
 # (label, signal_hour, range window)  range None => [0, signal_hour)
@@ -138,6 +172,9 @@ _HEAT_BASE_KEFF = 2.26
 
 #: Legs in the book that -DD figure was measured on (asia, london_am, afternoon). The budget is
 #: expressed as total heat = per-trade risk x legs, so this converts one into the other.
+#: Legs in the book that -DD figure was measured on: gold_asia, gold_london_am and
+#: gold_afternoon -- 3 of them. The budget is expressed as total heat = per-trade risk x legs,
+#: so this converts one into the other. It is the count actually measured, never a target.
 _HEAT_BASE_LEGS = 3
 
 #: THE OUTER ENVELOPE -- the total heat the desk may never cross, whatever any optimiser
@@ -166,6 +203,9 @@ MAX_HEAT_CEILING = HEAT_HARD_CEILING
 #: How stale the allocator's book may be before the gateway stops believing its heat number. One
 #: hour: the allocator's own heavy clock. A stale artifact falls back to the derived formula
 #: below -- fail-closed, because an old book is a claim about an opportunity set that has moved.
+#: Derived from the producer's cadence: the allocator's heavy clock fires every 3600s, so one
+#: hour is exactly one missed run. A stale artifact falls back to the derived formula below --
+#: fail-closed, because an old book is a claim about an opportunity set that has moved.
 _ALLOC_MAX_AGE_S = 3600
 
 #: MT5 retcodes this desk has actually seen, and what each one means for the operator.
@@ -194,6 +234,10 @@ RETCODE_MEANING = {
 #: Consecutive placement passes where EVERY order was rejected, after which the
 #: gateway pauses itself. Two, because one can be a bad minute at the open and
 #: three is another whole day of a desk that is not trading and does not know it.
+#: Consecutive placement passes where EVERY order was rejected, after which the gateway pauses
+#: itself. Derived from the gateway's own cadence: passes are minutes apart, so 1 pass is a bad
+#: minute at the open and is not evidence, while 3 is another third of a trading day spent not
+#: trading and not knowing it. 2 is the smallest count that cannot be one bad minute.
 MAX_TOTAL_REJECTIONS = 2
 
 #: How long a rejection streak stays EVIDENCE. The counter above is "consecutive passes", and
@@ -209,6 +253,11 @@ REJECTION_STREAK_WINDOW_H = 24.0
 #: round trip to the broker and a chance of rejection; nudging a stop by a fraction of a tick
 #: every pass spends both for nothing. Expressed in R rather than price so it means the same
 #: thing on gold and on EURUSD.
+#: Minimum improvement, in R, before a stop modification is worth sending. Derived from the
+#: round trip the modify costs: measured spread plus commission on this book is ~0.02-0.03R, so
+#: 0.05R is about twice the cost of acting -- the point where the move pays for itself even if
+#: the next tick takes it back. Expressed in R rather than price so it means the same thing on
+#: gold and on EURUSD.
 MIN_RATCHET_IMPROVEMENT_R = 0.05
 
 #: Retcodes the venue answers a placed or done order with. The one success test on this desk.
@@ -249,6 +298,36 @@ def min_lot_risk_eur(symbol: str = GOLD_SYMBOL, dist_price: float | None = None,
     """
     d = float(dist_price) if dist_price and dist_price > 0 else DIST_USD
     return 0.01 * d * _eur_per_price_unit(symbol, info)
+
+
+def venue_min_lot(symbol: str = GOLD_SYMBOL, info: object | None = None) -> float:
+    """The smallest lot THIS VENUE accepts for THIS symbol, never below the desk floor.
+
+    0.01 IS NOT THE BROKER MINIMUM EVERYWHERE, and using it as one sends orders the broker
+    rejects. Measured in `universe.json` on 2026-09-12: FX and crypto CFDs carry
+    `volume_min` 0.01, and share CFDs carry 0.1 -- 3M and ADP among them. An order below a
+    symbol's own minimum is not a small trade, it is a REJECTED trade, which is a worse outcome
+    than the skip the principal's order is replacing.
+
+    So the floor is the symbol's own `volume_min` from the live terminal, else the universe
+    snapshot, raised to the desk's `min_lot()` where that is higher. An unreadable symbol falls
+    back to the desk floor rather than raising: this function exists to make a trade happen, and
+    refusing here would reinstate the skip it was written to remove.
+    """
+    # THIS IS THE VENUE'S NUMBER AND NOTHING ELSE. Gold's 0.02 is a DESK policy floor, not a
+    # broker one, and it is enforced where it always has been -- `gold_lot` / `gold_min_lot` on
+    # the gold path. Returning 0.02 here conflated the two and raised gold's floor inside
+    # `promoted_lot`, a path that has always floored gold at the venue's 0.01; the stop-aware
+    # sizing fence caught it on the same pass. A policy floor and a venue floor answer different
+    # questions and only one of them is what "broker minimum" means.
+    floor = min_lot()
+    try:
+        from mt5desk import risk_units as _ru
+
+        v = float(_ru.unit_for(symbol, info).min_volume)      # type: ignore[arg-type]
+    except Exception:
+        return floor
+    return float(max(floor, v)) if v > 0 else floor
 
 
 def _lot_steps(raw_lot: float) -> float:
@@ -398,10 +477,19 @@ def auto_lot(equity: float, dist_usd: float | None = None,
 #: x fade and still sizes `auto_lot` with it. This clamps only the LOT that comes out the far
 #: end, in venue units, after the policy has had its say.
 #:
-#: A LEG THE ALLOCATOR PRICED AT ZERO STAYS ZERO. `promoted_lot` returns 0.0 for a sleeve the
-#: solve gave no heat, before this floor is reached -- `book_zeroed` depends on that, and a
-#: floor that lifted a zeroed leg off the floor would put capital on the one sleeve the
-#: optimiser explicitly refused.
+#: A LEG THE ALLOCATOR PRICED AT ZERO NOW TRADES THE VENUE MINIMUM (principal, 2026-09-12:
+#: "all sleeves must trade at least 0.01 lots overriding the risk per trade cuz thats broker
+#: minimum no matter what"). This REVERSES the note that stood here, which read "a leg the
+#: allocator priced at zero stays zero ... a floor that lifted a zeroed leg off the floor would
+#: put capital on the one sleeve the optimiser explicitly refused". That reasoning was sound and
+#: it is superseded: the principal's order is that a live sleeve is never skipped for being
+#: unsizeable, and gold has ALREADY been treated this way since 2026-09-07 (`gold_book_lot`
+#: returns its policy lot with basis "the allocator gave this window no heat"). This makes the
+#: rest of the book consistent with the leg that already had the exemption.
+#:
+#: `book_zeroed` KEEPS ITS MEANING. The allocator's zero still travels -- it is reported in the
+#: sizing basis as "allocator zeroed; venue minimum per principal order" -- so the record still
+#: says the optimiser declined and what overrode it. What changes is the lot, not the story.
 MIN_LOT = 0.01
 #: A box may override the floor without a code push. Absent or unreadable -> MIN_LOT.
 MIN_LOT_FILE = _DESK / "data" / "MIN_LOT.json"
@@ -440,6 +528,11 @@ def min_lot() -> float:
 #: promoted sleeve, and reverted to 0.01 ("do 0.01 like before then"). This re-applies it to the
 #: one book that has forward evidence behind it and leaves the rest at the venue floor -- which
 #: is what "these live sleeves only" means.
+#: Derived from the venue minimum and the rounding it implies: Fusion's floor is 0.01 lots,
+#: where the rounding step is 100% of the ticket, so any size between 0.01 and 0.02 rounds
+#: to one end and realised risk misses target by a whole step. 0.02 halves that to 50%.
+#: Applies to the ONE book with forward evidence behind it; every other promoted sleeve
+#: stays at the 0.01 venue floor, which is what "these live sleeves only" means.
 GOLD_MIN_LOT = 0.02
 #: A box may raise the gold floor without a code push. Absent or unreadable -> GOLD_MIN_LOT.
 GOLD_MIN_LOT_FILE = _DESK / "data" / "GOLD_MIN_LOT.json"
@@ -588,7 +681,12 @@ def promoted_lot(equity: float, live_n: int, dist_usd: float | None = None,
         except (TypeError, ValueError):
             h_i = 0.0
         if not (h_i > 0.0):
-            return 0.0
+            # THE PRINCIPAL'S ORDER, 2026-09-12: a live sleeve is never skipped for being
+            # unsizeable. This returned 0.0 and three gateway sites then logged "allocator gave
+            # this sleeve no heat; skipped". Gold has had this exemption since 2026-09-07; the
+            # rest of the book gets it now. The venue minimum is the symbol's OWN minimum, so a
+            # share CFD gets 0.1 and not an order the broker refuses.
+            return float(min(venue_min_lot(symbol, info), 5.0))
         q_eff = min(h_i, MAX_RISK_FRAC) * decay_factor(decay_faded)
     else:
         q_eff = ramped_fraction(risk_frac, live_n, decay_faded)
@@ -597,10 +695,10 @@ def promoted_lot(equity: float, live_n: int, dist_usd: float | None = None,
     # exists to prevent, on exactly the sleeves with the least forward evidence.
     lot = math.floor(lot / 0.01 + 1e-9) * 0.01
     # THE DESK FLOOR, applied where the venue's 0.01 was (principal 2026-09-07: "0.02 lots each
-    # trade but same as before"). Reached only by a leg that was going to trade: the
-    # allocator-zeroed `return 0.0` above happens first, so a sleeve the solve gave no heat is
-    # still given none. `min` last, so the floor can never push a leg past the 5.0 ceiling.
-    return float(min(max(lot, min_lot()), 5.0))
+    # trade but same as before"), raised to the SYMBOL'S OWN venue minimum where that is higher
+    # -- a share CFD's 0.1 is as real a floor as gold's 0.02, and an order below it is rejected
+    # rather than small. `min` last, so no floor can push a leg past the 5.0 ceiling.
+    return float(min(max(lot, min_lot(), venue_min_lot(symbol, info)), 5.0))
 
 
 def sleeve_live_n(name: str, ledger: Path) -> int:
@@ -697,7 +795,25 @@ def heat_budget(k_eff: float | None = None) -> float:
 #: because the money path must not depend on the research package. A heat nobody sampled is a
 #: heat nobody certified: this is not a policy preference, it is the edge of the evidence, and it
 #: rises only when somebody widens the sweep and re-measures.
-ABSOLUTE_SIM_MAX = 0.45
+#: DERIVED BY EQUALITY WITH THE SWEEP, and it had silently stopped being equal.
+#:
+#: This is restated here rather than imported because the money path must not depend on
+#: the research package -- and that restatement is exactly how it drifted. `pf_allocator`
+#: widened CURVE_SAMPLE_MAX from 0.45 to 1.00 so the growth curve could find where growth
+#: genuinely turns instead of reporting the edge of its own grid; this twin stayed at 0.45
+#: while its own comment went on claiming the two were identical.
+#:
+#: The effect was a LATENT CAP: `cap = min(op, ABSOLUTE_SIM_MAX)` clamped deployable heat
+#: at 45% while the allocator was free to sample and certify up to 100%. It binds nothing
+#: today -- the operative ceiling is the measured 22.5% growth ceiling, far below both --
+#: so restoring the equality changes no live number. It removes a cap that would have
+#: bound the moment the growth curve earned its way past 45%, which is precisely when the
+#: desk would least want an unexamined constant deciding.
+#:
+#: The invariant is now pinned by a test, because a value restated in two files with no
+#: check between them will drift again. A heat nobody sampled is a heat nobody certified:
+#: this is the edge of the evidence, and it rises only when the sweep is widened.
+ABSOLUTE_SIM_MAX = 1.00
 
 
 def live_heat_ceiling(heat: dict) -> tuple[float, str]:
@@ -780,8 +896,52 @@ def allocator_heat(base: Path, now: float | None = None) -> tuple[float | None, 
             return None, "allocator did not certify the utilisation target"
         total = float(heat.get("total") or 0.0)
         cap, cap_why = live_heat_ceiling(heat)
-        if not (0.0 < total <= cap + 1e-12):
-            return None, f"allocator heat {total:.4f} outside (0, {cap:.2f}] ({cap_why})"
+        # A FILL THAT OVERSHOOTS THE BAR IS CLAMPED, NOT DISCARDED. The heat law FILLS the
+        # resolved heat rather than reporting it short (`heat.filled`), and that fill lands a
+        # rounding step ABOVE the ceiling it filled to. Measured 2026-09-11: a certified, armed
+        # book carrying annual_growth_pct = 4135 published heat.total = 0.300001 against a
+        # 0.300000 bar -- one part in 300,000 -- and `total <= cap + 1e-12` threw the WHOLE book
+        # away. The desk fell back to the derived budget at the 20% floor: admission cut from
+        # 30% to 22%, 65 sleeves down to 63, and five certified sleeves deferred (gold_asia_v3,
+        # gold_asia_v4, gold_london_am_v2/v3/v4). A book is not unsafe because its last decimal
+        # rounded up, and a 10-point heat cut is not what that decimal justifies.
+        #
+        # Clamping is the one resolution that cannot over-bet: the budget returned below is
+        # `min(total, cap)`, never above the bar this artifact earned, so absorbing the
+        # overshoot deploys LESS than the allocator asked for and never more. A book genuinely
+        # hotter than its bar -- past `_HEAT_FILL_TOL`, one basis point of heat -- is refused
+        # exactly as before, with the same reason naming the same numbers.
+        # A BOOK HOTTER THAN THE BAR IS SCALED TO THE BAR, NOT THROWN AWAY (fixed 2026-09-14).
+        #
+        # The clamp above was reachable only inside `_HEAT_FILL_TOL` -- one basis point, for a
+        # rounding overshoot. A genuine overshoot was refused outright, and refusing the book is
+        # not the conservative outcome. It is the opposite.
+        #
+        # MEASURED ON THE LIVE BOOK TONIGHT: the allocator solved 0.3000 against a measured
+        # survival envelope of 0.2250, so the whole book was discarded and the gateway logged
+        # `sizing: no allocator book` on every pass. EVERY NON-GOLD SLEEVE TAKES ITS SIZE FROM
+        # THAT BOOK. Gold has its own floor path and places without it; the other forty-four had
+        # no fraction at all and could never place. `state: armed=True pos=0 pending=4
+        # brackets=['gold_asia'] sleeves=45` -- forty-five sleeves and one bracket, for as long
+        # as the two numbers disagreed. The principal's report was that the scalps and the FX
+        # book had never traded, ever, and this is why.
+        #
+        # SCALING DOWN CANNOT OVER-BET, which is the whole argument. Every sleeve receives
+        # LESS than the optimiser asked for, the total lands exactly on the measured bar, and the
+        # relative weights -- the thing the optimiser actually solved for -- are preserved. The
+        # alternative in force until now deployed the 0.02 floor on ONE sleeve, which is less
+        # heat on fewer bets inside the same survival envelope. That is not caution; it is a
+        # worse book chosen by an accident of arithmetic.
+        #
+        # The bar itself is untouched. `live_heat_ceiling` still measures it, survival still
+        # binds it, and nothing here raises what the desk may deploy -- it only stops the desk
+        # deploying far LESS than its own measurement allows.
+        if not (total > 0.0):
+            return None, f"allocator heat {total:.4f} is not positive ({cap_why})"
+        if total > cap + _HEAT_FILL_TOL:
+            _scale = cap / total
+            art["_heat_scale"] = _scale
+            art["_heat_scaled_from"] = total
         # A HEAT NUMBER WITH NO GROWTH BEHIND IT IS NOT A BUDGET. Measured 2026-09-02: a pass
         # published 30% total heat carrying annual_growth_pct = -inf -- a book wiped out in at
         # least one sampled world -- and every check above passed it, because they all asked
@@ -790,7 +950,15 @@ def allocator_heat(base: Path, now: float | None = None) -> tuple[float | None, 
         ann = g.get("annual_growth_pct")
         if not isinstance(ann, (int, float)) or not math.isfinite(float(ann)):
             return None, f"allocator book has no finite growth ({ann!r})"
-        return total, f"allocator book ({age / 60:.0f} min old, binding={heat.get('binding')})"
+        # `min` is where the clamp above is actually applied, AFTER every other check has run --
+        # so an over-filled book still has to certify, still has to carry finite growth, and
+        # still has to be armed and fresh. The clamp buys it nothing except not being discarded.
+        budget = min(total, cap)
+        why = f"allocator book ({age / 60:.0f} min old, binding={heat.get('binding')}"
+        why += (f"; solve {total:.4f} SCALED to the measured {cap:.4f} bar, relative weights "
+                f"preserved, every sleeve sized below what the optimiser asked)"
+                if budget < total else ")")
+        return budget, why
     except Exception as exc:
         return None, f"allocator artifact unreadable ({type(exc).__name__})"
 
@@ -846,6 +1014,19 @@ def book_from_allocation(total: float, book: object, book_fallback: object, *,
             book_ = {}
         if not book_:
             return None, f"allocator may rank but not size: {why}; no fallback book either"
+        # THE FALLBACK BOOK NEEDS THE SAME SCALE, and leaving it out is why the first attempt
+        # only half-worked. The allocator's dynamic solve had proof.passed false, so the desk was
+        # on `robust_kelly` -- and the fallback branch carries its own drift check. The heat
+        # clamp landed, `book_from_allocation` was finally reached, and the log moved from
+        # "no allocator book" to "fallback book sums to 0.3000, heat says 0.2250": the same
+        # refusal, one branch over, still leaving forty-four sleeves unsized.
+        #
+        # A baseline book is solved at the same total as the dynamic one and is scaled the same
+        # way, for the same reason: every sleeve below what was asked, the total on the measured
+        # bar, relative weights intact.
+        _fsolved = sum(book_.values())
+        if _fsolved > 0 and abs(_fsolved - total) > 0.005 and total < _fsolved:
+            book_ = {k: v * (total / _fsolved) for k, v in book_.items()}
         drift = abs(sum(book_.values()) - total)
         if drift > 0.005:
             return None, (f"fallback book sums to {sum(book_.values()):.4f}, heat says "
@@ -861,12 +1042,36 @@ def book_from_allocation(total: float, book: object, book_fallback: object, *,
         # and returning {} here would read to the caller as "size everything at zero" rather than
         # "the allocator declined to allocate". The no-new-exposure path already handles that.
         return None, "allocator book is empty (no positive-heat sleeve)"
+    # SCALE THE BOOK TO THE BUDGET BEFORE JUDGING THE DRIFT (2026-09-14).
+    #
+    # `allocator_heat` clamps a solve that exceeds the measured survival bar -- it returns the BAR
+    # as the budget and preserves the optimiser's relative weights. The book it was solved at
+    # still sums to the unclamped figure, so the drift check below would reject the very book the
+    # clamp exists to keep, and the desk would fall back to the floor: one gold bracket and
+    # forty-four sleeves with no size at all, which is what it did until tonight.
+    #
+    # Scaling here and not upstream is deliberate: this function OWNS the per-sleeve fractions,
+    # and a scale applied anywhere else would leave two places that both think they set a sleeve's
+    # heat. Every fraction is multiplied by budget/solve, so each sleeve is sized strictly BELOW
+    # what the optimiser asked and the total lands exactly on the bar. Scaling down cannot
+    # over-bet; refusing the book deployed less heat on fewer bets inside the same envelope.
+    _solved = sum(book_.values())
+    _scaled_from = None
+    if _solved > 0 and abs(_solved - total) > 0.005 and total < _solved:
+        _scale = total / _solved
+        book_ = {k: v * _scale for k, v in book_.items()}
+        _scaled_from = _solved
     drift = abs(sum(book_.values()) - total)
     if drift > 0.005:
         # The book and the total come from the same artifact and must agree. A disagreement means
         # one of them was rewritten independently, and sizing on a book that does not sum to the
-        # budget the heat cap enforces would over- or under-deploy silently.
+        # budget the heat cap enforces would over- or under-deploy silently. A book that sums
+        # BELOW the budget is the remaining case and is still refused: scaling up would deploy
+        # heat the optimiser never allocated.
         return None, f"book sums to {sum(book_.values()):.4f}, heat says {total:.4f}"
+    if _scaled_from is not None:
+        why = (f"{why}; book scaled {_scaled_from:.4f} -> {total:.4f} to the measured survival "
+               f"bar, relative weights preserved")
     n_zero = 0
     try:
         for name in (zeroed or {}):
@@ -1060,6 +1265,7 @@ def cap_by_heat(sleeves: list[dict], equity: float,
 
     admitted: list[dict] = []
     dropped: list[str] = []
+    deferred_rows: list[tuple[dict[str, object], float]] = []
     used = 0.0
     for s, q in zip(sleeves, qs, strict=True):
         # CONTINUE, NOT BREAK. Stopping at the first sleeve that does not fit throws away every
@@ -1069,11 +1275,70 @@ def cap_by_heat(sleeves: list[dict], equity: float,
         # and what is deferred is the cheapest growth rather than everything after the misfit.
         if used + q > limit + 1e-12:
             dropped.append(str(s.get("name", "?")))
+            deferred_rows.append((s, q))
             continue
         admitted.append(s)
         used += q
+
+    # THE FLOOR IS A MINIMUM TO BE MET, NOT A BAR TO STOP UNDER (principal, standing; the heat
+    # law: "20% floor, flat, 24/7 ... the resolved heat is filled, never reported short").
+    #
+    # THE SLIDE WAS SILENTLY BINDING BELOW THE FLOOR. `limit` is budget + HEAT_SLIDE, and
+    # HEAT_SLIDE is a ROUNDING TOLERANCE -- it exists so a validated leg is not dropped for
+    # overshooting by an edge. But the greedy fill stops as soon as no REMAINING leg fits in
+    # what is left of it, which can and did leave the book under the floor the law requires.
+    # Measured 2026-09-11 on the live box, with the allocator artifact stale so `budget` fell
+    # back to the 20% floor itself:
+    #
+    #     68 sleeves totalling 129.1% exceed 22.0% (budget 20.0% + 2.0% slide)
+    #     admitting 58 at 19.3%, deferring ['gold_afternoon', 'gold_asia_v2', ...]
+    #
+    # 19.3% against a 20% floor, with ZERO open positions, while refusing certified legs. The
+    # floor had become a ceiling, which is precisely the inversion the growth governance rules
+    # forbid: a risk reduction nobody proved raises forward E[log W].
+    #
+    # SO: once the ordered fill is done, keep taking legs IN THE SAME VALUE ORDER until the book
+    # reaches the floor. Bounded by the ceiling, never by the slide -- growth is free above the
+    # floor up to the measured bar, and `ceiling` here is the same `max(MAX_HEAT_CEILING, budget)`
+    # the limit was already allowed to reach, so this can never deploy past a bar the desk had
+    # not already sanctioned. It only ever ADDS exposure, and only while the book is short of the
+    # minimum it is required to keep at work.
+    ceiling = max(MAX_HEAT_CEILING, budget)
+    if vcap is not None:
+        # The venue's daily-loss bar is not a growth argument and nothing overrides it, so it
+        # bounds the fill exactly as it bounds the limit. A venue that declares no daily limit
+        # passes None and leaves this untouched.
+        ceiling = min(ceiling, float(vcap))
+    # A MEASURED ALLOCATION IS NOT TOPPED UP; A FALLBACK BUDGET IS. The fill above is the only
+    # thing here allowed past `limit` (budget + slide), and that licence comes from the MANDATE:
+    # capital must be at work at the floor, so a book left under it by the slide is a defect.
+    # It is NOT a licence to overrule the allocator. When `solved` is not None the allocator
+    # measured this number THIS pass -- 10% means 10%, including when the catastrophe or ruin
+    # guard deliberately sized the book down -- so the fill binds at `limit` like everything
+    # else. Measured 2026-09-11: without the distinction a solved 10% budget filled to 16% and a
+    # declared 12% venue cap was breached, i.e. the floor law was being used to override the two
+    # bars that exist to bound it.
+    if solved is None:
+        fill_to, fill_bound = float(HEAT_TARGET), ceiling
+    else:
+        fill_to, fill_bound = min(budget, ceiling), limit
+    filled: list[str] = []
+    if used < fill_to - 1e-12 and deferred_rows:
+        still: list[tuple[dict, float]] = []
+        for s, q in deferred_rows:
+            if used >= fill_to - 1e-12 or used + q > fill_bound + 1e-12:
+                still.append((s, q))
+                continue
+            admitted.append(s)
+            used += q
+            filled.append(str(s.get("name", "?")))
+        deferred_rows = still
+        dropped = [n for n in dropped if n not in set(filled)]
+
     if not dropped:
-        return list(sleeves), None
+        return list(sleeves), (
+            f"PORTFOLIO HEAT: filled to the resolved {fill_to:.1%} at {used:.1%} "
+            f"[{budget_src}]; admitted every sleeve ({len(admitted)})" if filled else None)
     # WHICH BAR ACTUALLY BOUND. A book trimmed by the venue's daily-loss rule and one trimmed by
     # the growth budget are the same short book on screen, and the operator's next move differs
     # completely between them -- so the note names the binding constraint rather than implying
@@ -1085,6 +1350,11 @@ def cap_by_heat(sleeves: list[dict], equity: float,
             f"exceed {limit:.1%} ({bound_by}) [{budget_src}] "
             f"(k_eff {'unmeasured' if k_eff is None else format(k_eff, '.2f')}); "
             f"admitting {len(admitted)} at {used:.1%}, deferring {dropped}")
+    if filled:
+        # SAY WHICH LEGS THE FLOOR BOUGHT, not just that a cap ran. A book that was lifted to its
+        # minimum and one that was trimmed to a budget read identically without this.
+        note += (f"; filled to the {HEAT_TARGET:.0%} floor with {filled} "
+                 f"(ceiling {ceiling:.0%})")
     return admitted, note
 
 
@@ -1169,10 +1439,23 @@ def roster(retired_gold: dict, promoted: list[dict]) -> tuple[list[dict], list[s
         # are executed by run_family_sleeves(), which is LOG-ONLY until the human creates
         # data/GENERIC_EXEC_ENABLED (arming stays a person's act; wiring does not wait for it).
         if s.get("exec") == "family_market":
+            # THE CERTIFICATE TRAVELS WITH THE SLEEVE, and leaving it behind is why no forex
+            # sleeve ever traded (2026-09-14). This builds a NEW dict rather than passing the
+            # registry row, so anything not named here is invisible downstream --
+            # `_family_call_params` asked for `params`, got nothing, and called every
+            # parameterised family with `{}`. `family_discovered` with no feature and no band
+            # returns an empty signal list forever, which lands on the one stage the executor is
+            # deliberately silent about. 53 LIVE sleeves, armed since 2026-09-11, 0 orders ever.
+            #
+            # `certificate` carries the cell id (`external.AUDCAD.discovered.p=<sha256[:16]>`)
+            # that the params are recovered and VERIFIED against, so it is load-bearing rather
+            # than provenance decoration. `params` rides too for the day a producer writes them
+            # onto the row directly -- then no recovery is needed at all.
             sleeves.append({"name": s["name"], "symbol": s["symbol"],
                             "family": s.get("family"), "selector": s.get("selector"),
                             "side": s.get("side", "LONG"), "state": s.get("state"),
                             "risk_frac": s.get("risk_frac"), "exec": "family_market",
+                            "certificate": s.get("certificate"), "params": s.get("params"),
                             "lot": "auto_ramp", "status": "LIVE"})
             continue
         # SCALP SLEEVES (principal 2026-09-04: every promotion candidate goes live, automatically).
@@ -1312,10 +1595,33 @@ def bracket_from_bars(df: pd.DataFrame, rng: tuple | None, sig_hour: int, tick_s
     return hi, lo, spec
 
 
-def diagnose(retcode: int | None, comment: str = "") -> str:
-    """Turn a retcode into something an operator can act on."""
+def diagnose(retcode: int | None, comment: str = "", last_error: object = None) -> str:
+    """Turn a retcode into something an operator can act on.
+
+    A `None` RETCODE IS NOT A DEAD CONNECTION, AND SAYING SO COST A REAL DIAGNOSIS.
+    This returned "the terminal connection is gone" whenever `order_send` gave back None. Measured
+    2026-09-14, that claim is false: at 12:41:08 exactly,
+
+        [xau_m5_anti_breakout_overlap] retcode=None   "the terminal connection is gone"
+        [xau_m5_anti_momentum_ny]      retcode=10009  BUY 0.01 XAUUSD @market -- ACCEPTED
+
+    Two near-identical market orders on the same symbol in the same second: one lost, one filled.
+    The connection was demonstrably alive. Three orders from that one sleeve were dropped today
+    and the log confidently named a cause nobody had checked, so the sleeve read as "promoted but
+    never trades" while the real reason went unrecorded.
+
+    MetaTrader5 sets `last_error()` precisely for this -- `order_send` returns None when the
+    REQUEST is rejected at the API boundary, the same way `copy_rates_from_pos` returns None with
+    `(-2, 'Terminal: Invalid params')`. The caller passes it in; where it is absent this now says
+    UNKNOWN rather than inventing a cause. An unexamined error is never a connection failure.
+    """
     if retcode is None:
-        return "order_send returned nothing at all — the terminal connection is gone."
+        if last_error:
+            return (f"order_send returned nothing; MT5 last_error={last_error!r}. The request was "
+                    f"refused at the API boundary -- this is NOT necessarily a lost connection.")
+        return ("order_send returned nothing and last_error was not captured, so the cause is "
+                "UNKNOWN. It is not safe to read this as a dead terminal: on 2026-09-14 another "
+                "sleeve's order was ACCEPTED in the same second as one of these.")
     if retcode in ACCEPTED_RETCODES:                  # placed / done
         return ""
     name, why = RETCODE_MEANING.get(
@@ -1533,7 +1839,8 @@ def family_bar_due(closed: pd.DataFrame, sig_hour: int) -> pd.Timestamp | None:
 
 def family_signal_step(closed: pd.DataFrame, last_bar: pd.Timestamp, *, last_signal_bar: object,
                        want_state: object, side: int, family_fn: Any,
-                       day_states_fn: Any, call_params: dict | None = None) -> FamilyStep:
+                       day_states_fn: Any, call_params: dict | None = None,
+                       signal_bars: pd.DataFrame | None = None) -> FamilyStep:
     """The replay-faithful signal decision for one family sleeve at its signal bar.
 
     FAITHFUL TO THE REPLAY OR NOT AT ALL: the signal comes from the SAME family function the
@@ -1553,6 +1860,32 @@ def family_signal_step(closed: pd.DataFrame, last_bar: pd.Timestamp, *, last_sig
              keyword side. `mt5desk.family_call` owns both shapes so this module and
              `shadow_forward` cannot drift; an EMPTY dict still selects this shape, and is the
              correct call for a price-only orthogonal family rather than a missing one.
+
+    `signal_bars` IS WHY THE FAMILY LANE COULD NEVER TRADE, and it is worth the paragraph.
+
+    Every family emits over `for i in range(n, len(d) - 1)`. The `- 1` is a BACKTEST convention:
+    the engine fills at the OPEN OF BAR i+1, so a signal at the last bar of the frame would have
+    no bar to fill on. The family therefore CANNOT emit on the final bar it is handed -- not
+    "usually does not", cannot.
+
+    The gateway handed it `closed` (the forming bar dropped) and then kept only signals whose
+    time equals `closed.index[-1]` -- the exact bar the family is structurally incapable of
+    emitting on. The filter matched nothing on every pass of every sleeve since the lane was
+    written. MEASURED 2026-09-15 across the 32 live forex family sleeves: given `closed`, ZERO
+    emitted on the last closed bar; given the frame WITH the forming bar appended, FOUR did, on
+    that same tick. Not one forex family order had ever been sent, and the log said only "no
+    signal on this bar", which was true and entirely misleading.
+
+    So the caller may pass `signal_bars` -- the frame INCLUDING the forming bar -- while
+    `last_bar` stays the last CLOSED bar. The family's loop bound can then reach `last_bar`, and
+    it still reads only closed data: these families index `i` and `i-1` and never `i+1`, so the
+    appended bar extends the RANGE without ever being read as a value. Live, the fill that the
+    backtest's bar i+1 stands for is the market order this pass is about to send, which is the
+    same contract the engine documents.
+
+    It defaults to None, and None means `closed` -- so `shadow_forward` and every hunt16 caller
+    resolve to the byte-identical call they have always made, and the forward clocks that
+    certified these cells are not re-pointed by this fix.
     """
     if last_signal_bar == str(last_bar):
         return FamilyStep(mark=False)                          # this bar already considered
@@ -1562,8 +1895,9 @@ def family_signal_step(closed: pd.DataFrame, last_bar: pd.Timestamp, *, last_sig
             return FamilyStep(mark=True, note=f"no trade: day state {got} != {want_state}")
     try:
         from mt5desk.family_call import hunt16_signals, signals
-        raw = (hunt16_signals(family_fn, closed, side) if call_params is None
-               else signals(family_fn, closed, side=side, params=call_params))
+        bars = closed if signal_bars is None else signal_bars
+        raw = (hunt16_signals(family_fn, bars, side) if call_params is None
+               else signals(family_fn, bars, side=side, params=call_params))
         sigs = [g for g in raw if pd.Timestamp(g.time) == last_bar]
     except Exception as exc:
         return FamilyStep(mark=False,
