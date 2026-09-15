@@ -1,0 +1,270 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "QuantShare - Trading Software for Stock, Forex and Futures Traders",
+  "url": "http://www.quantshare.com/index.php?option=threads",
+  "published": "2026-09-15T03:45:33+00:00",
+  "symbols": [
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "flow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [
+   "http://www.quantshare.com/title-2222-global-script-for-how-to-export-in-metastock-format-in-ascii-layout"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "0c438a828da8c52e9465",
+  "host": "www.quantshare.com",
+  "claims": [
+   {
+    "claim": "I'm currently using AMM to set the number of shares to buy/sell using the close price of the previous .",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "buy",
+     "sell"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "7d993836f23b"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "QuantShare - Trading Software for Stock, Forex and Futures Traders",
+  "url": "http://www.quantshare.com/index.php?option=partners",
+  "published": "2026-09-15T03:45:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a5f5c8d2c9d365fd1acf",
+  "host": "www.quantshare.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "60% of the time, it works every time. &#8211; Quantum Financier",
+  "url": "https://quantumfinancier.wordpress.com/2018/02/07/60-of-the-time-it-works-every-time/",
+  "published": "2026-09-15T03:46:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "mean_reversion",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d79fa9ff428f68601888",
+  "host": "quantumfinancier.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Give me good data, or give me death &#8211; Quantum Financier",
+  "url": "https://quantumfinancier.wordpress.com/2016/01/10/give-me-good-data-or-give-me-death/",
+  "published": "2026-09-15T03:46:12+00:00",
+  "symbols": [
+   "USDCAD",
+   "USDJPY"
+  ],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "82727d7873254144dac3",
+  "host": "quantumfinancier.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "99 Problems But A Backtest Ain&#8217;t One &#8211; Quantum Financier",
+  "url": "https://quantumfinancier.wordpress.com/2015/03/23/99-problems-but-a-backtest-aint-one/",
+  "published": "2026-09-15T03:46:14+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b9a8eaaa8a54b6b4223c",
+  "host": "quantumfinancier.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Ensemble Building 101 &#8211; Quantum Financier",
+  "url": "https://quantumfinancier.wordpress.com/2011/07/01/ensemble-building-101/",
+  "published": "2026-09-15T03:46:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c9dd35d1f07deac874a9",
+  "host": "quantumfinancier.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantum Financier &#8211; Page 2 &#8211; On algorithmic trading",
+  "url": "https://quantumfinancier.wordpress.com/page/2/",
+  "published": "2026-09-15T03:46:22+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M",
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b8ecf7fb1de318e04887",
+  "host": "quantumfinancier.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantum Financier &#8211; Page 6 &#8211; On algorithmic trading",
+  "url": "https://quantumfinancier.wordpress.com/page/6/",
+  "published": "2026-09-15T03:46:24+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "inventory"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f3838b015d2df502d4e9",
+  "host": "quantumfinancier.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "June 2018 &#8211; Quantum Financier",
+  "url": "https://quantumfinancier.wordpress.com/2018/06/",
+  "published": "2026-09-15T03:46:26+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "night_session",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "865aab12e9bc0417a23c",
+  "host": "quantumfinancier.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "February 2018 &#8211; Quantum Financier",
+  "url": "https://quantumfinancier.wordpress.com/2018/02/",
+  "published": "2026-09-15T03:46:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "mean_reversion",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c5316c037b9550ef441f",
+  "host": "quantumfinancier.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]
