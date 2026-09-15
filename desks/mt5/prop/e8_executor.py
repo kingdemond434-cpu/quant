@@ -415,7 +415,20 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None) -> dict
             doc["sleeves"].append(row)
             continue
         try:
-            signals = func(closed, **params) if params else func(closed)
+            # THE FAMILY IS GIVEN THE FRAME *INCLUDING* THE FORMING BAR, AND JUDGED ON THE LAST
+            # CLOSED ONE. Every family emits over `for i in range(n, len(d) - 1)`: the `- 1` is a
+            # backtest convention, because the engine fills at the open of bar i+1, so the family
+            # CANNOT emit on the final bar of whatever frame it is handed. Passing `closed` and
+            # then keeping only signals whose time equals `closed.index[-1]` asks for the one bar
+            # it is structurally incapable of producing -- the filter matches nothing, on every
+            # sleeve, on every pass, forever. That is the same defect the MT5 gateway carried
+            # (see `family_signal_step`'s `signal_bars`), and it is why this lane reported
+            # NO_SIGNAL for all 18 sleeves while the families were emitting normally.
+            #
+            # The appended bar extends the RANGE and is never read as a value: these families
+            # index i and i-1, never i+1. Live, the fill that the backtest's bar i+1 stands for
+            # is the market order this pass is about to send.
+            signals = func(frame, **params) if params else func(frame)
         except Exception as exc:
             row["status"] = "SIGNAL_ERROR"
             row["why"] = f"{type(exc).__name__}: {str(exc)[:140]}"

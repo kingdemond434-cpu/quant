@@ -1839,7 +1839,8 @@ def family_bar_due(closed: pd.DataFrame, sig_hour: int) -> pd.Timestamp | None:
 
 def family_signal_step(closed: pd.DataFrame, last_bar: pd.Timestamp, *, last_signal_bar: object,
                        want_state: object, side: int, family_fn: Any,
-                       day_states_fn: Any, call_params: dict | None = None) -> FamilyStep:
+                       day_states_fn: Any, call_params: dict | None = None,
+                       signal_bars: pd.DataFrame | None = None) -> FamilyStep:
     """The replay-faithful signal decision for one family sleeve at its signal bar.
 
     FAITHFUL TO THE REPLAY OR NOT AT ALL: the signal comes from the SAME family function the
@@ -1859,6 +1860,32 @@ def family_signal_step(closed: pd.DataFrame, last_bar: pd.Timestamp, *, last_sig
              keyword side. `mt5desk.family_call` owns both shapes so this module and
              `shadow_forward` cannot drift; an EMPTY dict still selects this shape, and is the
              correct call for a price-only orthogonal family rather than a missing one.
+
+    `signal_bars` IS WHY THE FAMILY LANE COULD NEVER TRADE, and it is worth the paragraph.
+
+    Every family emits over `for i in range(n, len(d) - 1)`. The `- 1` is a BACKTEST convention:
+    the engine fills at the OPEN OF BAR i+1, so a signal at the last bar of the frame would have
+    no bar to fill on. The family therefore CANNOT emit on the final bar it is handed -- not
+    "usually does not", cannot.
+
+    The gateway handed it `closed` (the forming bar dropped) and then kept only signals whose
+    time equals `closed.index[-1]` -- the exact bar the family is structurally incapable of
+    emitting on. The filter matched nothing on every pass of every sleeve since the lane was
+    written. MEASURED 2026-09-15 across the 32 live forex family sleeves: given `closed`, ZERO
+    emitted on the last closed bar; given the frame WITH the forming bar appended, FOUR did, on
+    that same tick. Not one forex family order had ever been sent, and the log said only "no
+    signal on this bar", which was true and entirely misleading.
+
+    So the caller may pass `signal_bars` -- the frame INCLUDING the forming bar -- while
+    `last_bar` stays the last CLOSED bar. The family's loop bound can then reach `last_bar`, and
+    it still reads only closed data: these families index `i` and `i-1` and never `i+1`, so the
+    appended bar extends the RANGE without ever being read as a value. Live, the fill that the
+    backtest's bar i+1 stands for is the market order this pass is about to send, which is the
+    same contract the engine documents.
+
+    It defaults to None, and None means `closed` -- so `shadow_forward` and every hunt16 caller
+    resolve to the byte-identical call they have always made, and the forward clocks that
+    certified these cells are not re-pointed by this fix.
     """
     if last_signal_bar == str(last_bar):
         return FamilyStep(mark=False)                          # this bar already considered
@@ -1868,8 +1895,9 @@ def family_signal_step(closed: pd.DataFrame, last_bar: pd.Timestamp, *, last_sig
             return FamilyStep(mark=True, note=f"no trade: day state {got} != {want_state}")
     try:
         from mt5desk.family_call import hunt16_signals, signals
-        raw = (hunt16_signals(family_fn, closed, side) if call_params is None
-               else signals(family_fn, closed, side=side, params=call_params))
+        bars = closed if signal_bars is None else signal_bars
+        raw = (hunt16_signals(family_fn, bars, side) if call_params is None
+               else signals(family_fn, bars, side=side, params=call_params))
         sigs = [g for g in raw if pd.Timestamp(g.time) == last_bar]
     except Exception as exc:
         return FamilyStep(mark=False,

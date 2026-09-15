@@ -49,7 +49,31 @@ vocabulary. Do not decide something the desk already decided.
   check. One-time: `desks\mt5\scripts\install_adopt_release_task.ps1` registers it AND runs the
   first adoption immediately (re-running the whole installer on a live box has failed with
   "Access is denied" on the S4U principals; this touches one task).
-- **Box memory: the TRADING box has 96 GB. The 8 GB reading was a different machine.**
+- **THE TRADING BOX THIS TREE RUNS ON HAS 8 GB (re-measured 2026-09-15). The 96 GB note below
+  is about a machine that is no longer the one trading, and it is left in place only so the
+  next session recognises it rather than trusting it.** Measured on the box running the gateway
+  today: hostname `VMI3500897`, QEMU VM, IP `169.58.159.142`, ONE 8 GB DIMM.
+  `Win32_ComputerSystem.TotalPhysicalMemory` = 7.99 GB, `Win32_OperatingSystem` = 8,186 MB
+  visible, and the desk's own `stall_watch.json` agrees: `memory.total_phys_mb: 8186`. The
+  96 GB box in the note below is the Contabo machine at `62.171.172.249`; this is a different
+  host, so a floor sized for 96 GB is sized for a machine the code is not on.
+
+  THE IRONY IS THE LESSON, and it is why the old text stays visible. The note below ends with
+  "NEVER SIZE A FLOOR OFF A CLAIM, AND NEVER OFF THE OTHER BOX EITHER -- measure the machine the
+  code is running on", and then became exactly that claim for whoever read it next. A measured
+  fact in a document has a shelf life; the RULE does not. Re-measure before you size anything:
+  `Get-CimInstance Win32_OperatingSystem` and `stall_watch.json` both answer in one call, and
+  they agreed with each other and disagreed with this file.
+
+  WHAT IT COSTS AT 8 GB, measured the same day: `external_gauntlet` declares a ~1200 MB need and
+  STOOD DOWN twice with 239 MB and 259 MB available after waiting 12 minutes, with 14 python
+  processes resident. `miner_candidate_compiler` is safe because its cap is DERIVED from live
+  free memory and floors at 1,000,000 -- it reads 1,000,000 here, which is the floor doing its
+  job, not a coincidence. Anything that hard-codes a budget off the 96 GB figure will thrash the
+  box that holds the live terminal.
+
+- **(SUPERSEDED, KEPT AS THE CAUTIONARY CASE) Box memory: the TRADING box has 96 GB. The 8 GB
+  reading was a different machine.**
   Re-measured 2026-09-12 on the Contabo trading box (62.171.172.249) from the two sources this
   file already names: `stall_watch.json` publishes `memory.total_phys_mb: 98298` with
   `free_phys_mb: 8118`, and `Win32_OperatingSystem` reports **98,298 MB total / 59,364 MB free**.
