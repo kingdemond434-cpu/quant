@@ -1,0 +1,15 @@
+[
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "Spatially-Indexed Longitudinal Distributional Outcome Regression for Environmental Monitoring",
+    "summary": "Characterizing longitudinal changes in region-specific distribution of environmental exposures, such as total nitrate (TNO$_3$) concentrations, is critical for understanding localized ecological risks",
+    "url": "https://arxiv.org/abs/2609.15961v1",
+    "published": "2026-09-14T17:52:16Z",
+    "trading_terms": [
+      "risk"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  }
+]
