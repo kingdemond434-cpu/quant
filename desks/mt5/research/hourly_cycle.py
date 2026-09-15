@@ -1135,6 +1135,28 @@ def asia_plane() -> dict:
     return _producer("asia_plane", "research/asia_plane.py")
 
 
+def sge_premium() -> dict:
+    """`sge_premium`: the Shanghai gold premium, which is physical Chinese demand priced directly.
+
+    BUILT, CORRECT, AND IDLE SINCE IT WAS WRITTEN (III.16, found 2026-09-15). The module declares
+    `data/lake/sge_daily.parquet` and that file did not exist anywhere in the tree -- no clock
+    ever ran it. On the first scheduled run it fetched a genuine SGE print and created the file.
+
+    WHY IT MATTERS MORE THAN ITS SIZE SUGGESTS. SGE day sessions are 09:00-11:30 and 13:30-15:30
+    Beijing, which is 01:00-03:30 and 05:30-07:30 UTC -- exactly the desk's ASIA window, where its
+    gold clocks fire and where its strongest measured edge lives. In those hours Shanghai, not
+    London, is the marginal physical venue for gold, and the desk had ZERO Chinese gold data
+    wired. That is a hypothesis about the best thing the book owns, not a finding, and it has been
+    untestable purely because nothing scheduled the fetch.
+
+    It FAILS CLOSED by construction: no genuine SGE print means UNAVAILABLE, never an
+    interpolation and never a proxy called SGE. The premium needs overlapping days and the rate
+    leg publishes with a lag, so the series grows forward from the wiring date.
+    """
+    return _producer("sge_premium", "research/fetch_sge_premium.py")
+
+
+
 
 
 def source_routes() -> dict:
@@ -2190,6 +2212,7 @@ def main() -> None:
     c2e = _costed("cost_to_edge", cost_to_edge)
     swr = _costed("swap_rejudge", swap_rejudge)
     asp = _costed("asia_plane", asia_plane)
+    sge = _costed("sge_premium", sge_premium)
     srt = _costed("source_routes", source_routes)
     spa = _costed("strategy_paths", strategy_paths)
     wse = _costed("weak_signals", weak_signal_ensembles)
@@ -2373,6 +2396,7 @@ def main() -> None:
                     "cost_to_edge": c2e,
                     "swap_rejudge": swr,
                     "asia_plane": asp,
+                    "sge_premium": sge,
                     "source_routes": srt,
                     "strategy_paths": spa,
                     "weak_signals": wse,

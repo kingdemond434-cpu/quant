@@ -30,6 +30,11 @@ INTEL = _DESK / "data" / "intelligence"
 
 #: Independent trades a cell needs before its mean is a number rather than an anecdote.
 MIN_TRADES = 30
+#: How close the EXIT must be to a severe artifact hour for the artifact to be judged capable of
+#: dominating the trade's return. The mechanism being refused is a short trade finishing beside a
+#: marked bar -- the measured case was entry 22:00, exit at the 23:00 close, one bar. Six bars is
+#: generous for that shape and still frees the multi-day holds this rule was silently vetoing.
+SEVERE_WINDOW_BARS = 6
 #: Deflated-t bar for PROPOSING. A proposer's threshold, not a gate.
 PROPOSE_T = 2.0
 
@@ -196,7 +201,28 @@ def screen(d: pd.DataFrame, signals: Sequence[Any], cost: float,
         exit_ = min(entry + max(1, int(s.ttl_bars)), len(c) - 1)
         severe = {h for h, t in (unfillable or {}).items()
                   if (t is not None and math.isfinite(float(t)) and abs(float(t)) >= SEVERE_T)}
-        if severe and any(int(hours[k]) in severe for k in range(entry + 1, exit_ + 1)):
+        # ...BUT ONLY WHERE THE ARTIFACT CAN ACTUALLY BE HARVESTED, AND THE WINDOW RULE ABOVE
+        # WAS VETOING EVERY MULTI-DAY CELL ON THIS DESK (measured 2026-09-15).
+        #
+        # The mechanism the paragraph above describes is a SHORT trade finishing beside a marked
+        # bar: entered 22:00, exited at the 23:00 close, booking the elevated close before the
+        # 00:00 mark. That is a one- or two-bar shape, and refusing it is right.
+        #
+        # Applied to the WHOLE window it stops being that rule. On H1, `artifact_hours` marks
+        # hour 0 severe on EURUSD at t = -11.19, and a 24-bar hold spans all twenty-four hours --
+        # so every trade contains hour 0 and EVERY cell is refused, unconditionally, whatever it
+        # does. `style_premia_sweep` measured 0 tests from 0 rows across 8 swept symbols with
+        # hundreds of valid non-overlapping trades per configuration, which is why
+        # `cross_sectional_fx` has sat at ZERO docket cells while two registered families point
+        # straight at it. A veto that admits nothing cannot be compared against anything, so it
+        # can never satisfy Growth Rule 1 -- it is not a filter, it is a blanket refusal.
+        #
+        # A position held for three days does not TRANSACT at hour 0; it passes through it and is
+        # marked at its own exit. So the refusal now follows the documented mechanism: a severe
+        # hour inside the window refuses the trade only when the exit is close enough to it for
+        # the artifact to dominate the return.
+        if severe and exit_ - entry <= SEVERE_WINDOW_BARS and any(
+                int(hours[k]) in severe for k in range(entry + 1, exit_ + 1)):
             refused += 1
             continue
         # EXITING ON THE REOPEN BAR IS TRADING THE REOPEN: the close of that bar is where the

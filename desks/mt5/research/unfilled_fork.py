@@ -6,7 +6,28 @@ actually two completely different failures with completely different fixes:
 
     TOUCHED      price reached the entry and no fill arrived.
                  A fill the desk SHOULD have had. Queue position, latency, broker stop-distance
-                 rules, or an expiry that fired before the trigger. An execution defect.
+                 rules, an expiry that fired before the trigger -- OR THE DEALER DECLINING IT.
+                 An execution defect.
+
+                 THAT FOURTH CAUSE WAS MISSING UNTIL 2026-09-15 AND IT IS WRITTEN DOWN IN THE
+                 BROKER'S OWN LEGALLY-REQUIRED DISCLOSURE. Fusion Markets is ASIC-regulated, so
+                 its Product Disclosure Statement is public, in English, and binding. It says:
+
+                     "Each Fusion Markets Product ... will be entered into by Fusion Markets AS
+                      PRINCIPAL. Fusion Markets makes a market in its products."
+                     "All Stop-loss Orders are subject to agreement by us ... Fusion Markets has
+                      absolute discretion whether to accept a Stop-loss Order."
+                     "Stop-loss Orders may not be executed at all."
+
+                 And its Hedging Counterparty Policy: "not all client transactions are hedged on
+                 a back-to-back basis so we may have a net position in markets that we offer."
+
+                 So the counterparty is the HOUSE, not an exchange, and stop acceptance is
+                 discretionary by contract. "Price touched and no fill arrived" therefore does
+                 NOT reduce to latency or queue position the way it would on an exchange -- and
+                 attributing it to those alone was inferring from 52 fill records what the
+                 broker had already published. The split below is still the right split; what
+                 changes is that TOUCHED names a fourth cause the desk cannot engineer away.
 
     NEVER_REACHED  price never got there before the bracket expired.
                  The order was never viable. The range did not break, or the level was chosen
@@ -170,8 +191,14 @@ def fork() -> dict[str, Any]:
         elif hit:
             rec.update({"verdict": "TOUCHED",
                         "why": ("price reached the entry and no fill arrived: queue position, "
-                                "latency, broker stop-distance, or an expiry that fired before "
-                                "the trigger. An EXECUTION defect.")})
+                                "latency, broker stop-distance, an expiry that fired before the "
+                                "trigger, OR the dealer declining it. Fusion's own PDS states it "
+                                "deals AS PRINCIPAL, makes a market, and has 'absolute discretion "
+                                "whether to accept a Stop-loss Order'; its hedging policy states "
+                                "not all client transactions are hedged back-to-back. An "
+                                "EXECUTION defect, and not all of it is the desk's to engineer "
+                                "away."),
+                        "counterparty": "principal/market-maker (Fusion PDS), not an exchange"})
         else:
             rec.update({"verdict": "NEVER_REACHED",
                         "why": ("price never reached the entry before expiry: the range did not "

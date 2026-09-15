@@ -180,6 +180,59 @@ def _daily_matrix(path: Path) -> pd.DataFrame | None:
     return df[~df.index.isna()]
 
 
+def _with_forward_columns(mat: pd.DataFrame | None,
+                          heats: Mapping[str, Any]) -> pd.DataFrame | None:
+    """Add a daily-R column for every funded sleeve the parquet cache does not carry.
+
+    THE BOOK WAS ONE SLEEVE WIDE AND NOTHING SAID SO (measured 2026-09-15). `daily_r.parquet` is
+    the allocator's BACKTEST evidence cache -- the gold book plus the hunt survivors, six columns
+    on this box. The allocator funds thirteen sleeves, and it funds them out of CERTIFIED and
+    FORWARD evidence, which that cache never held. The join matched exactly ONE name.
+
+    So every organ reading `load_book` -- the alpha search, the fitness terms, the tail study --
+    has been scoring candidates against a portfolio of one sleeve, and reporting it in a `source`
+    string nobody compared against the allocation. `alpha_evolution` proposing 1 cell from 72
+    tests was not a starved budget; it was a book with nothing in it to diversify against.
+
+    The forward ledgers are keyed EXACTLY as the allocator keys its book --
+    `ledger_AUDCHF_overnight_gap_decay_asia.json` -> `AUDCHF_overnight_gap_decay_asia` -- so this
+    is a join that always existed and was never made. Forward phase only, because allocation is a
+    forward decision and history cannot inform it (`portfolio_evidence.daily_series`).
+
+    A sleeve that STILL cannot be joined is named in `Book.source`, never dropped in silence.
+    """
+    want = {str(k) for k in heats}
+    have = {str(c) for c in mat.columns} if mat is not None else set()
+    if want <= have:
+        return mat
+    try:
+        import sys
+        for p in (str(DESK), str(DESK / "research")):
+            if p not in sys.path:
+                sys.path.insert(0, p)
+        from research.portfolio_evidence import (  # type: ignore[import-not-found]
+            daily_series,
+        )
+        series = daily_series()
+    except Exception:
+        return mat
+    add: dict[str, pd.Series] = {}
+    for name in want - have:
+        rows = series.get(name)
+        if isinstance(rows, dict) and rows:
+            add[name] = pd.Series({str(k): float(v) for k, v in rows.items()}, dtype=float)
+    if not add:
+        return mat
+    extra = pd.DataFrame(add)
+    extra.index = [str(x) for x in extra.index]
+    if mat is None or not len(mat.columns):
+        return extra
+    # OUTER, so a forward sleeve with a shorter history does not truncate the cached ones. The
+    # missing days are genuinely missing and `fillna(0.0)` at the call site reads them as flat,
+    # which is what a sleeve that did not exist yet actually did.
+    return mat.join(extra, how="outer")
+
+
 def load_book(*, allocation: Path = PF_ALLOCATION, daily: Path = SLEEVE_DAILY,
               sleeves_json: Path = SLEEVES_JSON) -> Book:
     """The current book, from the allocator's artifact, then the sleeve list, then empty.
@@ -193,14 +246,20 @@ def load_book(*, allocation: Path = PF_ALLOCATION, daily: Path = SLEEVE_DAILY,
     art = _read_json(allocation)
     heats = art.get("book") if isinstance(art.get("book"), dict) else {}
     mat = _daily_matrix(daily)
+    if heats:
+        mat = _with_forward_columns(mat, heats)
     if heats and mat is not None:
         cols = [c for c in mat.columns if str(c) in heats]
         if cols:
             w = pd.Series({c: float(heats[str(c)]) for c in cols}, dtype=float)
             book_daily = (mat[cols].fillna(0.0) * w).sum(axis=1)
+            missing = sorted(set(heats) - {str(c) for c in cols})
             return Book(daily=book_daily, sleeves=_sleeve_evidence(mat[cols], art),
                         hard_cap=float(art.get("hard_cap") or art.get("total_heat") or 0.35),
-                        source=f"{allocation.name} x {daily.name}: {len(cols)} funded sleeves")
+                        source=(f"{allocation.name} x {daily.name}+forward ledgers: "
+                                f"{len(cols)} of {len(heats)} funded sleeves"
+                                + (f"; UNJOINED {len(missing)}: {', '.join(missing[:4])}"
+                                   if missing else "")))
     if mat is not None and heats:
         return Book(hard_cap=float(art.get("hard_cap") or 0.35),
                     source=f"{allocation.name}: heats without a matching daily-R matrix")
