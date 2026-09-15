@@ -1,0 +1,667 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\u30b4\u30fc\u30eb\u30c9FX\u3092\u653b\u7565\u3059\u308b\u305f\u3081\u306e\u30d5\u30a1\u30f3\u30c0\u30e1\u30f3\u30bf\u30eb\u5206\u6790\u3068\u30c6\u30af\u30cb\u30ab\u30eb\u5206\u6790\uff5c\u3075\u3041\u3058\u304a",
+  "url": "https://note.com/porepore26/n/n36ea3e41e80b",
+  "published": "2026-09-15T06:51:46+00:00",
+  "symbols": [
+   "XAUUSD",
+   "UST10Y",
+   "XAGUSD",
+   "US30"
+  ],
+  "timeframes": [
+   "\u65e5\u8db3",
+   "\u9031\u8db3"
+  ],
+  "patterns": [
+   "correlation",
+   "policy",
+   "positioning",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "ja-JP",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "deca46dcaee77a2573e5",
+  "host": "note.com",
+  "claims": [
+   {
+    "claim": "\u6559\u79d1\u66f8\u901a\u308a\u3067\u8a00\u3046\u3068\u30b4\u30fc\u30eb\u30c9\u3068\u7c73\u91d1\u5229\u306f\u9006\u76f8\u95a2\u306e\u95a2\u4fc2\u3067\u3059\u304c\u30012024\u5e742\u6708\u9803\u304b\u3089\u9006\u76f8\u95a2\u3092\u7121\u8996\u3057\u3066\u3001\u30b4\u30fc\u30eb\u30c9\u304c\u6025\u9a30\u3057\u3066\u3044\u307e\u3059\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u30b4\u30fc\u30eb\u30c9",
+     "\u91d1",
+     "\u76f8\u95a2",
+     "\u9006\u76f8\u95a2"
+    ],
+    "direction": [
+     "\u6025\u9a30"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u30b4\u30fc\u30eb\u30c9"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e95e1c9dc5d6"
+   },
+   {
+    "claim": "MACD\u30a4\u30f3\u30b8\u30b1\u30fc\u30bf\u30fc\u65e5\u8db3\u304b\u3089\u3001\u8d64\u8272\u306e\u80cc\u666f\u3067\u3042\u308b\u671f\u9593(2024\u5e742\u6708\u982d\u9803)\u3067\u30de\u30a4\u30ca\u30b9\u570f\u3078\u306e\u30c7\u30c3\u30c9\u30af\u30ed\u30b9\u4ee5\u964d\u304b\u3089\u7c73\u56fd\u50b5\u58f2\u308a\u2192\u30b4\u30fc\u30eb\u30c9\u8cb7\u3044\u306b\u52d5\u3044\u3066\u3044\u308b\u3053\u3068\u304c\u5206\u304b\u308a\u307e\u3059\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u30b4\u30fc\u30eb\u30c9",
+     "macd",
+     "\u56fd\u50b5"
+    ],
+    "direction": [
+     "\u8cb7\u3044",
+     "\u58f2\u308a"
+    ],
+    "horizon": [
+     "\u5206",
+     "\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "\u30b4\u30fc\u30eb\u30c9",
+      "\u7c73\u56fd\u50b5"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "502853998ec9"
+   },
+   {
+    "claim": "XAU/USD\u9031\u8db3\u3068COT\u30ec\u30dd\u30fc\u30c8 2024\u5e74\u4ee5\u964d\u306e\u30b4\u30fc\u30eb\u30c9\u6295\u6a5f\u7b4b\u30dd\u30b8\u30b7\u30e7\u30f3-\u30d2\u30fc\u30c8\u30de\u30c3\u30d7 \u307e\u305f\u672a\u6c7a\u6e08\u5efa\u7389OI\uff08Open Interest\uff09\u306e\u63a8\u79fb\u3068\u51fa\u6765\u9ad8\u3092\u898b\u308b\u3053\u3068\u3067\u3001\u6295\u6a5f\u7b4b\u306e\u52d5\u5411\u306e\u5f62\u8de1\u3092\u8fbf\u308b\u3053\u3068\u304c\u3067\u304d\u307e\u3059\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u51fa\u6765\u9ad8",
+     "\u5efa\u7389",
+     "\u30b4\u30fc\u30eb\u30c9",
+     "cot"
+    ],
+    "direction": [
+     "\u6c7a\u6e08"
+    ],
+    "horizon": [
+     "\u9031",
+     "\u8db3"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "xau"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "b956e4cc95dd"
+   },
+   {
+    "claim": "\u6843\u82724/26~6/7 \u4fa1\u683c-\u51fa\u6765\u9ad8-OI\u306e\u5e02\u5834\u30bb\u30f3\u30c1\u30e1\u30f3\u30c8\u306e\u95a2\u4fc2\u6027 2024/6/7\u306e\u30d8\u30c3\u30c9\u30e9\u30a4\u30f3\u3067\u3001\u4e2d\u56fd\u4e2d\u592e\u9280\u884c\u306b\u3088\u308b\u91d1\u8cfc\u5165\u304c\u7d9a\u3044\u3066\u3044\u305f\u304c5\u6708\u306b\u8cfc\u5165\u304c\u306a\u304b\u3063\u305f\u3068\u306e\u5831\u9053\u304c\u3042\u308a\u3001\u6295\u6a5f\u7b4b\u8cb7\u3044\u30dd\u30b8\u30b7\u30e7\u30f3\u306e\u6c7a\u6e08\u304c\u5165\u308a\u4e0b\u843d\u306b\u8ee2\u3058\u305f\u601d\u308f\u308c\u307e\u3059\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u51fa\u6765\u9ad8",
+     "\u91d1",
+     "\u9280"
+    ],
+    "direction": [
+     "\u8cb7\u3044",
+     "\u4e0b\u843d"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "US30",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "\u30b4\u30fc\u30eb\u30c9",
+      "\u30b7\u30eb\u30d0\u30fc",
+      "\u30c0\u30a6",
+      "\u7c73\u56fd\u50b5"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "EURUSD",
+      "USDJPY",
+      "USDINR"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "\u70ba\u66ff\u4ecb\u5165: policy: BoJ / MoF intervention -> JPY",
+      "rbi: policy: RBI -> INR",
+      "\u91d1etf: fund flows: gold ETFs -> gold"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "bebd5935baa3"
+   },
+   {
+    "claim": "\u76f4\u8fd1\u306e\u5229\u4e0b\u3052\u671f\u9593\uff08\u7dd1\u30b7\u30e3\u30c9\u30fc\uff09\u3067\u306f\u3001\u30b4\u30fc\u30eb\u30c9\u306f\u4e0a\u6607\u3057\u3066\u3044\u308b\u3053\u3068\u304c\u5206\u304b\u308a\u307e\u3059\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u30b4\u30fc\u30eb\u30c9"
+    ],
+    "direction": [
+     "\u4e0a\u6607"
+    ],
+    "horizon": [
+     "\u5206"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u30b4\u30fc\u30eb\u30c9"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "99b24f9a38c0"
+   },
+   {
+    "claim": "\u5b63\u7bc0\u6027\u304b\u3089\u306f\u3001\u3056\u3063\u304f\u308a\u306811\u6708\u306f\u8abf\u6574\uff5e\u30ec\u30f3\u30b8\u3092\u523b\u3093\u3067\u304b\u308912\u6708\u304b\u3089\u5e74\u672b\u306b\u304b\u3051\u3066\u4e0a\u6607\u3059\u308b\u30d1\u30bf\u30fc\u30f3\u304c\u591a\u3044\u3067\u3059\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u5b63\u7bc0",
+     "\u5b63\u7bc0\u6027",
+     "\u30ec\u30f3\u30b8"
+    ],
+    "direction": [
+     "\u4e0a\u6607"
+    ],
+    "horizon": [
+     "\u6708",
+     "\u5e74\u672b"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "US30",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "\u30b4\u30fc\u30eb\u30c9",
+      "\u30b7\u30eb\u30d0\u30fc",
+      "\u30c0\u30a6",
+      "\u7c73\u56fd\u50b5"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "EURUSD",
+      "USDJPY",
+      "USDINR"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "\u70ba\u66ff\u4ecb\u5165: policy: BoJ / MoF intervention -> JPY",
+      "rbi: policy: RBI -> INR",
+      "\u91d1etf: fund flows: gold ETFs -> gold"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "09f1e95f71c0"
+   },
+   {
+    "claim": "\ud83d\udd34open interest \u3068 volume \u307e\u305f\u5f37\u3044\u30c8\u30ec\u30f3\u30c9\u304c\u51fa\u3066\u3044\u308b\u3068\u304d\u3001OI\u306f\u4e0a\u6607\u3057\u307e\u3059\u306e\u3067\u3001\u30b4\u30fc\u30eb\u30c9\u306eOI\u306b\u3082\u6ce8\u76ee\u3057\u3066\u3044\u307e\u3059\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u30c8\u30ec\u30f3\u30c9",
+     "\u30b4\u30fc\u30eb\u30c9",
+     "open interest",
+     "volume"
+    ],
+    "direction": [
+     "\u4e0a\u6607"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u30b4\u30fc\u30eb\u30c9"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "fb7741e90843"
+   },
+   {
+    "claim": "\u65e5\u8db3\u30ec\u30d9\u30eb\u3067OI\u4e0a\u6607\u3068\u51fa\u6765\u9ad8\u4e0a\u6607\u306b\u6ce8\u76ee\u3057\u3066\u307f\u305f\u3044\u3067\u3059\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u51fa\u6765\u9ad8"
+    ],
+    "direction": [
+     "\u4e0a\u6607"
+    ],
+    "horizon": [
+     "\u65e5",
+     "\u8db3"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "US30",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "\u30b4\u30fc\u30eb\u30c9",
+      "\u30b7\u30eb\u30d0\u30fc",
+      "\u30c0\u30a6",
+      "\u7c73\u56fd\u50b5"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "EURUSD",
+      "USDJPY",
+      "USDINR"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "\u70ba\u66ff\u4ecb\u5165: policy: BoJ / MoF intervention -> JPY",
+      "rbi: policy: RBI -> INR",
+      "\u91d1etf: fund flows: gold ETFs -> gold"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "34ee28aade92"
+   }
+  ],
+  "n_claims": 8
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u041c\u043e\u0441\u043a\u043e\u0432\u0441\u043a\u0430\u044f \u0431\u0438\u0440\u0436\u0430 \u043e\u043f\u0440\u0435\u0434\u0435\u043b\u0438\u043b\u0430 \u043b\u0443\u0447\u0448\u0438\u0445 \u0447\u0430\u0441\u0442\u043d\u044b\u0445 \u0438\u043d\u0432\u0435\u0441\u0442\u043e\u0440\u043e\u0432 2023 \u0433\u043e\u0434\u0430 | \u041d\u043e\u0432\u043e\u0441\u0442\u0438 \u0438 \u043f\u0440\u0435\u0441\u0441-\u0440\u0435\u043b\u0438\u0437\u044b",
+  "url": "https://www.moex.com/n66767",
+  "published": "2026-09-15T06:51:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.35,
+  "lang": "ru",
+  "endpoints": [
+   "https://fs.moex.com/f/19487/pobediteli-rozygryshey-lchi-2023.xlsx"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "7f6282b8ae095ab10dd9",
+  "host": "www.moex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u041c\u043e\u0441\u043a\u043e\u0432\u0441\u043a\u0430\u044f \u0411\u0438\u0440\u0436\u0430",
+  "url": "https://www.moex.com/s1007",
+  "published": "2026-09-15T06:51:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "ru",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9fa6cca52fd00eef510b",
+  "host": "www.moex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "5 \u0441\u0442\u0440\u0430\u0442\u0435\u0433\u0438\u0439 \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u043d\u0438\u044f \u0444\u044c\u044e\u0447\u0435\u0440\u0441\u043e\u0432 \u043d\u0430 \u0437\u043e\u043b\u043e\u0442\u043e",
+  "url": "https://smart-lab.ru/blog/800457.php",
+  "published": "2026-09-15T06:51:56+00:00",
+  "symbols": [
+   "USDTRY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "ru",
+  "endpoints": [
+   "https://smart-lab.ru/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "a8e899d461aff9ffa0be",
+  "host": "smart-lab.ru",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\ud83d\udcc8 \u0417\u041e\u041b\u041e\u0422\u041e (XAUUSD): \u0422\u0435\u0445\u043d\u0438\u0447\u0435\u0441\u043a\u0438\u0439 \u043e\u0431\u0437\u043e\u0440 \u043e\u0442\u0441\u043a\u043e\u043a\u0430 \u043f\u043e \u0434\u043d\u0435\u0432\u043d\u043e\u043c\u0443 \u0442\u0430\u0439\u043c\u0444\u0440\u0435\u0439\u043c\u0443 \u0438 \u0442\u043e\u0440\u0433\u043e\u0432\u0430\u044f \u0441\u0442\u0440\u0430\u0442\u0435\u0433\u0438\u044f",
+  "url": "https://smart-lab.ru/blog/tradesignals/1327973.php",
+  "published": "2026-09-15T06:51:57+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "momentum",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "ru",
+  "endpoints": [
+   "https://smart-lab.ru/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "b9df0c14807360f31bc3",
+  "host": "smart-lab.ru",
+  "claims": [
+   {
+    "claim": "\ud83d\udcc8 \u0417\u041e\u041b\u041e\u0422\u041e (XAUUSD): \u0422\u0435\u0445\u043d\u0438\u0447\u0435\u0441\u043a\u0438\u0439 \u043e\u0431\u0437\u043e\u0440 \u043e\u0442\u0441\u043a\u043e\u043a\u0430 \u043f\u043e \u0434\u043d\u0435\u0432\u043d\u043e\u043c\u0443 \u0442\u0430\u0439\u043c\u0444\u0440\u0435\u0439\u043c\u0443 \u0438 \u0442\u043e\u0440\u0433\u043e\u0432\u0430\u044f \u0441\u0442\u0440\u0430\u0442\u0435\u0433\u0438\u044f \u0410\u0432\u0442\u043e\u0440\u0438\u0437\u0430\u0446\u0438\u044f \u0417\u0430\u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0438\u0440\u043e\u0432\u0430\u0442\u044c\u0441\u044f \u041b\u043e\u0433\u0438\u043d \u0438\u043b\u0438 \u044d\u043b.",
+    "lang": "ru",
+    "quantities": [
+     "\u0437\u043e\u043b\u043e\u0442"
+    ],
+    "direction": [
+     "\u043e\u0442\u0441\u043a\u043e\u043a"
+    ],
+    "horizon": [
+     "\u0434\u043d\u0435\u0432\u043d",
+     "\u0442\u0430\u0439\u043c\u0444\u0440\u0435\u0439\u043c"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u0437\u043e\u043b\u043e\u0442"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "4f846d540505"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "+20% \u0432 \u0434\u0435\u043d\u044c. \u041f\u043e\u043d\u044f\u0442\u043d\u0430\u044f \u0442\u043e\u0440\u0433\u043e\u0432\u0430\u044f \u0441\u0442\u0440\u0430\u0442\u0435\u0433\u0438\u044f. \u041f\u0440\u0430\u0432\u0438\u043b\u0430 \u043e\u0442 \u0410 \u0434\u043e \u042f",
+  "url": "https://smart-lab.ru/blog/1175680.php",
+  "published": "2026-09-15T06:51:59+00:00",
+  "symbols": [
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "breakout",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "ru",
+  "endpoints": [
+   "https://smart-lab.ru/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "debefbe6f30234077516",
+  "host": "smart-lab.ru",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u042d\u043a\u0441\u043f\u0440\u0435\u0441\u0441-\u0430\u043d\u0430\u043b\u0438\u0437 \u0442\u043e\u0440\u0433\u043e\u0432\u043e\u0439 \u0441\u0438\u0441\u0442\u0435\u043c\u044b",
+  "url": "https://smart-lab.ru/blog/644777.php",
+  "published": "2026-09-15T06:52:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "ru",
+  "endpoints": [
+   "https://smart-lab.ru/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "447a593c601322c549a1",
+  "host": "smart-lab.ru",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmi - Wikipedia",
+  "url": "https://sq.wikipedia.org/w/index.php?title=Algoritmi&oldid=2941812",
+  "published": "2026-09-15T06:52:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sq",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3ef7bf256950590f3108",
+  "host": "sq.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmi - Wikipedia",
+  "url": "https://sq.wikipedia.org/w/index.php?title=Algoritmi&useparsoid=0",
+  "published": "2026-09-15T06:52:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sq",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2e113dd63525f9d8d6c8",
+  "host": "sq.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Krijues i librit - Wikipedia",
+  "url": "https://sq.wikipedia.org/w/index.php?title=Speciale:Libra&bookcmd=book_creator&referer=Algoritmi",
+  "published": "2026-09-15T06:52:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "sq",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f2ca4561f4c7a9d193dc",
+  "host": "sq.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmi - Wikipedia",
+  "url": "https://sq.wikipedia.org/w/index.php?title=Algoritmi&printable=yes",
+  "published": "2026-09-15T06:52:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sq",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "151d156ee9c7629bf9ea",
+  "host": "sq.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmi - Wikipedia",
+  "url": "https://sq.wikipedia.org/w/index.php?title=Algoritmi&veaction=edit&section=1",
+  "published": "2026-09-15T06:52:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sq",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "57bf71498566e7120a7c",
+  "host": "sq.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Shih burimin p\u00ebr Algoritmi - Wikipedia",
+  "url": "https://sq.wikipedia.org/w/index.php?title=Algoritmi&action=edit&section=1",
+  "published": "2026-09-15T06:52:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sq",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5056d869dfe2807538f2",
+  "host": "sq.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmi - Wikipedia",
+  "url": "https://sq.wikipedia.org/w/index.php?title=Algoritmi&veaction=edit&section=2",
+  "published": "2026-09-15T06:52:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sq",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3e8cda9e3fa6e22d155f",
+  "host": "sq.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritmi - Wikipedia",
+  "url": "https://sq.wikipedia.org/w/index.php?title=Algoritmi&veaction=edit&section=3",
+  "published": "2026-09-15T06:52:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "sq",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d35d6306ac57398ce97c",
+  "host": "sq.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ }
+]

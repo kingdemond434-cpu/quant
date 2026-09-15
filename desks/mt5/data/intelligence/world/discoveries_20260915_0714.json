@@ -1,0 +1,1352 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "DAX-Trading-Strategie \u2013 06.07.- 10.07.2026 - VTAD",
+  "url": "https://www.vtad.de/dax-trading-strategie-06-07-10-07-2026/",
+  "published": "2026-09-15T07:13:14+00:00",
+  "symbols": [
+   "US30",
+   "GER40",
+   "UKGILT"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "gap",
+   "mean_reversion",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "de",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5995ab81ab4bbe995eb1",
+  "host": "www.vtad.de",
+  "claims": [
+   {
+    "claim": "26 Markt\u00ad\u00fcber\u00adblick Der heu\u00adti\u00adge Han\u00addel ent\u00adwi\u00adckel\u00adte sich zu einem aus\u00adge\u00adpr\u00e4g\u00adten Short-Trend\u00adtag .",
+    "lang": "de",
+    "quantities": [
+     "trend"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "tag"
+    ],
+    "instruments": {
+     "analogues": [
+      "US30",
+      "GER40",
+      "UKGILT"
+     ],
+     "mentioned": [
+      "dow jones",
+      "dax",
+      "kes",
+      "gilt"
+     ],
+     "transfer_only": [
+      "kes->fx (KES not quoted)"
+     ],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "cca814a8bd4b"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "DAX-Trading 2026: CFD Compound-Modell - VTAD",
+  "url": "https://www.vtad.de/dax-trading-2026-cfd-compound-modell-10/",
+  "published": "2026-09-15T07:13:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "de",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "93e4caa66308572f35bd",
+  "host": "www.vtad.de",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "DAX-Trading-Strategie \u2013 13.07.- 17.07.2026 - VTAD",
+  "url": "https://www.vtad.de/dax-trading-strategie-13-07-17-07-2026/",
+  "published": "2026-09-15T07:13:19+00:00",
+  "symbols": [
+   "GER40",
+   "US30"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "gap",
+   "mean_reversion",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "de",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d41a72cec815b7fd6852",
+  "host": "www.vtad.de",
+  "claims": [
+   {
+    "claim": "Trotz die\u00adses schwa\u00adchen Starts zeig\u00adte der DAX eine bemer\u00adkens\u00adwer\u00adte Gegen\u00adbe\u00adwe\u00adgung und konn\u00adte sich bis zum Mit\u00adtag um rund 300 Punk\u00adte erholen.",
+    "lang": "de",
+    "quantities": [
+     "dax"
+    ],
+    "direction": [
+     "erhol"
+    ],
+    "horizon": [
+     "tag"
+    ],
+    "instruments": {
+     "analogues": [
+      "GER40"
+     ],
+     "mentioned": [
+      "dax"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "6876a95ac32e"
+   },
+   {
+    "claim": "Markt\u00adla\u00adge CFD Dow Jones: leicht im Minus DAX-CFD: leicht im Minus EMA 200 leicht \u00fcber dem Schlusskurs Han\u00addel der Zonen Short: 1.",
+    "lang": "de",
+    "quantities": [
+     "dax",
+     "schlusskurs"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "schluss"
+    ],
+    "instruments": {
+     "analogues": [
+      "US30",
+      "GER40"
+     ],
+     "mentioned": [
+      "dow jones",
+      "dax"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "4cfc35b76da1"
+   },
+   {
+    "claim": "Han\u00addels\u00adr\u00fcck\u00adblick DAX Han\u00addel am Morgen Am Vor\u00admit\u00adtag ergab sich an der ers\u00adten Long-Zone ein regel\u00adkon\u00adfor\u00admes Long-Set\u00adup.",
+    "lang": "de",
+    "quantities": [
+     "dax"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "tag"
+    ],
+    "instruments": {
+     "analogues": [
+      "GER40"
+     ],
+     "mentioned": [
+      "dax"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "8cc3b0db2138"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "DAX-Trading-Strategie \u2013 20.07.- 24.07.2026 - VTAD",
+  "url": "https://www.vtad.de/dax-trading-strategie-20-07-24-07-2026/",
+  "published": "2026-09-15T07:13:21+00:00",
+  "symbols": [
+   "GER40",
+   "US30"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "gap",
+   "mean_reversion",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "de",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c181ba66b1b6305221e3",
+  "host": "www.vtad.de",
+  "claims": [
+   {
+    "claim": "26 Markt\u00ad\u00fcber\u00adblick Trotz eines deut\u00adli\u00adchen Abw\u00e4rts-Gaps zum Han\u00addels\u00adbe\u00adginn zeig\u00adte der DAX am Vor\u00admit\u00adtag eine bemer\u00adkens\u00adwer\u00adte Erho\u00adlung und erreich\u00adte bis zum Mit\u00adtag ein kr\u00e4f\u00adti\u00adges Tages\u00adhoch.",
+    "lang": "de",
+    "quantities": [
+     "gap",
+     "dax"
+    ],
+    "direction": [
+     "abw\u00e4rts"
+    ],
+    "horizon": [
+     "tag"
+    ],
+    "instruments": {
+     "analogues": [
+      "GER40"
+     ],
+     "mentioned": [
+      "dax"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "6068e22c5f87"
+   },
+   {
+    "claim": "Posi\u00adti\u00adve ZEW-Kon\u00adjunk\u00adtur\u00ader\u00adwar\u00adtun\u00adgen f\u00fcr Deutsch\u00adland sowie ein freund\u00adli\u00adcher US-Markt sorg\u00adten heu\u00adte f\u00fcr zus\u00e4tz\u00adli\u00adchen R\u00fccken\u00adwind und f\u00fchr\u00adten letzt\u00adlich zu einem Trend\u00adtag auf der Long-Seite.",
+    "lang": "de",
+    "quantities": [
+     "trend"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "tag"
+    ],
+    "instruments": {
+     "analogues": [
+      "US30",
+      "GER40"
+     ],
+     "mentioned": [
+      "dow jones",
+      "dax",
+      "kes"
+     ],
+     "transfer_only": [
+      "kes->fx (KES not quoted)"
+     ],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "0a7607df8bdf"
+   },
+   {
+    "claim": "Die unmit\u00adtel\u00adbar nach der Umkehr\u00adker\u00adze erwar\u00adte\u00adte Kor\u00adrek\u00adtur setz\u00adte nicht ein.",
+    "lang": "de",
+    "quantities": [
+     "umkehr"
+    ],
+    "direction": [
+     "umkehr"
+    ],
+    "horizon": [
+     "bar"
+    ],
+    "instruments": {
+     "analogues": [
+      "US30",
+      "GER40"
+     ],
+     "mentioned": [
+      "dow jones",
+      "dax",
+      "kes"
+     ],
+     "transfer_only": [
+      "kes->fx (KES not quoted)"
+     ],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "0f6ff55cab61"
+   },
+   {
+    "claim": "Der DAX beweg\u00adte sich den gesam\u00adten Vor\u00admit\u00adtag inner\u00adhalb der defi\u00adnier\u00adten Tra\u00adding-Ran\u00adge zwi\u00adschen den Long- und Short-Zonen.",
+    "lang": "de",
+    "quantities": [
+     "dax"
+    ],
+    "direction": [
+     "long",
+     "short"
+    ],
+    "horizon": [
+     "tag"
+    ],
+    "instruments": {
+     "analogues": [
+      "GER40"
+     ],
+     "mentioned": [
+      "dax"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e3c1647ab22a"
+   },
+   {
+    "claim": "Gleich\u00adzei\u00adtig war erkenn\u00adbar, dass der Markt sei\u00adnen \u00fcber\u00adge\u00adord\u00adne\u00adten Auf\u00adw\u00e4rts\u00adtrend wei\u00adter\u00adhin fort\u00adsetz\u00adte und R\u00fcck\u00adset\u00adzer kon\u00adse\u00adquent zum Kauf genutzt wurden.",
+    "lang": "de",
+    "quantities": [
+     "trend"
+    ],
+    "direction": [
+     "kauf"
+    ],
+    "horizon": [
+     "bar"
+    ],
+    "instruments": {
+     "analogues": [
+      "US30",
+      "GER40"
+     ],
+     "mentioned": [
+      "dow jones",
+      "dax",
+      "kes"
+     ],
+     "transfer_only": [
+      "kes->fx (KES not quoted)"
+     ],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "07dd26f7e015"
+   },
+   {
+    "claim": "So auch heu\u00adte: Nach dem kr\u00e4f\u00adti\u00adgen Abw\u00e4rts\u00adtrend des Vor\u00adta\u00adges setz\u00adte bereits ab 9:00 Uhr ein dyna\u00admi\u00adscher Auf\u00adw\u00e4rts\u00adim\u00adpuls von rund 150 Punk\u00adten ein, der die Rich\u00adtung f\u00fcr den gesam\u00adten Han\u00addels\u00adtag vorgab.",
+    "lang": "de",
+    "quantities": [
+     "trend"
+    ],
+    "direction": [
+     "abw\u00e4rts"
+    ],
+    "horizon": [
+     "tag"
+    ],
+    "instruments": {
+     "analogues": [
+      "US30",
+      "GER40"
+     ],
+     "mentioned": [
+      "dow jones",
+      "dax",
+      "kes"
+     ],
+     "transfer_only": [
+      "kes->fx (KES not quoted)"
+     ],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "592439679c13"
+   }
+  ],
+  "n_claims": 6
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "DAX-Trading 2026: CFD Compound-Modell - VTAD",
+  "url": "https://www.vtad.de/dax-trading-2026-cfd-compound-modell-13/",
+  "published": "2026-09-15T07:13:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "de",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "38dae209af6d7caa2c34",
+  "host": "www.vtad.de",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "DAX-Trading-Strategie - VTAD",
+  "url": "https://www.vtad.de/fa/fdax-trading-strategie/",
+  "published": "2026-09-15T07:13:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "de",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "daadafc679a1a99f6fd7",
+  "host": "www.vtad.de",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "DAX-Trading 2026: CFD Compound-Modell - VTAD",
+  "url": "https://www.vtad.de/dax-trading-2026-cfd-compound-modell-12/",
+  "published": "2026-09-15T07:13:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "de",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "00e4e315bbf79323f2c6",
+  "host": "www.vtad.de",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "About - Trading System Lab",
+  "url": "https://tradingsystemlab.com/about/",
+  "published": "2026-09-15T07:13:30+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://tradingsystemlab.com/wp-content/plugins/download-after-email/css/download.css?ver=1773913844",
+   "https://tradingsystemlab.com/wp-content/plugins/download-after-email/css/all.css?ver=6.7.7"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "5ec4b2bdb6d09b4c28fc",
+  "host": "tradingsystemlab.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Products - Trading System Lab",
+  "url": "https://tradingsystemlab.com/product/",
+  "published": "2026-09-15T07:13:31+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "basis",
+   "flow",
+   "night_session",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://tradingsystemlab.com/wp-content/plugins/download-after-email/css/download.css?ver=1773913844",
+   "https://tradingsystemlab.com/wp-content/plugins/download-after-email/css/all.css?ver=6.7.7"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "3115db5812726963b456",
+  "host": "tradingsystemlab.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Consulting - Trading System Lab",
+  "url": "https://tradingsystemlab.com/consulting/",
+  "published": "2026-09-15T07:13:39+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://tradingsystemlab.com/wp-content/plugins/download-after-email/css/download.css?ver=1773913844",
+   "https://tradingsystemlab.com/wp-content/plugins/download-after-email/css/all.css?ver=6.7.7"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "3a467abe17e26f9ae580",
+  "host": "tradingsystemlab.com",
+  "claims": [
+   {
+    "claim": "Examples of consulting projects are: Automatically generate a trading system on the S&P 500 Futures contract using a set of patterns and indicators as well as related market data like TICK, TRIN, TIKI, Advancing Issues&Volume, Declining Issues&Volume, Put/Call ratio, VIX, etc.",
+    "lang": "en",
+    "quantities": [
+     "futures",
+     "volume",
+     "vix"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "tick"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "s&p 500"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "bf894f3e1b9f"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Help Center - Quantitative Finance Stack Exchange",
+  "url": "http://quant.stackexchange.com/help",
+  "published": "2026-09-15T07:13:42+00:00",
+  "symbols": [
+   "USDTRY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "545d3c92a85d40c50f0e",
+  "host": "quant.stackexchange.com",
+  "claims": [
+   {
+    "claim": "Help Center - Quantitative Finance Stack Exchange Skip to main content 184 communities for the curious Quantitative Finance is part of Stack Overflow\u2019s open communities: specialist spaces where curiosity is welcome, knowledge is shared freely, and the best answers rise to the top.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "rise"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a8236eab21ce"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Quantitative Finance Stack Exchange",
+  "url": "https://quant.stackexchange.com",
+  "published": "2026-09-15T07:13:44+00:00",
+  "symbols": [
+   "USDTRY"
+  ],
+  "timeframes": [
+   "D1"
+  ],
+  "patterns": [
+   "arbitrage",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "af755e2b47dfd98405a0",
+  "host": "quant.stackexchange.com",
+  "claims": [
+   {
+    "claim": "Quantitative Finance Stack Exchange Skip to main content 184 communities for the curious Quantitative Finance is part of Stack Overflow\u2019s open communities: specialist spaces where curiosity is welcome, knowledge is shared freely, and the best answers rise to the top.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "rise"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5a831c502973"
+   },
+   {
+    "claim": "Explore Stack Internal Explore our questions Ask Question options option-pricing volatility programming fixed-income black-scholes interest-rates equities implied-volatility stochastic-processes more tags Active Hot Week Month Score of 1 1 vote 2 answers 2 answers 230 views 230 views Should an uncertain volatility model option be priced higher or lower than a constant volatility model option?",
+    "lang": "en",
+    "quantities": [
+     "options",
+     "volatility"
+    ],
+    "direction": [
+     "higher",
+     "lower"
+    ],
+    "horizon": [
+     "week",
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "bf5d14a126f9"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Help Center - Quantitative Finance Stack Exchange",
+  "url": "https://quant.stackexchange.com/help",
+  "published": "2026-09-15T07:13:45+00:00",
+  "symbols": [
+   "USDTRY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8138248483d15e76b3fd",
+  "host": "quant.stackexchange.com",
+  "claims": [
+   {
+    "claim": "Help Center - Quantitative Finance Stack Exchange Skip to main content 184 communities for the curious Quantitative Finance is part of Stack Overflow\u2019s open communities: specialist spaces where curiosity is welcome, knowledge is shared freely, and the best answers rise to the top.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "rise"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a8236eab21ce"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Highly scored unanswered questions - Quantitative Finance Stack Exchange",
+  "url": "http://quant.stackexchange.com/unanswered",
+  "published": "2026-09-15T07:13:50+00:00",
+  "symbols": [
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3f1cad2dbc8d7c7f8482",
+  "host": "quant.stackexchange.com",
+  "claims": [
+   {
+    "claim": "Highly scored unanswered questions - Quantitative Finance Stack Exchange Skip to main content 184 communities for the curious Quantitative Finance is part of Stack Overflow\u2019s open communities: specialist spaces where curiosity is welcome, knowledge is shared freely, and the best answers rise to the top.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "rise"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8d9075289d8b"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Tags - Quantitative Finance Stack Exchange",
+  "url": "http://quant.stackexchange.com/tags",
+  "published": "2026-09-15T07:13:52+00:00",
+  "symbols": [
+   "USDTRY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "http://quant.stackexchange.com/questions/tagged/data?sort=newest&amp;days=365"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "a47de993ba75e09d02fd",
+  "host": "quant.stackexchange.com",
+  "claims": [
+   {
+    "claim": "Tags - Quantitative Finance Stack Exchange Skip to main content 184 communities for the curious Quantitative Finance is part of Stack Overflow\u2019s open communities: specialist spaces where curiosity is welcome, knowledge is shared freely, and the best answers rise to the top.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "rise"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "cb07972a90a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Users - Quantitative Finance Stack Exchange",
+  "url": "http://quant.stackexchange.com/users",
+  "published": "2026-09-15T07:13:53+00:00",
+  "symbols": [
+   "USDTRY"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9b99b334eb11768b7455",
+  "host": "quant.stackexchange.com",
+  "claims": [
+   {
+    "claim": "Users - Quantitative Finance Stack Exchange Skip to main content 184 communities for the curious Quantitative Finance is part of Stack Overflow\u2019s open communities: specialist spaces where curiosity is welcome, knowledge is shared freely, and the best answers rise to the top.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "rise"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5cb3b1552355"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Mengenal Konsep Algoritma Expectation\u2013maximization (EM) &ndash; Indowhiz",
+  "url": "https://web.archive.org/web/20220212111754/https://www.indowhiz.com/articles/id/mengenal-konsep-algoritma-expectation-maximization-em/",
+  "published": "2026-09-15T07:13:59+00:00",
+  "symbols": [],
+  "timeframes": [
+   "4H",
+   "HARIAN"
+  ],
+  "patterns": [
+   "gap",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "id-ID",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f2ccbc349ae4052c6d07",
+  "host": "web.archive.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Hours and Holidays | IEX Exchange | IEX",
+  "url": "https://www.iexexchange.io/resources/trading/trading-hours-holidays",
+  "published": "2026-09-15T07:14:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3c158d518bacfe5372d2",
+  "host": "www.iexexchange.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "IEX Exchange Fees | Fee Schedule | IEX Exchange | IEX",
+  "url": "https://www.iexexchange.io/resources/trading/fee-schedule",
+  "published": "2026-09-15T07:14:20+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6872e8ee85ce5dccb041",
+  "host": "www.iexexchange.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Implementing QuantLib",
+  "url": "https://web.archive.org/web/20150501075500/http://www.implementingquantlib.com/",
+  "published": "2026-09-15T07:14:25+00:00",
+  "symbols": [
+   "USDKRW",
+   "USDTRY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "correlation",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "25ed01c47d2c82125ceb",
+  "host": "web.archive.org",
+  "claims": [
+   {
+    "claim": "Its constructor takes and stores a handle to a short-rate model that will provide the lattice, the total number of time steps we want the lattice to have, and an optional reference date and day counter;",
+    "lang": "en",
+    "quantities": [
+     "rate"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDKRW",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "won",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "9ad53f127d10"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Dark Trading",
+  "url": "https://www.iexexchange.io/products/equities/dark-trading",
+  "published": "2026-09-15T07:14:27+00:00",
+  "symbols": [],
+  "timeframes": [
+   "H1",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e52822b81b2b6fe791ac",
+  "host": "www.iexexchange.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "IEX Square Edge | Markets Media Highlights Growth of End-of-Day Trading on IEX",
+  "url": "https://www.iexexchange.io/article/markets-media-highlights-growth-of-end-of-day-trading-on-iex",
+  "published": "2026-09-15T07:14:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6e6c846edce341994ef3",
+  "host": "www.iexexchange.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u0410\u041b\u0413\u041e\u0420\u0418\u0422\u041c | \u042d\u043d\u0446\u0438\u043a\u043b\u043e\u043f\u0435\u0434\u0438\u044f \u041a\u0440\u0443\u0433\u043e\u0441\u0432\u0435\u0442",
+  "url": "https://web.archive.org/web/2025/https://www.krugosvet.ru/enc/nauka_i_tehnika/matematika/ALGORITM.html",
+  "published": "2026-09-15T07:14:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "ru",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "de76962c523a91f4355f",
+  "host": "web.archive.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithmus der Woche - Informatikjahr 2006",
+  "url": "https://web.archive.org/web/20130826165501/http://www-i1.informatik.rwth-aachen.de/~algorithmus/",
+  "published": "2026-09-15T07:14:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ce4b5d1dd7e30bab3c77",
+  "host": "web.archive.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithm - Wikipedia",
+  "url": "https://ki.wikipedia.org/w/index.php?title=Algorithm&veaction=edit",
+  "published": "2026-09-15T07:14:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "ki",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "34c40d94636b43c581a2",
+  "host": "ki.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithm - Wikipedia",
+  "url": "https://ki.wikipedia.org/w/index.php?title=Algorithm&oldid=19382",
+  "published": "2026-09-15T07:14:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "ki",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "22e06db50c81ae818e46",
+  "host": "ki.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Re: [\u5fc3\u5f97] API\u7a0b\u5f0f\u4ea4\u6613\u5168\u6d41\u7a0b - \u770b\u677f Stock - \u6279\u8e22\u8e22\u5be6\u696d\u574a",
+  "url": "https://www.ptt.cc/bbs/Stock/M.1789435324.A.03D.html",
+  "published": "2026-09-15T07:14:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "flow",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e4e1fac6e2e499f7e54e",
+  "host": "www.ptt.cc",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Trade with AI. From your favorite chat | Dukascopy Bank",
+  "url": "https://ai.dukascopy.com/",
+  "published": "2026-09-15T07:14:50+00:00",
+  "symbols": [
+   "EURUSD",
+   "USDTRY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3095e311980c393285fe",
+  "host": "ai.dukascopy.com",
+  "claims": [
+   {
+    "claim": "Try asking: Buy 100K EUR/USD at market Dukascopy trading conditions Fast account opening Security of Swiss banking group Deposit protection up to 100,000 CHF Instruments 25 000+ Leverage up to 1 : 200 Live trading support 24/7 Years of experience 20+ FAQ Do I need a trading platform open?",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "buy"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "eur/usd",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "5e4f8549eeac"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "https://x.com/hashtag/Backtesting",
+  "url": "https://x.com/hashtag/Backtesting",
+  "published": "2026-09-15T07:14:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://x.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f700996049845903c47e",
+  "host": "x.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Radovan Vojtko - CEO of Quantpedia.com (@quantpedia) / X",
+  "url": "https://x.com/quantpedia",
+  "published": "2026-09-15T07:14:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://x.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "cec0c4ca516c1347e227",
+  "host": "x.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantifiable Edges (@QuantifiablEdgs) / X",
+  "url": "https://x.com/QuantifiablEdgs",
+  "published": "2026-09-15T07:14:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://x.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "2bfd3e0d9b843e7b8728",
+  "host": "x.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "https://x.com/i/jf/onboarding/web?mode=login&redirect_after_login=%2Fquantitativo1",
+  "url": "https://x.com/i/jf/onboarding/web?mode=login&redirect_after_login=%2Fquantitativo1",
+  "published": "2026-09-15T07:14:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://x.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ffbf1c781e7abbd8d12f",
+  "host": "x.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]
