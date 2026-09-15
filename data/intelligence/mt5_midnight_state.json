@@ -1,32 +1,31 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-09-15T13:52:25.407996+00:00",
+  "generated_at": "2026-09-15T17:11:01.700320+00:00",
   "scope": "MT5_FUSION_ONLY",
   "execution_authority": false,
   "universe": {
     "metadata_entities": 251,
     "h1_bar_files": 304,
-    "metadata_mtime": "2026-09-15T13:51:26.086662+00:00",
+    "metadata_mtime": "2026-09-15T17:09:37.309762+00:00",
     "newest_h1_mtime": "2026-09-10T22:28:41.305028+00:00"
   },
   "conversion": {
     "research_queue": {
-      "AWAITING_CANONICAL_GAUNTLET": 13,
+      "AWAITING_CANONICAL_GAUNTLET": 770,
       "BLOCKED_CANONICAL_DOCKET_MISSING": 115,
       "DONE": 10,
-      "GAUNTLET_REJECTED": 24156,
-      "QUEUED_CANONICAL_GAUNTLET": 757
+      "GAUNTLET_REJECTED": 24156
     },
     "universal_survivors": 58,
-    "shadow_sleeves": 518,
-    "shadow_observations": 850,
+    "shadow_sleeves": 595,
+    "shadow_observations": 863,
     "shadow_last_run": "2026-09-15"
   },
   "freshness": {
     "research_loop": "2026-09-04T03:31:09.889825+00:00",
-    "research_pipeline": "2026-09-15T11:52:20.760754+00:00",
-    "external_gauntlet": "2026-09-15T11:00:29+00:00",
-    "universal_gate": "2026-09-15T11:52:20.760754+00:00",
+    "research_pipeline": "2026-09-15T14:53:05.891490+00:00",
+    "external_gauntlet": "2026-09-15T14:23:00+00:00",
+    "universal_gate": "2026-09-15T14:53:05.891490+00:00",
     "allocation": "2026-09-04T03:30:52.359489+00:00",
     "markout": "2026-08-30T08:35:16+00:00",
     "markout_usable": false,
@@ -34,7 +33,7 @@
   },
   "capability_reuse": {
     "artifact": "data/intelligence/mt5_capability_reuse.json",
-    "generated_at": "2026-09-15T13:52:24.917233+00:00",
+    "generated_at": "2026-09-15T17:11:01.429644+00:00",
     "counts": {
       "DISPOSED_BLOCKED": 5,
       "DISPOSED_SUPERSEDED": 9,
