@@ -30,6 +30,11 @@ INTEL = _DESK / "data" / "intelligence"
 
 #: Independent trades a cell needs before its mean is a number rather than an anecdote.
 MIN_TRADES = 30
+#: How close the EXIT must be to a severe artifact hour for the artifact to be judged capable of
+#: dominating the trade's return. The mechanism being refused is a short trade finishing beside a
+#: marked bar -- the measured case was entry 22:00, exit at the 23:00 close, one bar. Six bars is
+#: generous for that shape and still frees the multi-day holds this rule was silently vetoing.
+SEVERE_WINDOW_BARS = 6
 #: Deflated-t bar for PROPOSING. A proposer's threshold, not a gate.
 PROPOSE_T = 2.0
 
@@ -196,7 +201,28 @@ def screen(d: pd.DataFrame, signals: Sequence[Any], cost: float,
         exit_ = min(entry + max(1, int(s.ttl_bars)), len(c) - 1)
         severe = {h for h, t in (unfillable or {}).items()
                   if (t is not None and math.isfinite(float(t)) and abs(float(t)) >= SEVERE_T)}
-        if severe and any(int(hours[k]) in severe for k in range(entry + 1, exit_ + 1)):
+        # ...BUT ONLY WHERE THE ARTIFACT CAN ACTUALLY BE HARVESTED, AND THE WINDOW RULE ABOVE
+        # WAS VETOING EVERY MULTI-DAY CELL ON THIS DESK (measured 2026-09-15).
+        #
+        # The mechanism the paragraph above describes is a SHORT trade finishing beside a marked
+        # bar: entered 22:00, exited at the 23:00 close, booking the elevated close before the
+        # 00:00 mark. That is a one- or two-bar shape, and refusing it is right.
+        #
+        # Applied to the WHOLE window it stops being that rule. On H1, `artifact_hours` marks
+        # hour 0 severe on EURUSD at t = -11.19, and a 24-bar hold spans all twenty-four hours --
+        # so every trade contains hour 0 and EVERY cell is refused, unconditionally, whatever it
+        # does. `style_premia_sweep` measured 0 tests from 0 rows across 8 swept symbols with
+        # hundreds of valid non-overlapping trades per configuration, which is why
+        # `cross_sectional_fx` has sat at ZERO docket cells while two registered families point
+        # straight at it. A veto that admits nothing cannot be compared against anything, so it
+        # can never satisfy Growth Rule 1 -- it is not a filter, it is a blanket refusal.
+        #
+        # A position held for three days does not TRANSACT at hour 0; it passes through it and is
+        # marked at its own exit. So the refusal now follows the documented mechanism: a severe
+        # hour inside the window refuses the trade only when the exit is close enough to it for
+        # the artifact to dominate the return.
+        if severe and exit_ - entry <= SEVERE_WINDOW_BARS and any(
+                int(hours[k]) in severe for k in range(entry + 1, exit_ + 1)):
             refused += 1
             continue
         # EXITING ON THE REOPEN BAR IS TRADING THE REOPEN: the close of that bar is where the
@@ -326,6 +352,57 @@ def _stamped(source: str, candidates: list[dict]) -> tuple[list[dict], list[dict
     return ok, refused
 
 
+def _lane_filtered(candidates: list[dict]) -> tuple[list[dict], list[dict]]:
+    """Refuse hypothesis-lane rows on instruments the TWO-LANE MANDATE does not hunt.
+
+    THE PRINCIPAL, 2026-09-06: single-name equities are traded on news, financial reports and
+    earnings reaction -- never hunted for statistical hypotheses. Routing was wired at
+    `run_external_backtest.route_by_lane`, which is the BACKTEST's door and not the DOCKET's.
+
+    MEASURED 2026-09-12 by the frontier map, which is why this exists: 10,927 of 21,582 docket
+    cells -- 51% -- sit on symbols `universe_policy.may_hypothesise` returns False for, they hold
+    ZERO certificates between them at a 0.046% upper bound, and 447 of them were first seen in
+    SEPTEMBER, i.e. after the mandate. The leak is live, not historical debt.
+
+    IT IS NOT A RISK REDUCTION AND THE STANDING ORDER DOES NOT COVER IT. Trial count is a SHARED
+    cost: the deflated-Sharpe charge and the program-level SPA/PBO tests divide one family-wise
+    error budget across every hypothesis tested, so each equity cell raises the bar every FX,
+    metals and energy cell has to clear. Refusing them at the door LOWERS the bar for the classes
+    the method actually suits. This makes the desk's research more aggressive, not less.
+
+    NOTHING HISTORICAL IS DELETED. The 10,480 rows already in the docket stay exactly where they
+    are and keep their verdicts; this closes the door, it does not rewrite the record.
+    """
+    try:
+        from research.universe_policy import may_hypothesise
+    except Exception:
+        # NO POLICY, NO FILTER. Refusing every row because the policy module is unimportable
+        # would take the whole intake dark over a missing import; absence of the rule is not the
+        # rule, and the rows are passed with nothing claimed about them (L1.28a).
+        return candidates, []
+    ok: list[dict] = []
+    refused: list[dict] = []
+    for c in candidates:
+        sym = str(c.get("symbol") or c.get("sym") or "").strip()
+        if not sym:
+            ok.append(c)
+            continue
+        try:
+            allowed = bool(may_hypothesise(sym))
+        except Exception:
+            allowed = True          # an unreadable verdict is not a refusal
+        if allowed:
+            ok.append(c)
+        else:
+            refused.append({"symbol": sym, "family": c.get("family"),
+                            "why": ("the two-lane mandate (2026-09-06): this instrument is "
+                                    "traded on news and earnings reaction, never hunted for "
+                                    "statistical hypotheses. Its cells spend a shared "
+                                    "family-wise error budget that every FX and metals "
+                                    "hypothesis then has to clear.")})
+    return ok, refused
+
+
 def donate(source: str, candidates: list[dict], tests_run: int) -> Path | None:
     """Write the discovery contract. A control run must NEVER call this.
 
@@ -336,8 +413,16 @@ def donate(source: str, candidates: list[dict], tests_run: int) -> Path | None:
     and on `donation_counts()` for the proposer's own report.
     """
     global LAST_DONATION
-    LAST_DONATION = {"source": source, "donated": 0, "refused_unstamped": 0, "refusals": []}
+    LAST_DONATION = {"source": source, "donated": 0, "refused_unstamped": 0,
+                     "refused_wrong_lane": 0, "refusals": [], "lane_refusals": []}
     if not candidates:
+        return None
+    candidates, lane_refused = _lane_filtered(candidates)
+    LAST_DONATION["refused_wrong_lane"] = len(lane_refused)
+    LAST_DONATION["lane_refusals"] = lane_refused[:20]
+    if not candidates:
+        # Every row was the wrong lane. Writing an empty contract would record a proposer that
+        # produced nothing, when it produced rows the mandate turned away.
         return None
     candidates, refused = _stamped(source, candidates)
     LAST_DONATION["refused_unstamped"] = len(refused)
@@ -366,7 +451,8 @@ def donate(source: str, candidates: list[dict], tests_run: int) -> Path | None:
                                 "generated_at": datetime.now(tz=UTC).isoformat(),
                                 "tests_run": tests_run, "discoveries": candidates,
                                 "counts": {"donated": len(candidates),
-                                           "refused_unstamped": len(refused)},
+                                           "refused_unstamped": len(refused),
+                                           "refused_wrong_lane": len(lane_refused)},
                                 "refusals": refused[:20],
                                 "rule": ("a candidate without a point-in-time stamp is refused "
                                          "here and counted, never written: absence of an "

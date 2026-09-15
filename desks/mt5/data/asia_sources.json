@@ -1,5 +1,5 @@
 {
- "note": "The ASIA HARD-DATA PLANE. `deep_forest_sources.json` holds the PRACTITIONER forest -- 502 grounds where people say what they believe, which are hypothesis generators and never evidence. This file holds the other half: official, exchange, physical and flow data, where the number itself is the observation. The two are kept apart on purpose. A forum post and an SHFE warehouse receipt are both public Chinese information and they earn completely different treatment: one mints a hypothesis, the other can settle one. Adding a source here means declaring an MT5 transmission path for it -- a dataset with no path into a tradable instrument is not collected, however interesting, because trial count is a shared cost (LAWS: TWO LANES) and an unroutable feed spends it for nothing.",
+ "note": "The ASIA HARD-DATA PLANE. `deep_forest_sources.json` holds the PRACTITIONER forest -- 502 grounds where people say what they believe, which are hypothesis generators and never evidence. This file holds the other half: official, exchange, physical and flow data, where the number itself is the observation. The two are kept apart on purpose. A forum post and an SHFE warehouse receipt are both public Chinese information and they earn completely different treatment: one mints a hypothesis, the other can settle one. Adding a source here means declaring an MT5 transmission path for it -- a dataset with no path into a tradable instrument is not collected, however interesting, because trial count is a shared cost (LAWS: TWO LANES) and an unroutable feed spends it for nothing. REGION ROUTING RULE (principal, 2026-09-15), which has now held for China, Japan, SE Asia, MENA and LatAm: mine a region for DATA when it PRODUCES OR TRANSITS something the desk trades; mine it for STRATEGIES only when it TRADES what the desk trades, legally, with mandatory disclosure. Japan is the only region scoring on both columns -- retail FX is legal, enormous, MT5-native, and TFX publishes exchange data. China, Chile, Peru, Brazil, Dubai and Turkey are PRODUCERS: take the data, never the strategies, because nothing there trades this desk's venue. Russia/CIS is the one corpus worth mining for mechanisms without a data claim, because it is the largest MT5 corpus in the world and its authors trade this same terminal. SE Asian and MENA retail crowds have no disclosure: mechanisms only, claims never.",
  "boundary": "PUBLIC OR LICENSED ONLY, and this is a hard line rather than a preference. Nothing here bypasses authentication, a paywall, a robots directive, a private group or an access control; nothing impersonates a user; no source is material non-public information. `access` declares what each needs, and a keyed or paid source that has no key configured reports UNCONFIGURED -- never a failed probe, and never a silent skip.",
  "planes": {
   "cn_hard": {
@@ -18,7 +18,7 @@
    "name": "Japan official and exchange",
    "region": "jp",
    "priority": 2,
-   "why": "JPY crosses and gold both price off Japanese rates and liquidity; BOJ's own time series carries ~200,000 items."
+   "why": "Japan is the LARGEST RETAIL FX MARKET IN THE WORLD, it is MT4/MT5-native, and it trades the desk's own instruments -- JPY crosses, XAUUSD, indices. That is the transferability test Chinese rebar strategies fail and Japan passes: data ABOUT THE DESK'S OWN INSTRUMENTS. JPY crosses and financing costs are what Japan is for."
   },
   "kr": {
    "name": "Korea exchange and macro",
@@ -91,6 +91,42 @@
    "region": "global",
    "priority": 2,
    "why": "freight is physical trade volume priced in real time, weeks upstream of the customs print it will eventually appear in."
+  },
+  "scheduled_flow": {
+   "name": "Scheduled mechanical flows",
+   "region": "global",
+   "priority": 1,
+   "why": "A flow that is ANNOUNCED IN ADVANCE, dated, and executed mechanically is the rarest thing on this desk: a conditioner that is KNOWN BEFORE IT HAPPENS. Almost every other family here infers a state from price and hopes the inference holds. These do not need to be predicted at all -- only sized. Expect small effects and take them: they are independent of every price-pattern family in the book, which is what breadth is."
+  },
+  "ru": {
+   "name": "Russia / CIS",
+   "region": "ru",
+   "priority": 2,
+   "why": "MetaQuotes is Russian-origin and the mql5.com community's centre of gravity is Russian-speaking, which makes this the LARGEST MT5 CORPUS IN THE WORLD -- and the only large one written by people trading the same terminal, the same brokers and the same instruments as this desk. `world_frontier._VOCAB` already carries the Russian vocabulary; nothing pointed at the ground."
+  },
+  "physical_gold": {
+   "name": "Gold physical chokepoints",
+   "region": "global",
+   "priority": 2,
+   "why": "The book is gold-heavy and sees none of the physical side. Swiss refineries sit between London and Asia, so Swiss customs is the transit itself rather than a proxy for it, and LBMA vault holdings are the London float the Shanghai premium is measured against."
+  },
+  "latam": {
+   "name": "South America -- the supply side",
+   "region": "latam",
+   "priority": 3,
+   "why": "the strategy corpus is thin and the ground is hostile to offshore FX, but South America PRODUCES what this desk trades. Chile is roughly a quarter of world copper; Peru is second; Brazil dominates coffee and sugar and ships iron ore. That is a data region, not a strategy region, and the routing rule says so explicitly."
+  },
+  "oceania": {
+   "name": "Oceania -- and the desk's own venue",
+   "region": "au",
+   "priority": 1,
+   "why": "THE ONLY REGION THAT SCORES ON BOTH COLUMNS OF THE ROUTING RULE, and the one this desk's own broker is licensed in. Australia produces iron ore, coal, LNG and gold; New Zealand's dairy auctions are a scheduled, pre-announced flow into a currency the book holds sleeves in; and AUD is the CHINA PROXY CURRENCY, which closes the loop on the whole China plane -- GACC iron ore imports into Australian export receipts into AUD, one chain with both ends free. Sydney's Monday open (Sunday 21:00 UTC) is also the start of the FX week and the reopen gap the desk has never studied."
+  },
+  "venue": {
+   "name": "The desk's own broker, by regulatory mandate",
+   "region": "au",
+   "priority": 1,
+   "why": "Fusion Markets is ASIC-regulated, so it is legally REQUIRED to publish how it fills this account. The desk has been inferring execution semantics from 52 fill records that its counterparty had already written down in English. This is the densest unread document about the desk's actual trading environment and it outranks every dataset in the registry."
   }
  },
  "sources": [
@@ -1303,6 +1339,523 @@
    ],
    "mechanism": "ACCELERATION of attention on a fixed keyword basket -- gold, buy gold, RMB, USD, copper price, steel, house price, rate cut -- not the level. Chinese household attention to gold is a retail bid with a lag",
    "boundary": "the published index product accessed as published; nothing that works around an access control"
+  },
+  {
+   "id": "tfx_swap_points",
+   "plane": "jp",
+   "name": "TFX Click365 swap points (exchange-published)",
+   "url": "https://www.tfx.co.jp/en/historical/fx/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "session close",
+    "publication_lag_days": 1
+   },
+   "targets": [
+    "USDJPY",
+    "EURJPY",
+    "GBPJPY",
+    "AUDJPY",
+    "CADJPY",
+    "CHFJPY",
+    "NZDJPY"
+   ],
+   "mechanism": "an INDEPENDENT, exchange-published financing reference for JPY pairs. The desk's engine charged zero swap until 2026-09-15 and now charges Fusion's own published rate -- which nothing checks. TFX is the second opinion: Fusion's swap against an exchange's, per pair, daily, free. The difference is the broker's financing markup, measured rather than assumed",
+   "why": "THE HIGHEST-VALUE SINGLE ENTRY ADDED TODAY. Financing is the cost that measured 0.246R against a +0.135R edge on GBPMXN -- cost exceeding the entire edge. A cost model with no external check is a cost model that can be wrong in one direction forever"
+  },
+  {
+   "id": "tfx_open_interest",
+   "plane": "jp",
+   "name": "TFX Click365 daily open interest and volume",
+   "url": "https://www.tfx.co.jp/en/retail/click365.html",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "session close",
+    "publication_lag_days": 1
+   },
+   "targets": [
+    "USDJPY",
+    "EURJPY",
+    "GBPJPY",
+    "AUDJPY"
+   ],
+   "mechanism": "Click365 is an EXCHANGE-TRADED RETAIL FX product, so its open interest is retail positioning with no Western equivalent at any price. Extremity and rate of change, never the level: a crowded retail book is a supply of stops"
+  },
+  {
+   "id": "mof_10day_trade",
+   "plane": "jp",
+   "name": "MOF Japan 10-day provisional trade statistics",
+   "url": "https://www.customs.go.jp/toukei/latest/index_e.htm",
+   "expect": "any",
+   "access": "public",
+   "cadence": "10-daily",
+   "pit": {
+    "event_time": "10-day period",
+    "publication_lag_days": 8
+   },
+   "targets": [
+    "USDJPY",
+    "EURJPY",
+    "AUDUSD"
+   ],
+   "mechanism": "THIRTY-SIX OBSERVATIONS A YEAR where every other country's trade print gives twelve. Three times the event density on the same economic series is three times the sample for an event-reaction study, from a free official source"
+  },
+  {
+   "id": "nse_option_chain",
+   "plane": "tw",
+   "name": "NSE India option chain with open interest",
+   "url": "https://www.nseindia.com/api/option-chain-indices",
+   "expect": "json",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "close",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "XAUUSD",
+    "EURUSD",
+    "USDJPY"
+   ],
+   "mechanism": "OI-AT-STRIKE as a METHOD, not as a signal about India. Offshore retail FX is illegal under FEMA so nothing here is tradable and nothing is meant to be: this is the cheapest free dataset anywhere for learning whether strike-level open interest conditions next-session behaviour AT ALL, before the desk spends attention on CME's FX and metals OI where it would actually trade it",
+   "boundary": "METHOD SOURCE ONLY. No Indian instrument is tradable on this account and none is targeted; the targets above are the MT5 instruments the METHOD would be carried to if it survives. Nothing here mints a cell claiming an Indian edge"
+  },
+  {
+   "id": "norges_fx_dailies",
+   "plane": "scheduled_flow",
+   "name": "Norges Bank NOK daily purchase amounts, PRE-ANNOUNCED for the following month",
+   "url": "https://www.norges-bank.no/en/topics/Statistics/Foreign-exchange-transactions/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly announcement, daily execution",
+   "pit": {
+    "event_time": "announced end of month for the WHOLE of the next month",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "USDNOK",
+    "EURNOK",
+    "CHFNOK",
+    "GBPNOK"
+   ],
+   "mechanism": "a KNOWN-IN-ADVANCE mechanical flow. Norges Bank publishes at each month end the daily NOK purchase amount for the following month and executes it as a daily net amount, explicitly prioritising transparency and predictability. The desk holds NOK sleeves and has never conditioned on it. The amounts are small against daily turnover so the effect should be small -- but it is known before it happens, which is what a conditioner needs and almost nothing else on this desk has",
+   "why": "THE SINGLE CLEANEST CONDITIONER ADDED TODAY. Every other family infers a state from price; this one is published on a calendar"
+  },
+  {
+   "id": "index_rebalance_calendar",
+   "plane": "scheduled_flow",
+   "name": "Index rebalance, futures roll and option expiry calendar",
+   "url": "https://www.cmegroup.com/tools-information/calendars.html",
+   "expect": "any",
+   "access": "public",
+   "cadence": "scheduled",
+   "pit": {
+    "event_time": "announced in advance",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "AUS200",
+    "HK50",
+    "XAUUSD",
+    "XTIUSD",
+    "EURUSD"
+   ],
+   "mechanism": "rebalances are announced before they execute, rolls and expiries are on a fixed calendar, and month-end fixing demand is a known clock. The flow is mechanical and the date is public: the research question is only its size and sign",
+   "why": "includes Japan's 31 March fiscal year-end, the largest single scheduled repatriation clock in the JPY complex"
+  },
+  {
+   "id": "riksbank_series",
+   "plane": "scheduled_flow",
+   "name": "Sveriges Riksbank rates and FX",
+   "url": "https://www.riksbank.se/en-gb/statistics/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "publication",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "EURSEK",
+    "USDSEK",
+    "CHFSEK"
+   ],
+   "mechanism": "the policy and FX-reserve series for a currency the book holds and has never researched"
+  },
+  {
+   "id": "nationalbanken_dkk",
+   "plane": "scheduled_flow",
+   "name": "Danmarks Nationalbank intervention and the EUR peg",
+   "url": "https://www.nationalbanken.dk/en/statistics",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 3
+   },
+   "targets": [
+    "CHFDKK",
+    "EURDKK",
+    "USDDKK"
+   ],
+   "mechanism": "DKK IS PEGGED TO THE EUR and managed far tighter than its ERM II band, so the intervention record is the peg's own stress gauge -- and CHFDKK is approximately CHFEUR wearing a different ticker, with a wider spread and worse financing. That is an orthogonality question about a LIVE SLEEVE, not a new hypothesis",
+   "why": "the desk's param-hash quota catches the same parameters on different symbols. It does NOT catch different symbols that are the same underlying, which is what a currency peg makes them"
+  },
+  {
+   "id": "banxico_series",
+   "plane": "scheduled_flow",
+   "name": "Banco de Mexico series",
+   "url": "https://www.banxico.org.mx/SieAPIRest/service/v1/",
+   "expect": "json",
+   "access": "key",
+   "key_env": "BANXICO_TOKEN",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "publication",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "USDMXN",
+    "GBPMXN"
+   ],
+   "mechanism": "policy rate and the FX commission's hedge programme for a currency carrying two live sleeves, one of which (GBPMXN) measured cost exceeding its entire edge"
+  },
+  {
+   "id": "sarb_series",
+   "plane": "scheduled_flow",
+   "name": "South African Reserve Bank series",
+   "url": "https://www.resbank.co.za/en/home/what-we-do/statistics",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 20
+   },
+   "targets": [
+    "USDZAR",
+    "EURZAR"
+   ],
+   "mechanism": "ZAR is a gold-linked currency and the book holds ZAR sleeves; SARB reserves and the policy rate are the two public series that move it"
+  },
+  {
+   "id": "mql5_ru_community",
+   "plane": "ru",
+   "name": "mql5.com Russian-language articles and forum",
+   "url": "https://www.mql5.com/ru/articles",
+   "expect": "any",
+   "access": "public",
+   "cadence": "weekly",
+   "targets": [
+    "EURUSD",
+    "GBPUSD",
+    "USDJPY",
+    "XAUUSD"
+   ],
+   "mechanism": "the largest MT5 corpus in the world, written by people trading the SAME terminal, the same broker class and the same instruments as this desk. An MQL5 expert advisor with stated parameters is an EXACT RECIPE, which is the one shape the compiler admits without prose guessing",
+   "why": "the transferability test every other foreign corpus fails: same venue, same platform, same instruments. A Chinese rebar strategy does not transfer; an MT5 EA on EURUSD is already in this desk's own execution universe"
+  },
+  {
+   "id": "smartlab_ru",
+   "plane": "ru",
+   "name": "smart-lab.ru algo and futures community",
+   "url": "https://smart-lab.ru/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "weekly",
+   "targets": [
+    "XAUUSD",
+    "XTIUSD",
+    "EURUSD"
+   ],
+   "mechanism": "the Russian algorithmic community, technically stronger than the SE Asian EA forums by a wide margin; mined for MECHANISMS, never for claimed performance"
+  },
+  {
+   "id": "cbr_series",
+   "plane": "ru",
+   "name": "Bank of Russia statistics",
+   "url": "https://www.cbr.ru/eng/statistics/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "publication",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "XAUUSD",
+    "XTIUSD"
+   ],
+   "mechanism": "official reserve and gold holdings from one of the larger central-bank gold buyers, and the energy complex it prices"
+  },
+  {
+   "id": "swiss_customs_gold",
+   "plane": "physical_gold",
+   "name": "Swiss customs monthly gold trade by counterparty",
+   "url": "https://www.gate.ezv.admin.ch/swissimpex/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 20
+   },
+   "targets": [
+    "XAUUSD",
+    "XAGUSD"
+   ],
+   "mechanism": "Swiss refineries sit physically between London and Asia, so the Swiss import and export lines ARE the transit rather than a proxy for it. Gold leaving Switzerland for China or India is the Shanghai premium's supply side, observed directly",
+   "why": "the missing half of the sge_benchmark channel: the premium says demand, this says whether the metal is actually moving to meet it"
+  },
+  {
+   "id": "lbma_vault",
+   "plane": "physical_gold",
+   "name": "LBMA vault holdings and the London fix",
+   "url": "https://www.lbma.org.uk/prices-and-data/lbma-vault-holdings-data",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "month end",
+    "publication_lag_days": 30
+   },
+   "targets": [
+    "XAUUSD",
+    "XAGUSD"
+   ],
+   "mechanism": "the London float the Shanghai premium is measured against. A falling vault against a rising premium is the physical squeeze both series are separately hinting at",
+   "limits": "a 30-day publication lag: this conditions a regime, never an entry"
+  },
+  {
+   "id": "cochilco_copper",
+   "plane": "latam",
+   "name": "Cochilco / Codelco copper production and exports",
+   "url": "https://www.cochilco.cl/Paginas/Estadisticas/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 30
+   },
+   "targets": [
+    "AUDUSD",
+    "XAGUSD"
+   ],
+   "mechanism": "Chile is roughly 25-28% of world copper supply, so Chilean production and export volume is the SUPPLY side of the same copper balance SHFE inventories read from the demand side. A supply shock and a demand shock move inventories identically and the price oppositely -- which is why one series cannot tell them apart",
+   "why": "the missing counterpart to shfe_warehouse. Together they separate a drawdown caused by Chinese buying from one caused by a Chilean mine outage"
+  },
+  {
+   "id": "minem_peru",
+   "plane": "latam",
+   "name": "MINEM Peru copper, silver and gold production",
+   "url": "https://www.gob.pe/minem",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 35
+   },
+   "targets": [
+    "XAGUSD",
+    "XAUUSD",
+    "AUDUSD"
+   ],
+   "mechanism": "the second-largest copper producer and a major silver source. Silver's supply is concentrated enough that a single country's production series is material to it, which is not true of gold"
+  },
+  {
+   "id": "conab_brazil",
+   "plane": "latam",
+   "name": "CONAB Brazilian crop estimates",
+   "url": "https://www.conab.gov.br/info-agro/safras",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "survey month",
+    "publication_lag_days": 10
+   },
+   "targets": [
+    "AUDUSD",
+    "USDCAD"
+   ],
+   "mechanism": "Brazil dominates coffee and sugar and is a major soybean and iron ore exporter; the crop estimate is the soft-commodity supply curve published on a schedule",
+   "limits": "Fusion's soft-commodity CFD coverage is thin, so this conditions the commodity currencies more reliably than it trades the softs themselves"
+  },
+  {
+   "id": "b3_investor_flow",
+   "plane": "latam",
+   "name": "B3 daily foreign investor flow and USDBRL futures OI",
+   "url": "https://www.b3.com.br/en_us/market-data-and-indices/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "close",
+    "publication_lag_days": 1
+   },
+   "targets": [
+    "USDMXN",
+    "USDZAR",
+    "AUDUSD"
+   ],
+   "mechanism": "foreign investor flow into the largest LatAm market is EM risk appetite measured directly, and the desk holds two MXN sleeves and two ZAR sleeves that price the same appetite"
+  },
+  {
+   "id": "fusion_pds",
+   "plane": "venue",
+   "name": "Fusion Markets Product Disclosure Statement",
+   "url": "https://fusionmarkets.com/static_images/V2_FM_PDS_VFSC_89bcbfeb60.pdf",
+   "expect": "binary",
+   "access": "public",
+   "cadence": "on change",
+   "pit": {
+    "event_time": "document version",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "EURUSD",
+    "XAUUSD",
+    "USDJPY",
+    "GBPUSD",
+    "AUDUSD"
+   ],
+   "mechanism": "READ 2026-09-15, 35 pages. It states outright that every product is entered into by Fusion AS PRINCIPAL and that Fusion MAKES A MARKET in its products; that all Stop-loss Orders are subject to agreement by Fusion, which has ABSOLUTE DISCRETION whether to accept one; and that Stop-loss Orders may not be executed at all. The counterparty is the house, not an exchange, and stop acceptance is discretionary by contract",
+   "why": "this changes the interpretation of the desk's own TOUCHED finding. unfilled_fork attributed every touched-but-unfilled order to queue position, latency or stop distance -- an exchange's vocabulary for a dealer's venue. Dealer discretion is a documented fourth cause and is now named in the verdict"
+  },
+  {
+   "id": "fusion_hedging_policy",
+   "plane": "venue",
+   "name": "Fusion Markets Hedging Counterparty Policy (ASIC)",
+   "url": "https://fusionmarkets.com.au/static_images/FM_ASIC_Hedging_Counterparty_Policy_September_2023_1_2_a0de1ce931.pdf",
+   "expect": "binary",
+   "access": "public",
+   "cadence": "on change",
+   "targets": [
+    "EURUSD",
+    "XAUUSD",
+    "AUDUSD"
+   ],
+   "mechanism": "READ 2026-09-15. 'Not all client transactions are hedged on a back-to-back basis so we may have a net position in markets that we offer.' Flow is INTERNALISED in part, with volume among the factors deciding whether a given order is hedged out",
+   "why": "if the broker internalises, the desk's counterparty is the house on that flow, which is the premise behind every execution-quality question it has been asking"
+  },
+  {
+   "id": "fusion_fsg_terms",
+   "plane": "venue",
+   "name": "Fusion Markets FSG and Financial Product Service Terms",
+   "url": "https://fusionmarkets.com/static_images/FM_ASIC_FSG_August_2024_c2582c33c3.pdf",
+   "expect": "binary",
+   "access": "public",
+   "cadence": "on change",
+   "targets": [
+    "EURUSD",
+    "XAUUSD"
+   ],
+   "mechanism": "whether Fusion acts as principal or agent, and the order acceptance, rejection and price-validity rules the 10015 rejections are judged against"
+  },
+  {
+   "id": "gdt_auction",
+   "plane": "oceania",
+   "name": "GlobalDairyTrade auction results",
+   "url": "https://www.globaldairytrade.info/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "fortnightly, on a published calendar",
+   "pit": {
+    "event_time": "auction close",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "NZDUSD",
+    "AUDNZD",
+    "NZDCAD"
+   ],
+   "mechanism": "dairy is roughly a quarter to a third of New Zealand's export receipts, and GDT is a DATED, SCHEDULED, PRE-ANNOUNCED auction with a published result. Same shape as the Norges Bank dailies: mechanical and calendared, so the research question is size and sign rather than prediction",
+   "why": "the desk holds AUDNZD and NZDCAD sleeves and has never conditioned on the single scheduled event that moves the currency"
+  },
+  {
+   "id": "rba_tables",
+   "plane": "oceania",
+   "name": "RBA statistical tables and FX operations",
+   "url": "https://www.rba.gov.au/statistics/tables/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "publication",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "AUDUSD",
+    "AUDNZD",
+    "AUDCHF",
+    "AUDCAD",
+    "AUDJPY"
+   ],
+   "mechanism": "the policy rate and FX operations behind the currency carrying the largest single share of this desk's sleeves"
+  },
+  {
+   "id": "rbnz_series",
+   "plane": "oceania",
+   "name": "RBNZ statistics",
+   "url": "https://www.rbnz.govt.nz/statistics",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "publication",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "NZDUSD",
+    "AUDNZD",
+    "NZDCAD"
+   ],
+   "mechanism": "the NZD side of the same pair the book trades against AUD"
+  },
+  {
+   "id": "abs_trade",
+   "plane": "oceania",
+   "name": "ABS Australian international trade",
+   "url": "https://www.abs.gov.au/statistics/economy/international-trade",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 30
+   },
+   "targets": [
+    "AUDUSD",
+    "AUDJPY",
+    "XAUUSD"
+   ],
+   "mechanism": "iron ore, coal, LNG and gold exports, overwhelmingly to China. This is the RECEIVING end of the chain china_customs measures from the buying end -- the same tonnage counted twice by two governments, which is a cross-check no single source provides"
+  },
+  {
+   "id": "sydney_week_open",
+   "plane": "oceania",
+   "name": "The Sunday reopen: Sydney starts the FX week",
+   "url": "https://www.asx.com.au/markets/trading-information/trading-hours",
+   "expect": "any",
+   "access": "public",
+   "cadence": "weekly",
+   "pit": {
+    "event_time": "Sunday 21:00 UTC",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "AUDUSD",
+    "AUDNZD",
+    "USDJPY",
+    "XAUUSD"
+   ],
+   "mechanism": "Monday 07:00 AEST is Sunday 21:00 UTC and it is the first price of the FX week, printed into a thin book that has absorbed two days of news. The weekend gap and its decay is a clock, not a pattern -- and the desk's Asia sleeves run through the Sydney/Tokyo overlap without ever conditioning on where the week started"
   }
  ],
  "miners": {
@@ -1323,7 +1876,7 @@
    "planes": [
     "jp"
    ],
-   "why": "BOJ, MOF and JPX, against the Japanese practitioner grounds the forest already holds"
+   "why": "Japan is the only Asian country where retail FX is legal, enormous, MT5-native, trades the desk's own instruments AND publishes structured exchange data. TFX swap points check the desk's own financing model; TFX open interest is retail positioning on pairs the book already holds. Both are data ABOUT THE DESK'S OWN INSTRUMENTS, which is the transferability test a Chinese rebar strategy fails."
   },
   "KR_INTELLIGENCE": {
    "planes": [
@@ -1371,6 +1924,42 @@
     "search"
    ],
    "why": "observation and attention. Weakest priors of anything here, so the highest bar and a residual-after-controls discipline"
+  },
+  "RU_CIS": {
+   "planes": [
+    "ru"
+   ],
+   "why": "the largest MT5 corpus in the world, on the same terminal and instruments this desk trades. The Russian vocabulary is already wired in world_frontier._VOCAB and nothing pointed at it."
+  },
+  "SCHEDULED_FLOW": {
+   "planes": [
+    "scheduled_flow"
+   ],
+   "why": "flows announced before they execute. The only conditioners on this desk that do not have to be predicted, only sized -- and independent of every price-pattern family in the book."
+  },
+  "PHYSICAL_GOLD": {
+   "planes": [
+    "physical_gold"
+   ],
+   "why": "the book is gold-heavy and sees none of the physical side: Swiss transit and the London float, against the Shanghai premium that is already wired."
+  },
+  "LATAM_SUPPLY": {
+   "planes": [
+    "latam"
+   ],
+   "why": "a DATA region under the routing rule: it produces copper, silver, coffee, sugar and iron ore that this desk trades through currencies and metals. No strategy mining -- offshore FX is restricted there and the corpus is thin."
+  },
+  "OCEANIA": {
+   "planes": [
+    "oceania"
+   ],
+   "why": "the only region scoring on BOTH columns of the routing rule, and AUD is the China proxy currency that closes the China chain."
+  },
+  "VENUE_TERMS": {
+   "planes": [
+    "venue"
+   ],
+   "why": "the broker's own ASIC-mandated disclosures. Execution semantics the desk was inferring from 52 fill records, written down and binding."
   }
  }
 }
