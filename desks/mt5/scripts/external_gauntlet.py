@@ -988,6 +988,91 @@ def _explore_unmeasured_axes(specs: list[dict], keep: list[dict]) -> tuple[list[
     return added, record
 
 
+#: Families that are ORTHOGONAL BY CONSTRUCTION. A PCA residual is, by definition, the part the
+#: common factors do not explain; a relative-value spread is two legs whose shared factor has been
+#: differenced away. They are the only families on this desk that attack rho directly.
+ORTHOGONAL_FAMILIES = ("cross_asset_residual", "relative_value", "correlation_regime",
+                       "pca_residual", "triangle")
+#: Cells from those families that MUST be judged each sweep, whatever their yield says.
+ORTHOGONALITY_MIN_CELLS = int(os.environ.get("GAUNTLET_ORTHOGONALITY_MIN_CELLS", "60"))
+
+
+def _stamped_but_unjudged() -> set[str]:
+    """Cell ids the sweep STAMPED as seen while recording no verdict for them.
+
+    Read from `universal_gates_external.json`: a verdict row with empty `stages` was never
+    computed -- the build budget died before it -- whatever its seen-stamp says. Returning these
+    as NEW puts them back at the front of the build order, which is the only way a cell trapped
+    behind its own stamp is ever reached again.
+
+    Fails OPEN (empty set) on any read problem: an unreadable report must not silently re-promote
+    the whole docket to the front and starve the genuinely-new cells instead.
+    """
+    try:
+        doc = json.loads((REPORTS / "universal_gates_external.json").read_text("utf-8"))
+    except (OSError, ValueError):
+        return set()
+    out: set[str] = set()
+    for v in doc.get("verdicts") or []:
+        if not isinstance(v, dict) or v.get("stages"):
+            continue
+        try:
+            out.add(cell_id({"sym": v.get("sym"), "family": v.get("family"),
+                             "params": v.get("params") or {}}))
+        except Exception:
+            continue
+        cid = v.get("cell_id") or v.get("id")
+        if isinstance(cid, str) and cid:
+            out.add(cid)
+    return out
+
+
+def _orthogonality_floor(specs: list[dict], keep: list[dict]) -> tuple[list[dict], dict]:
+    """Guarantee the rho-reducing families a sample, because their yield is 0 and always will be.
+
+    WHAT THE MEASUREMENT ACTUALLY SAID, 2026-09-15, after two wrong readings of it. The docket
+    holds 1,596 residual and relative-value candidates and ZERO have certified. The first reading
+    was "never judged" -- taken from the docket, which carries no verdict field at all. The second
+    was "judged and failed". Both were wrong, and the gates report says so plainly: 1,544 of 1,598
+    carry `stages: {}`, `days: 0`, `passed: null` and
+    `downstream_status: NOT_RUN_BUILD_BUDGET_DEFERRED`. They were QUEUED AND NEVER REACHED. Only
+    54 were ever computed (34 failed in_sample_screen, 19 deflated_sharpe, 1 observations).
+
+    The allocator is not the cause: it already keeps 1,339 of them. The cause was the seen-stamp
+    trap `_is_new` now closes. This floor is the SECOND line rather than the fix -- it guarantees
+    the rho-reducing families a sample if the yield trim ever does stop keeping them, which is
+    exactly what the trim is designed to do once a family has been ruled on and produced nothing.
+    It appends and takes from nobody, and when the trim already keeps enough it adds zero and says
+    so.
+
+    WHY THAT TERM IS THE ONLY ONE THAT MATTERS. n_eff = N / (1 + (N-1)rho). At the book's measured
+    rho ~= 0.165, n_eff is 5.59 on 61 sleeves and the CEILING is 1/rho = 6.1. Adding 939 more
+    sleeves at the same correlation buys 0.49 of one effective bet. No number of sources, cells or
+    certificates moves past 6.1; only rho does. Every certified family this desk holds is a
+    directional price-pattern family -- session_range_breakout 20, discovered 24,
+    overnight_gap_decay 12, carry 1 -- which is six kinds of structural sameness and is precisely
+    what rho measures.
+
+    So this floor is not fairness between families. It is the only lever on the binding constraint
+    that the desk already owns, sitting unjudged in its own docket.
+    """
+    kept_ids = {id(s) for s in keep}
+    rows = [s for s in specs if str(s.get("family") or "") in ORTHOGONAL_FAMILIES]
+    have = sum(1 for r in rows if id(r) in kept_ids)
+    short = ORTHOGONALITY_MIN_CELLS - have
+    if not rows or short <= 0:
+        return [], {"docket": len(rows), "already_kept": have, "added_by_floor": 0,
+                    "why": "the yield trim already keeps enough orthogonal-family cells"}
+    spare = [r for r in rows if id(r) not in kept_ids][:short]
+    return spare, {
+        "docket": len(rows), "already_kept": have, "added_by_floor": len(spare),
+        "families": list(ORTHOGONAL_FAMILIES),
+        "why": ("orthogonal-by-construction families have never been judged, so their yield is 0 "
+                "and the allocator would never build them. n_eff is capped at 1/rho = 6.1 and "
+                "only rho moves it; these are the only families that attack rho directly."),
+    }
+
+
 def allocate_by_yield(specs: list[dict]) -> tuple[list[dict], dict[str, dict]]:
     """Trim the docket so the build budget lands on the families that produce survivors.
 
@@ -1060,6 +1145,12 @@ def allocate_by_yield(specs: list[dict]) -> tuple[list[dict], dict[str, dict]]:
     # desk can distinguish "no edge there" from "never asked".
     explored, axes = _explore_unmeasured_axes(specs, keep)
     keep.extend(explored)
+    # THE ORTHOGONALITY FLOOR, on the same footing and for a sharper reason. The exploration floor
+    # above buys AXES the desk has never sampled; this buys the only families that attack rho,
+    # which is the single term n_eff is capped by (1/rho = 6.1 on this book). Also takes from
+    # nobody: it appends.
+    orthogonal, ortho_record = _orthogonality_floor(specs, keep)
+    keep.extend(orthogonal)
     # PUBLISHED, because an allocation nobody can read is not an allocation anyone can argue with
     # -- the capital side has pf_allocation.json for exactly this and the research side had
     # nothing. Best effort: a research sweep must never die because a report file is unwritable.
@@ -1084,6 +1175,8 @@ def allocate_by_yield(specs: list[dict]) -> tuple[list[dict], dict[str, dict]]:
                          "is reduced and nothing earning loses a build. Affordable because the "
                          "build budget is not binding."),
                 "min_cells_per_unmeasured_axis": EXPLORATION_MIN_CELLS,
+                "orthogonality_floor": ortho_record,
+                "min_cells_orthogonal_families": ORTHOGONALITY_MIN_CELLS,
                 "n_axes_floored": len(axes),
                 "n_cells_added": len(explored),
                 "by_axis": axes,
@@ -2592,13 +2685,37 @@ def main():
     _built_syms: set[str] = set()
     _seen = _seen_cells()
 
+    _unjudged = _stamped_but_unjudged()
+
     def _is_new(sp: dict) -> int:
-        """0 for a cell this desk has never judged, 1 otherwise. Cheap: no frame is loaded."""
+        """0 for a cell this desk has never JUDGED, 1 otherwise. Cheap: no frame is loaded.
+
+        A SEEN-STAMP IS NOT A VERDICT, AND CONFLATING THEM STARVED 1,544 CELLS FOREVER.
+        Measured 2026-09-15: every `cross_asset_residual`, `relative_value`, `correlation_regime`
+        and `pca_residual` row in the gates report carries `stages: {}`, `days: 0`,
+        `passed: null` and `downstream_status: NOT_RUN_BUILD_BUDGET_DEFERRED` -- the sweep's
+        build budget was exhausted before the cell was computed. 1,544 of 1,598.
+
+        That is a SELF-SUSTAINING trap, and it is GAP #27's residue. Until 4a3b7bb05460 the sweep
+        wrote the seen-stamp BEFORE the verdict was durable, so a cell the budget never reached
+        still got stamped. The stamp makes `_is_new` return 1, which sorts the cell behind every
+        genuinely-new one, which guarantees the budget never reaches it, which leaves it
+        unjudged -- forever, with the report calling it "work not yet done". Fixing the write
+        ORDER stops new instances; it cannot free the ones already stamped.
+
+        So newness is now measured against the VERDICT LEDGER as well as the stamp: a cell whose
+        recorded verdict has no stages is treated as never judged, because it was never judged.
+        This is the same distinction the desk draws everywhere else tonight -- a status asserted
+        where it could be read.
+        """
         try:
-            return 0 if cell_id({"sym": sp.get("sym"), "family": sp.get("family"),
-                                 "params": sp.get("params") or {}}) not in _seen else 1
+            cid = cell_id({"sym": sp.get("sym"), "family": sp.get("family"),
+                           "params": sp.get("params") or {}})
         except Exception:
             return 0
+        if cid not in _seen:
+            return 0
+        return 0 if cid in _unjudged else 1
     # CHART GROUPS STAY CONTIGUOUS INSIDE SYMBOL GROUPS, for the same reason symbol groups stay
     # contiguous at all: the frame cache is what makes the build cheap, and one symbol's M5 and
     # H1 frames are two different entries in it.

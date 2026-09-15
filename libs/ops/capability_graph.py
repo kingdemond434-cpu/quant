@@ -766,6 +766,76 @@ NODES: tuple[Node, ...] = (
          writes=("desks/mt5/reports/TIMEFRAME_COVERAGE.json",)),
     Node("world_crawler", "desks/mt5/side_channels/world_crawler.py",
          writes=("desks/mt5/reports/world_crawl.json",)),
+    # ---------------------------------------------------------------------------------
+    # DECLARED 2026-09-15, because a leg that declares nothing cannot be checked for
+    # completion by anything -- which is how a leg returning exit 1 every hour went six days
+    # unnoticed. The live count was 60 UNDECLARED against a ceiling of 40 that RATCHETS DOWN
+    # ONLY, so the state was a breach, and four of the sixty were legs added the same night.
+    #
+    # EVERY PATH BELOW IS READ FROM THE MODULE'S OWN OUTPUT CONSTANT, never guessed from the
+    # leg's name. An earlier pass filtered on 'the artifact exists on disk' and derived only
+    # eleven -- the wrong test: a node declares what it WRITES, and a leg that has never run
+    # on this box writes the same path it would write anywhere. A leg whose artifact could
+    # not be read from source is deliberately left UNDECLARED rather than invented, because a
+    # ceiling made green by a guessed path is worse than one that is honestly too high.
+    Node("acceptance", "scripts/check_acceptance_properties.py",
+         writes=("docs/research/tier1_program.json",
+                 "desks/mt5/reports/acceptance_properties.json")),
+    Node("alpha_rl", "desks/mt5/research/alpha_rl_run.py",
+         writes=("desks/mt5/reports/ALPHA_RL.json",)),
+    Node("asia_collector", "desks/mt5/research/asia_collector.py",
+         writes=("desks/mt5/reports/ASIA_COLLECTOR.json",)),
+    Node("asia_plane", "desks/mt5/research/asia_plane.py",
+         writes=("desks/mt5/reports/ASIA_PLANE.json",)),
+    Node("cost_to_edge", "desks/mt5/research/cost_to_edge.py",
+         writes=("desks/mt5/reports/COST_TO_EDGE.json",)),
+    Node("counterfactual_world", "libs/research/counterfactual_world.py",
+         writes=("desks/mt5/reports/COUNTERFACTUAL_WORLD.json",)),
+    Node("dead_architecture", "scripts/check_dead_architecture.py",
+         writes=("desks/mt5/reports/dead_architecture.json",)),
+    Node("deep_forest", "desks/mt5/research/deep_forest_miner.py",
+         writes=("desks/mt5/reports/DEEP_FOREST.json",)),
+    Node("exogenous_search", "desks/mt5/research/unknown_unknowns.py",
+         writes=("desks/mt5/reports/UNKNOWN_UNKNOWNS.json",)),
+    Node("falsifier_run", "desks/mt5/research/falsifier_run.py",
+         writes=("desks/mt5/reports/FALSIFIER_VERDICTS.json",)),
+    Node("fill_attribution", "desks/mt5/research/fill_attribution.py",
+         writes=("desks/mt5/reports/FILL_ATTRIBUTION.json",)),
+    Node("forward_reconcile", "desks/mt5/research/forward_reconcile.py",
+         writes=("desks/mt5/data/forward_reconcile.json",)),
+    Node("input_identity", "libs/data/input_identity.py",
+         writes=("desks/mt5/data/input_identity.json",)),
+    Node("lake_promote", "desks/mt5/research/lake_promote.py",
+         writes=("desks/mt5/reports/LAKE_PROMOTION.json",)),
+    Node("orthogonality", "desks/mt5/research/orthogonality.py",
+         writes=("desks/mt5/reports/ORTHOGONALITY.json",)),
+    Node("prosecutor", "scripts/check_prosecutor.py",
+         writes=("desks/mt5/reports/prosecutor_census.json",)),
+    Node("research_exchange_score", "scripts/research_exchange.py",
+         writes=("data/suggestion_ledger.jsonl",)),
+    Node("residual_factors", "desks/mt5/research/factor_residual_engine.py",
+         writes=("desks/mt5/reports/factor_residual.json",)),
+    Node("session_allocation", "desks/mt5/research/session_allocator.py",
+         writes=("desks/mt5/reports/SESSION_ALLOCATION.json",)),
+    Node("session_chart_expansion", "desks/mt5/research/session_chart_equivalents.py",
+         writes=("desks/mt5/reports/SESSION_ALLOCATION.json",
+                 "desks/mt5/reports/SESSION_CHART_EXPANSION.json")),
+    Node("sge_premium", "desks/mt5/research/fetch_sge_premium.py",
+         writes=("desks/mt5/data/lake/sge_daily.parquet",)),
+    Node("source_routes", "scripts/check_source_routes.py",
+         writes=("desks/mt5/reports/SOURCE_ROUTES.json",)),
+    Node("stamp_freshness", "scripts/check_stamp_freshness.py",
+         writes=("desks/mt5/reports/STAMP_FRESHNESS.json",)),
+    Node("state_vector", "desks/mt5/research/state_vector_build.py",
+         writes=("desks/mt5/data/state_vector.json",)),
+    Node("stop_reverse", "desks/mt5/research/stop_reverse_census.py",
+         writes=("desks/mt5/reports/STOP_REVERSE_CENSUS.json",)),
+    Node("strategy_paths", "desks/mt5/research/strategy_paths.py",
+         writes=("desks/mt5/data/strategy_paths.json", "desks/mt5/reports/STRATEGY_PATHS.json",)),
+    Node("swap_rejudge", "desks/mt5/research/swap_rejudge.py",
+         writes=("desks/mt5/reports/SWAP_REJUDGE.json",)),
+    Node("weak_signals", "desks/mt5/research/weak_signal_compiler.py",
+         writes=("desks/mt5/reports/weak_signal_compiler.json",)),
 )
 
 #: Artifacts a person is expected to read. Being the ONLY reader of a node's output makes that

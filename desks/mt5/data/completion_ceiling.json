@@ -1,5 +1,8 @@
 {
- "undeclared_max": 40,
- "measured_when_set": 40,
- "rule": "the number of cycle legs that declare no artifact in capability_graph. It RATCHETS DOWN ONLY (L1.50). A leg that declares nothing cannot be checked for completion by anything, which is how a leg returning exit 1 every hour went six days unnoticed. There is no flag that raises this."
+ "undeclared_max": 32,
+ "measured_when_set": 32,
+ "rule": "the number of cycle legs that declare no artifact in capability_graph. It RATCHETS DOWN ONLY (L1.50). A leg that declares nothing cannot be checked for completion by anything, which is how a leg returning exit 1 every hour went six days unnoticed. There is no flag that raises this.",
+ "previous": 40,
+ "lowered_utc": "2026-09-15",
+ "why": "lowered 40 -> 32 by DECLARING 28 legs in libs/ops/capability_graph, every path read from the module own output constant rather than guessed from the leg name. The live count had drifted to 60 -- a breach of the 40 ceiling -- and four of those sixty were legs added the same night, so the ceiling was being raised by the work meant to lower it. 32 remain UNDECLARED and are deliberately left so: a ceiling made green by an invented path is worse than one that is honestly too high."
 }
