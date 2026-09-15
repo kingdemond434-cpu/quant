@@ -2468,7 +2468,23 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
         if ttl_expired(srec.get("open_ttl_until"), now_utc.isoformat()):
             _book_target(s["name"], s["symbol"], 0.0, "ttl")
             if st.get("armed") and GENERIC_EXEC_ENABLED.exists():
-                close_positions(st, s["symbol"])
+                # ONE SLEEVE'S TIME EXIT IS NOT THE SYMBOL'S. This called `close_positions`,
+                # which force-closes EVERY position on the symbol -- so whenever one sleeve's TTL
+                # expired it also closed positions other sleeves had opened seconds earlier in
+                # THIS SAME PASS, the opening loop above running immediately before it.
+                #
+                # MEASURED 2026-09-15: 18 of 58 round trips closed 0-1 SECONDS after opening, at
+                # the same price, with an empty exit tag (no stop, no target, no broker close) --
+                # EURCHF 0.04 twice at 22:44:43, both 0.94497 -> 0.94497; AUDUSD 0.03 at
+                # 0.71300 -> 0.71300. Net -5.82 EUR of pure spread and commission for positions
+                # that never had a chance to express anything.
+                #
+                # `close_positions`' OWN docstring documents this defect class, found and fixed
+                # for the gold/scalp lane on 2026-09-08 -- "a basket an 'all'-session M15 sleeve
+                # opened at 19:31 was closed at 19:32 by the gold book's backstop, spread paid
+                # for nothing, every night" -- and `close_sleeve_positions` was written for it.
+                # The family lane was never moved over. It is now.
+                close_sleeve_positions(st, s["symbol"], s["name"])
             else:
                 log(f"[{s['name']}] SHADOW would TTL-close open position(s)")
             srec.pop("open_ttl_until", None)
