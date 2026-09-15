@@ -1,9 +1,9 @@
 {
- "generated_utc": "2026-09-15T05:04:18.740424+00:00",
- "live_sha": "b779b6898eddc1b1696b853ba8e0f5dbd935f8e0",
- "code_sha": "b779b6898eddc1b1696b853ba8e0f5dbd935f8e0",
- "parent_sha": "86d6270eabd920096418867b6891e3f506ed4447",
- "tree_sha": "f45cb32b643ffb0ac56667d7143f6158cdc105a8",
+ "generated_utc": "2026-09-15T05:24:09.727292+00:00",
+ "live_sha": "1e975b00f2d096595598f535cde1dcee92e9bed7",
+ "code_sha": "1e975b00f2d096595598f535cde1dcee92e9bed7",
+ "parent_sha": "1a978f86b1b214f5d82ac3cea7cd252d1ca9bb61",
+ "tree_sha": "93d0c20d663c70382cb5d16427078d69b8c0ec7e",
  "config_hash": "e0d1bfe75cb0d2c3",
  "survivor_registry_hash": "cd4132b75d14bf4e",
  "allocator_hash": "6840f7029e143f86",
@@ -84,10 +84,10 @@
   "desks/mt5/reports/shadow/shadow_health.json",
   "desks/mt5/reports/shadow/shadow_state.json"
  ],
- "release_id": "5a49bed690d4",
+ "release_id": "db58c372c591",
  "sealed": true,
- "sealed_at": "2026-09-15T05:04:18.740424+00:00",
- "sealed_by": "operator: mark-before-act fix 2026-09-15",
+ "sealed_at": "2026-09-15T05:24:09.727292+00:00",
+ "sealed_by": "operator: gateway lock 2026-09-15",
  "ci_run_id": null,
  "tested_sha": null,
  "worktree_dirty": [
@@ -172,6 +172,7 @@
   "desks/mt5/data/moat_coverage.json",
   "desks/mt5/data/pf_allocator_cache/worlds.npz",
   "desks/mt5/data/release_identity.json",
+  "desks/mt5/data/sleeve_registry.json",
   "desks/mt5/data/stall_watch.json",
   "desks/mt5/logs/signal_gate_console.txt",
   "desks/mt5/reports/CAPABILITY_STATUS.json",
@@ -190,6 +191,6 @@
   "desks/mt5/reports/universe_registry_repair.json",
   "web/desk_state.json"
  ],
- "previous_code_sha": "9d0343f651111aed256fe8b92e1b0fddc46cf10a",
- "previous_release_id": "356fe1a77567"
+ "previous_code_sha": "b779b6898eddc1b1696b853ba8e0f5dbd935f8e0",
+ "previous_release_id": "5a49bed690d4"
 }
