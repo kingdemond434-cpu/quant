@@ -1,0 +1,106 @@
+[
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "Corrupt Plans, Clean Traces: Evading Chain-of-Thought Monitoring with Plan Injection",
+    "summary": "Chain-of-thought (CoT) monitoring is a safety strategy where the reasoning of a large language model \"actor\" is inspected by a \"monitor\" (often another language model) for signs of unsafe planning, de",
+    "url": "https://arxiv.org/abs/2609.15989v1",
+    "published": "2026-09-14T18:33:27Z",
+    "trading_terms": [
+      "strategy"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  },
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "Direct-to-Symbol Integration from Landau Analysis",
+    "summary": "We propose a Landau-analysis-inspired strategy for directly computing the symbol of integrals that evaluate to multiple polylogarithms in twisted cohomology. The central idea is to identify all ways i",
+    "url": "https://arxiv.org/abs/2609.15952v1",
+    "published": "2026-09-14T17:49:00Z",
+    "trading_terms": [
+      "strategy"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  },
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "Spatially-Indexed Longitudinal Distributional Outcome Regression for Environmental Monitoring",
+    "summary": "Characterizing longitudinal changes in region-specific distribution of environmental exposures, such as total nitrate (TNO$_3$) concentrations, is critical for understanding localized ecological risks",
+    "url": "https://arxiv.org/abs/2609.15961v1",
+    "published": "2026-09-14T17:52:16Z",
+    "trading_terms": [
+      "risk"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  },
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "Spatially-Indexed Longitudinal Distributional Outcome Regression for Environmental Monitoring",
+    "summary": "Characterizing longitudinal changes in region-specific distribution of environmental exposures, such as total nitrate (TNO$_3$) concentrations, is critical for understanding localized ecological risks",
+    "url": "https://arxiv.org/abs/2609.15961v1",
+    "published": "2026-09-14T17:52:16Z",
+    "trading_terms": [
+      "risk"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  },
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "Direct-to-Symbol Integration from Landau Analysis",
+    "summary": "We propose a Landau-analysis-inspired strategy for directly computing the symbol of integrals that evaluate to multiple polylogarithms in twisted cohomology. The central idea is to identify all ways i",
+    "url": "https://arxiv.org/abs/2609.15952v1",
+    "published": "2026-09-14T17:49:00Z",
+    "trading_terms": [
+      "strategy"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  },
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "Corrupt Plans, Clean Traces: Evading Chain-of-Thought Monitoring with Plan Injection",
+    "summary": "Chain-of-thought (CoT) monitoring is a safety strategy where the reasoning of a large language model \"actor\" is inspected by a \"monitor\" (often another language model) for signs of unsafe planning, de",
+    "url": "https://arxiv.org/abs/2609.15989v1",
+    "published": "2026-09-14T18:33:27Z",
+    "trading_terms": [
+      "strategy"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  },
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "Direct-to-Symbol Integration from Landau Analysis",
+    "summary": "We propose a Landau-analysis-inspired strategy for directly computing the symbol of integrals that evaluate to multiple polylogarithms in twisted cohomology. The central idea is to identify all ways i",
+    "url": "https://arxiv.org/abs/2609.15952v1",
+    "published": "2026-09-14T17:49:00Z",
+    "trading_terms": [
+      "strategy"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  },
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "Spatially-Indexed Longitudinal Distributional Outcome Regression for Environmental Monitoring",
+    "summary": "Characterizing longitudinal changes in region-specific distribution of environmental exposures, such as total nitrate (TNO$_3$) concentrations, is critical for understanding localized ecological risks",
+    "url": "https://arxiv.org/abs/2609.15961v1",
+    "published": "2026-09-14T17:52:16Z",
+    "trading_terms": [
+      "risk"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  }
+]

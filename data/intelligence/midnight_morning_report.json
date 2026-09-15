@@ -119,84 +119,84 @@
   "allocation_rule": "unfinished canonical cells first; among discretionary research organs prefer measured certificate yield per CPU-hour",
   "certificates_added": 0,
   "certificates_per_cpu_hour": 0.0,
-  "measured_cpu_hours": 0.006582,
+  "measured_cpu_hours": 0.002552,
   "stage_rows": [
    {
     "certificate_delta": 0,
     "cpu_seconds": 0.0,
-    "duration_seconds": 2704.932,
+    "duration_seconds": 3886.169,
     "name": "canonical_external_pipeline"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 1.408294,
-    "duration_seconds": 6.441,
+    "cpu_seconds": 1.49012,
+    "duration_seconds": 7.52,
     "name": "external_queue_projection"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 9.816687,
-    "duration_seconds": 59.7,
+    "cpu_seconds": 3.505191,
+    "duration_seconds": 11.133,
     "name": "external_queue_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.106098,
-    "duration_seconds": 879.588,
+    "cpu_seconds": 0.105442,
+    "duration_seconds": 2.114,
     "name": "certificate_projection"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 8.899493,
-    "duration_seconds": 121.705,
+    "cpu_seconds": 0.281574,
+    "duration_seconds": 62.028,
     "name": "fusion_state_pull"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 1.328373,
-    "duration_seconds": 10.427,
+    "cpu_seconds": 1.227981,
+    "duration_seconds": 3.619,
     "name": "forward_identity_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.101814,
-    "duration_seconds": 4.347,
+    "cpu_seconds": 0.107093,
+    "duration_seconds": 1.869,
     "name": "forward_clock_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 1.212107,
-    "duration_seconds": 9.456,
+    "cpu_seconds": 1.25743,
+    "duration_seconds": 4.276,
     "name": "forward_lane_heal"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.0,
-    "duration_seconds": 9.353,
+    "cpu_seconds": 0.208499,
+    "duration_seconds": 6.329,
     "name": "zero_capital_shadow_forward"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.344302,
-    "duration_seconds": 5.839,
+    "cpu_seconds": 0.366709,
+    "duration_seconds": 2.332,
     "name": "mechanism_independence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.117143,
-    "duration_seconds": 2.682,
+    "cpu_seconds": 0.177383,
+    "duration_seconds": 2.069,
     "name": "same_day_fence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.241171,
-    "duration_seconds": 4.434,
+    "cpu_seconds": 0.315369,
+    "duration_seconds": 2.735,
     "name": "certificate_yield_fence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.12151,
-    "duration_seconds": 4.169,
+    "cpu_seconds": 0.145293,
+    "duration_seconds": 2.102,
     "name": "forward_clock_fence"
    }
   ]
@@ -325,7 +325,7 @@
    "xau_m15_anti_momentum"
   ]
  },
- "generated_at": "2026-09-15T18:39:24.675325+00:00",
+ "generated_at": "2026-09-15T20:08:08.863605+00:00",
  "headline": {
   "candidates_discovered": 20943,
   "candidates_lost": 15251,
@@ -343,24 +343,24 @@
    "measured": true,
    "sleeves": {
     "AUDCAD_discovered_asia": {
-     "n": 3,
+     "n": 2,
      "weight": 0.0,
      "weight_normalised": 0.0,
-     "why": "3 day(s) < 8: too little to size on"
+     "why": "2 day(s) < 8: too little to size on"
     },
     "AUDCHF_overnight_gap_decay_asia": {
      "kelly_raw": 0.1933,
      "mean_r": 0.1266,
      "n": 9,
      "var": 0.65488,
-     "weight": 0.00358,
+     "weight": 0.00314,
      "weight_normalised": 0.00767
     },
     "AUDNZD_discovered_asia": {
-     "kelly_raw": -0.6859,
-     "mean_r": -0.0648,
-     "n": 10,
-     "var": 0.09443,
+     "kelly_raw": -0.9591,
+     "mean_r": -0.0865,
+     "n": 11,
+     "var": 0.09017,
      "weight": 0.0,
      "weight_normalised": 0.0
     },
@@ -381,8 +381,8 @@
      "mean_r": 0.5666,
      "n": 8,
      "var": 0.3022,
-     "weight": 0.0347,
-     "weight_normalised": 0.07432
+     "weight": 0.03048,
+     "weight_normalised": 0.07447
     },
     "CHFDKK_carry_continuous": {
      "n": 1,
@@ -403,18 +403,24 @@
      "why": "2 day(s) < 8: too little to size on"
     },
     "CHFNOK_carry_asia": {
-     "kelly_raw": 0.8384,
-     "mean_r": 1.2042,
+     "kelly_raw": 0.7879,
+     "mean_r": 1.1777,
      "n": 10,
-     "var": 1.43624,
-     "weight": 0.01552,
-     "weight_normalised": 0.03324
+     "var": 1.49485,
+     "weight": 0.01281,
+     "weight_normalised": 0.0313
     },
     "CHFNOK_carry_continuous": {
      "n": 2,
      "weight": 0.0,
      "weight_normalised": 0.0,
      "why": "2 day(s) < 8: too little to size on"
+    },
+    "CHFSGD_carry_continuous": {
+     "n": 1,
+     "weight": 0.0,
+     "weight_normalised": 0.0,
+     "why": "1 day(s) < 8: too little to size on"
     },
     "EURCHF_discovered_asia": {
      "n": 3,
@@ -433,8 +439,8 @@
      "mean_r": 0.2585,
      "n": 9,
      "var": 1.50119,
-     "weight": 0.00319,
-     "weight_normalised": 0.00683
+     "weight": 0.0028,
+     "weight_normalised": 0.00684
     },
     "EURMXN_overnight_gap_decay_continuous": {
      "n": 2,
@@ -453,8 +459,8 @@
      "mean_r": 0.538,
      "n": 8,
      "var": 0.12079,
-     "weight": 0.08243,
-     "weight_normalised": 0.17655
+     "weight": 0.0724,
+     "weight_normalised": 0.17689
     },
     "EURNOK_overnight_gap_decay_continuous": {
      "n": 1,
@@ -473,10 +479,16 @@
      "mean_r": 0.3879,
      "n": 8,
      "var": 0.13949,
-     "weight": 0.05145,
-     "weight_normalised": 0.11019
+     "weight": 0.0452,
+     "weight_normalised": 0.11043
     },
     "EURZAR_overnight_gap_decay_continuous": {
+     "n": 1,
+     "weight": 0.0,
+     "weight_normalised": 0.0,
+     "why": "1 day(s) < 8: too little to size on"
+    },
+    "GBPAUD_vol_mean_reversion_continuous": {
      "n": 1,
      "weight": 0.0,
      "weight_normalised": 0.0,
@@ -493,16 +505,16 @@
      "mean_r": 0.8755,
      "n": 12,
      "var": 1.04128,
-     "weight": 0.01556,
-     "weight_normalised": 0.03333
+     "weight": 0.01367,
+     "weight_normalised": 0.0334
     },
     "GBPNOK_overnight_gap_decay_asia": {
      "kelly_raw": 0.6825,
      "mean_r": 1.7648,
      "n": 10,
      "var": 2.58556,
-     "weight": 0.01263,
-     "weight_normalised": 0.02705
+     "weight": 0.01109,
+     "weight_normalised": 0.0271
     },
     "GBPNOK_overnight_gap_decay_continuous": {
      "n": 1,
@@ -515,8 +527,8 @@
      "mean_r": 0.6525,
      "n": 8,
      "var": 0.15048,
-     "weight": 0.08024,
-     "weight_normalised": 0.17186
+     "weight": 0.07048,
+     "weight_normalised": 0.1722
     },
     "GBPSEK_overnight_gap_decay_continuous": {
      "n": 2,
@@ -535,8 +547,8 @@
      "mean_r": 0.5297,
      "n": 9,
      "var": 0.07237,
-     "weight": 0.13546,
-     "weight_normalised": 0.29013
+     "weight": 0.11899,
+     "weight_normalised": 0.29072
     },
     "GBPZAR_overnight_gap_decay_continuous": {
      "n": 1,
@@ -568,11 +580,11 @@
      "weight_normalised": 0.0,
      "why": "1 day(s) < 8: too little to size on"
     },
-    "USDCHF_discovered_asia": {
-     "n": 6,
+    "USDDKK_vol_mean_reversion_continuous": {
+     "n": 1,
      "weight": 0.0,
      "weight_normalised": 0.0,
-     "why": "6 day(s) < 8: too little to size on"
+     "why": "1 day(s) < 8: too little to size on"
     },
     "USDJPY_vol_mean_reversion_continuous": {
      "n": 1,
@@ -585,8 +597,8 @@
      "mean_r": 0.5896,
      "n": 10,
      "var": 0.40494,
-     "weight": 0.02694,
-     "weight_normalised": 0.0577
+     "weight": 0.02367,
+     "weight_normalised": 0.05783
     },
     "USDNOK_overnight_gap_decay_continuous": {
      "n": 1,
@@ -611,8 +623,8 @@
      "mean_r": 0.0782,
      "n": 9,
      "var": 0.27835,
-     "weight": 0.0052,
-     "weight_normalised": 0.01114
+     "weight": 0.00457,
+     "weight_normalised": 0.01117
     },
     "USDZAR_overnight_gap_decay_continuous": {
      "n": 2,
@@ -652,15 +664,15 @@
    "why": "no losing days yet -- co-movement UNMEASURED"
   },
   "effective_bets": {
-   "concentration": 13.51,
-   "n_effective": 3.405,
-   "n_sleeves": 46,
-   "pairs_assumed_correlated": 567,
-   "pairs_measured": 468,
+   "concentration": 15.38,
+   "n_effective": 3.121,
+   "n_sleeves": 48,
+   "pairs_assumed_correlated": 640,
+   "pairs_measured": 488,
    "why": "N_eff is the participation ratio of the correlation eigenvalues: it cannot be inflated by adding a variant of something already held. Unmeasured pairs are assumed FULLY correlated, the conservative direction."
   },
-  "forward_sleeves_with_observations": 46,
-  "measured_at": "2026-09-15T18:38:57+00:00",
+  "forward_sleeves_with_observations": 48,
+  "measured_at": "2026-09-15T20:07:53+00:00",
   "note": "Forward-phase observations only. Historical rows are excluded: allocation is a forward decision and may not be informed by evidence gathered during selection."
  },
  "rerouting": {
@@ -671,7 +683,7 @@
  "resource_execution": {
   "collision_control": "systemd uses one quant-external-pipeline.service instance; hourly and midnight starts cannot duplicate the heavy worker",
   "external_pipeline_memory_max": "1500M",
-  "mem_available_mb": 2717.9,
+  "mem_available_mb": 845.8,
   "remote_control": "desk-box job locks and per-stage timeouts remain authoritative"
  },
  "schema_version": 1,
