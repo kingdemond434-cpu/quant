@@ -376,6 +376,51 @@ def allocator_heat() -> tuple[float | None, str]:
     return _core.allocator_heat(BASE)
 
 
+def _book_key(s: dict, book: dict[str, float] | None) -> str | None:
+    """This sleeve's key in the allocator's book, or None when the allocator did not price it.
+
+    THE ALLOCATOR HAD NEVER SIZED A SINGLE SLEEVE, AND THIS IS THE REASON (measured 2026-09-15).
+    The lookup was `s["name"] in book`, and the two sides name the same sleeve differently:
+
+        allocator book   CHFNOK_carry_asia          SYMBOL_family_selector, symbol upper-cased
+        sleeve registry  chfnok_carry_asia_p_98d7   symbol lower-cased, parameter hash appended
+
+    Across the 40 LIVE rows the EXACT intersection with the dynamic book was 1 and with the
+    fallback book 0. So `from_book` was False for essentially every sleeve, every pass, and each
+    one fell through to `promoted_lot`'s ramp and `clamp_risk_frac`, which floors at
+    BASE_RISK_FRAC. The optimiser, the baseline contest, the proof certificate and the heat
+    budget all resolved to a flat base fraction at the venue: GBPNOK at a measured forward
+    +1.77R and AUDUSD at -0.574R were sized identically, and the book went six deep on one
+    currency because nothing was weighting anything.
+
+    Deriving the allocator's own key from the row's fields takes the join from 1 to 8 -- 8 being
+    the number of LIVE sleeves the allocator actually priced this solve. The other 32 are newly
+    promoted with no evidence yet, and their base fraction is DELIBERATE: automatic promotion
+    (principal, 2026-09-04) puts a certified candidate straight into the account so it can build
+    a record. Nothing here zeroes them; this only lets the allocator's weight reach the sleeves
+    it has evidence for.
+
+    The exact name is tried first so any row that already matches is untouched.
+    """
+    if not book:
+        return None
+    name = str(s.get("name") or "")
+    if name in book:
+        return name
+    sym = str(s.get("symbol") or "").upper()
+    fam = str(s.get("family") or "")
+    sel = str(s.get("selector") or "")
+    if not (sym and fam):
+        return None
+    derived = f"{sym}_{fam}_{sel}" if sel else f"{sym}_{fam}"
+    if derived in book:
+        return derived
+    # Case is the only other way these two spellings have differed; compare folded rather than
+    # inventing further shapes, so a genuine miss stays a miss.
+    folded = {k.lower(): k for k in book}
+    return folded.get(derived.lower())
+
+
 def allocator_book() -> tuple[dict[str, float] | None, str]:
     """The optimiser's PER-SLEEVE target risk fractions, or None with the reason.
 
@@ -440,8 +485,16 @@ def allocator_book() -> tuple[dict[str, float] | None, str]:
                                         certified=False, why=f"state-conditioned: {swhy}")
     # `book_zeroed` names the rostered sleeves THIS solve gave no heat. Carried through so the
     # answer can be zero: without it a zeroed sleeve is invisible to the sizer and falls back to
-    # the 3% base fraction (see `book_from_allocation`). Only on the certified path -- a baseline
-    # fallback book is a different allocation and does not carry this solve's zeros.
+    # the BASE_RISK_FRAC floor (see `book_from_allocation`), which is applied OUTSIDE the
+    # allocator's total and therefore adds heat the budget never granted.
+    #
+    # IT IS NOW PASSED ON BOTH PATHS. It used to be certified-only, on the reasoning that a
+    # baseline fallback is a different allocation and should not inherit this solve's refusals.
+    # That holds for the baseline's own weights and not for the names it is silent about --
+    # measured 2026-09-15, 261 of 318 passes (82%) took the fallback, and the sleeves the dynamic
+    # solve had explicitly excluded were funded anyway through the fall-through. `book_from_
+    # allocation` only zeroes names the fallback book does not itself fund, so the baseline still
+    # decides everything it has an opinion about.
     return book_from_allocation(total, art.get("book"), art.get("book_fallback"),
                                 certified=(cert is not None and src == "dynamic"),
                                 why=(f"{cwhy}; {swhy}" if cert is not None else cwhy),
@@ -1965,6 +2018,37 @@ def _params_from_certificate(s: dict[str, object]) -> tuple[dict[str, object] | 
         except Exception as exc:
             return None, f"cannot derive the default identity for {want!r} ({type(exc).__name__})"
         if derived.startswith(want + ".p="):
+            # THE IDENTITY CHECK IS NOT ENOUGH ON ITS OWN, AND ASSUMING IT WAS WAS MY ERROR.
+            #
+            # A bare name extends to the DEFAULT identity for any family, so this branch alone
+            # says only "the default parameterisation would be named this way" -- never "this
+            # certificate was earned at the default parameterisation". Those are different
+            # claims, and the docket settles which one is true.
+            #
+            # MEASURED 2026-09-15: the docket holds 115 DISTINCT parameterisations of
+            # CADJPY.session_range_breakout, 115 of EURJPY, 88 of GBPJPY, 115 of USDJPY and 278
+            # of XAUUSD. `external.CADJPY.session_range_breakout` could be any one of the 115.
+            # Returning `{}` there picks one at random and trades it under a certificate earned
+            # by a different spec -- the exact lookalike defect this file refuses everywhere
+            # else. `certificate_hygiene` reaches the same verdict independently and calls those
+            # six certificates UNRUNNABLE because `shadow_spec.params` is absent.
+            #
+            # So the default is admitted only when the docket agrees it is the ONLY candidate.
+            # One parameterisation means the bare name is unambiguous; more than one means the
+            # certificate lost the information and the cell must be RE-EARNED, not guessed.
+            sym_w, fam_w = want.split(".", 1)
+            cands = {json.dumps(r.get("params") or {}, sort_keys=True)
+                     for r in _docket_rows()
+                     if str(r.get("symbol")) == sym_w and str(r.get("family")) == fam_w}
+            if len(cands) > 1:
+                return None, (f"refused: {want!r} names no parameterisation and the docket holds "
+                              f"{len(cands)} distinct ones for {sym_w}.{fam_w}; the certificate "
+                              f"lost which spec earned it, so it must be re-earned rather than "
+                              f"guessed")
+            if len(cands) == 1:
+                only = json.loads(next(iter(cands)))
+                if only:
+                    return dict(only), ""
             return {}, ""
         return None, (f"{want!r} names no parameters and the default identity {derived!r} does "
                       f"not extend it; refusing to guess a parameterisation")
@@ -2991,9 +3075,10 @@ def main() -> None:
         # maximised E[log W] jointly with every other sleeve; Q_OPT and the ramp are what the
         # desk falls back to when nothing solved for it. Only reachable behind a fresh proof
         # certificate (see `allocator_book`), so an unproven allocator cannot resize the book.
-        from_book = _book is not None and _s["name"] in _book
+        _key = _book_key(_s, _book)
+        from_book = _key is not None
         if from_book:
-            _s["risk_frac"] = float(_book[_s["name"]])
+            _s["risk_frac"] = float(_book[_key])
             _s["sized_by"] = "allocator_book"
         if _s.get("exec") not in ("family_market", "scalp_market"):
             # EVERY BRACKET-LANE SLEEVE IS BILLED AT THE ORDER IT WILL ACTUALLY SEND -- gold,
