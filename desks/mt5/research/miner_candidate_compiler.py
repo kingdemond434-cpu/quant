@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import pathlib
 import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -75,7 +76,66 @@ def _rows(doc) -> list[dict]:
 #: 368 MB. The desk box carries 3.1 GB resident of 8.4 GB, so a pass at four times today's intake
 #: still fits with room, which is what this ceiling is set to allow. A number chosen for memory
 #: that nobody ever measured is just a smaller version of the filename filter below.
-MAX_ROWS_PER_PASS = 1_000_000
+#: THE FLOOR, not the cap. Kept at the value that has always been used so a box that cannot be
+#: measured behaves exactly as before.
+MAX_ROWS_FLOOR = 1_000_000
+
+#: Bytes of resident memory one intake row costs, measured generously. A row is a small dict plus
+#: its content hash and its source string; 2 KB each is several times what they actually take, and
+#: erring high is the right direction for a bound whose failure mode is an OOM on a box that also
+#: runs the gateway.
+BYTES_PER_ROW = 2048
+
+#: Share of FREE physical memory the intake may claim. A quarter leaves the gauntlet, the gateway
+#: and the recorders the rest of it -- this organ is not the most important thing running.
+FREE_MEMORY_SHARE = 0.25
+
+
+def _max_rows_per_pass() -> int:
+    """The row bound, derived from memory ACTUALLY FREE rather than from a constant.
+
+    THE CONSTANT WAS SIZED FOR A DIFFERENT MACHINE. Measured on the trading box 2026-09-12:
+    98,298 MB total physical, 59,364 MB free -- and the bound was 1,000,000 rows, which it hit,
+    deferring 420 files of donations every pass. The repo's standing note that this desk runs on
+    8 GB is about the VPS (a Hetzner CX32), not the Contabo box that trades, and a bound carried
+    across from the smaller machine was throwing away research the larger one had room for.
+
+    IT IS MEASURED, NOT RAISED. Hardcoding a bigger number would repeat the original mistake one
+    size up and would be wrong the moment this runs on the VPS again. A box whose memory cannot
+    be read keeps the historical floor exactly, because an unreadable counter is not permission.
+    """
+    try:
+        import ctypes
+
+        class _MS(ctypes.Structure):
+            _fields_ = [("dwLength", ctypes.c_ulong), ("dwMemoryLoad", ctypes.c_ulong),
+                        ("ullTotalPhys", ctypes.c_ulonglong),
+                        ("ullAvailPhys", ctypes.c_ulonglong),
+                        ("ullTotalPageFile", ctypes.c_ulonglong),
+                        ("ullAvailPageFile", ctypes.c_ulonglong),
+                        ("ullTotalVirtual", ctypes.c_ulonglong),
+                        ("ullAvailVirtual", ctypes.c_ulonglong),
+                        ("ullAvailExtendedVirtual", ctypes.c_ulonglong)]
+
+        st = _MS()
+        st.dwLength = ctypes.sizeof(_MS)
+        if not ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(st)):  # type: ignore[attr-defined]
+            return MAX_ROWS_FLOOR
+        free = int(st.ullAvailPhys)
+    except Exception:
+        # Not Windows, or the call is unavailable. /proc/meminfo is the other machine's answer.
+        try:
+            txt = pathlib.Path("/proc/meminfo").read_text(encoding="utf-8")
+            kb = next(int(ln.split()[1]) for ln in txt.splitlines()
+                      if ln.startswith("MemAvailable:"))
+            free = kb * 1024
+        except Exception:
+            return MAX_ROWS_FLOOR
+    allowed = int(free * FREE_MEMORY_SHARE / BYTES_PER_ROW)
+    return max(MAX_ROWS_FLOOR, allowed)
+
+
+MAX_ROWS_PER_PASS = _max_rows_per_pass()
 
 #: What the last intake pass left unread when the bound bound (2026-09-08). The shortfall used
 #: to be a printed line and nothing else -- research opportunity cost that no artifact carried.
@@ -191,14 +251,88 @@ def recent_rows(now: datetime) -> list[tuple[str, dict]]:
                                      "bound_hit": True})
                 print(f"compiler: MAX_ROWS_PER_PASS ({MAX_ROWS_PER_PASS:,}) reached; "
                       f"{len(all_paths) - (i + 1)} file(s) wait for the next pass. This is a "
-                      f"memory bound being hit, not a judgement -- raise it or shorten "
-                      f"WINDOW_DAYS.")
+                      f"memory bound being hit, not a judgement. The bound is DERIVED from free "
+                      f"physical memory at import ({FREE_MEMORY_SHARE:.0%} of it at "
+                      f"{BYTES_PER_ROW}B per row, floored at {MAX_ROWS_FLOOR:,}), so hitting it "
+                      f"means this box genuinely has no room -- shorten WINDOW_DAYS or free "
+                      f"memory rather than raising a constant.")
                 return found
     return found
 
 
+#: Institution -> the currency its communications are an event on. Longest phrase first, because
+#: "bank of england" must not be claimed by a looser "bank of" rule, and "reserve bank of new
+#: zealand" must not be claimed by "reserve bank of australia"'s prefix.
+_CB_CURRENCY: tuple[tuple[str, str], ...] = (
+    ("european central bank", "EUR"), ("bank of france", "EUR"), ("bundesbank", "EUR"),
+    ("banca d'italia", "EUR"), ("bank of italy", "EUR"), ("banco de espana", "EUR"),
+    ("de nederlandsche bank", "EUR"), ("bank of finland", "EUR"), ("oesterreichische", "EUR"),
+    ("central bank of ireland", "EUR"), ("bank of greece", "EUR"), ("banque de france", "EUR"),
+    ("federal reserve", "USD"), ("board of governors", "USD"),
+    ("bank of japan", "JPY"), ("bank of england", "GBP"),
+    ("reserve bank of new zealand", "NZD"), ("reserve bank of australia", "AUD"),
+    ("bank of canada", "CAD"), ("swiss national bank", "CHF"),
+    ("people's bank of china", "CNH"), ("norges bank", "NOK"), ("sveriges riksbank", "SEK"),
+    ("riksbank", "SEK"), ("danmarks nationalbank", "DKK"),
+    ("bank of korea", "KRW"), ("monetary authority of singapore", "SGD"),
+    ("hong kong monetary authority", "HKD"), ("south african reserve bank", "ZAR"),
+    ("banco de mexico", "MXN"), ("central bank of the republic of turkey", "TRY"),
+)
+
+#: Public-track-record phenotype -> the registered family it declares. A phenotype naming no
+#: family (ea_robot, max_growth, algo_survivor) is deliberately absent: those describe how the
+#: account was RUN, not what it traded on, and inventing a family for them would manufacture a
+#: hypothesis out of a leaderboard position.
+_PHENOTYPE_FAMILY: dict[str, str] = {
+    "trend": "trend_ma_cross",
+    "grid": "mean_reversion_rsi",
+    "mean_reversion": "mean_reversion_rsi",
+    "breakout": "level_breakout",
+    "momentum": "momentum_volgate",
+    "range": "range_reversion",
+    "reversal": "engulfing_reversal",
+    "carry": "overnight_drift",
+    "news": "event_reaction",
+    "volatility": "vol_transition",
+}
+
+#: Phenotype -> the instrument it names, for rows whose `symbols` field is empty but whose tags
+#: state the market outright. Kept tiny and literal: only tags that ARE an instrument.
+_PHENOTYPE_SYMBOL: dict[str, str] = {
+    "gold": "XAUUSD", "xauusd": "XAUUSD", "silver": "XAGUSD", "xagusd": "XAGUSD",
+    "oil": "XTIUSD", "crude": "XTIUSD", "bitcoin": "BTCUSD", "btc": "BTCUSD",
+}
+
+
+def _central_bank_currency(text: str) -> str | None:
+    """The currency an institution's communications are an event on, or None. No view is read."""
+    low = (text or "").lower()
+    for phrase, ccy in _CB_CURRENCY:
+        if phrase in low:
+            return ccy
+    return None
+
+
 def resolve_symbols(row: dict, universe: set[str]) -> list[str]:
-    """Resolve exact symbols and currency-wide evidence against the live Fusion registry."""
+    """Resolve exact symbols and currency-wide evidence against the live Fusion registry.
+
+    CASE DESTROYED EVERY MIXED-CASE FUSION SYMBOL UNTIL 2026-09-15, and the cost was large and
+    completely invisible. This upper-cased the token before looking it up, which is correct for
+    `eurusd` and fatal for `Accenture`: Fusion's registry keys share CFDs by their trade name --
+    Accenture, Adobe, Airbnb, AlibabaGroup, Alphabet-A, BankofAmericaCorp -- and `"ACCENTURE"` is
+    in no registry anywhere. The token then failed the 3-letter currency branch too, so the row
+    resolved to NOTHING.
+
+    MEASURED: 10,926 `broker_swaps` rows -- every equity swap record the terminal has ever
+    published -- compiled as NEEDS_SYMBOL_EXTRACTION and were queued for a deepening call to
+    recover an instrument THE ROW ALREADY NAMED IN A STRUCTURED FIELD. That is the exact failure
+    this module's own comment warns about thirty lines further down, arriving through the one
+    path nobody looked at, and it reached every seat that names an instrument by its Fusion name
+    rather than by a currency code. `3M` survived only because `upper("3M") == "3M"`.
+
+    So the lookup is now case-insensitive and returns the REGISTRY'S OWN casing, which is the
+    only spelling anything downstream can use to open a chart.
+    """
     raw = []
     for key in ("symbol", "currency"):
         if row.get(key):
@@ -206,13 +340,22 @@ def resolve_symbols(row: dict, universe: set[str]) -> list[str]:
     for key in ("symbols", "instruments"):
         if isinstance(row.get(key), list):
             raw.extend(row[key])
+    # Built once per call rather than per token: a row naming twenty instruments should not walk
+    # the registry twenty times.
+    folded = {s.upper(): s for s in universe}
     out: set[str] = set()
     for value in raw:
-        token = str(value).upper().replace("/", "").strip()
+        token = str(value).replace("/", "").strip()
         if token in universe:
             out.add(token)
+            continue
+        exact = folded.get(token.upper())
+        if exact is not None:
+            out.add(exact)
         elif len(token) == 3 and token.isalpha():
-            out.update(s for s in universe if len(s) == 6 and token in (s[:3], s[3:]))
+            up = token.upper()
+            out.update(s for s in universe if len(s) == 6 and up in (s[:3].upper(),
+                                                                     s[3:].upper()))
     return sorted(out)
 
 
@@ -430,6 +573,29 @@ def _phrase_re(phrase: str):
     return re.compile(r"(?<![a-z0-9])" + re.escape(phrase.lower()) + r"(?![a-z0-9])")
 
 
+def _body_text(row: dict) -> str:
+    """The row's prose EXCLUDING its title and url -- what an extractor actually has to work with.
+
+    A title is a label, not a body. `FX Blue user fxpl` and a bare archive URL are titles that
+    satisfy any "does this row have text" test and contain no instrument, no mechanism and no
+    rule, so a row whose ONLY text is its title has nothing an extraction call can succeed on.
+    This is deliberately checked AFTER the prose path has had its turn on the full text: if the
+    title alone did yield something, that path has already returned and this is never reached.
+    """
+    parts: list[str] = []
+    for key in _TEXT_FIELDS:
+        if key in ("title", "url", "link"):
+            continue
+        v = row.get(key)
+        if isinstance(v, str) and v.strip():
+            parts.append(v)
+    for key in _TEXT_LIST_FIELDS:
+        v = row.get(key)
+        if isinstance(v, list):
+            parts.extend(str(x) for x in v if isinstance(x, (str, int, float)))
+    return " ".join(parts).strip()
+
+
 def _row_text(row: dict) -> str:
     parts: list[str] = []
     for key in _TEXT_FIELDS:
@@ -584,14 +750,76 @@ def compile_row(source: str, row: dict, universe: set[str]) -> tuple[list[dict],
                             "conditionally")
                  for s in symbols], "STRUCTURED_COT")
 
-    event_like = (source_l in {"ff_calendar_vintage", "forexfactory", "central_bank"}
-                  or kind in {"calendar_event", "calendar_vintage", "cb_speech"})
+    # THE SEAT IS `central_banks` AND THIS SET SAID `central_bank`. One character, 16,462 rows.
+    # Those rows carry `{"bank": "BoE", "currency": "GBP", "hawk": 0, "dove": 1, "date": ...}` --
+    # the instrument is in a structured field, the event class is unambiguous, and every one of
+    # them was routed to an LLM for "exact rule extraction" it did not need. A seat name is a
+    # directory on disk and directory names drift; matching the SHAPE of the row as well as the
+    # name is what stops the next rename from costing another five figures of rows.
+    #
+    # THE TONE IS NOT READ INTO THE CELL. hawk/dove counts ride along as a prior for the study
+    # and never become a parameter: an LLM's reading of policy language must not reach capital,
+    # and `event_reaction` is testing the RELEASE, not somebody's interpretation of it.
+    event_like = (source_l in {"ff_calendar_vintage", "forexfactory", "central_bank",
+                               "central_banks", "bis_speeches", "cb_speeches"}
+                  or kind in {"calendar_event", "calendar_vintage", "cb_speech"}
+                  or (row.get("currency") and (row.get("bank") or row.get("speaker"))))
     if event_like and symbols:
         return ([_candidate(s, "event_reaction", {"input_source": "ff_calendar_vintage"},
                             source, row,
                             "scheduled information releases create conditional repricing "
                             "and liquidity")
                  for s in symbols], "STRUCTURED_EVENT")
+
+    # A CENTRAL BANK SPEECH NAMES ITS CURRENCY IN THE INSTITUTION, not in a symbols field.
+    # 4,640 `bis_speeches` rows compiled to nothing because `symbols` is empty on every one of
+    # them -- and they are not ambiguous rows: "Keynote speech by Mr Denis Beau, First Deputy
+    # Governor of the BANK OF FRANCE" is a euro-area official, which is a EUR event, and the
+    # deepening call that row was queued for would have been spent deriving exactly that.
+    #
+    # THE MAPPING IS INSTITUTION -> CURRENCY AND NOTHING ELSE. It does not read the speech for a
+    # view, does not score hawkishness and does not infer direction; an LLM reading of policy
+    # language must never reach capital (the Asia directive is explicit about this). It says only
+    # that a scheduled communication from this institution is an event on this currency, which is
+    # what `event_reaction` exists to test.
+    if event_like and not symbols:
+        blob = f"{row.get('title') or ''} {row.get('text') or ''} {row.get('speaker') or ''}"
+        ccy = _central_bank_currency(blob)
+        if ccy:
+            pairs = sorted(s for s in universe
+                           if len(s) == 6 and ccy in (s[:3].upper(), s[3:].upper()))
+            if pairs:
+                return ([_candidate(s, "event_reaction",
+                                    {"input_source": "ff_calendar_vintage"}, source, row,
+                                    f"central-bank communication from a {ccy} institution is a "
+                                    f"scheduled information release on that currency; the row "
+                                    f"names the institution and never a view")
+                         for s in pairs[:_MAX_TEXT_SYMBOLS]], "STRUCTURED_CB_SPEECH")
+
+    # A PUBLIC TRACK RECORD IS A PHENOTYPE, AND A PHENOTYPE IS NOT A MECHANISM.
+    # 28,077 rows across seven genome seats carry `kind: track_record`, and the temptation is to
+    # convert all of them because a public trader's equity curve looks like evidence. It is not.
+    # What a track record can legitimately supply is an INSTRUMENT and a STRUCTURAL CLASS -- this
+    # account traded gold with a grid -- and only when it supplies BOTH does a testable cell
+    # exist. A row naming an instrument and no structure says "something worked on gold", which
+    # is not a hypothesis; a row naming structure and no instrument is not one either.
+    #
+    # REPORTED RETURNS ARE A PRIOR AND NEVER A PRIVILEGE. `ev_score` and `growth_pct` are carried
+    # onto the row for the genome study and are deliberately NOT used to admit the cell: the
+    # gauntlet decides, and a 20,585% claimed growth buys exactly no gates.
+    if kind == "track_record":
+        marks = [str(t).lower() for t in
+                 ((row.get("mechanism_tags") or []) + (row.get("phenotypes") or []))]
+        fam = next((_PHENOTYPE_FAMILY[m] for m in marks if m in _PHENOTYPE_FAMILY), None)
+        syms = list(symbols) or [_PHENOTYPE_SYMBOL[m] for m in marks
+                                 if m in _PHENOTYPE_SYMBOL and _PHENOTYPE_SYMBOL[m] in universe]
+        if fam and syms and _registered_cached(fam):
+            return ([_candidate(s, fam, {}, source, row,
+                                f"a public track record on {s} whose structure is declared as "
+                                f"{'/'.join(sorted(set(marks)))}: the phenotype names a family "
+                                f"to test, and the reported return is a prior that buys no gate")
+                     for s in syms[:_MAX_TEXT_SYMBOLS]], "STRUCTURED_TRACK_RECORD")
+
 
     if source_l == "broker_swaps" and symbols and (
             kind in {"contract_terms", "swap_terms"}
@@ -700,6 +928,20 @@ def compile_row(source: str, row: dict, universe: set[str]) -> tuple[list[dict],
     # DID name one (the seats' rows: "gold basis pressure") was labelled NEEDS_SYMBOL_EXTRACTION
     # here, overriding the prose path's own finding; the deepening worker then spent its call
     # recovering an instrument the row already had, not the rule it lacked.
+    # THE CRAWLER FAILED, NOT THE COMPILER, AND THE LABEL MUST SAY WHICH. A row with no
+    # instrument, no structure and NOTHING THE PROSE READER COULD READ was never extractable: the
+    # miner captured a LINK and not a page. Calling that NEEDS_SYMBOL_EXTRACTION queues an LLM
+    # call that cannot possibly succeed -- there is nothing in the row to read -- and it hides a
+    # collector defect inside a research backlog, where it looks like work in progress forever.
+    #
+    # IT IS TESTED AFTER THE PROSE PATH AND AGAINST `_row_text`, NOT `text`. The first version of
+    # this check ran BEFORE the prose path and looked only at `row["text"]`, which killed the
+    # deepseek seat outright: its claim lives in `testable_claim`, so a perfectly readable
+    # hypothesis was labelled an empty capture and thrown away. A guard that silences a working
+    # lane is worse than the mislabelling it was written to fix.
+    if (not symbols and not (row.get("mechanism_tags") or row.get("phenotypes"))
+            and not _body_text(row).strip() and kind not in {"fetch_error", ""}):
+        return [], "EMPTY_CAPTURE"
     if not symbols and text_disp != "NEEDS_EXACT_RULE_EXTRACTION":
         return [], "NEEDS_SYMBOL_EXTRACTION"
     return [], "NEEDS_EXACT_RULE_EXTRACTION"
@@ -826,6 +1068,28 @@ def main() -> int:
         # unfunded, unrouted or broken, and every one of those has looked like "no findings".
         print(f"SEATS DARK inside the {WINDOW_DAYS}-day window: {', '.join(seats_dark)}",
               flush=True)
+    # EVERY SEAT DARK IS A DIFFERENT CONDITION FROM ONE SEAT DARK, and until now they printed the
+    # same (G1, wired 2026-09-13). One dark seat is a seat to chase. ALL of them dark means Engine
+    # A -- the whole mechanism-driven LLM synthesis lane, every role on every vendor -- produced
+    # nothing this window, and the compiler downstream of it has been reading an empty room and
+    # reporting a healthy conversion of zero.
+    #
+    # A PRINT IS NOT A SIGNAL. This lane has failed silently in exactly this shape before: the
+    # seats wrote where no reader looked, the compiler said 0 rows with no complaint, and the
+    # docket simply stopped growing from that source while every other number looked normal.
+    # Printing into a scheduled task's stdout is indistinguishable from working.
+    if seats_dark and len(seats_dark) == len(SEAT_SOURCES):
+        try:
+            from libs.ops.repair_invoke import request_repair
+            request_repair(
+                f"miner_candidate_compiler: ALL {len(SEAT_SOURCES)} synthesis seat(s) "
+                f"({', '.join(sorted(SEAT_SOURCES))}) donated ZERO rows inside the "
+                f"{WINDOW_DAYS}-day window. Engine A is producing nothing: the seats are "
+                "unfunded, unrouted or broken, and the compiler below them is converting an "
+                "empty room. Check the seat doors write under data/intelligence/<seat>/ and "
+                "that their clocks ran.")
+        except Exception as exc:      # a missing actuator must not take the compiler down
+            print(f"  (repair not requested: {type(exc).__name__}: {exc})", flush=True)
     agreement = sum(1 for c in candidates.values() if c.get("n_independent_sources", 0) > 1)
     # DISAGREEMENT IS A SIGNAL TOO (Tier-1 item G20, 2026-09-09). Two engines naming the same
     # symbol under DIFFERENT families is not a tie to discard: it is the cell whose test settles

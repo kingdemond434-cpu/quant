@@ -57,6 +57,7 @@ import json
 import math
 import os
 import re
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -99,7 +100,19 @@ LEDGER = _ROOT / "docs/desk_lessons.jsonl"
 #: Corpus discipline still binds, just where it belongs: `broken_enforcement` and the retirement
 #: path, not a silent truncation at read time. `DESK_MEMORY_BUDGET_CHARS` overrides for a caller
 #: whose context is genuinely tight.
-_FULL_CORPUS_CHARS = 130_000
+#:
+#: RAISED 130k -> 190k ON 2026-09-15, and the trigger is the whole reason this note exists. The
+#: corpus reached 338 lessons and `reach()` reported 335 reached, 1 UNREACHED, 0 lost: adding
+#: L0338 silently displaced L0288, which then reached no organ at all. That is the exact failure
+#: this constant was raised to 130k to end -- a ceiling set against a corpus size, on a corpus
+#: that grows by design. A budget that fits TODAY'S corpus is a budget that will drop tomorrow's
+#: lesson, and it will do it without saying so.
+#:
+#: So the floor is now sized off the corpus ON DISK rather than a remembered number: 293,746 raw
+#: chars render to well under this, and `check_lesson_reach` fails the suite the moment
+#: `unreached` is non-zero again, which is the part that makes the property survive the next
+#: hundred lessons instead of the next ten.
+_FULL_CORPUS_CHARS = 190_000
 BUDGET_CHARS = int(os.environ.get("DESK_MEMORY_BUDGET_CHARS") or _FULL_CORPUS_CHARS)
 
 #: What it cost the desk NOT to know this. The scale is about consequence, never about how
@@ -820,17 +833,60 @@ twice.
 """
 
 
-def next_id(path: Path | None = None) -> str:
-    p = path or LEDGER
-    if not p.exists():
-        return "L0001"
+def _max_id_in(text: str) -> int:
+    """Highest Lnnnn in a ledger payload. Unparsable lines are skipped, never guessed at."""
     n = 0
-    for line in p.read_text("utf-8").splitlines():
+    for line in text.splitlines():
         line = line.strip()
         if not line or line.startswith("#"):
             continue
-        raw = str(json.loads(line).get("id", "L0000")).lstrip("L")
-        n = max(n, int(raw) if raw.isdigit() else 0)
+        try:
+            raw = str(json.loads(line).get("id", "L0000")).lstrip("L")
+        except (ValueError, TypeError):
+            continue
+        if raw.isdigit():
+            n = max(n, int(raw))
+    return n
+
+
+#: Refs whose copy of the ledger is consulted before minting an id. See `next_id`.
+_ID_REFS = ("HEAD", "@{upstream}", "origin/HEAD")
+
+
+def next_id(path: Path | None = None) -> str:
+    """The next free lesson id, checked against every copy of the ledger this clone can see.
+
+    ONE COUNTER AND TWO WRITERS MINT THE SAME ID (fixed 2026-09-14). This read the working file
+    alone. The desk has two machines that both append lessons -- the trading box and the mirror --
+    and on 2026-09-13 both were sitting at L0293, so both minted L0294 onward. Eleven ids came to
+    name two entirely different lessons depending on which machine you asked, and adopting either
+    copy would have silently overwritten the other's eleven with every id still present and every
+    count unchanged. Only the three ids that happened NOT to collide were caught.
+
+    WHAT THIS CAN AND CANNOT FIX. Consulting HEAD and the upstream ref closes the window from
+    "forever" to "between the other machine's push and this machine's fetch", which on a desk
+    that syncs hourly is small. It cannot close it entirely: two machines that both append while
+    offline are not coordinated by anything here, and pretending otherwise would be worse than
+    stating the bound. The residual is caught downstream by `check_protected_records`, whose
+    RECORDS_REWRITTEN verdict refuses a commit where an id survives and its meaning does not.
+    That is the belt; this is the braces, and both were missing.
+    """
+    p = path or LEDGER
+    n = _max_id_in(p.read_text("utf-8")) if p.exists() else 0
+    try:
+        rel = p.resolve().relative_to(Path(__file__).resolve().parents[2]).as_posix()
+    except (ValueError, OSError):
+        rel = None
+    if rel:
+        for ref in _ID_REFS:
+            try:
+                r = subprocess.run(["git", "show", f"{ref}:{rel}"],
+                                   cwd=str(p.parent), capture_output=True, text=True,
+                                   encoding="utf-8", errors="replace", timeout=30, check=False)
+            except (OSError, subprocess.SubprocessError):
+                continue
+            if r.returncode == 0:
+                n = max(n, _max_id_in(r.stdout))
     return f"L{n + 1:04d}"
 
 

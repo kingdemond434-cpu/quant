@@ -70,6 +70,55 @@ LEG_LAYER: dict[str, str] = {
     # timing: when a claim becomes a trade
     "enrol_clocks": "timing", "heal_clocks": "timing", "promoter": "timing",
     "rebalance_trigger": "timing", "entry_timing": "timing",
+    # WHICH HOURS the desk has an edge in is a TIMING question, not a sizing one -- this leg
+    # measures and allocates nothing, and stacking it on pf_allocator would shrink twice.
+    "session_allocation": "timing",
+    # Generating a mechanism's other-session and other-chart equivalents is asking WHEN it works,
+    # which is a timing question even though the output is a research candidate.
+    "session_chart_expansion": "timing",
+    # Whether an artifact's own stamp advances is a MEASUREMENT property of the desk, not a
+    # property of any strategy -- it belongs with the other self-measurement legs.
+    "stamp_freshness": "information",
+    # Why an order filled or did not is an EXECUTION measurement, and it is the binding stage.
+    "fill_attribution": "execution",
+    # What a sleeve pays to trade belongs with execution too: it is a cost, not a signal.
+    "cost_to_edge": "execution",
+    "swap_rejudge": "execution",
+    "asia_plane": "information",
+    # Whether a data endpoint still serves what it claims is an INFORMATION property -- it decides
+    # whether any input exists at all, before any signal is derived from it.
+    "source_routes": "information",
+    # Per-sleeve return paths are what a PORTFOLIO view is computed from -- n_eff, covariance,
+    # joint drawdown. Not a signal and not an execution fact.
+    "strategy_paths": "portfolio",
+    # THE FOUR ACTIVATION LEGS (2026-09-14). All four organs existed and NOTHING ran them, which
+    # is III.16 exactly: built is not a status. `weak_signals` and `residual_factors` mint claims
+    # about returns, so they are prediction. `markout` asks what the desk's own fills cost it
+    # after the fact -- execution. `exogenous_search` is undirected hunting for inputs nobody has
+    # a story for, which is information, and is only affordable because the trial count is sealed.
+    "weak_signals": "prediction",
+    "residual_factors": "prediction",
+    "markout": "execution",
+    "exogenous_search": "information",
+    # `stop_reverse` asks what the desk's own orders did to it at the venue -- execution.
+    "stop_reverse": "execution",
+    # `forward_reconcile` keeps the forward lane's roster true -- which clock may accrue
+    # evidence and which is an orphan. That is portfolio bookkeeping, not prediction.
+    "forward_reconcile": "portfolio",
+    # AND FIVE LEGS WERE STILL UNMAPPED WHEN THOSE FOUR LANDED (2026-09-14). The registry's own
+    # comment records fifteen of these in 2026-09-10 and the same drift had recurred, so the test
+    # this file exists to satisfy was red before this session touched it. Mapped by what each
+    # actually does rather than by its name: `refresh_regime` (costed as `regime_monitor`)
+    # conditions on a latent state, which is prediction; `orthogonality` measures tail dependence
+    # BETWEEN sleeves, which only the portfolio layer can act on; `lake_promote` asks what share
+    # of stored intelligence survives a point-in-time question, which is information about the
+    # desk's own inputs; `research_exchange_score` scores which external source converts, likewise;
+    # `alpha_rl` searches sequentially against the allocator's marginals, which is prediction.
+    "alpha_rl": "prediction",
+    "regime_monitor": "prediction",
+    "orthogonality": "portfolio",
+    "lake_promote": "information",
+    "research_exchange_score": "information",
     # sizing: how much
     "capacity": "sizing", "ensemble_optimizer": "sizing",
     # portfolio: how the book is composed

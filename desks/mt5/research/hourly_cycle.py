@@ -262,7 +262,7 @@ def record_tape() -> dict:
     for label, call in (("tape", lambda: _tape_main()), ("triangle", lambda: _triangle_main())):
         try:
             rc = call()
-        except Exception as exc:                                        # noqa: BLE001
+        except Exception as exc:
             print(f"tick tape {label} FAILED: {type(exc).__name__}: {exc}", flush=True)
             results[f"{label}_error"] = f"{type(exc).__name__}: {exc}"
             codes.append(1)
@@ -307,7 +307,7 @@ def publish_state() -> dict:
                             "-ExecutionPolicy", "Bypass", "-File", str(script)],
                            capture_output=True, text=True, cwd=str(REPO),
                            timeout=600, check=False)
-    except Exception as exc:                                            # noqa: BLE001
+    except Exception as exc:
         print(f"publish_state FAILED to start: {type(exc).__name__}: {exc}", flush=True)
         return {"error": f"{type(exc).__name__}: {exc}"}
     tail = (r.stdout or r.stderr or "").strip().splitlines()[-3:]
@@ -632,6 +632,21 @@ def _allocator_mode_for_the_hour(art: Path | None = None, now: datetime | None =
     return "normal"
 
 
+#: Exit codes a leg uses to REPORT rather than to fail, by leg name. Declared here, beside the
+#: place that reads them, because the alternative is every consumer of the ledger inventing its
+#: own list. A code absent from a leg's tuple is a genuine failure and is recorded as one.
+#:
+#: Each entry is a claim about that leg's contract and is checked by reading the leg: `model_skill`
+#: documents exit 2 as a verdict in its own docstring; `deep_forest` returns 1 for a pass that
+#: mined nothing; `maintain_miners` exits 2 after examining stale artifacts and deciding, which is
+#: the work, not a failure to do it.
+VERDICT_EXITS: dict[str, tuple[int, ...]] = {
+    "model_skill": (2,),
+    "deep_forest": (1,),
+    "maintain_miners": (2,),
+}
+
+
 def _costed(name: str, fn):
     """Run one leg and record what it COST, whatever it returns or raises.
 
@@ -670,7 +685,7 @@ def _costed(name: str, fn):
     """
     try:
         from libs.ops.compute_ledger import close_run, open_run
-    except Exception as exc:                                            # noqa: BLE001
+    except Exception as exc:
         # LOUD, NOT SILENT (theirs, 2026-09-10). `compute_ledger` says in its own words that a
         # denominator which fails silently is a scaling law nobody can draw; this was the import
         # that could fail without a word.
@@ -690,7 +705,7 @@ def _costed(name: str, fn):
         if close_run and run is not None:
             close_run(run, outcome="interrupted")
         raise
-    except BaseException as exc:                                        # noqa: BLE001
+    except BaseException as exc:
         detail = f"{type(exc).__name__}: {exc}"
         if close_run and run is not None:
             close_run(run, outcome=detail[:200])
@@ -714,7 +729,28 @@ def _costed(name: str, fn):
         elif out.get("timeout_s") and out.get("exit_code") is None:
             outcome = "TIMEOUT"
         elif out.get("exit_code") not in (None, 0):
-            outcome = f"exit_code={out['exit_code']}"
+            # A VERDICT IS NOT A FAILURE, AND RENDERING THEM THE SAME IS ITS OWN DEFECT (WS-005).
+            #
+            # Several legs exit non-zero BY DESIGN to report bad news. `model_skill` says so in
+            # its own docstring -- "its non-zero exit is a VERDICT, not a cycle failure: it exits
+            # 2 while any predictor is unscored or beaten by its baseline ... a measurement organ
+            # must never be able to stop the desk by reporting bad news". `deep_forest` exits 1
+            # for a pass that mined nothing; `maintain_miners` exits 2 having examined every
+            # stale artifact and decided correctly about each.
+            #
+            # The ledger wrote `exit_code=2` for all of them, identical to a crash. Measured
+            # 2026-09-13: a reader counting non-ok rows found "16 legs failing every pass" and
+            # went looking for sixteen bugs, when most of those legs were working and reporting.
+            # The desk already knows this rule and states it one file over -- "different alarms
+            # and they must not render the same way".
+            #
+            # So the leg declares which of its exit codes are verdicts, and the ledger says
+            # `verdict_exit=N` rather than `exit_code=N`. Nothing is hidden: the code is still
+            # there, a verdict still ends a leg non-zero, and a code NOT on the declared list is
+            # still a failure. What changes is that a reader can tell them apart.
+            _code = out["exit_code"]
+            outcome = (f"verdict_exit={_code}" if _code in VERDICT_EXITS.get(name, ())
+                       else f"exit_code={_code}")
     if close_run and run is not None:
         close_run(run, outcome=outcome)
     _emit_leg(name, outcome)
@@ -729,7 +765,7 @@ def _emit_leg(name: str, outcome: str) -> None:
     try:
         from libs.ops.events import leg_events
         leg_events(name, outcome)
-    except Exception as exc:                                            # noqa: BLE001
+    except Exception as exc:
         print(f"  event for {name} not recorded: {type(exc).__name__}: {exc}", flush=True)
 
 
@@ -775,6 +811,31 @@ def _producer(name: str, script: str,
     return _producer_impl(name, script, tuple(flat))
 
 
+#: Legs whose job is to CLOSE A GAP rather than search, and how long each may take.
+#:
+#: A search leg is fine to truncate: it samples, and next hour it samples again. An ENROLMENT pass
+#: is not, and the difference cost the desk eighty-four forward clocks. `shadow_forward` walks the
+#: authorized runs and enrols the ones without a clock; at 720s it was killed partway through the
+#: same prefix EVERY hour, so the tail could never be reached -- not once, not eventually. Eighty-
+#: four certificates that had cleared all ten gates sat accruing nothing, indefinitely, while the
+#: leg reported as scheduled and running.
+#:
+#: THE SHAPE TO RECOGNISE: a truncated job that restarts from the same end is not slow, it is
+#: BROKEN, and it looks identical to slow on every dashboard. Either the pass must finish, or it
+#: must consume its backlog first so that truncation still makes progress. `shadow_forward` gets
+#: the budget to finish; the gauntlet already does the other (never-judged cells sort first).
+LEG_BUDGET_SEC: dict[str, int] = {
+    "enrol_clocks": 2_700,
+    # THE FOUR ACTIVATION LEGS ARE SEARCHES, NOT RENDERERS. `weak_signals` rebuilds member
+    # signals for up to 24 members across 67 symbols and its own `run()` already self-limits at
+    # 2400s; a cycle budget below that would kill it at the same prefix every hour, which is the
+    # failure `enrol_clocks` was raised for. The other three get room to reach their data.
+    "weak_signals": 2_700,
+    "residual_factors": 1_800,
+    "exogenous_search": 1_200,
+}
+
+
 def _producer_impl(name: str, script: str, args: tuple[str, ...] = ()) -> dict:
     """The body: resolve the script against both roots and run it under the cycle budget.
 
@@ -799,14 +860,15 @@ def _producer_impl(name: str, script: str, args: tuple[str, ...] = ()) -> dict:
         return {"exit_code": None, "status": "MISSING",
                 "why": f"{script} exists under neither {BASE} nor {REPO}",
                 "at": datetime.now(UTC).isoformat()}
+    budget = LEG_BUDGET_SEC.get(name, SEARCH_BUDGET_SEC)
     try:
         r = subprocess.run([sys.executable, "-u", "-W", "ignore", str(target), *args],
                            capture_output=True, text=True, cwd=str(root),
-                           timeout=SEARCH_BUDGET_SEC, check=False)
+                           timeout=budget, check=False)
         return {"exit_code": r.returncode, "tail": (r.stdout or r.stderr or "")[-300:],
-                "at": datetime.now(UTC).isoformat()}
+                "budget_s": budget, "at": datetime.now(UTC).isoformat()}
     except subprocess.TimeoutExpired:
-        return {"exit_code": None, "timeout_s": SEARCH_BUDGET_SEC,
+        return {"exit_code": None, "timeout_s": budget,
                 "note": f"{name} exceeded its cycle budget and was stopped; its partial work is "
                         f"whatever it had already written",
                 "at": datetime.now(UTC).isoformat()}
@@ -850,6 +912,434 @@ def causal_graph() -> dict:
     the book is no longer being held in.
     """
     return _producer("world_causal_graph", "research/world_causal_graph.py")
+
+
+#: The worker name this cycle claims under. One name, so a lease abandoned by a crashed pass is
+#: recoverable by the next one rather than orphaned under a per-run identifier.
+QUEUE_WORKER = "hourly_cycle"
+
+
+def _claim_one(kind: str) -> tuple[object | None, object | None, str]:
+    """Lease the most valuable READY task of `kind`, or explain why nothing was claimed. I2.
+
+    THE QUEUE HAD NO CONSUMER, WHICH MADE IT A LOG. `task_queue`, `worker`, `org`,
+    `wiring_campaign` and `coverage_governor` are five tested modules forming one complete loop,
+    `queue_cycle` gave them a clock, and still no leg ever called `claim()` -- so the journal grew,
+    the census reported it, and the cycle went on running every leg in source order regardless of
+    whether anything had happened. A queue nothing claims from is a list of regrets.
+
+    Returns (queue, task, why). `task is None` is the ordinary case and is NOT a failure: it means
+    nothing of this kind is ready, which is the whole point of running because something happened.
+    """
+    try:
+        from libs.ops.task_queue import TaskQueue
+    except Exception as exc:
+        return None, None, f"task_queue unimportable ({type(exc).__name__})"
+    path = BASE / "data" / "task_queue.jsonl"
+    if not path.exists():
+        return None, None, f"no queue journal at {path.name}; queue_cycle has not produced yet"
+    try:
+        q = TaskQueue(path)
+        task = q.claim(QUEUE_WORKER, kinds=(kind,))
+    except Exception as exc:
+        return None, None, f"claim failed ({type(exc).__name__}: {str(exc)[:100]})"
+    if task is None:
+        return q, None, f"no READY {kind!r} task -- nothing to do, which is the point"
+    return q, task, ""
+
+
+def orthogonality() -> dict:
+    """`orthogonality`: tail dependence between sleeves -- the correction the allocator sizes past.
+
+    MOVED FROM DAILY TO HOURLY 2026-09-13, and the mismatch it closes is this: `pf_allocator`
+    refreshes every pass and `EFFECTIVE_BREADTH` (the LINEAR n_eff it sizes on) refreshes hourly,
+    while the TAIL correction -- the reading that says 3.31 effective bets are really 3.05 when it
+    costs something -- ran once a day on MT5-FrontierAudit at 05:10. So the desk's tail-risk view
+    was permanently up to a day behind its own sizing decisions.
+
+    The day that became indefensible: the cure lane enrolled 120 clocks in one hour and the book
+    went 129 -> 251, none of which a 17-hour-old dependence estimate could see.
+
+    It costs 3.5 SECONDS measured on the box, so there was never a compute argument for daily --
+    only that nobody had asked. It stays on the frontier audit too; running twice is free and the
+    artifact is idempotent.
+
+    IT PUBLISHES AND DOES NOT RESIZE. Nothing here feeds the allocator: a dependence estimate that
+    silently shrank the book would be a growth cut with no missed-growth ledger line behind it.
+    """
+    return _producer("orthogonality", "research/orthogonality.py", "--apply")
+
+
+def lake_promote() -> dict:
+    """`lake_promote`: what share of the desk's own intelligence survives a point-in-time question.
+
+    I7. `libs/data/lake.py` carried the whole bronze/silver/gold ladder and its refusal rules, and
+    nothing on the tree ever called `promote` -- so the ladder was a schema. This leg climbs it
+    with the intelligence corpus the compiler reads, and publishes the REFUSAL count.
+
+    The refusals are the output, not the promotions. A promoter that fills a missing `event_time`
+    with the ingestion time produces a lake in which every backtest passes and none of them mean
+    anything, because every row then claims to have been knowable the moment it was scraped.
+
+    FIRST REAL PASS: 2,416 bronze rows, ZERO reached silver, all refused for "no resolvable
+    event_time". Not one row of the desk's own intelligence carries a stamp saying WHEN it could
+    have been known. That is a fact about the corpus, it was invisible until something ran the
+    ladder, and it bears directly on every claim built from these rows.
+    """
+    return _producer("lake_promote", "research/lake_promote.py")
+
+
+def session_allocation() -> dict:
+    """`session_allocation`: which HOURS the desk has an edge in, and which its capital sits idle.
+
+    `pf_allocator` solves posterior E[log W] per SLEEVE and nothing solved it per SESSION, so the
+    one dimension that decides whether capital works 24 hours had no measurement at all. It could
+    not have had one: all 228 forward clocks answered "?" to which window they trade, while the
+    answer sat in their own keys.
+
+    FIRST PASS, and both findings were invisible until something ran it. `overlap` held 14.2% of
+    deployed heat with ZERO clocks and ZERO forward trades -- capital sized into a window carrying
+    no forward evidence. And seven of twenty-four UTC hours have no forward clock at all, which no
+    amount of sizing can fix; only mechanisms hunted in those hours will.
+
+    It also corrected an impression worth correcting: the book's Asia concentration is EARNED.
+    exp_R 0.5384 +/- 0.0803 over 155 trades is a 6.7-sigma edge, so 61.5% of heat there is the
+    allocator being right, not drifting. `london_am` at 0.1649 +/- 0.1474 is ~1.1 sigma and
+    correctly gets nothing.
+
+    MEASUREMENT ONLY. A second allocator stacked on pf_allocator would shrink twice, and growth
+    governance Rule 1 requires any reduction to prove it raises robust forward E[log W]. The
+    honest use of this artifact is ADDITIVE: it hands the research side a target list of idle
+    hours to fill with NEW independent bets (Rule 2), never a reason to take heat off a window
+    that is earning.
+    """
+    return _producer("session_allocation", "research/session_allocator.py")
+
+
+def session_chart_expansion() -> dict:
+    """`session_chart_expansion`: every proven mechanism, asked about every other hour and chart.
+
+    STANDING RULE, not a one-off sweep. A mechanism certified in one session is a hypothesis
+    about the other eight, and a mechanism certified on one chart is a hypothesis about the other
+    six. Nothing on this desk ever asked either question, which is why seven of twenty-four UTC
+    hours carried no forward clock and every scalp sleeve was `xau_*`.
+
+    EVERY PARENT, NOT JUST THE ASIA ONES. The desk's certificates happen to be mostly Asia today;
+    the rule is not. An NY mechanism gets its London and Asia equivalents on the same pass.
+
+    HOURS ARE RANKED BY MEASURED COVERAGE, so the budget goes where there are no clocks rather
+    than back into the session the desk already owns. The first run showed why that matters: at a
+    cap of six it spent three slots re-hunting Asia and never reached ny_open or ny_mid at all.
+    As London and NY fill, they stop being cheap and Asia becomes eligible again -- the loop
+    closes rather than permanently condemning a session.
+
+    IT PROPOSES AND NOTHING MORE. No certificate, no authority, no size: every variant clears the
+    same ten gates as anything else on the docket. The cost is a real one -- each cell raises the
+    deflated-Sharpe bar every other cell must clear -- and it is bounded per parent for that
+    reason. 451 cells against a docket of 21,692 is a 2.1% rise in the trial count, spent on
+    variants of mechanisms measured at 105.6 survivors per 1,000 ruled cells while `discovered`
+    returns 2.0.
+    """
+    return _producer("session_chart_expansion", "research/session_chart_equivalents.py", "--apply")
+
+
+def stamp_freshness() -> dict:
+    """`stamp_freshness`: artifacts that are REWRITTEN but not RE-STAMPED.
+
+    An organ rewrites its artifact every pass and leaves the timestamp inside it wherever it last
+    landed. The file is fresh, the stamp is ancient, and every consumer that reads the stamp --
+    which is most of them, because a file mtime is destroyed by a checkout or a sync -- is told
+    the organ is dead.
+
+    NO EXISTING CHECK COULD SEE IT. `organ_contract` and `never_stale` judge by FILE AGE, so a
+    rewritten-but-unstamped artifact passes them cleanly; `build_zentech_state` reads the internal
+    STAMP, so the dashboard shows it dead. Neither looks at both numbers, and the contradiction
+    between them IS the finding.
+
+    FIRST RUN: two. `shadow_state.json` rewritten 0.0h ago carrying a stamp 434.8h old -- the one
+    artifact the forward lane's own health check reads, which is why heal_forward_lane had been
+    reporting "engine last evaluated this row 434.1h ago" about rows evaluated minutes earlier.
+    And `anomaly_cursor.json`, 41h of lag, which nobody had noticed at all.
+    """
+    return _producer("stamp_freshness", "scripts/check_stamp_freshness.py")
+
+
+def fill_attribution() -> dict:
+    """`fill_attribution`: why every order became a fill or did not. The BINDING stage.
+
+    conversion_ledger picks the binding constraint by its own rule and the answer is not in
+    research: order -> fill is 1.9%. 52 orders, 34 unfilled, 10 rejected, 1 filled. Breadth
+    multiplied by a 1.9% fill rate is still 1.9%.
+
+    NOTHING READ THE REASON CODES. order_intents.jsonl recorded a broker retcode per attempt and
+    no artifact ever parsed them, so every statement about why orders do not fill was a guess
+    standing beside a file that held the answer.
+
+    It also names a defect nobody had: the two execution ledgers CANNOT be row-joined.
+    fill_corpus carries intent_id and status, order_intents carries retcode and no intent_id, and
+    the only shared field is ticket -- which is 0 on every rejection, so the rows that most need
+    explaining are exactly the ones that cannot be joined.
+    """
+    return _producer("fill_attribution", "research/fill_attribution.py")
+
+
+def cost_to_edge() -> dict:
+    """`cost_to_edge`: what each live sleeve PAYS to trade, against what it earns.
+
+    THE ENGINE MODELS NO SWAP. mt5desk.engine.Costs carries spread and commission and nothing
+    else, so every certificate was judged with zero financing cost. For an intraday sleeve that
+    is correct; for overnight_gap_decay, which holds through rollover BY CONSTRUCTION, the
+    dominant cost was never charged.
+
+    Measured on the four live overnight sleeves: GBPMXN 0.246R and GBPNOK 0.202R round trip
+    against a +0.135R expectancy assumption -- cost exceeding the entire edge. EURUSD is 0.025R
+    for scale, and all four carry the same parameter hash.
+    """
+    return _producer("cost_to_edge", "research/cost_to_edge.py")
+
+
+def swap_rejudge() -> dict:
+    """`swap_rejudge`: every certificate re-priced against the financing it was never charged.
+
+    THE ENGINE NOW CHARGES SWAP (Costs.swap_per_lot_per_night, 2026-09-15) and that only protects
+    certificates minted from now on. The 58 already holding forward clocks were judged by an
+    engine that charged zero, so this re-prices each against the venue's published swap points and
+    the nights its OWN ledger says its trades crossed -- mean, not median, because the number it
+    is charged against is an expectancy and the trades that hold are part of it.
+
+    Measured 2026-09-15 over 58: 57 SURVIVES, 1 AT_RISK, 0 COST_NEGATIVE. The book is Asia-session
+    H1 and mostly exits before rollover; the worst is GBPJPY at 27.5% of its edge. That is the
+    answer being cheap rather than the fence being loose -- the same pass on the four live
+    overnight_gap_decay sleeves is where `cost_to_edge` finds cost exceeding the whole edge.
+    """
+    return _producer("swap_rejudge", "research/swap_rejudge.py")
+
+
+def asia_plane() -> dict:
+    """`asia_plane`: every Asian ground converted into gauntlet cells, or named as converting to none.
+
+    THE RULE (principal, 2026-09-15): every ground the desk ever covers must have machinery that
+    turns it into cells. Not a collector, not a dashboard tile -- CELLS, judged or explicitly
+    blocked on a named feed. A source that reaches no gauntlet is indistinguishable from a source
+    nobody added, and this desk has had both and could not tell them apart.
+
+    The hard-data half of the Asian surface: 45 official, exchange, physical, flow, genome and
+    alternative sources, kept apart from `deep_forest_miner`'s 502 PRACTITIONER grounds because a
+    forum post and an SHFE warehouse receipt earn completely different treatment -- one mints a
+    hypothesis, the other can settle one.
+
+    Measured on its first pass: 45 sources -> 393 cells, 100% compiling as STRUCTURED_HYPOTHESIS,
+    16 instruments, 0 unconverted grounds, 4 transports declared as carrying other sources rather
+    than minting their own, and 16 declared targets NAMED as not quoted on this account.
+    """
+    return _producer("asia_plane", "research/asia_plane.py")
+
+
+
+
+def source_routes() -> dict:
+    """`source_routes`: is each data endpoint still there, or has it moved and started lying?
+
+    A MOVED ENDPOINT DOES NOT REPORT AN ERROR, IT REPORTS ABSENCE. This repo's own history: NOAA
+    renamed CurrentSummaries.json to CurrentStorms.json, the old path answered with a 404 page as
+    HTML behind HTTP 200, and the miner read it as "no active storms" with four hurricanes live.
+
+    So the probe asks whether the body is still the SHAPE the caller declared, not merely whether
+    something answered. HTTP 200 carrying HTML where JSON was declared is MOVED, and MOVED is the
+    only fatal verdict -- an honest non-200 is loud and self-announcing.
+
+    FIRST RUN: gld_holdings 404 (a written fetcher aimed at a dead URL) and dukascopy 503, while
+    sge_quotations answers JSON -- so fetch_sge_premium is idle rather than broken. That
+    distinction is the whole point, and nothing else on the desk could make it.
+    """
+    return _producer("source_routes", "scripts/check_source_routes.py")
+
+
+def strategy_paths() -> dict:
+    """`strategy_paths`: per-sleeve return paths on one common clock. Four capabilities wait on it.
+
+    dependence_blindness reads 2.93x on a constructed clone book and ~1.0 on an independent one --
+    the discriminator provably works -- and on the REAL book it was UNMEASURED because
+    data/strategy_paths.json did not exist. Without it there is no real n_eff, no covariance
+    denoising, no dependence-aware Monte Carlo, and no answer to whether 190 sleeves are 13 bets.
+
+    I CONCLUDED THIS FILE COULD NOT BE BUILT, FROM THE ROW. The shadow row carries only summaries,
+    so "the data was never recorded" is a reasonable inference and a false one: shadow_forward
+    writes a per-sleeve LEDGER beside every row with entry_time, exit_time, r_multiple and a
+    forward/historical flag, and 173 of them were already on disk. The paths were one directory
+    over the whole time.
+
+    Forward trades only, and one daily grid spanning every sleeve's window -- equal LENGTH is not
+    alignment. The measurement needs 60 common marks and the window is 19, so it rebuilds hourly
+    and becomes available on its own.
+    """
+    return _producer("strategy_paths", "research/strategy_paths.py")
+
+
+def weak_signal_ensembles() -> dict:
+    """`weak_signals`: combine the cells that failed ONLY on power. Selection's discard pile.
+
+    THE DESK CERTIFIES INDIVIDUALLY AND THEREFORE THROWS AWAY ITS OWN RAW MATERIAL. Ten gates are
+    applied to each cell alone; a cell that clears every validity gate -- pbo, cpcv, walk_forward,
+    lockbox, reality_check_spa, stress_costs -- and fails only deflated_sharpe or expected_value
+    is not refuted. It is a real effect measured on too few observations to clear a bar charging
+    597 trials. Under selection it is a failure. Under combination it is the INPUT, because k
+    weak members with low mutual correlation carry a t-stat growing with sqrt(k) while no member's
+    own edge has to move.
+
+    IT WAS BUILT AND NEVER RUN BY ANYTHING. 284 lines, zero clock references, and `power_deficient`
+    read a `gates` field the gauntlet has never written, so it reported "0 combinations" on a
+    docket holding 560 qualifying cells across 67 eligible symbols. Unwired AND silently empty is
+    how a capability stays invisible: the artifact said there was nothing to do.
+    """
+    return _producer("weak_signals", "research/weak_signal_compiler.py")
+
+
+def residual_factors() -> dict:
+    """`residual_factors`: cross-sectional residuals, the family with candidates and no sleeves.
+
+    786 residual candidates have been mined and ZERO residual sleeves are live; all 61 live
+    sleeves are session, gap or carry. Left unrun, that zero reads as "residuals do not work on
+    this venue" -- a conclusion the desk has never actually tested, because the engine that
+    measures them has no clock. Running it makes the zero a MEASUREMENT instead of a silence.
+    """
+    return _producer("residual_factors", "research/factor_residual_engine.py")
+
+
+def markout() -> dict:
+    """`markout`: adverse selection in the desk's OWN fills. Are we the desperate party?
+
+    The desk cannot take the other side of somebody's forced liquidation -- but it can detect
+    when it is SUPPLYING one, and that is the same measurement read the other way round. A markout
+    curve that runs consistently against the fill says this book is the liquidity being taken.
+
+    WHAT IT CURRENTLY MEASURES IS ZERO, AND THE REASON IS THE FINDING. 282 decisions, 275 not
+    taken, of which 274 are `release_identity_refused` -- refused before a price was ever computed,
+    so there is no counterfactual to replay. The organ is sound and the ledger was empty because
+    the identity fence was rejecting everything upstream of it. That fence is fixed; this accrues
+    from here, which is exactly why it needs a clock rather than a one-off run.
+    """
+    return _producer("markout", "research/counterfactual_markout.py")
+
+
+def exogenous_search() -> dict:
+    """`exogenous_search`: the licensed absurd-variable lane, run under the sealed trial count.
+
+    Most desks cannot afford undirected search because their multiple-testing correction is
+    nominal. This one's is not: `n_trials` is a SEALED campaign constant (597) and the
+    deflated-Sharpe charge is paid whatever the search looked at, so an exogenous variable with
+    no economic story costs the same as one with a story and is judged by the same bar.
+
+    A LANE THAT FINDS NOTHING STILL PAYS. "We looked across this budget and there was nothing"
+    is a real answer and belongs in `negative_knowledge`; silence does not.
+    """
+    return _producer("exogenous_search", "research/unknown_unknowns.py")
+
+
+def stop_reverse_census() -> dict:
+    """`stop_reverse`: count the times one price level paid twice, and entries into a dislocation.
+
+    NAMED SO IT BECOMES COUNTABLE, NOT SO IT BECOMES A RULE. On 2026-09-11 a 60-point M1 wick took
+    a gold long's stop and, because the bracket's sell_stop sat at that level, opened a short at
+    the same price in the SAME SECOND -- at the low tick. Price was fully back six minutes later.
+    Two losses of ~72 EUR from one round trip that ended where it began.
+
+    There is no OCO, no cooldown and no opposite-leg cancellation in the gateway, so a wick through
+    a stop is structurally guaranteed to open the reverse at the worst tick. Three such events in
+    thirty days, net -30.20 -- but ONE of them earned +42.08, so an OCO would have cost that too.
+    Three is not a sample, and building the fix now would fit execution logic to a handful of
+    minutes (L0330). This leg counts, so that a fourth and fifth make it evidence.
+    """
+    return _producer("stop_reverse", "research/stop_reverse_census.py")
+
+
+def forward_reconcile_leg() -> dict:
+    """`forward_reconcile`: retire orphan clocks EVERY HOUR, because they accrue every hour.
+
+    A DAILY CADENCE COULD NOT KEEP UP AND THE SHORTFALL WAS INVISIBLE. `forward_reconcile` runs
+    once a day as MT5-ForwardReconcile, and its whole log is two lines: 81 actions, then 167.
+    Run by hand on 2026-09-14 it took 190 more -- {'IDENTITY_UNFROZEN': 42, 'RETIRED_ORPHAN':
+    190} -- and the retirement count is CLIMBING pass over pass (40 -> 125 -> 190). Orphans are
+    minted continuously: 17 certificates landed in one day and every re-key orphans the ledger
+    row it replaced.
+
+    WHAT THE BACKLOG COST. `heal_forward_lane` reported 186 STALLED rows, 183 of them
+    STALE_ATTEMPT with "engine last evaluated this row 453.8h ago" -- nineteen days of rows that
+    LOOKED alive, held a clock, and accrued nothing. Retiring the orphans took STALLED from 186
+    to 4 in a single pass. The forward lane is the desk's only source of out-of-sample evidence,
+    so a stalled row is not cosmetic: it is a certificate that can never mature.
+
+    AND IT FAILS SOFT BY DESIGN, which is why the backlog was silent -- `run_forward_reconcile.cmd`
+    says so in its own header: "unreadable enrolment disables retirement for the pass". A pass
+    that retires nothing and a pass that had nothing to retire write the same log line. Hourly
+    cadence does not fix that ambiguity; it bounds the damage to an hour instead of a day while
+    the census below makes the backlog itself visible.
+    """
+    return _producer("forward_reconcile", "research/forward_reconcile.py")
+
+
+def _recertify_canon_claimed() -> dict:
+    """`recertify_canon`, but only for a window the queue says is actually uncovered."""
+    q, task, why = _claim_one("recertify")
+    if task is None:
+        return {"status": "STOOD_DOWN", "why": why,
+                "note": ("not a failure: the queue is the schedule now, and an empty queue means "
+                         "no window is UNCOVERED. Running anyway would spend the hour proving it")}
+    payload = getattr(task, "payload", {}) or {}
+    res = _producer("recertify_canon", "scripts/recertify_canon.py")
+    ok = res.get("exit_code") == 0
+    try:
+        if ok:
+            q.complete(getattr(task, "id", ""), QUEUE_WORKER,
+                       why=f"recertify_canon exit 0 for {payload.get('cell', '?')}")
+        else:
+            q.fail(getattr(task, "id", ""), QUEUE_WORKER,
+                   why=f"recertify_canon exit {res.get('exit_code')}")
+    except Exception as exc:
+        res["queue_bookkeeping_error"] = f"{type(exc).__name__}: {exc}"
+    return {**res, "claimed": {"id": getattr(task, "id", ""),
+                               "cell": payload.get("cell"),
+                               "priority": getattr(task, "priority", None),
+                               "understatement": payload.get("understatement")}}
+
+
+def research_exchange_score() -> dict:
+    """`research_exchange score`: which external source's proposals actually became anything.
+
+    G1, AND IT IS THE MEASUREMENT THAT MAKES THE SEATS ACCOUNTABLE. `data/panel_scorecard.json`
+    has held thirteen providers at 0 scored / hit_rate null since 2026-07-17, which the scorer
+    itself says in its own output -- so every allocation between sources so far was made on
+    REPUTATION. The scorer walks the exchange ledger and turns that into proposed/dead/dup/built/
+    live per source, which is the only thing that can replace reputation with a yield.
+
+    It was scheduled by nothing. Wired here rather than as a VPS timer because this cycle is the
+    clock that demonstrably runs, and a timer on a machine that is not adopting is a clock in
+    name. It is cheap -- a ledger read and an arithmetic pass -- and it writes an EMPTY scoreboard
+    with an explicit "nothing has ever been ingested" when the ledger is empty, which is the
+    honest state rather than a fabricated one.
+    """
+    return _producer("research_exchange_score", "scripts/research_exchange.py", "score")
+
+
+def alpha_rl() -> dict:
+    """`alpha_rl_run`: the sequential alpha search, learning from the allocator's own marginals.
+
+    G4 HAD EXISTED AND RUN NOWHERE. `libs/research/alpha_rl.py` carried a complete Q-learner over
+    the alpha-construction MDP -- replay buffer, epsilon floor, and a reward that is the book's
+    measured marginal dE[log W] -- and its own Tier-1 row said so: "SEQUENTIAL CONTROL NOW EXISTS
+    AND IS MEASURED; NOTHING RUNS IT". That is III.16 stated in the ledger and left there.
+
+    Billed like every other leg, and bounded: the runner takes a wall-clock budget and reports how
+    many of the requested episodes it reached, so a slow host loses episodes rather than the hour.
+
+    ITS REFUSALS ARE PUBLISHED, WHICH IS WHY IT IS WORTH RUNNING AT ALL. With no allocator
+    artifact the reward is UNMEASURED and NO episode runs -- an empty table, said plainly, rather
+    than a confident ranking of a fabrication. An episode whose completed spec the book has never
+    valued is discarded whole rather than scored zero. The first real pass reported 291 rewarded
+    against 509 unpriced and learned almost entirely at `family` depth, which is exactly the sort
+    of thing a reader must be able to see before acting on a ranking.
+    """
+    return _producer("alpha_rl", "research/alpha_rl_run.py")
 
 
 def compile_candidates() -> dict:
@@ -1587,8 +2077,17 @@ def main() -> None:
     # THE CANON SEAL, hourly rather than daily. A certificate the gauntlet minted at 02:00 sat
     # unsealed until the next midnight run, so `shadow_admission._canon` -- which enrolment,
     # promotion and the dashboard all read -- was up to 24 hours behind the gates.
-    rc = _costed("recertify_canon", lambda: _producer(
-        "recertify_canon", "scripts/recertify_canon.py"))
+    # RUNS BECAUSE SOMETHING HAPPENED, NOT BECAUSE THE HOUR TURNED (I2). `queue_cycle` raises a
+    # `recertify` task for every window whose cost coverage came back UNCOVERED, priced by how
+    # much the charge was understated. This leg now CLAIMS one instead of running unconditionally:
+    # with an empty queue it stands down and says so, and the hour is spent on something that has
+    # work waiting. That single change is what turns a cycle running in source order into one
+    # running on events.
+    #
+    # The task is completed or failed by its outcome, so a pass that dies does not silently
+    # consume the work -- the lease expires and the next pass re-claims it, which is the property
+    # the durable journal exists to provide and which nothing was using.
+    rc = _costed("recertify_canon", _recertify_canon_claimed)
     # ENROLMENT, ON THE MACHINE THAT MINTS THE CERTIFICATES. `heal_clocks` above repairs clocks
     # that EXIST and have gone IDENTITY_BROKEN; it does nothing whatever for a certificate that
     # has no clock at all, and those are two different failures that read the same on a dashboard.
@@ -1680,6 +2179,25 @@ def main() -> None:
 
     et = _costed("execution_twin", execution_twin)
     cg = _costed("causal_graph", causal_graph)
+    arl = _costed("alpha_rl", alpha_rl)
+    rxs = _costed("research_exchange_score", research_exchange_score)
+    lkp = _costed("lake_promote", lake_promote)
+    orth = _costed("orthogonality", orthogonality)
+    sess = _costed("session_allocation", session_allocation)
+    sxp = _costed("session_chart_expansion", session_chart_expansion)
+    stf = _costed("stamp_freshness", stamp_freshness)
+    fat = _costed("fill_attribution", fill_attribution)
+    c2e = _costed("cost_to_edge", cost_to_edge)
+    swr = _costed("swap_rejudge", swap_rejudge)
+    asp = _costed("asia_plane", asia_plane)
+    srt = _costed("source_routes", source_routes)
+    spa = _costed("strategy_paths", strategy_paths)
+    wse = _costed("weak_signals", weak_signal_ensembles)
+    rfx = _costed("residual_factors", residual_factors)
+    mko = _costed("markout", markout)
+    exo = _costed("exogenous_search", exogenous_search)
+    srx = _costed("stop_reverse", stop_reverse_census)
+    fwr = _costed("forward_reconcile", forward_reconcile_leg)
     ms = _costed("model_skill", model_skill)
     fcx = _costed("forecast_contract", forecast_contract)
     mz = _costed("model_league", model_league)
@@ -1845,7 +2363,25 @@ def main() -> None:
                     "regime_monitor": rg,
                     "deepening": dp, "heal_clocks": hc, "mine": m,
                     "search": se, "sweep": sw, "compile": cc,
-                    "execution_twin": et, "causal_graph": cg, "model_skill": ms,
+                    "execution_twin": et, "causal_graph": cg, "alpha_rl": arl,
+                    "research_exchange_score": rxs, "lake_promote": lkp,
+                    "orthogonality": orth,
+                    "session_allocation": sess,
+                    "session_chart_expansion": sxp,
+                    "stamp_freshness": stf,
+                    "fill_attribution": fat,
+                    "cost_to_edge": c2e,
+                    "swap_rejudge": swr,
+                    "asia_plane": asp,
+                    "source_routes": srt,
+                    "strategy_paths": spa,
+                    "weak_signals": wse,
+                    "residual_factors": rfx,
+                    "markout": mko,
+                    "exogenous_search": exo,
+                    "stop_reverse": srx,
+                    "forward_reconcile": fwr,
+                    "model_skill": ms,
                     "frontier": fr, "refresh_bars": rb, "deep_forest": df,
                     "maintain_miners": mm, "publish_survivors": ps,
                     "forecast_contract": fcx, "model_league": mz, "adversaries": ad,

@@ -1,0 +1,1376 @@
+{
+ "note": "The ASIA HARD-DATA PLANE. `deep_forest_sources.json` holds the PRACTITIONER forest -- 502 grounds where people say what they believe, which are hypothesis generators and never evidence. This file holds the other half: official, exchange, physical and flow data, where the number itself is the observation. The two are kept apart on purpose. A forum post and an SHFE warehouse receipt are both public Chinese information and they earn completely different treatment: one mints a hypothesis, the other can settle one. Adding a source here means declaring an MT5 transmission path for it -- a dataset with no path into a tradable instrument is not collected, however interesting, because trial count is a shared cost (LAWS: TWO LANES) and an unroutable feed spends it for nothing.",
+ "boundary": "PUBLIC OR LICENSED ONLY, and this is a hard line rather than a preference. Nothing here bypasses authentication, a paywall, a robots directive, a private group or an access control; nothing impersonates a user; no source is material non-public information. `access` declares what each needs, and a keyed or paid source that has no key configured reports UNCONFIGURED -- never a failed probe, and never a silent skip.",
+ "planes": {
+  "cn_hard": {
+   "name": "China official, exchange and physical",
+   "region": "cn",
+   "priority": 1,
+   "why": "the number itself is the observation: inventories, receipts, member positioning, fixings, settlement flow. This is the surface almost nobody joins together correctly, and it is where an information advantage is actually available to a public-data desk."
+  },
+  "cn_aggregator": {
+   "name": "China aggregation APIs",
+   "region": "cn",
+   "priority": 2,
+   "why": "discovery and prototyping speed. An aggregator is a convenience over the exchange, never an authority: where a direct exchange route exists it is preferred, because an aggregator's silent schema change is indistinguishable from a quiet market."
+  },
+  "jp": {
+   "name": "Japan official and exchange",
+   "region": "jp",
+   "priority": 2,
+   "why": "JPY crosses and gold both price off Japanese rates and liquidity; BOJ's own time series carries ~200,000 items."
+  },
+  "kr": {
+   "name": "Korea exchange and macro",
+   "region": "kr",
+   "priority": 3,
+   "why": "exports and semiconductors are a clean read on Asian industrial demand, and KRX publishes investor-type flow."
+  },
+  "hk_sg": {
+   "name": "Hong Kong and Singapore",
+   "region": "hk",
+   "priority": 3,
+   "why": "HK is the CN/offshore transmission point and HKMA's open interface needs no registration at all; Singapore carries the Asian commodity and freight trade."
+  },
+  "tw": {
+   "name": "Taiwan",
+   "region": "tw",
+   "priority": 4,
+   "why": "semiconductor and trade information, and a second read on the same Asian industrial state."
+  },
+  "genome": {
+   "name": "Public trader genome",
+   "region": "global",
+   "priority": 2,
+   "why": "NOT for copying anyone. The question is structural: across tens of thousands of publicly observable strategies, what characteristics predict persistence AFTER costs. The graveyards are the valuable half -- a leaderboard of survivors answers a question nobody asked."
+  },
+  "alt": {
+   "name": "Alternative and narrative",
+   "region": "global",
+   "priority": 4,
+   "why": "trade, shipping, energy, weather and attention. Weakest priors here, so the highest bar."
+  },
+  "physical": {
+   "name": "Physical commodity and production exhaust",
+   "region": "cn",
+   "priority": 1,
+   "why": "the market that exists BEFORE the price reacts. Inventories, deliveries, port cargo, rail freight and production are the physical balance the futures curve is an opinion about. This is the deepest public layer where a public-data desk can still be early."
+  },
+  "participant": {
+   "name": "Exchange participant microdata",
+   "region": "cn",
+   "priority": 1,
+   "why": "member long/short rankings, OI change, concentration and option IV. CONCENTRATION, not net position, is what predicts a squeeze -- and the Chinese exchanges publish it while no Western feed carries it."
+  },
+  "supply_chain": {
+   "name": "Corporate and procurement exhaust",
+   "region": "cn",
+   "priority": 3,
+   "why": "tenders, hiring, land, permits, supplier graphs. An industrial-demand read built from operations rather than from a price. Mostly licensed rather than free, so each entry must earn its rent."
+  },
+  "geospatial": {
+   "name": "Satellite and geospatial",
+   "region": "global",
+   "priority": 3,
+   "why": "atmospheric and thermal observation over known industrial clusters, which is production measured directly rather than surveyed. Weakest prior of any plane and the highest bar: a fire is not a factory and an emissions anomaly is not output until it is shown to lead one."
+  },
+  "search": {
+   "name": "Search and consumer attention",
+   "region": "cn",
+   "priority": 4,
+   "why": "ACCELERATION, never level. Attention is a state variable that marks the crowded end of a move; the level is a popularity contest."
+  },
+  "customs_micro": {
+   "name": "Customs microdata",
+   "region": "asia",
+   "priority": 2,
+   "why": "commodity x country x customs point x transport mode, rather than a headline monthly total. Granularity is the whole edge: an aggregate that everyone has is not information."
+  },
+  "logistics": {
+   "name": "Shipping, freight and port",
+   "region": "global",
+   "priority": 2,
+   "why": "freight is physical trade volume priced in real time, weeks upstream of the customs print it will eventually appear in."
+  }
+ },
+ "sources": [
+  {
+   "id": "safe_fx_settlement",
+   "plane": "cn_hard",
+   "name": "SAFE bank FX settlement and sales",
+   "url": "https://www.safe.gov.cn/safe/whxsdsj/index.html",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 20
+   },
+   "targets": [
+    "USDCNH",
+    "AUDUSD",
+    "NZDUSD",
+    "XAUUSD"
+   ],
+   "mechanism": "corporate FX demand imbalance is RMB pressure before it is a price; the offshore rate and Asia-risk FX carry it",
+   "why": "SAFE publishes settlement/sales, cross-border receipts and payments, reserves and BOP -- the positioning and liquidity backdrop behind the fixing"
+  },
+  {
+   "id": "safe_cross_border",
+   "plane": "cn_hard",
+   "name": "SAFE cross-border receipts and payments",
+   "url": "https://www.safe.gov.cn/safe/kjszsfk/index.html",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 20
+   },
+   "targets": [
+    "USDCNH",
+    "AUDUSD",
+    "XAUUSD"
+   ],
+   "mechanism": "the payment imbalance leads the flow that moves the offshore rate"
+  },
+  {
+   "id": "safe_reserves",
+   "plane": "cn_hard",
+   "name": "SAFE / PBOC official reserve assets",
+   "url": "https://www.safe.gov.cn/safe/whcb/index.html",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "month end",
+    "publication_lag_days": 7
+   },
+   "targets": [
+    "XAUUSD",
+    "USDCNH"
+   ],
+   "mechanism": "official gold accumulation is a persistent, price-insensitive bid; the reserve line is the only public read on it"
+  },
+  {
+   "id": "pboc_open_market",
+   "plane": "cn_hard",
+   "name": "PBOC open market operations and announcements",
+   "url": "http://www.pbc.gov.cn/zhengcehuobisi/125207/125213/125431/index.html",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "operation date",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "USDCNH",
+    "AUDUSD",
+    "HK50"
+   ],
+   "mechanism": "a liquidity injection or drain sets the funding state that CNH and Asia risk trade off"
+  },
+  {
+   "id": "pboc_survey_stats",
+   "plane": "cn_hard",
+   "name": "PBOC survey and statistics (credit, aggregate financing)",
+   "url": "http://www.pbc.gov.cn/diaochatongjisi/116219/index.html",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 12
+   },
+   "targets": [
+    "AUDUSD",
+    "NZDUSD",
+    "Copper",
+    "XAUUSD"
+   ],
+   "mechanism": "Chinese credit creation leads the industrial demand that prices the metals complex and the commodity currencies"
+  },
+  {
+   "id": "cfets_fixing",
+   "plane": "cn_hard",
+   "name": "CFETS / ChinaMoney RMB central parity and index",
+   "url": "https://www.chinamoney.com.cn/english/bmkcpr/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "09:15 CST",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "USDCNH",
+    "AUDUSD",
+    "USDJPY"
+   ],
+   "mechanism": "the fixing SURPRISE -- parity against the model-implied level -- is the policy signal; the level itself is not"
+  },
+  {
+   "id": "chinabond_curve",
+   "plane": "cn_hard",
+   "name": "ChinaBond yield curve",
+   "url": "https://yield.chinabond.com.cn/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "close",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "USDCNH",
+    "XAUUSD"
+   ],
+   "mechanism": "the CN-US rate differential is the carry that sets CNH direction and the real-rate term that prices gold"
+  },
+  {
+   "id": "nbs_pmi",
+   "plane": "cn_hard",
+   "name": "NBS PMI with every sub-index",
+   "url": "https://data.stats.gov.cn/english/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 1
+   },
+   "targets": [
+    "AUDUSD",
+    "NZDUSD",
+    "Copper",
+    "AUS200",
+    "CN50"
+   ],
+   "mechanism": "the SUB-INDICES, not the headline: new orders minus inventories is a demand impulse, export orders is external demand, delivery times is supply stress. Surprise, diffusion, breadth, acceleration and disagreement are the features; the headline is the one number everyone already has"
+  },
+  {
+   "id": "nbs_industrial",
+   "plane": "cn_hard",
+   "name": "NBS industrial production, PPI/CPI, property, retail",
+   "url": "https://data.stats.gov.cn/english/easyquery.htm?cn=A01",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 15
+   },
+   "targets": [
+    "AUDUSD",
+    "Copper",
+    "XAGUSD"
+   ],
+   "mechanism": "sector-level production is the physical demand the metals complex clears against"
+  },
+  {
+   "id": "china_customs",
+   "plane": "cn_hard",
+   "name": "China Customs commodity-level import/export",
+   "url": "http://www.customs.gov.cn/customs/302249/zfxxgk/2799825/302274/302277/index.html",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 20
+   },
+   "targets": [
+    "AUDUSD",
+    "Copper",
+    "XAUUSD",
+    "USDCAD"
+   ],
+   "mechanism": "physical import QUANTITY is demand stripped of price; iron ore and copper tonnage read Australian export revenue directly"
+  },
+  {
+   "id": "sge_benchmark",
+   "plane": "cn_hard",
+   "name": "Shanghai Gold Exchange benchmark and Au(T+D)",
+   "url": "https://www.sge.com.cn/sjzx/mrhq",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "AM/PM fix",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "XAUUSD"
+   ],
+   "mechanism": "the SHANGHAI PREMIUM -- local benchmark against the loco-London price -- is Chinese physical demand made visible. A premium is a bid that must eventually be sourced offshore; a discount is the reverse"
+  },
+  {
+   "id": "sge_silver",
+   "plane": "cn_hard",
+   "name": "Shanghai Gold Exchange silver benchmark and Ag(T+D)",
+   "url": "https://www.sge.com.cn/sjzx/yjstjb",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "close",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "XAGUSD"
+   ],
+   "mechanism": "same premium mechanism as gold, on the metal with the thinner float and the larger industrial share"
+  },
+  {
+   "id": "shfe_daily",
+   "plane": "cn_hard",
+   "name": "SHFE daily market data",
+   "url": "https://www.shfe.com.cn/statements/dataview.html?paramid=kx",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "close",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "XAUUSD",
+    "XAGUSD",
+    "Copper",
+    "AUDUSD"
+   ],
+   "mechanism": "the CN/global basis and the term structure. A Shanghai contract trading above the western future is a demand signal the western curve has not cleared yet"
+  },
+  {
+   "id": "shfe_warehouse",
+   "plane": "cn_hard",
+   "name": "SHFE warehouse receipts and inventory",
+   "url": "https://www.shfe.com.cn/statements/dataview.html?paramid=kxQ",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "close",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "Copper",
+    "AUDUSD",
+    "XAGUSD"
+   ],
+   "mechanism": "inventory is the physical balance. A drawdown against a FLAT price is a divergence: demand is clearing stock that price has not repriced"
+  },
+  {
+   "id": "shfe_member_rank",
+   "plane": "cn_hard",
+   "name": "SHFE top-20 member volume and long/short rankings",
+   "url": "https://www.shfe.com.cn/statements/dataview.html?paramid=pm",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "close",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "Copper",
+    "XAUUSD",
+    "XAGUSD",
+    "AUDUSD"
+   ],
+   "mechanism": "POSITION CONCENTRATION. Published once the OI threshold is met, this is the closest thing to a public COT for the Chinese complex -- and concentration, not net position, is what predicts a squeeze",
+   "why": "the single highest-value hard dataset on this list: participant structure that no western feed carries"
+  },
+  {
+   "id": "ine_crude",
+   "plane": "cn_hard",
+   "name": "INE crude, and the Shanghai crude benchmark",
+   "url": "https://www.ine.cn/statements/daily/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "close",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "USDCAD",
+    "USDNOK",
+    "XTIUSD"
+   ],
+   "mechanism": "the Shanghai-Brent spread is the Asian physical premium; CAD and NOK are the currency expressions of the crude complex"
+  },
+  {
+   "id": "dce_daily",
+   "plane": "cn_hard",
+   "name": "DCE daily market, inventory and delivery (iron ore, coal, ag)",
+   "url": "http://www.dce.com.cn/dalianshangpin/xqsj/tjsj26/index.html",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "close",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "AUDUSD",
+    "AUS200"
+   ],
+   "mechanism": "iron ore is Australian export revenue with a lag: the steel chain is the transmission and AUD is the instrument"
+  },
+  {
+   "id": "czce_daily",
+   "plane": "cn_hard",
+   "name": "CZCE daily market and warehouse (PTA, methanol, ag)",
+   "url": "http://www.czce.com.cn/cn/jysj/mrhq/H770301index_1.htm",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "close",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "XTIUSD",
+    "AUDUSD"
+   ],
+   "mechanism": "the petrochemical chain reads refinery run rates, which is crude demand upstream of the crude price"
+  },
+  {
+   "id": "gfex_daily",
+   "plane": "cn_hard",
+   "name": "GFEX daily market (lithium, polysilicon, industrial silicon)",
+   "url": "http://www.gfex.com.cn/gfex/rihq/hqsj_tjsj.shtml",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "close",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "AUDUSD",
+    "Copper"
+   ],
+   "mechanism": "the energy-transition complex: the newest and least-crowded Chinese physical chain"
+  },
+  {
+   "id": "cffex_daily",
+   "plane": "cn_hard",
+   "name": "CFFEX financial futures daily and positioning",
+   "url": "http://www.cffex.com.cn/ccpm/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "close",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "CN50",
+    "HK50",
+    "USDCNH"
+   ],
+   "mechanism": "index basis and member positioning are the onshore risk state that leads the HK and offshore expression"
+  },
+  {
+   "id": "akshare",
+   "plane": "cn_aggregator",
+   "name": "AKShare",
+   "url": "https://akshare.akfamily.xyz/",
+   "expect": "any",
+   "access": "public",
+   "library": "akshare",
+   "cadence": "on demand",
+   "targets": [],
+   "mechanism": "a very large normalized surface over Chinese futures, FX, options, spot, macro and rates -- the fastest route from a hypothesis to a first measurement",
+   "why": "prototyping speed. Where a direct exchange route exists it is the authority and this is the convenience",
+   "role": "transport",
+   "serves": [
+    "shfe_daily",
+    "shfe_warehouse",
+    "shfe_member_rank",
+    "dce_daily",
+    "czce_daily",
+    "gfex_daily",
+    "cffex_daily",
+    "ine_crude",
+    "sge_benchmark",
+    "sge_silver",
+    "nbs_pmi",
+    "chinabond_curve"
+   ],
+   "why_no_cells": "a TRANSPORT, not a mechanism. It carries other sources' series and mints no hypothesis of its own; the rule it answers to is that every source it serves must be named here, and a transport serving nothing is the same defect as a ground reaching no cell."
+  },
+  {
+   "id": "tushare",
+   "plane": "cn_aggregator",
+   "name": "Tushare Pro",
+   "url": "https://api.tushare.pro",
+   "expect": "json",
+   "access": "key",
+   "key_env": "TUSHARE_TOKEN",
+   "cadence": "on demand",
+   "targets": [],
+   "mechanism": "structured Chinese futures and macro: continuous contract mappings, settlement, margin and fee history, minute and OI data, and the China release calendar -- the calendar alone makes PIT surprise features possible",
+   "role": "transport",
+   "serves": [
+    "shfe_daily",
+    "shfe_member_rank",
+    "dce_daily",
+    "czce_daily",
+    "cffex_daily",
+    "nbs_pmi",
+    "nbs_industrial",
+    "pboc_survey_stats"
+   ],
+   "why_no_cells": "a TRANSPORT, not a mechanism. It carries other sources' series and mints no hypothesis of its own; the rule it answers to is that every source it serves must be named here, and a transport serving nothing is the same defect as a ground reaching no cell."
+  },
+  {
+   "id": "rqdata",
+   "plane": "cn_aggregator",
+   "name": "RQData / RiceQuant",
+   "url": "https://www.ricequant.com/doc/rqdata/",
+   "expect": "any",
+   "access": "paid",
+   "cadence": "on demand",
+   "targets": [],
+   "mechanism": "commodity futures and options with minute and tick depth in the supported datasets",
+   "rent": "must earn incremental out-of-sample information value against its subscription before renewal",
+   "role": "transport",
+   "serves": [
+    "shfe_daily",
+    "shfe_warehouse",
+    "dce_daily",
+    "czce_daily",
+    "ine_crude"
+   ],
+   "why_no_cells": "a TRANSPORT, not a mechanism. It carries other sources' series and mints no hypothesis of its own; the rule it answers to is that every source it serves must be named here, and a transport serving nothing is the same defect as a ground reaching no cell."
+  },
+  {
+   "id": "wind",
+   "plane": "cn_aggregator",
+   "name": "Wind API",
+   "url": "https://www.wind.com.cn/",
+   "expect": "any",
+   "access": "paid",
+   "cadence": "on demand",
+   "targets": [],
+   "mechanism": "the broadest institutional Chinese surface: market, macro, thematic, commodities, options, tick history",
+   "rent": "the most expensive line on this list. It earns renewal on measured incremental E[log W] per unit of subscription cost or it is cancelled",
+   "role": "transport",
+   "serves": [
+    "safe_fx_settlement",
+    "cfets_fixing",
+    "chinabond_curve",
+    "shfe_member_rank",
+    "nbs_pmi",
+    "china_customs"
+   ],
+   "why_no_cells": "a TRANSPORT, not a mechanism. It carries other sources' series and mints no hypothesis of its own; the rule it answers to is that every source it serves must be named here, and a transport serving nothing is the same defect as a ground reaching no cell."
+  },
+  {
+   "id": "boj_timeseries",
+   "plane": "jp",
+   "name": "BOJ time-series API",
+   "url": "https://www.stat-search.boj.or.jp/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "release",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "USDJPY",
+    "EURJPY",
+    "GBPJPY",
+    "XAUUSD"
+   ],
+   "mechanism": "policy rate, JGB operations and the liquidity stance are the level JPY carry prices off; an operation SURPRISE is the event",
+   "why": "roughly 200,000 statistical items, and an official JSON/CSV interface since 2026-02"
+  },
+  {
+   "id": "mof_japan_flows",
+   "plane": "jp",
+   "name": "MOF Japan portfolio and intervention data",
+   "url": "https://www.mof.go.jp/english/policy/international_policy/reference/feio/index.htm",
+   "expect": "any",
+   "access": "public",
+   "cadence": "weekly",
+   "pit": {
+    "event_time": "reference week",
+    "publication_lag_days": 7
+   },
+   "targets": [
+    "USDJPY",
+    "EURJPY"
+   ],
+   "mechanism": "Japanese portfolio flow into foreign bonds is the structural JPY supply; the intervention record is the reaction function itself"
+  },
+  {
+   "id": "jpx_jquants",
+   "plane": "jp",
+   "name": "JPX J-Quants",
+   "url": "https://jpx-jquants.com/",
+   "expect": "any",
+   "access": "key",
+   "key_env": "JQUANTS_TOKEN",
+   "cadence": "daily",
+   "targets": [
+    "USDJPY",
+    "JP225"
+   ],
+   "mechanism": "investor-TYPE flow: who is buying. Foreign net flow into Japanese equity is an FX transaction before it is an equity one"
+  },
+  {
+   "id": "bok_ecos",
+   "plane": "kr",
+   "name": "Bank of Korea ECOS",
+   "url": "https://ecos.bok.or.kr/api/",
+   "expect": "any",
+   "access": "key",
+   "key_env": "BOK_API_KEY",
+   "cadence": "daily",
+   "targets": [
+    "AUDUSD",
+    "USDJPY"
+   ],
+   "mechanism": "Korean macro is the cleanest high-frequency read on Asian industrial demand"
+  },
+  {
+   "id": "krx_open_api",
+   "plane": "kr",
+   "name": "KRX Open API",
+   "url": "http://data.krx.co.kr/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "close",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "AUDUSD",
+    "USDJPY",
+    "JP225"
+   ],
+   "mechanism": "derivatives OI, investor type, foreign trading, program trading and short selling -- a full participant picture on a market that opens before Europe"
+  },
+  {
+   "id": "kr_exports_20d",
+   "plane": "kr",
+   "name": "Korea 20-day exports (KCS)",
+   "url": "https://unipass.customs.go.kr/ets/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "first 20 days",
+    "publication_lag_days": 1
+   },
+   "targets": [
+    "AUDUSD",
+    "JP225",
+    "AUS200"
+   ],
+   "mechanism": "the earliest hard read on global trade anywhere: 20-day exports land before every other country's monthly trade print",
+   "why": "a genuine timing edge that is entirely public and widely under-used"
+  },
+  {
+   "id": "hkma_open_api",
+   "plane": "hk_sg",
+   "name": "HKMA Open API",
+   "url": "https://api.hkma.gov.hk/public/market-data-and-statistics/daily-monetary-statistics/daily-figures-interbank-liquidity",
+   "expect": "json",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "close",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "HK50",
+    "USDCNH",
+    "XAUUSD"
+   ],
+   "mechanism": "the aggregate balance is HKD liquidity; a squeeze in HIBOR is the transmission of mainland tightening into an offshore market",
+   "why": "179 open datasets, free, no registration and no authentication -- the easiest surface on this entire list for a 24/7 system"
+  },
+  {
+   "id": "hkex_data",
+   "plane": "hk_sg",
+   "name": "HKEX market and reference data",
+   "url": "https://www.hkex.com.hk/Market-Data/Statistics",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "close",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "HK50",
+    "USDCNH"
+   ],
+   "mechanism": "Northbound/Southbound flow is mainland money crossing a border, which is the CN/HK transmission measured directly"
+  },
+  {
+   "id": "mas_api",
+   "plane": "hk_sg",
+   "name": "MAS Singapore statistics API",
+   "url": "https://eservices.mas.gov.sg/api/action/datastore/search.json",
+   "expect": "json",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "close",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "AUDUSD",
+    "XTIUSD"
+   ],
+   "mechanism": "SGD NEER policy band and Asian dollar funding; Singapore prices the regional trade cycle"
+  },
+  {
+   "id": "sgx_derivatives",
+   "plane": "hk_sg",
+   "name": "SGX derivatives daily",
+   "url": "https://www.sgx.com/research-education/derivatives",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "targets": [
+    "AUS200",
+    "JP225",
+    "AUDUSD"
+   ],
+   "mechanism": "SGX carries the Asia-hours expression of the Japanese and Indian index complex and the iron ore swap"
+  },
+  {
+   "id": "twse_taifex",
+   "plane": "tw",
+   "name": "TWSE / TAIFEX daily and institutional flow",
+   "url": "https://www.taifex.com.tw/enl/eng3/futContractsDate",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "targets": [
+    "JP225",
+    "AUDUSD"
+   ],
+   "mechanism": "semiconductor cycle and foreign institutional flow, a second independent read on the same Asian industrial state"
+  },
+  {
+   "id": "myfxbook_outlook",
+   "plane": "genome",
+   "name": "Myfxbook Community Outlook",
+   "url": "https://www.myfxbook.com/api/get-community-outlook.json",
+   "expect": "json",
+   "access": "key",
+   "key_env": "MYFXBOOK_SESSION",
+   "cadence": "hourly",
+   "targets": [
+    "EURUSD",
+    "GBPUSD",
+    "USDJPY",
+    "XAUUSD",
+    "AUDUSD",
+    "EURJPY",
+    "GBPJPY",
+    "XAGUSD"
+   ],
+   "mechanism": "RETAIL CROWDING, directly observed. The signal is not the direction; it is the extremity and the change in it. A crowd is a supply of stops",
+   "limits": "100 outlook requests per day on the free tier -- the cadence is set by that, not by preference",
+   "role": "genome",
+   "why_targets": "the genome asks a STRUCTURAL question -- what predicts persistence after costs across thousands of public strategies -- and its answer conditions cells on the instruments this account actually trades, rather than on whatever instrument a given public trader chose."
+  },
+  {
+   "id": "collective2",
+   "plane": "genome",
+   "name": "Collective2 strategy history",
+   "url": "https://api.collective2.com/",
+   "expect": "json",
+   "access": "key",
+   "key_env": "C2_API_KEY",
+   "cadence": "weekly",
+   "targets": [
+    "EURUSD",
+    "GBPUSD",
+    "USDJPY",
+    "XAUUSD",
+    "AUDUSD",
+    "EURJPY",
+    "GBPJPY",
+    "XAGUSD"
+   ],
+   "mechanism": "THE GRAVEYARD IS THE DATASET. The historical API returns dead, killed and archived strategies alongside live ones, which is the only way to ask what structure predicts DEATH rather than what a survivor looks like",
+   "why": "a leaderboard of survivors answers a question nobody asked. This is the one public source that escapes survivorship bias by construction",
+   "role": "genome",
+   "why_targets": "the genome asks a STRUCTURAL question -- what predicts persistence after costs across thousands of public strategies -- and its answer conditions cells on the instruments this account actually trades, rather than on whatever instrument a given public trader chose."
+  },
+  {
+   "id": "darwinex",
+   "plane": "genome",
+   "name": "Darwinex DARWIN quotes and attributes",
+   "url": "https://api.darwinex.com/",
+   "expect": "json",
+   "access": "key",
+   "key_env": "DARWINEX_TOKEN",
+   "cadence": "weekly",
+   "targets": [
+    "EURUSD",
+    "GBPUSD",
+    "USDJPY",
+    "XAUUSD",
+    "AUDUSD",
+    "EURJPY",
+    "GBPJPY",
+    "XAGUSD"
+   ],
+   "mechanism": "investment attributes are an already-computed structural decomposition of thousands of strategies -- risk stability, timing, market correlation -- which is exactly the feature set the genome wants",
+   "role": "genome",
+   "why_targets": "the genome asks a STRUCTURAL question -- what predicts persistence after costs across thousands of public strategies -- and its answer conditions cells on the instruments this account actually trades, rather than on whatever instrument a given public trader chose."
+  },
+  {
+   "id": "fxblue_public",
+   "plane": "genome",
+   "name": "FX Blue public accounts",
+   "url": "https://www.fxblue.com/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "weekly",
+   "targets": [
+    "EURUSD",
+    "GBPUSD",
+    "USDJPY",
+    "XAUUSD",
+    "AUDUSD",
+    "EURJPY",
+    "GBPJPY",
+    "XAGUSD"
+   ],
+   "mechanism": "public MT4/MT5 account statistics and machine-readable position feeds for accounts whose owners chose to publish them",
+   "role": "genome",
+   "why_targets": "the genome asks a STRUCTURAL question -- what predicts persistence after costs across thousands of public strategies -- and its answer conditions cells on the instruments this account actually trades, rather than on whatever instrument a given public trader chose."
+  },
+  {
+   "id": "mql5_signals",
+   "plane": "genome",
+   "name": "MQL5 Signals",
+   "url": "https://www.mql5.com/en/signals",
+   "expect": "any",
+   "access": "public",
+   "cadence": "weekly",
+   "targets": [
+    "EURUSD",
+    "GBPUSD",
+    "USDJPY",
+    "XAUUSD",
+    "AUDUSD",
+    "EURJPY",
+    "GBPJPY",
+    "XAGUSD"
+   ],
+   "mechanism": "MetaTrader-native and therefore priced on the SAME venue structure this desk trades: the only genome source whose costs are comparable to ours without translation",
+   "role": "genome",
+   "why_targets": "the genome asks a STRUCTURAL question -- what predicts persistence after costs across thousands of public strategies -- and its answer conditions cells on the instruments this account actually trades, rather than on whatever instrument a given public trader chose."
+  },
+  {
+   "id": "tradingview_ideas",
+   "plane": "genome",
+   "name": "TradingView public ideas and scripts",
+   "url": "https://www.tradingview.com/ideas/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "weekly",
+   "targets": [
+    "EURUSD",
+    "GBPUSD",
+    "USDJPY",
+    "XAUUSD",
+    "AUDUSD",
+    "EURJPY",
+    "GBPJPY",
+    "XAGUSD"
+   ],
+   "mechanism": "published ideas carry a timestamp and cannot be retroactively hidden, which makes them point-in-time mineable in a way most claimed track records are not",
+   "role": "genome",
+   "why_targets": "the genome asks a STRUCTURAL question -- what predicts persistence after costs across thousands of public strategies -- and its answer conditions cells on the instruments this account actually trades, rather than on whatever instrument a given public trader chose."
+  },
+  {
+   "id": "stocktwits_macro",
+   "plane": "alt",
+   "name": "StockTwits message volume and sentiment, MACRO TICKERS ONLY",
+   "url": "https://api.stocktwits.com/api/2/streams/symbol/GLD.json",
+   "expect": "json",
+   "access": "public",
+   "cadence": "hourly",
+   "pit": {
+    "event_time": "message time",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "XAUUSD",
+    "XAGUSD",
+    "XTIUSD",
+    "EURUSD",
+    "BTCUSD"
+   ],
+   "tickers": [
+    "GLD",
+    "SLV",
+    "USO",
+    "UUP",
+    "FXE",
+    "GBTC"
+   ],
+   "mechanism": "retail attention and crowding, not direction. The signal is the EXTREMITY and the rate of change of message volume: a crowded book is a supply of stops, so the break that should run fails",
+   "why": "MANDATE BOUNDARY, stated because it is the whole reason this entry is narrow. Single-name equities are traded on news and earnings and are NEVER hunted for statistical hypotheses (LAWS, TWO LANES), and StockTwits is overwhelmingly a single-name stream. Only the macro ETF and commodity-proxy tickers are ingested, each mapped to the MT5 instrument it tracks -- $GLD to XAUUSD, $USO to XTIUSD, $FXE to EURUSD. The single-name firehose is deliberately left on the floor: it would spend the shared trial budget on the asset class the method suits least, which is exactly the charge that cost this desk 61% of its multiple-testing budget in the 2026-09-06 census",
+   "limits": "public endpoint, rate-limited; the hourly cadence is set by that and not by preference"
+  },
+  {
+   "id": "google_trends",
+   "plane": "alt",
+   "name": "Google Trends (BigQuery international)",
+   "url": "https://trends.google.com/trends/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "targets": [
+    "XAUUSD",
+    "BTCUSD",
+    "XTIUSD"
+   ],
+   "mechanism": "attention is a state variable, not a direction: retail attention spikes mark the crowded end of a move"
+  },
+  {
+   "id": "baltic_freight",
+   "plane": "alt",
+   "name": "Dry bulk freight and shipping activity",
+   "url": "https://www.balticexchange.com/en/data-services/market-information.html",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "targets": [
+    "AUDUSD",
+    "Copper"
+   ],
+   "mechanism": "freight rates are physical trade volume priced in real time, upstream of the customs print by weeks"
+  },
+  {
+   "id": "eia_energy",
+   "plane": "alt",
+   "name": "EIA weekly petroleum status",
+   "url": "https://api.eia.gov/v2/petroleum/stoc/wstk/data/",
+   "expect": "json",
+   "access": "key",
+   "key_env": "EIA_API_KEY",
+   "cadence": "weekly",
+   "pit": {
+    "event_time": "reference week",
+    "publication_lag_days": 5
+   },
+   "targets": [
+    "XTIUSD",
+    "USDCAD",
+    "USDNOK"
+   ],
+   "mechanism": "the western half of the crude balance, which the Shanghai premium is measured against"
+  },
+  {
+   "id": "mot_port_throughput",
+   "plane": "physical",
+   "name": "China MOT port cargo and container throughput",
+   "url": "https://www.mot.gov.cn/tongjishuju/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference period",
+    "publication_lag_days": 15
+   },
+   "targets": [
+    "AUDUSD",
+    "XTIUSD",
+    "USDCNH"
+   ],
+   "mechanism": "port throughput is export and import VOLUME before it is a customs value; the transport ministry publishes the actual cargo spreadsheets rather than a headline index"
+  },
+  {
+   "id": "cn_rail_freight",
+   "plane": "physical",
+   "name": "China rail freight volume",
+   "url": "https://www.stats.gov.cn/sj/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 18
+   },
+   "targets": [
+    "AUDUSD",
+    "XTIUSD"
+   ],
+   "mechanism": "rail tonnage is bulk commodity movement inland: coal and ore that have landed and are being consumed, which the import number cannot distinguish from stockpiling"
+  },
+  {
+   "id": "cn_power_output",
+   "plane": "physical",
+   "name": "China electricity generation and consumption",
+   "url": "https://www.stats.gov.cn/sj/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 18
+   },
+   "targets": [
+    "AUDUSD",
+    "Copper",
+    "XTIUSD"
+   ],
+   "mechanism": "industrial power draw is the least-massaged production proxy China publishes; smelting and steel are electricity before they are metal"
+  },
+  {
+   "id": "shfe_delivery",
+   "plane": "physical",
+   "name": "SHFE delivery and settlement notices",
+   "url": "https://www.shfe.com.cn/news/notice/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "notice date",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "XAUUSD",
+    "XAGUSD",
+    "Copper"
+   ],
+   "mechanism": "delivery pressure at expiry is physical demand that cannot be rolled: the inventory drawdown it forces is a stock signal with a known date"
+  },
+  {
+   "id": "cffex_member_rank",
+   "plane": "participant",
+   "name": "CFFEX member transaction and position rankings",
+   "url": "http://www.cffex.com.cn/ccpm/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "close",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "HK50",
+    "USDCNH",
+    "AUS200"
+   ],
+   "mechanism": "top-member long and short positioning CHANGES, and the dispersion between them. Concentration divergence against price is the squeeze setup; the net position is the number everyone already reads"
+  },
+  {
+   "id": "cffex_option_stats",
+   "plane": "participant",
+   "name": "CFFEX options statistics and implied volatility",
+   "url": "http://www.cffex.com.cn/ssqq/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "close",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "HK50",
+    "AUS200",
+    "USDCNH"
+   ],
+   "mechanism": "onshore implied volatility is the only public read on Chinese hedging demand, and a risk regime prices in options before it prices in spot"
+  },
+  {
+   "id": "dce_member_rank",
+   "plane": "participant",
+   "name": "DCE member position rankings",
+   "url": "http://www.dce.com.cn/dalianshangpin/xqsj/tjsj26/rtj/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "close",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "AUDUSD",
+    "AUS200"
+   ],
+   "mechanism": "iron ore positioning concentration: the Australian export chain expressed as who is holding it"
+  },
+  {
+   "id": "czce_member_rank",
+   "plane": "participant",
+   "name": "CZCE member position rankings",
+   "url": "http://www.czce.com.cn/cn/jysj/ccpm/H770304index_1.htm",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "close",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "XTIUSD",
+    "AUDUSD"
+   ],
+   "mechanism": "petrochemical chain positioning, upstream of the crude price it eventually clears against"
+  },
+  {
+   "id": "estat_jp_customs",
+   "plane": "customs_micro",
+   "name": "Japan e-Stat customs microdata (commodity x country x office x mode)",
+   "url": "https://www.e-stat.go.jp/",
+   "expect": "any",
+   "access": "key",
+   "key_env": "ESTAT_APP_ID",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 20
+   },
+   "targets": [
+    "USDJPY",
+    "AUDUSD",
+    "XTIUSD"
+   ],
+   "mechanism": "air cargo separates from sea container, and commodity separates from country. Air freight moves first and is the high-frequency half of a monthly number"
+  },
+  {
+   "id": "cn_customs_detail",
+   "plane": "customs_micro",
+   "name": "China Customs detailed query (commodity x country x port)",
+   "url": "http://stats.customs.gov.cn/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "monthly",
+   "pit": {
+    "event_time": "reference month",
+    "publication_lag_days": 20
+   },
+   "targets": [
+    "AUDUSD",
+    "XTIUSD",
+    "XAUUSD"
+   ],
+   "mechanism": "the commodity-by-origin breakdown says WHOSE export revenue moved, which the aggregate cannot; Australian iron ore and Chilean copper are different currencies"
+  },
+  {
+   "id": "sse_freight_indices",
+   "plane": "logistics",
+   "name": "Shanghai Shipping Exchange index family (SCFI, CCFI, bulk, tanker)",
+   "url": "https://www.sse.net.cn/index/singleIndex",
+   "expect": "any",
+   "access": "public",
+   "cadence": "weekly",
+   "pit": {
+    "event_time": "publication day",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "AUDUSD",
+    "XTIUSD",
+    "USDCNH"
+   ],
+   "mechanism": "freight rate by ROUTE and commodity, not one global container index. A route is a specific trade lane and its rate is that lane's supply and demand",
+   "limits": "the exchange states subscription and licensing restrictions on parts of its historical index family; the collector must respect them rather than scrape around them"
+  },
+  {
+   "id": "port_congestion",
+   "plane": "logistics",
+   "name": "Global port call and congestion statistics",
+   "url": "https://unctadstat.unctad.org/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "weekly",
+   "pit": {
+    "event_time": "reference week",
+    "publication_lag_days": 7
+   },
+   "targets": [
+    "AUDUSD",
+    "XTIUSD"
+   ],
+   "mechanism": "vessel waiting time is supply friction: the same cargo arriving late is a different price than the same cargo arriving"
+  },
+  {
+   "id": "ccgp_procurement",
+   "plane": "supply_chain",
+   "name": "China government procurement notices and awards",
+   "url": "http://www.ccgp.gov.cn/",
+   "expect": "any",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "notice date",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "AUDUSD",
+    "Copper"
+   ],
+   "mechanism": "not an aggregate spending level. Each award classified by province, industry, commodity input, project size and infrastructure category becomes an infrastructure-ORDER momentum series -- steel and copper demand with an award date on it"
+  },
+  {
+   "id": "tianyancha_supply",
+   "plane": "supply_chain",
+   "name": "Corporate registry: supplier/customer graph, tenders, hiring, land, permits",
+   "url": "https://open.tianyancha.com/",
+   "expect": "json",
+   "access": "paid",
+   "key_env": "TIANYANCHA_TOKEN",
+   "cadence": "weekly",
+   "targets": [
+    "AUDUSD",
+    "Copper",
+    "USDCNH"
+   ],
+   "mechanism": "the operational exhaust of Chinese industry: supplier relationships with purchase share, new tenders, recruitment, land purchases and permits, aggregated into a latent industrial-demand index rather than read one company at a time",
+   "rent": "a paid interface catalogue. It earns renewal on measured incremental E[log W] per unit of subscription cost or it is cancelled",
+   "boundary": "public and licensed corporate registry information only; no private corporate channel checks and no non-public material"
+  },
+  {
+   "id": "copernicus_s5p",
+   "plane": "geospatial",
+   "name": "Copernicus Sentinel-5P atmospheric (NO2, SO2, CO)",
+   "url": "https://catalogue.dataspace.copernicus.eu/stac",
+   "expect": "json",
+   "access": "key",
+   "key_env": "CDSE_TOKEN",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "overpass",
+    "publication_lag_days": 1
+   },
+   "targets": [
+    "AUDUSD",
+    "Copper",
+    "XTIUSD"
+   ],
+   "mechanism": "NO2 and CO anomalies over KNOWN steel, smelting and refining clusters are combustion, and combustion over an industrial cluster is output. The anomaly is against that cluster's own seasonal baseline, never against a national average",
+   "caution": "the weakest prior on this list. Weather, wind and season move these series far more than industry does, so the feature is a residual after a meteorological control or it is noise with a satellite attached"
+  },
+  {
+   "id": "nasa_firms",
+   "plane": "geospatial",
+   "name": "NASA FIRMS thermal anomalies",
+   "url": "https://firms.modaps.eosdis.nasa.gov/api/",
+   "expect": "csv",
+   "access": "key",
+   "key_env": "FIRMS_MAP_KEY",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "overpass",
+    "publication_lag_days": 0
+   },
+   "targets": [
+    "XTIUSD",
+    "AUDUSD"
+   ],
+   "mechanism": "thermal hotspots at refineries, flares and smelters. Flaring is throughput; an outage is its absence",
+   "caution": "a fire is not a factory. Only detections inside a declared industrial footprint are read, and the rest are discarded rather than averaged in"
+  },
+  {
+   "id": "baidu_index",
+   "plane": "search",
+   "name": "Baidu Index keyword attention",
+   "url": "https://index.baidu.com/",
+   "expect": "any",
+   "access": "key",
+   "key_env": "BAIDU_INDEX_COOKIE",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "search day",
+    "publication_lag_days": 1
+   },
+   "targets": [
+    "XAUUSD",
+    "USDCNH",
+    "AUDUSD"
+   ],
+   "mechanism": "ACCELERATION of attention on a fixed keyword basket -- gold, buy gold, RMB, USD, copper price, steel, house price, rate cut -- not the level. Chinese household attention to gold is a retail bid with a lag",
+   "boundary": "the published index product accessed as published; nothing that works around an access control"
+  }
+ ],
+ "miners": {
+  "CN_HARD_DATA": {
+   "planes": [
+    "cn_hard",
+    "cn_aggregator"
+   ],
+   "why": "official, exchange, physical and flow. Exhaust this before a single social post is read: the hard surfaces carry the information and the forums carry opinions about it."
+  },
+  "CN_DEEP_FOREST": {
+   "planes": [],
+   "delegates_to": "deep_forest_miner",
+   "region": "cn",
+   "why": "already built and already running over 30 Chinese grounds. This registry does NOT duplicate it -- a second crawler over the same ground would double the trial charge and halve the attention."
+  },
+  "JP_INTELLIGENCE": {
+   "planes": [
+    "jp"
+   ],
+   "why": "BOJ, MOF and JPX, against the Japanese practitioner grounds the forest already holds"
+  },
+  "KR_INTELLIGENCE": {
+   "planes": [
+    "kr"
+   ],
+   "why": "KRX participant data and the 20-day export print"
+  },
+  "HK_SG_INTELLIGENCE": {
+   "planes": [
+    "hk_sg",
+    "tw"
+   ],
+   "why": "the offshore transmission point and the regional trade cycle"
+  },
+  "GLOBAL_TRADER_GENOME": {
+   "planes": [
+    "genome"
+   ],
+   "why": "structure that predicts persistence after costs, learned from graveyards as much as from survivors"
+  },
+  "ALT_DATA_FOREST": {
+   "planes": [
+    "alt"
+   ],
+   "why": "trade, shipping, energy and attention. Weakest priors, highest bar."
+  },
+  "CN_PHYSICAL": {
+   "planes": [
+    "physical",
+    "participant",
+    "customs_micro",
+    "logistics"
+   ],
+   "why": "the physical economy and the participants holding it: the market that exists before the price reacts"
+  },
+  "SUPPLY_CHAIN_EXHAUST": {
+   "planes": [
+    "supply_chain"
+   ],
+   "why": "tenders, hiring, land, permits and supplier graphs fused into an industrial-demand read built from operations rather than price"
+  },
+  "GEOSPATIAL": {
+   "planes": [
+    "geospatial",
+    "search"
+   ],
+   "why": "observation and attention. Weakest priors of anything here, so the highest bar and a residual-after-controls discipline"
+  }
+ }
+}
