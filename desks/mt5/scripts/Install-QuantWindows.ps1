@@ -276,7 +276,13 @@ $tasks = @(
        Kind = "ps1"
        Script = "scripts\\Run-DeskCycle.ps1"
        Args = "-Lane noon"
-       Trigger = { New-ScheduledTaskTrigger -Daily -At "12:00" `
+       # -Once, NOT -Daily. PowerShell 5.1's `-Daily` parameter set does NOT accept
+       # -RepetitionInterval/-RepetitionDuration, so this registration failed with "Parameter set
+       # cannot be resolved using the specified named parameters" -- and BOTH cycle lanes were
+       # silently absent from the box for as long as the installer has existed. `-Once` at a
+       # dated 12:00 with a repetition is the supported shape and fires on the same clock: the
+       # trigger repeats every hour for eleven hours, every day, from that instant on.
+       Trigger = { New-ScheduledTaskTrigger -Once -At ([datetime]::Today.AddHours(12)) `
                      -RepetitionInterval (New-TimeSpan -Hours 1) `
                      -RepetitionDuration (New-TimeSpan -Hours 11) }
        # ELEVEN HOURS, not twelve: the repetition must stop before the OTHER lane's daily start,
@@ -288,7 +294,7 @@ $tasks = @(
        Kind = "ps1"
        Script = "scripts\\Run-DeskCycle.ps1"
        Args = "-Lane midnight"
-       Trigger = { New-ScheduledTaskTrigger -Daily -At "00:00" `
+       Trigger = { New-ScheduledTaskTrigger -Once -At ([datetime]::Today) `
                      -RepetitionInterval (New-TimeSpan -Hours 1) `
                      -RepetitionDuration (New-TimeSpan -Hours 11) }
        TimeLimit = (New-TimeSpan -Hours 10)
