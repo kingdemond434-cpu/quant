@@ -71,6 +71,19 @@ REGISTRY: tuple[Modifier, ...] = (
     Modifier("breadth_budget", 1.0, 1.5, "two_sided",
              "gateway.heat_budget: sqrt(k_eff) ladder above the base budget",
              "desks/mt5/reports/MISSED_GROWTH.json"),
+    # TWO-SIDED BY CONSTRUCTION, and registered here so the growth fence can hold it to that.
+    # It damps an order that piles onto a currency leg the book already holds and BOOSTS one that
+    # opens a leg the book does not hold, by the same bound -- the band is symmetric about 1.0 on
+    # purpose. Total heat is decided upstream by `heat_budget` and is untouched; what this moves
+    # is which bets that heat buys. Measured 2026-09-15: eight forex positions closed on their
+    # stops for -34.05 EUR, and six of them were one bet (EURCHF short x4 and USDCHF short x2 are
+    # both long CHF). Replaying that cluster through this, the 3rd and 4th EURCHF shorts size at
+    # 0.55x and the CHF leg lands at 0.166 lots instead of 0.200, with 1.45x available on any leg
+    # the book was not already holding.
+    Modifier("leg_balance", 0.55, 1.45, "two_sided",
+             "mt5desk.leg_balance.multiplier, applied in gateway.resolve_family_order after "
+             "promoted_lot and before the venue lot step",
+             "desks/mt5/reports/MISSED_GROWTH.json"),
     Modifier("fade", 0.5, 1.0, "reduce_only",
              "mt5desk.sizing.decay_factor (L1.59 fade flag from decay_monitor)",
              "desks/mt5/reports/MISSED_GROWTH.json"),

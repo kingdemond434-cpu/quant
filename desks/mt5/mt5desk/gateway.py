@@ -2168,15 +2168,43 @@ def resolve_family_order(st: dict, s: dict, equity: float) -> dict:
         return {"ok": False, "stage": "unpriceable", "considered": True,
                 "why": f"cannot price risk ({exc}); skipped",
                 "mark": bool(step.mark), "last_bar": last_bar, "note": step.note}
+    # CURRENCY-LEG BALANCE, TWO-SIDED (2026-09-15). Measured that day: eight forex positions
+    # closed, all eight on their stop, -34.05 EUR -- and six of them were ONE bet, because
+    # EURCHF short x4 and USDCHF short x2 are both long CHF. The desk could already SEE this
+    # (`independence.factor_k_eff` decomposes the book into legs) and sized nothing by it.
+    #
+    # This is not a cap on the book: it is heat-neutral by construction and boosts as readily as
+    # it damps. An order piling onto a leg the book already holds gets less; an order on a leg
+    # the book does not hold gets MORE, by the same bound. Total heat stays where `heat_budget`
+    # put it -- what changes is which bets it buys, which is the principal's own definition of
+    # Tier-1: more independent positive-Elog bets inside the same heat.
+    leg_mult, leg_why = 1.0, ""
+    try:
+        from mt5desk import leg_balance
+        leg_mult, leg_why = leg_balance.multiplier(s["symbol"], side,
+                                                   mt5.positions_get() or [])
+        _vmin = float(getattr(sym, "volume_min", 0.01) or 0.01)
+        _vstep = float(getattr(sym, "volume_step", 0.01) or 0.01)
+        _scaled = float(lot) * leg_mult
+        # THE VENUE'S FLOOR IS NOT A SUGGESTION and the principal's 0.02 gold floor is not
+        # negotiable: damping never rounds a real order down to nothing. An order the balance
+        # would shrink below the minimum is sent AT the minimum, which is the smallest thing the
+        # venue will accept, not a refusal dressed as sizing.
+        lot = max(_vmin, round(_scaled / _vstep) * _vstep)
+    except Exception as exc:                                        # noqa: BLE001
+        # UNMEASURED IS 1.0, NEVER A SILENT SHRINK: a decomposition that cannot be trusted must
+        # not quietly become a reason to trade smaller.
+        leg_mult, leg_why = 1.0, f"leg balance UNMEASURED ({type(exc).__name__}: {exc})"
     return {"ok": True, "stage": "ok", "why": "resolved", "considered": True,
             "lot": float(lot), "dist": float(dist),
             "sym": sym, "tick": tick, "entry_ref": float(entry_ref), "signal": g, "side": side,
             "tf": tf, "last_bar": last_bar, "mark": bool(step.mark), "note": step.note,
             "population": population,
             "ttl_until": family_ttl_until(last_bar, g.ttl_bars, _BAR_MINUTES.get(tf, 60)),
+            "leg_mult": float(leg_mult), "leg_why": leg_why,
             "basis": (f"promoted_lot: risk_frac={s.get('risk_frac')} x ramp(n_live={n_live})"
                       f"{' from the allocator book' if from_book else ''} at the signal's own "
-                      f"{dist:.5g} stop")}
+                      f"{dist:.5g} stop; {leg_why}")}
 
 
 def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
