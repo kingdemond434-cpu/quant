@@ -1,0 +1,160 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "World Development Indicators | DataBank",
+  "url": "http://databank.worldbank.org/data/source/world-development-indicators",
+  "published": "2026-09-15T16:12:22+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "cafbe55a6c42f96fc4fc",
+  "host": "databank.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "IBKR Campus Newsletters",
+  "url": "https://ndcdyn.interactivebrokers.com/IBSales/IBKRCampus?subscription=quant",
+  "published": "2026-09-15T16:12:35+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "cf53e9fb16a05c050923",
+  "host": "ndcdyn.interactivebrokers.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "INVESTMENT STRATEGIES &#8211; Systematic Strategies",
+  "url": "https://systematic-strategies.com/?page_id=9",
+  "published": "2026-09-15T16:12:41+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "correlation",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "322d70dfd82f7ea0e407",
+  "host": "systematic-strategies.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "RESEARCH &#038; DEVELOPMENT &#8211; Systematic Strategies",
+  "url": "https://systematic-strategies.com/?page_id=11",
+  "published": "2026-09-15T16:12:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8e4283237ccd9d7e8fb7",
+  "host": "systematic-strategies.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "MANAGEMENT &#8211; Systematic Strategies",
+  "url": "https://systematic-strategies.com/?page_id=683",
+  "published": "2026-09-15T16:12:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "284959d8ecaa535e4761",
+  "host": "systematic-strategies.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Hanes golygu 'Algorithm' - Wicipedia",
+  "url": "https://cy.wikipedia.org/w/index.php?title=Algorithm&action=history",
+  "published": "2026-09-15T16:13:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory"
+  ],
+  "confidence": 0.35,
+  "lang": "cy",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c60872a2543352f8ae1e",
+  "host": "cy.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Pel\u00ea ke be \"Algoritma\" ra g\u0131re ben\u00ea - Wikipedia",
+  "url": "https://diq.wikipedia.org/wiki/X%C4%B1susi:GreyNaySera%C5%9F%C4%B1no/Algoritma",
+  "published": "2026-09-15T16:13:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "diq",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "529286ce6cf937f24a2b",
+  "host": "diq.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ }
+]
