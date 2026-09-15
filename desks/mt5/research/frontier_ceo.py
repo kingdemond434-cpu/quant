@@ -220,6 +220,42 @@ def propose() -> list[dict]:
     that would refute it; a row that cannot state both is UNFALSIFIABLE and ranks last."""
     props: list[dict] = []
 
+    # 0a. THE NO-LOG, REVIEWED WEEKLY (principal's instruction, 2026-09-15).
+    #
+    # The desk publishes its refusals and nothing read them. Between 2026-09-14 and 2026-09-15
+    # the gateway wrote `RELEASE IDENTITY refuses NEW risk` on EVERY pass -- 1,780 times, naming
+    # its own cause -- while gold logged `bracket NOT placed` and no forex signal could reach the
+    # venue. A weekly pass over "what did the desk decline, and why" would have caught that in a
+    # day; instead it ran for a week.
+    #
+    # An OUTAGE here is not a loud refusal, it is an UNBROKEN one: the same reason class, still
+    # being written by the most recent pass, on a path that blocks new risk. Those become agenda
+    # rows, ranked first, because a desk that has stopped is a larger dE[log W] than any
+    # capability it could add this week. Refusals that LIFT are counted and never escalated --
+    # a strategy declining a bar is a strategy working.
+    try:
+        from research import no_log
+        for row in no_log.proposals(days=7.0):
+            props.append({
+                **row,
+                "adds": ("restores risk-taking the desk is currently refusing -- capacity it "
+                         "already has and is not using"),
+                "needs": "diagnose and clear the named cause",
+                "why_independent": ("orthogonal to every research proposal: it does not add an "
+                                    "edge, it stops an existing edge being declined"),
+            })
+    except Exception as exc:
+        props.append({
+            "id": "no_log.unavailable",
+            "kind": "refusal_outage",
+            "cost": "low",
+            "adds": "the NO-log could not be read, so the week's refusals are UNMEASURED",
+            "needs": f"repair {type(exc).__name__}: {str(exc)[:120]}",
+            "why_independent": "an unmeasured refusal ledger hides outages by construction",
+            "experiment": "run `python desks/mt5/research/no_log.py --days 7 --apply`",
+            "refuted_if": "it writes NO_LOG.json and the rows are readable",
+        })
+
     # 0. THE COLD AUDIT'S ADMITTED RECOMMENDATIONS. The principal's instruction of 2026-09-12: as
     #    CEO, read the OpenRouter audits daily and implement what serves E[log W] and edge
     #    discovery, including the bottlenecks they call out -- and never the timid half.
@@ -322,6 +358,35 @@ def propose() -> list[dict]:
     return props
 
 
+def _no_log_block() -> dict:
+    """The week's refusal summary for the docket, or a named UNMEASURED.
+
+    Absence is never a clean verdict (L1.28a): if the NO-log cannot be read, the docket says so
+    rather than publishing a reassuring empty summary.
+    """
+    try:
+        from research import no_log
+        doc = no_log.review(7.0)
+    except Exception as exc:
+        return {"status": "UNMEASURED",
+                "why": f"the NO-log could not be read ({type(exc).__name__}: {exc})"}
+    return {
+        "status": "MEASURED",
+        "window_days": doc["window_days"],
+        "n_refusals": doc["n_refusals"],
+        "n_reason_classes": doc["n_reason_classes"],
+        "n_outage": doc["n_outage"],
+        "n_standing": doc["n_standing"],
+        "n_healthy": doc["n_healthy"],
+        "outages": [r for r in doc["rows"] if r["verdict"] == "OUTAGE"][:10],
+        "longest_standing": [
+            {k: r[k] for k in ("reason", "kind", "n", "held_hours", "verdict")}
+            for r in doc["rows"][:10]
+        ],
+        "rule": doc["rule"],
+    }
+
+
 def build() -> dict:
     now = datetime.now(tz=UTC)
     audit = _audit_rows()
@@ -340,6 +405,11 @@ def build() -> dict:
         "standing_questions": list(STANDING_QUESTIONS),
         "binding_constraint": BINDING_CONSTRAINT,
         "scout": _frontier_scout(),
+        # THE WEEK'S REFUSALS, IN THE DOCKET ITSELF -- not only as proposals. A reader of this
+        # file must be able to see what the desk declined without running another tool, because
+        # the failure mode being corrected is precisely that the refusals were written down and
+        # never read.
+        "no_log": _no_log_block(),
         "cold_audit": {
             "status": audit.get("status"),
             "sources_present": audit.get("n_sources_present"),
