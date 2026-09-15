@@ -327,7 +327,19 @@ def lot_for_risk(venue: Any, symbol: str, stop_dist: float, risk_usd: float) -> 
             step = float(v)
             break
     if step:
-        lot = int(lot / step) * step          # FLOOR, never round: rounding up oversizes
+        # FLOOR, never round: rounding up oversizes. Then QUANTISE TO THE STEP'S OWN PRECISION.
+        #
+        # `int(lot / step) * step` is exact in decimal and not in binary: 114 * 0.01 is
+        # 1.1400000000000001, which the venue rejects outright with "Order cannot be created
+        # since order amount is not multiple of lot step". Measured 2026-09-15: two EURCHF
+        # orders refused for exactly this, at 1.1400000000000001 and 0.9500000000000001, while
+        # their USDCAD siblings on the same pass went through because their arithmetic happened
+        # to land clean. A sizing bug that only bites some lots is worse than one that bites all
+        # of them, because the lane looks healthy.
+        from decimal import Decimal
+        d_step = Decimal(str(step))
+        lot = float((Decimal(str(lot)) / d_step).to_integral_value(rounding="ROUND_FLOOR")
+                    * d_step)
     return float(max(lot, vmin)), basis + f"; risk ${risk_usd:.2f} -> {max(lot, vmin):g} lot"
 
 
@@ -360,11 +372,26 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None) -> dict
         return doc
 
     risk_usd = float(book["risk_frac"]) * e8_guard.START_BALANCE
-    open_tags = set()
+    # THE DEDUPE KEY IS THE INSTRUMENT AND SIDE, BECAUSE THIS VENUE HAS NO COMMENTS.
+    #
+    # MEASURED 2026-09-15, and it cost the account 0.85% in half an hour. This read
+    # `p.get("comment")` and kept the tags that start with TAG -- the MT5 idiom, where the order
+    # comment IS the sleeve tag. TradeLocker returns positions as
+    # {id, tradableInstrumentId, routeId, side, qty, avgPrice}: THERE IS NO COMMENT FIELD. So
+    # `open_tags` was unconditionally empty, `ALREADY_OPEN` could never fire, and every sleeve
+    # re-entered on every pass. At a 15-minute cadence that is the same trade every quarter hour:
+    # EURCHF sell at 13:21, 13:37, 13:52 and USDCAD sell alongside it, 23 orders in total, until
+    # the daily guard stood the account down at -846.
+    #
+    # A dedupe key that the venue does not return is not a weak guard, it is no guard, and it
+    # fails OPEN -- the one direction a position guard must never fail. Matching on what the
+    # venue DOES return cannot silently become a no-op the same way.
+    open_keys: set[tuple[int, str]] = set()
     for p in venue.positions():
-        c = str(p.get("comment") or p.get("Comment") or "")
-        if c.startswith(TAG):
-            open_tags.add(c)
+        iid = p.get("tradableInstrumentId") or p.get("instrumentId") or p.get("id")
+        sd = str(p.get("side") or p.get("Side") or "").lower()
+        if iid is not None and sd:
+            open_keys.add((int(iid), sd))
 
     from mt5desk.families import get_family_func
 
@@ -377,10 +404,6 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None) -> dict
         sym, fam = s["symbol"], s["family"]
         tag = f"{TAG}{fam[:6]}{sym}"[:31]
         row: dict[str, Any] = {"symbol": sym, "family": fam, "tag": tag}
-        if tag in open_tags:
-            row["status"] = "ALREADY_OPEN"
-            doc["sleeves"].append(row)
-            continue
         func = get_family_func(fam)
         if func is None:
             row["status"] = "NO_FAMILY"
@@ -392,6 +415,16 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None) -> dict
         except Exception as exc:
             row["status"] = "NOT_LISTED"
             row["why"] = str(exc)[:160]
+            doc["sleeves"].append(row)
+            continue
+
+        # ONE POSITION PER INSTRUMENT. Checked here rather than at the top of the loop because
+        # this venue's key is the instrument id, which is only known once it resolves. A prop
+        # account with a hard daily floor has no use for a second helping of a trade it already
+        # holds: the second entry doubles the risk of the first without adding a bet.
+        if any(k[0] == int(iid) for k in open_keys):
+            row["status"] = "ALREADY_OPEN"
+            row["why"] = f"a position is already open on {sym} (instrument {iid})"
             doc["sleeves"].append(row)
             continue
         # The chart travels in the sleeve's params exactly as it does through the gauntlet's
