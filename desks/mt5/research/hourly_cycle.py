@@ -1832,6 +1832,22 @@ def time_joins() -> dict:
     return _producer("time_joins", "scripts/check_time_joins.py")
 
 
+def allocator_join() -> dict:
+    """DOES THE ALLOCATOR'S BOOK REACH THE SLEEVES IT FUNDS? It did not, and nothing said so.
+
+    `pf_allocation.json` names a sleeve `CHFNOK_carry_asia` and `sleeves.json` names the same
+    sleeve `chfnok_carry_asia_p_98d7`. The gateway joined them by raw name, so across 40 LIVE
+    rows the intersection was 1 with the dynamic book and 0 with the fallback -- every sleeve read
+    `from_book = False` and was sized at `clamp_risk_frac`'s BASE_RISK_FRAC floor. The optimiser,
+    the baseline contest, the proof certificate and the heat budget all arrived at the venue as
+    one flat fraction, and a sleeve at forward +1.77R was sized like one at -0.574R.
+
+    Every artifact looked correct throughout, which is why this is a scheduled fence and not a
+    note: a join that empties is invisible in logs and fatal to allocation.
+    """
+    return _producer("allocator_join", "scripts/check_allocator_join.py")
+
+
 def spread_provenance() -> dict:
     """WHERE THE COST EVERY BACKTEST CHARGES CAME FROM -- for 145 of 195 symbols, nothing says.
 
@@ -2042,6 +2058,7 @@ def main() -> None:
     tf = _costed("tape_features", tape_features)
     fll = _costed("futures_lead_lag", futures_lead_lag)
     tj = _costed("time_joins", time_joins)
+    aj = _costed("allocator_join", allocator_join)
     fzc = _costed("fusion_cost", fusion_cost)
     cxc = _costed("cost_construction", cost_construction)
     emf = _costed("edges_macro_fusion_sweep", edges_macro_fusion_sweep)
@@ -2475,7 +2492,7 @@ def main() -> None:
                     "alpha_periodic_table": pt, "queue_cycle": qcy,
                     "microstructure_census": mx, "entry_timing": ety,
                     "spread_provenance": sp, "tape_features": tf,
-                    "futures_lead_lag": fll, "time_joins": tj,
+                    "futures_lead_lag": fll, "time_joins": tj, "allocator_join": aj,
                     "fusion_cost": fzc, "cost_construction": cxc,
                     "edges_macro_fusion_sweep": emf,
                     "recertify_canon": rc, "hunt12": h12,
