@@ -3,16 +3,27 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Quant Desk Terminal</title>
+<title>Quant Desk</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
-/* ============================================================================
-   QUANT DESK TERMINAL
-   One canonical view. Reads web/desk_state.json from its own origin, so it is
-   live wherever it is served; falls back to an embedded snapshot when opened
-   from a host that has no JSON beside it.
+/* ===========================================================================
+   QUANT DESK — the six-page layout from docs/DASHBOARD.md, as one static file.
+
+   WHY ONE FILE AND NO BUILD. The design shipped as FastAPI + Next.js in July
+   2026 and was never once served: api/ and frontend/ both exist, both date to
+   2026-07-16, and nothing has ever listened on 8000 or 3000. A dashboard that
+   needs a node toolchain, a build step and two long-lived processes is a
+   dashboard that stops working the first time nobody restarts it. This reads
+   the JSON the desk already publishes and renders it — so it works wherever
+   the file is served, and there is nothing to keep alive.
+
+   HONESTY BY DESIGN, WHICH HERE MEANS SHOWING AGE. Every block carries the
+   timestamp of the artifact behind it. A stale number is rendered STALE, in
+   amber, with its age — never as a current one. The failure this replaces is
+   exactly that: the page showed live equity beside seven-day-old breadth and
+   nothing distinguished them.
    ========================================================================= */
 :root{
   --ground:#08080a; --panel:#0e0e11; --card:#121215; --card-2:#16161a;
@@ -20,1083 +31,344 @@
   --gold:#c9a961; --gold-hi:#e8d5a3; --gold-dim:#7a6636;
   --ink:#f2f2f4; --ink-2:#8c8c95; --ink-3:#63636c;
   --good:#34d399; --bad:#f87171; --warn:#d9a441; --info:#7aa2d6;
-  --good-bg:rgba(52,211,153,.07); --bad-bg:rgba(248,113,113,.07);
-  --warn-bg:rgba(217,164,65,.07);
   --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
   --sans:"Archivo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-  --r:10px;
 }
 *{box-sizing:border-box}
-html,body{margin:0;padding:0}
-body{
-  background:var(--ground); color:var(--ink);
-  font-family:var(--sans); font-size:14px; line-height:1.5;
-  -webkit-font-smoothing:antialiased;
-}
-a{color:inherit}
-/* --- shell ---------------------------------------------------------------- */
-.shell{display:grid; grid-template-columns:172px 1fr; min-height:100vh}
-.side{
-  border-right:1px solid var(--line); background:var(--panel);
-  display:flex; flex-direction:column; gap:22px; padding:16px 0 24px;
-  position:sticky; top:0; height:100vh; overflow-y:auto;
-}
-.brand{display:flex; gap:9px; align-items:center; padding:0 14px}
-.brand-mark{
-  width:30px; height:30px; border-radius:7px; flex:0 0 auto;
-  border:1px solid var(--gold-dim); background:linear-gradient(160deg,#1a160c,#0d0b06);
-  display:grid; place-items:center; color:var(--gold); font-family:var(--mono);
-  font-size:13px; font-weight:600;
-}
-.brand-name{font-size:13px; font-weight:600; letter-spacing:-.01em; line-height:1.15}
-.brand-sub{
-  font-family:var(--mono); font-size:7.5px; color:var(--ink-3);
-  letter-spacing:.14em; text-transform:uppercase; margin-top:2px;
-}
-.navgroup{display:flex; flex-direction:column; gap:1px}
-.navlabel{
-  font-family:var(--mono); font-size:8px; letter-spacing:.16em; color:var(--ink-3);
-  text-transform:uppercase; padding:0 14px 6px;
-}
-.navitem{
-  display:flex; align-items:center; gap:9px; padding:7px 14px;
-  color:var(--ink-2); font-size:12.5px; cursor:pointer; border:0; background:none;
-  font-family:var(--sans); text-align:left; width:100%;
-  border-left:2px solid transparent;
-}
-.navitem:hover{color:var(--ink); background:#131317}
-.navitem[aria-current="true"]{
-  color:var(--ink); background:#17171c; border-left-color:var(--gold);
-}
-.navitem svg{width:13px; height:13px; flex:0 0 auto; opacity:.75}
-.navitem[aria-current="true"] svg{opacity:1; color:var(--gold)}
-.navitem:focus-visible{outline:2px solid var(--gold); outline-offset:-2px}
-/* --- topbar --------------------------------------------------------------- */
-.main{min-width:0; display:flex; flex-direction:column}
-.topbar{
-  display:flex; align-items:center; gap:14px; flex-wrap:wrap;
-  padding:11px 20px; border-bottom:1px solid var(--line); background:var(--panel);
-}
-.topbar h1{font-size:14px; font-weight:600; margin:0; letter-spacing:-.01em}
-.topbar .cap{font-size:11px; color:var(--ink-3)}
-.topbar .spacer{flex:1 1 auto}
-.clock{font-family:var(--mono); font-size:13px; letter-spacing:.02em; font-variant-numeric:tabular-nums}
-.clock small{font-size:9px; color:var(--ink-3); margin-left:4px}
-.stamp{font-family:var(--mono); font-size:9px; color:var(--ink-3); line-height:1.35; max-width:96px}
-.chip{
-  font-family:var(--mono); font-size:9.5px; letter-spacing:.1em; text-transform:uppercase;
-  padding:5px 9px; border-radius:5px; border:1px solid var(--line); color:var(--ink-2);
-  background:var(--card); white-space:nowrap;
-}
-.chip.gold{background:linear-gradient(180deg,#d9bd77,#bb9b4f); color:#1a1509; border-color:#c9a961; font-weight:600}
-button.chip{cursor:pointer}
-button.chip:hover{color:var(--ink); border-color:#2c2c33}
-button.chip:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
-/* --- status ribbon -------------------------------------------------------- */
-.ribbon{
-  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
-  padding:8px 20px; border-bottom:1px solid var(--line);
-  font-family:var(--mono); font-size:10.5px; letter-spacing:.06em;
-}
-.ribbon.is-good{background:var(--good-bg); color:var(--good)}
-.ribbon.is-warn{background:var(--warn-bg); color:var(--warn)}
-.ribbon.is-bad{background:var(--bad-bg); color:var(--bad)}
-.dot{width:6px; height:6px; border-radius:50%; background:currentColor; flex:0 0 auto}
-.ribbon .note{color:var(--ink-2); letter-spacing:.02em; text-transform:none}
-/* --- page ----------------------------------------------------------------- */
-.page{padding:20px; display:flex; flex-direction:column; gap:18px; max-width:1500px}
-.pagehead h2{font-size:19px; margin:0 0 2px; font-weight:600; letter-spacing:-.02em}
-.pagehead p{margin:0; color:var(--ink-3); font-size:12px}
-.eyebrow{
-  font-family:var(--mono); font-size:9px; letter-spacing:.2em; text-transform:uppercase;
-  color:var(--gold); margin:0 0 6px;
-}
-/* --- kpi strip ------------------------------------------------------------ */
-.kpis{
-  display:grid; grid-template-columns:repeat(auto-fit,minmax(148px,1fr));
-  border:1px solid var(--line); border-radius:var(--r); overflow:hidden; background:var(--card);
-}
-.kpi{padding:12px 14px; border-right:1px solid var(--line-soft); min-width:0}
-.kpi:last-child{border-right:0}
-.kpi .k{
-  font-family:var(--mono); font-size:8.5px; letter-spacing:.15em; text-transform:uppercase;
-  color:var(--ink-3); display:block; margin-bottom:5px;
-}
-.kpi .v{
-  font-family:var(--mono); font-size:20px; font-weight:500; letter-spacing:-.01em;
-  font-variant-numeric:tabular-nums; line-height:1.1; display:block;
-}
-.kpi .s{font-size:10.5px; color:var(--ink-3); display:block; margin-top:3px}
-/* --- cards ---------------------------------------------------------------- */
-.grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(370px,1fr)); gap:14px}
-.card{
-  border:1px solid var(--line); border-radius:var(--r); background:var(--card);
-  display:flex; flex-direction:column; min-width:0; overflow:hidden;
-}
-.card > header{
-  display:flex; align-items:center; gap:8px; padding:11px 14px;
-  border-bottom:1px solid var(--line-soft);
-}
-.card > header h3{
-  margin:0; font-family:var(--mono); font-size:9.5px; letter-spacing:.15em;
-  text-transform:uppercase; color:var(--ink-2); font-weight:500;
-}
-.card > header .src{
-  margin-left:auto; font-family:var(--mono); font-size:8.5px; letter-spacing:.1em;
-  text-transform:uppercase; color:var(--ink-3); border:1px solid var(--line);
-  border-radius:4px; padding:3px 7px; white-space:nowrap;
-}
-.card .body{padding:14px; display:flex; flex-direction:column; gap:13px}
-/* --- verdict panel (the EDGE FACTOR block) -------------------------------- */
-.verdict{
-  display:flex; gap:14px; align-items:flex-start; padding:13px;
-  border:1px solid var(--line); border-radius:9px; background:var(--card-2);
-}
-.verdict.is-good{border-color:rgba(52,211,153,.3); background:var(--good-bg)}
-.verdict.is-warn{border-color:rgba(217,164,65,.3); background:var(--warn-bg)}
-.verdict.is-bad{border-color:rgba(248,113,113,.3); background:var(--bad-bg)}
-.verdict .score{
-  font-family:var(--mono); font-size:34px; font-weight:600; line-height:1;
-  font-variant-numeric:tabular-nums; flex:0 0 auto;
-}
-.verdict.is-good .score{color:var(--good)}
-.verdict.is-warn .score{color:var(--warn)}
-.verdict.is-bad .score{color:var(--bad)}
-.verdict .unit{font-size:13px; font-weight:400; opacity:.65}
-.verdict .txt{min-width:0}
-.verdict .grade{font-size:12px; color:var(--ink-2); margin-bottom:5px}
-.verdict .k{
-  font-family:var(--mono); font-size:8.5px; letter-spacing:.15em; text-transform:uppercase;
-  color:var(--ink-3); display:block; margin-bottom:4px;
-}
-.verdict p{margin:0; font-size:12.5px; color:var(--ink); line-height:1.5}
-/* --- three-up strip ------------------------------------------------------- */
-.triple{
-  display:grid; grid-template-columns:repeat(3,1fr);
-  border:1px solid var(--line); border-radius:8px; overflow:hidden;
-}
-.triple > div{padding:9px 11px; border-right:1px solid var(--line-soft)}
-.triple > div:last-child{border-right:0}
-.triple .k{
-  font-family:var(--mono); font-size:8px; letter-spacing:.15em; text-transform:uppercase;
-  color:var(--ink-3); display:block; margin-bottom:4px;
-}
-.triple .v{font-family:var(--mono); font-size:12px; letter-spacing:.05em; font-weight:500}
-/* --- definition rows ------------------------------------------------------ */
-.defs{display:flex; flex-direction:column; border:1px solid var(--line); border-radius:8px}
-.defs > div{padding:10px 12px; border-bottom:1px solid var(--line-soft)}
-.defs > div:last-child{border-bottom:0}
-.defs .k{
-  font-family:var(--mono); font-size:8px; letter-spacing:.15em; text-transform:uppercase;
-  color:var(--ink-3); display:block; margin-bottom:3px;
-}
-.defs .v{font-size:13.5px; font-weight:600; letter-spacing:-.01em}
-.defs .why{font-size:11.5px; color:var(--ink-3); margin-top:2px; line-height:1.45}
-/* --- bar meters (signed, centred zero) ------------------------------------ */
-.meters{display:flex; flex-direction:column; gap:11px}
-.meter{display:grid; grid-template-columns:1fr 108px 52px; gap:10px; align-items:center}
-.meter .name{font-size:12.5px; min-width:0}
-.meter .name small{display:block; color:var(--ink-3); font-size:10.5px; margin-top:1px; line-height:1.4}
-.meter .track{height:3px; border-radius:2px; background:#232329; position:relative}
-.meter .track i{position:absolute; top:0; height:3px; border-radius:2px}
-.meter .track b{position:absolute; top:-2px; width:1px; height:7px; background:#33333b; left:50%}
-.meter .val{
-  font-family:var(--mono); font-size:11.5px; text-align:right;
-  font-variant-numeric:tabular-nums;
-}
-/* --- progress bars (funnel) ----------------------------------------------- */
-.bars{display:flex; flex-direction:column; gap:12px}
-.bar .top{display:flex; align-items:baseline; gap:8px; margin-bottom:5px}
-.bar .top .n{font-size:12.5px}
-.bar .top .q{
-  margin-left:auto; font-family:var(--mono); font-size:12px; font-variant-numeric:tabular-nums;
-}
-.bar .top .pc{font-family:var(--mono); font-size:10px; color:var(--ink-3); width:44px; text-align:right}
-.bar .rail{height:4px; border-radius:2px; background:#202027; overflow:hidden}
-.bar .rail i{display:block; height:4px; border-radius:2px; background:var(--gold)}
-.bar .why{font-size:11px; color:var(--ink-3); margin-top:4px; line-height:1.45}
-/* --- gauge ---------------------------------------------------------------- */
-.gauge{display:flex; gap:14px; align-items:center}
-.gauge svg{flex:0 0 auto}
-.gauge .cap{font-family:var(--mono); font-size:8px; letter-spacing:.15em; fill:var(--ink-3)}
-.gauge .num{font-family:var(--mono); font-size:19px; font-weight:600; fill:var(--ink)}
-.gauge .lede{font-size:14px; font-weight:600; margin-bottom:3px}
-.gauge p{margin:0; font-size:12px; color:var(--ink-2); line-height:1.5}
-/* --- table ---------------------------------------------------------------- */
-.tablewrap{overflow-x:auto}
-table{border-collapse:collapse; width:100%; font-size:12.5px}
-th{
-  font-family:var(--mono); font-size:8px; letter-spacing:.13em; text-transform:uppercase;
-  color:var(--ink-3); text-align:left; font-weight:500; padding:0 10px 7px 0; white-space:nowrap;
-}
-td{padding:7px 10px 7px 0; border-top:1px solid var(--line-soft); white-space:nowrap}
-td.num{font-family:var(--mono); font-variant-numeric:tabular-nums; text-align:right; padding-right:14px}
-th.num{text-align:right; padding-right:14px}
-td.name{white-space:normal; min-width:150px}
-/* --- empty state ---------------------------------------------------------- */
-.empty{
-  border:1px dashed var(--line); border-radius:8px; padding:16px; text-align:left;
-  background:#0f0f12;
-}
-.empty .h{font-size:13px; font-weight:600; margin-bottom:4px}
-.empty p{margin:0; font-size:12px; color:var(--ink-3); line-height:1.5}
-/* --- misc ----------------------------------------------------------------- */
-/* The promotable tally strip above the clock roster. READY is the only state
-   that asks the reader to act, so it leads and is the only green one. */
-.pillrow{display:flex; gap:6px; flex-wrap:wrap}
-.pill{
-  font-family:var(--mono); font-size:9px; letter-spacing:.1em; text-transform:uppercase;
-  padding:2px 7px; border-radius:4px; border:1px solid currentColor; white-space:nowrap;
-}
-.g{color:var(--good)} .r{color:var(--bad)} .w{color:var(--warn)} .m{color:var(--ink-3)}
-.foot{
-  padding:14px 20px 30px; color:var(--ink-3); font-size:11px; line-height:1.6;
-  border-top:1px solid var(--line); margin-top:6px;
-}
-.foot code{font-family:var(--mono); color:var(--ink-2)}
-[hidden]{display:none !important}
-/* --- responsive ----------------------------------------------------------- */
-@media (max-width:900px){
-  .shell{grid-template-columns:1fr}
-  .side{
-    position:static; height:auto; flex-direction:row; align-items:center; overflow-x:auto;
-    gap:0; padding:0; border-right:0; border-bottom:1px solid var(--line);
-  }
-  .brand{padding:10px 12px; border-right:1px solid var(--line); flex:0 0 auto}
-  .brand-sub{display:none}
-  .navgroup{flex-direction:row; flex:0 0 auto}
-  .navlabel{display:none}
-  .navitem{
-    border-left:0; border-bottom:2px solid transparent; padding:12px 12px; white-space:nowrap;
-    width:auto;
-  }
-  .navitem[aria-current="true"]{border-bottom-color:var(--gold); background:#17171c}
-  .page{padding:14px}
-  .topbar{padding:10px 14px}
-  .ribbon{padding:8px 14px}
-  .grid{grid-template-columns:1fr}
-  .meter{grid-template-columns:1fr 76px 46px}
-}
-@media (prefers-reduced-motion:reduce){*{transition:none !important; animation:none !important}}
+html,body{margin:0;padding:0;background:var(--ground);color:var(--ink);font-family:var(--sans)}
+body{display:flex;min-height:100vh}
+a{color:inherit;text-decoration:none}
+
+/* ---- sidebar ---- */
+nav{width:210px;flex:0 0 210px;background:var(--panel);border-right:1px solid var(--line);
+    padding:18px 0;position:sticky;top:0;height:100vh;overflow-y:auto}
+nav .brand{padding:0 18px 16px;border-bottom:1px solid var(--line-soft);margin-bottom:12px}
+nav .brand b{display:block;font-size:15px;letter-spacing:.02em}
+nav .brand span{display:block;font-family:var(--mono);font-size:10px;color:var(--ink-3);margin-top:3px}
+nav button{display:block;width:100%;text-align:left;background:none;border:0;color:var(--ink-2);
+    font-family:var(--sans);font-size:13px;padding:9px 18px;cursor:pointer;border-left:2px solid transparent}
+nav button:hover{color:var(--ink);background:var(--card)}
+nav button.on{color:var(--gold-hi);border-left-color:var(--gold);background:var(--card)}
+nav .foot{padding:14px 18px;font-family:var(--mono);font-size:10px;color:var(--ink-3);
+    border-top:1px solid var(--line-soft);margin-top:12px}
+
+/* ---- main ---- */
+main{flex:1;padding:22px 26px 60px;max-width:1500px}
+header.page{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+header.page h1{font-size:19px;margin:0;font-weight:600}
+header.page .sub{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+.live{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--ink-2);
+      display:flex;align-items:center;gap:7px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--good);box-shadow:0 0 6px var(--good)}
+.dot.stale{background:var(--warn);box-shadow:0 0 6px var(--warn)}
+.dot.dead{background:var(--bad);box-shadow:0 0 6px var(--bad)}
+
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));margin-bottom:14px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:13px 15px}
+.stat .k{font-family:var(--mono);font-size:10px;color:var(--ink-3);text-transform:uppercase;
+         letter-spacing:.07em;margin-bottom:7px}
+.stat .v{font-family:var(--mono);font-size:22px;font-weight:600;letter-spacing:-.01em}
+.stat .n{font-family:var(--mono);font-size:10px;color:var(--ink-3);margin-top:5px}
+.pos{color:var(--good)} .neg{color:var(--bad)} .muted{color:var(--ink-3)}
+
+.panel{background:var(--card);border:1px solid var(--line);border-radius:9px;margin-bottom:14px;overflow:hidden}
+.panel > h2{margin:0;padding:11px 15px;font-size:12px;font-weight:600;letter-spacing:.05em;
+   text-transform:uppercase;color:var(--ink-2);border-bottom:1px solid var(--line-soft);
+   display:flex;align-items:center;gap:10px}
+.panel > h2 .age{margin-left:auto;font-family:var(--mono);font-size:10px;font-weight:400;
+   text-transform:none;letter-spacing:0}
+.panel .body{padding:13px 15px}
+.age.fresh{color:var(--ink-3)} .age.warn{color:var(--warn)} .age.dead{color:var(--bad)}
+
+table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11.5px}
+th{text-align:left;color:var(--ink-3);font-weight:500;padding:6px 9px;border-bottom:1px solid var(--line);
+   text-transform:uppercase;font-size:10px;letter-spacing:.05em}
+td{padding:6px 9px;border-bottom:1px solid var(--line-soft);color:var(--ink-2)}
+tr:last-child td{border-bottom:0}
+td.num{text-align:right}
+.tag{display:inline-block;font-family:var(--mono);font-size:9.5px;padding:2px 6px;border-radius:4px;
+     border:1px solid var(--line);color:var(--ink-2)}
+.tag.ok{color:var(--good);border-color:rgba(52,211,153,.3)}
+.tag.bad{color:var(--bad);border-color:rgba(248,113,113,.3)}
+.tag.warn{color:var(--warn);border-color:rgba(217,164,65,.3)}
+.empty{color:var(--ink-3);font-family:var(--mono);font-size:11.5px;padding:8px 0;line-height:1.6}
+.page-view{display:none} .page-view.on{display:block}
+.note{font-family:var(--mono);font-size:10.5px;color:var(--ink-3);line-height:1.65;margin-top:9px}
+.bar{height:5px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:6px}
+.bar > i{display:block;height:100%;background:var(--gold)}
+@media(max-width:820px){body{flex-direction:column}nav{width:100%;height:auto;position:static;
+  display:flex;flex-wrap:wrap;padding:10px}nav .brand,nav .foot{width:100%}nav button{width:auto}}
 </style>
 </head>
 <body>
-<div class="shell">
-  <nav class="side" aria-label="Sections">
-    <div class="brand">
-      <div class="brand-mark">Q</div>
-      <div>
-        <div class="brand-name">Quant Desk</div>
-        <div class="brand-sub">MT5 Research Terminal</div>
-      </div>
-    </div>
-    <div class="navgroup" id="nav-markets">
-      <div class="navlabel">Desk</div>
-    </div>
-    <div class="navgroup" id="nav-research">
-      <div class="navlabel">Research</div>
-    </div>
-  </nav>
+<nav>
+  <div class="brand"><b>Quant Desk</b><span id="brand-sub">loading…</span></div>
+  <button data-p="exec" class="on">Executive</button>
+  <button data-p="research">Research</button>
+  <button data-p="portfolio">Portfolio</button>
+  <button data-p="risk">Risk</button>
+  <button data-p="execution">Execution</button>
+  <button data-p="monitor">Monitoring</button>
+  <div class="foot" id="nav-foot">—</div>
+</nav>
 
-  <div class="main">
-    <div class="topbar">
-      <h1 id="page-title">Desk</h1>
-      <span class="cap" id="page-cap">live operator read</span>
-      <span class="spacer"></span>
-      <span class="clock" id="clock">--:--:--<small>UTC</small></span>
-      <span class="stamp" id="built">built —</span>
-      <span class="chip" id="scope">MT5 · FUSION</span>
-      <button class="chip gold" type="button" id="refresh">Refresh</button>
-    </div>
-
-    <div class="ribbon is-warn" id="ribbon">
-      <span class="dot"></span>
-      <span id="ribbon-text">READING STATE…</span>
-      <span class="note" id="ribbon-note"></span>
-    </div>
-
-    <div class="page" id="page"></div>
-
-    <div class="foot">
-      Research and operator telemetry only. Missing values read <code>UNMEASURED</code> rather than
-      zero — an absent measurement is never a passing one. Shadow lanes hold no order authority.
-      <br>Source <code>web/desk_state.json</code>, rebuilt by <code>scripts/build_zentech_state.py</code>
-      as the closing leg of every hourly cycle.
-    </div>
-  </div>
-</div>
+<main>
+  <header class="page">
+    <h1 id="page-title">Executive Overview</h1>
+    <span class="sub" id="page-sub"></span>
+    <span class="live"><span class="dot" id="live-dot"></span><span id="live-txt">connecting…</span></span>
+  </header>
+  <div id="view-exec"       class="page-view on"></div>
+  <div id="view-research"   class="page-view"></div>
+  <div id="view-portfolio"  class="page-view"></div>
+  <div id="view-risk"       class="page-view"></div>
+  <div id="view-execution"  class="page-view"></div>
+  <div id="view-monitor"    class="page-view"></div>
+</main>
 
 <script>
-/* ==========================================================================
-   DATA. Same-origin JSON when it is there, embedded snapshot when it is not.
-   ========================================================================== */
-const SNAPSHOT = window.__DESK_SNAPSHOT__ || null;
-let D = SNAPSHOT || {};
-let LIVE = false;
+/* ---------------------------------------------------------------------------
+   THE ONE RULE OF THIS FILE: never render a number without its age.
+   `age()` returns the hours since a timestamp, and `ageTag` turns that into a
+   visible badge. A block whose artifact is old says so, in amber, next to the
+   figure — because the page this replaces showed one-minute equity beside
+   seven-day-old breadth with nothing to tell them apart.
+--------------------------------------------------------------------------- */
+const POLL_MS = 15000;
+const STALE_H = 3, DEAD_H = 24;
+let S = null, lastOk = 0;
 
-/* --- helpers -------------------------------------------------------------- */
-const $ = (s, r) => (r || document).querySelector(s);
-const el = (t, c, txt) => { const n = document.createElement(t); if (c) n.className = c;
-  if (txt !== undefined && txt !== null) n.textContent = txt; return n; };
-const has = v => v !== null && v !== undefined && v !== "" && v !== "UNMEASURED";
-const num = (v, d = 0) => has(v) && isFinite(v)
-  ? Number(v).toLocaleString("en-US", {minimumFractionDigits: d, maximumFractionDigits: d}) : "—";
-const money = v => has(v) && isFinite(v) ? "$" + num(v, 2) : "—";
-function dur(sec){
-  if (!has(sec) || !isFinite(sec)) return "—";
-  const s = Math.abs(sec);
-  if (s < 90) return Math.round(s) + "s";
-  if (s < 5400) return (s / 60).toFixed(0) + "m";
-  if (s < 172800) return (s / 3600).toFixed(1) + "h";
-  return (s / 86400).toFixed(1) + "d";
-}
-const esc = s => String(s == null ? "" : s);
+const $ = id => document.getElementById(id);
+const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const num = (v,d=2) => (v==null||v===''||Number.isNaN(Number(v))) ? '—' : Number(v).toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d});
+const pct = (v,d=1) => v==null ? '—' : (Number(v)*100).toFixed(d)+'%';
+const sign = v => v==null ? 'muted' : (Number(v)>0?'pos':Number(v)<0?'neg':'muted');
 
-/* --- sections ------------------------------------------------------------- */
-const ICONS = {
-  desk:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1.8" y="1.8" width="5" height="5" rx="1"/><rect x="9.2" y="1.8" width="5" height="5" rx="1"/><rect x="1.8" y="9.2" width="5" height="5" rx="1"/><rect x="9.2" y="9.2" width="5" height="5" rx="1"/></svg>',
-  clock:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="6.2"/><path d="M8 4.6V8l2.4 1.6"/></svg>',
-  funnel:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1.8 2.6h12.4L9.4 8v5.4L6.6 12V8z"/></svg>',
-  pick:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2.2 13.8 8 2.4l5.8 11.4"/><path d="M4.6 9.6h6.8"/></svg>',
-  web:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="6.2"/><path d="M1.8 8h12.4M8 1.8c1.7 1.9 2.6 4 2.6 6.2S9.7 12.3 8 14.2C6.3 12.3 5.4 10.2 5.4 8S6.3 3.7 8 1.8z"/></svg>',
-  alert:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 1.9 15 14H1z"/><path d="M8 6.2v3.4"/><circle cx="8" cy="11.7" r=".6" fill="currentColor"/></svg>',
-  seat:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2.2" y="2.2" width="11.6" height="8" rx="1.2"/><path d="M5 13.8h6"/></svg>'
-};
-const SECTIONS = [
-  {id:"desk",     group:"markets",  icon:"desk",   label:"Desk",           cap:"live operator read"},
-  {id:"issues",   group:"markets",  icon:"alert",  label:"Issues",         cap:"everything wrong, and what closes it"},
-  {id:"clocks",   group:"markets",  icon:"clock",  label:"Forward Clocks", cap:"what is actually maturing"},
-  {id:"pipeline", group:"research", icon:"funnel", label:"Pipeline",       cap:"docket to certificate"},
-  {id:"candidates",group:"research",icon:"pick",  label:"Candidates",     cap:"what cleared which gate"},
-  {id:"miners",   group:"research", icon:"pick",   label:"Miners",         cap:"what each one converts"},
-  {id:"breadth",  group:"research", icon:"web",    label:"Breadth",        cap:"independent bets in the book"},
-  {id:"seats",    group:"research", icon:"seat",   label:"Seats & Host",   cap:"can the work even start"}
-];
-let current = "desk";
+function age(ts){
+  if(!ts) return null;
+  const t = Date.parse(ts);
+  if(Number.isNaN(t)) return null;
+  return (Date.now()-t)/3.6e6;
+}
+function ageTxt(h){
+  if(h==null) return 'no timestamp';
+  if(h < 1/60) return 'just now';
+  if(h < 1) return Math.round(h*60)+' min old';
+  if(h < 48) return h.toFixed(1)+'h old';
+  return (h/24).toFixed(1)+'d old';
+}
+function ageCls(h){ return h==null ? 'dead' : h>DEAD_H ? 'dead' : h>STALE_H ? 'warn' : 'fresh'; }
+function ageTag(ts){
+  const h = age(ts);
+  const extra = (h!=null && h>STALE_H) ? ' — STALE' : '';
+  return `<span class="age ${ageCls(h)}">${esc(ageTxt(h))}${extra}</span>`;
+}
+function panel(title, ts, bodyHtml){
+  return `<div class="panel"><h2>${esc(title)}${ts!==undefined?ageTag(ts):''}</h2>
+          <div class="body">${bodyHtml}</div></div>`;
+}
+function stat(k, v, note, cls){
+  return `<div class="stat"><div class="k">${esc(k)}</div>
+          <div class="v ${cls||''}">${v}</div>
+          ${note?`<div class="n">${esc(note)}</div>`:''}</div>`;
+}
+function empty(msg){ return `<div class="empty">${esc(msg)}</div>`; }
 
-/* ==========================================================================
-   COMPONENTS
-   ========================================================================== */
-function card(title, src){
-  const c = el("div", "card"), h = el("header");
-  h.appendChild(el("h3", null, title));
-  if (src) h.appendChild(el("span", "src", src));
-  c.appendChild(h);
-  const b = el("div", "body"); c.appendChild(b);
-  return {node: c, body: b};
-}
-function verdict(tone, score, unit, grade, label, text){
-  const v = el("div", "verdict is-" + tone);
-  const s = el("div", "score"); s.appendChild(document.createTextNode(score));
-  if (unit) s.appendChild(el("span", "unit", unit));
-  v.appendChild(s);
-  const t = el("div", "txt");
-  if (grade) t.appendChild(el("div", "grade", grade));
-  t.appendChild(el("span", "k", label));
-  t.appendChild(el("p", null, text));
-  v.appendChild(t); return v;
-}
-function triple(rows){
-  const t = el("div", "triple");
-  rows.forEach(([k, v, tone]) => {
-    const d = el("div");
-    d.appendChild(el("span", "k", k));
-    d.appendChild(el("div", "v " + (tone || ""), v));
-    t.appendChild(d);
-  });
-  return t;
-}
-function defs(rows){
-  const d = el("div", "defs");
-  rows.forEach(([k, v, why]) => {
-    const r = el("div");
-    r.appendChild(el("span", "k", k));
-    r.appendChild(el("div", "v", v));
-    if (why) r.appendChild(el("div", "why", why));
-    d.appendChild(r);
-  });
-  return d;
-}
-/* Signed meter: centred zero, magnitude scaled to `max`. */
-function meters(rows){
-  const m = el("div", "meters");
-  rows.forEach(([name, sub, value, display, max, tone]) => {
-    const r = el("div", "meter");
-    const n = el("div", "name", name);
-    if (sub) n.appendChild(el("small", null, sub));
-    r.appendChild(n);
-    const track = el("div", "track");
-    track.appendChild(el("b"));
-    const frac = Math.max(-1, Math.min(1, (value || 0) / (max || 1)));
-    const i = el("i");
-    const w = Math.abs(frac) * 50;
-    if (frac >= 0){ i.style.left = "50%"; i.style.width = w + "%"; }
-    else { i.style.right = "50%"; i.style.width = w + "%"; }
-    i.style.background = tone === "bad" ? "var(--bad)" : tone === "warn" ? "var(--warn)" : "var(--good)";
-    track.appendChild(i);
-    r.appendChild(track);
-    r.appendChild(el("div", "val " + (tone === "bad" ? "r" : tone === "warn" ? "w" : "g"), display));
-    m.appendChild(r);
-  });
-  return m;
-}
-function bars(rows, total){
-  const b = el("div", "bars");
-  rows.forEach(([name, qty, why]) => {
-    const r = el("div", "bar"), top = el("div", "top");
-    top.appendChild(el("span", "n", name));
-    top.appendChild(el("span", "q", has(qty) ? num(qty) : "—"));
-    const pc = total ? (100 * (qty || 0) / total) : 0;
-    top.appendChild(el("span", "pc", total && has(qty) ? pc.toFixed(pc < 1 && pc > 0 ? 2 : 1) + "%" : ""));
-    r.appendChild(top);
-    const rail = el("div", "rail"), i = el("i");
-    i.style.width = Math.max(qty ? 0.4 : 0, Math.min(100, pc)) + "%";
-    rail.appendChild(i); r.appendChild(rail);
-    if (why) r.appendChild(el("div", "why", why));
-    b.appendChild(r);
-  });
-  return b;
-}
-function gauge(value, max, label, lede, text, tone){
-  const g = el("div", "gauge");
-  const R = 30, C = 2 * Math.PI * R;
-  const frac = has(value) && max ? Math.max(0, Math.min(1, value / max)) : 0;
-  const colour = tone === "bad" ? "#f87171" : tone === "warn" ? "#d9a441" : "#34d399";
-  const svg = `<svg width="76" height="76" viewBox="0 0 76 76" role="img" aria-label="${esc(label)} ${has(value) ? value : "unmeasured"}">
-    <circle cx="38" cy="38" r="${R}" fill="none" stroke="#232329" stroke-width="5"/>
-    <circle cx="38" cy="38" r="${R}" fill="none" stroke="${colour}" stroke-width="5"
-      stroke-linecap="round" stroke-dasharray="${(frac * C).toFixed(1)} ${C.toFixed(1)}"
-      transform="rotate(-90 38 38)"/>
-    <text class="num" x="38" y="37" text-anchor="middle" dominant-baseline="middle">${has(value) ? value : "—"}</text>
-    <text class="cap" x="38" y="50" text-anchor="middle">${esc(label)}</text>
-  </svg>`;
-  g.innerHTML = svg;
-  const t = el("div");
-  t.appendChild(el("div", "lede", lede));
-  t.appendChild(el("p", null, text));
-  g.appendChild(t); return g;
-}
-/* An empty tile must NAME the file it is empty for. "—" tells the reader nothing; the filename
-   tells them whether to wait, to look at the box, or to fix a producer. Every blank on this
-   board traced back to an artifact that never crossed the wire, and none of them said so. */
-function missing(what, file, why){
-  const e = el("div", "empty");
-  e.appendChild(el("div", "h", what + " — no data on this host"));
-  const p = el("p");
-  p.appendChild(document.createTextNode(why + " "));
-  const c = el("span", "m"); c.style.fontFamily = "var(--mono)";
-  c.textContent = file;
-  p.appendChild(c);
-  p.appendChild(document.createTextNode(" has not reached this machine. It is written on the "
-    + "trading box and travels by the shadow sync; a blank here is a DELIVERY fact, not a "
-    + "research one."));
-  e.appendChild(p);
-  return e;
-}
-function empty(head, body){
-  const e = el("div", "empty");
-  e.appendChild(el("div", "h", head));
-  e.appendChild(el("p", null, body));
-  return e;
-}
-// Certificates that passed all ten gates, CAN be run, and have no forward clock. This is the
-// only number in the funnel that is a genuine work item: a gate-failed row was never a
-// certificate and an unrunnable one cannot be enrolled, so both are subtracted before the
-// subtraction that matters. Returns null rather than a number when either input is absent --
-// "certified 55, clocks 19" with no cause is the display that sent the principal hunting for
-// 36 missing sleeves when two thirds of the gap was rows that never qualified.
-function clockless(p){
-  if (p.certified == null || p.forward_clocks == null) return null;
-  const runnable = p.certified - (p.certificates_unrunnable || 0);
-  return Math.max(0, runnable - p.forward_clocks);
-}
-function kpis(rows){
-  const k = el("div", "kpis");
-  rows.forEach(([label, value, sub, tone]) => {
-    const d = el("div", "kpi");
-    d.appendChild(el("span", "k", label));
-    d.appendChild(el("span", "v " + (tone || ""), value));
-    d.appendChild(el("span", "s", sub || ""));
-    k.appendChild(d);
-  });
-  return k;
+function table(cols, rows, emptyMsg){
+  if(!rows || !rows.length) return empty(emptyMsg || 'no rows');
+  const head = cols.map(c=>`<th${c.num?' style="text-align:right"':''}>${esc(c.h)}</th>`).join('');
+  const body = rows.map(r=>'<tr>'+cols.map(c=>{
+    const v = c.f ? c.f(r) : r[c.k];
+    return `<td class="${c.num?'num':''} ${c.cls?c.cls(r):''}">${v==null?'—':v}</td>`;
+  }).join('')+'</tr>').join('');
+  return `<table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
 }
 
-/* ==========================================================================
-   PAGES
-   ========================================================================== */
-function boxTone(st){
-  return st === "REPORTING" ? "good" : st === "LATE" ? "warn" : st === "SILENT" ? "bad" : "warn";
+/* ------------------------------------------------------------------ pages */
+function pageExec(){
+  const a = S.account||{}, h = S.health||{}, r = S.research||{}, b = S.breadth||{};
+  const bb = b.book_breadth||{};
+  const g = `<div class="grid">
+    ${stat('Equity', (a.currency||'')+' '+num(a.equity), 'balance '+num(a.balance))}
+    ${stat('Today P&L', num(a.today_pnl), 'open '+num(a.open_pnl), sign(a.today_pnl))}
+    ${stat('Open positions', (S.execution&&S.execution.open_trades? S.execution.open_trades.length : 0), 'margin '+num(a.margin))}
+    ${stat('Certificates', r.canonical_survivors!=null?r.canonical_survivors:'—', 'ten-gate survivors')}
+    ${stat('Family concentration', bb.family_concentration!=null?pct(bb.family_concentration):'—',
+           bb.largest_family?('largest: '+bb.largest_family):'', bb.family_concentration>0.8?'neg':'')}
+  </div>`;
+  return g
+    + panel('Account', S.generated_at, table(
+        [{h:'field', f:r=>esc(r.field)}, {h:'value', num:true, f:r=>esc(r.value)}],
+        Object.entries(a).filter(([,v])=>typeof v!=='object')
+                         .map(([k,v])=>({field:k, value:v==null?'—':v})),
+        'no account block'))
+    + panel('Breadth — the binding constraint', b.measured_at,
+        (bb.why ? `<div class="note">${esc(bb.why)}</div>` : '')
+        + table([{h:'family'},{h:'state'},{h:'needs'}],
+            (bb.missing_families||[]).map(f=>({family:f.family,state:`<span class="tag warn">${esc(f.state||'')}</span>`,needs:f.why||f.needs})),
+            'no missing-family list in this payload')
+      )
+    + panel('Issues', S.generated_at, table(
+        [{h:'issue'},{h:'detail'}],
+        (S.issues||[]).slice(0,14).map(i=>typeof i==='string'?{issue:esc(i),detail:''}:{issue:esc(i.title||i.id||''),detail:esc(i.why||i.detail||'')}),
+        'no open issues reported'));
 }
 
-function pageDesk(){
-  const out = [];
-  const h = D.health || {}, box = h.box || {}, a = D.account || {}, p = D.pipeline || {}, s = D.stats || {};
-  out.push(kpis([
-    ["Equity", has(a.equity) ? money(a.equity) : "UNMEASURED", a.venue && has(a.venue) ? a.venue : "no terminal reachable", has(a.equity) ? "" : "m"],
-    ["Today P&L", has(a.today_pnl) ? money(a.today_pnl) : "—", "closed + floating", (a.today_pnl || 0) >= 0 ? "g" : "r"],
-    ["Certificates", num(p.certified ?? (D.breadth?.book_breadth?.certificates)), "cleared all ten gates"],
-    ["Promotion-ready", num(p.promotion_ready), "matured and above gate", p.promotion_ready ? "g" : "m"],
-    ["Forward clocks", num(p.forward_clocks), "sleeves accruing evidence", p.forward_clocks ? "g" : "m"],
-    ["Docket", num(p.docket_candidates), "candidates awaiting judgement"]
-  ]));
-
-  const g = el("div", "grid");
-
-  /* box liveness — the qualifier on every other number here */
-  const c1 = card("Box liveness", "shadow_health");
-  const silentH = has(box.silent_seconds) ? (box.silent_seconds / 3600) : null;
-  c1.body.appendChild(verdict(boxTone(box.status),
-    silentH === null ? "—" : silentH.toFixed(1), silentH === null ? "" : "h",
-    box.status === "REPORTING" ? "Reporting / current" :
-    box.status === "LATE" ? "Late / degraded" :
-    box.status === "SILENT" ? "Silent / not current" : "Unmeasured",
-    "SINCE LAST REPORT",
-    box.why || "the box has not published a readable clock, so this view cannot tell a live desk from a photograph of one"));
-  c1.body.appendChild(triple([
-    ["STATE", box.status || "UNMEASURED", boxTone(box.status) === "good" ? "g" : boxTone(box.status) === "warn" ? "w" : "r"],
-    ["LATE AFTER", dur(box.late_after_seconds), "m"],
-    ["SILENT AFTER", dur(box.silent_after_seconds), "m"]
-  ]));
-  const per = box.per_report || {};
-  const keys = Object.keys(per);
-  if (keys.length){
-    const worst = Math.max(...keys.map(k => per[k].age_seconds || 0), 1);
-    c1.body.appendChild(meters(keys.map(k => {
-      const r = per[k], age = r.age_seconds;
-      const sub = r.at ? "last wrote " + r.at.replace("T", " ").slice(0, 16)
-                       : (r.why || (r.status === "ABSENT" ? "never reached this host"
-                                                          : "carries no timestamp"));
-      return [k, sub,
-        has(age) ? -age : 0,
-        has(age) ? dur(age) : (r.status === "ABSENT" ? "ABSENT" : "NO CLOCK"), worst,
-        !has(age) ? "warn" : r.status === "FRESH" ? "good" : "bad"];
-    })));
-  }
-  g.appendChild(c1.node);
-
-  /* account */
-  const c2 = card("Account", has(a.venue) ? a.venue : "no terminal");
-  if (has(a.equity)){
-    c2.body.appendChild(defs([
-      ["EQUITY", money(a.equity), "balance " + money(a.balance) + " · floating " + money(a.open_pnl)],
-      ["GROWTH", has(a.growth_pct) ? a.growth_pct.toFixed(2) + "%" : "—", "against starting capital " + money(a.starting_capital)],
-      ["MARGIN", money(a.margin), "free " + money(a.free_margin)],
-      ["FEED AGE", dur(a.source_age_seconds), "the account read lags its writer by design"]
-    ]));
-  } else {
-    c2.body.appendChild(empty("No account figure, and none invented",
-      "This host has no MT5 terminal, so it is not entitled to publish an equity number. " +
-      "A machine that cannot see the account must not print one — the last time a terminal-less " +
-      "writer filled the gap it published a figure 28× the real balance and the equity curve " +
-      "recorded it 32 times."));
-  }
-  c2.body.appendChild(triple([
-    ["CLOSED TRADES", num(s.closed_trades), s.closed_trades ? "" : "m"],
-    ["WIN RATE", has(s.win_rate) ? (100 * s.win_rate).toFixed(1) + "%" : "—", "m"],
-    ["MAX DD", has(s.max_dd_r) ? s.max_dd_r.toFixed(1) + "R" : "—", "m"]
-  ]));
-  g.appendChild(c2.node);
-
-  const c3 = card("P&L and equity", "ledger");
-  const curve = D.equity_curve || [];
-  if (curve.length > 1){
-    c3.body.appendChild(spark(curve));
-  } else {
-    c3.body.appendChild(missing("Equity curve", "web/equity_history.jsonl",
-      "The closed-trade ledger behind the curve lives in"));
-  }
-  c3.body.appendChild(triple([
-    ["TODAY", has(a.today_pnl) ? money(a.today_pnl) : "—", (a.today_pnl || 0) >= 0 ? "g" : "r"],
-    ["OPEN", has(a.open_pnl) ? money(a.open_pnl) : "—", (a.open_pnl || 0) >= 0 ? "g" : "r"],
-    ["CLOSED TRADES", num(s.closed_trades), s.closed_trades ? "" : "m"]
-  ]));
-  c3.body.appendChild(defs([
-    ["SHARPE (DAILY)", has(s.sharpe_daily) ? s.sharpe_daily.toFixed(2) : "UNMEASURED",
-      s.closed_trades ? "" : "no closed trade has been recorded, so there is nothing to ratio"],
-    ["MAX DRAWDOWN", has(s.max_dd_r) ? s.max_dd_r.toFixed(1) + "R" : "UNMEASURED",
-      "current " + (has(s.current_dd_r) ? s.current_dd_r.toFixed(1) + "R" : "—")],
-    ["WIN RATE", has(s.win_rate) ? (100 * s.win_rate).toFixed(1) + "%" : "UNMEASURED",
-      "a win rate without a payoff ratio is not an edge; both or neither"]
-  ]));
-  g.appendChild(c3.node);
-
-  out.push(g);
-  return out;
+function pageResearch(){
+  const r = S.research||{}, p = S.pipeline||{}, b = S.breadth||{};
+  const miners = b.miners||{};
+  const rows = Object.entries(miners).map(([name,m])=>({
+    miner:name, disc:m.discoveries, comp:m.compiled_candidates, surv:m.survivors,
+    conv:m.conversion!=null?pct(m.conversion,1):'—',
+    status:`<span class="tag ${m.attribution_status==='UNMEASURED'?'warn':'ok'}">${esc(m.attribution_status||'')}</span>`
+  })).sort((x,y)=>(y.disc||0)-(x.disc||0));
+  return `<div class="grid">
+      ${stat('Canonical survivors', r.canonical_survivors!=null?r.canonical_survivors:'—','passed all ten gates')}
+      ${stat('Candidates tested', r.candidates_tested!=null?r.candidates_tested:'—','UNMEASURED means not reported')}
+      ${stat('Miners reporting', Object.keys(miners).length, 'sources feeding the compiler')}
+      ${stat('Zero-yield miners', (b.zero_yield_miners||[]).length, (b.zero_yield_miners||[]).join(', ')||'none')}
+    </div>`
+    + panel('Miner conversion', b.measured_at,
+        table([{h:'miner'},{h:'discoveries',num:true,k:'disc'},{h:'compiled',num:true,k:'comp'},
+               {h:'survivors',num:true,k:'surv'},{h:'conversion',num:true,k:'conv'},{h:'attribution',k:'status'}],
+              rows, 'no miner block in this payload')
+        + `<div class="note">Conversion is survivors divided by discoveries. A miner at 0% has produced rows
+           the gates never admitted — that is a measurement, not an absence.</div>`)
+    + panel('Pipeline', S.generated_at, table([{h:'stage'},{h:'count',num:true}],
+        Object.entries(p).filter(([,v])=>typeof v!=='object').map(([k,v])=>({stage:k,count:v})),
+        'no pipeline block'));
 }
 
-/* Area sparkline. One scale places every point; the last point is emphasised because "where is
-   it now" is the question a curve on a desk board is actually asked. */
-function spark(series){
-  const w = 520, h = 120, pad = 6;
-  const lo = Math.min(...series), hi = Math.max(...series);
-  const span = (hi - lo) || 1;
-  const pt = (v, i) => [pad + i * (w - 2 * pad) / Math.max(1, series.length - 1),
-                        h - pad - ((v - lo) / span) * (h - 2 * pad)];
-  const pts = series.map(pt);
-  const up = series[series.length - 1] >= series[0];
-  const col = up ? "#34d399" : "#f87171";
-  const line = pts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" ");
-  const area = line + ` L${pts[pts.length - 1][0].toFixed(1)} ${h - pad} L${pts[0][0].toFixed(1)} ${h - pad} Z`;
-  const box = el("div");
-  box.style.overflowX = "auto";
-  box.innerHTML =
-    `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" role="img" aria-label="equity curve">
-       <defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
-         <stop offset="0%" stop-color="${col}" stop-opacity=".22"/>
-         <stop offset="100%" stop-color="${col}" stop-opacity="0"/></linearGradient></defs>
-       <path d="${area}" fill="url(#sg)"/>
-       <path d="${line}" fill="none" stroke="${col}" stroke-width="1.6"/>
-       <circle cx="${pts[pts.length - 1][0].toFixed(1)}" cy="${pts[pts.length - 1][1].toFixed(1)}"
-               r="3" fill="${col}"/>
-     </svg>`;
-  return box;
+function pagePortfolio(){
+  const a = S.account||{}, sh = S.shadow||{};
+  const eq = S.equity_curve||[];
+  return `<div class="grid">
+      ${stat('Equity', (a.currency||'')+' '+num(a.equity))}
+      ${stat('Starting capital', num(a.starting_capital))}
+      ${stat('Return', a.starting_capital?pct((a.equity-a.starting_capital)/a.starting_capital):'—','since inception',
+             sign(a.equity-a.starting_capital))}
+      ${stat('Equity points', eq.length, S.equity_curve_source||'')}
+    </div>`
+    + panel('Forward clocks (shadow)', S.generated_at, table(
+        [{h:'cell'},{h:'n',num:true},{h:'exp R',num:true},{h:'status'}],
+        Object.entries(sh).slice(0,20).map(([k,v])=>({
+          cell:esc(k), n:(v&&v.n)||'—',
+          'exp R':v&&v.exp_r!=null?num(v.exp_r,3):'—',
+          status:`<span class="tag ${v&&v.status==='ACTIVE'?'ok':'warn'}">${esc((v&&v.status)||'')}</span>`})),
+        'no shadow block in this payload'))
+    + panel('Equity curve', S.generated_at,
+        eq.length ? table([{h:'point'},{h:'equity',num:true}],
+            eq.slice(-25).map((p,i)=>({point:esc(p.t||p.time||i), equity:num(p.equity!=null?p.equity:p.v)})),'')
+          : empty('no equity curve published'));
 }
 
-function pageClocks(){
-  // THE ROSTER, NOT A SAMPLE OF IT. `pipeline.forward_detail` carried 14 rows while the header
-  // beside it said 89 -- so the page reported a count it could not itemise, which is the one
-  // thing a monitoring board must never do: a desk cannot be watched from a number. The full
-  // roster (shadow.clocks) is every lane including the scalp lane, which forward_detail omitted
-  // entirely. forward_detail stays as the fallback for any payload built before this landed.
-  const out = [], p = D.pipeline || {}, sh = D.shadow || {};
-  const rows = (sh.clocks && sh.clocks.length) ? sh.clocks : (p.forward_detail || []);
-  const tally = sh.by_promotable || {};
-  out.push(kpis([
-    ["Forward clocks", num(p.forward_clocks), "running now"],
-    ["Forward obs", num(p.forward_observations), "trades that COUNT toward maturity", p.forward_observations ? "g" : "r"],
-    ["Historical obs", num(p.historical_observations), "selection-era; can never mature a sleeve", "m"],
-    ["Promotion-ready", num(p.promotion_ready), "matured and above gate", p.promotion_ready ? "g" : "m"],
-    ["Live", num(p.live), "carrying capital", p.live ? "g" : "m"]
-  ]));
-  const g = el("div", "grid");
-  const c = card("Every forward clock (" + rows.length + ")", "shadow lanes, all statuses");
-  if (Object.keys(tally).length){
-    const bar = el("div", "pillrow");
-    // READY first: it is the only one of the four that asks the reader to DO something.
-    const order = ["READY", "WAITING", "NO_AUTHORITY", "HELD", "CLOSED"];
-    order.filter(k => tally[k]).forEach(k => {
-      const tone = k === "READY" ? "g" : (k === "CLOSED" ? "r" : "m");
-      bar.appendChild(el("span", "pill " + tone, k.replace("_", " ") + " " + tally[k]));
-    });
-    c.body.appendChild(bar);
-  }
-  if (rows.length){
-    const w = el("div", "tablewrap"), t = el("table");
-    t.innerHTML = "<thead><tr><th>Sleeve</th><th>Status</th><th>Promotable</th>" +
-      "<th class='num'>Day</th><th class='num'>n</th><th class='num'>Exp R</th>" +
-      "<th class='num'>Cum R</th><th class='num'>Max DD R</th></tr></thead>";
-    const tb = el("tbody");
-    rows.forEach(r => {
-      const tr = el("tr");
-      tr.appendChild(el("td", "name", r.name));
-      const st = el("td");
-      const pill = el("span", "pill " + (/PROMOTION/.test(r.status || "") ? "g" : "m"), r.status || "—");
-      st.appendChild(pill); tr.appendChild(st);
-      // PROMOTABLE IS THE COLUMN THE PRINCIPAL ASKED FOR, and it is three-way on purpose:
-      // "not yet" and "never" send the reader to completely different places.
-      const pm = String(r.promotable || "—");
-      const ptone = pm.startsWith("READY") ? "g" : (pm === "CLOSED" ? "r" : "m");
-      const pc = el("td"); pc.appendChild(el("span", "pill " + ptone, pm)); tr.appendChild(pc);
-      tr.appendChild(el("td", "num", (r.days ?? "—") + " / 14"));
-      tr.appendChild(el("td", "num", num(has(r.trades) ? r.trades : r.n)));
-      tr.appendChild(el("td", "num", has(r.expectancy_r) ? r.expectancy_r.toFixed(3) : "—"));
-      tr.appendChild(el("td", "num", has(r.cum_r) ? r.cum_r.toFixed(2) : "—"));
-      tr.appendChild(el("td", "num", has(r.max_dd_r) ? r.max_dd_r.toFixed(2) : "—"));
-      tb.appendChild(tr);
-    });
-    t.appendChild(tb); w.appendChild(t); c.body.appendChild(w);
-  } else {
-    c.body.appendChild(empty("No sleeve is on a forward clock",
-      "Nothing is accruing the evidence promotion requires. Until the desk publishes the lane " +
-      "state files, this view cannot distinguish a quiet market from a lane that stopped writing — " +
-      "so it claims neither."));
-  }
-  c.body.appendChild(defs([
-    ["MATURITY", "n ≥ 50, or 14 days with n ≥ 20", "the scalp lane's rule; the main lane needs 14 days or n ≥ 50"],
-    ["PROMOTION", "expectancy > 0.05R and max drawdown > −25R", "both, on FORWARD observations only"],
-    ["WHY HISTORICAL DOES NOT COUNT", num(p.historical_observations) + " observations excluded",
-      "they come from the window the sleeve was SELECTED in, so counting them would let a sleeve mature on the evidence that chose it"]
-  ]));
-  g.appendChild(c.node);
-  out.push(g);
-  return out;
+function pageRisk(){
+  const h = S.health||{}, rd = S.readiness||{}, d = S.decay||{};
+  return `<div class="grid">
+      ${stat('Readiness', rd.status||'—', rd.why||'')}
+      ${stat('Health', h.status||'—', h.why||'')}
+      ${stat('Decay flags', Object.keys(d).length||0, 'sleeves flagged fading')}
+    </div>`
+    + panel('Readiness', S.generated_at, table([{h:'field'},{h:'value'}],
+        Object.entries(rd).filter(([,v])=>typeof v!=='object').map(([k,v])=>({field:k,value:esc(v)})),
+        'no readiness block'))
+    + panel('Decay', S.generated_at, table([{h:'sleeve'},{h:'state'}],
+        Object.entries(d).map(([k,v])=>({sleeve:esc(k),state:esc(typeof v==='object'?JSON.stringify(v).slice(0,90):v)})),
+        'nothing flagged as decaying'))
+    + `<div class="note">Risk panels render what the desk publishes. A blank panel means the artifact behind it
+       was not written — never that the risk is zero.</div>`;
 }
 
-function pagePipeline(){
-  const out = [], p = D.pipeline || {};
-  const docket = p.docket_candidates || 0;
-  out.push(kpis([
-    ["Docket", num(p.docket_candidates), "awaiting judgement"],
-    ["Backtested", num(p.discovered_backtested), "reached a backtest"],
-    ["Judged last pass", num(p.gauntlet_last_judged), "the gauntlet's last run"],
-    ["Unmeasured", num(p.gauntlet_last_unmeasured), "could not be judged", p.gauntlet_last_unmeasured ? "w" : "m"],
-    ["Certified", num(p.certified ?? (D.breadth?.book_breadth?.certificates)), "passed all ten gates"],
-    ["Gate-failed", num(p.certified_gate_failed), "in the survivors file, never passed", p.certified_gate_failed ? "w" : "m"],
-    ["Unrunnable", num(p.certificates_unrunnable), "certified but not executable", p.certificates_unrunnable ? "r" : "m"],
-    ["Clockless", num(clockless(p)), "certified, runnable, no forward clock", clockless(p) ? "r" : "g"]
-  ]));
-  const g = el("div", "grid");
-  const c = card("Conversion, stage by stage", "gauntlet");
-  c.body.appendChild(bars([
-    ["Docket candidates", p.docket_candidates, "everything mined and compiled that has not yet been judged"],
-    ["Reached a backtest", p.discovered_backtested, "the step where most corpora die"],
-    ["Judged last pass", p.gauntlet_last_judged, "one gauntlet run's throughput"],
-    ["Certified", p.certified ?? (D.breadth?.book_breadth?.certificates), "cleared all ten statistical gates"],
-    ["On a forward clock", p.forward_clocks, "accruing out-of-sample evidence"],
-    ["Live", p.live, "carrying capital"]
-  ], docket || 1));
-  g.appendChild(c.node);
-
-  const c2 = card("Executability", "shadow_spec");
-  if (p.certificates_unrunnable){
-    c2.body.appendChild(verdict("bad", p.certificates_unrunnable, "", "Certified but not executable",
-      "UNRUNNABLE CERTIFICATES", p.unrunnable_reason || ""));
-  } else {
-    c2.body.appendChild(verdict("good", "0", "", "Every certificate carries its parameterisation",
-      "UNRUNNABLE CERTIFICATES",
-      "A certificate without `params` in its shadow_spec names a mechanism nothing can run. " +
-      "Sealing one is indistinguishable downstream from never having certified it."));
-  }
-  c2.body.appendChild(defs([
-    ["TEN GATES", "fixed and permanent",
-      "deflated Sharpe, walk-forward, PBO, reality-check SPA, stress costs and the rest — no gate is ever loosened to admit a candidate"],
-    ["DOCKET DEPTH", num(p.docket_candidates) + " candidates",
-      "throughput, not supply, is the binding constraint at this depth"]
-  ]));
-  g.appendChild(c2.node);
-
-  // EVERY ROW IN THE SURVIVORS FILE ACCOUNTED FOR, on screen, adding up. The funnel used to
-  // publish two numbers — certified and clocks — whose difference had no stated cause, so a
-  // gap that is mostly rows that never passed a gate read as sleeves going missing. Each line
-  // below subtracts a NAMED population, and the last line is the only one anybody must act on.
-  const c3 = card("Certificate ledger", "UNIVERSAL_SURVIVORS.json");
-  const rowsInFile = (p.certified == null || p.certified_gate_failed == null)
-    ? null : p.certified + p.certified_gate_failed;
-  if (rowsInFile == null){
-    c3.body.appendChild(missing("Certificate ledger", "UNIVERSAL_SURVIVORS.json",
-      "The ten-gate census could not be taken."));
-  } else {
-    c3.body.appendChild(defs([
-      ["ROWS IN FILE", num(rowsInFile), "everything the survivors file holds, passed or not"],
-      ["LESS GATE-FAILED", "−" + num(p.certified_gate_failed),
-        "kept for the record and refused at the door — these never were certificates, and counting them as such was the funnel's most misleading number"],
-      ["CERTIFIED", num(p.certified), "passed all ten gates"],
-      ["LESS UNRUNNABLE", "−" + num(p.certificates_unrunnable),
-        "earned a certificate, carries no parameterisation, cannot be enrolled without guessing the strategy that passed"],
-      ["RUNNABLE", num(p.certified - (p.certificates_unrunnable || 0)),
-        "eligible for a forward clock"],
-      ["LESS ON A CLOCK", "−" + num(p.forward_clocks), "accruing out-of-sample evidence now"],
-      ["CLOCKLESS", num(clockless(p)),
-        clockless(p) ? "certified, runnable, accruing NOTHING — the only line here that is a work item"
-                     : "every runnable certificate is on a clock"]
-    ]));
-  }
-  if (p.census_basis && p.census_basis !== "ten_gate_verdict"){
-    c3.body.appendChild(empty("Census unavailable — counts fall back to the file's own row count",
-      p.census_basis + ". Until this resolves, `certified` is the number of ROWS in the "
-      + "survivors file, which includes rows that failed a gate."));
-  }
-  g.appendChild(c3.node);
-  out.push(g);
-  return out;
+function pageExecution(){
+  const e = S.execution||{};
+  const open = e.open_trades||[];
+  return `<div class="grid">
+      ${stat('Open trades', open.length)}
+      ${stat('Matched fills', e.matched_fills!=null?e.matched_fills:'—','UNMEASURED if blank')}
+      ${stat('Markout usable', e.markout_usable===true?'yes':e.markout_usable===false?'no':'—', e.why||'')}
+    </div>`
+    + panel('Open trades', S.generated_at, table(
+        [{h:'symbol'},{h:'side'},{h:'volume',num:true},{h:'entry',num:true},{h:'P&L',num:true}],
+        open.map(t=>({symbol:esc(t.symbol),side:esc(t.side||t.type),volume:num(t.volume,2),
+                      entry:num(t.price||t.entry,5),'P&L':num(t.profit,2)})),
+        'no open trades'))
+    + panel('Execution quality', S.generated_at, table([{h:'field'},{h:'value'}],
+        Object.entries(e).filter(([,v])=>typeof v!=='object').map(([k,v])=>({field:k,value:esc(v)})),
+        'no execution block'));
 }
 
-function pageMiners(){
-  const out = [], b = D.breadth || {}, miners = b.miners || {}, zero = b.zero_yield_miners || [];
-  const names = Object.keys(miners);
-  const totalDisc = names.reduce((a, k) => a + (miners[k].discoveries || 0), 0);
-  out.push(kpis([
-    ["Miners with rows", num(names.length), "in the last " + (b.window_days || 14) + " days"],
-    ["Zero-yield", num(zero.length), "rows but no survivor", zero.length ? "r" : "g"],
-    ["Discoveries", num(totalDisc), "raw rows produced"],
-    ["Survivors", num(names.reduce((a, k) => a + (miners[k].survivors || 0), 0)), "cleared the gates", "m"],
-    ["Yield rate", names.length ? (100 * (names.length - zero.length) / names.length).toFixed(0) + "%" : "—", "miners that converted anything"]
-  ]));
-  const g = el("div", "grid");
-
-  const c = card("Verdict", "miner_conversion");
-  const rate = names.length ? (names.length - zero.length) / names.length : null;
-  c.body.appendChild(verdict(zero.length > names.length / 2 ? "bad" : rate > 0.5 ? "good" : "warn",
-    num(zero.length), " / " + num(names.length),
-    "Producing rows, converting nothing",
-    "ZERO-YIELD MINERS",
-    "A miner with discoveries and no survivor across the whole window is producing noise at cost. " +
-    "Volume is not breadth: two writeups naming the same session-range breakout differently are one " +
-    "discovery, so rows are deduplicated by economic exposure — family, symbol, session — never by title."));
-  const top = names.map(k => [k, miners[k]])
-    .sort((a, bb) => (bb[1].discoveries || 0) - (a[1].discoveries || 0)).slice(0, 12);
-  const w = el("div", "tablewrap"), t = el("table");
-  t.innerHTML = "<thead><tr><th>Miner</th><th class='num'>Rows</th><th class='num'>Distinct</th>" +
-    "<th class='num'>Novel</th><th class='num'>Tested</th><th class='num'>Surv</th><th class='num'>Dup</th></tr></thead>";
-  const tb = el("tbody");
-  top.forEach(([k, m]) => {
-    const tr = el("tr");
-    tr.appendChild(el("td", "name", k));
-    tr.appendChild(el("td", "num", num(m.discoveries)));
-    tr.appendChild(el("td", "num", num(m.distinct_mechanisms)));
-    tr.appendChild(el("td", "num", num(m.novel_mechanisms)));
-    tr.appendChild(el("td", "num", num(m.reached_backtest)));
-    const sv = el("td", "num " + (m.survivors ? "g" : "r"), num(m.survivors));
-    tr.appendChild(sv);
-    tr.appendChild(el("td", "num m", has(m.duplicate_rate) ? (100 * m.duplicate_rate).toFixed(1) + "%" : "—"));
-    tb.appendChild(tr);
-  });
-  t.appendChild(tb); w.appendChild(t); c.body.appendChild(w);
-  g.appendChild(c.node);
-  out.push(g);
-  return out;
+function pageMonitor(){
+  const sw = S.stall_watch||{}, h = S.health||{};
+  const mem = sw.memory||{};
+  const procs = mem.top || sw.top || [];
+  return `<div class="grid">
+      ${stat('Physical memory', mem.total_phys_mb?num(mem.total_phys_mb,0)+' MB':'—',
+             mem.free_phys_mb!=null?('free '+num(mem.free_phys_mb,0)+' MB'):'')}
+      ${stat('Health', h.status||'—', h.why||'')}
+      ${stat('Payload size', (JSON.stringify(S).length/1024).toFixed(0)+' KB','desk_state.json')}
+    </div>`
+    + panel('Largest processes', S.generated_at, table(
+        [{h:'pid',num:true},{h:'name'},{h:'commit MB',num:true},{h:'rss MB',num:true}],
+        (Array.isArray(procs)?procs:[]).slice(0,12).map(p=>({pid:p.pid,name:esc(p.name),
+          'commit MB':num(p.commit_mb,0),'rss MB':num(p.rss_mb,0)})),
+        'no process table in stall_watch'))
+    + panel('Block freshness — every artifact behind this page', undefined,
+        table([{h:'block'},{h:'timestamp'},{h:'age'}],
+          [['generated_at',S.generated_at],['breadth.measured_at',(S.breadth||{}).measured_at],
+           ['shadow',(S.shadow&&Object.keys(S.shadow).length)?S.generated_at:null],
+           ['stall_watch',sw.at||sw.measured_utc||null]]
+          .map(([k,v])=>({block:esc(k),timestamp:esc(v||'—'),age:ageTag(v)})),'')
+        + `<div class="note">This table is the point of the page. Equity can be one minute old while breadth is
+           seven days old, and a dashboard that shows both as plain numbers is telling you something untrue.</div>`);
 }
 
-function pageBreadth(){
-  const out = [], b = (D.breadth || {}).book_breadth || {};
-  const conc = b.family_concentration, missing = b.missing_families || [];
-  const fams = b.families || {};
-  out.push(kpis([
-    ["Certificates", num(b.certificates), "in the book"],
-    ["Families held", num(Object.keys(fams).length), "distinct mechanisms"],
-    ["Largest family", b.largest_family || "—", has(conc) ? (100 * conc).toFixed(0) + "% of the book" : "no book to concentrate"],
-    ["Target families absent", num(missing.length), "each would add an independent bet", missing.length ? "w" : "g"]
-  ]));
-  const g = el("div", "grid");
+const PAGES = {exec:['Executive Overview',pageExec], research:['Research',pageResearch],
+  portfolio:['Portfolio',pagePortfolio], risk:['Risk',pageRisk],
+  execution:['Execution',pageExecution], monitor:['Monitoring',pageMonitor]};
+let current = 'exec';
 
-  const c = card("Concentration", "book breadth");
-  c.body.appendChild(gauge(has(conc) ? Math.round(100 * conc) : null, 100, "PCT",
-    has(conc) ? (conc > 0.8 ? "One bet, wearing many names" : "Diversified") : "No book to measure",
-    has(conc)
-      ? "The share of certificates in the single largest family. Near 100% means every certificate is the same bet, and no amount of mining inside that family can raise the number of independent bets."
-      : "Concentration is undefined with no certificates. It becomes the binding number the moment the book is non-empty — which is why it is on this page before it has a value.",
-    has(conc) ? (conc > 0.8 ? "bad" : "good") : "warn"));
-  g.appendChild(c.node);
-
-  const c2 = card("Missing independent bets", "ordered by independence");
-  c2.body.appendChild(defs(missing.slice(0, 8).map(m => [
-    m.family.replace(/_/g, " ").toUpperCase() + " · " + (m.state === "REACHABLE" ? "REACHABLE" : "NO GENERATOR"),
-    m.why, "needs: " + m.needs
-  ])));
-  g.appendChild(c2.node);
-  out.push(g);
-  return out;
-}
-
-function pageSeats(){
-  const out = [], sw = D.stall_watch || {}, r = D.readiness || {}, h = D.health || {};
-  const procs = sw.procs || {};
-  const fails = Object.keys(procs).filter(k => /^fail\./.test(k));
-  out.push(kpis([
-    ["Free disk", has(sw.free_gb) ? sw.free_gb.toFixed(1) + " GB" : "—", "on the desk box", (sw.free_gb || 0) < 5 ? "r" : "g"],
-    ["Low-memory strikes", num(sw.low_mem_strikes), "consecutive", sw.low_mem_strikes ? "r" : "g"],
-    ["Failing tasks", num(fails.length), "reported by stall watch", fails.length ? "r" : "g"],
-    ["Readiness", r.status || "UNMEASURED", "live-capital assessment", r.status === "READY" ? "g" : "m"],
-    ["Newest H1 bar", h.newest_h1_file ? h.newest_h1_file.slice(0, 10) : "—", "freshest chart on disk"]
-  ]));
-  const g = el("div", "grid");
-  const c = card("Host and seats", "stall_watch");
-  if (Object.keys(procs).length){
-    c.body.appendChild(defs(Object.keys(procs).slice(0, 8).map(k => [
-      k.replace(/^fail\./, "").toUpperCase(),
-      /^fail\./.test(k) ? "FAILING" : "running",
-      JSON.stringify(procs[k]).slice(0, 150)
-    ])));
-  } else {
-    c.body.appendChild(empty("Nothing reported", "The stall watch has published no process table."));
-  }
-  g.appendChild(c.node);
-
-  const c2 = card("Live-capital readiness", "readiness");
-  c2.body.appendChild(verdict(r.status === "READY" ? "good" : "warn", r.status === "READY" ? "✓" : "—", "",
-    r.status || "UNMEASURED", "BLOCKING",
-    (r.blocking || ["no assessment recorded"]).join(" · ")));
-  c2.body.appendChild(defs([
-    ["HEAT FLOOR", "20% nominal, flat",
-      "never reduced by an evidence-readiness multiplier; the floor is a floor"],
-    ["ADMISSION", "pf_allocation under 26h, status MEASURED",
-      "a stale or unmeasured allocation admits nothing to live, whatever the roster says"]
-  ]));
-  g.appendChild(c2.node);
-  out.push(g);
-  return out;
-}
-
-function pageCandidates(){
-  const out = [], r = D.research || {}, rows = r.survivors || [];
-  const fails = r.gate_failures || {};
-  out.push(kpis([
-    ["Tested", num(r.candidates_tested), "through the ten gates"],
-    ["Cleared all ten", num(rows.length), "certified candidates", rows.length ? "g" : "m"],
-    ["Historical survivors", num(r.historical_survivors), "selection-era", "m"],
-    ["Canonical", num(r.canonical_survivors), "in the canon"],
-    ["Gate failures", num(Object.values(fails).reduce((a, b) => a + (b || 0), 0)),
-      "rejections recorded", "w"]
-  ]));
-  const g = el("div", "grid");
-
-  const c = card("Candidates and their gates", "QQUANT_GATES");
-  if (rows.length){
-    const w = el("div", "tablewrap"), t = el("table");
-    t.innerHTML = "<thead><tr><th>Candidate</th><th>Hunt</th><th class='num'>Days</th>" +
-      "<th class='num'>DSR</th><th class='num'>WF Sharpe</th><th class='num'>PBO</th>" +
-      "<th class='num'>SPA p</th></tr></thead>";
-    const tb = el("tbody");
-    rows.slice(0, 60).forEach(x => {
-      const tr = el("tr");
-      tr.appendChild(el("td", "name", x.name || "—"));
-      tr.appendChild(el("td", "m", x.hunt || "—"));
-      tr.appendChild(el("td", "num", num(x.days)));
-      tr.appendChild(el("td", "num " + ((x.dsr || 0) > 0 ? "g" : "r"),
-        has(x.dsr) ? x.dsr.toFixed(3) : "—"));
-      tr.appendChild(el("td", "num", has(x.wf_sharpe) ? x.wf_sharpe.toFixed(2) : "—"));
-      tr.appendChild(el("td", "num " + ((x.pbo || 1) < 0.5 ? "g" : "r"),
-        has(x.pbo) ? x.pbo.toFixed(3) : "—"));
-      tr.appendChild(el("td", "num", has(x.spa_p) ? x.spa_p.toFixed(4) : "—"));
-      tb.appendChild(tr);
-    });
-    t.appendChild(tb); w.appendChild(t); c.body.appendChild(w);
-  } else {
-    c.body.appendChild(missing("Candidates", "desks/mt5/reports/QQUANT_GATES.json",
-      "The per-candidate gate verdicts live in"));
-  }
-  g.appendChild(c.node);
-
-  const c2 = card("Which gate kills the most", "gate_failures");
-  const entries = Object.entries(fails).sort((a, b) => (b[1] || 0) - (a[1] || 0));
-  if (entries.length){
-    const total = entries.reduce((a, e) => a + (e[1] || 0), 0);
-    c2.body.appendChild(bars(entries.map(([k, v]) =>
-      [k.replace(/_/g, " "), v, ""]), total));
-    c2.body.appendChild(defs([["WHY THIS TILE", "conversion is the binding constraint",
-      "0 certificates from a docket of tens of thousands. The gate rejecting the most is where "
-      + "throughput is actually lost — and no gate is ever loosened to raise this number."]]));
-  } else {
-    c2.body.appendChild(missing("Gate failures", "desks/mt5/reports/QQUANT_GATES.json",
-      "The per-gate rejection counts live in"));
-  }
-  g.appendChild(c2.node);
-  out.push(g);
-  return out;
-}
-
-function pageIssues(){
-  const out = [], ib = D.issues || {};
-  const issues = ib.issues || [], sev = ib.by_severity || {};
-  const order = ["CAPITAL", "BLIND", "STALLED", "DEGRADED"];
-  out.push(kpis([
-    ["Open issues", num(issues.length), "everything the desk can see", issues.length ? "w" : "g"],
-    ["Capital", num(sev.CAPITAL), "could size or trade wrongly now", sev.CAPITAL ? "r" : "g"],
-    ["Blind", num(sev.BLIND), "believes something false about itself", sev.BLIND ? "r" : "g"],
-    ["Stalled", num(sev.STALLED), "a producer stopped", sev.STALLED ? "w" : "g"],
-    ["Auto-repairable", num(ib.auto_repairable), "fixed without a human", "g"],
-    ["Watched producers", num(ib.watched_producers), "each with a declared cadence"]
-  ]));
-  const g = el("div", "grid");
-  const c = card("Open issues", "issue_board");
-  if (issues.length){
-    const sorted = issues.slice().sort(
-      (a, b) => order.indexOf(a.severity) - order.indexOf(b.severity));
-    c.body.appendChild(defs(sorted.map(i => [
-      i.severity + (i.auto_repairable ? " · AUTO-REPAIRABLE" : ""),
-      i.what,
-      (i.detail || "") + (i.repair ? "  →  " + i.repair : "")
-    ])));
-  } else if (ib.measured_at){
-    c.body.appendChild(empty("No open issues",
-      "Every watched producer is inside its declared cadence, no alarm file is raised, and the "
-      + "desk state reports nothing wrong. " + (ib.contract || "")));
-  } else {
-    c.body.appendChild(missing("Issue board", "desks/mt5/reports/ISSUE_BOARD.json",
-      "The aggregated issue list lives in"));
-  }
-  g.appendChild(c.node);
-
-  const c2 = card("What the fixer did", "auto-repair");
-  const acts = ib.actions || [];
-  const ran = acts.filter(a => a.action === "REPAIRED" && a.verified === true);
-  if (acts.length){
-    c2.body.appendChild(triple([
-      ["REPAIRED", num(ran.length), ran.length ? "g" : "m"],
-      ["REFUSED", num(acts.filter(a => a.action === "REFUSED").length), "m"],
-      ["APPLIED", ib.applied ? "YES" : "DRY RUN", ib.applied ? "g" : "w"]
-    ]));
-    c2.body.appendChild(defs(acts.slice(0, 10).map(a => [
-      a.action, a.key, a.cmd || a.why || ""])));
-  } else {
-    c2.body.appendChild(empty("No repair pass recorded", "The fixer has not run."));
-  }
-  c2.body.appendChild(defs(Object.entries(ib.never_automated || {}).map(
-    ([k, v]) => ["NEVER AUTOMATED · " + k, v, ""])));
-  g.appendChild(c2.node);
-  out.push(g);
-  return out;
-}
-
-const PAGES = {desk: pageDesk, issues: pageIssues, candidates: pageCandidates, clocks: pageClocks, pipeline: pagePipeline,
-  miners: pageMiners, breadth: pageBreadth, seats: pageSeats};
-
-/* ==========================================================================
-   RENDER
-   ========================================================================== */
-function buildNav(){
-  const groups = {markets: $("#nav-markets"), research: $("#nav-research")};
-  SECTIONS.forEach(s => {
-    const b = el("button", "navitem");
-    b.type = "button";
-    b.innerHTML = ICONS[s.icon];
-    b.appendChild(document.createTextNode(s.label));
-    b.setAttribute("aria-current", String(s.id === current));
-    b.addEventListener("click", () => { current = s.id; render(); });
-    groups[s.group].appendChild(b);
-  });
-}
-function syncNav(){
-  document.querySelectorAll(".navitem").forEach((b, i) =>
-    b.setAttribute("aria-current", String(SECTIONS[i].id === current)));
-}
 function render(){
-  const sec = SECTIONS.find(s => s.id === current) || SECTIONS[0];
-  $("#page-title").textContent = sec.label;
-  $("#page-cap").textContent = sec.cap;
-  syncNav();
-
-  const box = (D.health || {}).box || {};
-  const tone = boxTone(box.status);
-  const rib = $("#ribbon");
-  rib.className = "ribbon is-" + tone;
-  $("#ribbon-text").textContent =
-    box.status === "REPORTING" ? "REPORTING — state is current"
-    : box.status === "LATE" ? "LATE — the box has not reported recently"
-    : box.status === "SILENT" ? "SILENT — nothing on this page is current"
-    : "UNMEASURED — the box publishes no readable clock";
-  $("#ribbon-note").textContent = box.why || "";
-  $("#built").textContent = D.generated_at
-    ? "built\n" + D.generated_at.replace("T", " ").slice(0, 16) : "built —";
-  $("#scope").textContent = LIVE ? "MT5 · LIVE JSON" : "MT5 · SNAPSHOT";
-
-  const page = $("#page");
-  page.textContent = "";
-  const head = el("div", "pagehead");
-  head.appendChild(el("div", "eyebrow", "THE " + sec.label.toUpperCase()));
-  head.appendChild(el("h2", null, sec.label));
-  head.appendChild(el("p", null, sec.cap));
-  page.appendChild(head);
-  (PAGES[current] || pageDesk)().forEach(n => page.appendChild(n));
+  if(!S) return;
+  const [title, fn] = PAGES[current];
+  $('page-title').textContent = title;
+  try { $('view-'+current).innerHTML = fn(); }
+  catch(err){ $('view-'+current).innerHTML = empty('panel failed to render: '+err.message); }
+  const h = age(S.generated_at);
+  $('page-sub').textContent = S.identity ? (S.identity.desk||S.identity.name||'') : '';
+  $('brand-sub').textContent = (S.account&&S.account.currency?S.account.currency+' ':'')+
+      (S.account?num(S.account.equity):'');
+  $('nav-foot').innerHTML = 'payload '+ (JSON.stringify(S).length/1024).toFixed(0)+' KB<br>'+ageTxt(h);
+  const dot = $('live-dot');
+  dot.className = 'dot ' + (h==null?'dead':h>DEAD_H?'dead':h>STALE_H?'stale':'');
+  $('live-txt').textContent = 'desk_state ' + ageTxt(h);
 }
-function tick(){
-  const d = new Date();
-  $("#clock").innerHTML = d.toISOString().slice(11, 19) +
-    '<small>UTC</small>';
-}
-async function load(){
+
+async function poll(){
   try{
-    const r = await fetch("desk_state.json", {cache: "no-store"});
-    if (r.ok){ D = await r.json(); LIVE = true; }
-  }catch(e){ /* served without its JSON; the snapshot stands */ }
-  render();
+    // Cache-busted on purpose: a CDN holding the previous payload is the same
+    // failure as a stale artifact, and indistinguishable from the page.
+    const res = await fetch('desk_state.json?t='+Date.now(), {cache:'no-store'});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    S = await res.json(); lastOk = Date.now(); render();
+  }catch(err){
+    $('live-txt').textContent = 'fetch failed: '+err.message;
+    $('live-dot').className = 'dot dead';
+  }
 }
-buildNav();
-render();
-tick(); setInterval(tick, 1000);
-$("#refresh").addEventListener("click", load);
-load();
+
+document.querySelectorAll('nav button').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('nav button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    document.querySelectorAll('.page-view').forEach(v=>v.classList.remove('on'));
+    current = b.dataset.p;
+    $('view-'+current).classList.add('on');
+    render();
+  });
+});
+
+poll();
+setInterval(poll, POLL_MS);
 </script>
 </body>
 </html>
