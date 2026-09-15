@@ -30,6 +30,7 @@ from __future__ import annotations
 import contextlib
 import hashlib
 import json
+import re
 import sys
 import time
 from datetime import UTC, datetime, timedelta
@@ -107,9 +108,20 @@ MAGIC = 341953
 #: exists because the previous day-wide window silently lost every fill the gateway did not see
 #: on the same calendar day: a skipped pass, an OOM kill or a restart after midnight left those
 #: closes unrecorded permanently, since nothing ever looked backwards.
+#: THIRTY DAYS IS DERIVED FROM THE DEDUP GUARANTEE, not chosen for comfort. Deals are keyed by
+#: the venue's own ticket, so widening the window cannot double-count -- the only cost is a
+#: longer list scan. The floor is set by the longest credible gap in the gateway's own cadence:
+#: a restart spanning a weekend plus a holiday is ~4 days, and 30 covers seven such gaps back
+#: to back. Anything shorter re-creates the defect below, where a skipped pass lost those
+#: closes permanently because nothing ever looked backwards.
 LEDGER_LOOKBACK_DAYS = 30
 
-LOT = 0.02              # gold book lot; see Q_OPT below for the sizing policy
+#: The gold book's ticket. 0.02 is twice the venue minimum of 0.01, and that ratio IS the
+#: derivation: at 0.01 the rounding step is 100% of the ticket, so any size the allocator asks
+#: for between 0.01 and 0.02 rounds to one end and realised heat misses target by a whole step.
+#: At 0.02 the same absolute step is 50% of the ticket. A FLOOR on the gold book only -- Q_OPT
+#: below decides the actual size and this never raises it.
+LOT = 0.02
 # RISK FRACTION OF EQUITY PER TRADE. Was 0.055, and that was not an arbitrary number: measured
 # full Kelly on the 3-leg gold book (E[ln(1+qR)] maximised over the daily portfolio series,
 # 5,728 trades, 2018-2026) is q* = 6.00%, so 5.5% was ~92% of Kelly, chosen deliberately.
@@ -228,6 +240,81 @@ def gold_min_lot() -> float:
     return _core.gold_min_lot()
 
 
+#: E2's ARM SWITCH, deliberately its own file beside GENERIC_EXEC_ENABLED. Present means the
+#: winner of the priced execution competition chooses the order shape; absent means the
+#: competition is still run, still ranked and still logged, and the hard-coded market order is
+#: still what goes out. A principal who armed generic execution must not silently acquire a
+#: router, so the two are separate acts.
+EXEC_ROUTING_ENABLED = BASE / "data" / "EXEC_ROUTING_ENABLED"
+
+#: Algorithms this router may select. Every child must be a `market` child: those need no
+#: management between signal and fill, so a wrong choice costs slippage rather than leaving an
+#: unmanaged resting order on the book. `twap`, `sniper`, `pullback` and the staged shapes stay
+#: measured and unrouted until the fill surface is fitted on this box's own fills.
+ROUTABLE_ALGOS = ("market",)
+
+
+def _exec_route(symbol: str, side: int, entry_ref: float, tick: object, sym: object,
+                dist: float, signal: object, lot: float) -> dict:
+    """Run the execution competition and say whether its winner may be routed. E2.
+
+    ALWAYS RUNS, ROUTES ONLY WHEN ARMED. The competition's value is the same either way -- the
+    counterfactual ledger scores the road not taken from it -- so refusing to compute it when
+    disarmed would cost the evidence and save nothing.
+
+    Returns a row that is recorded whether or not it routed, because "the router would have
+    chosen twap and was not allowed to" is the measurement that decides whether to arm it.
+    """
+    out: dict = {"routed": False, "armed": EXEC_ROUTING_ENABLED.exists()}
+    try:
+        from mt5desk import execution_registry as er
+
+        # `side` IS A STRING HERE and an int at the call site; `stop_frac` is the stop distance
+        # over the price, which is the R denominator the competition prices everything in.
+        intent = er.Intent(symbol=symbol, side=("buy" if int(side) > 0 else "sell"),
+                           lots=float(lot), price=float(entry_ref),
+                           stop_frac=(float(dist) / float(entry_ref)) if entry_ref else 0.0)
+        comp = er.compete(intent)
+        best = comp["plans"][comp["best"]]
+        market = comp["plans"].get("market")
+        out.update({
+            "algo": str(comp["best"]),
+            "utility": float(best.utility),
+            "market_utility": float(market.utility) if market is not None else None,
+            "utilities": {k: round(float(v), 6) for k, v in (comp.get("utilities") or {}).items()},
+            "children_all_market": all(str(c.get("kind", "")) == "market"
+                                       for c in (best.children or [])),
+        })
+    except Exception as exc:
+        out["why"] = f"competition unavailable ({type(exc).__name__}: {str(exc)[:110]})"
+        return out
+    if not out["armed"]:
+        out["why"] = ("EXEC_ROUTING_ENABLED absent: the winner is logged and the hard-coded "
+                      "market order is sent. Arming this is a separate principal act")
+        return out
+    if out["algo"] not in ROUTABLE_ALGOS or not out["children_all_market"]:
+        out["why"] = (f"{out['algo']} is not routable: only algorithms whose children are all "
+                      "`market` may be selected, because the rest leave resting orders this lane "
+                      "does not yet manage")
+        return out
+    out["routed"] = True
+    return out
+
+
+def venue_min_lot(symbol: str = GOLD_SYMBOL, info: object | None = None) -> float:
+    """The smallest lot THIS VENUE accepts for THIS symbol -- `decision_core.venue_min_lot`.
+
+    Bound here by name for the same reason every other sizing decision is: the reachability
+    fence in `test_decision_core` walks this file's surface and fails when a decision that moves
+    a live order cannot be reached through the gateway. It caught this function on the pass that
+    introduced it, which is the fence doing its job.
+
+    It decides a live order under the principal's 2026-09-12 order -- a sleeve the allocator
+    zeroed trades the venue minimum rather than being skipped -- so it belongs on this surface.
+    """
+    return _core.venue_min_lot(symbol, info)
+
+
 def gold_lot(equity: float, dist_usd: float | None = None,
              info: object | None = None) -> float:
     """The gold book's lot, floored at the principal's minimum -- `decision_core.gold_lot`,
@@ -314,7 +401,7 @@ def allocator_book() -> tuple[dict[str, float] | None, str]:
             if mix.get("status") == "BLENDED" and mix.get("book"):
                 by_name = {str(k): float(v) for k, v in mix["book"].items() if float(v) > 0.0}
                 src, swhy = "blend", mix["why"]
-        except Exception as exc:                                         # noqa: BLE001
+        except Exception as exc:
             # A broken ensemble must never cost the desk the book `select` already chose.
             swhy = f"{swhy}; ensemble unavailable ({type(exc).__name__}: {exc})"
         if by_name:
@@ -366,7 +453,7 @@ def venue_heat_cap() -> tuple[float | None, str]:
     """
     try:
         acc = _prov.current_account(mt5.account_info())
-    except Exception as exc:                                    # noqa: BLE001 -- see docstring
+    except Exception as exc:
         acc = None
         _ = exc
     return _acct.venue_heat_cap(acc, BASE.parent.parent)
@@ -579,7 +666,7 @@ def _release_id() -> str:
     try:
         from libs.ops.release import release_id
         return release_id()
-    except Exception:                                           # noqa: BLE001
+    except Exception:
         return "unreleased"
 
 
@@ -607,7 +694,7 @@ def _record_decision(**row) -> None:
     row.setdefault("state_vector_id", _state_vector_id())
     try:
         row.setdefault("release_id", _release_id())
-    except Exception:                                       # noqa: BLE001
+    except Exception:
         row.setdefault("release_id", "unreleased")
     row.setdefault("size_mult", 1.0)
     row.setdefault("execution",
@@ -644,7 +731,7 @@ def _decision_portfolio_context(sleeve) -> dict:
             return {"book": None, "why": why}
         return {"h": book.get(str(sleeve or "")), "n_book": len(book),
                 "total_heat": round(sum(float(v) for v in book.values()), 6), "why": why}
-    except Exception as exc:                                # noqa: BLE001
+    except Exception as exc:
         return {"book": None, "why": f"{type(exc).__name__}: {exc}"}
 
 
@@ -728,7 +815,7 @@ def _record_intent(**row) -> str | None:
         row.setdefault("state_vector_id", _state_vector_id())
         try:
             row.setdefault("release_id", _release_id())
-        except Exception:                                   # noqa: BLE001
+        except Exception:
             row.setdefault("release_id", "unreleased")
         with contextlib.suppress(Exception):
             row.setdefault("intent_id", _intent_id(row.get("symbol"), row.get("sleeve"),
@@ -766,7 +853,26 @@ def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float,
 
     for side in ("buy_stop", "sell_stop"):
         s = spec[side]
-        if _t is not None and _lvl > 0:
+        # STOPS_LEVEL ZERO MEANS NO MINIMUM DISTANCE, NOT "ANY PRICE IS LEGAL" (fixed 2026-09-14).
+        #
+        # This was guarded `and _lvl > 0`, and Fusion reports trade_stops_level 0 on every symbol
+        # -- XAUUSD, EURUSD, AUDNZD all measured at 0. So `entry_is_legal` was NEVER CALLED on
+        # this broker, and the function whose own docstring says "THE CAUSE OF EVERY 10015 THIS
+        # DESK HAS SEEN" was switched off on exactly the venue the desk trades.
+        #
+        # The SIDE requirement is unconditional and has nothing to do with the distance band: a
+        # buy_stop below the ask is not a stop order at all, it is a limit order wearing the wrong
+        # name, and MT5 rejects it outright. `entry_is_legal` already handles a zero band
+        # correctly -- band becomes 0 and `gap < 0` still bites -- so the guard was the only thing
+        # standing between the desk and three of its eight rejections.
+        #
+        # MEASURED on the live intent ledger: every 10015 was a buy_stop below the ask.
+        #     buy_stop 4407.85 vs ask 4408.13   (0.28 below)
+        #     buy_stop 4407.85 vs ask 4408.09   (0.24 below)
+        #     buy_stop 4357.47 vs ask 4371.25  (13.78 below)
+        # Price had run past the range high between the range completing and the order going out,
+        # which is the ordinary behaviour of a breakout, not an anomaly.
+        if _t is not None:
             legal, why_illegal = entry_is_legal(
                 float(s["price"]), side, float(_t.bid), float(_t.ask), _point, _lvl)
             if not legal:
@@ -810,7 +916,7 @@ def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float,
         res = mt5.order_send(req)
         _lat_ms = round((time.perf_counter() - _t0) * 1000.0, 3)
         code = res.retcode if res else None
-        why = diagnose(code, getattr(res, "comment", "") or "")
+        why = diagnose(code, getattr(res, "comment", "") or "", _send_error(res))
         if why:
             log(f"ORDER FAILED [{sleeve}] {side}: {why}")
         # THE INTENT, RECORDED AT PLACEMENT. Without this line slippage is unknowable: once the
@@ -1374,6 +1480,27 @@ def sleeve_set() -> list[dict]:
 #: `type nul > data\GENERIC_EXEC_ENABLED` is the deliberate human act that arms the lane.
 GENERIC_EXEC_ENABLED = BASE / "data" / "GENERIC_EXEC_ENABLED"
 
+
+def unarmed_why(st: dict[str, object]) -> str:
+    """WHICH of the three arming terms is false, by name.
+
+    `armed` is `st["armed"] AND GENERIC_EXEC_ENABLED.exists() AND NEW_RISK_OK`, and the
+    WOULD-PLACE line used to print "enable=GENERIC_EXEC_ENABLED" whatever the cause. Measured
+    2026-09-11: the flag file had been present since 2026-09-06 and the false term was
+    NEW_RISK_OK (a release identity the seal had not caught up with), so every scalp signal for
+    hours advertised a fix that was already done while the real blocker went unnamed. A
+    diagnostic that points at the wrong term is worse than none: it sends whoever reads it to
+    re-do something that is not broken.
+    """
+    missing = []
+    if not st.get("armed"):
+        missing.append("account unarmed (state.armed false)")
+    if not GENERIC_EXEC_ENABLED.exists():
+        missing.append(f"{GENERIC_EXEC_ENABLED.name} absent")
+    if not NEW_RISK_OK:
+        missing.append("release identity refuses new risk")
+    return "; ".join(missing) if missing else "armed"
+
 #: RELEASE IDENTITY (2026-09-05). The code this box runs must be the code that was sealed,
 #: tested and merged -- one SHA. When it is not (a stale checkout, a trampled module, a seal that
 #: never landed, an identity that cannot be measured), the gateway keeps managing what is open
@@ -1398,7 +1525,7 @@ def _policy_advice(symbol: str, side: int, entry_ref: float, tick, sym, dist: fl
         from mt5desk.execution_policy import choose
         return choose(exec_context(symbol, side, entry_ref, tick, dist, g, lot),
                       _fill_surface())
-    except Exception as exc:                                    # noqa: BLE001
+    except Exception as exc:
         return {"policy": "MARKET", "why": f"advice unavailable: {type(exc).__name__}"}
 
 
@@ -1421,7 +1548,7 @@ def _fill_surface():
                     if ln.strip()] if INTENTS.exists() else []
             fs = fill_surface.FillSurface().fit(rows) if rows else None
             _SURFACE = fs if fs is not None else False
-        except Exception as exc:                                # noqa: BLE001
+        except Exception as exc:
             log(f"fill surface unavailable ({type(exc).__name__}: {exc}); spread prior only")
             _SURFACE = False
     return _SURFACE or None
@@ -1445,7 +1572,7 @@ def _netting_book():
         try:
             from mt5desk import netting
             _BOOK = netting.TheoreticalBook()
-        except Exception as exc:                                # noqa: BLE001
+        except Exception as exc:
             log(f"netting book unavailable ({type(exc).__name__}: {exc}); pass runs without it")
             _BOOK = False
     return _BOOK or None
@@ -1460,7 +1587,7 @@ def _book_target(name: str, symbol: str, lots_signed: float, reason: str,
     try:
         book.set_target(name, symbol, float(lots_signed), reason=reason,
                         at=datetime.now(tz=UTC), price=price)
-    except Exception as exc:                                    # noqa: BLE001
+    except Exception as exc:
         log(f"[{name}] netting target not recorded ({type(exc).__name__}: {exc})")
 
 
@@ -1472,7 +1599,7 @@ def _book_fill(name: str, symbol: str, lots_signed: float, price: float) -> None
         return
     try:
         book.fill(name, symbol, float(lots_signed), float(price), at=datetime.now(tz=UTC))
-    except Exception as exc:                                    # noqa: BLE001
+    except Exception as exc:
         log(f"[{name}] netting fill not recorded ({type(exc).__name__}: {exc})")
 
 
@@ -1488,7 +1615,7 @@ def _record_exec_outcome(symbol: str, side: int, lot: float, entry_ref: float, t
         plan = execution_registry.market(intent_of(ctx), surface=_fill_surface())
         execution_registry.record_outcome(plan, [(float(lot), float(fill_price))],
                                           at=datetime.now(tz=UTC))
-    except Exception as exc:                                    # noqa: BLE001
+    except Exception as exc:
         log(f"execution outcome not recorded for {symbol} ({type(exc).__name__}: {exc})")
 
 
@@ -1522,7 +1649,7 @@ def _net_routes(symbols: set[str]) -> None:
             if abs(terminal - ledger) > 1e-9:
                 log(f"[netting] {symbol} ledger {ledger:+.2f} vs terminal {terminal:+.2f} lots"
                     f" -- broker-side exits or pre-ledger fills; reported, not corrected")
-        except Exception as exc:                                # noqa: BLE001
+        except Exception as exc:
             log(f"[netting] {symbol} route unmeasured ({type(exc).__name__}: {exc})")
 
 
@@ -1674,7 +1801,7 @@ def _family_chart(s: dict) -> tuple[str, object, int]:
     an H1 one and naming H1 explicitly would rename all of them at once. So an old row resolves to
     exactly what it resolved to before, including its 400-bar read.
     """
-    tf = str(((s.get("params") or {}).get("timeframe") or "H1")).upper()
+    tf = str((s.get("params") or {}).get("timeframe") or "H1").upper()
     attr = _FAMILY_TF_ATTR.get(tf)
     if attr is None or not hasattr(mt5, attr):
         return tf, None, 0                       # caller refuses the row by name; never guesses
@@ -1696,7 +1823,7 @@ def _family_constructor(family: str) -> tuple[object | None, str | None]:
     try:
         from mt5desk import executables
         return executables.resolve_family(family), executables.population_of(family)
-    except Exception as exc:                                            # noqa: BLE001
+    except Exception as exc:
         log(f"FAMILY-EXEC: executables unavailable ({type(exc).__name__}: {exc})")
         return None, None
 
@@ -1706,8 +1833,134 @@ def _family_takes_side(fn: object) -> bool:
     try:
         from mt5desk.family_call import accepts_side
         return accepts_side(fn)
-    except Exception:                                                   # noqa: BLE001
+    except Exception:
         return False
+
+
+def _params_from_certificate(s: dict[str, object]) -> tuple[dict[str, object] | None, str]:
+    """The certified parameters for a sleeve whose registry row does not carry them.
+
+    NO FOREX SLEEVE HAS EVER SENT AN ORDER, AND THIS IS WHY (measured 2026-09-14). Every one of
+    the 53 `family_market` rows is LIVE, armed (`GENERIC_EXEC_ENABLED` present since 2026-09-11),
+    admitted by the heat cap and sized -- and `order_intents.jsonl` holds 59 intents of which
+    NOT ONE is on a non-gold symbol. `_family_call_params` read `s["params"]`; not one of the 53
+    rows has that key, so every sleeve was called with `{}`.
+
+        audcad_discovered_asia_p_7c996ac8456c8919
+        certified params: {"feature": "ext_resid_EURGBP_z", "band": [0.9, 1.0],
+                           "horizon": 1, "side": -1}
+        called with:      {}
+        signals over 400 bars: 0
+
+    `family_discovered` unparameterised selects no feature and no band, so it returns an empty
+    signal list forever. That lands on stage `no_signal`, which `run_family_sleeves` is
+    DELIBERATELY silent about -- "the ordinary quiet outcome" -- so 53 sleeves produced nothing,
+    every hour, for days, and the log said exactly nothing about it. One FAMILY-EXEC line exists
+    in the entire gateway log.
+
+    THE PARAMS ARE ONE-WAY IN THE NAME AND RECOVERABLE FROM THE DOCKET. The certificate names its
+    cell `external.AUDCAD.discovered.p=7c996ac8456c8919`, where the `p=` field is a SHA256 digest
+    of the parameters. `frontier_identity.cell_id` is the desk's own identity function, so
+    recomputing it across `external_survivors.json` joins the two exactly: 47 of the 53 sleeves
+    recover their certified params this way.
+
+    AND THE RECONSTRUCTION IS VERIFIED, NOT TRUSTED. Whatever the docket hands back is hashed and
+    must reproduce the certificate's own cell id before it is used. That is what makes an EMPTY
+    result safe to accept when it is genuine -- `audchf_overnight_gap_decay_asia_p_44136fa355b3678a`
+    really is parameterised `{}`, and 44136fa355b3678a really is the digest of `{}` -- while an
+    empty result that does NOT hash back is refused. Without that check this function would
+    re-introduce the original defect for any sleeve it failed to join: calling a parameterised
+    family with nothing, which is "trading a lookalike strategy under a certified sleeve's name",
+    the defect class `resolve_family_order` already refuses by name elsewhere.
+    """
+    cert = s.get("certificate")
+    cell = str((cert or {}).get("cell") or "") if isinstance(cert, dict) else ""
+    if not cell:
+        return None, "registry row carries no params and its certificate names no cell"
+    want = cell.split(".", 1)[1] if cell.startswith("external.") else cell
+    try:
+        from research.frontier_identity import cell_id
+    except Exception as exc:
+        return None, f"frontier_identity unavailable ({type(exc).__name__}: {exc})"
+    # A BARE CELL NAME IS NOT AN UNKNOWN PARAMETERISATION -- IT IS THE DEFAULT ONE, and refusing
+    # it kept every session_range_breakout sleeve out of the market (measured 2026-09-15).
+    #
+    # `cell_id` ALWAYS appends a parameter field: empty params render as
+    # `CADJPY.session_range_breakout.p=44136fa355b3678a`. The certificates for these sleeves are
+    # named `external.CADJPY.session_range_breakout` with no suffix at all, so the docket join
+    # below can never match them -- not because the row is missing, but because the two names are
+    # built by different rules. Five sleeves (CADJPY, EURJPY, GBPJPY, USDJPY, XAUUSD) refused
+    # every pass with "not in the docket on this box", which reads as a data gap and is a naming
+    # mismatch.
+    #
+    # THE ACCEPTANCE IS STILL VERIFIED, on the same rule the docket path uses: `{}` is accepted
+    # only when hashing it reproduces the cell id the bare name would have had. So this admits the
+    # genuine default parameterisation and still refuses anything whose identity does not check.
+    if "." in want and not re.search(r"\.(p=|[a-z_]+=)", want):
+        try:
+            derived = cell_id({"sym": want.split(".", 1)[0],
+                               "family": want.split(".", 1)[1], "params": {}})
+        except Exception as exc:
+            return None, f"cannot derive the default identity for {want!r} ({type(exc).__name__})"
+        if derived.startswith(want + ".p="):
+            return {}, ""
+        return None, (f"{want!r} names no parameters and the default identity {derived!r} does "
+                      f"not extend it; refusing to guess a parameterisation")
+
+    docket = _docket_rows()
+    if not docket:
+        return None, f"no docket on this box to recover params for cell {want!r}"
+    for row in docket:
+        try:
+            got = cell_id({**row, "sym": row.get("symbol"), "family": row.get("family"),
+                           "params": row.get("params")})
+        except Exception:
+            continue
+        if got != want:
+            continue
+        found = row.get("params")
+        found = dict(found) if isinstance(found, dict) else {}
+        # VERIFIED, not merely found: the digest must reproduce the certified identity.
+        if cell_id({"sym": row.get("symbol"), "family": row.get("family"),
+                    "params": found}) != want:
+            return None, (f"docket row for {want!r} does not hash back to its own cell id; "
+                          f"refusing to trade unverified parameters")
+        return found, ""
+    return None, (f"certified cell {want!r} is not in the docket on this box, so its parameters "
+                  f"cannot be reconstructed; refusing to trade the family unparameterised")
+
+
+def _docket_rows() -> list[dict[str, object]]:
+    """`external_survivors.json`, cached for the life of the process. ~23k rows, read once."""
+    global _DOCKET_CACHE
+    if _DOCKET_CACHE is None:
+        try:
+            rows = json.loads(
+                (BASE / "data" / "hypotheses" / "external_survivors.json").read_text("utf-8"))
+            _DOCKET_CACHE = ([r for r in rows if isinstance(r, dict)]
+                             if isinstance(rows, list) else [])
+        except (OSError, ValueError):
+            _DOCKET_CACHE = []
+    return _DOCKET_CACHE
+
+
+_DOCKET_CACHE: list[dict[str, object]] | None = None
+
+
+def _send_error(res: object) -> object:
+    """MT5's `last_error()` when a send came back empty, so the log states a cause it CHECKED.
+
+    `order_send` returns None when the request is refused at the API boundary -- the same shape as
+    `copy_rates_from_pos` returning None with `(-2, 'Terminal: Invalid params')`. Until 2026-09-14
+    the desk logged "the terminal connection is gone" for every such case without asking, and that
+    was measurably wrong: one sleeve's order was ACCEPTED in the same second another's was lost.
+    """
+    if res is not None:
+        return None
+    try:
+        return mt5.last_error()
+    except Exception:
+        return None
 
 
 def _family_call_params(s: dict, family: str, bars: object) -> tuple[dict | None, str]:
@@ -1724,14 +1977,19 @@ def _family_call_params(s: dict, family: str, bars: object) -> tuple[dict | None
     nothing beyond bars -- and is not a gap.
     """
     params = dict(s.get("params") or {})
+    if not params:
+        recovered, why = _params_from_certificate(s)
+        if recovered is None:
+            return None, why
+        params = dict(recovered)
     try:
         from mt5desk.family_inputs import resolve, strip_identity_keys
-    except Exception as exc:                                            # noqa: BLE001
+    except Exception as exc:
         return None, f"family_inputs unavailable ({type(exc).__name__}: {exc})"
     try:
         call_params = strip_identity_keys(family, params)
         extra, why = resolve(str(s["symbol"]), family, params, bars)
-    except Exception as exc:                                            # noqa: BLE001
+    except Exception as exc:
         return None, f"input reconstruction raised ({type(exc).__name__}: {exc})"
     if extra is None:
         return None, why
@@ -1914,6 +2172,35 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
         # counterfactual ledger can score the road not taken. Routing stays MARKET until the
         # fill surface is fitted on enough of the box's own fills to make the choice measured.
         policy_advice = _policy_advice(s["symbol"], side, entry_ref, tick, sym, dist, g, lot)
+        # E2 -- THE COMPETITION IS RUN ON EVERY PASS AND ROUTES NOTHING UNLESS ARMED SEPARATELY.
+        #
+        # Nine execution policies and five child-order algorithms are priced and ranked inside
+        # every gateway pass, and exactly two order shapes have ever reached the venue: a pending
+        # stop for gold and a market order for everything else, chosen by a hard-coded branch
+        # rather than by the argmax the competition computes. That is the whole of E2: the
+        # ranking exists, is measured, and decides nothing.
+        #
+        # WHY THIS IS A SEPARATE SWITCH FROM GENERIC_EXEC_ENABLED. Arming generic execution says
+        # "this lane may send". Arming this says "the WINNER of a priced competition chooses the
+        # order shape" -- a different decision, on a different kind of evidence, and one that
+        # changes what arrives at the venue for sleeves already trading. Folding it into the
+        # existing switch would mean a principal who armed execution last month silently
+        # acquired a router today.
+        #
+        # ONLY ALGORITHMS WHOSE CHILDREN ARE ALL `market` ARE ELIGIBLE, and that bound is the
+        # reason this can be armed at all. `twap` and `sniper` win by SPLITTING or DELAYING, and
+        # both introduce a live decision between the signal and the fill -- a resting child that
+        # the desk must then manage, cancel and reconcile. `market` children need none of that:
+        # the only thing the router changes is WHICH market order is sent, so a wrong answer
+        # costs slippage rather than an unmanaged resting order. The staged and time-sliced
+        # algorithms stay measured and unrouted until the fill surface is fitted on this box's
+        # own fills, which needs matched_fills > 0 and it is 0.
+        exec_route = _exec_route(s["symbol"], side, entry_ref, tick, sym, dist, g, lot)
+        if exec_route.get("routed"):
+            _mu = exec_route["market_utility"]
+            log(f"[{name}] EXEC-ROUTE {exec_route['algo']} "
+                f"(utility {exec_route['utility']:+.5f} vs market "
+                f"{_mu:+.5f})" if _mu is not None else f"[{name}] EXEC-ROUTE {exec_route['algo']}")
         # The theoretical book sees every intent, armed or not, so netting is measured in shadow.
         _book_target(name, s["symbol"], side * lot, f"family_market/{family}/{selector}",
                      price=entry_ref)
@@ -1923,9 +2210,8 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
         ttl_until = str(plan["ttl_until"])
         order_desc = family_order_desc(side, lot, s["symbol"], g, ttl_until)
         if not armed:
-            log(f"[{name}] WOULD PLACE (generic exec "
-                f"{'not armed' if st.get('armed') else 'account unarmed'}; "
-                f"enable={GENERIC_EXEC_ENABLED.name}): {order_desc}")
+            log(f"[{name}] WOULD PLACE (generic exec blocked: "
+                f"{unarmed_why(st)}): {order_desc}")
             continue
         if not margin_ok(s["symbol"], lot, entry_ref):
             log(f"[{name}] FAMILY-EXEC SKIPPED: margin tight (lot={lot})")
@@ -1945,7 +2231,8 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
                        ticket=(getattr(res, "order", None) if res else None), retcode=rc,
                        policy_advice=policy_advice, latency_ms=_lat_ms,
                        **_sleeve_identity(s))
-        log(f"[{name}] FAMILY-EXEC ORDER -> retcode={rc} {diagnose(rc, getattr(res, 'comment', '') or '')} "
+        log(f"[{name}] FAMILY-EXEC ORDER -> retcode={rc} "
+            f"{diagnose(rc, getattr(res, 'comment', '') or '', _send_error(res))} "
             f"| {order_desc}")
         if rc in (10008, 10009):
             srec["open_ttl_until"] = ttl_until
@@ -2249,9 +2536,8 @@ def run_scalp_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
             _book_target(name, s["symbol"], side * per, f"scalp_market/{plan['family']}",
                          price=price)
         if not armed:
-            log(f"[{name}] WOULD PLACE (scalp exec "
-                f"{'not armed' if st.get('armed') else 'account unarmed'}; "
-                f"enable={GENERIC_EXEC_ENABLED.name}): {desc}")
+            log(f"[{name}] WOULD PLACE (scalp exec blocked: "
+                f"{unarmed_why(st)}): {desc}")
             continue
         if not margin_ok(s["symbol"], per, price):
             log(f"[{name}] SCALP-EXEC{' add-on' if is_addon else ''} SKIPPED: margin tight "
@@ -2274,7 +2560,7 @@ def run_scalp_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
                        slice_depth=(len(plan["entries"]) if is_addon else 1),
                        latency_ms=_lat_ms, **_sleeve_identity(s))
         log(f"[{name}] SCALP-EXEC {'ADD-ON' if is_addon else 'ORDER'} -> retcode={rc} "
-            f"{diagnose(rc, getattr(res, 'comment', '') or '')} | {desc}")
+            f"{diagnose(rc, getattr(res, 'comment', '') or '', _send_error(res))} | {desc}")
         if rc not in (10008, 10009):
             continue
         fill_px = float(getattr(res, "price", 0.0) or price)
@@ -2935,7 +3221,7 @@ def main() -> None:
                     _record_decision(sleeve=s["name"], symbol=s["symbol"], side=None, lot=lot,
                                      price=None, sl=None, tp=None, taken=False,
                                      reason="release_identity_refused", detail=spec)
-                except Exception as exc:                        # noqa: BLE001
+                except Exception as exc:
                     log(f"release-refusal record failed (non-fatal) [{s['name']}]: "
                         f"{type(exc).__name__}: {exc}")
                 continue
