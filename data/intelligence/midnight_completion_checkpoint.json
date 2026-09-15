@@ -45,10 +45,13 @@
    "status": "DONE"
   },
   "forward_identity_reconciliation": {
-   "finished_at": "2026-09-15T05:57:46.039711+00:00",
-   "passes_completed": 1,
-   "returncode": 0,
-   "status": "DONE"
+   "command": [
+    "/home/quant/quant-platform/.venv/bin/python",
+    "desks/mt5/research/forward_reconcile.py"
+   ],
+   "passes_completed": 0,
+   "started_at": "2026-09-15T09:30:29.322352+00:00",
+   "status": "RUNNING"
   },
   "forward_lane_heal": {
    "finished_at": "2026-09-15T05:58:03.784632+00:00",
@@ -81,5 +84,5 @@
    "status": "DONE"
   }
  },
- "updated_at": "2026-09-15T08:08:44.599008+00:00"
+ "updated_at": "2026-09-15T09:30:29.322352+00:00"
 }
