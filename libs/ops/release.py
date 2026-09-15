@@ -126,10 +126,42 @@ SEAL_RULE = ("a running SHA is accepted iff it equals code_sha, or `git diff --n
 
 
 # --------------------------------------------------------------------------------- git / files
+def _git_exe() -> str:
+    """An ABSOLUTE path to git, because the money path may not have it on PATH.
+
+    THIS IS WHY THE GATEWAY REFUSED NEW RISK WHILE THE SEAL WAS CORRECT (measured 2026-09-15).
+    `release_gate()` returned True from an interactive shell and False from the scheduled
+    MT5-Gateway task, which logged "the diff cannot be taken (git failed, or the sealed commit is
+    not in this clone)" every pass. The seal was fine and the clone was fine: the task runs under
+    cmd.exe with a restricted environment and `git` was simply not on its PATH, so every
+    subprocess call failed and `_git` returned None -- which reads, correctly but uselessly, as
+    "cannot verify".
+
+    A refusal caused by a missing interpreter is indistinguishable in the log from a refusal
+    caused by unreleased code, and only one of those is a reason not to trade. Resolving the
+    binary once, absolutely, removes the ambiguity: after this a "git failed" line means git
+    genuinely failed.
+
+    `shutil.which` first so a normal environment is unchanged; the standard Windows install
+    locations after it, because that is exactly the case the scheduler creates.
+    """
+    import shutil
+    found = shutil.which("git")
+    if found:
+        return found
+    for cand in (r"C:\Program Files\Git\cmd\git.exe",
+                 r"C:\Program Files\Git\bin\git.exe",
+                 r"C:\Program Files (x86)\Git\cmd\git.exe",
+                 "/usr/bin/git"):
+        if os.path.exists(cand):
+            return cand
+    return "git"
+
+
 def _git(args: list[str], root: Path, timeout: float = 10.0) -> str | None:
     """stdout of a git command, or None when git is absent, times out, or exits non-zero."""
     try:
-        r = subprocess.run(["git", "-c", "core.quotepath=off", *args], cwd=root,
+        r = subprocess.run([_git_exe(), "-c", "core.quotepath=off", *args], cwd=root,
                            capture_output=True, text=True, timeout=timeout)
     except (OSError, subprocess.SubprocessError):
         return None
@@ -169,7 +201,7 @@ def _read(rel: str, root: Path, commit: str | None) -> bytes | None:
         except OSError:
             return None
     try:
-        r = subprocess.run(["git", "show", f"{commit}:{rel}"], cwd=root, capture_output=True,
+        r = subprocess.run([_git_exe(), "show", f"{commit}:{rel}"], cwd=root, capture_output=True,
                            timeout=10)
     except (OSError, subprocess.SubprocessError):
         return None
