@@ -120,7 +120,7 @@ def test_child_mode_calls_each_convention_with_its_budget(monkeypatch) -> None:
     calls: dict[str, object] = {}
     budgeted = types.ModuleType("fake_budgeted")
 
-    def run(symbols=None, budget_s: float = 999.0) -> dict:   # noqa: ARG001
+    def run(symbols=None, budget_s: float = 999.0) -> dict:
         calls["budget"] = budget_s
         return {"cells_proposed": 3}
 
@@ -156,7 +156,7 @@ def test_real_acquirer_entrypoint_retains_its_report(monkeypatch) -> None:
     import acquire_datasets
 
     report = {"endpoints_tried": 2, "datasets_kept": 1, "new_series": ["native"]}
-    monkeypatch.setattr(acquire_datasets, "acquire", lambda: report)
+    monkeypatch.setattr(acquire_datasets, "acquire", lambda **kwargs: report)
     assert hd.run_organ("acquire_datasets", 60.0) == {"result": report}
     assert hd.yield_of(report) == {"endpoints_tried": 2, "datasets_kept": 1, "new_series": 1}
 

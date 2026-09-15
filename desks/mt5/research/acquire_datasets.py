@@ -27,10 +27,14 @@ Nothing here retries forever or downloads something it has not measured first.
 from __future__ import annotations
 
 import glob
+import hashlib
 import io
 import json
+import os
 import re
 import sys
+import tempfile
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -45,8 +49,13 @@ _ROOT = DESK.parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from libs.data.pit_certificate import certify  # noqa: E402
-from libs.data.pit_certificate import write as write_certificate  # noqa: E402
+from desks.mt5.macro.ledger import write_json_atomic  # noqa: E402
+from desks.mt5.research.job_lock import exclusive_job  # noqa: E402
+
+from libs.data.pit_certificate import (  # noqa: E402
+    certify,
+    path_for,
+)
 
 WORLD = DESK / "data" / "intelligence" / "world"
 STORE = DESK / "data" / "acquired"
@@ -116,9 +125,8 @@ _SEED_ENDPOINTS: tuple[str, ...] = (
     "https://data.bis.org/static/bulk/WS_CBPOL_csv_col.zip",
     # EIA WTI spot -- the energy leg.
     "https://www.eia.gov/dnav/pet/hist_xls/RWTCd.xls",
-) + tuple(
-    f"https://data-api.ecb.europa.eu/service/data/EXR/D.{ccy}.EUR.SP00.A?format=csvdata"
-    for ccy in _ECB_CROSSES
+    *(f"https://data-api.ecb.europa.eu/service/data/EXR/D.{ccy}.EUR.SP00.A?format=csvdata"
+      for ccy in _ECB_CROSSES),
 )
 
 
@@ -218,11 +226,17 @@ def _numeric_series(df: pd.DataFrame, stem: str) -> dict[str, pd.Series]:
 def _endpoints(limit: int) -> list[tuple[str, str]]:
     """(url, host) from the newest crawl files, deduped against what is already acquired."""
     known: set[str] = set()
-    if REGISTRY.exists():
-        try:
-            known = set(json.loads(REGISTRY.read_text("utf-8")).get("by_url") or {})
-        except (OSError, ValueError):
-            known = set()
+    if limit <= 0:
+        return []
+    reg = _registry()
+    today = datetime.now(UTC).date().isoformat()
+    # Acquired once is not fresh forever. Resume completed endpoints within the UTC day;
+    # refresh on the next day, including legacy rows that predate PIT certification.
+    known = {url for url, meta in reg["by_url"].items()
+             if str(meta.get("at", ""))[:10] == today
+             and meta.get("series") and all(
+                 name in reg["series"] and _series_path(reg["series"][name]).is_file()
+                 for name in meta["series"])}
     seen: set[str] = set()
     out: list[tuple[str, str]] = []
     # Seeds first: they are known to be dated, keyless and relevant, so a run never spends its
@@ -250,27 +264,80 @@ def _endpoints(limit: int) -> list[tuple[str, str]]:
     return out
 
 
-def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
-    STORE.mkdir(parents=True, exist_ok=True)
-    reg: dict[str, Any] = {"by_url": {}, "series": {}}
-    if REGISTRY.exists():
-        try:
-            reg = json.loads(REGISTRY.read_text("utf-8"))
-        except (OSError, ValueError):
-            pass
+def _registry() -> dict[str, Any]:
+    try:
+        reg = json.loads(REGISTRY.read_text("utf-8"))
+    except FileNotFoundError:
+        return {"by_url": {}, "series": {}}
+    # Unreadable or corrupt evidence must never be overwritten with an empty registry.
+    if not isinstance(reg, dict) or any(
+            not isinstance(reg.get(key, {}), dict) for key in ("by_url", "series")):
+        raise ValueError("acquired registry must contain by_url and series mappings")
     reg.setdefault("by_url", {})
     reg.setdefault("series", {})
+    return reg
+
+
+def _series_path(meta: dict[str, Any]) -> Path:
+    # Copied registries may name another host's absolute POSIX or Windows path. Series live
+    # under the canonical STORE on every host; never read a foreign checkout by accident.
+    return STORE / str(meta["path"]).replace("\\", "/").rsplit("/", 1)[-1]
+
+
+def _persist_series(name: str, s: pd.Series) -> tuple[Path, str]:
+    """Immutable parquet snapshot; registry replacement is the publication point."""
+    fd, tmp = tempfile.mkstemp(dir=STORE, suffix=".tmp")
+    os.close(fd)
+    temporary = Path(tmp)
+    try:
+        s.rename("value").to_frame().to_parquet(temporary)
+        with temporary.open("rb") as stream:
+            digest = hashlib.file_digest(stream, "sha256").hexdigest()
+        path = STORE / f"{name}.{digest}.parquet"
+        if not path.exists():
+            os.replace(temporary, path)
+        return path, digest
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def acquire(limit: int = MAX_PER_RUN, *, budget_s: float | None = None) -> dict[str, Any]:
+    with exclusive_job("acquire_datasets") as owned:
+        if not owned:
+            raise RuntimeError(
+                "acquire_datasets: existing writer owns acquisition; retry next tick")
+        return _acquire(limit, budget_s=budget_s)
+
+
+def _acquire(limit: int, *, budget_s: float | None) -> dict[str, Any]:
+    STORE.mkdir(parents=True, exist_ok=True)
+    reg = _registry()
+    started = time.monotonic()
 
     tried = kept = 0
     refusals: dict[str, int] = {}
     new_series: list[str] = []
+    attempts: list[dict[str, Any]] = []
+
+    def _checkpoint() -> None:
+        reg["updated_at"] = datetime.now(UTC).isoformat(timespec="seconds")
+        write_json_atomic(REGISTRY, reg)
 
     def _refuse(why: str) -> None:
         refusals[why] = refusals.get(why, 0) + 1
+        if attempts:
+            attempts[-1].setdefault("refusals", []).append(why)
 
     for url, host in _endpoints(limit):
+        if budget_s is not None and time.monotonic() - started >= budget_s:
+            break
         tried += 1
         raw, ctype = _fetch(url)
+        attempt = {"url": url, "content_type": ctype,
+                   "retrieved_at": datetime.now(UTC).isoformat(),
+                   "bytes": len(raw) if raw is not None else 0,
+                   "sha256": hashlib.sha256(raw).hexdigest() if raw is not None else None}
+        attempts.append(attempt)
         if raw is None:
             _refuse("served HTML, not data" if ctype == "html" else "unreachable")
             continue
@@ -292,12 +359,7 @@ def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
             continue
 
         for name, s in series.items():
-            path = STORE / f"{name}.parquet"
-            try:
-                s.rename("value").to_frame().to_parquet(path)
-            except Exception:
-                _refuse("could not persist")
-                continue
+            path, content_hash = _persist_series(name, s)
             # EVERY ACQUIRED SERIES IS CERTIFIED, at the only moment the desk holds both the
             # frame and what the acquirer knows about it. `authority: false` is not a refusal to
             # STORE -- the series stays, priced honestly -- it is a refusal of PROMOTION
@@ -311,18 +373,19 @@ def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
                                 "history_starts": prior.get("first"),
                                 "schema_hash": prior.get("schema_hash")},
                                s.rename("value").to_frame(), now=datetime.now(UTC))
-                write_certificate(cert)
+                write_json_atomic(path_for(cert.dataset), json.loads(cert.to_json()))
                 blocking = sorted(set(cert.failures()) | set(cert.unmeasured()))
                 authority, cert_id = bool(cert.authority), cert.certificate_id
                 schema_hash = cert.span.get("schema_hash")
-            except Exception as exc:                                        # noqa: BLE001
+            except Exception as exc:
                 # A certifier that cannot run withholds authority; it never grants it.
                 blocking = [f"certify failed: {type(exc).__name__}: {exc}"]
                 authority, cert_id, schema_hash = False, "", prior.get("schema_hash")
             if not authority:
                 _refuse("no PIT authority: " + ", ".join(blocking))
             reg["series"][name] = {
-                "path": str(path), "url": url, "host": host,
+                "path": path.name, "url": url, "host": host,
+                "sha256": content_hash, "source_sha256": attempt["sha256"],
                 "rows": int(s.notna().sum()),
                 "first": str(s.index.min()), "last": str(s.index.max()),
                 "acquired_at": datetime.now(UTC).isoformat(timespec="seconds"),
@@ -331,25 +394,31 @@ def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
                 "pit_authority": authority,
                 "pit_blocking": blocking,
             }
+            # A timeout on the next series/URL cannot discard already acquired evidence.
+            _checkpoint()
             new_series.append(name)
         reg["by_url"][url] = {"host": host, "series": list(series),
                               "at": datetime.now(UTC).isoformat(timespec="seconds")}
         kept += 1
+        attempt["stored_series"] = list(series)
+        _checkpoint()
 
     reg["updated_at"] = datetime.now(UTC).isoformat(timespec="seconds")
-    REGISTRY.write_text(json.dumps(reg, indent=1, default=str), encoding="utf-8")
+    _checkpoint()
 
     report = {
         "ran_at": datetime.now(UTC).isoformat(timespec="seconds"),
         "endpoints_tried": tried, "datasets_kept": kept,
         "new_series": new_series, "total_series": len(reg["series"]),
         "refusals": refusals,
+        "attempts": attempts,
+        "budget_exhausted": budget_s is not None and time.monotonic() - started >= budget_s,
         "rule": ("point-in-time or nothing: a frame with no usable date column is refused rather "
                  "than stamped with now, because backfilling today's value across history "
                  "manufactures an edge that never existed"),
     }
     REPORT.parent.mkdir(parents=True, exist_ok=True)
-    REPORT.write_text(json.dumps(report, indent=1, default=str), encoding="utf-8")
+    write_json_atomic(REPORT, report)
     return report
 
 
@@ -378,7 +447,7 @@ def acquired_series(index: pd.Index | None = None, *,
         if require_authority and not meta.get("pit_authority"):
             continue
         try:
-            df = pd.read_parquet(meta["path"])
+            df = pd.read_parquet(_series_path(meta))
             s = df["value"].astype(float)
             # FORWARD-FILL ONLY. A macro series is knowable from its publication date onward and
             # never before; interpolating backwards is leakage wearing the shape of tidiness.

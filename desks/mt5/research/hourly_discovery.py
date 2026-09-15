@@ -174,7 +174,7 @@ def run_organ(name: str, budget_s: float) -> dict[str, Any]:
     if how == "run":
         return {"result": mod.run()}
     if how == "acquire":
-        return {"result": mod.acquire()}
+        return {"result": mod.acquire(budget_s=float(budget_s))}
     # The dispatcher owns sys.argv. CLI organs must parse their own defaults,
     # never the parent --organ/--budget-s flags. Preserve no-argument entrypoints.
     kwargs = {"argv": []} if "argv" in inspect.signature(mod.main).parameters else {}

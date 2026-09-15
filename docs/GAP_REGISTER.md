@@ -2123,3 +2123,54 @@ queue verdict windows end September 12, while the separate certificate artifact 
 Neither that raw certificate count nor the report's zero queue-derived pass count is an independent
 validity audit. Preserve the source windows and reconcile identities; never turn publication
 recovery into a claim that the underlying research evidence is current or all gates are sound.
+
+
+### 2026-09-15 — hourly-discovery: acquisition persistence (controller epoch 200)
+
+Bounded continuation of the existing September 12–14 acquisition/compiler recovery. No new
+registry or scheduler. Claude's origin repairs through `49b6bcf8b` were inspected and retained.
+
+- Original failure: hel8 `HOURLY_DISCOVERY.json` at 01:02:59Z records acquisition rc=1,
+  PermissionError writing `desks/mt5/data/acquired/registry.json`. The file is root-owned
+  mode0644 inside a quant-writable directory; its 19 series and 19 URLs retain September 3
+  acquisition stamps. Existing endpoint dedupe never refreshed those URLs.
+- IMPLEMENTED: existing acquirer publishes immutable SHA256-named parquet snapshots, atomic
+  PIT-certificate/registry/report JSON, per-series and per-endpoint checkpoints, daily endpoint
+  refresh, local resolution of copied Windows/POSIX paths, and the shared exclusive-job lock.
+  Publication errors propagate; incomplete URLs remain retryable; corrupt registries are never
+  replaced with an empty population. Hourly dispatcher passes its existing measured time budget.
+  Acquisition hashes and retrieval timestamps are reported separately from observation dates.
+- TESTED: 57 focused tests (acquisition, hourly dispatch, prior publication, PIT certificates)
+  passed. Coverage includes partial parquet writes, failed registry replacement, interruption
+  after a completed endpoint, unchanged PIT withholding, copied paths, and duplicate writers.
+  Release gates and canonical deployment evidence follow below; no runtime closure claimed yet.
+- Actual acquisition on the designated research host at 01:10:50Z: official ECB USD/EUR daily
+  CSV, 1,482,335 bytes, SHA256
+  `1ef57ffa0447bd6097e0423dd3113a3fe07e6d5e8e378e104c95a40f1eb8f28b`, 7,154 parsed rows,
+  observation dates 1999-01-04 through 2026-09-14. Raw file and metadata preserved under
+  `data/cro_ai_logs/midnight_20260915_epoch200/` on hel8. ACQUIRED_RAW_NOT_DATA_READY:
+  no historical availability or revision authority is inferred from today's retrieval.
+- Daily frontier disposition: repair the owned-data/PIT path before adding another generator.
+  Retrieved 2026-09-15: [ECB methodology](https://data.ecb.europa.eu/methodology/exchange-rates)
+  (undated current page) and [2015-12-07 publication-time announcement](https://www.ecb.europa.eu/press/pr/date/2015/html/pr151207.en.html).
+  Publication changed effective 2016-07-01; observation date alone cannot identify when a value
+  became knowable. This is an additional timing counterexample to the prior September 14 BoE
+  geography finding, not evidence of a new edge or a comprehensive coverage cursor.
+  Falsifier: any candidate consuming a value before its evidenced availability or unable to
+  reproduce its frozen snapshot fails the proposed genealogy experiment. Portfolio value remains
+  UNMEASURED until aligned native evidence, OOS controls and unchanged gates are available.
+- Consumer path: hourly_discovery -> acquire_datasets -> acquired/registry.json ->
+  anomaly_factory._extra_for -> build_primitives/family_discovered. Tests invoke the real registry
+  reader; synthetic unmeasured PIT data contributes zero admissible primitives. Full scheduled
+  consumption and new tested candidates remain unverified, not inferred from storage success.
+- Deployment dependency reproduced: hel8's approved quant-desk-refresh.service exits 2 every
+  three minutes; bash reports unexpected EOF in refresh_desk_state.sh (if at line 35). Windows
+  MT5-AdoptRelease last result=1 at 00:12Z, next scheduled 01:12Z. Preserve both hosts' dirty
+  runtime state and the existing Git-writer ownership. No tracked source copied into either host.
+- Baseline audit: published desk page HTTP 200, 54,010 bytes; serving desk_state generated
+  01:00:39Z while its midnight artifact remains September 3. hel8 max-push/completion/handoff
+  artifacts remain August 20. Those timestamps cannot establish current operational success.
+- Economic disposition: retain this bounded repair to recover previously unusable acquired
+  inventory and avoid replay cost; no profitability, certificate, independent-axis or E[log W]
+  increase is claimed. New backtests=0, judgments=0, certificates=0, native forward observations
+  independently verified=0. Broad migration and certificate/trade reconciliation remain OPEN.
