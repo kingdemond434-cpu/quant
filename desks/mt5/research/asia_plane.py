@@ -97,11 +97,34 @@ _KIND_HINTS = (
     ("handoff", ("session", "close", "open", "overnight", "hours")),
 )
 
-#: Sources whose hypothesis needs the SERIES ITSELF before any gate can rule. Derived from the
-#: registry rather than listed: a source is blocked when its mechanism is about a quantity this
-#: desk does not hold a feed for. `cadence` is the tell -- a daily exchange statistic the desk
-#: does not collect cannot condition a cell today, whatever its price expression suggests.
-_COLLECTED_LOCALLY = ("myfxbook_outlook",)   # nothing else has a live collector yet
+#: Sources the desk HAS DATA FOR, read from the lake rather than declared in a tuple.
+#:
+#: THIS WAS A HARDCODED LIST AND THAT MADE THE TIER A CLAIM INSTEAD OF A MEASUREMENT. It named
+#: one source and every other cell was BLOCKED_ON_DATA by assertion -- so a source the collector
+#: had successfully fetched would have gone on reporting itself blocked until somebody remembered
+#: to edit this line. That is the same shape as every other defect found tonight: a status
+#: asserted where it could have been read.
+#:
+#: `asia_collector` vaults every fetch under the source id, so the presence of a vault directory
+#: or a parsed series IS the answer, it updates itself, and a source added tomorrow is measured
+#: the hour its first fetch lands.
+_LAKE = BASE / "data" / "lake"
+
+
+def _have_data() -> set[str]:
+    """Source ids with bytes on disk: a parsed series, or vaulted raw content."""
+    out: set[str] = set()
+    series = _LAKE / "series"
+    if series.is_dir():
+        out |= {f.stem for f in series.iterdir() if f.is_file()}
+    vault = _LAKE / "vault"
+    if vault.is_dir():
+        out |= {d.name for d in vault.iterdir()
+                if d.is_dir() and any(d.glob("*.gz"))}
+    # `fetch_sge_premium` writes its own history outside the generic collector's tree.
+    if (_LAKE / "sge_daily.parquet").exists():
+        out.add("sge_benchmark")
+    return out
 
 
 def _read(p: Path, default: Any = None) -> Any:
@@ -144,6 +167,7 @@ def convert(registry: dict[str, Any], universe: dict[str, Any]) -> list[dict[str
     so saying it here is what sets it downstream.
     """
     rows: list[dict[str, Any]] = []
+    have_data = _have_data()
     for src in registry.get("sources") or []:
         if not isinstance(src, dict):
             continue
@@ -178,7 +202,7 @@ def convert(registry: dict[str, Any], universe: dict[str, Any]) -> list[dict[str
 
         kind = _kind_of(mech)
         families, why_kind = _EXPRESSION[kind]
-        blocked = sid not in _COLLECTED_LOCALLY
+        blocked = sid not in have_data
         for sym in targets:
             for fam in families:
                 rows.append({
