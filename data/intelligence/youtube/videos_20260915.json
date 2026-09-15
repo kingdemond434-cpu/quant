@@ -219,5 +219,25 @@
   "start_verified": false,
   "end_verified": false,
   "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UCmrU1HFPpy5DfUySK6okqEA",
+  "channel": "Lewis Jackson",
+  "video_id": "6BDfAkHfxAo",
+  "published": "2026-09-15T18:00:07Z",
+  "title": "7 Levels of AI Trading",
+  "description": "Get the AI Quant Trading System that 180x My Portfolio: \nhttps://www.part-timequant.com/live\n\nMost people start AI trading by asking ChatGPT, \u201cShould I buy Apple?\u201d\n\nThat is Level 1.\n\nIn this video, I\u2019ll walk through all seven levels, from basic AI prompts and TradingView scripts to Python backtesting, machine learning, alternative data, portfolio risk management, and multi-agent trading systems.\n\nThe goal is not to pretend that AI guarantees profits. The goal is to understand what changes as you move from an AI chatbot to a properly tested quantitative workflow.\n\nWe\u2019ll cover:\n\nLevel 1: The Prompt Guesser\nLevel 2: AI-generated trading scripts\nLevel 3: Python backtesting and trading costs\nLevel 4: Machine learning and market regimes\nLevel 5: AI research and alternative data\nLevel 6: Portfolio construction and risk control\nLevel 7: The autonomous multi-agent trading system\n\nWatch the related tutorials:\n\nHow To Connect Claude to Trading View:\nhttps://www.youtube.com/watch?v=vIX6ztULs4U\n\nHow To Build A Self-Improving AI Trading Agent:\nhttps://www.youtube.com/watch?v=6njREUQAFdg\n\nThis video is educational and is not financial advice. Trading involves risk. Past performance and backtest results do not guarantee future returns.\n\nMusic:\n\u201cDreams Become Real\u201d by Kevin MacLeod\nhttps://incompetech.com/music/royalty-free/index.html?isrc=USUAN1500027\nLicensed under Creative Commons Attribution 4.0:\nhttps://creativecommons.org/licenses/by/4.0/",
+  "links": [
+   "https://www.part-timequant.com/live",
+   "https://www.youtube.com/watch?v=vIX6ztULs4U",
+   "https://www.youtube.com/watch?v=6njREUQAFdg",
+   "https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1500027",
+   "https://creativecommons.org/licenses/by/4.0/"
+  ],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
  }
 ]

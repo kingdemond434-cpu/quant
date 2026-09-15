@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-09-15T17:11:01.700320+00:00",
+  "generated_at": "2026-09-15T18:40:13.610919+00:00",
   "scope": "MT5_FUSION_ONLY",
   "execution_authority": false,
   "universe": {
     "metadata_entities": 251,
     "h1_bar_files": 304,
-    "metadata_mtime": "2026-09-15T17:09:37.309762+00:00",
+    "metadata_mtime": "2026-09-15T18:39:50.810283+00:00",
     "newest_h1_mtime": "2026-09-10T22:28:41.305028+00:00"
   },
   "conversion": {
@@ -18,7 +18,7 @@
     },
     "universal_survivors": 58,
     "shadow_sleeves": 595,
-    "shadow_observations": 863,
+    "shadow_observations": 865,
     "shadow_last_run": "2026-09-15"
   },
   "freshness": {
@@ -33,7 +33,7 @@
   },
   "capability_reuse": {
     "artifact": "data/intelligence/mt5_capability_reuse.json",
-    "generated_at": "2026-09-15T17:11:01.429644+00:00",
+    "generated_at": "2026-09-15T18:40:13.264930+00:00",
     "counts": {
       "DISPOSED_BLOCKED": 5,
       "DISPOSED_SUPERSEDED": 9,
