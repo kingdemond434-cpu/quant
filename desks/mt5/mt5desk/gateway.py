@@ -2165,7 +2165,27 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
         # signal hour decided nothing and must leave no trace at all.
         if plan.get("considered"):
             gstate.setdefault(name, {})
-        if plan.get("mark"):
+        # A BAR MUST NOT BE CONSUMED BY A PASS THAT WAS FORBIDDEN TO PLACE.
+        #
+        # MEASURED 2026-09-15, and it is why no forex sleeve traded all session. The mark is
+        # dedupe: it stops one signal firing twice on the same bar. But it was applied whatever
+        # the gateway was allowed to do -- so while the release-identity fence was refusing NEW
+        # risk ("managing open positions only"), three passes at 02:42, 03:42 and 04:22 walked
+        # every sleeve, resolved its signal, and STAMPED the bar consumed without sending
+        # anything. Every forex sleeve in `generic` carried
+        # `last_signal_bar: 2026-09-15 06:00`, and USDCHF's family really did produce a signal on
+        # that exact bar. The signal was burned by a pass that could not act on it.
+        #
+        # This is GAP #27's shape in the money path: marked BEFORE the thing the mark attests to
+        # actually happened. There the sweep stamped a cell JUDGED before its verdict was
+        # durable; here the gateway stamps a bar SEEN before it was allowed to trade it. Both are
+        # self-sustaining, because the stamp then hides the work from the pass that could have
+        # done it.
+        #
+        # The dedupe itself is unchanged when the desk CAN act -- including when it looks and
+        # declines, which is a real decision about the bar. Only a pass under a new-risk refusal
+        # leaves no trace, so the next permitted pass sees the signal still standing.
+        if plan.get("mark") and NEW_RISK_OK:
             gstate.setdefault(name, {})["last_signal_bar"] = str(plan.get("last_bar"))
         if plan.get("note"):
             log(f"[{name}] {plan['note']}")
