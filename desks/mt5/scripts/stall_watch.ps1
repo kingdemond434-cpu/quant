@@ -17,6 +17,16 @@
 
 $ErrorActionPreference = 'SilentlyContinue'
 $base = 'C:\opt\quant\desks\mt5'
+# A RETIRED BOX IS NOT HEALED (2026-09-16). The 8 GB build box had every desk task disabled and
+# every desk process stopped at 09:50 UTC; this watchdog's DISABLED heal switched 21 of them back
+# on within the hour and the supervisor, the hourly cycle, the gauntlet and the allocator were
+# running again beside the box that trades. "Nothing is disabled for long" is right on the box
+# that owns the desk and exactly wrong on a box that has been retired from it. The sentinel is
+# written by hand, once, with the reason inside it; while it exists this script heals nothing.
+if (Test-Path (Join-Path $base 'data\BOX_RETIRED')) {
+  Write-Output 'stall watch: box retired (data\BOX_RETIRED present); healing nothing'
+  exit 0
+}
 $stateFile = Join-Path $base 'data\stall_watch.json'
 $patterns = @('external_gauntlet', 'shadow_cycle', 'edge_search', 'expand_universe',
               'backfill_coverage',
