@@ -75,8 +75,8 @@ The armed gold book is NOT managed here (hunt5 authority, armed by human).
 
 import hashlib
 import json
-import re
 import math
+import re
 import sys
 import time
 from contextlib import suppress
@@ -452,6 +452,62 @@ def _certificate_key(row: dict) -> str:
     if isinstance(cert, dict):
         return str(cert.get("cell") or "")
     return str(cert or "")
+
+
+def _queue_close(names: list[str]) -> None:
+    """Hand retired names to the gateway's close queue (`gateway.close_retired_positions`)."""
+    p = SLEEVES_FILE.parent / "RETIRED_CLOSE_QUEUE.json"
+    have: list[str] = []
+    try:
+        have = [str(x) for x in (json.loads(p.read_text("utf-8")).get("names") or [])]
+    except (OSError, ValueError):
+        have = []
+    merged = list(dict.fromkeys(have + [str(n) for n in names if n]))
+    try:
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(json.dumps({"names": merged,
+                                 "at": datetime.now(tz=UTC).isoformat(timespec="seconds")},
+                                indent=1), "utf-8")
+    except OSError:
+        pass
+
+
+def retire_banned(sleeves: list[dict]) -> bool:
+    """RETIRE every LIVE or STANDBY row of a family the principal has banned
+    (research/family_policy.py, data/banned_families.json). Returns changed.
+
+    2026-09-16: the `discovered` family. The decay monitor had already retired its live forex
+    sleeves on the pooled bar; this is the standing order that keeps them out -- a candidate of
+    a banned family is never promoted (see `promote_generic` and `main`), and any row that is
+    still on the roster leaves it here with the ban's own reason on it. Open positions go to
+    the gateway's close queue.
+    """
+    try:
+        from family_policy import ban_reason, family_banned
+    except ImportError:                                    # pragma: no cover
+        from research.family_policy import ban_reason, family_banned
+    changed = False
+    stamp = datetime.now(tz=UTC).isoformat(timespec="seconds")
+    gone: list[str] = []
+    for s in sleeves:
+        status = str(s.get("status") or "")
+        if status not in ("LIVE", "STANDBY"):
+            continue
+        fam = str(s.get("family") or "")
+        if not family_banned(fam):
+            continue
+        reason = ban_reason(fam)
+        s.update({"status": "RETIRED", "risk_frac": 0.0, "risk_frac_source": "none",
+                  "retired_at": stamp, "retire_reason": reason})
+        plog(f"AUTO-RETIRED {s['name']} ({reason})")
+        note_door(str(s.get("name") or ""), door="RETIRED", from_status=status,
+                  to_status="RETIRED", reason=reason,
+                  evidence={"certificate": s.get("certificate"), "banned_family": fam})
+        gone.append(str(s.get("name") or ""))
+        changed = True
+    if gone:
+        _queue_close(gone)
+    return changed
 
 
 def retire_unrunnable(sleeves: list[dict], evicted: set[str] | None = None) -> bool:
@@ -1573,6 +1629,19 @@ def promote_generic(sleeves: list[dict], qshadow: dict, existing: set,
         if key in existing:
             continue
         spec = cert_specs.get(key)
+        # A CANDIDATE OF A BANNED FAMILY IS NEVER PROMOTED (2026-09-16). Its clock may keep
+        # running in shadow; the roster is closed to it while the ban stands.
+        try:
+            from family_policy import ban_reason, family_banned
+        except ImportError:                                # pragma: no cover
+            from research.family_policy import ban_reason, family_banned
+        _fam = str((spec or {}).get("family") or row.get("family") or "")
+        if family_banned(_fam):
+            row["status"] = "BANNED_FAMILY"
+            row["gate_reason"] = ban_reason(_fam)
+            plog(f"{key}: live promotion refused -- {row['gate_reason']}")
+            changed = True
+            continue
         if not spec:
             plog(f"{key}: qquant PROMOTION_CANDIDATE but no exact-policy shadow_spec; refused")
             continue
@@ -1637,6 +1706,8 @@ def main() -> None:
     # Certificates hygiene has evicted as UNRUNNABLE leave the roster before anything is judged
     # or restored on them (2026-09-16).
     changed = retire_unrunnable(sleeves) or changed
+    # And rows of a family the principal has banned (data/banned_families.json).
+    changed = retire_banned(sleeves) or changed
 
     # WHAT THE ALLOCATOR CURRENTLY SAYS. Read ONCE per pass: the three promotion doors and the
     # reconciliation below must all decide from the same solve, or two rows written in the same
@@ -1674,6 +1745,19 @@ def main() -> None:
             sym, win = parts[0], parts[1]
             family, side_txt, params = "session_range_breakout", "LONG", {}
             cond = parts[2] if len(parts) > 2 else None
+        try:
+            from family_policy import ban_reason as _ban_reason
+            from family_policy import family_banned as _family_banned
+        except ImportError:                                # pragma: no cover
+            from research.family_policy import ban_reason as _ban_reason
+            from research.family_policy import family_banned as _family_banned
+        if _family_banned(family):
+            st["status"] = "BANNED_FAMILY"
+            st["promotion_authority"] = False
+            st["gate_reason"] = _ban_reason(family)
+            plog(f"{key}: live promotion refused -- {st['gate_reason']}")
+            changed = True
+            continue
         gate_spec = (sym, win, cond, family, False)
         # THE TEN GATES GATE ENROLMENT, NOT PROMOTION. A clock exists only because a certificate
         # enrolled it (grandfathering ended 2026-08-26), so re-checking the authority set here

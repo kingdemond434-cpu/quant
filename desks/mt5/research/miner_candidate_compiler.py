@@ -787,6 +787,15 @@ def compile_row(source: str, row: dict, universe: set[str]) -> tuple[list[dict],
     source_l = source.lower()
     kind = str(row.get("kind") or row.get("type") or "").lower()
 
+    # A BANNED FAMILY COMPILES TO NOTHING (2026-09-16, `discovered`): the docket stops filling
+    # with it and the gauntlet's hour goes to every other mechanism. data/banned_families.json.
+    try:
+        from family_policy import family_banned
+    except ImportError:                                    # pragma: no cover
+        from research.family_policy import family_banned
+    if family_banned(row.get("family")):
+        return [], "BANNED_FAMILY"
+
     # Direct recipes from any present or future miner are admitted only when the family and
     # executable parameters are explicit. The gauntlet remains the arbiter of profitability.
     family = row.get("family")

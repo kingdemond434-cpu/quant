@@ -1445,6 +1445,17 @@ def search() -> dict:
     reported a stale hourly leg for a leg that had no schedule at all, and the docket had been
     running on miner rows alone for a day and a half.
     """
+    # THE SEARCH MINTS ONLY `discovered` HYPOTHESES. While that family is banned
+    # (data/banned_families.json, principal 2026-09-16) this leg stands down and its hour goes
+    # to every other leg; lifting the ban is one edit to that file.
+    try:
+        from family_policy import ban_reason, family_banned
+        if family_banned("discovered"):
+            return {"status": "SKIPPED", "leg": "edge_search",
+                    "why": f"{ban_reason('discovered')}; the search leg mints only discovered "
+                           f"hypotheses, so its hour goes to the other legs"}
+    except Exception:
+        pass
     return _producer("edge_search", "research/edge_search.py")
 
 
