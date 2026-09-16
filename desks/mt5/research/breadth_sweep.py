@@ -165,9 +165,30 @@ CORE = ("XAUUSD", "XAGUSD", "EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "USDCAD", "U
         "US30", "GER40", "UK100", "JPN225", "BTCUSD", "ETHUSD", "USDZAR", "USDMXN")
 
 
+#: EVERY CHART THE DESK HOLDS BARS FOR (principal 2026-09-16: "all breadth, all charts, all
+#: sessions, not tons of H1"). A cell is emitted on a chart only when that symbol's bars for it
+#: are on disk; H1 keeps the bare identity every existing cell has, the others carry
+#: `timeframe`, which is the chart to load and stays in the cell's identity.
+CHARTS = ("M5", "M15", "M30", "H1", "H4")
+
+
 def _with_bars() -> list[str]:
+    """Instruments to sweep: the liquid core plus every instrument in the hypothesis lane that
+    has H1 bars on disk -- the same breadth the discovery hunt had (principal 2026-09-16), now
+    spent on the families that are not banned."""
     have = {p.name.split("_")[0].upper() for p in UNIVERSE.glob("*_H1.parquet")}
-    return [s for s in CORE if s in have]
+    out = [s for s in CORE if s in have]
+    try:
+        from research.universe_policy import may_hypothesise
+        extra = sorted(s for s in have if s not in out and may_hypothesise(s))
+        out.extend(extra)
+    except Exception:
+        pass
+    return out
+
+
+def _charts_for(sym: str) -> list[str]:
+    return [tf for tf in CHARTS if (UNIVERSE / f"{sym}_{tf}.parquet").exists()]
 
 
 def _targets(fam: str, spec: dict, syms: list[str]) -> list[tuple[str, dict]]:
@@ -196,20 +217,28 @@ def cells(only: str | None = None) -> list[dict]:
             continue
         for sym, extra in _targets(fam, spec, syms):
             for params in spec["grid"]:
-                p = dict(params)
-                p.update(extra)
-                out.append({
-                    "symbol": sym, "family": fam, "params": p,
-                    "n": 0, "exp_r": None, "max_dd_r": None, "t_stat": None,
-                    "profit_factor": None, "win_rate": None,
-                    "source": f"breadth_sweep/{fam}",
-                    "url": None,
-                    "producer": "desks/mt5/research/breadth_sweep.py",
-                    "first_seen": now, "pit_stamp": now,
-                    "why": (f"closing a NAMED breadth gap: {spec['why']}. No performance is "
-                            f"claimed -- the gauntlet attaches the only numbers that attach."),
-                })
+                for tf in _charts_for(sym) or ["H1"]:
+                    p = dict(params)
+                    p.update(extra)
+                    if tf != "H1":
+                        p["timeframe"] = tf
+                    out.append(_cell(sym, fam, p, spec, now))
     return out
+
+
+def _cell(sym: str, fam: str, p: dict, spec: dict, now: str) -> dict:
+    """One docket row: the executable spec and nothing claimed about it."""
+    return {
+        "symbol": sym, "family": fam, "params": p,
+        "n": 0, "exp_r": None, "max_dd_r": None, "t_stat": None,
+        "profit_factor": None, "win_rate": None,
+        "source": f"breadth_sweep/{fam}",
+        "url": None,
+        "producer": "desks/mt5/research/breadth_sweep.py",
+        "first_seen": now, "pit_stamp": now,
+        "why": (f"closing a NAMED breadth gap: {spec['why']}. No performance is "
+                f"claimed -- the gauntlet attaches the only numbers that attach."),
+    }
 
 
 def apply(new: list[dict]) -> tuple[int, int]:

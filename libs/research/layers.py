@@ -135,6 +135,12 @@ LEG_LAYER: dict[str, str] = {
     # Formulaic alpha generation is a predictor search; the closed-loop attestation is meta.
     "alpha_evolution": "prediction",
     "closed_loop": "meta",
+    # The breadth sweep mints cells for every unbanned family on every chart the desk holds bars
+    # for -- a predictor search, scheduled hourly since the discovery hunt was banned (2026-09-16).
+    "breadth_sweep": "prediction",
+    # Whether the allocator's book reaches the sleeves it funds is a measurement of the desk's
+    # own wiring, like `wiring_audit`: meta.
+    "allocator_join": "meta",
     # sizing: how much
     "capacity": "sizing", "ensemble_optimizer": "sizing",
     # portfolio: how the book is composed

@@ -1430,6 +1430,13 @@ def compile_candidates() -> dict:
     return _producer("miner_candidate_compiler", "research/miner_candidate_compiler.py")
 
 
+def breadth_sweep() -> dict:
+    """`breadth_sweep`: cells for every unbanned READY family on every chart the desk holds bars
+    for, merged into the docket idempotently (principal 2026-09-16: the discovery hunt is banned;
+    its volume goes to every other mechanism, all charts, not tons of H1)."""
+    return _producer("breadth_sweep", "research/breadth_sweep.py", "--apply")
+
+
 def search() -> dict:
     """`edge_search`: the family-free hypothesis search. NOT SCHEDULED ANYWHERE BEFORE THIS.
 
@@ -2166,6 +2173,7 @@ def main() -> None:
     mo = _costed("moat_miner", lambda: _producer("moat_miner", "research/moat_miner.py"))
     m = _costed("mine", mine)
     se = _costed("search", search)
+    bs = _costed("breadth_sweep", breadth_sweep)
     sw = _costed("sweep", sweep)
     cc = _costed("compile_candidates", compile_candidates)
     dp = _costed("deepen", deepen)
@@ -2510,7 +2518,7 @@ def main() -> None:
                     "health": h, "tape": t, "state_vector": s, "daily": d,
                     "regime_monitor": rg,
                     "deepening": dp, "heal_clocks": hc, "mine": m,
-                    "search": se, "sweep": sw, "compile": cc,
+                    "search": se, "breadth_sweep": bs, "sweep": sw, "compile": cc,
                     "execution_twin": et, "causal_graph": cg, "alpha_rl": arl,
                     "research_exchange_score": rxs, "lake_promote": lkp,
                     "orthogonality": orth,

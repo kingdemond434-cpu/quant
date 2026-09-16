@@ -295,6 +295,7 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         doc["actions"].append(act)
     state["windows"] = {n: w for n, w in state["windows"].items() if not n.startswith("carried:")}
 
+    doc.setdefault("status", "OK")
     try:
         STATE.parent.mkdir(parents=True, exist_ok=True)
         STATE.write_text(json.dumps(state, indent=1, default=str), encoding="utf-8")
@@ -303,7 +304,6 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         OUT.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
     except OSError as exc:
         log(f"state/report write failed: {exc}")
-    doc.setdefault("status", "OK")
     return doc
 
 
