@@ -3778,22 +3778,24 @@
    "item": "Adversarial synthetic regimes: a named, replayable scenario set absent from history (USD shock + liquidity crash, spread x5, correlations -> 1, instant trend break, central-bank surprise, vol doubling, weekend gap, feed latency, partial fills, missing releases) applied to certified and live sleeves to expose hidden structural failure modes, never to optimise synthetic profit",
    "domain": "Q",
    "phase": "Q",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
+    "desks/mt5/research/synthetic_regimes.py",
+    "desks/mt5/tests/test_synthetic_regimes.py",
+    "libs/validation/hostile.py",
     "desks/mt5/research/adversary_evolution.py",
     "libs/validation/stress_costs.py",
-    "libs/validation/bar_permutation.py",
-    "libs/validation/hostile.py",
-    "desks/mt5/research/fragility.py",
-    "libs/portfolio/multiperiod_worlds.py"
+    "libs/validation/bar_permutation.py"
    ],
-   "scheduled_by": "MT5-Gauntlet (stress_costs, bar_permutation)",
-   "artifact": "none",
-   "consumer": "none",
-   "gap": "MEASURED 2026-09-16: the 5x cost ladder is the entire stress surface; none of the named conditions exists as a scenario applied to a sleeve; no SYNTHETIC_REGIMES artifact.",
+   "scheduled_by": "hourly_cycle:synthetic_regimes (validate department)",
+   "artifact": "desks/mt5/reports/SYNTHETIC_REGIMES.json",
+   "consumer": "hazard_engine (flags, next); the CEO docket",
+   "gap": "LANDED 2026-09-16: eleven named worlds (USD shock + liquidity crash, spread x5, correlations to one, instant trend break, central-bank surprise, vol doubling, weekend gap and its inverse, feed latency, partial fills, missing releases) replayed through the engine that certifies; six one-directional failure flags; the gold windows read UNMEASURED because their rule lives in the gateway.",
    "next_step": "synthetic_regimes.py (wave 4, building): the scenario set as transforms of a sleeve's bars/trade series and cost model, applied to every certified/live sleeve with the family re-run, reporting per-scenario expectancy, drawdown and the structural failure flags (blows up under spread x5, needs the weekend gap, dies when correlations collapse); reports/SYNTHETIC_REGIMES.json every heavy pass; hazard_engine reads the flags.",
-   "landed": []
+   "landed": [
+    "494744b2c01"
+   ]
   },
   {
    "id": "Q6",
@@ -4110,24 +4112,24 @@
    "item": "P1 Global Intelligence OS: a source registry with provenance, native-language source maps (CN/JP/KR/RU/AR/PT/ES/TR/HI/... never translated-English coverage), official primary feeds as events with known-at stamps, scholarly/code/web collectors, and per-source reputation P(novel lead | source), P(testable | source), P(survivor | source), E[dElogW | source] with an intelligence ROI allocator",
    "domain": "W",
    "phase": "W",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
+    "desks/mt5/research/source_registry.py",
+    "desks/mt5/tests/test_source_registry.py",
+    "desks/mt5/data/deep_forest_sources.json",
     "desks/mt5/research/deep_forest_miner.py",
     "desks/mt5/research/repo_miner.py",
-    "desks/mt5/data/deep_forest_sources.json",
-    "desks/mt5/research/data_prospector.py",
-    "desks/mt5/research/acquire_datasets.py",
-    "libs/research/source_roi.py",
-    "desks/mt5/research/credit_assignment.py",
-    "desks/mt5/research/fetch_alfred.py"
+    "desks/mt5/research/data_prospector.py"
    ],
-   "scheduled_by": "hourly_cycle:world_crawler, hourly_cycle:deep_forest, daily_cycle:world_miners, quant-cot-fetch.timer, quant-prospector.timer",
-   "artifact": "desks/mt5/reports/DEEP_FOREST.json",
-   "consumer": "miner_candidate_compiler (data/intelligence/**)",
-   "gap": "MEASURED 2026-09-16: the world crawler and the deep-forest miner cover the Chinese/JP/KR/RU forests from data/deep_forest_sources.json and repo_miner covers public code; there is no source REGISTRY with provenance and reputation as one object, no per-source ROI allocator, no official-feed event normaliser with known-at stamps (fetch_alfred/sec_edgar on no clock), and no native-language maps for AR/PT/ES/TR/HI/VI.",
+   "scheduled_by": "hourly_cycle:source_registry, hourly_cycle:world_crawler, hourly_cycle:deep_forest",
+   "artifact": "desks/mt5/reports/SOURCE_REGISTRY.json",
+   "consumer": "world_crawler / deep_forest crawl budget (next: read the shares); research_departments",
+   "gap": "LANDED 2026-09-16: 639 sources registered with provenance, result-based reputation and intel ROI shares (20% exploration floor, PRIOR_AND_PRICE regime until a costed source certifies); all thirteen tracked languages have a ground; the crawlers do not yet read the shares.",
    "next_step": "source_registry.py (wave 4b): one registry data/source_registry.json of every ground (language, kind, licence, fetch clock, cost), reputation from credit_assignment/hypothesis_graph/novelty_gate joins (novel, testable, survivor, independent survivor, dElogW per source), and an intel ROI share per source that world_crawler/deep_forest read as their crawl budget; extend deep_forest_sources.json with the missing language forests.",
-   "landed": []
+   "landed": [
+    "494744b2c01"
+   ]
   },
   {
    "id": "W2",

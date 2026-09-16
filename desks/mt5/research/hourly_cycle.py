@@ -737,7 +737,8 @@ LEG_DEPARTMENT: dict[str, str] = {
     **dict.fromkeys(("fred_macro", "futures_lead_lag", "causal_graph", "residual_factors",
                      "weak_signals", "edges_macro_fusion_sweep", "strategy_paths",
                      "counterfactual_world", "opportunity_forecast", "forecast_contract",
-                     "exposure_decomposition"), "macro"),
+                     "exposure_decomposition", "event_response_atlas", "causal_lab",
+                     "world_lab"), "macro"),
     # execution: the execution research command
     **dict.fromkeys(("execution_twin", "entry_timing", "cost_to_edge", "exit_study",
                      "execution_resolver"), "execution"),
@@ -2475,6 +2476,11 @@ def main() -> None:
     evl = _costed("evaluator_lab", lambda: _producer("evaluator_lab",
                                                       "libs/validation/evaluator_lab.py",
                                                       "--seeds", "5"))
+    # SYNTHETIC REGIMES: eleven named worlds absent from history applied to certified and live
+    # sleeves for hidden structural failure modes; synthetic profit is never a merit.
+    syr = _costed("synthetic_regimes", lambda: _producer("synthetic_regimes",
+                                                          "research/synthetic_regimes.py",
+                                                          "--max-sleeves", "25"))
     # VALUE OF DATA: one ratio per missing observation, handed to the acquirer as targets.
     vod = _costed("value_of_data", lambda: _producer("value_of_data",
                                                       "research/value_of_data.py",
@@ -2503,6 +2509,11 @@ def main() -> None:
                                                            "--budget-s", "240"))
     exd = _costed("exposure_decomposition", lambda: _producer(
         "exposure_decomposition", "research/exposure_decomposition.py"))
+    # THE EVENT-RESPONSE ATLAS: measured reactions per event kind x instrument x horizon x
+    # conditioner from the desk's own calendar and bars; clearing cells donated (macro dept).
+    era = _costed("event_response_atlas", lambda: _producer("event_response_atlas",
+                                                             "research/event_response_atlas.py",
+                                                             "--budget-s", "240"))
     # EVERY BUILD ON A CLOCK: the auto-clocked organs of this plan (data/auto_legs.json).
     auto = run_auto_legs()
     sw = _costed("sweep", sweep)
@@ -2856,9 +2867,10 @@ def main() -> None:
                     "semantic_memory": smm, "model_role_benchmark": mrb,
                     "live_system_state": lss, "tier1_scorecard": t1s, "wiring_ceo": wce,
                     "research_departments": rdp, "qd_frontier": qdf, "blind_reviewer": bvr,
-                    "evaluator_lab": evl, "value_of_data": vod, "research_api_status": rap,
+                    "evaluator_lab": evl, "synthetic_regimes": syr, "value_of_data": vod,
+                    "research_api_status": rap,
                     "artifact_chain": acv, "residual_queue": rsq, "unseen_frontier": usf,
-                    "source_registry": srg,
+                    "source_registry": srg, "event_response_atlas": era,
                     "probation": prb, "standing_questions": sqs, "exposure_decomposition": exd,
                     "auto_legs": auto,
                     "sweep": sw, "compile": cc,
