@@ -287,6 +287,41 @@ class TradeLockerVenue:
             raise VenueError(f"{symbol}: the venue rejected a {side} {qty} order")
         return int(oid)
 
+    def place_stop(self, symbol: str, side: Side, lot: float, *, price: float,
+                   stop: float | None = None, take_profit: float | None = None) -> int:
+        """Send ONE resting stop order (a bracket leg) with its stop and target attached.
+
+        THE GOLD WINDOWS ON THIS VENUE (2026-09-16, principal: "replace E8's book with the gold
+        sleeves we use now"). The desk's gold book is two pending stops around a session range;
+        this venue's library takes the trigger as `stop_price` with `validity="GTC"` (a `price`
+        on a stop order is refused by the library itself), and the protective levels as
+        absolute prices. The lot is the caller's, floored at the venue minimum like `place`.
+        """
+        if side not in ("buy", "sell"):
+            raise VenueError(f"side must be buy or sell, got {side!r}")
+        if not (lot > 0) or not (price > 0):
+            raise VenueError(f"{symbol}: refusing a stop order with lot {lot} at {price}")
+        iid = self.instrument_id(symbol)
+        qty = max(float(lot), self.min_lot(symbol))
+        oid = self._api.create_order(
+            instrument_id=iid, quantity=qty, side=side, type_="stop", validity="GTC",
+            stop_price=float(price),
+            stop_loss=stop, stop_loss_type="absolute" if stop is not None else None,
+            take_profit=take_profit,
+            take_profit_type="absolute" if take_profit is not None else None)
+        if oid is None:
+            raise VenueError(f"{symbol}: the venue rejected a {side} stop {qty} @ {price}")
+        return int(oid)
+
+    def orders(self, symbol: str | None = None) -> list[dict[str, Any]]:
+        """Resting orders, optionally for one symbol."""
+        iid = self.instrument_id(symbol) if symbol else 0
+        frame = self._api.get_all_orders(instrument_id_filter=iid)
+        return frame.to_dict("records") if hasattr(frame, "to_dict") else list(frame)
+
+    def cancel(self, order_id: int) -> bool:
+        return bool(self._api.delete_order(int(order_id)))
+
     def close(self, position_id: int, quantity: float = 0) -> bool:
         return bool(self._api.close_position(position_id=int(position_id),
                                              close_quantity=float(quantity)))
