@@ -2357,6 +2357,21 @@ def resolve_family_order(st: dict, s: dict, equity: float,
         # 0.01, so comparing the raw number let the second and third copies through while
         # reporting that they had been damped. What matters is whether the order ARRIVES at the
         # minimum, because that is the size that cannot be reduced any further.
+        # THE MACRO LEAN, APPLIED AS A SECOND TWO-SIDED MULTIPLIER (2026-09-16). `leg_balance`
+        # asks "how much of this leg does the book already hold"; this asks "which way is the
+        # currency itself leaning". Measured the night it was written: every currency leg the
+        # book held was losing at once, the signature of no directional view -- and the view,
+        # even on 12-day-stale FRED data, leaned CHF -0.31 (risk-on) while the desk was SHORT
+        # EURCHF and USDCHF, its three largest losers. An aligned order is sized up by the same
+        # bound an opposed one is sized down, so total heat is unchanged; a certificate that
+        # disagrees with the macro still trades, smaller, and the basis line says so.
+        macro_mult, macro_why = 1.0, ""
+        try:
+            from mt5desk import macro_view
+            macro_mult, macro_why = macro_view.multiplier(s["symbol"], side)
+            _scaled = _scaled * macro_mult
+        except Exception as exc:                                    # noqa: BLE001
+            macro_mult, macro_why = 1.0, f"macro UNMEASURED ({type(exc).__name__}: {exc})"
         _final = max(_vmin, round(_scaled / _vstep) * _vstep)
         _held = leg_balance.already_held(s["symbol"], side, mt5.positions_get() or [], pending)
         if _held > 0 and _final <= _vmin + 1e-12:
@@ -2380,9 +2395,10 @@ def resolve_family_order(st: dict, s: dict, equity: float,
             "population": population,
             "ttl_until": family_ttl_until(last_bar, g.ttl_bars, _BAR_MINUTES.get(tf, 60)),
             "leg_mult": float(leg_mult), "leg_why": leg_why,
+            "macro_mult": float(macro_mult), "macro_why": macro_why,
             "basis": (f"promoted_lot: risk_frac={s.get('risk_frac')} x ramp(n_live={n_live})"
                       f"{' from the allocator book' if from_book else ''} at the signal's own "
-                      f"{dist:.5g} stop; {leg_why}")}
+                      f"{dist:.5g} stop; {leg_why}; {macro_why}")}
 
 
 def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
