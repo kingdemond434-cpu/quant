@@ -409,6 +409,23 @@ def _no_log_block() -> dict:
     }
 
 
+def _wiring_block() -> dict:
+    """The wiring hunter's docket: unwired organs, the ratchet, and what probation proved."""
+    w = _read(REPORTS / "WIRING_CEO.json")
+    pr = _read(REPORTS / "PROBATION.json")
+    if not isinstance(w, dict):
+        return {"status": "UNMEASURED", "why": "no WIRING_CEO.json: the wiring hunter has not run"}
+    tasks = [{"organ": r.get("organ"), "lines": r.get("lines"), "has_tests": r.get("has_tests"),
+              "suggested_clock": r.get("suggested_clock"), "task": r.get("task")}
+             for r in (w.get("unwired") or [])[:12] if isinstance(r, dict)]
+    return {"status": "OK", "at": w.get("at"), "n_unwired": w.get("n_unwired"),
+            "n_probation": w.get("n_probation"), "floor": w.get("floor"),
+            "tasks": tasks,
+            "promotable": (pr.get("promotable") or [])[:12] if isinstance(pr, dict) else [],
+            "rule": ("an organ on no clock is a task on this docket until it runs; three clean "
+                     "probation runs make it PROMOTABLE to a named leg")}
+
+
 def build() -> dict:
     now = datetime.now(tz=UTC)
     audit = _audit_rows()
@@ -455,6 +472,9 @@ def build() -> dict:
         "n_proposals": len(props),
         "n_undecided": len(fresh),
         "proposals": props,
+        # THE CEO HUNTS WIRING (principal 2026-09-16): every build on no clock is a docket task
+        # here, daily, with the probation evidence beside it.
+        "wiring": _wiring_block(),
         # MEASURED ON THE GAUNTLET'S OWN ORDER, never asserted here: the docket is authoritative
         # when the last sweep placed cells of its proposed families first (GAUNTLET_ORDER.json).
         "authoritative": _served_by_gauntlet()[0],

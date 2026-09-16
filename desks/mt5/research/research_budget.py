@@ -40,6 +40,16 @@ def _read(p: Path) -> dict[str, Any]:
         return {}
 
 
+def _ladder_factor(leg: str) -> float:
+    """The breadth ladder's per-leg factor (research is paid in n_eff per compute-hour);
+    1.0 when the ladder is unmeasured or unavailable."""
+    try:
+        import breadth_ladder
+        return float(breadth_ladder.budget_factor(leg))
+    except Exception:
+        return 1.0
+
+
 def budget_s(leg: str, base: float) -> tuple[int, dict[str, Any]]:
     """(seconds, record) for `leg`: base x (share of its arms / equal-share baseline), clipped."""
     bandit = _read(BANDIT)
@@ -54,9 +64,11 @@ def budget_s(leg: str, base: float) -> tuple[int, dict[str, Any]]:
         return int(base), rec
     share = float(sum(float(shares[a]) for a in arms))
     baseline = len(arms) / max(1, len(shares))
-    factor = max(FLOOR, min(CEIL, share / baseline if baseline > 0 else 1.0))
-    applied = int(round(base * factor))
+    ladder = _ladder_factor(leg)
+    factor = max(FLOOR, min(CEIL, (share / baseline if baseline > 0 else 1.0) * ladder))
+    applied = round(base * factor)
     rec.update({"share": round(share, 4), "baseline": round(baseline, 4),
+                "ladder_factor": round(ladder, 3),
                 "factor": round(factor, 3), "applied_s": applied, "applied": True,
                 "why": f"share {share:.3f} of arms {list(arms)} vs equal-share baseline "
                        f"{baseline:.3f} -> x{factor:.2f}, clipped to [{FLOOR}, {CEIL}]"})

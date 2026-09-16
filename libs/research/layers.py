@@ -152,6 +152,15 @@ LEG_LAYER: dict[str, str] = {
     # Realised R credited back to the scientist and lane that proposed each cell: the delayed
     # truth that reweights the predictor search (bandit worth, generator weights): prediction.
     "credit_assignment": "prediction",
+    # THE 2026-09-16 BLUEPRINT ORGANS (Tier-1 phases C/D).
+    "axis_registry": "information", "forced_flow_calendar": "information",
+    "standing_questions": "information",
+    "novelty_gate": "prediction",
+    "posterior_alpha": "sizing", "exposure_decomposition": "portfolio",
+    "hazard_engine": "exit",
+    "breadth_ladder": "meta", "tier1_scorecard": "meta", "wiring_ceo": "meta",
+    "probation": "meta", "live_system_state": "meta", "semantic_memory": "meta",
+    "model_role_benchmark": "meta",
     # sizing: how much
     "capacity": "sizing", "ensemble_optimizer": "sizing",
     # portfolio: how the book is composed

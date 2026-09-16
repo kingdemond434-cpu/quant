@@ -91,10 +91,40 @@ def find_period_column(columns: Any) -> str | None:
     return None
 
 
-def stamp_frame(df: Any, *, lag_days: int, observed_at: str | datetime | None,
-                ) -> tuple[Any, dict[str, Any]]:
-    """Add event_time / available_time / ingested_time to a DataFrame when a period column exists.
+#: The full point-in-time envelope every stamped observation carries (blueprint item 2,
+#: 2026-09-16). The three original fields are measured; the four added ones are either aliases
+#: of measured fields (published_time = the modelled publication instant, retrieval_time = the
+#: fetch instant) or DECLARED by the caller (source_id, vintage_id) -- an undeclared one is None,
+#: never invented, and `meta["undeclared"]` names it.
+PIT_FIELDS: tuple[str, ...] = ("event_time", "published_time", "available_time", "revision_time",
+                               "retrieval_time", "ingested_time", "source_id", "vintage_id")
 
+
+def vintage_id_for(source_id: str | None, ingested_time: str | None,
+                   payload: Any = None) -> str | None:
+    """One id per (source, fetch) blob: sha1 of source|fetch|payload-size, 16 hex. None when the
+    fetch instant is unknown -- a vintage without a fetch time is not a vintage."""
+    if not ingested_time:
+        return None
+    import hashlib
+    size = ""
+    try:
+        size = str(len(payload)) if payload is not None else ""
+    except TypeError:
+        size = ""
+    raw = f"{source_id or ''}|{ingested_time}|{size}".encode()
+    return hashlib.sha1(raw).hexdigest()[:16]
+
+
+def stamp_frame(df: Any, *, lag_days: int, observed_at: str | datetime | None,
+                source_id: str | None = None, vintage_id: str | None = None,
+                revision_time: str | datetime | None = None,
+                ) -> tuple[Any, dict[str, Any]]:
+    """Add the point-in-time envelope to a DataFrame when a period column exists.
+
+    event_time / available_time / ingested_time as before, plus published_time (= the modelled
+    publication instant, event_time + lag), retrieval_time (= ingested_time), revision_time (the
+    caller's, or None), source_id and vintage_id (declared or derived from source + fetch).
     Returns (frame, meta). Never raises; an unstampable frame comes back unchanged with
     `meta["status"] == "UNSTAMPED"` and the reason.
     """
@@ -104,6 +134,12 @@ def stamp_frame(df: Any, *, lag_days: int, observed_at: str | datetime | None,
     if observed_at is not None:
         meta["ingested_time"] = (observed_at.isoformat() if isinstance(observed_at, datetime)
                                  else str(observed_at))
+    meta["source_id"] = source_id
+    meta["vintage_id"] = vintage_id or vintage_id_for(source_id, meta["ingested_time"], df)
+    meta["revision_time"] = (revision_time.isoformat() if isinstance(revision_time, datetime)
+                             else (str(revision_time) if revision_time else None))
+    meta["undeclared"] = [k for k in ("source_id", "vintage_id", "revision_time")
+                          if meta.get(k) is None]
     col = find_period_column(df.columns)
     if col is None:
         meta.update({"status": "UNSTAMPED", "why": "no column names a period (date/period/...)",
@@ -124,7 +160,13 @@ def stamp_frame(df: Any, *, lag_days: int, observed_at: str | datetime | None,
     out["event_time"] = parsed
     out["available_time"] = parsed + pd.Timedelta(days=lag_days)
     out["ingested_time"] = meta["ingested_time"]
+    out["published_time"] = out["available_time"]
+    out["retrieval_time"] = meta["ingested_time"]
+    out["revision_time"] = meta["revision_time"]
+    out["source_id"] = meta["source_id"]
+    out["vintage_id"] = meta["vintage_id"]
     meta.update({"status": "STAMPED", "period_column": col, "n": len(out),
+                 "fields": list(PIT_FIELDS),
                  "parsed_share": round(share, 3),
                  "first_period": str(parsed.min())[:19] if len(parsed) else None,
                  "last_period": str(parsed.max())[:19] if len(parsed) else None})
