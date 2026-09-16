@@ -1468,7 +1468,25 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
         # (stop), joined on position_id -- the only join MT5 offers between the two.
         ctx = _position_entry(getattr(d, "position_id", None))
         entry_price, sl_price, tp_price = ctx["entry_price"], ctx["sl"], ctx["tp"]
-        comment = (d.comment or ctx["comment"] or "")
+        # THE ENTRY'S TAG IS THE SLEEVE; THE EXIT'S TAG IS THE BROKER'S, AND IT IS NOT A NAME.
+        #
+        # This read `d.comment or ctx["comment"]`. A trade the desk closes has an empty OUT
+        # comment, so it fell through to the entry's `DW<sleeve>` tag and was attributed. A trade
+        # the BROKER closes -- every stop-out, every target hit -- carries the broker's own label
+        # on the OUT deal, `[sl 4300.69]` or `[tp 4267.99]`, which is truthy, so the entry tag
+        # was never consulted. `sleeve_from_comment('[sl 4300.69]')` returns '[sl 4300.69]'
+        # verbatim, and the trade landed in the ledger under a UNIQUE garbage sleeve name per
+        # trade.
+        #
+        # MEASURED 2026-09-16: xau_m15_anti_breakout had 18 closed live trades and the ledger held
+        # 3 of them under its name -- the three the desk closed itself. The 15 stop-outs sat under
+        # fifteen different '[sl ...]' names with one trade each. `decay_monitor` needs n >= 20 on
+        # ONE name to fade or retire, so a sleeve whose losses are stop-outs -- which is what a
+        # losing sleeve's losses ARE -- could never accumulate the evidence to be retired. The
+        # organ was not blind by threshold; it was blind by attribution.
+        _out_comment = str(d.comment or "")
+        _broker_close = _out_comment.startswith("[")
+        comment = ((ctx["comment"] or "") if _broker_close else (_out_comment or ctx["comment"] or ""))
         # MAGIC IS THE IDENTITY, NOT THE COMMENT. history_deals_get already filtered to
         # magic=MAGIC, so every deal here is this gateway's own; requiring the comment to ALSO
         # start with "DW" made a broker-side rewrite silently discard the entire ledger. Brokers
