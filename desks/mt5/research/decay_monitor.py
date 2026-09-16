@@ -73,6 +73,9 @@ SLEEVES_FILE = BASE / "data" / "sleeves.json"
 LEDGER = BASE / "data" / "live_ledger.jsonl"
 OUT = BASE / "data" / "decay_live.json"
 ACTIONS = BASE / "data" / "decay_actions.jsonl"
+#: Names the gateway must close out on its next pass: a sleeve that leaves the roster leaves the
+#: book (gateway.close_retired_positions reads and drains this).
+CLOSE_QUEUE = BASE / "data" / "RETIRED_CLOSE_QUEUE.json"
 #: The forward clocks' own ledgers, the model's fallback series while the live ledger is thin:
 #: a promoted sleeve's shadow clock keeps running (promoter.py never stops it), so its forward
 #: rows are the longest untouched expectancy series the desk holds for that sleeve.
@@ -102,6 +105,14 @@ FADE_FACTOR = 0.5
 #: while each sleeve individually "had no statistical verdict either way".
 POOL_FADE_N = 20
 POOL_FADE_T = -1.5
+#: THE POOLED RETIREMENT, on the same bar a sleeve retires on (t <= -T_PROMOTE at n >= 20):
+#: as much evidence of harm as promotion required of good, read across the family. Measured
+#: 2026-09-16: the `discovered` forex family stood at n=76, mean -0.23R, t=-4.5 -- past the bar
+#: three times over -- while no single sleeve had the twenty trades to say so. Every live sleeve
+#: of the pool leaves the roster (certificates stand; live risk is re-earned through a fresh
+#: pre-registered forward window) and its open positions are queued for the gateway to close.
+POOL_RETIRE_N = 20
+POOL_RETIRE_T = -2.5
 
 #: THE MODEL HALF's floors. Each is a refusal threshold for publishing a NUMBER, not a rule that
 #: moves capital: below any of them the half-life is UNMEASURED with its n.
@@ -248,6 +259,13 @@ def pooled_verdicts(live: dict[str, dict], trades: Any = None) -> dict[str, dict
         if s["n"] < POOL_FADE_N:
             v, why = "UNMEASURED", (f"pooled {key}: {s['n']} trailing trade(s) < {POOL_FADE_N} "
                                     f"across {len(names)} sleeve(s)")
+        elif s["n"] >= POOL_RETIRE_N and s["t"] <= POOL_RETIRE_T and s["exp_r"] < 0.0:
+            v, why = "RETIRE", (f"pooled {key}: t={s['t']} <= {POOL_RETIRE_T}, exp={s['exp_r']}R "
+                                f"over n={s['n']} across {len(names)} sleeve(s): as much "
+                                f"evidence of harm as promotion required of good; every live "
+                                f"sleeve of the pool leaves the roster and its positions are "
+                                f"closed; certificates stand and live risk is re-earned through "
+                                f"a fresh pre-registered forward window")
         elif s["t"] <= POOL_FADE_T and s["exp_r"] < 0.0:
             v, why = "FADE", (f"pooled {key}: t={s['t']}, exp={s['exp_r']}R over n={s['n']} "
                               f"across {len(names)} sleeve(s): the family is losing where no "
@@ -260,6 +278,23 @@ def pooled_verdicts(live: dict[str, dict], trades: Any = None) -> dict[str, dict
                               f"inside the band; fades stand as they are")
         out[key] = {**s, "verdict": v, "why": why, "sleeves": sorted(names)}
     return out
+
+
+def queue_close(names: list[str], path: Path | None = None) -> None:
+    """Add retired sleeve names to the gateway's close queue (merged, never duplicated)."""
+    # Beside whatever roster this run judges: a test that redirects SLEEVES_FILE to tmp_path
+    # must never queue a close into the desk's real data directory.
+    p = path or (SLEEVES_FILE.parent / CLOSE_QUEUE.name)
+    have: list[str] = []
+    try:
+        have = [str(x) for x in (json.loads(p.read_text("utf-8")).get("names") or [])]
+    except (OSError, ValueError):
+        have = []
+    merged = list(dict.fromkeys(have + [str(n) for n in names if n]))
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps({"names": merged,
+                             "at": datetime.now(tz=UTC).isoformat(timespec="seconds")},
+                            indent=1), "utf-8")
 
 
 def source_state() -> tuple[str, str]:
@@ -584,10 +619,12 @@ def main(write_queue: bool = True) -> int:
                                        "promoter refills the freed slot from matured candidates "
                                        "on its next daily pass"})
             sleeves.pop(name, None)
+            queue_close([name])
             changed = True
 
     # THE POOLED VERDICT, AFTER THE PER-SLEEVE ONE: a pool that is losing fades every live sleeve
-    # in it; a pool that has turned lifts only the sleeves it faded itself.
+    # in it; a pool past the retirement bar retires every live sleeve in it; a pool that has
+    # turned lifts only the sleeves it faded itself.
     pools = pooled_verdicts({k: v for k, v in live.items() if k in sleeves})
     for key, pv in pools.items():
         for name in pv["sleeves"]:
@@ -595,6 +632,17 @@ def main(write_queue: bool = True) -> int:
             if not isinstance(row, dict):
                 continue
             basis = str(row.get("decay_fade_basis") or "")
+            if pv["verdict"] == "RETIRE":
+                actions.append({"at": now, "sleeve": name, "action": "RETIRE", "pool": key,
+                                "why": pv["why"],
+                                "reentry": "certificate stands; re-earn live risk through a "
+                                           "fresh pre-registered forward window (RESEARCH 6d)"})
+                if name in report:
+                    report[name].update({"pool": key, "pool_verdict": "RETIRE"})
+                sleeves.pop(name, None)
+                queue_close([name])
+                changed = True
+                continue
             if pv["verdict"] == "FADE" and not row.get("decay_faded"):
                 eff = float(row.get("risk_frac") or 0.03)
                 row["decay_faded"] = now

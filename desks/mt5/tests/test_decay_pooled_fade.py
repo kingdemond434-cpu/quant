@@ -33,14 +33,16 @@ def _live(**fam_by_name: str) -> dict[str, dict]:
 def test_a_losing_pool_fades_and_a_winning_pool_reads_healthy() -> None:
     live = _live(eurchf_a="discovered", audcad_b="discovered", eurgbp_c="discovered",
                  usdchf_d="discovered", chfnok_e="carry")
-    rs = {"eurchf_a": [-0.4, -0.3, 0.2, -0.5, -0.2, -0.3],
-          "audcad_b": [-0.2, -0.4, -0.1, 0.3, -0.5, -0.3],
-          "eurgbp_c": [-1.0, -0.2, -0.3, 0.1, -0.4, -0.2],
-          "usdchf_d": [0.2, -0.3, -0.4, -0.1, -0.2, -0.6],
+    # A pooled record inside the FADE band: negative, past t=-1.5, short of the -2.5 retire bar.
+    rs = {"eurchf_a": [-0.5, 0.3, -0.4, 0.2, -0.3, 0.0],
+          "audcad_b": [-0.4, 0.2, -0.5, 0.3, -0.3, -0.1],
+          "eurgbp_c": [-0.6, 0.3, -0.2, 0.1, -0.4, 0.0],
+          "usdchf_d": [0.2, -0.4, -0.3, 0.1, -0.5, 0.0],
           "chfnok_e": [0.5, 0.4, -0.1, 0.6]}
     pools = D.pooled_verdicts(live, trades=_trades(rs))
     disc = pools["discovered/FX"]
-    assert disc["n"] == 24 and disc["verdict"] == "FADE" and disc["t"] <= D.POOL_FADE_T
+    assert disc["n"] == 24 and disc["verdict"] == "FADE"
+    assert D.POOL_RETIRE_T < disc["t"] <= D.POOL_FADE_T
     assert disc["sleeves"] == ["audcad_b", "eurchf_a", "eurgbp_c", "usdchf_d"]
     assert pools["carry/FX"]["verdict"] == "UNMEASURED"
 
@@ -74,10 +76,12 @@ def _write(desk: Path, rs_by_name: dict[str, list[float]]) -> None:
 
 
 def test_the_monitor_fades_the_whole_pool_and_lifts_it_only_when_the_pool_turns(desk) -> None:
-    losing = {"eurchf_a": [-0.4, -0.3, 0.2, -0.5, -0.2, -0.3],
-              "audcad_b": [-0.2, -0.4, -0.1, 0.3, -0.5, -0.3],
-              "eurgbp_c": [-1.0, -0.2, -0.3, 0.1, -0.4, -0.2],
-              "usdchf_d": [0.2, -0.3, -0.4, -0.1, -0.2, -0.6]}
+    # Inside the FADE band as a pool; no single sleeve trips its own early-fade bar (each has
+    # wins and a mean above -0.25R), so the fade is the pool's alone.
+    losing = {"eurchf_a": [-0.5, 0.3, -0.4, 0.2, -0.3, 0.0],
+              "audcad_b": [-0.4, 0.2, -0.5, 0.3, -0.3, -0.1],
+              "eurgbp_c": [-0.6, 0.3, -0.2, 0.1, -0.4, 0.0],
+              "usdchf_d": [0.2, -0.4, -0.3, 0.1, -0.5, 0.0]}
     _write(desk, losing)
     D.main(write_queue=False)
 
@@ -91,11 +95,8 @@ def test_the_monitor_fades_the_whole_pool_and_lifts_it_only_when_the_pool_turns(
 
     rows = _rows()
     assert all(rows[n].get("decay_faded") for n in losing)
-    # Two sleeves crossed the per-sleeve early-fade bar on their own record; the other two,
-    # individually "no verdict either way", are faded by the pool.
-    basis = {n: rows[n].get("decay_fade_basis") for n in losing}
-    assert basis["eurchf_a"] == "own" and basis["eurgbp_c"] == "own"
-    assert basis["audcad_b"] == "pool:discovered/FX" and basis["usdchf_d"] == "pool:discovered/FX"
+    # Every sleeve is individually "no verdict either way"; all four are faded by the pool.
+    assert all(rows[n].get("decay_fade_basis") == "pool:discovered/FX" for n in losing)
     actions = _actions()
     assert {a["sleeve"] for a in actions if a["action"] == "FADE"} == set(losing)
     # Same losing record again: nothing flips, nothing is written twice.
@@ -115,3 +116,26 @@ def test_the_monitor_fades_the_whole_pool_and_lifts_it_only_when_the_pool_turns(
     rows = _rows()
     assert not any(rows[n].get("decay_faded") for n in winning)
     assert {a["sleeve"] for a in _actions() if a["action"] == "UNFADE"} == set(winning)
+
+
+def test_a_pool_past_the_retirement_bar_retires_every_live_sleeve_and_queues_their_close(
+        desk, monkeypatch) -> None:
+    """The measured case: n=76, mean -0.23R, t=-4.5 across a family whose sleeves individually
+    had 3-8 trades each. Every live sleeve of the pool leaves the roster; the gateway's close
+    queue names them; the report carries the pool verdict."""
+    monkeypatch.setattr(D, "CLOSE_QUEUE", desk / "RETIRED_CLOSE_QUEUE.json")
+    losing = {f"sleeve_{i}": [-0.6, -0.4, -0.5, -0.3, -0.7, -0.2, -0.5, -0.4] for i in range(4)}
+    _write(desk, losing)
+    pools = D.pooled_verdicts({n: {"family": "discovered", "symbol": "EURCHF"} for n in losing},
+                              trades=lambda n: [{"r_multiple": r} for r in losing[n]])
+    assert pools["discovered/FX"]["verdict"] == "RETIRE"
+    D.main(write_queue=False)
+    rows = json.loads((desk / "sleeves.json").read_text("utf-8"))["sleeves"]
+    assert rows == []
+    queued = json.loads((desk / "RETIRED_CLOSE_QUEUE.json").read_text("utf-8"))["names"]
+    assert set(queued) == set(losing)
+    actions = [json.loads(x)
+               for x in (desk / "decay_actions.jsonl").read_text("utf-8").splitlines()]
+    retired = [a for a in actions if a["action"] == "RETIRE"]
+    assert {a["sleeve"] for a in retired} == set(losing)
+    assert all("re-earn" in a["reentry"] for a in retired)
