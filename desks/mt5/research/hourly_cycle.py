@@ -691,17 +691,72 @@ CORE_LEGS: frozenset[str] = frozenset({
     "alpha_breadth", "alpha_periodic_table", "regime_coverage", "timeframe_coverage",
     "frontier_unknowns", "frontier_report", "frontier_ontology", "counterfactual_world",
     "strategy_paths", "reclaim_disk", "archive_tape", "queue_cycle", "release_authority",
+    # THE 2026-09-16 BLUEPRINT ORGANS (phases C/D of the Tier-1 ledger), all cheap readers.
+    "axis_registry", "tier1_scorecard", "novelty_gate", "forced_flow_calendar", "breadth_ladder",
+    "wiring_ceo", "live_system_state", "hazard_engine", "posterior_alpha", "semantic_memory",
+    "model_role_benchmark",
 })
 
 
 def in_plan(name: str, plan: str | None = None) -> bool:
-    """Does leg `name` run under `plan`? core = CORE_LEGS only; heavy = everything else; all."""
+    """Does leg `name` run under `plan`? core = CORE_LEGS only; heavy = everything else; all.
+    An `auto_*` leg is already filtered by its own plan in run_auto_legs and always passes."""
     p = (plan if plan is not None else HOURLY_PLAN)
+    if name.startswith("auto_"):
+        return True
     if p == "core":
         return name in CORE_LEGS
     if p == "heavy":
         return name not in CORE_LEGS
     return True
+
+
+AUTO_LEGS_FILE = BASE / "data" / "auto_legs.json"
+
+
+def _auto_leg(entry: dict) -> dict:
+    """Run one auto-clocked organ under its budget; a dict result, never a raise."""
+    organ = str(entry.get("organ") or "")
+    target = REPO / organ
+    if not target.exists():
+        return {"exit_code": None, "status": "MISSING", "why": f"{organ} is not in the tree",
+                "at": datetime.now(UTC).isoformat()}
+    budget = max(15, int(entry.get("budget_s") or 120))
+    cwd = BASE if organ.startswith("desks/mt5/") else REPO
+    try:
+        r = subprocess.run([sys.executable, "-u", "-W", "ignore", str(target),
+                            *[str(a) for a in (entry.get("argv") or [])]],
+                           capture_output=True, text=True, cwd=str(cwd), timeout=budget,
+                           check=False)
+        return {"exit_code": r.returncode, "tail": (r.stdout or r.stderr or "")[-300:],
+                "budget_s": budget, "at": datetime.now(UTC).isoformat()}
+    except subprocess.TimeoutExpired:
+        return {"exit_code": None, "timeout_s": budget, "status": "TIMEOUT",
+                "at": datetime.now(UTC).isoformat()}
+
+
+def run_auto_legs(plan: str | None = None, path: Path | None = None) -> dict:
+    """THE HOURLY ORGAN WIRER'S OTHER HALF (principal 2026-09-16). `wiring_ceo` writes
+    data/auto_legs.json: every safe organ nothing else schedules, with a plan and a budget
+    measured by probation. This runs the ones that belong to the current plan as ordinary
+    costed legs (`auto_<stem>`), so a build lands on a clock the hour after it is found --
+    with the ledger row, the provenance envelope and the failure isolation every named leg
+    gets. The clock is data; nobody edits this file to wire an organ."""
+    p = plan if plan is not None else HOURLY_PLAN
+    src = path or AUTO_LEGS_FILE
+    try:
+        doc = json.loads(src.read_text(encoding="utf-8-sig"))
+        legs = [e for e in (doc.get("legs") or []) if isinstance(e, dict) and e.get("organ")]
+    except (OSError, ValueError):
+        return {"n": 0, "why": "no auto_legs.json yet: the wiring CEO has not run"}
+    chosen = [e for e in legs if p == "all" or str(e.get("plan") or "heavy") == p]
+    out: dict[str, dict] = {}
+    for e in chosen:
+        name = str(e.get("leg") or ("auto_" + Path(str(e["organ"])).stem))
+        out[name] = _costed(name, lambda e=e: _auto_leg(e))
+    print(f"auto legs: {len(chosen)} of {len(legs)} clocked organ(s) ran under plan={p}",
+          flush=True)
+    return {"n": len(chosen), "of": len(legs), "results": out}
 
 
 _LEG_ARTIFACTS: dict[str, list[Path]] | None = None
@@ -1209,7 +1264,8 @@ def swap_rejudge() -> dict:
 
 
 def asia_plane() -> dict:
-    """`asia_plane`: every Asian ground converted into gauntlet cells, or named as converting to none.
+    """`asia_plane`: every Asian ground converted into gauntlet cells, or named as converting to
+    none.
 
     THE RULE (principal, 2026-09-15): every ground the desk ever covers must have machinery that
     turns it into cells. Not a collector, not a dashboard tile -- CELLS, judged or explicitly
@@ -2207,7 +2263,9 @@ def refresh_regime() -> dict:
 
 
 def main() -> None:
-    print(f"hourly cycle plan={HOURLY_PLAN} ({'core legs only' if HOURLY_PLAN == 'core' else 'research producers only' if HOURLY_PLAN == 'heavy' else 'every leg'})", flush=True)
+    _plan_words = {"core": "core legs only", "heavy": "research producers only"}
+    print(f"hourly cycle plan={HOURLY_PLAN} ({_plan_words.get(HOURLY_PLAN, 'every leg')})",
+          flush=True)
     # BARS FIRST. Every leg below reasons about a chart, so a stale chart makes all of them
     # confidently wrong rather than merely late.
     rb = _costed("refresh_bars", refresh_bars)
@@ -2301,6 +2359,43 @@ def main() -> None:
     cra = _costed("credit_assignment", lambda: _producer("credit_assignment",
                                                           "research/credit_assignment.py",
                                                           "--apply"))
+    # THE BLUEPRINT ORGANS (principal, 2026-09-16; Tier-1 phases C/D). Each runs on the core
+    # plan every hour and leaves its artifact; order matters where one reads another (the axis
+    # registry before the ladder, the hazard engine before the posterior, the wiring CEO before
+    # probation). UNWIRED OR IDLE IS A DEFECT (III.16) -- these were built today and are on a
+    # clock today.
+    axr = _costed("axis_registry", lambda: _producer("axis_registry",
+                                                      "research/axis_registry.py"))
+    bld = _costed("breadth_ladder", lambda: _producer("breadth_ladder",
+                                                       "research/breadth_ladder.py"))
+    ffc = _costed("forced_flow_calendar", lambda: _producer("forced_flow_calendar",
+                                                             "research/forced_flow_calendar.py"))
+    ngt = _costed("novelty_gate", lambda: _producer("novelty_gate", "research/novelty_gate.py",
+                                                     "--limit", "3000"))
+    hze = _costed("hazard_engine", lambda: _producer("hazard_engine",
+                                                      "research/hazard_engine.py"))
+    pal = _costed("posterior_alpha", lambda: _producer("posterior_alpha",
+                                                        "research/posterior_alpha.py"))
+    smm = _costed("semantic_memory", lambda: _producer("semantic_memory",
+                                                        "research/semantic_memory.py", "build"))
+    mrb = _costed("model_role_benchmark", lambda: _producer("model_role_benchmark",
+                                                             "research/model_role_benchmark.py"))
+    lss = _costed("live_system_state", lambda: _producer("live_system_state",
+                                                          "research/live_system_state.py"))
+    t1s = _costed("tier1_scorecard", lambda: _producer("tier1_scorecard",
+                                                        "research/tier1_scorecard.py"))
+    # THE WIRING CEO hunts every build that is on no clock (principal 2026-09-16: "always
+    # hunting"); probation (heavy plan) exercises the safe ones until they earn a named leg.
+    wce = _costed("wiring_ceo", lambda: _producer("wiring_ceo", "research/wiring_ceo.py",
+                                                   "--apply"))
+    prb = _costed("probation", lambda: _producer("probation", "research/probation_runner.py"))
+    sqs = _costed("standing_questions", lambda: _producer("standing_questions",
+                                                           "research/standing_questions.py",
+                                                           "--budget-s", "240"))
+    exd = _costed("exposure_decomposition", lambda: _producer(
+        "exposure_decomposition", "research/exposure_decomposition.py"))
+    # EVERY BUILD ON A CLOCK: the auto-clocked organs of this plan (data/auto_legs.json).
+    auto = run_auto_legs()
     sw = _costed("sweep", sweep)
     cc = _costed("compile_candidates", compile_candidates)
     dp = _costed("deepen", deepen)
@@ -2647,6 +2742,12 @@ def main() -> None:
                     "deepening": dp, "heal_clocks": hc, "mine": m,
                     "search": se, "breadth_sweep": bs, "candidate_conservation": ccv,
                     "pit_canaries": pcn, "mutation_yield": myd, "credit_assignment": cra,
+                    "axis_registry": axr, "breadth_ladder": bld, "forced_flow_calendar": ffc,
+                    "novelty_gate": ngt, "hazard_engine": hze, "posterior_alpha": pal,
+                    "semantic_memory": smm, "model_role_benchmark": mrb,
+                    "live_system_state": lss, "tier1_scorecard": t1s, "wiring_ceo": wce,
+                    "probation": prb, "standing_questions": sqs, "exposure_decomposition": exd,
+                    "auto_legs": auto,
                     "sweep": sw, "compile": cc,
                     "execution_twin": et, "causal_graph": cg, "alpha_rl": arl,
                     "research_exchange_score": rxs, "lake_promote": lkp,

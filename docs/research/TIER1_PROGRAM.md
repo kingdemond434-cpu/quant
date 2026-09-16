@@ -34,9 +34,9 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
 | 6 Execution intelligence: routing competition, slippage prediction, fill probability, self-footprint, broker microstructure | 0 | 0 | 1 | 0 | 4 |
 | 7 Recursive research improvement: agents compete for compute by downstream economic value; the machine redesigns itself | 1 | 0 | 0 | 0 | 10 |
 | B The principal's 28-item closed-loop blueprint (2026-09-16), measured against this tree | 2 | 0 | 26 | 0 | 0 |
-| C The 2026-09-16 blueprint (principal): production truth, PIT lake, axis registry, effective breadth, mechanism genome, ten engines, macro state, causal graph, residual research, forced flows, event surfaces, execution intelligence, hostile validation, scarce forward slots, posterior alpha, E[log W] allocator, exposure decomposition, hazard engine, self-recorded moat, LLM roles, semantic memory, unknown-unknowns, failures as data, Tier-1 scorecard | 0 | 0 | 25 | 0 | 0 |
-| D The nine Asian research mechanisms (principal, 2026-09-16): AlphaSchema semantic frontier, QuantaAlpha trajectory evolution, RD-Agent factor x model arms, FactorEngine program-alpha lane, AlphaSAGE reward-proportional sampling, AlphaAgent novelty filter, Alpha Jungle MCTS deepening, TRA/DoubleAdapt regime router, AlphaBench model-role benchmark | 0 | 0 | 9 | 0 | 0 |
-| **all** | 5 | 0 | 69 | 0 | 101 |
+| C The 2026-09-16 blueprint (principal): production truth, PIT lake, axis registry, effective breadth, mechanism genome, ten engines, macro state, causal graph, residual research, forced flows, event surfaces, execution intelligence, hostile validation, scarce forward slots, posterior alpha, E[log W] allocator, exposure decomposition, hazard engine, self-recorded moat, LLM roles, semantic memory, unknown-unknowns, failures as data, Tier-1 scorecard | 0 | 0 | 18 | 0 | 7 |
+| D The nine Asian research mechanisms (principal, 2026-09-16): AlphaSchema semantic frontier, QuantaAlpha trajectory evolution, RD-Agent factor x model arms, FactorEngine program-alpha lane, AlphaSAGE reward-proportional sampling, AlphaAgent novelty filter, Alpha Jungle MCTS deepening, TRA/DoubleAdapt regime router, AlphaBench model-role benchmark | 0 | 0 | 6 | 0 | 3 |
+| **all** | 5 | 0 | 59 | 0 | 111 |
 
 ## Items
 
@@ -938,37 +938,39 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
 ### Phase C — The 2026-09-16 blueprint (principal): production truth, PIT lake, axis registry, effective breadth, mechanism genome, ten engines, macro state, causal graph, residual research, forced flows, event surfaces, execution intelligence, hostile validation, scarce forward slots, posterior alpha, E[log W] allocator, exposure decomposition, hazard engine, self-recorded moat, LLM roles, semantic memory, unknown-unknowns, failures as data, Tier-1 scorecard
 
 - **C1 Production truth: live-MT5 deadman, mandatory runtime build hash, verified box/VPS relationship, per-organ provenance envelope, one LIVE_SYSTEM_STATE.json, >99% trade attribution** — PARTIAL
-  - gap: MEASURED 2026-09-16: compute_ledger rows carry {at, run, kind, outcome, wall_s, cpu_s} only -- no commit_sha/config_hash/input_hash/output_hash; LIVE_SYSTEM_STATE.json has zero occurrences; the deadman is dry-run on both its tasks; live attribution is 151 ledger rows against 52 intents and cannot yet read >99%.
-  - desks/mt5/proposals/fusion_deadman.py
-  - desks/mt5/mt5desk/release_identity.py
-  - libs/ops/release.py
+  - gap: PARTIAL 2026-09-16: LIVE_SYSTEM_STATE.json and the per-run provenance envelope (commit_sha, config_hash, input_hash, output_hash, started_at, finished_at) LANDED; the deadman is dry-run on both tasks and live attribution reads 4.6% (live_ledger sleeves not in sleeves.json/survivors), so >99% attribution and the live deadman remain open.
+  - desks/mt5/research/live_system_state.py
   - libs/ops/compute_ledger.py
-  - clock: hourly_cycle:release_identity, hourly_cycle:input_identity, hourly_cycle:burn_in, MT5-FusionDeadman, MT5-FusionDeadmanDryRun, MT5-ReleaseAuthority · artifact: desks/mt5/data/release_identity.json · consumer: mt5desk/gateway.py release gate; scripts/check_closed_loop.py
+  - desks/mt5/tests/test_live_system_state.py
+  - tests/ops/test_compute_ledger_envelope.py
+  - clock: hourly_cycle:live_system_state, hourly_cycle:release_identity, MT5-FusionDeadman, MT5-FusionDeadmanDryRun, MT5-ReleaseAuthority · artifact: desks/mt5/data/LIVE_SYSTEM_STATE.json · consumer: mt5desk/gateway.py release gate; scripts/check_closed_loop.py
   - next: libs/ops/compute_ledger.open_run/close_run gain commit_sha, config_hash (hash of the leg's declared inputs), input_hash, output_hash; a new organ live_system_state.py joins release_identity, sleeves, gateway_state, pf_allocation, promoter state and RELEASE.json into desks/mt5/data/LIVE_SYSTEM_STATE.json hourly (core plan); the deadman's --live path is principal-gated (LAWS §4).
 - **C2 Point-in-time information lake: published/retrieval/vintage stamps, as-of joins only, macro releases with initial/consensus/prior/revised/surprise, ALFRED/BIS/CFTC/EDGAR ingest on clocks** — PARTIAL
-  - gap: MEASURED 2026-09-16: the stamp is event_time/available_time/ingested_time/source_version/payload_hash (+revision_id); no published_time, retrieval_time, source_id, vintage_id; lake.py records event_time on 0.0% of 2,816 intelligence rows; macro/surprise.py has forecast/previous but no actual, so surprise is not computable; fetch_alfred.py and sec_edgar_miner.py run on no clock.
-  - libs/data/pit.py
+  - gap: PARTIAL 2026-09-16: the stamp now carries published_time, retrieval_time, revision_time, source_id, vintage_id and the canary asserts them (LANDED); still open: ALFRED/EDGAR/macro-revision ingest on a clock and an `actual` column so surprise is computable.
   - libs/data/pit_stamp.py
-  - libs/data/lake.py
-  - libs/research/vintage.py
+  - scripts/check_pit_canaries.py
+  - tests/data/test_pit_stamp.py
+  - libs/data/pit.py
   - clock: hourly_cycle:pit_canaries, hourly_cycle:time_joins, hourly_cycle:lake_promote, hourly_cycle:fred_macro, quant-cot-fetch.timer · artifact: desks/mt5/reports/PIT_CENSUS.json · consumer: libs/features/pit.py readers; scripts/check_closed_loop.py truth.pit_canaries_green
   - next: Extend pit_stamp with published_time, retrieval_time, source_id, vintage_id (defaulting to the existing fields, never inventing); put fetch_alfred.py and macro_revision_miner.py on the daily cycle; add an `actual` column to the macro calendar vintages from the release feed so surprise = (actual - consensus)/sigma is computable; PIT canaries assert the four new fields.
-- **C3 Information-axis registry and occupancy tensor over ten axes with states UNMEASURED/MEASURED_FAIL/CERTIFIED/FORWARD/LIVE, selecting search regions before implementation** — PARTIAL
-  - gap: MEASURED 2026-09-16: three incompatible coordinate systems (5/5/8 axes); no registry tags economic_actor, information_source or execution_style; no occupancy tensor with the five states; libs/research_os/surrogate.py has no importer at all (the wiring audit voted RETIRE).
-  - desks/mt5/research/frontier_map.py
-  - libs/research/semantic_space.py
-  - libs/research/alpha_schema.py
+- **C3 Information-axis registry and occupancy tensor over ten axes with states UNMEASURED/MEASURED_FAIL/CERTIFIED/FORWARD/LIVE, selecting search regions before implementation** — LANDED
+  - gap: LANDED 2026-09-16: MEASURED 2026-09-16: three incompatible coordinate systems (5/5/8 axes); no registry tags economic_actor, information_source or execution_style; no occupancy tensor with the five states; libs/research_os/surrogate.py has no importer at all (the wiring audit voted RETIRE).
+  - desks/mt5/research/axis_registry.py
+  - desks/mt5/tests/test_axis_registry.py
   - libs/research_os/surrogate.py
-  - clock: hourly_cycle:regime_coverage, hourly_cycle:timeframe_coverage, MT5-FrontierAudit · artifact: desks/mt5/reports/REGIME_COVERAGE.json · consumer: desks/mt5/research/breadth_sweep.py (charts x sessions), miner_candidate_compiler.py
+  - desks/mt5/research/frontier_map.py
+  - clock: hourly_cycle:axis_registry · artifact: desks/mt5/reports/AXIS_REGISTRY.json · consumer: desks/mt5/research/breadth_ladder.py (exploration floor); data/intelligence/axis_registry/ -> miner_candidate_compiler
   - next: desks/mt5/research/axis_registry.py (built 2026-09-16, wave 1): tags every judged/certified/forward/live cell on the ten axes, writes reports/AXIS_REGISTRY.json + data/axis_registry.jsonl, proposes global_explore/learned_exploit/local_mutate cells into data/intelligence/axis_registry/; wire as hourly leg `axis_registry` (core plan) and map it in libs/research/layers.py.
-- **C4 Effective-breadth optimisation: research compute allocated by delta n_eff and delta E[log W] per compute-second with an exploration floor keyed to UNMEASURED cells; ladder 6 -> 10 -> 15 -> 25 -> 40** — PARTIAL
-  - gap: MEASURED 2026-09-16: the bandit prices arms by E[dElogW] x P(survivor) x breadth_credit / cost and research_budget scales two legs by its shares; nothing computes marginal n_eff per compute-hour, the exploration floor is 40% of compute not keyed to UNMEASURED cells, and the 6->40 ladder exists nowhere.
-  - desks/mt5/research/alpha_breadth.py
-  - libs/research/breadth.py
-  - libs/research/breadth_credit.py
+  - landed: f4cb30fc239, wave-1/2 2026-09-16
+- **C4 Effective-breadth optimisation: research compute allocated by delta n_eff and delta E[log W] per compute-second with an exploration floor keyed to UNMEASURED cells; ladder 6 -> 10 -> 15 -> 25 -> 40** — LANDED
+  - gap: LANDED 2026-09-16: MEASURED 2026-09-16: the bandit prices arms by E[dElogW] x P(survivor) x breadth_credit / cost and research_budget scales two legs by its shares; nothing computes marginal n_eff per compute-hour, the exploration floor is 40% of compute not keyed to UNMEASURED cells, and the 6->40 ladder exists nowhere.
+  - desks/mt5/research/breadth_ladder.py
   - desks/mt5/research/research_budget.py
-  - clock: hourly_cycle:alpha_breadth, hourly_cycle:scaling_laws, hourly_cycle:alpha_evolution (budget via research_budget) · artifact: desks/mt5/reports/EFFECTIVE_BREADTH.json · consumer: libs/research/bandit.py breadth_credit; research_budget.budget_s
+  - desks/mt5/tests/test_breadth_ladder.py
+  - desks/mt5/research/alpha_breadth.py
+  - clock: hourly_cycle:breadth_ladder, hourly_cycle:alpha_evolution · artifact: desks/mt5/reports/BREADTH_LADDER.json · consumer: research_budget.budget_s (ladder factor); tier1_scorecard
   - next: breadth_ladder.py: reads EFFECTIVE_BREADTH.json history (data/effective_breadth.jsonl) and scaling_laws.json, fits d(n_eff)/d(compute-hour) per arm, publishes the ladder rung and the next target in reports/BREADTH_LADDER.json, and feeds research_budget a per-leg factor from delta n_eff per second; exploration floor = share of UNMEASURED cells in AXIS_REGISTRY.json.
+  - landed: f4cb30fc239, wave-1/2 2026-09-16
 - **C5 Mechanism genome: every alpha as a composition of economic primitives (actor, constraint, observable, trigger, catalyst, transmission, entry, exit, holding, capacity, decay_risk); alpha_evolution recombines at mechanism level** — PARTIAL
   - gap: MEASURED 2026-09-16: alpha_evolution mutates and crosses grammar expressions (operators + parameters); no schema carries the eleven primitives as composable slots; alpha_genome is a post-hoc structural fingerprint.
   - libs/research/mechanism_ontology.py
@@ -1009,14 +1011,15 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
   - libs/portfolio/latent_factors.py
   - clock: hourly_cycle:residual_factors, hourly_cycle:orthogonality · artifact: desks/mt5/reports/factor_residual.json · consumer: external_gauntlet stages
   - next: libs/validation/residual_gate.py: regress a cell's trade R on the latent factors of the current book (latent_factors.py) and on the survivors' returns; admission statistic = t of the residual mean; external_gauntlet adds stage `residual_alpha` after `expected_value`, recorded per cell in the verdict ledger.
-- **C10 Forced-flow families on a dated calendar: index rebalances, month/quarter-end, futures roll/expiry, option expiry, auctions, central-bank operations, fixings, inventories, USDA, fiscal calendar, holiday liquidity** — PARTIAL
-  - gap: MEASURED 2026-09-16: about four of thirteen named forced-flow families are executable and no dated forced-flow calendar exists (event_calendar.py reads macro prints only).
-  - desks/mt5/mt5desk/family_turn_of_month.py
-  - desks/mt5/mt5desk/family_fx_fixing_reversal.py
-  - desks/mt5/mt5desk/family_comex_settlement.py
-  - libs/research/event_calendar.py
-  - clock: hourly_cycle:sweep, hourly_cycle:search, hourly_cycle:compile_candidates · artifact: desks/mt5/reports/BREADTH_MANDATE.json · consumer: desks/mt5/research/breadth_sweep.py default_families
+- **C10 Forced-flow families on a dated calendar: index rebalances, month/quarter-end, futures roll/expiry, option expiry, auctions, central-bank operations, fixings, inventories, USDA, fiscal calendar, holiday liquidity** — LANDED
+  - gap: LANDED 2026-09-16: MEASURED 2026-09-16: about four of thirteen named forced-flow families are executable and no dated forced-flow calendar exists (event_calendar.py reads macro prints only).
+  - desks/mt5/research/forced_flow_calendar.py
+  - desks/mt5/mt5desk/family_forced_flow.py
+  - desks/mt5/mt5desk/families_orthogonal.py
+  - desks/mt5/tests/test_forced_flow.py
+  - clock: hourly_cycle:forced_flow_calendar, hourly_cycle:sweep, hourly_cycle:compile_candidates · artifact: desks/mt5/data/forced_flow_calendar.json · consumer: breadth_sweep default_families (family forced_flow), external_gauntlet, family_call
   - next: desks/mt5/research/forced_flow_calendar.py + mt5desk/family_forced_flow.py (built 2026-09-16, wave 1): rule-generated calendar (month/quarter-end, rebalances, rolls, expiries, auctions, FOMC/ECB/BoE/BoJ tables, fixings, EIA/API, WASDE, holidays) in data/forced_flow_calendar.json daily; the family is registered in families_orthogonal so breadth_sweep hunts every event_kind x mode x chart x session.
+  - landed: f4cb30fc239, wave-1/2 2026-09-16
 - **C11 Event-reaction surfaces: response = f(surprise, revision, positioning, prior trend, vol, liquidity, regime) as reaction cubes across instruments x horizons x regimes** — PARTIAL
   - gap: MEASURED 2026-09-16: no reaction cube exists and surprise.py records that `actual` is missing from the calendar vintages, so the primary conditioning variable cannot be computed today.
   - desks/mt5/mt5desk/family_event_reaction.py
@@ -1042,11 +1045,11 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
   - clock: hourly_cycle:exit_study, hourly_cycle:markout, hourly_cycle:cost_to_edge, daily_cycle:excursions · artifact: desks/mt5/reports/ALPHA_CAPTURE.json · consumer: mt5desk/family_call (brackets); execution_resolver
   - next: execution_alpha.py: fit the post-signal excursion path per family x symbol x session from data/excursions.jsonl (MFE/MAE quantiles by bar offset), evaluate entry modes (now/wait k bars/limit at -x ATR) and exit modes under one objective with spread/slippage/miss from the fill corpus, publish the chosen mode per sleeve in reports/EXECUTION_ALPHA.json; family_call reads it for bracket placement when the evidence has n >= 30.
 - **C14 Hostile validation: timestamp permutation, sign inversion, random-entry matched-exit, regime permutation, nearby-instrument placebo, cost shocks, delayed entry 1/5/15, parameter neighbourhood, subperiod removal, worst-year removal, transfer, source substitution, dual-engine -- mandatory and blocking** — PARTIAL
-  - gap: MEASURED 2026-09-16: present are cost shocks, parameter neighbourhood, sign inversion, random entry, machinery-level permutation; absent as gates: timestamp permutation, regime permutation, nearby-instrument placebo, delayed entry, subperiod removal, worst-year removal, transfer, source substitution, dual engine; redteam withdraws nothing on its own.
+  - gap: PARTIAL 2026-09-16: libs/validation/hostile.py LANDED (eight tests, one interface, blocking set: timestamp_permutation, delayed_entry(1), subperiod sign flip, worst_year); not yet mounted as a gauntlet stage -- the cell evaluate closure must be built from external_gauntlet's harness.
+  - libs/validation/hostile.py
+  - tests/validation/test_hostile.py
   - libs/validation/redteam.py
   - libs/validation/falsifiers.py
-  - libs/validation/knob_sensitivity.py
-  - desks/mt5/research/placebo_test.py
   - clock: hourly_cycle:external_gauntlet, hourly_cycle:adversaries, hourly_cycle:falsifier_run, MT5-Gauntlet · artifact: desks/mt5/reports/ADVERSARY.json · consumer: external_gauntlet stages
   - next: libs/validation/hostile.py (built 2026-09-16, wave 1): the eight tests behind one interface with a blocking set; external_gauntlet adds stage `hostile` after `stress_costs` that runs run_all on the cell's evaluate closure and refuses certification when `blocking` is true; verdicts land in the gate verdict ledger.
 - **C15 Scarce forward evidence: forward slots ranked by posterior edge x expected diversification x capacity / (uncertainty x verification time)** — PARTIAL
@@ -1057,14 +1060,15 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
   - desks/mt5/research/forward_reconcile.py
   - clock: MT5-Shadow, hourly_cycle:enrol_clocks, hourly_cycle:experiment_design, hourly_cycle:forward_reconcile · artifact: desks/mt5/reports/EXPERIMENT_DESIGN.json · consumer: shadow_forward enrolment
   - next: forward_slot_ranker.py: score = posterior edge (DSR-shrunk) x marginal k_eff (breadth.py) x capacity / (posterior sd x expected days to n=40 at the cell's trade rate); publishes reports/FORWARD_SLOTS.json hourly and shadow_admission reads the ranking when the lane is at its slot ceiling (MAX_FORWARD_SLOTS) -- never evicts a running clock.
-- **C16 Posterior alpha: every sleeve carries p(mu, sigma, rho, decay) shrunk toward zero when weak** — PARTIAL
-  - gap: MEASURED 2026-09-16: shrinkage and posterior mu exist inside the allocator's world sampler; no per-sleeve published joint posterior; decay_live.json reads live_sleeves: 0.
+- **C16 Posterior alpha: every sleeve carries p(mu, sigma, rho, decay) shrunk toward zero when weak** — LANDED
+  - gap: LANDED 2026-09-16: MEASURED 2026-09-16: shrinkage and posterior mu exist inside the allocator's world sampler; no per-sleeve published joint posterior; decay_live.json reads live_sleeves: 0.
+  - desks/mt5/research/posterior_alpha.py
+  - desks/mt5/tests/test_posterior_alpha.py
   - libs/portfolio/robust_elog.py
   - libs/portfolio/posterior_growth.py
-  - libs/risk/kelly_shrink.py
-  - desks/mt5/research/edge_reliability.py
-  - clock: hourly_cycle:pf_allocator, hourly_cycle:edge_reliability, hourly_cycle:edge_confidence, MT5-AllocatorFast · artifact: desks/mt5/reports/edge_reliability.json · consumer: pf_allocator worlds
+  - clock: hourly_cycle:posterior_alpha · artifact: desks/mt5/reports/POSTERIOR_ALPHA.json · consumer: pf_allocator (next: world-sampler prior); dashboard
   - next: posterior_alpha.py: per live/forward sleeve, Normal-Inverse-Gamma posterior on (mu, sigma) from its trade R with an n/(n+30) prior at zero, rho to the book from the shared-day returns, decay from hazard_engine's p_die; published in reports/POSTERIOR_ALPHA.json hourly and consumed by pf_allocator as the world sampler's per-sleeve prior.
+  - landed: f4cb30fc239, wave-1/2 2026-09-16
 - **C17 Posterior E[log W] allocator: max E[log(1+w'r)] - C(w) - U(w) with hierarchical constraints (trade, sleeve, mechanism, factor, instrument, asset class, portfolio)** — PARTIAL
   - gap: MEASURED 2026-09-16: heat, asset-class and currency tiers bind; the mechanism cluster reaches the artifact and stops; no per-trade/instrument tier; C(w) and U(w) are folded into the world sampler rather than explicit terms. The standing order NEVER REDUCE AGGRESSIVENESS bounds every change: new tiers may only redistribute inside the resolved heat, never lower it.
   - desks/mt5/research/pf_allocator.py
@@ -1075,20 +1079,21 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
   - next: pf_allocator publishes C(w) (spread+commission+slippage+financing from the cost surface) and U(w) (posterior-sd penalty) as explicit terms of the objective and adds mechanism-cluster and instrument tiers that REDISTRIBUTE within the heat floor/ceiling (Rule 2 two-sided); allocator_proof certifies the decomposition.
 - **C18 Hierarchical exposure decomposition per position (currency, duration, USD, growth, inflation, commodities, vol, equity beta, liquidity, trend, carry, mechanism cluster) with duplicate-heat detection** — PARTIAL
   - gap: MEASURED 2026-09-16: currency, asset-class and structural clusters only; no named macro exposures per position; duplicate detection is a cluster count that binds nothing.
+  - desks/mt5/research/exposure_decomposition.py
   - libs/risk/fx_factors.py
   - libs/risk/factor_caps.py
   - libs/portfolio/latent_factors.py
-  - desks/mt5/research/orthogonality.py
-  - clock: hourly_cycle:pf_allocator, hourly_cycle:orthogonality, hourly_cycle:alpha_breadth · artifact: desks/mt5/reports/ORTHOGONALITY.json · consumer: pf_allocator
+  - clock: hourly_cycle:exposure_decomposition, hourly_cycle:pf_allocator · artifact: desks/mt5/reports/EXPOSURE_DECOMPOSITION.json · consumer: pf_allocator
   - next: exposure_decomposition.py: per open position and per live sleeve, betas to the named factors (USD index, US 10y, gold, oil, VIX proxy, equity beta, trend and carry factors built from the desk's own bars/axes), summed into a book exposure table with duplicate-heat pairs; published in reports/EXPOSURE_DECOMPOSITION.json every core hour and read by pf_allocator as the factor tier of C17.
-- **C19 Alpha decay/hazard engine: P(edge dies in next k | state) per live alpha with health, posterior edge, decay probability, capacity and named replacement candidates; successor search before the kill threshold** — PARTIAL
-  - gap: MEASURED 2026-09-16: decay is threshold arithmetic on trailing t; no hazard model; successor search exists only after retirement.
+- **C19 Alpha decay/hazard engine: P(edge dies in next k | state) per live alpha with health, posterior edge, decay probability, capacity and named replacement candidates; successor search before the kill threshold** — LANDED
+  - gap: LANDED 2026-09-16: MEASURED 2026-09-16: decay is threshold arithmetic on trailing t; no hazard model; successor search exists only after retirement.
+  - desks/mt5/research/hazard_engine.py
+  - desks/mt5/tests/test_hazard_engine.py
   - desks/mt5/research/decay_monitor.py
   - libs/research/decline_detector.py
-  - desks/mt5/research/revival_engine.py
-  - libs/research/graveyard_model.py
-  - clock: hourly_cycle:daily (decay), hourly_cycle:edge_reliability, MT5-ShiftWatch · artifact: desks/mt5/data/decay_live.json · consumer: promoter; sleeves.json
+  - clock: hourly_cycle:hazard_engine · artifact: desks/mt5/reports/ALPHA_HAZARD.json · consumer: posterior_alpha (decay); data/hypotheses/successor_queue.jsonl -> deepening_worker
   - next: desks/mt5/research/hazard_engine.py (built 2026-09-16, wave 1): logistic hazard on the desk's own retirement history with an empirical fallback, health cards in reports/ALPHA_HAZARD.json, successor tasks queued in data/hypotheses/successor_queue.jsonl; wire as core leg `hazard_engine` and have the deepening worker drain successor_queue first.
+  - landed: f4cb30fc239, wave-1/2 2026-09-16
 - **C20 Proprietary moat by self-recording: ticks, spreads, fills, latency, news reaction tape, failed orders, weekend gaps, stop behaviour, swap changes, closures, realised costs by regime, every live forward prediction** — PARTIAL
   - gap: MEASURED 2026-09-16: ticks, spreads, fills, rejections, slippage and latency are recorded; not recorded as series: weekend gaps, closures/trading-hour changes, swap-rate change history, stop-hunt behaviour, news-reaction tape, live forward predictions vs outcomes.
   - desks/mt5/recorders/tick_recorder.py
@@ -1105,21 +1110,22 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
   - libs/ops/llm_seat.py
   - clock: hourly_cycle:research_org, MT5-ScientistTournament, quant-deepseek.timer, quant-kimi-hunter.timer · artifact: desks/mt5/reports/RESEARCH_ORG.json · consumer: audit_intake.classify
   - next: research_org.run reads the real seat ledgers (data/intelligence/<seat>/, model_skill_track.jsonl, tournament dissents) and binds the ten roles to seats by measured competence (D9's benchmark); the replicator role re-implements a certified cell from its hypothesis text through the program-alpha lane (D4) and the dual_engine test (C14) compares.
-- **C22 Semantic institutional memory: knowledge graph + embeddings over hypotheses, mechanisms, negative results, datasets, commits, trades, papers; 'what failed that is mechanistically similar' answerable** — PARTIAL
-  - gap: MEASURED 2026-09-16: memory is categorical (family x symbol x parameter region); alpha_embedding_engine is unwired to desk hypotheses; no index spans datasets, commits, trades or papers.
+- **C22 Semantic institutional memory: knowledge graph + embeddings over hypotheses, mechanisms, negative results, datasets, commits, trades, papers; 'what failed that is mechanistically similar' answerable** — LANDED
+  - gap: LANDED 2026-09-16: MEASURED 2026-09-16: memory is categorical (family x symbol x parameter region); alpha_embedding_engine is unwired to desk hypotheses; no index spans datasets, commits, trades or papers.
+  - desks/mt5/research/semantic_memory.py
+  - desks/mt5/tests/test_semantic_memory.py
   - libs/research/hypothesis_graph.py
   - libs/research/semantic_space.py
-  - libs/alpha_factory/alpha_embedding_engine.py
-  - desks/mt5/research/negative_knowledge.py
-  - clock: hourly_cycle:compile_candidates (graph), hourly_cycle:graveyard_model, MT5-FrontierAudit (negative_knowledge) · artifact: desks/mt5/data/hypothesis_graph.jsonl · consumer: scripts/vault_search.py (lexical)
+  - clock: hourly_cycle:semantic_memory · artifact: desks/mt5/data/semantic_memory/manifest.json · consumer: novelty_gate, deepening_worker (similar_failures, redundant_with); CLI
   - next: semantic_memory.py: a local embedding index (hashing/TF-IDF over mechanism text + genome slots, no external service) over hypothesis_graph rows, desk_lessons, gate verdicts, survivors, commit messages and deep_forest claims; `similar_failures(text)` and `redundant_with(candidate)` queries published as a CLI and read by novelty_gate and the deepening worker; rebuilt hourly (core plan) into data/semantic_memory/.
+  - landed: f4cb30fc239, wave-1/2 2026-09-16
 - **C23 Unknown-unknown generator with a defended budget and six standing queries (pre-vol changes, first responder to USD moves, unexplained residual correlates, overnight drift, unexplained live losses, forced-schedule actors)** — PARTIAL
   - gap: MEASURED 2026-09-16: the budget is a multiplicity allowance, not a defended compute budget; none of the six questions is a standing query; UNKNOWN_UNKNOWNS.json does not exist on the box.
+  - desks/mt5/research/standing_questions.py
   - desks/mt5/research/unknown_unknowns.py
   - desks/mt5/frontier_intel/unknowns.py
   - desks/mt5/side_channels/unknown_unknown_miner.py
-  - desks/mt5/research/missed_growth.py
-  - clock: hourly_cycle:exogenous_search, hourly_cycle:frontier_unknowns, hourly_cycle:opportunity_gap · artifact: desks/mt5/reports/FRONTIER_GAPS.json · consumer: research queue
+  - clock: hourly_cycle:standing_questions, hourly_cycle:exogenous_search, hourly_cycle:frontier_unknowns · artifact: desks/mt5/reports/STANDING_QUESTIONS.json · consumer: research queue
   - next: standing_questions.py: the six queries as measured organs over the desk's own bars/axes/ledgers (pre-vol feature scan, lead-lag first responder, residual-vs-axis correlation screen, overnight drift census, live-loss attribution residual, forced-actor calendar coverage), each donating hypotheses and publishing reports/STANDING_QUESTIONS.json; research_budget reserves a fixed share for this leg.
 - **C24 Failures as training data: a declared failure-stage taxonomy on every rejection and P(survival | hypothesis features incl. mechanism, axis, information source) steering compute with an exploration floor** — PARTIAL
   - gap: MEASURED 2026-09-16: failure classes are derived from which gate failed, not a declared stage taxonomy; P(survival|features) uses family/symbol/source/parameter region only.
@@ -1129,25 +1135,27 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
   - libs/research/bandit.py
   - clock: hourly_cycle:graveyard_model, hourly_cycle:mutation_yield, hourly_cycle:deepen (VOI order) · artifact: desks/mt5/reports/MUTATION_YIELD.json · consumer: deepening_worker.voi_order; research_budget
   - next: graveyard_model gains a stage taxonomy {idea, data, pit, statistics, cost, capacity, execution, forward, decay} written into every gate verdict and hypothesis_graph row, and features from AXIS_REGISTRY (mechanism, information_source, actor, session, chart); its P(survival) feeds research_budget as a per-arm factor with the exploration floor from C4.
-- **C25 Tier-1 scorecard measured hourly: fourteen rows with current value, first target and direction** — PARTIAL
-  - gap: MEASURED 2026-09-16: no single artifact carries the fourteen rows; the numbers are scattered across eight artifacts; six rows have no source anywhere.
+- **C25 Tier-1 scorecard measured hourly: fourteen rows with current value, first target and direction** — LANDED
+  - gap: LANDED 2026-09-16: MEASURED 2026-09-16: no single artifact carries the fourteen rows; the numbers are scattered across eight artifacts; six rows have no source anywhere.
+  - desks/mt5/research/tier1_scorecard.py
+  - desks/mt5/tests/test_tier1_scorecard.py
   - scripts/check_tier1_program.py
   - scripts/check_acceptance_properties.py
-  - desks/mt5/research/alpha_breadth.py
-  - scripts/check_pit_canaries.py
-  - clock: hourly_cycle:acceptance, hourly_cycle:health · artifact: desks/mt5/reports/acceptance_properties.json · consumer: dashboard; check_closed_loop
+  - clock: hourly_cycle:tier1_scorecard · artifact: desks/mt5/reports/TIER1_SCORECARD.json · consumer: dashboard; check_closed_loop
   - next: desks/mt5/research/tier1_scorecard.py (built 2026-09-16, wave 1) writes reports/TIER1_SCORECARD.json; wire as core leg `tier1_scorecard`, map in layers.py, and surface it on the dashboard.
+  - landed: f4cb30fc239, wave-1/2 2026-09-16
 
 ### Phase D — The nine Asian research mechanisms (principal, 2026-09-16): AlphaSchema semantic frontier, QuantaAlpha trajectory evolution, RD-Agent factor x model arms, FactorEngine program-alpha lane, AlphaSAGE reward-proportional sampling, AlphaAgent novelty filter, Alpha Jungle MCTS deepening, TRA/DoubleAdapt regime router, AlphaBench model-role benchmark
 
-- **D1 AlphaSchema semantic frontier: an explicit ten-axis cell grid with a surrogate that selects global-explore / learned-exploit / local-mutate BEFORE an LLM implements** — PARTIAL
-  - gap: MEASURED 2026-09-16: three incompatible coordinate systems; alpha_schema has no production importer; surrogate.py has no importer at all; no selector chooses the mode before implementation.
+- **D1 AlphaSchema semantic frontier: an explicit ten-axis cell grid with a surrogate that selects global-explore / learned-exploit / local-mutate BEFORE an LLM implements** — LANDED
+  - gap: LANDED 2026-09-16: MEASURED 2026-09-16: three incompatible coordinate systems; alpha_schema has no production importer; surrogate.py has no importer at all; no selector chooses the mode before implementation.
+  - desks/mt5/research/axis_registry.py
+  - libs/research_os/surrogate.py
   - libs/research/alpha_schema.py
   - libs/research/semantic_space.py
-  - libs/research_os/surrogate.py
-  - desks/mt5/research/frontier_map.py
-  - clock: MT5-FrontierAudit, scripts/run_research_intake.py (VPS cron 10:45) · artifact: desks/mt5/reports/FRONTIER_MAP.json · consumer: none today
+  - clock: hourly_cycle:axis_registry · artifact: desks/mt5/reports/AXIS_REGISTRY.json · consumer: data/intelligence/axis_registry/ (global_explore / learned_exploit / local_mutate proposals)
   - next: Same organ as C3 (axis_registry.py): the ten-axis grid is the registry, the surrogate prior is fitted on its own states, and the selection block names the mode per proposal; alpha_schema's EVENTS table becomes the event axis vocabulary.
+  - landed: f4cb30fc239, wave-1/2 2026-09-16
 - **D2 QuantaAlpha trajectory evolution: research runs as trajectories with a ResearchGenome, weak segments mutated, strong segments crossed under causal-compatibility checks, persistent factor memory** — PARTIAL
   - gap: MEASURED 2026-09-16: trajectory.py (seven steps, mutate/crossover/parent_weights) and lineage_dag.py exist and are wired only by two unscheduled scripts; crossover has no causal-compatibility check; the eleven-field genome is scattered across three modules.
   - libs/research/trajectory.py
@@ -1180,14 +1188,15 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
   - desks/mt5/research/alpha_evolution.py
   - clock: hourly_cycle:alpha_evolution · artifact: desks/mt5/reports/alpha_evolution.json · consumer: proposer_common.donate
   - next: alpha_fitness gains `mechanism_distance` (genome slot distance to the nearest survivor, C5) and `axis_scarcity` (1 / occupancy of the candidate's AXIS_REGISTRY cell, C3); generators.GFlowNet is trained on the augmented reward and alpha_evolution's population shares are recorded per term in alpha_evolution.json.
-- **D6 AlphaAgent anti-homogeneity: a binding four-way similarity gate (semantic, AST, feature, realised returns) before expensive testing with complexity regularisation and hypothesis-factor alignment** — PARTIAL
-  - gap: MEASURED 2026-09-16: novelty_v2 and tri_alignment run daily on the VPS as advisory only; no Windows-box intake door calls them; the quantifier convicts on ANY axis rather than requiring novelty in at least one economically meaningful dimension.
+- **D6 AlphaAgent anti-homogeneity: a binding four-way similarity gate (semantic, AST, feature, realised returns) before expensive testing with complexity regularisation and hypothesis-factor alignment** — LANDED
+  - gap: LANDED 2026-09-16: MEASURED 2026-09-16: novelty_v2 and tri_alignment run daily on the VPS as advisory only; no Windows-box intake door calls them; the quantifier convicts on ANY axis rather than requiring novelty in at least one economically meaningful dimension.
+  - desks/mt5/research/novelty_gate.py
+  - desks/mt5/scripts/external_gauntlet.py
   - libs/research/novelty_v2.py
   - libs/research/tri_alignment.py
-  - scripts/run_research_intake.py
-  - libs/research/alpha_fitness.py
-  - clock: scripts/run_research_intake.py (VPS cron 10:45, advisory) · artifact: data/research_intake.json · consumer: none binding
+  - clock: hourly_cycle:novelty_gate, hourly_cycle:external_gauntlet, MT5-Gauntlet · artifact: desks/mt5/reports/NOVELTY_GATE.json · consumer: external_gauntlet (REDUNDANT cells set aside before judging, twins named in NOVELTY_SET_ASIDE.json)
   - next: desks/mt5/research/novelty_gate.py (built 2026-09-16, wave 1): admit()/screen() with the corrected rule and named twins, reports/NOVELTY_GATE.json; miner_candidate_compiler sets aside REDUNDANT rows (disposition REDUNDANT, twin named) before the docket, and the gauntlet's sort reads the novelty verdict.
+  - landed: f4cb30fc239, wave-1/2 2026-09-16
 - **D7 Alpha Jungle LLM + MCTS: Monte Carlo tree search over hypothesis -> implementation branches with backtest feedback, visit counts and UCT, avoiding frequently visited subtrees, used for deepening** — PARTIAL
   - gap: MEASURED 2026-09-16: research_tree is a Beta-posterior beam search (no rollouts, visit counts, UCT or backpropagation); lineage_dag.subtree_penalty is unwired.
   - desks/mt5/research/research_tree.py
@@ -1203,12 +1212,13 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
   - desks/mt5/research/representation_discovery.py
   - clock: hourly_cycle:regime_monitor, hourly_cycle:regime_coverage, MT5-FrontierAudit (representation_discovery) · artifact: desks/mt5/data/regime_state.json · consumer: sleeve permission filter
   - next: regime_router.py: fit SoftMoE per live sleeve family on its own trade history with regime_state features, publish the active expert per sleeve per hour in reports/REGIME_ROUTER.json, and let family_call read the router's expert parameters when the router's OOS log-score beats the unrouted model (measured, two-sided); regime_discovery joins the daily cycle.
-- **D9 AlphaBench model-role benchmark: every LLM seat scored on generation, criticism, novelty, coding accuracy, economic reasoning, search efficiency, leakage detection, factor ranking and failure diagnosis; roles allocated by measured competence** — PARTIAL
-  - gap: MEASURED 2026-09-16: the tournament records which model answered but never grades it; research_org publishes demo agents; role->model assignment is round-robin by vendor.
+- **D9 AlphaBench model-role benchmark: every LLM seat scored on generation, criticism, novelty, coding accuracy, economic reasoning, search efficiency, leakage detection, factor ranking and failure diagnosis; roles allocated by measured competence** — LANDED
+  - gap: LANDED 2026-09-16: MEASURED 2026-09-16: the tournament records which model answered but never grades it; research_org publishes demo agents; role->model assignment is round-robin by vendor.
+  - desks/mt5/research/model_role_benchmark.py
+  - desks/mt5/tests/test_model_role_benchmark.py
   - desks/mt5/research/scientist_tournament.py
   - desks/mt5/research/research_org.py
-  - desks/mt5/research/model_self_improvement.py
-  - libs/ops/llm_seat.py
-  - clock: MT5-ScientistTournament, hourly_cycle:research_org, hourly_cycle:model_skill · artifact: desks/mt5/reports/SCIENTIST_TOURNAMENT.json · consumer: none binding
+  - clock: hourly_cycle:model_role_benchmark · artifact: desks/mt5/reports/MODEL_ROLE_BENCHMARK.json · consumer: research_org (next: role binding); frontier_ceo
   - next: model_role_benchmark.py: per seat/model, the nine scores from the ledgers the desk already writes (generation = born rows per seat from hypothesis_graph; criticism = tournament dissents later confirmed by the gauntlet; novelty = NOVELTY_GATE verdicts per seat; coding accuracy = compiler dispositions per seat; economic reasoning = economic_prior stage pass rate; search efficiency = certified per trial; leakage detection = PIT/lookahead findings raised; factor ranking = rank correlation of a seat's ranking vs gauntlet outcome; failure diagnosis = correct failure-stage predictions), published in reports/MODEL_ROLE_BENCHMARK.json daily; research_org binds roles by these scores.
+  - landed: f4cb30fc239, wave-1/2 2026-09-16
 

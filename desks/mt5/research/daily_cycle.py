@@ -483,6 +483,22 @@ def _module_rent() -> None:
          + (f"; NAMED for retirement: {', '.join(named[:6])}" if named else ""))
 
 
+def _wiring_ceo() -> None:
+    """Every build on a clock: the wiring hunter, daily (principal 2026-09-16)."""
+    import wiring_ceo
+    rc = wiring_ceo.main(["--apply"])
+    if rc != 0:
+        raise RuntimeError(f"wiring_ceo returned {rc}")
+
+
+def _probation() -> None:
+    """Exercise unwired-but-safe organs in rotation so 'built' becomes 'runs'."""
+    import probation_runner
+    rc = probation_runner.main(["--per-pass", "12"])
+    if rc != 0:
+        raise RuntimeError(f"probation_runner returned {rc}")
+
+
 def _zentech() -> None:
     root = BASE.parent.parent
     sys.path.insert(0, str(root / "scripts"))
@@ -508,6 +524,7 @@ STEPS = (("refresh_bars", _refresh_bars), ("cost_fields", _cost_fields),
          ("state_research_feedback", _state_research_feedback),
          ("research_memory", _research_memory),
          ("module_rent", _module_rent), ("zentech", _zentech), ("conservation", _conservation),
+         ("wiring_ceo", _wiring_ceo), ("probation", _probation),
          ("export_aurum", _export_aurum))
 
 def main(argv: list[str] | None = None) -> int:

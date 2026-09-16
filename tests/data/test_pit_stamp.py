@@ -36,3 +36,25 @@ def test_no_period_column_is_unstamped_not_guessed() -> None:
     df = pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
     out, meta = pit.stamp_frame(df, lag_days=5, observed_at=None)
     assert meta["status"] == "UNSTAMPED" and "available_time" not in out.columns
+
+
+def test_stamp_carries_the_full_point_in_time_envelope() -> None:
+    import pandas as pd
+
+    from libs.data.pit_stamp import PIT_FIELDS, stamp_frame, vintage_id_for
+
+    df = pd.DataFrame({"period_end": ["2026-01-31", "2026-02-28"], "value": [1.0, 2.0]})
+    out, meta = stamp_frame(df, lag_days=2, observed_at="2026-03-05T00:00:00+00:00",
+                            source_id="fred:CPIAUCSL")
+    assert meta["status"] == "STAMPED" and meta["fields"] == list(PIT_FIELDS)
+    for col in PIT_FIELDS:
+        assert col in out.columns
+    assert (out["published_time"] == out["available_time"]).all()
+    assert (out["retrieval_time"] == "2026-03-05T00:00:00+00:00").all()
+    assert (out["source_id"] == "fred:CPIAUCSL").all()
+    assert meta["vintage_id"] == vintage_id_for("fred:CPIAUCSL", "2026-03-05T00:00:00+00:00", df)
+    assert meta["undeclared"] == ["revision_time"]
+    # nothing is invented: no fetch instant -> no vintage, and it says so
+    out2, meta2 = stamp_frame(df, lag_days=2, observed_at=None)
+    assert meta2["vintage_id"] is None and "vintage_id" in meta2["undeclared"]
+    assert out2["source_id"].isna().all()

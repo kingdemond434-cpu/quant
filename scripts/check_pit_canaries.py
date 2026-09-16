@@ -66,11 +66,18 @@ def plant_and_read(now: datetime | None = None) -> dict[str, Any]:
     visible = stamped[avail <= pd.Timestamp(now)]
     future_leaked = bool((visible["value"] == 3.0).any())
     past_seen = bool((visible["value"] == 1.0).any())
+    # THE ENVELOPE IS PART OF THE CANARY (blueprint item 2): a stamp that lacks the published /
+    # retrieval / source / vintage fields is not the point-in-time envelope the desk declares.
+    wanted = ("event_time", "published_time", "available_time", "retrieval_time", "source_id",
+              "vintage_id")
+    missing = [c for c in wanted if c not in stamped.columns]
     return {
-        "green": (not future_leaked) and past_seen,
+        "green": (not future_leaked) and past_seen and not missing,
         "planted": 3, "visible_at_now": len(visible),
         "future_row_leaked": future_leaked, "past_row_visible": past_seen,
-        "why": ("a point-in-time read at now returned only rows whose available_time had passed"
+        "envelope_missing": missing,
+        "why": (f"the stamp lacks {missing}" if missing else
+                "a point-in-time read at now returned only rows whose available_time had passed"
                 if (not future_leaked and past_seen) else
                 "the future row was readable before its available_time" if future_leaked else
                 "the past row was not readable although its available_time had passed"),

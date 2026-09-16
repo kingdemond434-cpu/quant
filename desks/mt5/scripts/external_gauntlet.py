@@ -2824,6 +2824,39 @@ def main():
     # itself on. Applied here rather than before the sort so a never-judged cell keeps its
     # priority -- judging a cell for the first time is still the only thing a sweep does that can
     # change what the desk knows, whatever family it belongs to.
+    # NOVELTY BEFORE TESTING (AlphaAgent anti-homogeneity, principal 2026-09-16). The cells
+    # about to be judged are screened against the desk's library by `research/novelty_gate`:
+    # a cell that is a twin of an existing member on every MEASURABLE economic dimension is
+    # set aside with the twin named, and never spends a trial of the family-wise error budget.
+    # Novelty in at least one measured dimension admits; an unmeasurable dimension never
+    # convicts. The screen is bounded so it costs seconds, not the sweep.
+    try:
+        _rp = str(BASE / "desks" / "mt5" / "research")
+        if _rp not in sys.path:
+            sys.path.insert(0, _rp)
+        import novelty_gate as _ng
+        _head_n = int(os.environ.get("GAUNTLET_NOVELTY_SCREEN", "1500"))
+        _head = eligible_specs[:_head_n]
+        _cands = [{"symbol": sp.get("sym"), "family": sp.get("family"),
+                   "params": sp.get("params") or {},
+                   "timeframe": timeframe_of(sp.get("params"), str(sp.get("family") or "")),
+                   "session": (sp.get("params") or {}).get("session")} for sp in _head]
+        _verd = _ng.screen(_cands)
+        _drop = {i for i, v in enumerate(_verd) if getattr(v, "verdict", "") == "REDUNDANT"}
+        _aside = [{"sym": _head[i].get("sym"), "family": _head[i].get("family"),
+                   "twin": getattr(_verd[i], "twin", None),
+                   "why": str(getattr(_verd[i], "why", ""))[:160]} for i in sorted(_drop)]
+        if _drop:
+            eligible_specs = [sp for i, sp in enumerate(eligible_specs) if i not in _drop]
+        (BASE / "desks" / "mt5" / "reports" / "NOVELTY_SET_ASIDE.json").write_text(json.dumps(
+            {"at": datetime.now(tz=UTC).isoformat(timespec="seconds"), "screened": len(_head),
+             "set_aside": len(_drop), "rows": _aside[:300],
+             "rule": "REDUNDANT on every measurable economic dimension, twin named"}, indent=1),
+            encoding="utf-8")
+        print(f"  novelty: {len(_drop)} of {len(_head)} screened cell(s) set aside as REDUNDANT "
+              f"(twins named) -> NOVELTY_SET_ASIDE.json")
+    except Exception as _exc:
+        print(f"  novelty screen unavailable ({type(_exc).__name__}: {_exc}); nothing set aside")
     _before = len(eligible_specs)
     eligible_specs, _alloc = allocate_by_yield(eligible_specs)
     _n_new = sum(1 for sp in eligible_specs if _is_new(sp) == 0)

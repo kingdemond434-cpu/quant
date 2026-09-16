@@ -2150,3 +2150,16 @@ def timeframe_overrides(family: str, timeframe: str) -> dict[str, int]:
             continue
         out[name] = _scale_bars(p.default, timeframe)
     return out
+
+
+
+# FORCED FLOWS ON A DATED CALENDAR (principal's blueprint item 10, 2026-09-16). Known forced
+# participant + known time window + observable constraint, from `research/forced_flow_calendar`;
+# one generic family over event_kind x mode so breadth_sweep hunts every kind on every chart and
+# session. Registered here so the sweep, the gauntlet, the forward clock and the gateway all see
+# it through the one registry they share.
+from mt5desk.family_forced_flow import family_forced_flow  # noqa: E402
+
+ORTHOGONAL_FAMILIES["forced_flow"] = family_forced_flow
+FAMILY_INPUTS["forced_flow"] = ("price only + the rule-generated forced-flow calendar",
+                                "data/forced_flow_calendar.json")
