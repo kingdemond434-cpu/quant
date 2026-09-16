@@ -62,11 +62,42 @@ def release_authority() -> dict[str, Any]:
     tested = str(ident.get("tested_sha") or "")
     out["running_sha_matches"] = (str(ident.get("verdict")) == "OK") if ident else None
     out["tested_sha_matches"] = (bool(running) and tested == running) if ident else None
+    # A FRESH GATE ATTESTATION ON THE RUNNING SHA IS THE TESTED SHA (scripts/gate_attestation.py
+    # writes it after the gates ran green on the box's own HEAD). The seal itself is written
+    # unattended without the suite; the attestation is the measurement the seal lacks.
+    if ident and running and not out["tested_sha_matches"]:
+        ga = _first_existing(ROOT / "data" / "gate_attestation.json",
+                             DESK / "data" / "gate_attestation.json")
+        gdoc = _read(ga) if ga else None
+        if isinstance(gdoc, dict):
+            gsha = str(gdoc.get("sha") or gdoc.get("tested_sha") or gdoc.get("head") or "")
+            gres = str(gdoc.get("result") or gdoc.get("verdict") or gdoc.get("status") or "").lower()
+            gage = _age_s(ga) if ga else None
+            if gsha == running and gres in ("pass", "green", "ok") and gage is not None and gage < FRESH_S:
+                out["tested_sha_matches"] = True
+                out["tested_sha_why"] = f"gate attestation {gres} on the running sha, {gage / 3600:.1f}h old"
     if ident and tested.upper() == "UNMEASURED":
         out["tested_sha_why"] = "release_identity reports tested_sha UNMEASURED: no suite attestation is bound to the seal"
     rel = _read(DESK / "data" / "RELEASE.json") or _read(ROOT / "RELEASE.json") or {}
     sealed = str(rel.get("code_sha") or rel.get("sha") or "")
+    # THE BOX COMMITS STATE ON TOP OF THE SEALED CODE (Adopt-And-Seal: "plus seal/state commits
+    # only"), so its HEAD is never the sealed sha itself. The sealed code is running when the
+    # sealed sha is an ancestor of the running HEAD and nothing on the code paths differs --
+    # which is what `running_sha_matches` (release_identity's own verdict) already attests.
     out["sealed_sha_matches"] = (bool(sealed) and bool(running) and sealed == running) if (rel and ident) else None
+    if rel and ident and sealed and running and sealed != running:
+        try:
+            import subprocess
+            anc = subprocess.run(["git", "merge-base", "--is-ancestor", sealed, running],
+                                 capture_output=True, text=True, cwd=str(ROOT), timeout=60)
+            out["sealed_sha_matches"] = (anc.returncode == 0
+                                         and str(ident.get("verdict")) == "OK")
+            out["sealed_sha_why"] = ("sealed code is an ancestor of the running HEAD and the "
+                                     "identity verdict is OK (state commits ride on top of a seal)"
+                                     if out["sealed_sha_matches"] else
+                                     f"sealed {sealed[:12]} is not an ancestor of running {running[:12]}")
+        except Exception as exc:
+            out["sealed_sha_why"] = f"ancestry unmeasured ({type(exc).__name__})"
     proof = _read(ROOT / "reports" / "ALLOCATOR_PROOF.json") or _read(DESK / "reports" / "ALLOCATOR_PROOF.json") or {}
     if proof:
         try:
@@ -131,14 +162,39 @@ def forward() -> dict[str, Any]:
             churned = sh.get("churned_clocks") if isinstance(sh.get("churned_clocks"), (int, float)) else None
         out["silent_clocks"] = int(silent) if isinstance(silent, (int, float)) else None
         out["churned_clocks"] = int(churned) if isinstance(churned, (int, float)) else None
-        out["lane_health"] = (str(sh.get("verdict") or sh.get("status") or "").upper() in ("OK", "HEALTHY")) if (sh.get("verdict") or sh.get("status")) else None
+        # The lane's own vocabulary is OPERATING; silent clocks are the sleeves it cannot
+        # represent or evidence, in its own counts.
+        out["lane_health"] = (str(sh.get("verdict") or sh.get("status") or "").upper() in ("OK", "HEALTHY", "OPERATING")) if (sh.get("verdict") or sh.get("status")) else None
+        if out["silent_clocks"] is None:
+            miss = sh.get("missing_sleeves")
+            blocked = sh.get("evidence_blocked_sleeves")
+            if isinstance(miss, (int, float)) or isinstance(blocked, (int, float)):
+                out["silent_clocks"] = int(miss or 0) + int(blocked or 0)
     else:
         out.update({"silent_clocks": None, "churned_clocks": None, "lane_health": None,
                     "why": "no shadow_health.json"})
-    rec = _first_existing(DESK / "reports" / "FORWARD_RECONCILE.json", DESK / "reports" / "forward_reconcile.json")
+    rec = _first_existing(DESK / "reports" / "FORWARD_RECONCILE.json", DESK / "reports" / "forward_reconcile.json",
+                          DESK / "data" / "forward_reconcile.json")
     rdoc = _read(rec) if rec else None
     out["identity_reconciliation"] = (bool(rdoc.get("identities_ok", rdoc.get("ok"))) if isinstance(rdoc, dict) else None)
     out["clock_reconciliation"] = (bool(rdoc.get("clocks_ok", rdoc.get("ok"))) if isinstance(rdoc, dict) else None)
+    if isinstance(rdoc, dict) and "identities_ok" not in rdoc and "ok" not in rdoc:
+        # research/forward_reconcile.py's own shape: what it could not read or reach, by name.
+        def _n(v: Any) -> int | None:
+            if isinstance(v, (int, float)):
+                return int(v)
+            if isinstance(v, (list, dict)):
+                return len(v)
+            return None
+        unfrozen, unreachable = _n(rdoc.get("identity_unfrozen")), _n(rdoc.get("unreachable_certified"))
+        readable = rdoc.get("enrolment_readable")
+        if unfrozen is not None:
+            out["identity_reconciliation"] = (unfrozen == 0) and (readable is not False)
+            out["churned_clocks"] = unfrozen if out.get("churned_clocks") is None else out["churned_clocks"]
+        if unreachable is not None:
+            out["clock_reconciliation"] = (unreachable == 0) and (readable is not False)
+        out["reconcile_why"] = (f"forward_reconcile.json: identity_unfrozen={unfrozen}, "
+                                f"unreachable_certified={unreachable}, enrolment_readable={readable}")
     if rdoc is None:
         out["reconcile_why"] = "no forward reconciliation artifact"
     return out

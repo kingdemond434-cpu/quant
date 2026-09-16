@@ -141,6 +141,9 @@ LEG_LAYER: dict[str, str] = {
     # Whether the allocator's book reaches the sleeves it funds is a measurement of the desk's
     # own wiring, like `wiring_audit`: meta.
     "allocator_join": "meta",
+    # Whether every docket candidate is still accounted for is a measurement of the desk's own
+    # bookkeeping: meta.
+    "candidate_conservation": "meta",
     # sizing: how much
     "capacity": "sizing", "ensemble_optimizer": "sizing",
     # portfolio: how the book is composed
