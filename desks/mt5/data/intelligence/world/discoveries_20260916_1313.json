@@ -1,0 +1,382 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u30d0\u30c3\u30af\u30c6\u30b9\u30c6\u30a3\u30f3\u30b0\u306e\u6539\u5584\u306b\u5f79\u7acb\u3064Forex\u30d2\u30b9\u30c8\u30ea\u30ab\u30eb\u30c7\u30fc\u30bf\u306e\u691c\u7d22\u65b9\u6cd5",
+  "url": "http://www.forextester.jp/data/datasources",
+  "published": "2026-09-16T13:12:44+00:00",
+  "symbols": [
+   "AUDJPY",
+   "AUDUSD",
+   "CHFJPY",
+   "EURCAD",
+   "EURCHF",
+   "EURGBP",
+   "EURJPY",
+   "EURUSD",
+   "GBPCHF",
+   "GBPJPY",
+   "GBPUSD",
+   "NZDJPY",
+   "NZDUSD",
+   "USDCAD",
+   "USDCHF",
+   "USDJPY",
+   "XAGUSD",
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "ja-JP",
+  "endpoints": [
+   "http://www.forextester.jp/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "1c937d2d9566f316d49d",
+  "host": "www.forextester.jp",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "[\u516c\u5f0f] Forex Tester\u30c0\u30a6\u30f3\u30ed\u30fc\u30c9\u30da\u30fc\u30b8",
+  "url": "http://www.forextester.jp/download",
+  "published": "2026-09-16T13:12:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "ja-JP",
+  "endpoints": [
+   "https://forextester.jp/download",
+   "https://desktop.forextester.com/download",
+   "http://www.forextester.jp/templates/css/min/download.css",
+   "http://www.forextester.jp/download"
+  ],
+  "n_endpoints": 4,
+  "vault_sha": "f90057b0646ff683d1d4",
+  "host": "www.forextester.jp",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Automated Trading System &#8211; Internal Order Matching | Systematic Edge",
+  "url": "https://systematicedge.wordpress.com/2015/02/22/automated-trading-system-internal-order-matching/",
+  "published": "2026-09-16T13:12:49+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "mean_reversion",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "75a8550a31292c514c20",
+  "host": "systematicedge.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "https://systematicedge.wordpress.com/2015/02/22/automated-trading-system-internal-order-matching/?share=twitter",
+  "url": "https://systematicedge.wordpress.com/2015/02/22/automated-trading-system-internal-order-matching/?share=twitter",
+  "published": "2026-09-16T13:12:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://systematicedge.wordpress.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f346ce7ac467232a7db4",
+  "host": "systematicedge.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Factor investing and asset allocation strategies: a comparison of factor versus sector optimization | Journal of Asset Management | Springer Nature Link",
+  "url": "https://link.springer.com/article/10.1057/s41260-021-00225-1",
+  "published": "2026-09-16T13:13:12+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "carry",
+   "correlation",
+   "inventory",
+   "momentum",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "84976f925f3ffebf2652",
+  "host": "link.springer.com",
+  "claims": [
+   {
+    "claim": "Second, average monthly returns were slightly higher for factor indices than for sectors, indicating higher portfolio returns.",
+    "lang": "en",
+    "quantities": [
+     "factor"
+    ],
+    "direction": [
+     "higher"
+    ],
+    "horizon": [
+     "monthly"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "s&p 500"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "9fd3524c2988"
+   },
+   {
+    "claim": "22% per month) we obtain with the factor-based Black\u2013Litterman optimization method with 60-month estimation window and with short sales allowed (weights between \u221250% and 50%).",
+    "lang": "en",
+    "quantities": [
+     "factor"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "s&p 500"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "f44d3ce84c14"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Factor investing and asset allocation strategies: a comparison of factor versus sector optimization | Journal of Asset Management | Springer Nature Link",
+  "url": "https://link.springer.com/10.1057/s41260-021-00225-1?fromPaywallRec=true",
+  "published": "2026-09-16T13:13:18+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "carry",
+   "correlation",
+   "inventory",
+   "momentum",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "eda1efe6fdb580809261",
+  "host": "link.springer.com",
+  "claims": [
+   {
+    "claim": "Second, average monthly returns were slightly higher for factor indices than for sectors, indicating higher portfolio returns.",
+    "lang": "en",
+    "quantities": [
+     "factor"
+    ],
+    "direction": [
+     "higher"
+    ],
+    "horizon": [
+     "monthly"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "s&p 500"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "9fd3524c2988"
+   },
+   {
+    "claim": "22% per month) we obtain with the factor-based Black\u2013Litterman optimization method with 60-month estimation window and with short sales allowed (weights between \u221250% and 50%).",
+    "lang": "en",
+    "quantities": [
+     "factor"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "s&p 500"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "f44d3ce84c14"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantitative Finance - Recent articles and discoveries | Springer Nature Link",
+  "url": "https://link.springer.com/subjects/quantitative-finance",
+  "published": "2026-09-16T13:13:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "57beab9f7105b0787c6a",
+  "host": "link.springer.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The Right Way to Use AI in Trading (This Week) - by Simon M",
+  "url": "https://algoadvantage.substack.com/p/the-right-way-to-use-ai-in-trading",
+  "published": "2026-09-16T13:13:20+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ed858a8aaa03042d17b6",
+  "host": "algoadvantage.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "053 - Martyn Tinsley - Walk Forward Correlation: A New Tool for Robust Strategy Design!",
+  "url": "https://algoadvantage.substack.com/p/053-martyn-tinsley-walk-forward-correlation",
+  "published": "2026-09-16T13:13:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ad8412e28cc8b8b0bf2f",
+  "host": "algoadvantage.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "052 - Martyn Tinsley - Beyond the BackTest - by Simon M",
+  "url": "https://algoadvantage.substack.com/p/052-martyn-tinsley-beyond-the-backtest",
+  "published": "2026-09-16T13:13:25+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "gap",
+   "inventory",
+   "mean_reversion",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "87beba7ae8968b16c8b9",
+  "host": "algoadvantage.substack.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]
