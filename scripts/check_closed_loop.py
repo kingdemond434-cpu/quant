@@ -1,0 +1,228 @@
+"""The closed-loop attestation: is the desk's compute / information / capital loop closed?
+
+THE ARTIFACT IS GENERATED FROM EVIDENCE, NEVER SET BY HAND (principal's blueprint, item 28). Each
+boolean below is derived from an artifact another organ writes; a boolean whose artifact does not
+exist, or does not carry the field, is `null` with the reason -- UNMEASURED, which is a verdict
+(L1.28a) and never a pass. `complete` is true only when every boolean is true, so the desk cannot
+declare itself closed by omission. Written hourly to
+`desks/mt5/data/architecture/closed_loop_attestation.json` (leg `closed_loop`); exit 0 always --
+this is a report, and a report that stops the cycle would be worse than an open loop.
+
+What each block reads:
+  release_authority  release_identity.json (running vs tested sha, verdict), data/RELEASE.json
+                     (sealed sha), reports/ALLOCATOR_PROOF.json (passed, age), the fast-gate
+                     attestation (green on the running sha)
+  truth              PIT census (scripts/check_pit.py artifact), candidate conservation
+  forward            shadow_health.json (silent / churned clocks), forward reconciliation
+  research           whether the frontier and EVIG organs are AUTHORITATIVE (they schedule
+                     compute) or advisory (they write reports) -- read from their own artifacts
+  meta               the controller's last completed epoch and whether each budget moved
+                     because of an outcome (generator weights, research bandit, allocator proof)
+"""
+from __future__ import annotations
+
+import json
+import sys
+import time
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any
+
+ROOT = Path(__file__).resolve().parents[1]
+DESK = ROOT / "desks" / "mt5"
+OUT = DESK / "data" / "architecture" / "closed_loop_attestation.json"
+FRESH_S = 26 * 3600
+
+
+def _read(p: Path) -> Any:
+    try:
+        return json.loads(p.read_text("utf-8"))
+    except (OSError, ValueError):
+        return None
+
+
+def _age_s(p: Path) -> float | None:
+    try:
+        return time.time() - p.stat().st_mtime
+    except OSError:
+        return None
+
+
+def _first_existing(*paths: Path) -> Path | None:
+    for p in paths:
+        if p.exists():
+            return p
+    return None
+
+
+def release_authority() -> dict[str, Any]:
+    out: dict[str, Any] = {}
+    ident = _read(DESK / "data" / "release_identity.json") or {}
+    running = str(ident.get("running_sha") or "")
+    tested = str(ident.get("tested_sha") or "")
+    out["running_sha_matches"] = (str(ident.get("verdict")) == "OK") if ident else None
+    out["tested_sha_matches"] = (bool(running) and tested == running) if ident else None
+    if ident and tested.upper() == "UNMEASURED":
+        out["tested_sha_why"] = "release_identity reports tested_sha UNMEASURED: no suite attestation is bound to the seal"
+    rel = _read(DESK / "data" / "RELEASE.json") or _read(ROOT / "RELEASE.json") or {}
+    sealed = str(rel.get("code_sha") or rel.get("sha") or "")
+    out["sealed_sha_matches"] = (bool(sealed) and bool(running) and sealed == running) if (rel and ident) else None
+    proof = _read(ROOT / "reports" / "ALLOCATOR_PROOF.json") or _read(DESK / "reports" / "ALLOCATOR_PROOF.json") or {}
+    if proof:
+        try:
+            at = datetime.fromisoformat(str(proof.get("at")).replace("Z", "+00:00"))
+            fresh = (datetime.now(tz=UTC) - at).total_seconds() < float(proof.get("max_age_s") or FRESH_S)
+        except ValueError:
+            fresh = False
+        out["allocator_certificate_valid"] = bool(proof.get("passed")) and fresh
+    else:
+        out["allocator_certificate_valid"] = None
+    att = _first_existing(ROOT / "data" / "gate_attestation.json", ROOT / "reports" / "GATE_ATTESTATION.json",
+                          DESK / "data" / "gate_attestation.json")
+    if att is not None:
+        doc = _read(att) or {}
+        sha = str(doc.get("sha") or doc.get("tested_sha") or doc.get("head") or "")
+        out["ci_green"] = (str(doc.get("result") or doc.get("verdict") or doc.get("status")).lower() in ("pass", "green", "ok")
+                           and (not running or sha.startswith(running[:12]) or running.startswith(sha[:12])))
+    else:
+        out["ci_green"] = None
+        out["ci_green_why"] = "no gate attestation artifact on this box"
+    return out
+
+
+def truth() -> dict[str, Any]:
+    out: dict[str, Any] = {}
+    pit = _first_existing(DESK / "reports" / "PIT_CENSUS.json", ROOT / "reports" / "PIT_CENSUS.json",
+                          DESK / "reports" / "pit_census.json")
+    doc = _read(pit) if pit else None
+    if isinstance(doc, dict):
+        can = doc.get("canaries") or doc.get("canary")
+        out["pit_canaries_green"] = (bool(can.get("green")) if isinstance(can, dict) else None)
+        if out["pit_canaries_green"] is None:
+            out["pit_canaries_why"] = "PIT census carries no planted-canary block"
+    else:
+        out["pit_canaries_green"] = None
+        out["pit_canaries_why"] = "no PIT census artifact"
+    cons = _first_existing(DESK / "reports" / "CANDIDATE_CONSERVATION.json",
+                           DESK / "reports" / "candidate_conservation.json",
+                           DESK / "data" / "hypotheses" / "conservation.json")
+    cdoc = _read(cons) if cons else None
+    if isinstance(cdoc, dict):
+        lost = cdoc.get("lost") if isinstance(cdoc.get("lost"), (int, float)) else cdoc.get("n_lost")
+        out["lost_candidates"] = int(lost) if isinstance(lost, (int, float)) else None
+        out["provenance_conservation"] = (out["lost_candidates"] == 0) if out["lost_candidates"] is not None else None
+    else:
+        out["provenance_conservation"] = None
+        out["lost_candidates"] = None
+        out["provenance_why"] = "no candidate-conservation artifact; conservation is derived from counts, not an event ledger"
+    return out
+
+
+def forward() -> dict[str, Any]:
+    out: dict[str, Any] = {}
+    sh = _read(DESK / "reports" / "shadow" / "shadow_health.json") or {}
+    if sh:
+        counts = sh.get("counts") or sh.get("by_status") or {}
+        silent = counts.get("SILENT") if isinstance(counts, dict) else None
+        churned = counts.get("CHURNED") if isinstance(counts, dict) else None
+        if silent is None:
+            silent = sh.get("silent_clocks") if isinstance(sh.get("silent_clocks"), (int, float)) else None
+        if churned is None:
+            churned = sh.get("churned_clocks") if isinstance(sh.get("churned_clocks"), (int, float)) else None
+        out["silent_clocks"] = int(silent) if isinstance(silent, (int, float)) else None
+        out["churned_clocks"] = int(churned) if isinstance(churned, (int, float)) else None
+        out["lane_health"] = (str(sh.get("verdict") or sh.get("status") or "").upper() in ("OK", "HEALTHY")) if (sh.get("verdict") or sh.get("status")) else None
+    else:
+        out.update({"silent_clocks": None, "churned_clocks": None, "lane_health": None,
+                    "why": "no shadow_health.json"})
+    rec = _first_existing(DESK / "reports" / "FORWARD_RECONCILE.json", DESK / "reports" / "forward_reconcile.json")
+    rdoc = _read(rec) if rec else None
+    out["identity_reconciliation"] = (bool(rdoc.get("identities_ok", rdoc.get("ok"))) if isinstance(rdoc, dict) else None)
+    out["clock_reconciliation"] = (bool(rdoc.get("clocks_ok", rdoc.get("ok"))) if isinstance(rdoc, dict) else None)
+    if rdoc is None:
+        out["reconcile_why"] = "no forward reconciliation artifact"
+    return out
+
+
+def research() -> dict[str, Any]:
+    out: dict[str, Any] = {}
+    ceo = _read(DESK / "reports" / "CEO_DOCKET.json") or {}
+    # The frontier map is AUTHORITATIVE only if the queue it writes is what the gauntlet consumes
+    # and nothing else feeds that queue; the CEO docket says so itself or it is advisory.
+    out["frontier_scheduler_authoritative"] = (bool(ceo.get("authoritative")) if "authoritative" in ceo else False)
+    if "authoritative" not in ceo:
+        out["frontier_why"] = "CEO_DOCKET.json carries no `authoritative` claim: the docket proposes; the gauntlet's own queue decides"
+    bandit = _read(DESK / "reports" / "RESEARCH_BANDIT.json") or {}
+    out["evig_controller_authoritative"] = (bool(bandit.get("authoritative")) if "authoritative" in bandit else False)
+    if "authoritative" not in bandit:
+        out["evig_why"] = "RESEARCH_BANDIT.json prices arms but does not schedule them: advisory"
+    gw = _read(DESK / "data" / "generator_weights.json") or {}
+    out["delayed_truth_credit_live"] = False
+    out["credit_why"] = ("generator weights move on certification fate (mutation_yield); credit does not yet "
+                         "flow back from LIVE marginal Elog" if gw else "no generator_weights.json")
+    return out
+
+
+def meta() -> dict[str, Any]:
+    out: dict[str, Any] = {}
+    mc = _first_existing(DESK / "reports" / "META_CONTROLLER.json", DESK / "reports" / "meta_controller.json",
+                         DESK / "data" / "meta_controller_state.json")
+    mdoc = _read(mc) if mc else None
+    out["controller_completed_epoch"] = (bool(mdoc.get("epoch_complete", mdoc.get("completed"))) if isinstance(mdoc, dict) else None)
+    if mdoc is None:
+        out["controller_why"] = "no meta-controller artifact"
+    gw_age = _age_s(DESK / "data" / "generator_weights.json")
+    out["compute_reallocated_from_outcomes"] = (gw_age is not None and gw_age < FRESH_S)
+    rb_age = _age_s(DESK / "reports" / "RESEARCH_BANDIT.json")
+    out["information_budget_reallocated_from_outcomes"] = (rb_age is not None and rb_age < FRESH_S)
+    proof = _read(ROOT / "reports" / "ALLOCATOR_PROOF.json") or _read(DESK / "reports" / "ALLOCATOR_PROOF.json") or {}
+    out["capital_reallocated_from_outcomes"] = bool(proof.get("passed")) if proof else None
+    return out
+
+
+def measure() -> dict[str, Any]:
+    blocks = {"release_authority": release_authority(), "truth": truth(), "forward": forward(),
+              "research": research(), "meta": meta()}
+    flags: list[tuple[str, Any]] = []
+    for b, d in blocks.items():
+        for k, v in d.items():
+            if isinstance(v, bool) or v is None:
+                flags.append((f"{b}.{k}", v))
+            elif k in ("silent_clocks", "churned_clocks", "lost_candidates"):
+                flags.append((f"{b}.{k}", (v == 0) if v is not None else None))
+    n_true = sum(1 for _, v in flags if v is True)
+    n_false = sum(1 for _, v in flags if v is False)
+    n_unm = sum(1 for _, v in flags if v is None)
+    ledger = _read(ROOT / "docs" / "research" / "tier1_program.json") or {}
+    items = [i for i in ledger.get("items", []) if str(i.get("phase")) == "B"]
+    landed = sum(1 for i in items if i.get("status") in ("LANDED", "EXISTS-LIT"))
+    doc = {
+        "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+        "architecture_28_implemented": bool(items) and landed == len(items),
+        "architecture_28_census": {"items": len(items), "landed_or_lit": landed,
+                                   "by_status": {s: sum(1 for i in items if i.get("status") == s)
+                                                 for s in sorted({str(i.get("status")) for i in items})}},
+        **blocks,
+        "summary": {"true": n_true, "false": n_false, "unmeasured": n_unm,
+                    "open": [k for k, v in flags if v is not True]},
+        "complete": bool(items) and landed == len(items) and n_false == 0 and n_unm == 0,
+        "rule": ("every flag is derived from another organ's artifact; null is UNMEASURED and never "
+                 "a pass; complete requires all 28 blueprint items LANDED/EXISTS-LIT and every flag true"),
+    }
+    OUT.parent.mkdir(parents=True, exist_ok=True)
+    OUT.write_text(json.dumps(doc, indent=1), "utf-8")
+    return doc
+
+
+def main() -> int:
+    doc = measure()
+    s = doc["summary"]
+    print(f"closed loop: complete={doc['complete']} | flags true={s['true']} false={s['false']} "
+          f"unmeasured={s['unmeasured']} | blueprint {doc['architecture_28_census']} -> {OUT}")
+    for k in s["open"][:40]:
+        print("   open:", k)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -341,7 +341,11 @@ def _family_ns(tmp_path: Path, mt5: SimpleNamespace, monkeypatch, *, armed_file:
         enable.write_text("", "utf-8")
     else:
         enable.unlink(missing_ok=True)
-    fam = signals or (lambda closed, side: [_signal(closed.index[-1])])
+    # THE FAMILY SEES THE FULL FRAME (2026-09-15 frame-bound fix): `signal_bars` includes the
+    # forming bar, so a family that emits on the last CLOSED bar emits on index[-2] -- the
+    # backtest's `range(n, len(d) - 1)` convention. Keying the fixture on index[-1] put the
+    # signal on the forming bar, which the resolver never trades.
+    fam = signals or (lambda closed, side: [_signal(closed.index[-2])])
     hunt16 = SimpleNamespace(FAMILIES={"fam": fam},
                              WINDOWS={"asia": {"signal_at": sig_hour, "range_start": 0}})
     monkeypatch.setitem(sys.modules, "research.run_hunt16", hunt16)
@@ -354,6 +358,9 @@ def _family_ns(tmp_path: Path, mt5: SimpleNamespace, monkeypatch, *, armed_file:
     monkeypatch.setitem(sys.modules, "research.run_hunt12", SimpleNamespace(
         day_states=states or (lambda closed: {})))
     ns = {"mt5": mt5, "log": logs.append, "MAGIC": 1, "GENERIC_EXEC_ENABLED": enable,
+          # Execution routing (limit/market choice) is an arm file like the generic exec one;
+          # absent under tmp_path, so the harness sends market orders exactly as before.
+          "EXEC_ROUTING_ENABLED": tmp_path / "EXEC_ROUTING_ENABLED",
           "NEW_RISK_OK": True, "promoted_lot": lambda *a, **k: 0.12,
           "sleeve_live_n": lambda name: 0, "margin_ok": lambda *a, **k: True,
           "_record_intent": lambda **row: intents.append(row),
@@ -362,6 +369,9 @@ def _family_ns(tmp_path: Path, mt5: SimpleNamespace, monkeypatch, *, armed_file:
           "_book_fill": lambda *a, **k: book.append(("fill", *a)),
           "_record_exec_outcome": lambda *a, **k: book.append(("outcome", *a)),
           "close_positions": lambda st, symbol: closes.append(("close", symbol)),
+          # The TTL exit closes the SLEEVE'S positions (2026-09-15), not the symbol's: the
+          # harness records the call the same way it records the symbol-wide close.
+          "close_sleeve_positions": lambda st, symbol, name: closes.append(("close", symbol)),
           "_logs": logs, "_intents": intents, "_book": book, "_closes": closes}
     # `_sleeve_identity` rides along because the send site spreads it onto the intent row; it is
     # pure over the sleeve dict and the harness would otherwise report the adapter broken.
@@ -373,7 +383,7 @@ def _family_ns(tmp_path: Path, mt5: SimpleNamespace, monkeypatch, *, armed_file:
                   "_sleeve_identity", "unarmed_why",
                   # 2026-09-15/16: single-position discipline, the per-sleeve TTL close, the
                   # allocator book key and the shared order-comment helper.
-                  "_sleeve_positions", "close_sleeve_positions", "_book_key", "order_comment",
+                  "_sleeve_positions", "_book_key", "order_comment", "_exec_route", "_send_error",
                   # 2026-09-16: the per-symbol same-side cap and its refusal journal
                   "same_side_count", "journal_refusal"), ns)
 
@@ -646,7 +656,7 @@ def test_the_executor_refuses_what_it_cannot_replay_exactly(tmp_path, monkeypatc
     # A degenerate stop and a zero lot each stop the order before the venue.
     flat = _fake_mt5(rows)
     ns = _family_ns(tmp_path, flat, monkeypatch, armed_file=True, sig_hour=_sig_hour(rows),
-                    signals=lambda closed, side: [_signal(closed.index[-1], stop=1.1102)])
+                    signals=lambda closed, side: [_signal(closed.index[-2], stop=1.1102)])
     _run_family(ns, {"armed": True}, [_sleeve()], 10_000.0)
     assert f"[{_NAME}] FAMILY-EXEC: degenerate stop distance; skipped" in ns["_logs"]
     ns = _family_ns(tmp_path, _fake_mt5(rows), monkeypatch, armed_file=True,

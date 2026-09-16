@@ -2089,6 +2089,14 @@ def main() -> None:
     wa = _costed("wiring_audit", wiring_audit)
     ab = _costed("brain_ab", brain_ab)
     cm = _costed("alpha_breadth", coverage_map)
+    # DEPTH, HOURLY (2026-09-16). alpha_evolution ran once a day with a 1500 s budget; the
+    # docket it feeds is judged every ten minutes now, so the generator runs every hour with
+    # a bounded budget and its IC pre-screen keeps unstable expressions off the docket.
+    aev = _costed("alpha_evolution", lambda: _producer("alpha_evolution",
+                                                        "research/alpha_evolution.py",
+                                                        "--budget-s", "240"))
+    # The closed-loop attestation: every flag derived from another organ's artifact.
+    clp = _costed("closed_loop", lambda: _producer("closed_loop", "scripts/check_closed_loop.py"))
     rc = _costed("regime_coverage", regime_coverage)
     pt = _costed("alpha_periodic_table", periodic_table)
     mx = _costed("microstructure_census", microstructure_census)
@@ -2538,6 +2546,7 @@ def main() -> None:
                     "external_gauntlet": gt, "falsifier_run": fz, "merge_docket": mh,
                     "backtest": bt,
                     "wiring_audit": wa, "brain_ab": ab, "alpha_breadth": cm,
+                    "alpha_evolution": aev, "closed_loop": clp,
                     "alpha_periodic_table": pt, "queue_cycle": qcy,
                     "microstructure_census": mx, "entry_timing": ety,
                     "spread_provenance": sp, "tape_features": tf,

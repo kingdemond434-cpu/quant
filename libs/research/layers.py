@@ -132,6 +132,9 @@ LEG_LAYER: dict[str, str] = {
     # inputs can be read at all: information.
     "source_fixer": "information",
     "universe_integrity": "information",
+    # Formulaic alpha generation is a predictor search; the closed-loop attestation is meta.
+    "alpha_evolution": "prediction",
+    "closed_loop": "meta",
     # sizing: how much
     "capacity": "sizing", "ensemble_optimizer": "sizing",
     # portfolio: how the book is composed

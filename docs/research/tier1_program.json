@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-09-08",
+ "updated": "2026-09-16",
  "source": "Two external blueprints pasted by the principal 2026-09-08 (65 + ~55 items) and five acceptance properties; statuses from six repository sweeps with file:line evidence, checked by scripts/check_tier1_program.py.",
  "heat_policy": "20% portfolio heat is the ceiling AND the floor of the book; never reduced. Tier-1 means more independent positive-Elog bets inside the same heat.",
  "phases": {
@@ -11,7 +11,8 @@
   "4": "Adversarial scientific loop: falsifier, replicator, leakage prosecutor, statistics prosecutor, synthetic nulls, positive controls",
   "5": "Adaptive capital brain: regime posterior, decay posterior, joint scenarios, tail dependence, state-dependent Elog, execution-cost prediction, contextual allocation, H <= 20%",
   "6": "Execution intelligence: routing competition, slippage prediction, fill probability, self-footprint, broker microstructure",
-  "7": "Recursive research improvement: agents compete for compute by downstream economic value; the machine redesigns itself"
+  "7": "Recursive research improvement: agents compete for compute by downstream economic value; the machine redesigns itself",
+  "B": "The principal's 28-item closed-loop blueprint (2026-09-16), measured against this tree"
  },
  "acceptance_properties": [
   {
@@ -2398,6 +2399,513 @@
    "landed": [
     "848c7424"
    ]
+  },
+  {
+   "id": "B1",
+   "item": "Canonical release / capital authority: one bit answering 'may this code create new exposure'",
+   "domain": "B",
+   "phase": "B",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/mt5desk/release_identity.py",
+    "desks/mt5/scripts/Adopt-And-Seal.ps1",
+    "scripts/gate_attestation.py"
+   ],
+   "scheduled_by": "task:MT5-ReleaseAuthority",
+   "artifact": "desks/mt5/data/release_identity.json",
+   "consumer": "mt5desk/gateway.py release gate",
+   "gap": "tested_sha is UNMEASURED on the box: the seal does not require a green suite attestation for the exact sha; the release is a runtime check, not a transaction",
+   "next_step": "make Adopt-And-Seal refuse to seal a sha without a pass attestation in data/gate_attestation.json",
+   "landed": []
+  },
+  {
+   "id": "B2",
+   "item": "Universal point-in-time truth: (event_time, available_time, ingested_time, revision, hash) on every row",
+   "domain": "B",
+   "phase": "B",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "libs/data/pit.py",
+    "libs/data/pit_stamp.py",
+    "desks/mt5/research/asia_parser.py"
+   ],
+   "scheduled_by": "hourly_cycle:asia_parser",
+   "artifact": "desks/mt5/data/lake/series",
+   "consumer": "lake consumers (none yet join on available_time)",
+   "gap": "no planted future-data canaries run continuously; series consumers do not yet join on available_time",
+   "next_step": "plant canary rows with available_time in the future and fail any consumer that reads them",
+   "landed": []
+  },
+  {
+   "id": "B3",
+   "item": "Probabilistic market world model: P(state|history) + transitions, not one regime label",
+   "domain": "B",
+   "phase": "B",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "libs/regime/engine.py",
+    "libs/regime/transitions.py",
+    "desks/mt5/research/pf_allocator.py"
+   ],
+   "scheduled_by": "hourly_cycle:regime_monitor",
+   "artifact": "desks/mt5/data/state_vector.json",
+   "consumer": "pf_allocator regime_state",
+   "gap": "one global HMM/GMM fitted on XAUUSD daily closes; no per-asset hierarchy; liquidity/crowding/execution-quality states absent",
+   "next_step": "per-asset regime fit feeding regime_state per sleeve",
+   "landed": []
+  },
+  {
+   "id": "B4",
+   "item": "Learned representation discovery: self-supervised latent variables judged by the same gauntlet",
+   "domain": "B",
+   "phase": "B",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "libs/research/alpha_grammar.py",
+    "desks/mt5/research/alpha_evolution.py"
+   ],
+   "scheduled_by": "hourly_cycle:alpha_evolution",
+   "artifact": "desks/mt5/reports/alpha_evolution.json",
+   "consumer": "miner_candidate_compiler (formula cells)",
+   "gap": "representations are grammar expressions, not learned embeddings; no temporal-stability or interpretability probe",
+   "next_step": "an embedding lane that donates features through the same formula bridge",
+   "landed": []
+  },
+  {
+   "id": "B5",
+   "item": "Joint strategy evolution: entry + exit + hold + stop + execution + sizing evolved together",
+   "domain": "B",
+   "phase": "B",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/mt5desk/families.py",
+    "desks/mt5/research/alpha_evolution.py"
+   ],
+   "scheduled_by": "hourly_cycle:alpha_evolution",
+   "artifact": "desks/mt5/reports/alpha_evolution.json",
+   "consumer": "the docket",
+   "gap": "the genome evolves the expression and side mode under a fixed RECIPE (hold, stop, rr); fitness is a book-aware proxy, not certified marginal Elog",
+   "next_step": "let hold/stop/rr mutate inside the recipe bounds and score by marginal_delta_elog",
+   "landed": []
+  },
+  {
+   "id": "B6",
+   "item": "Agentic research-tree search ranked by expected value of the next experiment",
+   "domain": "B",
+   "phase": "B",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/frontier_ceo.py",
+    "desks/mt5/research/miner_candidate_compiler.py"
+   ],
+   "scheduled_by": "task:MT5-CEODocket",
+   "artifact": "desks/mt5/reports/CEO_DOCKET.json",
+   "consumer": "the gauntlet queue",
+   "gap": "the docket is a ranked list, not a checkpointed tree with falsifier/variant branches and EVIG expansion",
+   "next_step": "tree nodes with evidence + uncertainty + EVIG in the CEO docket",
+   "landed": []
+  },
+  {
+   "id": "B7",
+   "item": "AI scientist tournament scored on future certified marginal Elog",
+   "domain": "B",
+   "phase": "B",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/frontier_ceo.py"
+   ],
+   "scheduled_by": "task:MT5-ScientistTournament",
+   "artifact": "desks/mt5/reports/CEO_DOCKET.json",
+   "consumer": "frontier_ceo",
+   "gap": "scored on report quality and certification, not on live marginal Elog; no adversarial/replication roles",
+   "next_step": "credit seats from the live ledger (see B12)",
+   "landed": []
+  },
+  {
+   "id": "B8",
+   "item": "Unknown-unknowns engine: search where the ontology is weakest",
+   "domain": "B",
+   "phase": "B",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/unknown_unknowns.py"
+   ],
+   "scheduled_by": "hourly_cycle:exogenous_search",
+   "artifact": "desks/mt5/reports/UNKNOWN_UNKNOWNS.json",
+   "consumer": "the docket",
+   "gap": "undirected exogenous search only; no residual/error map of unexplained P&L, calibration holes or anomalous execution",
+   "next_step": "feed counterfactual_world residuals and calibration gaps into the search prior",
+   "landed": []
+  },
+  {
+   "id": "B9",
+   "item": "Authoritative research frontier map consumed by the scheduler",
+   "domain": "B",
+   "phase": "B",
+   "status": "EXISTS-LIT",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/frontier_ceo.py"
+   ],
+   "scheduled_by": "hourly_cycle:frontier",
+   "artifact": "desks/mt5/reports/CEO_DOCKET.json",
+   "consumer": "the gauntlet's docket build (queue_cycle)",
+   "gap": "",
+   "next_step": "carry compute cost and EVIG per cell so the map ranks by value per unit budget",
+   "landed": []
+  },
+  {
+   "id": "B10",
+   "item": "Learned negative knowledge as a search prior",
+   "domain": "B",
+   "phase": "B",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/no_log.py",
+    "desks/mt5/research/mutation_yield.py"
+   ],
+   "scheduled_by": "task:MT5-NoLog",
+   "artifact": "desks/mt5/data/generator_weights.json",
+   "consumer": "alpha_evolution population weights",
+   "gap": "failure reasons are logged and generator weights move on fate; no learned P(failure|structure,data,state) prior that can reopen an old failure under new conditions",
+   "next_step": "model failure reason by hypothesis structure and use it as a prior, never a blacklist",
+   "landed": []
+  },
+  {
+   "id": "B11",
+   "item": "One EVIG acquisition function for every research resource",
+   "domain": "B",
+   "phase": "B",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/research_bandit.py",
+    "desks/mt5/research/opportunity_cost.py"
+   ],
+   "scheduled_by": "hourly_cycle:opportunity_cost",
+   "artifact": "desks/mt5/reports/RESEARCH_BANDIT.json",
+   "consumer": "reports only",
+   "gap": "the bandit prices arms and the frontier ranks cells, separately; neither schedules compute",
+   "next_step": "B27",
+   "landed": []
+  },
+  {
+   "id": "B12",
+   "item": "Delayed-real-truth researcher rewards: credit flows back from live marginal Elog",
+   "domain": "B",
+   "phase": "B",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/mutation_yield.py",
+    "desks/mt5/data/live_ledger.jsonl"
+   ],
+   "scheduled_by": "hourly_cycle:alpha_evolution",
+   "artifact": "desks/mt5/data/generator_weights.json",
+   "consumer": "alpha_evolution",
+   "gap": "credit stops at certification fate; live R (now real, 2026-09-16) is not yet joined back to the generator that made the sleeve",
+   "next_step": "join live_ledger sleeves to their proposal genealogy and weight generators by live R",
+   "landed": []
+  },
+  {
+   "id": "B13",
+   "item": "Multidimensional orthogonality: effective breadth, not raw count",
+   "domain": "B",
+   "phase": "B",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/mt5desk/leg_balance.py",
+    "libs/portfolio/leg_factors.py",
+    "libs/portfolio/robust_elog.py",
+    "libs/portfolio/latent_factors.py"
+   ],
+   "scheduled_by": "hourly_cycle:pf_allocator",
+   "artifact": "desks/mt5/reports/pf_allocation.json",
+   "consumer": "gateway allocator_book",
+   "gap": "covariance, factor and tail n_eff are measured; shared-input-data, trade-time overlap and causal-mechanism similarity are not",
+   "next_step": "add input-data and mechanism similarity to _structured_corr",
+   "landed": []
+  },
+  {
+   "id": "B14",
+   "item": "Autonomous information-acquisition brain",
+   "domain": "B",
+   "phase": "B",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/asia_collector.py",
+    "desks/mt5/research/source_fixer.py",
+    "desks/mt5/research/feature_roi.py"
+   ],
+   "scheduled_by": "hourly_cycle:asia_collector",
+   "artifact": "desks/mt5/reports/ASIA_COLLECTOR.json",
+   "consumer": "asia_parser, the compiler",
+   "gap": "sources are registered by hand; FeatureROI measures value after the fact; no EVIG-priced proposal to fetch a dataset",
+   "next_step": "let feature_roi propose registry rows with an expected-value line",
+   "landed": []
+  },
+  {
+   "id": "B15",
+   "item": "Market ecology / opponent brain: latent actor populations",
+   "domain": "B",
+   "phase": "B",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/mt5desk/families.py",
+    "desks/mt5/data/asia_sources.json"
+   ],
+   "scheduled_by": "hourly_cycle:asia_collector",
+   "artifact": "desks/mt5/data/lake/series",
+   "consumer": "cot_* families, participant-plane sources",
+   "gap": "positioning families read COT and participant data; no explicit latent-actor model of dealers, CTAs, vol-control, rebalancers",
+   "next_step": "an actor-pressure state in the state vector",
+   "landed": []
+  },
+  {
+   "id": "B16",
+   "item": "Actual causal discovery wired to promotion",
+   "domain": "B",
+   "phase": "B",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/causal_discovery.py",
+    "desks/mt5/research/world_causal_graph.py"
+   ],
+   "scheduled_by": "hourly_cycle:causal_graph",
+   "artifact": "desks/mt5/reports/WORLD_CAUSAL_GRAPH.json",
+   "consumer": "reports only",
+   "gap": "a causal label changes nothing on the promotion path; no invariance-across-environments test",
+   "next_step": "an invariance gate: coefficient stability across regimes/sessions as a certificate field",
+   "landed": []
+  },
+  {
+   "id": "B17",
+   "item": "Adversarial co-evolution: destroyers that reproduce",
+   "domain": "B",
+   "phase": "B",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/falsifier_run.py",
+    "desks/mt5/research/adversary.py"
+   ],
+   "scheduled_by": "hourly_cycle:falsifier_run",
+   "artifact": "desks/mt5/reports/FALSIFIERS.json",
+   "consumer": "the gauntlet",
+   "gap": "falsifiers attack certificates; no paired populations, destroyers do not reproduce on kills",
+   "next_step": "score destroyers by false positives killed and mutate them",
+   "landed": []
+  },
+  {
+   "id": "B18",
+   "item": "Permanent QuantBench: every historical defect as an immortal test",
+   "domain": "B",
+   "phase": "B",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "docs/desk_lessons.jsonl",
+    "desks/mt5/tests/test_close_backstop_and_stop_floor.py",
+    "desks/mt5/tests/test_symbol_side_cap.py"
+   ],
+   "scheduled_by": "",
+   "artifact": "",
+   "consumer": "the suite",
+   "gap": "defects are pinned as tests one by one; no replayable bug corpus that new code must beat as a whole",
+   "next_step": "a bug-corpus runner over recorded defect fixtures",
+   "landed": []
+  },
+  {
+   "id": "B19",
+   "item": "Cryptographic evidence vault",
+   "domain": "B",
+   "phase": "B",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/asia_collector.py",
+    "libs/data/pit.py"
+   ],
+   "scheduled_by": "hourly_cycle:asia_collector",
+   "artifact": "desks/mt5/data/lake/vault",
+   "consumer": "asia_parser",
+   "gap": "content-addressed blobs and payload hashes exist; no hash chain over certificates, seeds and gate results",
+   "next_step": "a Merkle manifest per certificate",
+   "landed": []
+  },
+  {
+   "id": "B20",
+   "item": "Statistically first-class forward lab: immutable clocks at the writer",
+   "domain": "B",
+   "phase": "B",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/shadow_forward.py",
+    "desks/mt5/research/promoter.py"
+   ],
+   "scheduled_by": "task:MT5-Shadow",
+   "artifact": "desks/mt5/reports/shadow/shadow_health.json",
+   "consumer": "promoter",
+   "gap": "forward_start can still move at the writer; a churned clock is reported, not made impossible",
+   "next_step": "forward_start = min(previous, current) when the identity hash is unchanged; a new identity opens a new clock",
+   "landed": []
+  },
+  {
+   "id": "B21",
+   "item": "Empirical capacity / impact brain",
+   "domain": "B",
+   "phase": "B",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/capacity.py",
+    "libs/portfolio/kelly_surface.py"
+   ],
+   "scheduled_by": "hourly_cycle:pf_allocator",
+   "artifact": "desks/mt5/reports/CAPACITY.json",
+   "consumer": "pf_allocator survival envelope",
+   "gap": "the ceiling refuses itself until realised fills exist (matched_fills 1)",
+   "next_step": "accrues with live fills; nothing to build",
+   "landed": []
+  },
+  {
+   "id": "B22",
+   "item": "Execution scientist: execution researched with alpha's rigour",
+   "domain": "B",
+   "phase": "B",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/mt5desk/execution_policy.py",
+    "desks/mt5/research/execution_twin.py"
+   ],
+   "scheduled_by": "hourly_cycle:execution_twin",
+   "artifact": "desks/mt5/reports/EXECUTION_TWIN.json",
+   "consumer": "reports only",
+   "gap": "market/limit/delay are scored at decision time; the shortfall model is not re-fitted from the tape continuously",
+   "next_step": "fit expected shortfall by state/symbol/size from execution_twin's ledger",
+   "landed": []
+  },
+  {
+   "id": "B23",
+   "item": "Live counterfactual attribution per trade at every timeframe",
+   "domain": "B",
+   "phase": "B",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "libs/research/counterfactual_world.py",
+    "desks/mt5/research/counterfactual_replay.py"
+   ],
+   "scheduled_by": "hourly_cycle:counterfactual_world",
+   "artifact": "desks/mt5/reports/COUNTERFACTUAL_WORLD.json",
+   "consumer": "missed_growth",
+   "gap": "arms are priced per decision on one axis; not per trade at M1/M5/M15/H1",
+   "next_step": "multi-timeframe counterfactual paths per live trade",
+   "landed": []
+  },
+  {
+   "id": "B24",
+   "item": "Every risk/growth modifier proves itself",
+   "domain": "B",
+   "phase": "B",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "libs/portfolio/capital_modifiers.py",
+    "desks/mt5/research/missed_growth.py",
+    "scripts/check_growth_governance.py"
+   ],
+   "scheduled_by": "hourly_cycle:pf_allocator",
+   "artifact": "desks/mt5/reports/CAPITAL_MODIFIERS.json",
+   "consumer": "growth governance fence",
+   "gap": "every modifier is registered two-sided and ledgered; categories read UNMEASURED until 20 matched days exist",
+   "next_step": "accrues with live days; nothing to build",
+   "landed": []
+  },
+  {
+   "id": "B25",
+   "item": "Recursive meta-R&D: the research process as an experimental subject",
+   "domain": "B",
+   "phase": "B",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/hourly_cycle.py"
+   ],
+   "scheduled_by": "hourly_cycle:brain_ab",
+   "artifact": "desks/mt5/reports/BRAIN_AB.json",
+   "consumer": "reports only",
+   "gap": "seats are A/B'd; gauntlet thresholds, mutation operators and test ordering are not experimental subjects",
+   "next_step": "a sandboxed tournament over gate-spec variants",
+   "landed": []
+  },
+  {
+   "id": "B26",
+   "item": "Formal verification hierarchy for plumbing invariants",
+   "domain": "B",
+   "phase": "B",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "scripts/check_constitution_core.py",
+    "desks/mt5/tests/test_decision_core.py"
+   ],
+   "scheduled_by": "",
+   "artifact": "",
+   "consumer": "the suite",
+   "gap": "invariants are pinned by example tests, not property-based or proven",
+   "next_step": "property tests for no-order-without-authority, no-forward-rebase, no-duplicate-risk",
+   "landed": []
+  },
+  {
+   "id": "B27",
+   "item": "One meta-controller pricing every use of research resources",
+   "domain": "B",
+   "phase": "B",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/research_bandit.py",
+    "desks/mt5/research/hourly_cycle.py"
+   ],
+   "scheduled_by": "hourly_cycle:opportunity_cost",
+   "artifact": "desks/mt5/reports/RESEARCH_BANDIT.json",
+   "consumer": "reports only",
+   "gap": "the controller is advisory: the hourly cycle runs every leg on its own clock regardless of the bandit's prices",
+   "next_step": "let the bandit's prices set leg budgets (LEG_BUDGET_SEC) each hour",
+   "landed": []
+  },
+  {
+   "id": "B28",
+   "item": "Closed three-resource loop with a generated attestation",
+   "domain": "B",
+   "phase": "B",
+   "status": "EXISTS-LIT",
+   "gate": "none",
+   "evidence": [
+    "scripts/check_closed_loop.py"
+   ],
+   "scheduled_by": "hourly_cycle:closed_loop",
+   "artifact": "desks/mt5/data/architecture/closed_loop_attestation.json",
+   "consumer": "the CEO cycle and this ledger",
+   "gap": "",
+   "next_step": "drive every flag in the attestation to true; complete is generated, never set",
+   "landed": []
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."

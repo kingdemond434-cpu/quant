@@ -299,6 +299,57 @@ def _corr(a: pd.Series | None, b: pd.Series | None) -> float:
     return float(j.iloc[:, 0].corr(j.iloc[:, 1]))
 
 
+#: THE IC PRE-SCREEN (2026-09-16). A formulaic expression is the one candidate shape that HAS a
+#: continuous predictor before any replay, so the Chinese-practice report card applies to it:
+#: rank-IC of the expression against the forward return over K disjoint time folds, its
+#: dispersion, and the share of folds agreeing in sign. A proposal whose IC flips sign across
+#: folds is UNSTABLE and is not handed to the gauntlet -- it is still COUNTED as a trial in
+#: `pc.deflate`, so screening never lowers the multiplicity charge the survivors pay.
+IC_FOLDS = 4
+IC_MIN_ABS = 0.005
+IC_SIGN_MIN = 0.75
+
+
+def ic_folds(z: pd.Series, ret: pd.Series, hold: int, k: int = IC_FOLDS) -> dict[str, float]:
+    """Rank-IC per fold of `z` against the `hold`-bar forward return; mean, IR, sign consistency."""
+    try:
+        fwd = ret.rolling(int(hold)).sum().shift(-int(hold))
+        j = pd.concat([z.rename("z"), fwd.rename("f")], axis=1).dropna()
+    except Exception:
+        return {"ic_mean": 0.0, "ic_ir": 0.0, "ic_sign": 0.0, "ic_n": 0}
+    n = len(j)
+    if n < 40 * k:
+        return {"ic_mean": 0.0, "ic_ir": 0.0, "ic_sign": 0.0, "ic_n": int(n)}
+    ics: list[float] = []
+    for i in range(k):
+        part = j.iloc[i * n // k:(i + 1) * n // k]
+        if len(part) < 40:
+            continue
+        ic = part["z"].rank().corr(part["f"].rank())
+        if ic == ic:                                                 # not NaN
+            ics.append(float(ic))
+    if len(ics) < 2:
+        return {"ic_mean": 0.0, "ic_ir": 0.0, "ic_sign": 0.0, "ic_n": int(n)}
+    arr = np.asarray(ics, dtype=float)
+    mean = float(arr.mean())
+    sd = float(arr.std(ddof=1)) if arr.size > 1 else 0.0
+    sign = float((np.sign(arr) == np.sign(mean)).mean()) if mean != 0.0 else 0.0
+    return {"ic_mean": round(mean, 5), "ic_ir": round(mean / sd, 3) if sd > 1e-12 else 0.0,
+            "ic_sign": round(sign, 3), "ic_n": int(n), "ic_folds": [round(x, 4) for x in ics]}
+
+
+def ic_screen(row: dict) -> str | None:
+    """None when the row may be proposed; else the reason it is screened out."""
+    if row.get("stage") != 1:
+        return None
+    ic, sign = float(row.get("ic_mean") or 0.0), float(row.get("ic_sign") or 0.0)
+    if abs(ic) < IC_MIN_ABS:
+        return f"IC_WEAK: |ic_mean| {abs(ic):.4f} < {IC_MIN_ABS}"
+    if sign < IC_SIGN_MIN:
+        return f"IC_UNSTABLE: sign agreement {sign:.2f} < {IC_SIGN_MIN} across {IC_FOLDS} folds"
+    return None
+
+
 class _Evaluator:
     def __init__(self, sym: str, d: pd.DataFrame, cost: float, drivers: dict[str, pd.DataFrame],
                  survivors: pd.Series | None, book: af.Book | None = None,
@@ -487,6 +538,8 @@ class _Evaluator:
         pnl = _daily_pnl_proxy(z * flip, self.ret, RECIPE["entry_z"], RECIPE["hold_bars"],
                                self.risk_frac, held=held)
         self.pnls[k] = pnl
+        # The IC report card, on the expression's own z against the recipe's hold horizon.
+        row.update(ic_folds(z * flip, self.ret, int(RECIPE["hold_bars"])))
         corr_surv = _corr(pnl, self.survivors)
         refs = list(self.canon_z.values()) + pop_z
         novelty = 1.0 - max([abs(_corr(z, r)) for r in refs] or [0.0])
@@ -857,9 +910,15 @@ def run(symbols: list[str] | None = None, budget_s: float = 1500.0, seed: int = 
         generator_failures.extend(f"{sym}: {f}" for f in ev.generator_failures)
     # Every distinct expression tried is a trial; stage-0-only rows may not be proposed.
     rows = pc.deflate(rows)
+    n_screened = 0
     for r in rows:
         if r.get("stage") != 1:
             r["proposed"] = False
+        why = ic_screen(r)
+        if why is not None and r.get("proposed"):
+            r["proposed"] = False
+            r["screened"] = why
+            n_screened += 1
     proposals = pc.best_per_cell(rows)
     cands = [pc.candidate(
         SOURCE, r["symbol"], "formula", dict(r["params"]),
@@ -871,11 +930,16 @@ def run(symbols: list[str] | None = None, budget_s: float = 1500.0, seed: int = 
                                         "cost_frac", "t_gross", "t_deflated_sweep",
                                         "n_tests_sweep", "stability", "corr_survivors",
                                         "novelty", "fitness", "fitness_legacy", "terms",
+                                        "ic_mean", "ic_ir", "ic_sign", "ic_n",
                                         "unmeasured", "tail", "generator")},
     ) for r in proposals]
     pops = population_yield(per_symbol)
     report = {"generated_at": datetime.now(tz=UTC).isoformat(), "symbols_swept": len(todo),
               "tests_run": len(rows), "cells_proposed": len(proposals), "skipped": skipped,
+              "ic_screened": n_screened,
+              "ic_screen_rule": (f"|ic_mean| >= {IC_MIN_ABS} and sign agreement >= "
+                                 f"{IC_SIGN_MIN} over {IC_FOLDS} disjoint folds; screened rows "
+                                 "stay counted as trials"),
               "per_symbol": per_symbol, "proposals": proposals,
               # THE YIELD LEDGER'S INPUT: which population's individuals were tried, went
               # full-sample and were proposed, sweep-wide, beside the weights that were read.
