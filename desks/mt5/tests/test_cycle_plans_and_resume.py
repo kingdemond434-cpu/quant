@@ -82,3 +82,35 @@ def test_healer_freezes_modern_keys_from_the_engine_identity(monkeypatch, tmp_pa
     assert n == 1 and calls == [(key, ident)]
     # no engine identity for the key -> left alone, never guessed
     assert healer.freeze_unfrozen({"sleeves": {}}, apply=True, identities={}) == 0
+
+
+def test_department_plans_partition_the_heavy_legs():
+    heavy = [n for n in ("search", "compile_candidates", "deepen", "world_crawler",
+                         "external_gauntlet", "state_vector", "refresh_bars", "issue_board",
+                         "some_unknown_leg") if n not in hc.CORE_LEGS]
+    assert hc.department_of("search") == hc.department_of("compile_candidates") == "discovery"
+    assert hc.department_of("deepen") == "discovery"          # one pipeline, one department
+    assert hc.department_of("world_crawler") == "intel"
+    assert hc.department_of("external_gauntlet") == "validate"
+    assert hc.department_of("refresh_bars") == "data"
+    assert hc.department_of("some_unknown_leg") == "rest"
+    for n in heavy:
+        depts = [d for d in hc.DEPARTMENTS if hc.in_plan(n, f"dept:{d}")]
+        assert depts == [hc.department_of(n)]                   # exactly one department
+    assert not hc.in_plan("health", "dept:meta")                # core legs never in a department
+    assert hc.in_plan("auto_x", "dept:rest")
+    for d in hc.LEG_DEPARTMENT.values():
+        assert d in hc.DEPARTMENTS
+
+
+def test_auto_legs_under_department_plans_run_only_in_rest(monkeypatch, tmp_path):
+    ran: list[str] = []
+    monkeypatch.setattr(hc, "_auto_leg", lambda e: ran.append(e["organ"]) or {"exit_code": 0})
+    monkeypatch.setattr(hc, "_costed", lambda name, fn: fn())
+    f = tmp_path / "auto_legs.json"
+    f.write_text(json.dumps({"legs": [
+        {"organ": "desks/mt5/research/a.py", "leg": "auto_a", "plan": "core"},
+        {"organ": "desks/mt5/research/b.py", "leg": "auto_b", "plan": "heavy"}]}),
+        encoding="utf-8")
+    assert hc.run_auto_legs("dept:discovery", f)["n"] == 0
+    assert hc.run_auto_legs("dept:rest", f)["n"] == 1 and ran == ["desks/mt5/research/b.py"]

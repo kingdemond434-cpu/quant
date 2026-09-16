@@ -694,12 +694,65 @@ CORE_LEGS: frozenset[str] = frozenset({
     # THE 2026-09-16 BLUEPRINT ORGANS (phases C/D of the Tier-1 ledger), all cheap readers.
     "axis_registry", "tier1_scorecard", "novelty_gate", "forced_flow_calendar", "breadth_ladder",
     "wiring_ceo", "live_system_state", "hazard_engine", "posterior_alpha", "semantic_memory",
-    "model_role_benchmark",
+    "model_role_benchmark", "research_departments",
 })
 
 
+#: THE DEPARTMENTS (principal 2026-09-16: "Explore = 100% || Exploit = 100% || Transfer = 100% ||
+#: Validate = 100% || Intel = 100% || Meta = 100%, each with its own workers, queues and
+#: reservation"). One heavy pass ran every research producer in ONE sequential process, so the
+#: gauntlet waited for the crawler and the macro brain waited for the backtest -- and a pass
+#: summed to three hours. A department plan (HOURLY_PLAN=dept:<name>) runs only its own
+#: non-core legs, in the cycle's own order, as its own scheduled task; the departments run
+#: CONCURRENTLY, so each is at its full useful throughput every hour and none can starve
+#: another. A leg that feeds another in the same pass sits in the same department (search ->
+#: compile -> merge_docket -> deepen is one pipeline). Legs named in no department belong to
+#: `rest`, which also hosts the auto-clocked organs. The core plan is unchanged.
+DEPARTMENTS: tuple[str, ...] = ("data", "intel", "discovery", "validate", "macro", "execution",
+                                "forward", "meta", "rest")
+LEG_DEPARTMENT: dict[str, str] = {
+    # data: bars, tapes, lakes, sources -- the inputs every other department reads
+    **dict.fromkeys(("refresh_bars", "tape_features", "lake_promote", "universe_integrity",
+                     "source_routes", "source_fixer", "asia_collector", "asia_parser",
+                     "asia_plane", "archive_tape", "reclaim_disk", "maintain_miners",
+                     "spread_provenance", "microstructure_census", "fusion_cost",
+                     "cost_construction", "swap_rejudge", "sge_premium"), "data"),
+    # intel: the global intelligence agency -- crawlers, forests, frontier scouts
+    **dict.fromkeys(("world_crawler", "deep_forest", "moat_miner", "market_intel", "mine",
+                     "exogenous_search", "standing_questions", "frontier", "frontier_report",
+                     "frontier_implementer", "hunt12"), "intel"),
+    # discovery: the candidate pipeline, in order, plus the evolutionary generators
+    **dict.fromkeys(("search", "sweep", "breadth_sweep", "compile_candidates", "merge_docket",
+                     "deepen", "alpha_evolution", "alpha_rl", "ml_layer", "ensemble_optimizer",
+                     "requeue_unrunnable", "queue_cycle", "queue_compact", "miner_conversion",
+                     "recertify_canon", "session_chart_expansion", "experiment_design",
+                     "experiment_cache", "probation"), "discovery"),
+    # validate: the adversarial evidence lab
+    **dict.fromkeys(("external_gauntlet", "backtest", "falsifier_run", "adversaries",
+                     "stop_reverse", "orthogonality"), "validate"),
+    # macro: the cross-asset / macro brain
+    **dict.fromkeys(("fred_macro", "futures_lead_lag", "causal_graph", "residual_factors",
+                     "weak_signals", "edges_macro_fusion_sweep", "strategy_paths",
+                     "counterfactual_world", "opportunity_forecast", "forecast_contract",
+                     "exposure_decomposition"), "macro"),
+    # execution: the execution research command
+    **dict.fromkeys(("execution_twin", "entry_timing", "cost_to_edge", "exit_study",
+                     "execution_resolver"), "execution"),
+    # forward: forward evidence, promotion and the allocator
+    **dict.fromkeys(("enrol_clocks", "pf_allocator", "daily", "hunt12_forward"), "forward"),
+    # meta: the machine that runs the machine (the heavy part of it)
+    **dict.fromkeys(("issue_board", "publish_state", "model_league", "ml_layer_meta"), "meta"),
+}
+
+
+def department_of(name: str) -> str:
+    """The department a heavy leg belongs to; `rest` when no department names it."""
+    return LEG_DEPARTMENT.get(name, "rest")
+
+
 def in_plan(name: str, plan: str | None = None) -> bool:
-    """Does leg `name` run under `plan`? core = CORE_LEGS only; heavy = everything else; all.
+    """Does leg `name` run under `plan`? core = CORE_LEGS only; heavy = every non-core leg;
+    dept:<d> = the non-core legs of department d; all = everything.
     An `auto_*` leg is already filtered by its own plan in run_auto_legs and always passes."""
     p = (plan if plan is not None else HOURLY_PLAN)
     if name.startswith("auto_"):
@@ -708,6 +761,8 @@ def in_plan(name: str, plan: str | None = None) -> bool:
         return name in CORE_LEGS
     if p == "heavy":
         return name not in CORE_LEGS
+    if p.startswith("dept:"):
+        return name not in CORE_LEGS and department_of(name) == p.split(":", 1)[1]
     return True
 
 
@@ -749,7 +804,17 @@ def run_auto_legs(plan: str | None = None, path: Path | None = None) -> dict:
         legs = [e for e in (doc.get("legs") or []) if isinstance(e, dict) and e.get("organ")]
     except (OSError, ValueError):
         return {"n": 0, "why": "no auto_legs.json yet: the wiring CEO has not run"}
-    chosen = [e for e in legs if p == "all" or str(e.get("plan") or "heavy") == p]
+    # An auto-clocked organ's plan is core or heavy; under department plans the heavy ones
+    # belong to `rest` (one department runs them, not nine).
+    def _wants(e: dict) -> bool:
+        ep = str(e.get("plan") or "heavy")
+        if p == "all":
+            return True
+        if p.startswith("dept:"):
+            return ep == "heavy" and p == "dept:rest"
+        return ep == p
+
+    chosen = [e for e in legs if _wants(e)]
     out: dict[str, dict] = {}
     for e in chosen:
         name = str(e.get("leg") or ("auto_" + Path(str(e["organ"])).stem))
@@ -2264,6 +2329,8 @@ def refresh_regime() -> dict:
 
 def main() -> None:
     _plan_words = {"core": "core legs only", "heavy": "research producers only"}
+    if HOURLY_PLAN.startswith("dept:"):
+        _plan_words[HOURLY_PLAN] = f"department {HOURLY_PLAN.split(':', 1)[1]} only"
     print(f"hourly cycle plan={HOURLY_PLAN} ({_plan_words.get(HOURLY_PLAN, 'every leg')})",
           flush=True)
     # BARS FIRST. Every leg below reasons about a chart, so a stale chart makes all of them
@@ -2384,6 +2451,10 @@ def main() -> None:
                                                           "research/live_system_state.py"))
     t1s = _costed("tier1_scorecard", lambda: _producer("tier1_scorecard",
                                                         "research/tier1_scorecard.py"))
+    # THE RESOURCE EXCHANGE: every department's measured yield per compute-hour and the
+    # elastic factor research_budget multiplies into its legs' seconds; its clock is its floor.
+    rdp = _costed("research_departments", lambda: _producer("research_departments",
+                                                             "research/research_departments.py"))
     # THE WIRING CEO hunts every build that is on no clock (principal 2026-09-16: "always
     # hunting"); probation (heavy plan) exercises the safe ones until they earn a named leg.
     wce = _costed("wiring_ceo", lambda: _producer("wiring_ceo", "research/wiring_ceo.py",
@@ -2746,6 +2817,7 @@ def main() -> None:
                     "novelty_gate": ngt, "hazard_engine": hze, "posterior_alpha": pal,
                     "semantic_memory": smm, "model_role_benchmark": mrb,
                     "live_system_state": lss, "tier1_scorecard": t1s, "wiring_ceo": wce,
+                    "research_departments": rdp,
                     "probation": prb, "standing_questions": sqs, "exposure_decomposition": exd,
                     "auto_legs": auto,
                     "sweep": sw, "compile": cc,

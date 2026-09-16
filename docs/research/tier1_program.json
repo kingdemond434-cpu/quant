@@ -14,7 +14,9 @@
   "7": "Recursive research improvement: agents compete for compute by downstream economic value; the machine redesigns itself",
   "B": "The principal's 28-item closed-loop blueprint (2026-09-16), measured against this tree",
   "C": "The 2026-09-16 blueprint (principal): production truth, PIT lake, axis registry, effective breadth, mechanism genome, ten engines, macro state, causal graph, residual research, forced flows, event surfaces, execution intelligence, hostile validation, scarce forward slots, posterior alpha, E[log W] allocator, exposure decomposition, hazard engine, self-recorded moat, LLM roles, semantic memory, unknown-unknowns, failures as data, Tier-1 scorecard",
-  "D": "The nine Asian research mechanisms (principal, 2026-09-16): AlphaSchema semantic frontier, QuantaAlpha trajectory evolution, RD-Agent factor x model arms, FactorEngine program-alpha lane, AlphaSAGE reward-proportional sampling, AlphaAgent novelty filter, Alpha Jungle MCTS deepening, TRA/DoubleAdapt regime router, AlphaBench model-role benchmark"
+  "D": "The nine Asian research mechanisms (principal, 2026-09-16): AlphaSchema semantic frontier, QuantaAlpha trajectory evolution, RD-Agent factor x model arms, FactorEngine program-alpha lane, AlphaSAGE reward-proportional sampling, AlphaAgent novelty filter, Alpha Jungle MCTS deepening, TRA/DoubleAdapt regime router, AlphaBench model-role benchmark",
+  "Q": "The open-ended Quant Scientist (principal, 2026-09-16): self-evolving research OS behind an immutable constitution, co-evolving evaluators behind a sealed anchor, program evolution over research algorithms, world-model lab, synthetic regimes, causal discovery lab, value-of-data acquisition, one typed research API, Quant Co-Scientist, evolvable ontology, unexplained-residual queue, meta research allocator; plus the donor mechanisms: AgonAlpha blind reviewer, GoAnt quality-diversity frontier, Agora evaluator lab, AI-Scientist experiment tree, AlphaCrafter state-conditioned alpha, FactorMiner positive/negative memory",
+  "W": "The Global Autonomous Quant Intelligence Organization (principal, 2026-09-16): six organisations in one system -- Global Intelligence Agency, Quant Science Lab, Alpha Search Supercomputer, Adversarial Evidence Lab, Portfolio & Execution Lab, Meta-Research Lab -- sharing one lake, one ontology, one memory, one gauntlet, one live truth; built in the order P0 production truth -> P1 Global Intelligence OS -> P2 knowledge graph + canonical mechanisms -> P3 semantic frontier + unseen-frontier estimator -> P4 cheap scouts -> P5 scientist swarm -> P6 diverse search algorithms -> P7 PIT macro/cross-asset world model -> P8 residual/forced-flow/event/microstructure labs -> P9 artifact-level replication -> P10 forward evidence allocator -> P11 posterior E[log W] allocator -> P12 self-improving Research OS -> P13 proprietary-data flywheel"
  },
  "acceptance_properties": [
   {
@@ -3302,22 +3304,24 @@
    "item": "Hierarchical exposure decomposition per position (currency, duration, USD, growth, inflation, commodities, vol, equity beta, liquidity, trend, carry, mechanism cluster) with duplicate-heat detection",
    "domain": "C",
    "phase": "C",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
     "desks/mt5/research/exposure_decomposition.py",
+    "desks/mt5/tests/test_exposure_decomposition.py",
     "libs/risk/fx_factors.py",
     "libs/risk/factor_caps.py",
     "libs/portfolio/latent_factors.py",
-    "desks/mt5/research/orthogonality.py",
-    "desks/mt5/research/alpha_breadth.py"
+    "desks/mt5/research/orthogonality.py"
    ],
    "scheduled_by": "hourly_cycle:exposure_decomposition, hourly_cycle:pf_allocator",
    "artifact": "desks/mt5/reports/EXPOSURE_DECOMPOSITION.json",
-   "consumer": "pf_allocator",
-   "gap": "MEASURED 2026-09-16: currency, asset-class and structural clusters only; no named macro exposures per position; duplicate detection is a cluster count that binds nothing.",
+   "consumer": "pf_allocator (next: the factor tier of C17 reads the book table); dashboard",
+   "gap": "LANDED 2026-09-16: twelve named factors per live sleeve and open position, duplicate-heat pairs, n_eff_factor_bets; growth/inflation UNMEASURED while data/axes/fred.json holds 0 series; 39 of 40 live sleeves carry no side on the roster (computed at +1 and named).",
    "next_step": "exposure_decomposition.py: per open position and per live sleeve, betas to the named factors (USD index, US 10y, gold, oil, VIX proxy, equity beta, trend and carry factors built from the desk's own bars/axes), summed into a book exposure table with duplicate-heat pairs; published in reports/EXPOSURE_DECOMPOSITION.json every core hour and read by pf_allocator as the factor tier of C17.",
-   "landed": []
+   "landed": [
+    "c8fb6c395c6"
+   ]
   },
   {
    "id": "C19",
@@ -3416,22 +3420,24 @@
    "item": "Unknown-unknown generator with a defended budget and six standing queries (pre-vol changes, first responder to USD moves, unexplained residual correlates, overnight drift, unexplained live losses, forced-schedule actors)",
    "domain": "C",
    "phase": "C",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
     "desks/mt5/research/standing_questions.py",
+    "desks/mt5/tests/test_standing_questions.py",
     "desks/mt5/research/unknown_unknowns.py",
     "desks/mt5/frontier_intel/unknowns.py",
     "desks/mt5/side_channels/unknown_unknown_miner.py",
-    "desks/mt5/research/missed_growth.py",
-    "desks/mt5/research/anomaly_factory.py"
+    "desks/mt5/research/missed_growth.py"
    ],
    "scheduled_by": "hourly_cycle:standing_questions, hourly_cycle:exogenous_search, hourly_cycle:frontier_unknowns",
    "artifact": "desks/mt5/reports/STANDING_QUESTIONS.json",
-   "consumer": "research queue",
-   "gap": "MEASURED 2026-09-16: the budget is a multiplicity allowance, not a defended compute budget; none of the six questions is a standing query; UNKNOWN_UNKNOWNS.json does not exist on the box.",
+   "consumer": "data/intelligence/standing_questions/ -> miner_candidate_compiler (44 rows compiled EXACT_RECIPE on the local copy); frontier_ceo",
+   "gap": "LANDED 2026-09-16: the six standing questions run every heavy pass with a 240 s budget and donate structured hypotheses; Q5 reads UNMEASURED until the live ledger carries reconstructed R on >= 20 trades.",
    "next_step": "standing_questions.py: the six queries as measured organs over the desk's own bars/axes/ledgers (pre-vol feature scan, lead-lag first responder, residual-vs-axis correlation screen, overnight drift census, live-loss attribution residual, forced-actor calendar coverage), each donating hypotheses and publishing reports/STANDING_QUESTIONS.json; research_budget reserves a fixed share for this leg.",
-   "landed": []
+   "landed": [
+    "1c028e76853"
+   ]
   },
   {
    "id": "C24",
@@ -3674,6 +3680,833 @@
     "f4cb30fc239",
     "wave-1/2 2026-09-16"
    ]
+  },
+  {
+   "id": "Q1",
+   "item": "Self-evolving research OS: a population/archive of ResearchOS variants (generators, retrieval, model selection, allocation, prompts, search, tools) scored on survivor yield, delta n_eff, novel-mechanism rate, FDR, compute per survivor and forward success; the promotion/financial constitution immutable",
+   "domain": "Q",
+   "phase": "Q",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "libs/research_os/store.py",
+    "libs/research_os/mutation.py",
+    "libs/research_os/credit.py",
+    "desks/mt5/research/meta_rnd.py",
+    "desks/mt5/research/model_self_improvement.py",
+    "scripts/check_immutable_evaluator.py",
+    "scripts/run_research_loop.py"
+   ],
+   "scheduled_by": "hourly_cycle:brain_ab, hourly_cycle:model_skill, MT5-FrontierAudit (meta_rnd)",
+   "artifact": "desks/mt5/reports/META_RND.json",
+   "consumer": "research_budget (knobs); check_immutable_evaluator (the wall)",
+   "gap": "MEASURED 2026-09-16: meta_rnd moves six scalar knobs on ONE champion (data/meta_champion.json); no population, no diverse archive, no six-metric descendant fitness assembled anywhere; the immutable wall exists (check_immutable_evaluator.IMMUTABLE, 18 files; meta_rnd.FORBIDDEN_KNOBS). run_research_loop.py (search_controller + nine search populations) is on no clock.",
+   "next_step": "research_os_archive.py: variants = named research POLICIES (leg budgets, arm weights, population mix, retrieval depth, prompt template ids) kept as an archive with lineage; each hour one variant is active (rotation with a UCB over the six-metric fitness computed from hypothesis_graph, EFFECTIVE_BREADTH history, NOVELTY_GATE, gate verdicts, compute ledger, shadow ledgers); research_budget reads the active variant; the wall is asserted by refusing any variant that names an IMMUTABLE file. Put scripts/run_research_loop.py on the heavy plan with a budget.",
+   "landed": []
+  },
+  {
+   "id": "Q2",
+   "item": "Co-evolving evaluators (Red Queen): an EvaluatorLab that invents attack variants and keeps the discriminating ones, behind a FIXED reality anchor (sealed OOS, forward clock, real fills, real costs)",
+   "domain": "Q",
+   "phase": "Q",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/adversary_evolution.py",
+    "desks/mt5/research/adversary.py",
+    "libs/validation/hostile.py",
+    "libs/validation/redteam.py",
+    "libs/validation/falsifiers.py",
+    "libs/validation/lockbox.py",
+    "desks/mt5/research/evidence_vault.py"
+   ],
+   "scheduled_by": "hourly_cycle:adversaries, hourly_cycle:falsifier_run, MT5-FrontierAudit (adversary_evolution, evidence_vault)",
+   "artifact": "desks/mt5/reports/ADVERSARY_EVOLUTION.json",
+   "consumer": "external_gauntlet (falsifiers), promoter",
+   "gap": "MEASURED 2026-09-16: adversary_evolution searches eight numeric genes of known failure modes and cannot invent an attack class; hostile.py (eight strategy-level attacks, built today) is on no clock; the anchor (lockbox, shadow_forward, real fills, cost surface) is real and separately governed.",
+   "next_step": "libs/validation/evaluator_lab.py (wave 3, building): attack variants with parameter families, positive/negative controls, keep/retire by discriminating power, SEALED tuple documented, judge() preserving disagreement; blind_reviewer runs hostile+battery on certified cells; wire as heavy leg evaluator_lab.",
+   "landed": []
+  },
+  {
+   "id": "Q3",
+   "item": "AlphaEvolve-style program evolution over research algorithms (feature generators, cross-asset models, portfolio optimisers, regime detectors, execution models, search policies, validation procedures, schedulers) with automated evaluators and a program database",
+   "domain": "Q",
+   "phase": "Q",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/alpha_evolution.py",
+    "desks/mt5/research/joint_evolution.py",
+    "desks/mt5/research/representation_discovery.py",
+    "libs/research/search_populations.py",
+    "libs/research_os/dsl.py",
+    "desks/mt5/research/factor_model_coevolution.py"
+   ],
+   "scheduled_by": "hourly_cycle:alpha_evolution, MT5-FrontierAudit (joint_evolution, representation_discovery)",
+   "artifact": "desks/mt5/reports/JOINT_EVOLUTION.json",
+   "consumer": "proposer_common.donate (joint_evolution winners reach the docket)",
+   "gap": "MEASURED 2026-09-16: evolution is over expressions and genome axes inside a fixed harness; nothing evolves the CODE of optimisers, regime detectors, execution models, search policies, validators or schedulers; no program database keyed by program text with per-program evaluators; search_populations has no scheduled importer.",
+   "next_step": "algorithm_db.py: a program database (data/algorithm_db.jsonl) of parameterised ALGORITHM CONFIGS per class (search policy, regime detector, execution model, cost model, validator battery) with lineage and an automated evaluator per class (the class's own scoring organ), evolved by mutation/crossover of configs under research_os_archive's variants; a program-IR lane (D4) supplies code-level candidates later.",
+   "landed": []
+  },
+  {
+   "id": "Q4",
+   "item": "Market world-model laboratory: heterogeneous simulated participants grounded in real information, used as an intervention lab (CPI -> rates -> USD -> dealer inventory -> XAU liquidity -> residual) whose hypotheses go through the real gauntlet; synthetic never gets promotion authority",
+   "domain": "Q",
+   "phase": "Q",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/world_model.py",
+    "desks/mt5/research/market_ecology.py",
+    "libs/research/participant_phenotype.py",
+    "desks/mt5/side_channels/economic_constraint_graph.py",
+    "desks/mt5/research/world_causal_graph.py",
+    "libs/portfolio/multiperiod_worlds.py"
+   ],
+   "scheduled_by": "MT5-FrontierAudit (world_model, market_ecology), hourly_cycle:causal_graph",
+   "artifact": "desks/mt5/reports/WORLD_MODEL.json",
+   "consumer": "none: reports only",
+   "gap": "MEASURED 2026-09-16: world_model and market_ecology are observational estimators; no simulator, no do() operator, no hypothesis generated from a counterfactual world state; economic_constraint_graph is on no desk clock.",
+   "next_step": "world_lab.py: an intervention operator over the admitted causal graph (do(node=shock) propagated along edges with lag distributions and betas, participant responses from market_ecology's measured behaviours), producing predicted residual effects per instrument and donating them as `world_lab` hypotheses (authority ZERO by source tag; the gauntlet judges on real history); economic_constraint_graph on the heavy plan.",
+   "landed": []
+  },
+  {
+   "id": "Q5",
+   "item": "Adversarial synthetic regimes: a named, replayable scenario set absent from history (USD shock + liquidity crash, spread x5, correlations -> 1, instant trend break, central-bank surprise, vol doubling, weekend gap, feed latency, partial fills, missing releases) applied to certified and live sleeves to expose hidden structural failure modes, never to optimise synthetic profit",
+   "domain": "Q",
+   "phase": "Q",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/adversary_evolution.py",
+    "libs/validation/stress_costs.py",
+    "libs/validation/bar_permutation.py",
+    "libs/validation/hostile.py",
+    "desks/mt5/research/fragility.py",
+    "libs/portfolio/multiperiod_worlds.py"
+   ],
+   "scheduled_by": "MT5-Gauntlet (stress_costs, bar_permutation)",
+   "artifact": "none",
+   "consumer": "none",
+   "gap": "MEASURED 2026-09-16: the 5x cost ladder is the entire stress surface; none of the named conditions exists as a scenario applied to a sleeve; no SYNTHETIC_REGIMES artifact.",
+   "next_step": "synthetic_regimes.py (wave 4, building): the scenario set as transforms of a sleeve's bars/trade series and cost model, applied to every certified/live sleeve with the family re-run, reporting per-scenario expectancy, drawdown and the structural failure flags (blows up under spread x5, needs the weekend gap, dies when correlations collapse); reports/SYNTHETIC_REGIMES.json every heavy pass; hazard_engine reads the flags.",
+   "landed": []
+  },
+  {
+   "id": "Q6",
+   "item": "Formal causal discovery lab: PC, GES, NOTEARS, PCMCI/temporal methods with economic restrictions on PIT data; edge classes OBSERVATIONAL / PLAUSIBLE_MECHANISM / INTERVENTION_SUPPORTED; chains conditioned on positioning/liquidity/regime; LLMs never invent edges",
+   "domain": "Q",
+   "phase": "Q",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/causal_discovery.py",
+    "desks/mt5/research/world_causal_graph.py",
+    "libs/research/causal_graph.py",
+    "libs/research/information_flow.py",
+    "libs/research/natural_experiment.py"
+   ],
+   "scheduled_by": "hourly_cycle:causal_graph, MT5-FrontierAudit (causal_discovery)",
+   "artifact": "desks/mt5/reports/CAUSAL_DISCOVERY.json",
+   "consumer": "state_vector_build conditioning hints",
+   "gap": "MEASURED 2026-09-16: PC-style conditional independence plus Granger/transfer entropy exist; no GES, NOTEARS or PCMCI; the edge vocabulary encodes measurement status (PLAUSIBLE_UNMEASURED/ADMITTED/RECORDED_NOT_ADMITTED/STRUCTURAL), not evidence class, so a difference-in-differences natural experiment can never promote an edge to INTERVENTION_SUPPORTED.",
+   "next_step": "causal_lab.py (wave 4, building): PCMCI-style lagged discovery with FDR over the PIT-aligned daily panel (bars + axes), economic restrictions (no edge into a release, no future lag), a NOTEARS-lite continuous optimisation for the contemporaneous DAG, edge classes attached from evidence (observational test, mechanism_ontology plausibility, natural_experiment DiD -> INTERVENTION_SUPPORTED), chains published; hourly heavy leg.",
+   "landed": []
+  },
+  {
+   "id": "Q7",
+   "item": "Autonomous information acquisition: ValueOfData(d) = E[uncertainty reduction or decision improvement] / cost(d) per missing observation, then a search of public/licensed sources for it",
+   "domain": "Q",
+   "phase": "Q",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/information_value.py",
+    "desks/mt5/research/data_prospector.py",
+    "desks/mt5/research/acquire_datasets.py",
+    "desks/mt5/research/experiment_design.py",
+    "libs/research/source_roi.py",
+    "libs/research_os/store.py"
+   ],
+   "scheduled_by": "MT5-FrontierAudit (information_value), daily_cycle:proposers (data_prospector), hourly_cycle:experiment_design, quant-prospector.timer",
+   "artifact": "desks/mt5/reports/DATA_PROSPECTOR.json",
+   "consumer": "acquire_datasets -> data/intelligence + registry",
+   "gap": "MEASURED 2026-09-16: EVSI is computed over docket experiments and value-of-data over sources, never as one ratio per missing observation; research_os blocking_observables() has no reader; no organ asks which single observation would most reduce uncertainty about a named hypothesis.",
+   "next_step": "value_of_data.py (wave 4, building): per hypothesis (docket cell or standing question finding) the observation that would most reduce its posterior uncertainty, priced by the prospector's cost table into one ratio, ranked, handed to acquire_datasets as targets and published in reports/VALUE_OF_DATA.json; core leg.",
+   "landed": []
+  },
+  {
+   "id": "Q8",
+   "item": "One typed deterministic research API: data.query, event.query, macro.query, causal.test, factor.build, alpha.backtest, execution.simulate, portfolio.evaluate, gauntlet.run, forward.register, evidence.lookup with aligned schemas and deterministic replay",
+   "domain": "Q",
+   "phase": "Q",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "libs/research_os/adapters/base.py",
+    "libs/research/measurement_resolver.py",
+    "libs/research_os/dsl.py",
+    "desks/mt5/research/proposer_common.py",
+    "libs/validation/replay2.py",
+    "libs/data/pit.py",
+    "desks/mt5/research/shadow_forward.py"
+   ],
+   "scheduled_by": "none (each surface is invoked ad hoc)",
+   "artifact": "none",
+   "consumer": "none",
+   "gap": "MEASURED 2026-09-16: no research_api or tool_env module; the eleven verbs have no common schema or call log; bars loading, cost basis and universe are re-implemented per organ; deterministic replay is a property of replay2/lockbox alone.",
+   "next_step": "libs/research/research_api.py (wave 4, building): one typed facade whose eleven verbs delegate to the existing organs with dataclass schemas, a deterministic call log (data/research_api_calls.jsonl with input hashes) and PIT enforcement on every query; the seats and new organs call it instead of re-implementing loaders.",
+   "landed": []
+  },
+  {
+   "id": "Q9",
+   "item": "Quant Co-Scientist: separate competing functions Generation -> Mechanism -> Criticism -> Simulation -> Replication -> Meta-review; no majority voting; evidence that survives attacks wins",
+   "domain": "Q",
+   "phase": "Q",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/scientist_tournament.py",
+    "desks/mt5/research/research_org.py",
+    "desks/mt5/research/adversary.py",
+    "libs/research/review_rubric.py",
+    "desks/mt5/research/model_role_benchmark.py"
+   ],
+   "scheduled_by": "MT5-ScientistTournament (daily, --subjects 1), hourly_cycle:research_org, hourly_cycle:prosecutor",
+   "artifact": "desks/mt5/reports/SCIENTIST_TOURNAMENT.json",
+   "consumer": "none binding",
+   "gap": "MEASURED 2026-09-16: the panel is all critics -- Generation and Simulation are not seats; Replication (shadow_forward) never reads a tournament verdict; one subject per day; no tournament outcome writes a docket row or gates the promoter.",
+   "next_step": "scientist_tournament gains generation and simulation seats (the QD frontier and world_lab as generators, synthetic_regimes as the simulation), --subjects raised to the never-reviewed certified cells, and its verdicts feed blind_reviewer's ledger so the promoter refuses a VETO; roles bound by model_role_benchmark.",
+   "landed": []
+  },
+  {
+   "id": "Q10",
+   "item": "Evolvable ontology: the system proposes NEW axes for the semantic space (balance-sheet constraint, LP inventory state, information diffusion speed), tests whether they explain unexplained P&L/residuals, and registers them only on evidence",
+   "domain": "Q",
+   "phase": "Q",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "libs/research/semantic_space.py",
+    "libs/research/alpha_schema.py",
+    "libs/research/mechanism_ontology.py",
+    "desks/mt5/research/axis_registry.py",
+    "desks/mt5/research/representation_discovery.py",
+    "desks/mt5/frontier_intel/ontology.py"
+   ],
+   "scheduled_by": "hourly_cycle:axis_registry, hourly_cycle:frontier_ontology, MT5-FrontierAudit (representation_discovery)",
+   "artifact": "desks/mt5/reports/AXIS_REGISTRY.json",
+   "consumer": "data/intelligence/axis_registry/",
+   "gap": "MEASURED 2026-09-16: the axes are source constants; representation_discovery invents composite variables but they never become coordinates; nothing proposes, tests and registers a new axis on evidence.",
+   "next_step": "axis_proposer.py (wave 5): candidate axes from representation_discovery composites, standing_questions residual correlates and mechanism_ontology observables; each scored by the share of unexplained residual it explains out of sample; proposals published with evidence and registered into axis_registry's vocabulary table only after two consecutive passes clear the bar.",
+   "landed": []
+  },
+  {
+   "id": "Q11",
+   "item": "Unexplained-residual hunting: Residual = Reality - ExistingModels at every level, one queue for unexplained returns, volatility, live losses, slippage, cross-asset moves, macro reactions, prioritised by magnitude x recurrence x unexplained fraction",
+   "domain": "Q",
+   "phase": "Q",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/standing_questions.py",
+    "desks/mt5/research/factor_residual_engine.py",
+    "desks/mt5/research/unknown_unknowns.py",
+    "libs/research/counterfactual_world.py",
+    "desks/mt5/research/missed_growth.py",
+    "desks/mt5/research/opportunity_gap.py",
+    "desks/mt5/research/fill_attribution.py"
+   ],
+   "scheduled_by": "hourly_cycle:standing_questions, daily_cycle:factor_residual, hourly_cycle:exogenous_search, hourly_cycle:counterfactual_world, hourly_cycle:opportunity_gap",
+   "artifact": "desks/mt5/reports/STANDING_QUESTIONS.json",
+   "consumer": "data/intelligence (standing_questions, factor_residual); reports otherwise",
+   "gap": "MEASURED 2026-09-16: six residual producers and no single queue; data/unknown_unknowns_queue.jsonl has no consumer; no organ ranks residuals by economic magnitude x recurrence x unexplained fraction.",
+   "next_step": "residual_queue.py (wave 4, building): merges every producer into data/residual_queue.jsonl with one priority, consumes unknown_unknowns_queue.jsonl, donates the top items as hypotheses through proposer_common.donate and publishes reports/RESIDUAL_QUEUE.json; core leg.",
+   "landed": []
+  },
+  {
+   "id": "Q12",
+   "item": "Meta research allocator: ROI_research_j = E[delta E[log W]] / (compute + data + time) allocating compute to research directions the way capital is allocated to alphas",
+   "domain": "Q",
+   "phase": "Q",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "libs/research/bandit.py",
+    "desks/mt5/research/research_budget.py",
+    "desks/mt5/research/budget_market.py",
+    "desks/mt5/research/meta_controller.py",
+    "libs/ops/scaling_laws.py",
+    "desks/mt5/research/credit_assignment.py",
+    "desks/mt5/research/breadth_ladder.py"
+   ],
+   "scheduled_by": "daily_cycle:research_bandit, hourly_cycle:alpha_evolution (research_budget), MT5-FrontierAudit (budget_market, meta_controller)",
+   "artifact": "desks/mt5/reports/RESEARCH_BUDGET.json",
+   "consumer": "research_budget.budget_s -> the budgeted legs",
+   "gap": "MEASURED 2026-09-16: the bandit's numerator is survivor posteriors x breadth credit (and realised credit since today), research_budget scales seconds by shares x the breadth ladder; meta_controller and budget_market price nine action kinds in dElogW but nothing reads their ranking to decide what runs.",
+   "next_step": "research_budget gains a third factor from meta_controller's per-kind prices via meta_controller.KIND_LEGS (a leg whose kind is priced above the median gets more seconds, below gets fewer, clipped), so compute follows E[dElogW] per compute-second; RESEARCH_BUDGET.json records all three factors.",
+   "landed": []
+  },
+  {
+   "id": "Q13",
+   "item": "AgonAlpha: immutable research artifacts searched as objects; a fresh-context BLIND REVIEWER that reloads data, re-runs the experiment, reproduces the statistics, attacks assumptions and can VETO; a pending-aware scheduler",
+   "domain": "Q",
+   "phase": "Q",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/adversary.py",
+    "libs/validation/replay2.py",
+    "desks/mt5/scripts/external_gauntlet.py",
+    "libs/validation/hostile.py",
+    "libs/research/artifacts.py"
+   ],
+   "scheduled_by": "hourly_cycle:adversaries, MT5-Gauntlet (replay2_agreement)",
+   "artifact": "desks/mt5/reports/UNIVERSAL_SURVIVORS.json",
+   "consumer": "promoter",
+   "gap": "MEASURED 2026-09-16: replay2_agreement compares two engines on the same evidence inside the gauntlet; no organ reproduces a certificate from the data with fresh eyes and no veto reaches the promoter; the gauntlet's queue does not account for pending experiments.",
+   "next_step": "blind_reviewer.py (wave 3, building): reloads bars, re-runs the family through family_call, reproduces the stats, runs hostile.run_all, writes PASS/VETO to data/blind_review_ledger.jsonl; promoter refuses a LIVE row for a VETOed certificate; core leg; pending-aware scheduling via the gauntlet's cursor.",
+   "landed": []
+  },
+  {
+   "id": "Q14",
+   "item": "GoAnt: quality-diversity search with Explorer/Exploiter/Connector workers over a niche Mental Map (actor, constraint, information, mechanism, asset, horizon, session, regime), one elite per niche",
+   "domain": "Q",
+   "phase": "Q",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/axis_registry.py",
+    "libs/research/search_populations.py",
+    "desks/mt5/research/alpha_evolution.py",
+    "desks/mt5/research/breadth_frontier.py",
+    "desks/mt5/research/empty_cluster_forcer.py"
+   ],
+   "scheduled_by": "hourly_cycle:axis_registry, hourly_cycle:alpha_evolution",
+   "artifact": "desks/mt5/reports/AXIS_REGISTRY.json",
+   "consumer": "data/intelligence/axis_registry/",
+   "gap": "MEASURED 2026-09-16: MAP-Elites exists inside alpha_evolution's populations over expression features, not over economic niches; no elite-per-niche map, no explorer/exploiter/connector split.",
+   "next_step": "qd_frontier.py (wave 3, building): the Mental Map from the axis registry's cells, elites by forward evidence, three workers donating into data/intelligence/qd_frontier/; core leg; dominance and elite_families published as the anti-monoculture numbers.",
+   "landed": []
+  },
+  {
+   "id": "Q15",
+   "item": "AI-Scientist-v2: progressive agentic tree search over whole research projects managed by an experiment manager (macro liquidity -> metals/FX/indices -> real yield/USD/carry/basis -> XAU/XAG ...), results deciding which branches deepen",
+   "domain": "Q",
+   "phase": "Q",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/research_tree.py",
+    "desks/mt5/research/experiment_design.py",
+    "libs/research/lineage_dag.py",
+    "desks/mt5/research/deepening_worker.py"
+   ],
+   "scheduled_by": "MT5-AuditLane (research_tree), hourly_cycle:experiment_design, hourly_cycle:deepen",
+   "artifact": "desks/mt5/reports/RESEARCH_TREE.json",
+   "consumer": "proposer_common.donate (research_tree)",
+   "gap": "MEASURED 2026-09-16: research_tree is a beam over a generic kinds ladder; no experiment manager owns a project tree whose branches are asset classes and mechanisms with results deciding depth.",
+   "next_step": "Same organ as D7 (MCTS in research_tree): add project roots from the QD frontier's niches and the standing questions' findings, with PUCT over branches and the forced-flow ladder as the first project.",
+   "landed": []
+  },
+  {
+   "id": "Q16",
+   "item": "AlphaCrafter: alpha value is state dependent -- P(alpha_i > 0 | macro, vol, session, liquidity, cross-asset, positioning, time) published per sleeve and used by the allocator",
+   "domain": "Q",
+   "phase": "Q",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/posterior_alpha.py",
+    "desks/mt5/research/regime_monitor.py",
+    "desks/mt5/research/regime_coverage.py",
+    "libs/models/router.py",
+    "desks/mt5/research/pf_allocator.py"
+   ],
+   "scheduled_by": "hourly_cycle:posterior_alpha, hourly_cycle:regime_monitor",
+   "artifact": "desks/mt5/reports/POSTERIOR_ALPHA.json",
+   "consumer": "pf_allocator (next)",
+   "gap": "MEASURED 2026-09-16: posterior_alpha publishes an unconditional posterior per sleeve; regime_monitor gates by one expectancy threshold; no per-sleeve state-conditioned P(alpha>0).",
+   "next_step": "posterior_alpha gains a state-conditioned block: the same NIG posterior per sleeve x state bucket (regime_state, session, vol tercile, USD trend sign) with shrinkage to the unconditional posterior; pf_allocator's world sampler reads the bucket matching the current state (two-sided: more when the state is favourable, less when not, never below the floor).",
+   "landed": []
+  },
+  {
+   "id": "Q17",
+   "item": "FactorMiner: executable research skills plus structured experience memory split into POSITIVE (mechanisms that survived, conditions, transferable constructions) and NEGATIVE (leakage patterns, cost-killed mechanisms, parameter fragility, duplicate families, regime failures, forward failures); retrieve -> generate -> evaluate -> distill",
+   "domain": "Q",
+   "phase": "Q",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/semantic_memory.py",
+    "libs/research/graveyard_model.py",
+    "desks/mt5/research/negative_knowledge.py",
+    "libs/alpha_factory/research_memory.py",
+    "desks/mt5/research/survivor_distiller.py"
+   ],
+   "scheduled_by": "hourly_cycle:semantic_memory, hourly_cycle:graveyard_model",
+   "artifact": "desks/mt5/data/semantic_memory/manifest.json",
+   "consumer": "novelty_gate, deepening_worker",
+   "gap": "MEASURED 2026-09-16: semantic_memory indexes lessons, verdicts, survivors, claims, hypotheses, genomes, commits and trade outcomes; it does not split the corpus into the positive/negative experience classes or distil constructions; survivor_distiller and negative_knowledge are unwired.",
+   "next_step": "semantic_memory gains `positive()` and `negative()` views with the six negative classes derived from gate verdicts (terminal_gate -> class) and a distil() step writing data/experience_memory.json; the deepening worker retrieves both before generating; survivor_distiller and negative_knowledge on the heavy plan.",
+   "landed": []
+  },
+  {
+   "id": "Q18",
+   "item": "Research parallelism by search paradigm (LLM causal reasoning, symbolic regression, MCTS, GFlowNet, MAP-Elites/QD, Bayesian optimisation, genetic program evolution, causal discovery, residual mining, literature mechanism extraction) feeding one intake; agents never merged",
+   "domain": "Q",
+   "phase": "Q",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "libs/research/search_populations.py",
+    "desks/mt5/research/alpha_evolution.py",
+    "desks/mt5/research/research_tree.py",
+    "desks/mt5/research/deep_forest_miner.py",
+    "desks/mt5/research/standing_questions.py",
+    "desks/mt5/research/causal_discovery.py",
+    "libs/research/bandit.py"
+   ],
+   "scheduled_by": "hourly_cycle:alpha_evolution, MT5-AuditLane, hourly_cycle:deep_forest, hourly_cycle:standing_questions, MT5-FrontierAudit",
+   "artifact": "desks/mt5/reports/RESEARCH_BANDIT.json",
+   "consumer": "miner_candidate_compiler",
+   "gap": "MEASURED 2026-09-16: the paradigms exist as separate organs on different clocks; the bandit prices research-action arms, not paradigms, and nothing measures the correlation of what the paradigms propose.",
+   "next_step": "engine_registry (C6) gains a paradigm column and a redundancy measure (share of proposals of paradigm A that novelty_gate finds redundant with B's), published in reports/ENGINE_REGISTRY.json; the bandit gains a JOINT/PARADIGM view so the budget rewards the paradigms whose survivors are independent.",
+   "landed": []
+  },
+  {
+   "id": "W0",
+   "item": "P0 production truth: code/data/runtime provenance perfect, zero silent failures",
+   "domain": "W",
+   "phase": "W",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "libs/ops/compute_ledger.py",
+    "desks/mt5/research/live_system_state.py",
+    "desks/mt5/research/wiring_ceo.py",
+    "desks/mt5/research/hourly_cycle.py",
+    "scripts/check_closed_loop.py",
+    "desks/mt5/research/tier1_scorecard.py"
+   ],
+   "scheduled_by": "hourly_cycle:live_system_state, hourly_cycle:wiring_ceo, hourly_cycle:closed_loop, hourly_cycle:tier1_scorecard, MT5-GateAttest",
+   "artifact": "desks/mt5/data/LIVE_SYSTEM_STATE.json",
+   "consumer": "check_closed_loop; the dashboard",
+   "gap": "MEASURED 2026-09-16: provenance envelope, one canonical state, the wiring hunter with auto-clocking, core/heavy plans and the attestation on every seal LANDED today; still open: the live deadman (dry-run), >99% trade attribution (4.6% measured), the silent-failure row of the scorecard reads 10.",
+   "next_step": "Close C1's remaining two: repoint the deadman at the live MT5 book (principal-gated, LAWS 4) and reconcile live_ledger sleeves to the roster so attribution reads >99%; drive process_health FAILING/NOT_SCHEDULED to 0 by contract-naming the FrontierAudit sub-organs.",
+   "landed": []
+  },
+  {
+   "id": "W1",
+   "item": "P1 Global Intelligence OS: a source registry with provenance, native-language source maps (CN/JP/KR/RU/AR/PT/ES/TR/HI/... never translated-English coverage), official primary feeds as events with known-at stamps, scholarly/code/web collectors, and per-source reputation P(novel lead | source), P(testable | source), P(survivor | source), E[dElogW | source] with an intelligence ROI allocator",
+   "domain": "W",
+   "phase": "W",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/deep_forest_miner.py",
+    "desks/mt5/research/repo_miner.py",
+    "desks/mt5/data/deep_forest_sources.json",
+    "desks/mt5/research/data_prospector.py",
+    "desks/mt5/research/acquire_datasets.py",
+    "libs/research/source_roi.py",
+    "desks/mt5/research/credit_assignment.py",
+    "desks/mt5/research/fetch_alfred.py"
+   ],
+   "scheduled_by": "hourly_cycle:world_crawler, hourly_cycle:deep_forest, daily_cycle:world_miners, quant-cot-fetch.timer, quant-prospector.timer",
+   "artifact": "desks/mt5/reports/DEEP_FOREST.json",
+   "consumer": "miner_candidate_compiler (data/intelligence/**)",
+   "gap": "MEASURED 2026-09-16: the world crawler and the deep-forest miner cover the Chinese/JP/KR/RU forests from data/deep_forest_sources.json and repo_miner covers public code; there is no source REGISTRY with provenance and reputation as one object, no per-source ROI allocator, no official-feed event normaliser with known-at stamps (fetch_alfred/sec_edgar on no clock), and no native-language maps for AR/PT/ES/TR/HI/VI.",
+   "next_step": "source_registry.py (wave 4b): one registry data/source_registry.json of every ground (language, kind, licence, fetch clock, cost), reputation from credit_assignment/hypothesis_graph/novelty_gate joins (novel, testable, survivor, independent survivor, dElogW per source), and an intel ROI share per source that world_crawler/deep_forest read as their crawl budget; extend deep_forest_sources.json with the missing language forests.",
+   "landed": []
+  },
+  {
+   "id": "W2",
+   "item": "P2 knowledge graph + canonical mechanism extraction: every lead one schema (actor, constraint, counterparty, mechanism, persistence, asset mapping, horizon, session, data, PIT availability, cost sensitivity, capacity, rule, risks, falsifier, hashes); four-stage deduplication (semantic, mechanism, structural, economic)",
+   "domain": "W",
+   "phase": "W",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "libs/research/hypothesis_graph.py",
+    "desks/mt5/side_channels/hypothesis_schema.py",
+    "libs/research/mechanism_ontology.py",
+    "libs/research/mechanism_claims.py",
+    "desks/mt5/research/semantic_memory.py",
+    "desks/mt5/research/novelty_gate.py",
+    "desks/mt5/research/miner_candidate_compiler.py"
+   ],
+   "scheduled_by": "hourly_cycle:compile_candidates, hourly_cycle:semantic_memory, hourly_cycle:novelty_gate",
+   "artifact": "desks/mt5/data/hypothesis_graph.jsonl",
+   "consumer": "the docket; novelty_gate; semantic_memory queries",
+   "gap": "MEASURED 2026-09-16: the hypothesis graph, the mechanism ontology, semantic memory and the four-way novelty gate exist; the canonical lead schema (hypothesis_schema.py) is read by no intake door and the graph nodes are hypotheses, not the full SOURCE/AUTHOR/PAPER/CODE/CLAIM/MECHANISM/ACTOR/EVENT/DATASET vocabulary with CITES/CONTRADICTS/RESEMBLES/LEADS edges.",
+   "next_step": "lead_schema enforcement at the compiler (INCOMPLETE_LEAD disposition when actor/mechanism/falsifier are missing from an LLM row) and a knowledge_graph.py that projects sources, claims, mechanisms, datasets, experiments, failures and survivors into one typed graph (data/knowledge_graph.jsonl) queried by semantic_memory.",
+   "landed": []
+  },
+  {
+   "id": "W3",
+   "item": "P3 semantic frontier + unseen-frontier estimator: the A x P x C x E x I x M x H x S x R x X periodic table with explicit frontier coverage of ~40 mechanism clusters, and N_unseen(language, source, asset, mechanism) from Good-Turing / Chao estimators and discovery curves so the allocator knows which grounds are saturating",
+   "domain": "W",
+   "phase": "W",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/axis_registry.py",
+    "desks/mt5/research/qd_frontier.py",
+    "desks/mt5/research/breadth_ladder.py",
+    "libs/research/alpha_schema.py",
+    "desks/mt5/research/frontier_map.py"
+   ],
+   "scheduled_by": "hourly_cycle:axis_registry, hourly_cycle:breadth_ladder",
+   "artifact": "desks/mt5/reports/AXIS_REGISTRY.json",
+   "consumer": "breadth_ladder (floor); qd_frontier; research_budget",
+   "gap": "MEASURED 2026-09-16: the ten-axis registry, the ladder and (wave 3) the QD frontier exist; no organ estimates how many mechanisms a ground still hides (no Chao/Good-Turing over mechanism observations), so 'Korean commodities 80% explored' is not a statement the desk can make.",
+   "next_step": "unseen_frontier.py (wave 4b): per (language, source, asset_class, mechanism) the observed mechanism frequency table from deep_forest claims, repo_miner rows and the hypothesis graph, Chao1 and Good-Turing coverage estimates, discovery curves per source, published in reports/UNSEEN_FRONTIER.json; source_registry reads it as the exploration term of the intel ROI.",
+   "landed": []
+  },
+  {
+   "id": "W4",
+   "item": "P4 thousands of cheap scouts: deterministic/small-model scouts per ground (ChinaFactorScout, JapanMacroScout, CentralBankScout, ExchangeNoticeScout, CompetitionScout, CodeCommitScout, FailureScout, ...) that extract structured mechanisms and provenance only, never trades; 70-90% of information handled without frontier models",
+   "domain": "W",
+   "phase": "W",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/deep_forest_miner.py",
+    "desks/mt5/research/repo_miner.py",
+    "desks/mt5/data/deep_forest_sources.json",
+    "libs/ops/llm_seat.py"
+   ],
+   "scheduled_by": "hourly_cycle:world_crawler, hourly_cycle:deep_forest",
+   "artifact": "desks/mt5/data/intelligence/deep_forest",
+   "consumer": "miner_candidate_compiler",
+   "gap": "MEASURED 2026-09-16: the crawler and forest miner are the scouts today and they call seats for extraction; no per-ground scout roster with a cheap deterministic filter before any model, and no scout yield accounting per ground.",
+   "next_step": "scout_roster.py: the roster as data (ground -> scout kind -> filter regexes in the ground's language -> extraction seat), the cheap filters run before any seat, per-scout yield (leads, novel, testable) into the source registry; every scout donates only structured lead rows.",
+   "landed": []
+  },
+  {
+   "id": "W5",
+   "item": "P5 analyst + scientist + red-team swarms: analysts turn leads into mechanisms (MechanismExtractor, EconomicActorMapper, PITAuditor, DataAvailability, CrossAssetMapper, FusionInstrumentMapper, Novelty, PriorEvidence, CostFeasibility, Falsifier); scientists with different epistemologies compete for budget; red-team hunters (leakage, PIT, overfit, cost, selection, survivorship, correlation, regime, execution, replication, counterfactual) kill research",
+   "domain": "W",
+   "phase": "W",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/deepening_worker.py",
+    "desks/mt5/research/scientist_tournament.py",
+    "desks/mt5/research/research_org.py",
+    "desks/mt5/research/adversary.py",
+    "desks/mt5/research/model_role_benchmark.py",
+    "desks/mt5/research/blind_reviewer.py"
+   ],
+   "scheduled_by": "hourly_cycle:deepen, MT5-ScientistTournament, hourly_cycle:research_org, hourly_cycle:adversaries",
+   "artifact": "desks/mt5/reports/SCIENTIST_TOURNAMENT.json",
+   "consumer": "the docket; the promoter (blind review veto)",
+   "gap": "MEASURED 2026-09-16: the deepening worker is the analyst, the tournament the critics, adversary the prosecutor, blind_reviewer (wave 3) the replicator; no analyst pipeline with the ten named functions on every lead, no scientist seats competing for budget by epistemology.",
+   "next_step": "analyst_pipeline.py: the ten analyst functions as deterministic/seat steps over every canonical lead (fills the lead schema), and the scientist roster bound to research_budget arms so scientists compete for seconds; red-team hunters are the evaluator lab's battery plus blind review.",
+   "landed": []
+  },
+  {
+   "id": "W6",
+   "item": "P6 diverse search algorithms feeding one intake: AlphaSchema semantic, AlphaPROBE DAG evolution, trajectory evolution, budget-aware controllers (IMPROVE/COMBINE/PIVOT/STOP), program evolution, MCTS, quality-diversity, MAPLE multi-output correlation penalty, symbolic regression, Bayesian optimisation, causal discovery, residual mining, literature-to-code, counterexample agents",
+   "domain": "W",
+   "phase": "W",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/axis_registry.py",
+    "desks/mt5/research/qd_frontier.py",
+    "libs/research/trajectory.py",
+    "libs/research/lineage_dag.py",
+    "desks/mt5/research/research_tree.py",
+    "libs/research/generators.py",
+    "libs/research/search_populations.py",
+    "desks/mt5/research/alpha_evolution.py",
+    "desks/mt5/research/standing_questions.py",
+    "desks/mt5/research/causal_discovery.py",
+    "libs/research/search_controller.py"
+   ],
+   "scheduled_by": "hourly_cycle:axis_registry, hourly_cycle:alpha_evolution, MT5-AuditLane, hourly_cycle:standing_questions, MT5-FrontierAudit",
+   "artifact": "desks/mt5/data/research_queue.json",
+   "consumer": "miner_candidate_compiler",
+   "gap": "MEASURED 2026-09-16: nine of the paradigms exist as organs; trajectory evolution, the search controller and the populations are on no clock; no paradigm-level redundancy measure; no counterexample agent.",
+   "next_step": "Same as Q18 plus: run_research_loop.py on the heavy plan (trajectory/DAG/controller), a counterexample agent (evaluator lab attacks per hypothesis), and the paradigm column in the engine registry.",
+   "landed": []
+  },
+  {
+   "id": "W7",
+   "item": "P7 PIT macro/cross-asset world model: country state vectors, global factors, dynamic cross-asset graph G_t whose edge changes are themselves hunted, per-trade risk decomposition so five long-USD trades read as one bet",
+   "domain": "W",
+   "phase": "W",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/state_vector_build.py",
+    "libs/portfolio/macro_state.py",
+    "desks/mt5/research/world_causal_graph.py",
+    "desks/mt5/research/exposure_decomposition.py",
+    "desks/mt5/research/futures_lead_lag.py"
+   ],
+   "scheduled_by": "hourly_cycle:state_vector, hourly_cycle:causal_graph, hourly_cycle:exposure_decomposition",
+   "artifact": "desks/mt5/reports/EXPOSURE_DECOMPOSITION.json",
+   "consumer": "pf_allocator; standing_questions",
+   "gap": "MEASURED 2026-09-16: exposure decomposition landed today (twelve named factors, duplicate heat); the state vector is single-country; the causal graph does not publish edge CHANGES as hunted objects.",
+   "next_step": "C7's macro_state_engine (country blocks) and an edge-change hunter in world_causal_graph (rolling-beta / lead-lag change points donated as hypotheses).",
+   "landed": []
+  },
+  {
+   "id": "W8",
+   "item": "P8 the four laboratories on clocks: residual lab (queues by magnitude x frequency x unexplained fraction), forced-flow/event factory, event-response atlas (reaction distributions per event x asset x horizon x regime), execution intelligence command (Cost(asset, time, size, state, order) and NetAlpha = RawAlpha - ExpectedExecutionCost)",
+   "domain": "W",
+   "phase": "W",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/standing_questions.py",
+    "desks/mt5/research/forced_flow_calendar.py",
+    "desks/mt5/mt5desk/family_forced_flow.py",
+    "desks/mt5/research/cost_surface.py",
+    "desks/mt5/research/fill_attribution.py",
+    "desks/mt5/mt5desk/family_event_reaction.py"
+   ],
+   "scheduled_by": "hourly_cycle:standing_questions, hourly_cycle:forced_flow_calendar, MT5-CostState, hourly_cycle:fill_attribution",
+   "artifact": "desks/mt5/data/forced_flow_calendar.json",
+   "consumer": "breadth_sweep (forced_flow family); gauntlet costs",
+   "gap": "MEASURED 2026-09-16: the forced-flow calendar and family and the standing questions landed today; the residual queue (Q11), the event-response atlas (C11) and the multi-dimensional cost surface (C12) are still open.",
+   "next_step": "residual_queue.py (wave 4), event_response_atlas.py (price reactions around every calendar event by horizon and regime, no consensus needed), cost_surface dimensions (C12).",
+   "landed": []
+  },
+  {
+   "id": "W9",
+   "item": "P9 immutable research artifacts + independent adversarial replication: SOURCE -> CLAIM -> HYPOTHESIS -> CODE -> DATA HASH -> CONFIG HASH -> RESULTS -> REVIEW frozen and hash-linked; a new experiment is a new artifact; the blind reviewer re-executes with minimal context and can veto",
+   "domain": "W",
+   "phase": "W",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "libs/research/artifacts.py",
+    "libs/ops/compute_ledger.py",
+    "desks/mt5/research/blind_reviewer.py",
+    "libs/validation/replay2.py",
+    "desks/mt5/research/evidence_vault.py"
+   ],
+   "scheduled_by": "hourly_cycle:blind_reviewer (wave 3), MT5-Gauntlet",
+   "artifact": "desks/mt5/data/blind_review_ledger.jsonl",
+   "consumer": "promoter (veto)",
+   "gap": "MEASURED 2026-09-16: the provenance envelope hashes each run's declared outputs and the blind reviewer (wave 3) re-executes certificates; there is no hash-linked artifact chain from source to review as one immutable record.",
+   "next_step": "research_artifacts.py (wave 4b): an append-only chain data/research_artifacts.jsonl where each record carries the sha256 of its predecessor and of its own payload (source lead -> claim -> hypothesis card -> code identity (behaviour_hash) -> data hash (bars parquet digests) -> config hash -> gauntlet result -> blind review), written by the compiler, the gauntlet, the reviewer and the promoter; a verifier walks the chain hourly.",
+   "landed": []
+  },
+  {
+   "id": "W10",
+   "item": "P10 forward evidence allocator: scarce forward slots ranked by PosteriorEdge x expected delta n_eff x expected delta g / (Uncertainty x ForwardTime)",
+   "domain": "W",
+   "phase": "W",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/shadow_admission.py",
+    "desks/mt5/research/experiment_design.py",
+    "desks/mt5/research/posterior_alpha.py",
+    "libs/research/breadth.py"
+   ],
+   "scheduled_by": "MT5-Shadow, hourly_cycle:experiment_design, hourly_cycle:posterior_alpha",
+   "artifact": "desks/mt5/reports/POSTERIOR_ALPHA.json",
+   "consumer": "shadow_admission",
+   "gap": "MEASURED 2026-09-16: same gap as C15 -- enrolment is eligibility-driven; posterior_alpha now supplies the posterior edge and breadth.py the marginal k_eff, so the ranker's inputs exist.",
+   "next_step": "forward_slot_ranker.py (C15) reading POSTERIOR_ALPHA.json, EFFECTIVE_BREADTH, capacity and the cell's trade rate; shadow_admission reads the ranking at the slot ceiling.",
+   "landed": []
+  },
+  {
+   "id": "W11",
+   "item": "P11 posterior E[log W] allocator whose live allocations update from forward evidence, with effective-breadth admission (incremental P&L independence and mechanism novelty, not profit alone)",
+   "domain": "W",
+   "phase": "W",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/pf_allocator.py",
+    "libs/portfolio/robust_elog.py",
+    "desks/mt5/research/posterior_alpha.py",
+    "desks/mt5/research/alpha_breadth.py",
+    "libs/research/breadth_credit.py",
+    "desks/mt5/research/exposure_decomposition.py"
+   ],
+   "scheduled_by": "hourly_cycle:pf_allocator, MT5-AllocatorFast, hourly_cycle:alpha_breadth",
+   "artifact": "desks/mt5/reports/pf_allocation.json",
+   "consumer": "mt5desk/gateway.py",
+   "gap": "MEASURED 2026-09-16: the allocator maximises robust E[log W] over sampled worlds and the forward-evidence override now runs (live ledger present); posterior_alpha and exposure_decomposition are published but not yet read by the world sampler; the marginal-breadth admission is a research credit, not an allocator tier.",
+   "next_step": "C16/C17/C18 next steps: the world sampler takes posterior_alpha's per-sleeve prior and exposure_decomposition's factor tier; a breadth-admission term (marginal k_eff) enters the objective two-sided inside the heat floor/ceiling.",
+   "landed": []
+  },
+  {
+   "id": "W12",
+   "item": "P12 self-improving Research OS with an immutable evidence wall, four memory banks (positive, negative, mechanism, research-process), model-specialisation routing and the research ROI allocator",
+   "domain": "W",
+   "phase": "W",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/meta_rnd.py",
+    "scripts/check_immutable_evaluator.py",
+    "desks/mt5/research/semantic_memory.py",
+    "desks/mt5/research/model_role_benchmark.py",
+    "desks/mt5/research/research_budget.py",
+    "desks/mt5/research/breadth_ladder.py"
+   ],
+   "scheduled_by": "MT5-FrontierAudit (meta_rnd), hourly_cycle:semantic_memory, hourly_cycle:model_role_benchmark, hourly_cycle:alpha_evolution (research_budget)",
+   "artifact": "desks/mt5/reports/RESEARCH_BUDGET.json",
+   "consumer": "research_budget -> the budgeted legs",
+   "gap": "MEASURED 2026-09-16: the wall exists (check_immutable_evaluator), the role benchmark and the memory index landed today, the budget follows the bandit x the ladder; no variant archive (Q1), no four-bank memory split (Q17), no meta-controller factor (Q12).",
+   "next_step": "Q1 research_os_archive, Q17 memory banks, Q12 meta factor in research_budget.",
+   "landed": []
+  },
+  {
+   "id": "W13",
+   "item": "P13 proprietary-data flywheel: persist ticks, spreads, fills, rejections, latency, forward forecasts and errors, live regime labels, decay, event observations, own false discoveries -- everything nobody can reconstruct later",
+   "domain": "W",
+   "phase": "W",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/recorders/tick_recorder.py",
+    "desks/mt5/moat/moat_recorder.py",
+    "libs/execution/fill_corpus.py",
+    "desks/mt5/research/hazard_engine.py",
+    "desks/mt5/data/hypotheses/gate_verdict_ledger.jsonl"
+   ],
+   "scheduled_by": "MT5-TickRecorder, MT5-MoatRecorder, MT5-MoatSilver, hourly_cycle:record_tape, hourly_cycle:hazard_engine",
+   "artifact": "desks/mt5/data/moat_coverage.json",
+   "consumer": "moat_miner; execution_twin; credit",
+   "gap": "MEASURED 2026-09-16: ticks, spreads, fills, rejections, slippage, latency, gate verdicts (own false discoveries) and now hazard cards are persisted; not yet as series: forward forecasts vs outcomes (prediction tape), live regime labels, weekend gaps, swap changes, closures (C20).",
+   "next_step": "moat_series.py (C20 next step): the prediction tape (bracket at placement vs venue close), regime labels per hour, weekend gaps, swap-change and closure series; a daily coverage report.",
+   "landed": []
+  },
+  {
+   "id": "W14",
+   "item": "Departments at 100%: every research mission (data, intel, discovery, validate, macro, execution, forward, meta) on its own clock at full useful throughput with a guaranteed baseline (its task) and an elastic share from measured marginal value; a central resource exchange naming the binding resource (compute / forward slots / data / sample)",
+   "domain": "W",
+   "phase": "W",
+   "status": "LANDED",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/hourly_cycle.py",
+    "desks/mt5/research/research_departments.py",
+    "desks/mt5/research/research_budget.py",
+    "desks/mt5/tests/test_cycle_plans_and_resume.py"
+   ],
+   "scheduled_by": "hourly_cycle:research_departments, MT5-HourlyCore, MT5-Hourly (dept:discovery) + MT5-Dept-* tasks",
+   "artifact": "desks/mt5/reports/RESEARCH_DEPARTMENTS.json",
+   "consumer": "research_budget.budget_s (department factor)",
+   "gap": "LANDED 2026-09-16: HOURLY_PLAN=dept:<name> partitions the heavy legs into nine departments (LEG_DEPARTMENT), each run as its own concurrent task; research_departments measures yield per compute-hour per department and publishes the elastic factor and the binding resource; UNMEASURED reallocates nothing.",
+   "next_step": "Register the department tasks on the box (MT5-Hourly -> dept:discovery; MT5-Dept-data/intel/validate/macro/execution/forward/meta/rest hourly at :06, PT3H, IgnoreNew); the exchange's shadow price for forward slots reads UNMEASURED until the forward ranker publishes queue depth.",
+   "landed": [
+    "research_departments 2026-09-16"
+   ]
+  },
+  {
+   "id": "W15",
+   "item": "Hierarchical bandits with a protected exploration floor at every node: Score_j = E[delta g_j] + beta sqrt(ln N / n_j) + lambda Novelty_j over a tree GLOBAL -> {Explore: languages, datasets, mechanisms, alien} / {Exploit: macro, forced flow, residual, carry, microstructure} / {Transfer: assets, horizons, regimes, execution}; discovery temperatures T0..T5 run concurrently; a permanent cold/alien exploration budget",
+   "domain": "W",
+   "phase": "W",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "libs/research/bandit.py",
+    "desks/mt5/research/research_budget.py",
+    "desks/mt5/research/breadth_ladder.py",
+    "desks/mt5/research/qd_frontier.py",
+    "desks/mt5/research/standing_questions.py",
+    "ops/research_allocation_policy.json"
+   ],
+   "scheduled_by": "daily_cycle:research_bandit, hourly_cycle:breadth_ladder, hourly_cycle:qd_frontier (wave 3), hourly_cycle:standing_questions",
+   "artifact": "desks/mt5/reports/RESEARCH_BANDIT.json",
+   "consumer": "research_budget",
+   "gap": "MEASURED 2026-09-16: one flat eleven-arm bandit with exploit/adjacent/cold group floors (research_allocation_policy.json); the ladder adds an exploration floor from UNMEASURED cells; the QD workers are the temperatures T0-T3 (exploiter, connector, explorer) and standing questions/unseen frontier are T4-T5; no tree of bandits and no explicit UCB novelty term.",
+   "next_step": "bandit gains a two-level tree (group -> arm) with a UCB term beta*sqrt(ln N/n) and a novelty term from novelty_gate per arm, each node with its floor from the policy; the temperature ladder is published per proposal source so the exchange can see T0..T5 all running.",
+   "landed": []
+  },
+  {
+   "id": "W16",
+   "item": "Descendants of every discovery AND every failure: a survivor spawns horizontal (assets), vertical (deeper conditioning), temporal (charts), conditional (regimes), execution and combination descendants; a failure spawns avoidance filters, reversal hypotheses, regime classifiers and why-it-fails hypotheses; every descendant charged to the multiple-testing ledger",
+   "domain": "W",
+   "phase": "W",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/survivor_distiller.py",
+    "desks/mt5/research/breadth_sweep.py",
+    "desks/mt5/research/miner_candidate_compiler.py",
+    "libs/research/graveyard_model.py",
+    "desks/mt5/research/revival_engine.py",
+    "desks/mt5/research/hazard_engine.py"
+   ],
+   "scheduled_by": "hourly_cycle:session_chart_expansion, hourly_cycle:breadth_sweep, hourly_cycle:compile_candidates, hourly_cycle:graveyard_model",
+   "artifact": "desks/mt5/data/research_queue.json",
+   "consumer": "the docket",
+   "gap": "MEASURED 2026-09-16: the compiler's expand_axes and the breadth sweep spawn chart/session descendants of every row; survivor_distiller (vertical/combination descendants) is on no clock; failures feed the graveyard model's P(survival) but spawn no descendants.",
+   "next_step": "descendants.py: on every new certificate spawn the six descendant classes through proposer_common.donate with a lineage tag; on every terminal failure class spawn the avoidance/reversal/why hypotheses; survivor_distiller on the discovery department's clock; all descendants charged by the existing trial census.",
+   "landed": []
+  },
+  {
+   "id": "W17",
+   "item": "Exploit sources and methods: a productive source triggers SourceExpansion (authors, linked forums, archives, citations, code, terminology, adjacent topics); a method's yield is tracked per domain P(method works | domain) and compute follows it; an under-covered region gets a temporary swarm until its marginal novelty falls",
+   "domain": "W",
+   "phase": "W",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/model_role_benchmark.py",
+    "libs/research/bandit.py"
+   ],
+   "scheduled_by": "hourly_cycle:source_registry (wave 4b), hourly_cycle:unseen_frontier (wave 4b), hourly_cycle:model_role_benchmark",
+   "artifact": "desks/mt5/reports/SOURCE_REGISTRY.json",
+   "consumer": "world_crawler crawl shares (next)",
+   "gap": "MEASURED 2026-09-16: the source registry (reputation + intel ROI shares) and the unseen-frontier estimator are being built; the crawler does not yet read the shares; no per-(method, domain) yield table.",
+   "next_step": "world_crawler and deep_forest read SOURCE_REGISTRY shares as their crawl budget and expand a source's neighbourhood when its ROI share rises; engine_registry (C6/Q18) publishes P(certified | method, asset_class) so research_budget can weight by domain.",
+   "landed": []
+  },
+  {
+   "id": "W18",
+   "item": "The ignorance ledger and the CEO dashboard: every unexplained thing scored magnitude x recurrence x unexplained fraction x potential value and sent back through the scientists; a dashboard answering coverage, frontier, research, discovery, validation, forward, breadth, growth and health with lifetime metrics (frontier explored %, survivor yield per source, PIT-clean axes, novel mechanisms/week, survivors/compute, FDR/replication rates, n_eff, posterior edge distribution, live half-life, alpha captured / theoretical, realised vs predicted log-growth, meta-R&D productivity, unseen mechanism mass)",
+   "domain": "W",
+   "phase": "W",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/tier1_scorecard.py",
+    "desks/mt5/research/research_departments.py",
+    "desks/mt5/research/live_system_state.py",
+    "scripts/build_zentech_state.py"
+   ],
+   "scheduled_by": "hourly_cycle:residual_queue (wave 4), hourly_cycle:tier1_scorecard, hourly_cycle:research_departments, MT5-DeskState",
+   "artifact": "desks/mt5/reports/TIER1_SCORECARD.json",
+   "consumer": "the dashboard (web/desk_state.json)",
+   "gap": "MEASURED 2026-09-16: the residual queue (ignorance ledger) is being built; the scorecard carries fourteen rows; the dashboard state builder does not yet read the scorecard, the departments, the unseen frontier or the wiring hunter.",
+   "next_step": "build_zentech_state.py gains a `ceo` block reading TIER1_SCORECARD, RESEARCH_DEPARTMENTS, UNSEEN_FRONTIER, WIRING_CEO, RESIDUAL_QUEUE, SOURCE_REGISTRY and POSTERIOR_ALPHA into the thirteen lifetime rows the principal named.",
+   "landed": []
+  },
+  {
+   "id": "W19",
+   "item": "The immutable constitution as code: PIT rules, complete search accounting, the multiple-testing ledger, sealed holdouts, preregistered forward clocks, actual execution records, actual costs and the research lineage are never modified by any self-improving organ; new tests may be added, old failed tests never deleted; sealed data never reaches a generator",
+   "domain": "W",
+   "phase": "W",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "scripts/check_immutable_evaluator.py",
+    "ops/principal_doctrine.txt",
+    "scripts/check_constitution_core.py",
+    "libs/validation/lockbox.py",
+    "desks/mt5/research/evidence_vault.py"
+   ],
+   "scheduled_by": "ops/gates.sh (law gates), MT5-GateAttest, MT5-FrontierAudit (evidence_vault)",
+   "artifact": "desks/mt5/data/IMMUTABLE_MANIFEST.json",
+   "consumer": "every self-improving organ (meta_rnd, research_os_archive, evaluator_lab)",
+   "gap": "MEASURED 2026-09-16: check_immutable_evaluator pins 18 files and the doctrine core is sealed; the wall does not yet list the forward clocks' ledgers, the live ledger, the cost surface or the artifact chain as immutable paths, and no organ asserts that a generator never reads sealed windows.",
+   "next_step": "Extend IMMUTABLE to the forward ledgers, live_ledger.jsonl, cost_surface.json and research_artifacts.jsonl (append-only checked by artifact_chain.verify); add a generator-isolation test that greps every proposer for lockbox/holdout reads; the evaluator lab and research_os_archive refuse variants naming any IMMUTABLE path.",
+   "landed": []
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."

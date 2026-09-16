@@ -157,3 +157,14 @@ TASK name="MT5-CycleNoon" trigger="UNDECLARED" runs="desks/mt5/research/hourly_c
 TASK name="MT5-DashMirror" trigger="UNDECLARED" runs="UNKNOWN" installer="NONE" lane="ops"
 # desks/mt5/scripts/Install-QuantWindows.ps1 registers it; not installed on the box 2026-09-16.
 TASK name="MT5-ArtifactSync" trigger="UNDECLARED" runs="UNKNOWN" installer="desks/mt5/scripts/Install-QuantWindows.ps1" lane="ops"
+
+# THE DEPARTMENTS (2026-09-16): each research mission on its own hourly clock at full throughput
+# (HOURLY_PLAN=dept:<name>); MT5-Hourly itself runs dept:discovery. PT3H, IgnoreNew, SYSTEM.
+TASK name="MT5-Dept-Data" trigger="every 1 hour, at :06" runs="desks/mt5/research/hourly_cycle.py" installer="NONE" lane="research"
+TASK name="MT5-Dept-Intel" trigger="every 1 hour, at :06" runs="desks/mt5/research/hourly_cycle.py" installer="NONE" lane="research"
+TASK name="MT5-Dept-Validate" trigger="every 1 hour, at :06" runs="desks/mt5/research/hourly_cycle.py" installer="NONE" lane="research"
+TASK name="MT5-Dept-Macro" trigger="every 1 hour, at :06" runs="desks/mt5/research/hourly_cycle.py" installer="NONE" lane="research"
+TASK name="MT5-Dept-Execution" trigger="every 1 hour, at :06" runs="desks/mt5/research/hourly_cycle.py" installer="NONE" lane="research"
+TASK name="MT5-Dept-Forward" trigger="every 1 hour, at :06" runs="desks/mt5/research/hourly_cycle.py" installer="NONE" lane="research"
+TASK name="MT5-Dept-Meta" trigger="every 1 hour, at :06" runs="desks/mt5/research/hourly_cycle.py" installer="NONE" lane="research"
+TASK name="MT5-Dept-Rest" trigger="every 1 hour, at :06" runs="desks/mt5/research/hourly_cycle.py" installer="NONE" lane="research"
