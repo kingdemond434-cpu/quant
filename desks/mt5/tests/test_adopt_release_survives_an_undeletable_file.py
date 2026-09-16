@@ -57,6 +57,7 @@ def _repo(tmp_path: Path) -> Path:
 #: The prefixes the script keeps for the box, verbatim from the script (the test below pins
 #: them to `libs.ops.release.STATE_PREFIXES` minus docs/).
 STATE_PREFIXES = ("desks/mt5/data/", "desks/mt5/reports/", "desks/mt5/logs/",
+                  "desks/mt5/frontier_intel/data/", "desks/mt5/side_channels/data/",
                   "data/", "reports/", "logs/", "web/")
 
 
@@ -198,7 +199,33 @@ def test_recording_the_merge_before_the_tree_matches_would_bury_the_release(
     assert _git(repo, "diff", "--name-only", "HEAD", target).strip() == "money.py"
 
 
-@pytest.mark.skipif(os.geteuid() == 0,
+# THIS TEST WAS POSIX-SHAPED AND ITS SUBJECT IS A WINDOWS SCRIPT. Two faults, one cause.
+#
+# `os.geteuid` is POSIX-only and was evaluated at IMPORT, so it raised AttributeError during
+# COLLECTION and the whole desks/mt5 suite could not be collected on the trading box -- the one
+# machine `Adopt-Release.ps1` runs on, and the only place any of these tests mean anything.
+#
+# Un-break the collection and the test itself then fails, because `chmod(0o555)` on a directory
+# is not how NTFS refuses an unlink: Windows honours the read-only attribute on FILES and ignores
+# a directory's mode bits, so the unlink succeeds and `pytest.raises(PermissionError)` is what
+# fails. Skipping it there would have left the claim untested on the only platform that runs it.
+#
+# So the SETUP is now platform-appropriate and the PROPERTY asserted is identical on both. On
+# Windows an open handle denies DELETE sharing, which is the box's real failure mode -- two of
+# this branch's own adoption commits say "NTFS entry corruption blocks unlink" -- and truncating
+# through a second handle is exactly what `Adopt-Release.ps1` does. On POSIX the directory bits
+# still do it, and the root guard stands, because root does ignore them.
+def _undeletable(f: Path):
+    """Make `f` refuse `unlink` the way its own platform does. Returns a teardown callable."""
+    if hasattr(os, "geteuid"):
+        d = f.parent
+        d.chmod(0o555)                   # entries may not be created or removed
+        return lambda: d.chmod(0o755)
+    fh = open(f, "r+b")                  # Windows: an open handle denies DELETE sharing
+    return fh.close
+
+
+@pytest.mark.skipif(getattr(os, "geteuid", lambda: 1)() == 0,
                     reason="root ignores directory permission bits, so unlink still succeeds")
 def test_in_place_truncate_writes_a_file_that_cannot_be_unlinked(tmp_path: Path) -> None:
     """The claim the whole script rests on, against a filesystem that refuses to unlink."""
@@ -206,7 +233,7 @@ def test_in_place_truncate_writes_a_file_that_cannot_be_unlinked(tmp_path: Path)
     d.mkdir()
     f = d / "run_external_backtest.py"
     f.write_bytes(b"old contents\n")
-    d.chmod(0o555)                       # entries may not be created or removed
+    teardown = _undeletable(f)
     try:
         with pytest.raises(PermissionError):
             f.unlink()
@@ -215,7 +242,7 @@ def test_in_place_truncate_writes_a_file_that_cannot_be_unlinked(tmp_path: Path)
             fh.write(b"new contents\n")
         assert f.read_bytes() == b"new contents\n"
     finally:
-        d.chmod(0o755)
+        teardown()
 
 
 def _executable_lines(text: str) -> str:
@@ -353,8 +380,31 @@ def test_the_script_keeps_before_it_deletes_and_verifies_outside_the_kept_set() 
     # a kept path is not staged either -- it is left for the sync that owns it
     keep_branch = code[code.index("if (Test-KeptByBox $rel)"):code.index('if ($op.Kind -eq "D")')]
     assert "$staged.Add" not in keep_branch and "continue" in keep_branch
-    # the verification gate excludes exactly the kept set, nothing wider
-    assert "Where-Object { -not (Test-KeptByBox $_) })" in code
+    # THE VERIFICATION GATE EXCLUDES EVERY STATE PATH, WHICH IS WIDER THAN THE KEPT SET AND HAD
+    # TO BECOME SO (2026-09-13). This asserted `-not (Test-KeptByBox $_)`, i.e. "exactly the kept
+    # set, nothing wider" -- and that scope made the adoption unable to succeed on a live box.
+    #
+    # `Test-KeptByBox` keeps a state path only when the box CHANGED it since the merge base. A
+    # state path the box had not touched is therefore written from the target in step 2 and then
+    # checked here -- and the organs that own those files are running while the adoption runs.
+    # Measured on the box: 2,404 paths adopted, 54 written and committed, then 52 "still differ",
+    # every one under data/intelligence/, desks/mt5/data/ or web/, rewritten between the write and
+    # the diff by hourly_cycle, shadow_forward, external_gauntlet, moat_recorder and the gateway
+    # loop, with twelve python processes live. The adoption was racing its own machine.
+    #
+    # What step 4 is FOR is refusing to record a merge whose CODE did not land, because sealing a
+    # half-adopted tree is the failure the whole script exists to prevent. A state file that
+    # differs says nothing about that: it is either the box's evidence, kept by design and carried
+    # up by the next push, or an input its own organ has since rewritten. So the gate is scoped to
+    # code, state drift is counted and named rather than hidden, and the refusal message says
+    # CODE path(s) so nobody reads it as the old rule.
+    assert "$stateDrift = @($allDiff | Where-Object { Test-StatePath $_ })" in code
+    assert "$drift      = @($allDiff | Where-Object { -not (Test-StatePath $_) })" in code
+    assert "CODE path(s) still differ" in code, (
+        "the refusal must say which kind of path blocked it, or the next reader re-widens the gate")
+    assert "state path(s) differ and are NOT blocking" in code, (
+        "state drift is reported, never silently dropped -- that is the difference between "
+        "scoping a gate and weakening it")
     # box-touched is measured from the merge base AFTER the box's own state is committed
     assert (code.index("Box state captured before release adoption")
             < code.index('"merge-base", "HEAD", $target'))

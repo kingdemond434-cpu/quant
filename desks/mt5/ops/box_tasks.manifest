@@ -82,7 +82,7 @@ TASK name="MT5-ResearchSupervisor" trigger="every 30 minutes, at :26" runs="desk
 TASK name="MT5-QQuantGatesCertify" trigger="every 1 hour, at :27" runs="desks/mt5/research/qquant_gates.py"          installer="NONE" lane="research"
 
 # Declared here because their installers are in the repo and were read to write these lines.
-TASK name="MT5-Hourly"             trigger="loop, sleeps to the top of each hour" runs="desks/mt5/research/hourly_cycle.py"     installer="desks/mt5/scripts/MT5Hourly.cmd" lane="research"
+TASK name="MT5-Hourly"             trigger="every 1 hour (keep-alive of the 24/7 discovery resident)" runs="desks/mt5/research/department_resident.py" installer="desks/mt5/scripts/MT5Hourly.cmd" lane="research"
 TASK name="MT5-Deepening"          trigger="every 1 hour"  runs="desks/mt5/research/deepening_worker.py"  installer="desks/mt5/scripts/install_deepening_task.ps1" lane="research"
 
 # ------------------------------------------------------------------------------- the data moat
@@ -159,12 +159,15 @@ TASK name="MT5-DashMirror" trigger="UNDECLARED" runs="UNKNOWN" installer="NONE" 
 TASK name="MT5-ArtifactSync" trigger="UNDECLARED" runs="UNKNOWN" installer="desks/mt5/scripts/Install-QuantWindows.ps1" lane="ops"
 
 # THE DEPARTMENTS (2026-09-16): each research mission on its own hourly clock at full throughput
-# (HOURLY_PLAN=dept:<name>); MT5-Hourly itself runs dept:discovery. PT3H, IgnoreNew, SYSTEM.
-TASK name="MT5-Dept-Data" trigger="every 1 hour, at :06" runs="desks/mt5/research/hourly_cycle.py" installer="NONE" lane="research"
-TASK name="MT5-Dept-Intel" trigger="every 1 hour, at :06" runs="desks/mt5/research/hourly_cycle.py" installer="NONE" lane="research"
-TASK name="MT5-Dept-Validate" trigger="every 1 hour, at :06" runs="desks/mt5/research/hourly_cycle.py" installer="NONE" lane="research"
-TASK name="MT5-Dept-Macro" trigger="every 1 hour, at :06" runs="desks/mt5/research/hourly_cycle.py" installer="NONE" lane="research"
-TASK name="MT5-Dept-Execution" trigger="every 1 hour, at :06" runs="desks/mt5/research/hourly_cycle.py" installer="NONE" lane="research"
-TASK name="MT5-Dept-Forward" trigger="every 1 hour, at :06" runs="desks/mt5/research/hourly_cycle.py" installer="NONE" lane="research"
-TASK name="MT5-Dept-Meta" trigger="every 1 hour, at :06" runs="desks/mt5/research/hourly_cycle.py" installer="NONE" lane="research"
-TASK name="MT5-Dept-Rest" trigger="every 1 hour, at :06" runs="desks/mt5/research/hourly_cycle.py" installer="NONE" lane="research"
+# (HOURLY_PLAN=dept:<name>) as 24/7 RESIDENTS (department_resident.py: singleton lock, a pass
+# restarts the moment the last one ends, BELOW_NORMAL child, memory guard); the trigger is a
+# keep-alive that is a no-op while the resident lives. MT5-Hourly is the discovery resident.
+# Unlimited ExecutionTimeLimit, IgnoreNew, SYSTEM. Principal 2026-09-17: "pure 24/7".
+TASK name="MT5-Dept-Data" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
+TASK name="MT5-Dept-Intel" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
+TASK name="MT5-Dept-Validate" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
+TASK name="MT5-Dept-Macro" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
+TASK name="MT5-Dept-Execution" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
+TASK name="MT5-Dept-Forward" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
+TASK name="MT5-Dept-Meta" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
+TASK name="MT5-Dept-Rest" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"

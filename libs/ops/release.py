@@ -429,6 +429,12 @@ def release_id() -> str:
 #: STATE"; one check answering both is how the first one refused on evidence.
 STATE_PREFIXES: tuple[str, ...] = (
     "desks/mt5/data/", "desks/mt5/reports/", "desks/mt5/logs/",
+    # Organ-written state that sits under a package directory instead of data/ (measured
+    # 2026-09-16 22:12 UTC: frontier_queue.jsonl was dirty within the hour of every
+    # adoption, so the seal was refused after the tree had already been adopted and the
+    # box ran unsealed code for five batches). A path an hourly organ writes is state
+    # wherever it lives; the seal must never wait on it.
+    "desks/mt5/frontier_intel/data/", "desks/mt5/side_channels/data/",
     "data/", "reports/", "logs/", "web/", "docs/",
 )
 
