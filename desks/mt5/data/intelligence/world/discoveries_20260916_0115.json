@@ -1,0 +1,1199 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Media movil | Rava Burs\u00e1til",
+  "url": "https://www.rava.com/indicadores/media-movil",
+  "published": "2026-09-16T01:13:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2c3bd01bbd0e17ae7485",
+  "host": "www.rava.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Macd | Rava Burs\u00e1til",
+  "url": "https://www.rava.com/indicadores/macd",
+  "published": "2026-09-16T01:13:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e0dd21e443eb4aa2844f",
+  "host": "www.rava.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Estocastico | Rava Burs\u00e1til",
+  "url": "https://www.rava.com/indicadores/estocastico",
+  "published": "2026-09-16T01:13:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8d8c760a8996aeeed95a",
+  "host": "www.rava.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "World Cup Trading Championship Historical Standings - World Cup Trading Championships",
+  "url": "https://www.worldcupchampionships.com/world-cup-trading-championship-historical-standings",
+  "published": "2026-09-16T01:13:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "120458a2d1ec8187cc31",
+  "host": "www.worldcupchampionships.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Home - World Cup Trading Championships",
+  "url": "https://www.worldcupchampionships.com/",
+  "published": "2026-09-16T01:13:39+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "night_session"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "86dbb7426a24de583712",
+  "host": "www.worldcupchampionships.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Enter The World Cup Trading Championships - 2025 - World Cup Trading Championships",
+  "url": "https://www.worldcupchampionships.com/enter-the-world-cup-trading-championships",
+  "published": "2026-09-16T01:13:41+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "376bba0cf0746a4ac04d",
+  "host": "www.worldcupchampionships.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Myslivost, s.r.o. , Praha I\u010cO 45807990 - Obchodn\u00ed rejst\u0159\u00edk firem | Kurzy.cz",
+  "url": "https://rejstrik-firem.kurzy.cz/45807990/myslivost-sro/",
+  "published": "2026-09-16T01:13:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "cs",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a8b74a2d69bf10bc3502",
+  "host": "rejstrik-firem.kurzy.cz",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Zlato Trade group s.r.o. , Praha I\u010cO 08334706 - Obchodn\u00ed rejst\u0159\u00edk firem | Kurzy.cz",
+  "url": "https://rejstrik-firem.kurzy.cz/08334706/zlato-trade-group-sro/",
+  "published": "2026-09-16T01:13:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "cs",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "30a6ec9e17890e42b8fb",
+  "host": "rejstrik-firem.kurzy.cz",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "FXCM vs. CFTC | Forex Forum - EarnForex",
+  "url": "http://www.earnforex.com/forum/f10/fxcm-vs-cftc-435/",
+  "published": "2026-09-16T01:13:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "correlation",
+   "momentum",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c4747d6a56ee0b1d10a0",
+  "host": "www.earnforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forex Trading Information",
+  "url": "http://www.earnforex.com/",
+  "published": "2026-09-16T01:13:51+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.55,
+  "lang": "en-us",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "066bbdbcc8aa0bad9689",
+  "host": "www.earnforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Walk Forward Correlation (WFC) - A New Algo Trading Tool",
+  "url": "https://www.tradelikeamachine.com/blog/wfc/using-walk-forward-correlation-in-algo-trading?aid=pY5Tdstmnb8Tgh6s",
+  "published": "2026-09-16T01:13:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "correlation",
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "00f4021695d901353f53",
+  "host": "www.tradelikeamachine.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Opt My Strategy - Free, Subscription, and Lifetime Options",
+  "url": "https://www.tradelikeamachine.com/backtesting-software-opt-my-strategy/opt-my-strategy-purchase-options/m5cgt1tsvc91kjjk5nbw?aid=pY5Tdstmnb8Tgh6s",
+  "published": "2026-09-16T01:13:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "eafafd2370bbee034ebd",
+  "host": "www.tradelikeamachine.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "A IA precisa de ferramentas para investir",
+  "url": "https://codecapital.substack.com/p/a-ia-precisa-de-ferramentas-para",
+  "published": "2026-09-16T01:13:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "policy",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-br",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3928a24a15f69fe10188",
+  "host": "codecapital.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Backtests no S&amp;P 500 - by Rafael Quintanilha - Code Capital",
+  "url": "https://codecapital.substack.com/p/code-night-003-backtests-no-s-and",
+  "published": "2026-09-16T01:13:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-br",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "47782130cf9500ff7836",
+  "host": "codecapital.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "KBpedia: ClusteringAlgorithm Reference Concept",
+  "url": "https://kbpedia.org/knowledge-graph/reference-concept/?uri=ClusteringAlgorithm",
+  "published": "2026-09-16T01:13:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://kbpedia.org/resources/downloads/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "1fc4f30d16171f822019",
+  "host": "kbpedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Dictionary of Algorithms and Data Structures",
+  "url": "https://www.nist.gov/dads/",
+  "published": "2026-09-16T01:14:02+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "63ba0d6f6a9603835baf",
+  "host": "www.nist.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Uppslagsverk - NE.se",
+  "url": "https://www.ne.se/uppslagsverk/encyklopedi/l\u00e5ng/algoritm",
+  "published": "2026-09-16T01:14:02+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion"
+  ],
+  "confidence": 0.35,
+  "lang": "sv",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "39d7fc45bd242c450291",
+  "host": "www.ne.se",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "KBpedia: Algorithm Reference Concept",
+  "url": "https://kbpedia.org/knowledge-graph/reference-concept/?uri=Algorithm",
+  "published": "2026-09-16T01:14:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://kbpedia.org/resources/downloads/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "80f6fa9ab1cd9e4eedd5",
+  "host": "kbpedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Dictionary of Algorithms and Data Structures",
+  "url": "http://www.nist.gov/dads/",
+  "published": "2026-09-16T01:14:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "41bcca163eb41acac822",
+  "host": "www.nist.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Uppslagsverk - NE.se",
+  "url": "http://www.ne.se/uppslagsverk/encyklopedi/l\u00e5ng/algoritm",
+  "published": "2026-09-16T01:14:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion"
+  ],
+  "confidence": 0.35,
+  "lang": "sv",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "978f11a0c70c5bd96716",
+  "host": "www.ne.se",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Calendar Strategy: Fed Days | Systematic Investor",
+  "url": "https://systematicinvestor.wordpress.com/2014/05/06/calendar-strategy-fed-days",
+  "published": "2026-09-16T01:14:16+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum",
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "477f73f9c8d75ef9ce1c",
+  "host": "systematicinvestor.wordpress.com",
+  "claims": [
+   {
+    "claim": "Today, I want to follow up with the Calendar Strategy: Option Expiry post.",
+    "lang": "en",
+    "quantities": [
+     "expiry"
+    ],
+    "direction": [
+     "follow"
+    ],
+    "horizon": [
+     "expiry"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "30208030d2d7"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Calendar Strategy: Option Expiry | Systematic Investor",
+  "url": "http://systematicinvestor.wordpress.com/2014/05/03/calendar-strategy-option-expiry/",
+  "published": "2026-09-16T01:14:18+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3c3c51dde2cbe1331f7c",
+  "host": "systematicinvestor.wordpress.com",
+  "claims": [
+   {
+    "claim": "Calendar Strategy: Option Expiry | Systematic Investor Systematic Investor Systematic Investor Blog Home About Systematic Investor Toolbox Research Shiny Home > Backtesting , R > Calendar Strategy: Option Expiry Calendar Strategy: Option Expiry May 3, 2014 systematicinvestor Leave a comment Go to comments Today, I want to follow up with the Calendar Strategy: Month End post.",
+    "lang": "en",
+    "quantities": [
+     "expiry"
+    ],
+    "direction": [
+     "follow"
+    ],
+    "horizon": [
+     "expiry",
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5b497b93f2da"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Quantifiable Edges: Fed Study",
+  "url": "http://quantifiableedges.blogspot.ca/search/label/Fed%20Study",
+  "published": "2026-09-16T01:14:19+00:00",
+  "symbols": [
+   "US500",
+   "XAUUSD",
+   "XAGUSD",
+   "NAS100",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "carry",
+   "flow",
+   "gap",
+   "night_session",
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "71beaa62d31d726ed326",
+  "host": "quantifiableedges.blogspot.ca",
+  "claims": [
+   {
+    "claim": "for a short-term Fed Day bump should perhaps be hoping the SPX does not close",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "day",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spx"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "edf861ecaba7"
+   },
+   {
+    "claim": "Posted by Rob Hanna at 12:12 PM No comments: Labels: Fed Study , Quantitative Study Thursday, September 19, 2013 An Updated Look At Fed Rallies To New Long-Term Highs In \u201cThe Quantifiable Edges Guide to Fed Days\u201d I discussed Fed Days that close at new highs.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "rallies",
+     "long"
+    ],
+    "horizon": [
+     "days",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "NAS100",
+      "US500",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "nasdaq",
+      "spx",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5f78017809be"
+   },
+   {
+    "claim": "The table below shows the hypothetical results of buying at the close on the day before a Fed Day if it was at least the 3rd consecutive lower close.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "close",
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "NAS100",
+      "US500",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "nasdaq",
+      "spx",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a345451910b2"
+   },
+   {
+    "claim": "Posted by Rob Hanna at 9:03 AM No comments: Labels: Fed Study , Quantitative Study Friday, September 14, 2012 When The Fed Sparks A Rally To A Long-Term High In \u201cThe Quantifiable Edges Guide to Fed Days\u201d I discussed Fed Days that close at new highs.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "rally",
+     "long"
+    ],
+    "horizon": [
+     "days",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "0264d357e1ca"
+   },
+   {
+    "claim": "Often leading up to a Fed Day the VIX will rise as traders fret over what the Fed might say or do.",
+    "lang": "en",
+    "quantities": [
+     "vix"
+    ],
+    "direction": [
+     "rise"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "25e35338d195"
+   },
+   {
+    "claim": "Posted by Rob Hanna at 9:05 AM No comments: Labels: Fed Study , Quantitative Study Wednesday, January 25, 2012 When SPX Closes Just Under a 50-day High Prior to a Fed Day Yesterday I showed that Fed Days typically carry a bullish edge, but that edge failed to hold when the SPX closed at a 20-day high just prior to the Fed Day.",
+    "lang": "en",
+    "quantities": [
+     "carry"
+    ],
+    "direction": [
+     "bullish"
+    ],
+    "horizon": [
+     "day",
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spx"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "30cea18b4f8c"
+   },
+   {
+    "claim": "View my complete profile Labels Quantitative Study (683) seasonality (75) gaps (61) VIX (48) Breadth (43) volume (43) CBI (40) Fed Study (30) IBD Follow Through Day (24) Subscriber Letter (14) reversal bar (12) Intraday (11) Using Quantifiable Edges (11) Spyx (10) Capitulation (7) System (7) NYSE Net New Highs (6) Trend Vs.",
+    "lang": "en",
+    "quantities": [
+     "vix",
+     "volume",
+     "reversal",
+     "trend"
+    ],
+    "direction": [
+     "follow"
+    ],
+    "horizon": [
+     "day",
+     "bar"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "NAS100",
+      "US500",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "nasdaq",
+      "spx",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "501411f3012b"
+   }
+  ],
+  "n_claims": 7
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "5 \u0441\u0442\u0440\u0430\u0442\u0435\u0433\u0438\u0439 \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u043d\u0438\u044f \u0444\u044c\u044e\u0447\u0435\u0440\u0441\u043e\u0432 \u043d\u0430 \u0437\u043e\u043b\u043e\u0442\u043e",
+  "url": "https://smart-lab.ru/blog/800457.php",
+  "published": "2026-09-16T01:14:26+00:00",
+  "symbols": [
+   "USDTRY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "ru",
+  "endpoints": [
+   "https://smart-lab.ru/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "55346bd2793a3a40c32a",
+  "host": "smart-lab.ru",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\ud83d\udcc8 \u0417\u041e\u041b\u041e\u0422\u041e (XAUUSD): \u0422\u0435\u0445\u043d\u0438\u0447\u0435\u0441\u043a\u0438\u0439 \u043e\u0431\u0437\u043e\u0440 \u043e\u0442\u0441\u043a\u043e\u043a\u0430 \u043f\u043e \u0434\u043d\u0435\u0432\u043d\u043e\u043c\u0443 \u0442\u0430\u0439\u043c\u0444\u0440\u0435\u0439\u043c\u0443 \u0438 \u0442\u043e\u0440\u0433\u043e\u0432\u0430\u044f \u0441\u0442\u0440\u0430\u0442\u0435\u0433\u0438\u044f",
+  "url": "https://smart-lab.ru/blog/tradesignals/1327973.php",
+  "published": "2026-09-16T01:14:27+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "momentum",
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "ru",
+  "endpoints": [
+   "https://smart-lab.ru/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "2424311dba403d48f772",
+  "host": "smart-lab.ru",
+  "claims": [
+   {
+    "claim": "\ud83d\udcc8 \u0417\u041e\u041b\u041e\u0422\u041e (XAUUSD): \u0422\u0435\u0445\u043d\u0438\u0447\u0435\u0441\u043a\u0438\u0439 \u043e\u0431\u0437\u043e\u0440 \u043e\u0442\u0441\u043a\u043e\u043a\u0430 \u043f\u043e \u0434\u043d\u0435\u0432\u043d\u043e\u043c\u0443 \u0442\u0430\u0439\u043c\u0444\u0440\u0435\u0439\u043c\u0443 \u0438 \u0442\u043e\u0440\u0433\u043e\u0432\u0430\u044f \u0441\u0442\u0440\u0430\u0442\u0435\u0433\u0438\u044f \u0410\u0432\u0442\u043e\u0440\u0438\u0437\u0430\u0446\u0438\u044f \u0417\u0430\u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0438\u0440\u043e\u0432\u0430\u0442\u044c\u0441\u044f \u041b\u043e\u0433\u0438\u043d \u0438\u043b\u0438 \u044d\u043b.",
+    "lang": "ru",
+    "quantities": [
+     "\u0437\u043e\u043b\u043e\u0442"
+    ],
+    "direction": [
+     "\u043e\u0442\u0441\u043a\u043e\u043a"
+    ],
+    "horizon": [
+     "\u0434\u043d\u0435\u0432\u043d",
+     "\u0442\u0430\u0439\u043c\u0444\u0440\u0435\u0439\u043c"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u0437\u043e\u043b\u043e\u0442"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "4f846d540505"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "+20% \u0432 \u0434\u0435\u043d\u044c. \u041f\u043e\u043d\u044f\u0442\u043d\u0430\u044f \u0442\u043e\u0440\u0433\u043e\u0432\u0430\u044f \u0441\u0442\u0440\u0430\u0442\u0435\u0433\u0438\u044f. \u041f\u0440\u0430\u0432\u0438\u043b\u0430 \u043e\u0442 \u0410 \u0434\u043e \u042f",
+  "url": "https://smart-lab.ru/blog/1175680.php",
+  "published": "2026-09-16T01:14:29+00:00",
+  "symbols": [
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "breakout",
+   "flow"
+  ],
+  "confidence": 0.55,
+  "lang": "ru",
+  "endpoints": [
+   "https://smart-lab.ru/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "2c11b73250e6f3ffe4f3",
+  "host": "smart-lab.ru",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u042d\u043a\u0441\u043f\u0440\u0435\u0441\u0441-\u0430\u043d\u0430\u043b\u0438\u0437 \u0442\u043e\u0440\u0433\u043e\u0432\u043e\u0439 \u0441\u0438\u0441\u0442\u0435\u043c\u044b",
+  "url": "https://smart-lab.ru/blog/644777.php",
+  "published": "2026-09-16T01:14:31+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "ru",
+  "endpoints": [
+   "https://smart-lab.ru/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "bccbe6a66d9908c2e8b2",
+  "host": "smart-lab.ru",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "StrategyEngine | Tales from a Trading Desk | Page 2",
+  "url": "https://mdavey.wordpress.com/tag/strategyengine/page/2/",
+  "published": "2026-09-16T01:14:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "89e4b94a1431cb2a03eb",
+  "host": "mdavey.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quick 5 ETF Rotational Strategy Returns the Upside of Stocks with Half the Risk",
+  "url": "https://papertoprofit.substack.com/p/quick-5-etf-rotational-strategy-returns",
+  "published": "2026-09-16T01:14:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f41c989efc4f2e99adba",
+  "host": "papertoprofit.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Comments - Quick 5 ETF Rotational Strategy Returns the Upside of Stocks with Half the Risk",
+  "url": "https://papertoprofit.substack.com/p/quick-5-etf-rotational-strategy-returns/comment/308162459",
+  "published": "2026-09-16T01:14:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "efbb497363cb24523c7b",
+  "host": "papertoprofit.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Comments - Quick 5 ETF Rotational Strategy Returns the Upside of Stocks with Half the Risk",
+  "url": "https://papertoprofit.substack.com/p/quick-5-etf-rotational-strategy-returns/comments",
+  "published": "2026-09-16T01:14:58+00:00",
+  "symbols": [
+   "USDTRY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "night_session",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "446ee73a34fb574ddea7",
+  "host": "papertoprofit.substack.com",
+  "claims": [
+   {
+    "claim": "Reply Share Horse Badorties Aug 11 Really, a monthly momentum strategy should follow the big boys and front-run end-of-month rebalancing.",
+    "lang": "en",
+    "quantities": [
+     "momentum"
+    ],
+    "direction": [
+     "follow"
+    ],
+    "horizon": [
+     "monthly",
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8a0f5b6a2192"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Comments - Quick 5 ETF Rotational Strategy Returns the Upside of Stocks with Half the Risk",
+  "url": "https://papertoprofit.substack.com/p/quick-5-etf-rotational-strategy-returns/comment/308207759",
+  "published": "2026-09-16T01:14:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "026b5d70e79df7ee46eb",
+  "host": "papertoprofit.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Comments - Quick 5 ETF Rotational Strategy Returns the Upside of Stocks with Half the Risk",
+  "url": "https://papertoprofit.substack.com/p/quick-5-etf-rotational-strategy-returns/comment/314162667",
+  "published": "2026-09-16T01:15:00+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7a78fecbe93f2c16a82d",
+  "host": "papertoprofit.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "I Mastered Chaos Theory to Develop a 3.275 Sharpe FX Strategy. Here&#x27;s How to Do It.",
+  "url": "https://papertoprofit.substack.com/p/i-mastered-chaos-theory-to-develop",
+  "published": "2026-09-16T01:15:03+00:00",
+  "symbols": [
+   "EURJPY",
+   "EURUSD",
+   "USDJPY"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "momentum",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4043b04eef3fd38cbbbd",
+  "host": "papertoprofit.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Estad\u00edsticas e Indicadores | BCRA",
+  "url": "https://www.bcra.gob.ar/PublicacionesEstadisticas/Principales_variables.asp",
+  "published": "2026-09-16T01:15:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "mean_reversion",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "es-ES",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2ef307753e708a617473",
+  "host": "www.bcra.gob.ar",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Educators | Student Trading Lab | IBKR Campus",
+  "url": "https://ibkrcampus.com/campus/student-trading-lab/",
+  "published": "2026-09-16T01:15:07+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.com/campus/traders-academy/api/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "69eee1032e78442b4583",
+  "host": "ibkrcampus.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Estad\u00edsticas e Indicadores | BCRA",
+  "url": "https://www.bcra.gob.ar/estadisticas-indicadores/",
+  "published": "2026-09-16T01:15:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "mean_reversion",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "es-ES",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2ef307753e708a617473",
+  "host": "www.bcra.gob.ar",
+  "claims": [],
+  "n_claims": 0
+ }
+]

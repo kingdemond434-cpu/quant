@@ -9,10 +9,13 @@
    "status": "FAILED"
   },
   "certificate_projection": {
-   "finished_at": "2026-09-15T20:06:24.203154+00:00",
-   "passes_completed": 1,
-   "returncode": 0,
-   "status": "DONE"
+   "command": [
+    "/home/quant/quant-platform/.venv/bin/python",
+    "scripts/build_gauntlet_survivors.py"
+   ],
+   "passes_completed": 0,
+   "started_at": "2026-09-16T01:44:07.662802+00:00",
+   "status": "RUNNING"
   },
   "certificate_yield_fence": {
    "finished_at": "2026-09-15T20:08:03.464967+00:00",
@@ -21,16 +24,13 @@
    "status": "DONE"
   },
   "external_queue_projection": {
-   "command": [
-    "/home/quant/quant-platform/.venv/bin/python",
-    "scripts/promote_external_to_queue.py"
-   ],
-   "passes_completed": 0,
-   "started_at": "2026-09-15T22:06:02.119712+00:00",
-   "status": "RUNNING"
+   "finished_at": "2026-09-16T01:04:19.311278+00:00",
+   "passes_completed": 1,
+   "returncode": 124,
+   "status": "FAILED"
   },
   "external_queue_reconciliation": {
-   "finished_at": "2026-09-15T20:06:20.566898+00:00",
+   "finished_at": "2026-09-16T01:15:49.311574+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -84,5 +84,5 @@
    "status": "DONE"
   }
  },
- "updated_at": "2026-09-15T22:06:02.119712+00:00"
+ "updated_at": "2026-09-16T01:44:07.662802+00:00"
 }
