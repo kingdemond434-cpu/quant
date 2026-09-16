@@ -161,6 +161,7 @@ LEG_LAYER: dict[str, str] = {
     "breadth_ladder": "meta", "tier1_scorecard": "meta", "wiring_ceo": "meta",
     "probation": "meta", "live_system_state": "meta", "semantic_memory": "meta",
     "model_role_benchmark": "meta", "research_departments": "meta",
+    "qd_frontier": "information", "blind_reviewer": "meta",
     # sizing: how much
     "capacity": "sizing", "ensemble_optimizer": "sizing",
     # portfolio: how the book is composed

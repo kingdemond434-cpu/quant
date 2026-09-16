@@ -129,6 +129,7 @@ MECHANISM_ACTOR = {
     "session_handover": "cross_session_risk_transferor",
     "session_information_handoff": "later_session_participant",
     "fx_fixing_flow": "benchmark_tracking_customer", "macro_release": "scheduled_repricer",
+    "forced_flow": "forced_participant_on_a_dated_calendar",
     "carry_rollover": "negative_carry_holder", "positioning_crowding": "crowded_speculator",
     "calendar_seasonality": "calendar_constrained_allocator",
     "relative_value_dislocation": "relative_value_arbitrageur",
@@ -158,6 +159,7 @@ _FAMILY_GROUPS: dict[str, str] = {
     "hedging_demand_close_flow price_only market": "comex_settlement hedging_demand_close"
                                                    " london_close_momentum",
     "fx_fixing_flow price_only market": "fx_fixing_reversal",
+    "forced_flow event market": "forced_flow",
     "macro_release macro market": "macro_conditional macro_gold_yield",
     "macro_release event market": "event_reaction",
     "macro_release cross_asset market": "usd_session_shock",

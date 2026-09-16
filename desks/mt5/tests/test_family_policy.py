@@ -113,3 +113,12 @@ def test_a_banned_family_is_paroled_only_by_its_pooled_forward_record(tmp_path: 
     _ledger("EURCHF.discovered.asia", [-0.2, -0.4, 0.1, -0.3, -0.6] * 8)
     ok, why = promoter.family_parole("discovered", ids)
     assert not ok
+
+
+def test_blind_review_veto_matches_the_canon_prefixing_convention():
+    verdicts = {"external.XAUUSD.session_range_breakout.rr=1.5": "VETO",
+                "external.EURUSD.carry": "PASS"}
+    assert promoter.blind_review_veto("XAUUSD.session_range_breakout.rr=1.5", verdicts) \
+        == "external.XAUUSD.session_range_breakout.rr=1.5"
+    assert promoter.blind_review_veto("EURUSD.carry", verdicts) is None
+    assert promoter.blind_review_veto("GBPUSD.carry", {}) is None
