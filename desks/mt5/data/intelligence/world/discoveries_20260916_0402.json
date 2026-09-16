@@ -1,0 +1,912 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantinsti",
+  "url": "https://www.slideshare.net/QuantInsti/presentations",
+  "published": "2026-09-16T04:01:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b13ca1b52547899d72a0",
+  "host": "www.slideshare.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Brave New Backtest - Robot Wealth",
+  "url": "https://robotwealth.com/brave-new-backtest/",
+  "published": "2026-09-16T04:02:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "auction",
+   "carry",
+   "correlation",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1083e12e6947d79a5c58",
+  "host": "robotwealth.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trade Like a Quant / Quant Like a Trader",
+  "url": "https://robotwealth.com/trade-like-a-quant-bootcamp/",
+  "published": "2026-09-16T04:02:04+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fa277a9896151d46294a",
+  "host": "robotwealth.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Machine Learning for Trading - What Does it Really Look Like?",
+  "url": "https://robotwealth.com/machine-learning-financial-prediction-david-aronson/",
+  "published": "2026-09-16T04:02:09+00:00",
+  "symbols": [
+   "EURUSD",
+   "GBPUSD",
+   "USDKRW",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "D1",
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "flow",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "night_session",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "741d3b1aae4eae0016b5",
+  "host": "robotwealth.com",
+  "claims": [
+   {
+    "claim": "# Residual Deviance: 8593000 AIC: 22670 The final model selected 2 of the 15 variables: the ratio of the 20- to 100-day ATR, and the difference between a short-term and long-term trend indicator.",
+    "lang": "en",
+    "quantities": [
+     "residual",
+     "trend"
+    ],
+    "direction": [
+     "short",
+     "long"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "GBPUSD",
+      "USDKRW",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "eur/usd",
+      "gbp/usd",
+      "won",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "6fb0c3bfc49a"
+   },
+   {
+    "claim": "On any given day, all things being equal, a small negative return could turn out to be a small positive return by the time the close rolls around, or vice versa, as a result of any number of random occurrences related to the fundamentals of the exchange rate.",
+    "lang": "en",
+    "quantities": [
+     "close",
+     "rate"
+    ],
+    "direction": [
+     "negative",
+     "positive"
+    ],
+    "horizon": [
+     "day",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "GBPUSD",
+      "USDKRW",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "eur/usd",
+      "gbp/usd",
+      "won",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "adb16283f414"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "NISA\u306e\u6b21\u3001\u3069\u3046\u3059\u308b\uff1f \u76f8\u5834\u306b\u5f35\u308a\u4ed8\u304b\u305a\u306b\u7d9a\u3051\u3089\u308c\u308b\u300c\u30c8\u30e9\u30ea\u30d4\u300d\u3068\u3044\u3046\u9078\u629e\u80a2 - \u307f\u3093\u304b\u3076\uff08\u30de\u30ac\u30b8\u30f3\uff09",
+  "url": "https://ac.ebis.ne.jp/tr_set.php?argument=GFU4CUZu&ai=4293",
+  "published": "2026-09-16T04:02:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "orderflow",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fab5ac220f81f3a5678e",
+  "host": "ac.ebis.ne.jp",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The Quantifiable Edges Guide to Fed Days - Quantifiable Edges",
+  "url": "http://www.quantifiableedges.com/fedguide",
+  "published": "2026-09-16T04:02:15+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "correlation",
+   "gap",
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "313adc65e8ea84845a9b",
+  "host": "www.quantifiableedges.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Gold Level Subscription Scorecard For December - Quantifiable Edges",
+  "url": "http://www.quantifiableedges.com/gold",
+  "published": "2026-09-16T04:02:19+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "correlation",
+   "orderflow",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2456a405a8476d42fe7c",
+  "host": "www.quantifiableedges.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "I Ran Two Strategies Past 80 Meaningless Versions of Themselves. The Control Group Told Them Apart.",
+  "url": "https://yizon.substack.com/p/i-ran-two-strategies-past-80-meaningless",
+  "published": "2026-09-16T04:02:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "129bb67dd3a6766995a5",
+  "host": "yizon.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Alvarez Quant Trading &#8211; Providing confidence in your trading",
+  "url": "http://www.AlvarezQuantTrading.com",
+  "published": "2026-09-16T04:02:33+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "837a4af767671215d151",
+  "host": "www.AlvarezQuantTrading.com",
+  "claims": [
+   {
+    "claim": "The 30% Selloff Signal: What History Tells Us About Market Recoveries SPY, SSO and TLT Strategy Join my email list For the best curated research in quantitative finance, bookmark Popular Posts Internal Bar Strength for Mean Reversion February 16, 2022 SPY, SSO and TLT Strategy November 13, 2024 The Power of Strategy Diversification August 19, 2026 The 100% Club.",
+    "lang": "en",
+    "quantities": [
+     "mean reversion"
+    ],
+    "direction": [
+     "selloff"
+    ],
+    "horizon": [
+     "bar"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e36e92265eb4"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "My Backtest Said &quot;SURVIVES.&quot; The Per-Year Numbers Said No. I Learned to Trust the Second One.",
+  "url": "https://yizon.substack.com/p/my-backtest-said-survives-the-per",
+  "published": "2026-09-16T04:02:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "correlation",
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "35c02d51a3c33c1f84e9",
+  "host": "yizon.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Supertrend, flipped to death: the most-taught indicator on the internet | The Refutation",
+  "url": "https://therefutation.com/essays/does-supertrend-work/",
+  "published": "2026-09-16T04:02:34+00:00",
+  "symbols": [
+   "USDTRY",
+   "BTCUSD"
+  ],
+  "timeframes": [
+   "4H"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9da3300e5b68cc32ae42",
+  "host": "therefutation.com",
+  "claims": [
+   {
+    "claim": "Each flip is a signal: green means close the short and go long, red means the reverse.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "short",
+     "long"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "9db4b9e2a918"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "MACD: The Indicator Is a Passenger | The Refutation",
+  "url": "https://therefutation.com/essays/macd-the-indicator-is-a-passenger/",
+  "published": "2026-09-16T04:02:36+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "gap",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1ec9c5dd1baaabee9e35",
+  "host": "therefutation.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Most of the insider trading alpha is gone by the time you see the filing: poof!",
+  "url": "https://tommijohnsen.substack.com/p/most-of-the-insider-trading-alpha",
+  "published": "2026-09-16T04:02:37+00:00",
+  "symbols": [
+   "US500",
+   "TSMC",
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "1M",
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "carry",
+   "inventory"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c9f5669f25f7e73a4a1a",
+  "host": "tommijohnsen.substack.com",
+  "claims": [
+   {
+    "claim": "The cluster definition needs an extra filter The standard academic definition of a cluster buy \u2014 three or more distinct insiders making open-market purchases in a short window, with role and 10b5-1 filtering applied \u2014 flagged four tickers on May 19: TSM (Taiwan Semiconductor), ONON (On Holding), GEHC (GE HealthCare), and SPGI (S&P Global).",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "buy",
+     "short"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "TSMC"
+     ],
+     "mentioned": [
+      "s&p",
+      "taiwan semiconductor"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "5ba0f4e2373c"
+   },
+   {
+    "claim": "With twenty to fifty cluster observations, the per-buy and same-day-same-price thresholds become tunable against an actual false-positive rate.",
+    "lang": "en",
+    "quantities": [
+     "rate"
+    ],
+    "direction": [
+     "buy",
+     "positive"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "US500",
+      "TSMC"
+     ],
+     "mentioned": [
+      "gold",
+      "s&p",
+      "taiwan semiconductor"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "1a26a347de24"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Alvarez Quant Trading &#8211; Providing confidence in your trading",
+  "url": "https://www.alvarezquanttrading.com",
+  "published": "2026-09-16T04:02:40+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d90c688faa4721febdfb",
+  "host": "www.alvarezquanttrading.com",
+  "claims": [
+   {
+    "claim": "The 30% Selloff Signal: What History Tells Us About Market Recoveries SPY, SSO and TLT Strategy Join my email list For the best curated research in quantitative finance, bookmark Popular Posts Internal Bar Strength for Mean Reversion February 16, 2022 SPY, SSO and TLT Strategy November 13, 2024 The Power of Strategy Diversification August 19, 2026 The 100% Club.",
+    "lang": "en",
+    "quantities": [
+     "mean reversion"
+    ],
+    "direction": [
+     "selloff"
+    ],
+    "horizon": [
+     "bar"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e36e92265eb4"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "NGX up 50% in 2026, but one sector has surged 111% &#8211; NM Staging",
+  "url": "https://nm-stag.nairametrics.com/ngx-up-50-in-2026-but-one-sector-has-surged-111/",
+  "published": "2026-09-16T04:02:42+00:00",
+  "symbols": [],
+  "timeframes": [
+   "H1"
+  ],
+  "patterns": [
+   "basis",
+   "gap",
+   "mean_reversion",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fdea1355bd72dc0d5b02",
+  "host": "nm-stag.nairametrics.com",
+  "claims": [
+   {
+    "claim": "NGX up 50% in 2026, but one sector has surged 111% \u2013 NM Staging Close Home Exclusives Economy Markets Sectors Financial Literacy Lifestyle Opinions Search Latest News Equities Airtel Africa, FUGAZ Banks sustain NGX rebound with N1.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "rebound"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "ngx"
+     ],
+     "transfer_only": [
+      "ngx->indices (African exchanges)"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "7878c7d7465b"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "NGX ETFs close mixed as trading value rises to N1.18 billion &#8211; NM Staging",
+  "url": "https://nm-stag.nairametrics.com/ngx-etfs-close-mixed-as-trading-value-rises-to-n1-18-billion/",
+  "published": "2026-09-16T04:02:43+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "db2031d61843341e4b71",
+  "host": "nm-stag.nairametrics.com",
+  "claims": [
+   {
+    "claim": "NGX ETFs close mixed as trading value rises to N1.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "rises"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "ngx"
+     ],
+     "transfer_only": [
+      "ngx->indices (African exchanges)"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "6a63388ed53a"
+   },
+   {
+    "claim": "18 billion \u2013 NM Staging Close Home Exclusives Economy Markets Sectors Financial Literacy Lifestyle Opinions Search Latest News Equities Airtel Africa, FUGAZ Banks sustain NGX rebound with N1.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "rebound"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "ngx"
+     ],
+     "transfer_only": [
+      "ngx->indices (African exchanges)"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "8ff956894d2c"
+   },
+   {
+    "claim": "More insights ETF trading activity strengthened during the week, with total trading volume rising to 7.",
+    "lang": "en",
+    "quantities": [
+     "volume"
+    ],
+    "direction": [
+     "strengthened"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "s&p",
+      "ngx"
+     ],
+     "transfer_only": [
+      "ngx->indices (African exchanges)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "298c8efbe2ec"
+   },
+   {
+    "claim": "Trading activity also strengthened in the previous week, as total volume rose to 7.",
+    "lang": "en",
+    "quantities": [
+     "volume"
+    ],
+    "direction": [
+     "strengthened",
+     "rose"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "s&p",
+      "ngx"
+     ],
+     "transfer_only": [
+      "ngx->indices (African exchanges)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "c60da40285d9"
+   }
+  ],
+  "n_claims": 4
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Most of the insider trading alpha is gone by the time you see the filing: poof!",
+  "url": "https://tommijohnsen.substack.com/p/most-of-the-insider-trading-alpha/comments",
+  "published": "2026-09-16T04:02:44+00:00",
+  "symbols": [
+   "US500",
+   "TSMC",
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "1M",
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "carry",
+   "inventory"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "73466a1ebd88c861ec70",
+  "host": "tommijohnsen.substack.com",
+  "claims": [
+   {
+    "claim": "The cluster definition needs an extra filter The standard academic definition of a cluster buy \u2014 three or more distinct insiders making open-market purchases in a short window, with role and 10b5-1 filtering applied \u2014 flagged four tickers on May 19: TSM (Taiwan Semiconductor), ONON (On Holding), GEHC (GE HealthCare), and SPGI (S&P Global).",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "buy",
+     "short"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "TSMC"
+     ],
+     "mentioned": [
+      "s&p",
+      "taiwan semiconductor"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "5ba0f4e2373c"
+   },
+   {
+    "claim": "With twenty to fifty cluster observations, the per-buy and same-day-same-price thresholds become tunable against an actual false-positive rate.",
+    "lang": "en",
+    "quantities": [
+     "rate"
+    ],
+    "direction": [
+     "buy",
+     "positive"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "US500",
+      "TSMC"
+     ],
+     "mentioned": [
+      "gold",
+      "s&p",
+      "taiwan semiconductor"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "1a26a347de24"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Myslivost, s.r.o. , Praha I\u010cO 45807990 - Obchodn\u00ed rejst\u0159\u00edk firem | Kurzy.cz",
+  "url": "https://rejstrik-firem.kurzy.cz/45807990/myslivost-sro/",
+  "published": "2026-09-16T04:02:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "cs",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "09a8c591399dfa456469",
+  "host": "rejstrik-firem.kurzy.cz",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Zlato Trade group s.r.o. , Praha I\u010cO 08334706 - Obchodn\u00ed rejst\u0159\u00edk firem | Kurzy.cz",
+  "url": "https://rejstrik-firem.kurzy.cz/08334706/zlato-trade-group-sro/",
+  "published": "2026-09-16T04:02:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "cs",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3d82532fb198c8677800",
+  "host": "rejstrik-firem.kurzy.cz",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "FXCM vs. CFTC | Forex Forum - EarnForex",
+  "url": "http://www.earnforex.com/forum/f10/fxcm-vs-cftc-435/",
+  "published": "2026-09-16T04:02:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "correlation",
+   "momentum",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3634340e7fcc42e43fda",
+  "host": "www.earnforex.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]
