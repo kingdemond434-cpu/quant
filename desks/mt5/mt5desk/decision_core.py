@@ -1976,6 +1976,138 @@ def family_entry(g: object, side: int, bid: float, ask: float) -> tuple[float, f
     return entry_ref, abs(entry_ref - float(g.stop))
 
 
+#: How far the live entry may sit from the signal bar's close, as a fraction of the certified
+#: stop distance, before the bracket is re-anchored to the actual entry. A quarter: the replay
+#: fills at the next OPEN, which differs from the close by the open-close gap, and a quarter of
+#: the stop is well past any such gap on the charts these families run on.
+ENTRY_DRIFT_TOL_FRAC = 0.25
+
+
+def family_bracket(g: object, side: int, bid: float, ask: float,
+                   signal_close: float | None,
+                   tol_frac: float = ENTRY_DRIFT_TOL_FRAC,
+                   ) -> tuple[float, float, float, float, str, float | None, str]:
+    """(entry reference, stop, target, stop distance, note, drift fraction, verdict) for a
+    family signal at the price the venue quotes NOW. The verdict is one of `certified` (levels
+    verbatim), `re_anchored`, `stale` (the market has already reached the certified stop or
+    target: the replay's trade is over and this one must not open), `unmeasured` (no signal
+    close; levels verbatim) or `degenerate` (a certified stop AT the close; distance 0).
+
+    THE SIGNAL'S LEVELS ARE ANCHORED TO ITS BAR'S CLOSE, AND THE GATEWAY DOES NOT ENTER THERE
+    (measured 2026-09-16). `family_discovered` brackets `px +/- stop_atr * ATR` around the
+    signal bar's close and the engine fills at the next open, a few points away. The live lane
+    entered at whatever the quote was when its pass reached the sleeve -- 4 to 14 minutes after
+    the bar closed -- and kept the ABSOLUTE levels. EURGBP short, certified 8.4-pip stop:
+    entered 7 pips past the close, sent with a 1.3-pip stop and a 19.7-pip target, sized to
+    0.27 lots against that 1.3 pips, stopped by noise in 13 minutes at -1.10R. Nine forex
+    closes with a stop under 10 pips, nine losses at a mean -1.05R, -36 EUR: half of the lane's
+    whole loss, from a geometry no certificate ever had.
+
+    The certified trade is the GEOMETRY -- a stop `d_stop` and a target `d_tgt` from the fill --
+    not two price levels frozen at the close. So: within `tol_frac` of the certified stop the
+    Signal's own levels go verbatim (the replay's trade, within the open-close gap the replay
+    itself carries); past it, the same distances are laid from the actual entry and the drift
+    is reported. Never a refusal -- growth governance forbids a new veto -- and never more EUR
+    at risk: `promoted_lot` sizes against the re-anchored stop, so the risk is the certificate's
+    at a stop the market cannot cross on spread alone.
+
+    `signal_close` None means the drift is UNMEASURED and the levels go as they are, with the
+    note saying so -- exactly what every caller did before this function existed.
+    """
+    entry_ref = float(ask if side == 1 else bid)
+    stop, target = float(g.stop), float(g.target)
+    dist = abs(entry_ref - stop)
+    if signal_close is None or pd.isna(signal_close):
+        return (entry_ref, stop, target, dist,
+                "entry drift UNMEASURED (no signal close); levels as certified", None,
+                "unmeasured")
+    px = float(signal_close)
+    d_stop, d_tgt = abs(px - stop), abs(target - px)
+    if not (d_stop > 0.0):
+        return (entry_ref, stop, target, 0.0,
+                "degenerate certified stop (at the signal close)", None, "degenerate")
+    sgn = 1 if int(side) >= 0 else -1
+    # Signed: positive is the market moving AGAINST the certified position since its bar closed,
+    # in units of the certified stop; the favourable move is measured against the target.
+    adverse = sgn * (px - entry_ref) / d_stop
+    favourable = (sgn * (entry_ref - px) / d_tgt) if d_tgt > 0.0 else 0.0
+    if adverse >= 1.0 or favourable >= 1.0:
+        which = ("stop" if adverse >= 1.0 else "target")
+        frac = adverse if adverse >= 1.0 else favourable
+        return (entry_ref, stop, target, dist,
+                f"stale signal: the market has already moved {frac:.2f} of the certified "
+                f"{which} distance since the signal bar closed at {px:.5f} (entry {entry_ref:.5f}"
+                f"); the replay's trade is over and a fresh one here is not the certified trade",
+                adverse, "stale")
+    drift = abs(entry_ref - px) / d_stop
+    if drift <= tol_frac:
+        return (entry_ref, stop, target, dist,
+                f"entry drift {drift:.2f} of the certified stop (tol {tol_frac:g}); levels as "
+                f"certified", adverse, "certified")
+    new_stop = entry_ref - sgn * d_stop
+    new_target = entry_ref + sgn * d_tgt
+    return (entry_ref, new_stop, new_target, d_stop,
+            f"entry drift {drift:.2f} of the certified stop (tol {tol_frac:g}): bracket "
+            f"re-anchored to the entry -- stop {stop:.5f}->{new_stop:.5f}, target "
+            f"{target:.5f}->{new_target:.5f}, certified R:R kept", adverse, "re_anchored")
+
+
+def signal_with_levels(g: object, stop: float, target: float) -> object:
+    """A copy of a family Signal carrying `stop`/`target`, whatever the Signal's type: a
+    dataclass (`engine.Signal`), a namedtuple, or a plain attribute bag. The original is never
+    mutated -- the family's own list must stay what the family emitted."""
+    import copy
+    import dataclasses
+    from types import SimpleNamespace
+    if dataclasses.is_dataclass(g) and not isinstance(g, type):
+        try:
+            return dataclasses.replace(g, stop=float(stop), target=float(target))
+        except Exception:
+            pass
+    rep = getattr(g, "_replace", None)
+    if callable(rep):
+        try:
+            return rep(stop=float(stop), target=float(target))
+        except Exception:
+            pass
+    try:
+        new = copy.copy(g)
+        new.stop = float(stop)
+        new.target = float(target)
+        return new
+    except Exception:
+        d = dict(vars(g)) if hasattr(g, "__dict__") else {}
+        d.update(stop=float(stop), target=float(target))
+        return SimpleNamespace(**d)
+
+
+def bar_already_traded(deals: object, tag: str, entry_in: int = 0) -> tuple[int, str] | None:
+    """(deal ticket, ISO time) of the first ENTRY deal carrying this sleeve's order comment among
+    `deals`, or None. The venue's own record of whether this sleeve already opened on a bar.
+
+    THE STATE MARK IS NOT THE ONLY WITNESS (measured 2026-09-16). `eurgbp_discovered_asia_p_8e61`
+    sold 0.11 at 06:04:29 on the 08:00 bar, was stopped at 06:08, and sold 0.27 on the SAME bar
+    at 06:14:29 from the next pass -- two -1R for one signal, -9.26 EUR -- although the pass that
+    sent the first had marked the bar and saved the state. Whatever lost the mark, the venue had
+    not: the first deal sat in the account history under the sleeve's tag. So the resolver asks
+    the venue too. The replay fills once per signal and never re-enters a bar after its stop; a
+    second entry on the same bar is a trade the certificate never made.
+    """
+    for d in deals or []:
+        try:
+            if int(getattr(d, "entry", -1)) != int(entry_in):
+                continue
+            if str(getattr(d, "comment", "") or "") != tag:
+                continue
+            t = getattr(d, "time", None)
+            iso = (datetime.fromtimestamp(int(t), tz=UTC).isoformat(timespec="seconds")
+                   if t is not None else "")
+            return int(getattr(d, "ticket", 0) or 0), iso
+        except Exception:
+            continue
+    return None
+
+
 def family_ttl_until(last_bar: pd.Timestamp, ttl_bars: int, bar_minutes: int = 60) -> str:
     """The replay's time exit: `ttl_bars` BARS after the entry bar's open, as ISO text.
 

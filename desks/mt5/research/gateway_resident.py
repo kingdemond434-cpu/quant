@@ -55,7 +55,50 @@ INTERVAL_S = 60
 #: healthy loop holds the slot -- so exiting here is the ONLY thing needed, and the gap is at
 #: most one trigger. A pass is idempotent and the PID-aware lock is released on exit, so nothing
 #: is half-done across the boundary.
-RECYCLE_RSS_MB = float(os.environ.get("GATEWAY_RECYCLE_RSS_MB", "900"))
+def _total_phys_mb() -> float | None:
+    """Physical memory of THIS machine in MB, or None when it cannot be read."""
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        class _MS(ctypes.Structure):
+            _fields_ = [("dwLength", wintypes.DWORD), ("dwMemoryLoad", wintypes.DWORD),
+                        ("ullTotalPhys", ctypes.c_ulonglong),
+                        ("ullAvailPhys", ctypes.c_ulonglong),
+                        ("ullTotalPageFile", ctypes.c_ulonglong),
+                        ("ullAvailPageFile", ctypes.c_ulonglong),
+                        ("ullTotalVirtual", ctypes.c_ulonglong),
+                        ("ullAvailVirtual", ctypes.c_ulonglong),
+                        ("ullAvailExtendedVirtual", ctypes.c_ulonglong)]
+
+        m = _MS()
+        m.dwLength = ctypes.sizeof(_MS)
+        if not ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(m)):
+            return None
+        return float(m.ullTotalPhys) / (1024.0 * 1024.0)
+    except Exception:
+        return None
+
+
+def default_recycle_mb(total_phys_mb: float | None) -> float:
+    """The recycle ceiling for a box with `total_phys_mb` of memory: a tenth of it, never below
+    the 900 MB the 8 GB box was tuned to.
+
+    MEASURED ON THE MACHINE, NEVER A CONSTANT FROM ANOTHER (CLAUDE.md's floor rule). At a flat
+    900 MB the resident on the 98 GB box recycled after every 2-4 passes ("1737MB resident
+    (limit 900MB)" 2026-09-16 06:14, again at 06:26 and 06:38), so every third pass paid a cold
+    start -- module imports, bars, primitives -- and the passes stretched to 7-10 minutes apart.
+    That gap is the entry drift `decision_core.family_bracket` documents: the engine fills at the
+    bar's open, the gateway got there up to 14 minutes later. An unreadable counter keeps the
+    old 900, which is the floor doing its job rather than a guess.
+    """
+    if total_phys_mb is None or not total_phys_mb > 0:
+        return 900.0
+    return float(max(900.0, round(0.10 * total_phys_mb)))
+
+
+RECYCLE_RSS_MB = float(os.environ.get("GATEWAY_RECYCLE_RSS_MB", "")
+                       or default_recycle_mb(_total_phys_mb()))
 
 #: A ceiling on passes even if the RSS reading is unavailable. At 60s a pass this is ~2 hours.
 RECYCLE_AFTER_PASSES = int(os.environ.get("GATEWAY_RECYCLE_PASSES", "120"))

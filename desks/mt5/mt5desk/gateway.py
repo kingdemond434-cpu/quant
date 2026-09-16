@@ -60,6 +60,7 @@ from mt5desk.decision_core import (
     addon_entries,
     allocator_rank,
     atr_last,
+    bar_already_traded,
     basket_lots,
     basket_record,
     book_from_allocation,
@@ -70,7 +71,7 @@ from mt5desk.decision_core import (
     entry_is_legal,
     exec_context,
     family_bar_due,
-    family_entry,
+    family_bracket,
     family_order_desc,
     family_signal_hour,
     family_signal_step,
@@ -83,6 +84,7 @@ from mt5desk.decision_core import (
     roster,
     scalp_order_desc,
     scalp_recipe,
+    signal_with_levels,
     sleeve_from_comment,
     state_allows,
     stop_distance,
@@ -195,6 +197,7 @@ from mt5desk.decision_core import (
     FX_EUR as FX_EUR,
     GOLD_WINDOWS as GOLD_WINDOWS,
     ABSOLUTE_SIM_MAX as ABSOLUTE_SIM_MAX,
+    ENTRY_DRIFT_TOL_FRAC as ENTRY_DRIFT_TOL_FRAC,
     HEAT_SLIDE as HEAT_SLIDE,
     MAX_HEAT_CEILING as MAX_HEAT_CEILING,
     MIN_LOT_RISK_EUR as MIN_LOT_RISK_EUR,
@@ -203,6 +206,7 @@ from mt5desk.decision_core import (
     allocator_order as allocator_order,
     bracket_spec as bracket_spec,
     day_range as day_range,
+    family_entry as family_entry,
     gold_book_lot as gold_book_lot,
     heat_budget as heat_budget,
     live_heat_ceiling as live_heat_ceiling,
@@ -1180,7 +1184,8 @@ def same_side_count(symbol: str, side: int, positions: object,
     for p in positions or []:
         if str(getattr(p, "symbol", "") or "") != symbol:
             continue
-        if int(getattr(p, "type", -1)) == want and str(getattr(p, "comment", "") or "").startswith("DW"):
+        tagged = str(getattr(p, "comment", "") or "").startswith("DW")
+        if int(getattr(p, "type", -1)) == want and tagged:
             n += 1
     q = float((pending or {}).get(symbol, 0.0))
     if q * (1.0 if side > 0 else -1.0) > 0:
@@ -1232,7 +1237,8 @@ def floor_stop_to_spread(plan: object, tick: object) -> tuple[object, str]:
                        target=entry + side * abs(target - entry) * k,
                        stop_dist=floor)
     except Exception as exc:
-        return plan, f"stop floor: could not rescale the plan ({type(exc).__name__}); left as planned"
+        return plan, (f"stop floor: could not rescale the plan ({type(exc).__name__}); "
+                      f"left as planned")
     return new, (f"stop floor: {dist:.5g} -> {floor:.5g} ({MIN_STOP_SPREAD_MULT:g}x spread "
                  f"{spread:.5g}); target scaled x{k:.2f} to keep the certified R:R")
 
@@ -1431,7 +1437,9 @@ def manage_open_positions(st: dict, sleeves: list[dict]) -> None:
 def reconcile(st: dict) -> dict:
     pos = []
     pend = []
-    for symbol in list({s["symbol"] for s in load_sleeves()}) + ["XAUUSD"]:
+    # ONE READ PER SYMBOL: XAUUSD is on the roster too, and appending it again listed every gold
+    # position and pending order twice (`pending=4` for two orders, measured 2026-09-16).
+    for symbol in sorted({s["symbol"] for s in load_sleeves()} | {"XAUUSD"}):
         pos += mt5.positions_get(symbol=symbol) or []
         pend += mt5.orders_get(symbol=symbol) or []
     st["position"] = [
@@ -2402,7 +2410,42 @@ def resolve_family_order(st: dict, s: dict, equity: float,
         return {"ok": False, "stage": "no_tick", "why": "no tick/symbol_info; skipped",
                 "mark": bool(step.mark), "last_bar": last_bar, "note": step.note,
                 "considered": True}
-    entry_ref, dist = family_entry(g, side, tick.bid, tick.ask)
+    # THE VENUE IS ASKED WHETHER THIS BAR WAS ALREADY TRADED (2026-09-16). The state mark is the
+    # first witness; the account history is the second, and it is the one that cannot be lost
+    # between passes. The window is the bar AFTER the signal bar -- the bar during which this
+    # signal's entry is sent -- so the previous signal's fill never shadows a new bar.
+    _bar_min = int(_BAR_MINUTES.get(tf, 60))
+    try:
+        _from = pd.Timestamp(last_bar).to_pydatetime().replace(tzinfo=None) \
+            + timedelta(minutes=_bar_min)
+        _deals = mt5.history_deals_get(_from, _from + timedelta(minutes=_bar_min)) or []
+    except Exception:
+        _deals = []                                  # UNMEASURED: the state mark still stands
+    _traded = bar_already_traded(_deals, order_comment(name))
+    if _traded is not None:
+        return {"ok": False, "stage": "bar_traded", "considered": True, "sep": " ",
+                "mark": True, "last_bar": last_bar,
+                "why": (f"refused: this sleeve already opened on bar {last_bar} at the venue "
+                        f"(deal {_traded[0]} at {_traded[1]}); the replay fills once per signal "
+                        f"and never re-enters a bar after its stop")}
+    # THE BRACKET IS LAID FROM THE ENTRY THE VENUE GIVES, NOT FROM A CLOSE IT HAS LEFT: see
+    # `family_bracket` for the 0.27-lot, 1.3-pip EURGBP stop this replaces.
+    try:
+        _sig_close = (float(closed["close"].loc[last_bar]) if last_bar in closed.index
+                      else float(closed["close"].iloc[-1]))
+    except Exception:
+        _sig_close = None
+    entry_ref, _stop, _target, dist, _drift_note, _drift, _verdict = family_bracket(
+        g, side, tick.bid, tick.ask, _sig_close)
+    if _verdict == "stale":
+        # The replay's trade already ended at its stop or its target; opening one now is a
+        # trade the certificate never made. Journaled so `missed_growth` prices the refusal.
+        journal_refusal(name, s["symbol"], side, "stale_signal", _drift_note)
+        return {"ok": False, "stage": "stale_signal", "considered": True, "sep": " ",
+                "mark": True, "last_bar": last_bar, "why": f"refused: {_drift_note}"}
+    if _verdict == "re_anchored":
+        g = signal_with_levels(g, _stop, _target)
+        log(f"[{name}] FAMILY-EXEC {_drift_note}")
     if not (dist > 0):
         return {"ok": False, "stage": "degenerate_stop",
                 "why": "degenerate stop distance; skipped", "considered": True,
