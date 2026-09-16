@@ -694,7 +694,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     # THE 2026-09-16 BLUEPRINT ORGANS (phases C/D of the Tier-1 ledger), all cheap readers.
     "axis_registry", "tier1_scorecard", "novelty_gate", "forced_flow_calendar", "breadth_ladder",
     "wiring_ceo", "live_system_state", "hazard_engine", "posterior_alpha", "semantic_memory",
-    "model_role_benchmark", "research_departments",
+    "model_role_benchmark", "research_departments", "qd_frontier",
 })
 
 
@@ -729,7 +729,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "experiment_cache", "probation"), "discovery"),
     # validate: the adversarial evidence lab
     **dict.fromkeys(("external_gauntlet", "backtest", "falsifier_run", "adversaries",
-                     "stop_reverse", "orthogonality"), "validate"),
+                     "stop_reverse", "orthogonality", "blind_reviewer", "synthetic_regimes",
+                     "evaluator_lab"), "validate"),
     # macro: the cross-asset / macro brain
     **dict.fromkeys(("fred_macro", "futures_lead_lag", "causal_graph", "residual_factors",
                      "weak_signals", "edges_macro_fusion_sweep", "strategy_paths",
@@ -2455,6 +2456,14 @@ def main() -> None:
     # elastic factor research_budget multiplies into its legs' seconds; its clock is its floor.
     rdp = _costed("research_departments", lambda: _producer("research_departments",
                                                              "research/research_departments.py"))
+    # QUALITY-DIVERSITY (GoAnt): one elite per economic niche; explorer/exploiter/connector
+    # proposals into the intake. Cheap (seconds), so core.
+    qdf = _costed("qd_frontier", lambda: _producer("qd_frontier", "research/qd_frontier.py"))
+    # THE BLIND REVIEWER (AgonAlpha): re-executes certificates with fresh eyes; a VETO withholds
+    # the LIVE row (promoter.blind_review_veto). ~90 s per cell: the validate department.
+    bvr = _costed("blind_reviewer", lambda: _producer("blind_reviewer",
+                                                       "research/blind_reviewer.py",
+                                                       "--max-cells", "12"))
     # THE WIRING CEO hunts every build that is on no clock (principal 2026-09-16: "always
     # hunting"); probation (heavy plan) exercises the safe ones until they earn a named leg.
     wce = _costed("wiring_ceo", lambda: _producer("wiring_ceo", "research/wiring_ceo.py",
@@ -2817,7 +2826,7 @@ def main() -> None:
                     "novelty_gate": ngt, "hazard_engine": hze, "posterior_alpha": pal,
                     "semantic_memory": smm, "model_role_benchmark": mrb,
                     "live_system_state": lss, "tier1_scorecard": t1s, "wiring_ceo": wce,
-                    "research_departments": rdp,
+                    "research_departments": rdp, "qd_frontier": qdf, "blind_reviewer": bvr,
                     "probation": prb, "standing_questions": sqs, "exposure_decomposition": exd,
                     "auto_legs": auto,
                     "sweep": sw, "compile": cc,

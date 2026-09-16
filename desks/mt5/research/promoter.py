@@ -1495,6 +1495,29 @@ def regrade_failures(now: datetime | None = None) -> dict[str, dict]:
             if isinstance(r, dict) and r.get("status") == "COST_REGRADE_FAIL"}
 
 
+def blind_review_veto(name: str, verdicts: dict[str, str] | None = None) -> str | None:
+    """The certificate the blind reviewer VETOED that names this clock, or None.
+
+    THE REVIEWER RE-EXECUTES; THE PROMOTER OBEYS (AgonAlpha, principal 2026-09-16). A
+    certificate is a claim; `research/blind_reviewer` reloads the data, re-runs the family and
+    reproduces the statistics with fresh eyes, and writes PASS / VETO to its ledger. A VETO here
+    withholds the LIVE row -- it sizes nothing and touches no open position -- until a later
+    review reproduces the claim. Matching follows `regrade_block`'s prefixing convention.
+    """
+    if verdicts is None:
+        try:
+            import blind_reviewer
+            verdicts = blind_reviewer.latest_verdicts()
+        except Exception:
+            return None
+    for cert, v in (verdicts or {}).items():
+        if str(v).upper() != "VETO":
+            continue
+        if cert == name or cert.endswith("." + name) or name.endswith("." + cert):
+            return cert
+    return None
+
+
 def regrade_block(name: str, fails: dict[str, dict]) -> dict | None:
     """The failing audit row for `name`, matched exactly or across the canon's prefixing
     convention (`external.<cell>`, `<hunt>.<cell>` on one side, the bare cell on the other)."""
@@ -1716,6 +1739,14 @@ def promote_generic(sleeves: list[dict], qshadow: dict, existing: set,
                  f"(cost/lot now {bad.get('cost_per_lot_now')})")
             changed = True
             continue
+        _veto = blind_review_veto(key)
+        if _veto:
+            row["status"] = "BLOCKED_BLIND_REVIEW"
+            row["gate_reason"] = (f"the blind reviewer could not reproduce certificate {_veto} "
+                                  f"from the data (VETO)")
+            plog(f"{key}: candidate refused -- {row['gate_reason']}")
+            changed = True
+            continue
         tup = (str(spec["symbol"]), str(spec["selector"]), spec.get("condition") or None,
                str(spec["family"]), spec.get("is_universe") is True)
         row["certificate_drift"] = bool(gate_authority) and tup not in gate_authority
@@ -1841,6 +1872,15 @@ def main() -> None:
             st["promotion_authority"] = False
             st["gate_reason"] = ("fails its own ten gates at the current cost model: "
                                  + ", ".join(bad.get("gates_failing_now") or ["unspecified"]))
+            plog(f"{key}: live promotion refused -- {st['gate_reason']}")
+            changed = True
+            continue
+        _veto = blind_review_veto(key)
+        if _veto:
+            st["status"] = "BLOCKED_BLIND_REVIEW"
+            st["promotion_authority"] = False
+            st["gate_reason"] = (f"the blind reviewer could not reproduce certificate {_veto} "
+                                 f"from the data (VETO)")
             plog(f"{key}: live promotion refused -- {st['gate_reason']}")
             changed = True
             continue
