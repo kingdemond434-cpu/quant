@@ -1,0 +1,968 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "A book outside currencies, my thoughts on passive investing strategies | Mechanical Forex",
+  "url": "https://mechanicalforex.com/2018/09/a-book-outside-currencies-my-thoughts-on-passive-investing-strategies.html",
+  "published": "2026-09-16T23:12:54+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "091ea81a19abc718c252",
+  "host": "mechanicalforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\u6771\u4eac\u70ba\u66ff\uff1a\u30c9\u30eb\u30fb\u5186\u306f\u5c0f\u52d5\u304d\u3001\u30af\u30ed\u30b9\u5186\u306f\u5931\u901f \u6295\u7a3f\u65e5\u6642\uff1a 2026/09/15 14:10[\u30d5\u30a3\u30b9\u30b3] - \u307f\u3093\u304b\u3076",
+  "url": "https://minkabu.jp/news/4617930",
+  "published": "2026-09-16T23:12:57+00:00",
+  "symbols": [
+   "AUDUSD",
+   "XAUUSD",
+   "XPTUSD",
+   "HK50",
+   "NAS100",
+   "US500",
+   "US30",
+   "JPN225"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "641524b92b74454035e6",
+  "host": "minkabu.jp",
+  "claims": [
+   {
+    "claim": "\u4e00\u65b9\u3001\u30e6\u30fc\u30ed\u3084\u8c6a\u30c9\u30eb\u306a\u3069\u4e3b\u8981\u901a\u8ca8\u306f\u7c73\u5229\u4e0a\u3052\u89b3\u6e2c\u306b\u3088\u308b\u91d1\u5229\u9ad8\u30fb\u30c9\u30eb\u9ad8\u3067\u5f31\u542b\u307f\u3001\u305d\u306e\u5f71\u97ff\u3067\u30af\u30ed\u30b9\u5186\u3082\u4e0a\u6607\u5206\u3092\u524a\u308b\u5c55\u958b\u306b\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u91d1",
+     "\u8c6a\u30c9\u30eb"
+    ],
+    "direction": [
+     "\u4e0a\u6607",
+     "\u5f31\u542b"
+    ],
+    "horizon": [
+     "\u5206"
+    ],
+    "instruments": {
+     "analogues": [
+      "AUDUSD"
+     ],
+     "mentioned": [
+      "\u8c6a\u30c9\u30eb"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "af1e874bf249"
+   },
+   {
+    "claim": "09/16 12:20 \u4e09\u83f1\u91cd\u306a\u3069\u9632\u885b\u95a2\u9023\u4e3b\u529b\u9298\u67c4\u306b\u8cb7\u3044\u304c\u6d41\u5165\u3001\u9632\u885b\u4e88\u7b97\u306e\u5897\u984d\u89b3\u6e2c\u304c\u682a\u4fa1\u523a\u6fc0\u25c7 09/16 11:28 \u6771\u4eac\u682a\u5f0f\uff08\u524d\u5f15\u3051\uff09\uff1d\u5c0f\u5e45\u7d9a\u843d\u3001\u500b\u5225\u306f\u5024\u4e0a\u304c\u308a\u6570\u304c\u5727\u5012\u7684\u306b\u591a\u304f\uff34\uff2f\uff30.",
+    "lang": "ja",
+    "quantities": [
+     "\u4e3b\u529b"
+    ],
+    "direction": [
+     "\u8cb7\u3044",
+     "\u7d9a\u843d"
+    ],
+    "horizon": [
+     "\u5f15\u3051"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XPTUSD",
+      "HK50",
+      "NAS100",
+      "US500",
+      "US30",
+      "JPN225",
+      "AUDUSD"
+     ],
+     "mentioned": [
+      "\u30b4\u30fc\u30eb\u30c9",
+      "\u767d\u91d1",
+      "hang seng",
+      "nasdaq",
+      "s&p",
+      "\u30c0\u30a6",
+      "\u65e5\u7d4c\u5e73\u5747",
+      "\u8c6a\u30c9\u30eb"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDJPY"
+     ],
+     "channels": [
+      "\u6295\u4fe1: flow: Japanese outbound investment -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "45d48535817e"
+   },
+   {
+    "claim": "09/16 11:49 \u6771\u4eac\u682a\u5f0f\uff08\u5927\u5f15\u3051\uff09\uff1d\uff14\uff13\uff18\u5186\u9ad8\u3001\u69d8\u5b50\u898b\u30e0\u30fc\u30c9\u3082\u5f8c\u5834\u5207\u308a\u8fd4\u3057\uff14\u65e5\u3076\u308a\u53cd\u767a 09/16 16:18 \u65b0\u7740\u30cb\u30e5\u30fc\u30b9 \u65b0\u7740\u30cb\u30e5\u30fc\u30b9\u4e00\u89a7 \u6771\u4eac\u5e02\u5834 \u30d4\u30dc\u30c3\u30c8\u5206\u6790\uff08\u30af\u30ed\u30b9\u5186\uff09 \u4eca\u65e5 08:12 \u6771\u4eac\u5e02\u5834 \u30d4\u30dc\u30c3\u30c8\u5206\u6790\uff08\u4e3b\u8981\u56fd\u901a\u8ca8\uff09 \u4eca\u65e5 08:11 \u9999\u6e2f\u91d1\u878d\u7ba1\u7406\u5c40 \u57fa\u6e96\u91d1\u5229\u30924.",
+    "lang": "ja",
+    "quantities": [
+     "\u91d1"
+    ],
+    "direction": [
+     "\u53cd\u767a",
+     "\u5186\u9ad8"
+    ],
+    "horizon": [
+     "\u5206",
+     "\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XPTUSD",
+      "HK50",
+      "NAS100",
+      "US500",
+      "US30",
+      "JPN225",
+      "AUDUSD"
+     ],
+     "mentioned": [
+      "\u30b4\u30fc\u30eb\u30c9",
+      "\u767d\u91d1",
+      "hang seng",
+      "nasdaq",
+      "s&p",
+      "\u30c0\u30a6",
+      "\u65e5\u7d4c\u5e73\u5747",
+      "\u8c6a\u30c9\u30eb"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDJPY"
+     ],
+     "channels": [
+      "\u6295\u4fe1: flow: Japanese outbound investment -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "ba29188f2f82"
+   },
+   {
+    "claim": "\u30cd\u30c3\u30c8\u8a3c\u5238\u30e9\u30f3\u30ad\u30f3\u30b0 \u304a\u3059\u3059\u3081\u6761\u4ef6\u3067\u30b9\u30af\u30ea\u30fc\u30cb\u30f3\u30b0 \u5272\u5b89\u306a\u512a\u826f\u9298\u67c4 \u51fa\u6765\u9ad8\u6025\u5897\u9298\u67c4 \u30a2\u30ca\u30ea\u30b9\u30c8\u4e0a\u65b9\u4fee\u6b63\u9298\u67c4 \u30d7\u30ec\u30df\u30a2\u30e0\u9650\u5b9a \u9ad8\u914d\u5f53\u9298\u67c4 5\u4e07\u5186\u4ee5\u4e0b\u3067\u914d\u5f53\u72d9\u3044 \u696d\u7e3e\u304c\u597d\u8abf\u306a\u4f01\u696d \u30d7\u30ec\u30df\u30a2\u30e0\u9650\u5b9a \u62bc\u3057\u76ee\u8cb7\u3044\u72d9\u3044 \u30d7\u30ec\u30df\u30a2\u30e0\u9650\u5b9a \u914d\u5f53\u30fb\u512a\u5f85\u4e8c\u5200\u6d41\u9298\u67c4 \u5897\u914d\u671f\u5f85\u306e\u914d\u5f53\u9298\u67c4 \u30d7\u30ec\u30df\u30a2\u30e0\u9650\u5b9a \u65e5\u672c\u7248\u30c0\u30a6\u306e\u72ac \u30d0\u30d5\u30a7\u30c3\u30c8\u9298\u67c4 \u6025\u6210\u9577\u30c6\u30f3\u30d0\u30ac\u30fc\u5019\u88dc \u597d\u304d\u306a\u6761\u4ef6\u3067\u9298\u67c4\u3092\u63a2\u3059 \u6ce8\u76ee\u306e\u6c7a\u7b97\u77ed\u4fe1AI\u8981\u7d04 \u30d1\u30f3\u30d1\u30b7\uff28\uff24 \uff087532\uff09 \uff27\uff2f \uff08581A\uff09 \u30b7\u30e7\u30fc\u30dc\u30f3\u30c9 \uff081414\uff09 \uff21\uff29\u30e1\u30ab \uff086227\uff09 \u6771\u4eac\u6d77\u4e0a \uff088766\uff09 \u30a2\u30af\u30bb\u30eb\uff28\uff24 \uff08402A\uff09 \u58f2\u8cb7\u4e88\u60f3\u30e9\u30f3\u30ad\u30f3\u30b0 \u682a\u4fa1\u5024\u4e0a\u304c\u308a\u30fb\u5024\u4e0b\u304c\u308a\u30e9\u30f3\u30ad\u30f3\u30b0 \u914d\u5f53\u5229\u56de\u308a\u30e9\u30f3\u30ad\u30f3\u30b0 \u6ce8\u76ee\uff01",
+    "lang": "ja",
+    "quantities": [
+     "\u51fa\u6765\u9ad8",
+     "\u62bc\u3057\u76ee",
+     "\u6c7a\u7b97",
+     "\u914d\u5f53"
+    ],
+    "direction": [
+     "\u8cb7\u3044",
+     "\u62bc\u3057\u76ee\u8cb7\u3044"
+    ],
+    "horizon": [
+     "\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "US30"
+     ],
+     "mentioned": [
+      "\u30c0\u30a6"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "7b7fc4d3c583"
+   },
+   {
+    "claim": "\u8907\u6570\u306e\u4fdd\u967a\u5546\u54c1\u3092\u307e\u3068\u3081\u3066\u898b\u7a4d\u3082\u308a - \u81ea\u52d5\u8eca\u4fdd\u967a\u3067\u4ea4\u901a\u4e8b\u6545\u7b49\u306b\u5099\u3048\u308b - \u706b\u707d\u4fdd\u967a\u3067\u4f4f\u5b85\u306e\u30ea\u30b9\u30af\u306b\u5099\u3048\u308b - \u533b\u7642\u4fdd\u967a\u3067\u75c5\u6c17\u30ea\u30b9\u30af\u306b\u5099\u3048\u308b \u304a\u3059\u3059\u3081\u306e\u30af\u30ec\u30b8\u30c3\u30c8\u30ab\u30fc\u30c9 - \u9084\u5143\u7387\u304c\u9ad8\u3044\u30af\u30ec\u30b8\u30c3\u30c8\u30ab\u30fc\u30c9 - \u5165\u4f1a\u7279\u5178\u304c\u304a\u5f97\u306a\u30af\u30ec\u30b8\u30c3\u30c8\u30ab\u30fc\u30c9 \u304a\u3059\u3059\u3081\u306e\u30ab\u30fc\u30c9\u30ed\u30fc\u30f3 - \u6d88\u8cbb\u8005\u91d1\u878d\u304a\u3059\u3059\u3081 - \u9280\u884c\u30ab\u30fc\u30c9\u30ed\u30fc\u30f3\u304a\u3059\u3059\u3081 \u30da\u30fc\u30b8TOP\u3078 \u682a\u5f0f/\u6307\u6570 \u30cb\u30e5\u30fc\u30b9 \u6771\u4eac\u70ba\u66ff\uff1a\u30c9\u30eb\u30fb\u5186\u306f\u5c0f\u52d5\u304d\u3001\u30af\u30ed\u30b9\u5186\u306f\u5931\u901f \u6700\u65b0\u6295\u7a3f\u65e5\u6642:2026/09/15 14:10 - \u300c\u6771\u4eac\u70ba\u66ff\uff1a\u30c9\u30eb\u30fb\u5186\u306f\u5c0f\u52d5\u304d\u3001\u30af\u30ed\u30b9\u5186\u306f\u5931\u901f\u300d\uff08\u30d5\u30a3\u30b9\u30b3\uff09 \u3010\u3054\u6ce8\u610f\u3011\u300e\u307f\u3093\u304b\u3076\u300f\u306b\u304a\u3051\u308b\u300c\u8cb7\u3044\u300d\u300c\u58f2\u308a\u300d\u306e\u60c5\u5831\u306f\u3042\u304f\u307e\u3067\u3082\u6295\u7a3f\u8005\u306e\u500b\u4eba\u7684\u898b\u89e3\u306b\u3088\u308b\u3082\u306e\u3067\u3042\u308a\u3001\u60c5\u5831\u306e\u771f\u507d\u3001\u682a\u5f0f\u306e\u8a55\u4fa1\u306b\u95a2\u3059\u308b\u6b63\u78ba\u6027\u30fb\u4fe1\u983c\u6027\u7b49\u306b\u3064\u3044\u3066\u306f\u4e00\u5207\u4fdd\u8a3c\u3055\u308c\u3066\u304a\u308a\u307e\u305b\u3093\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u91d1",
+     "\u9280"
+    ],
+    "direction": [
+     "\u8cb7\u3044",
+     "\u58f2\u308a"
+    ],
+    "horizon": [
+     "\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XPTUSD",
+      "HK50",
+      "NAS100",
+      "US500",
+      "US30",
+      "JPN225",
+      "AUDUSD"
+     ],
+     "mentioned": [
+      "\u30b4\u30fc\u30eb\u30c9",
+      "\u767d\u91d1",
+      "hang seng",
+      "nasdaq",
+      "s&p",
+      "\u30c0\u30a6",
+      "\u65e5\u7d4c\u5e73\u5747",
+      "\u8c6a\u30c9\u30eb"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDJPY"
+     ],
+     "channels": [
+      "\u6295\u4fe1: flow: Japanese outbound investment -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "00cc06b31433"
+   }
+  ],
+  "n_claims": 5
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Amazon.com: High Probability Trading Strategies: Entry to Exit Tactics for the Forex, Futures, and Stock Markets (Wiley Trading): 9780470181669: Miner, Robert C.: Books",
+  "url": "https://amzn.to/3Cpb5DF",
+  "published": "2026-09-16T23:13:18+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "inventory",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en-us",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b2bf30b7b2de414c658b",
+  "host": "amzn.to",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Amazon.com: The New Trading for a Living: Psychology, Discipline, Trading Tools and Systems, Risk Control, Trade Management (Wiley Trading): 9781118443927: Elder, Alexander: Books",
+  "url": "https://amzn.to/3Gl4yeF",
+  "published": "2026-09-16T23:13:27+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "inventory",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en-us",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "08f62cd9d50e6d524b2b",
+  "host": "amzn.to",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "QuantLib, a free/open-source library for quantitative finance",
+  "url": "http://quantlib.org",
+  "published": "2026-09-16T23:13:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "http://quantlib.org/download.shtml"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f69c8d0a5ead3f9d88fd",
+  "host": "quantlib.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Kr\u00e9yat\u00f2 di liv \u2014 Wikip\u00e9dja",
+  "url": "https://gcr.wikipedia.org/w/index.php?title=%C3%88sp%C3%A9syal:Livre&bookcmd=book_creator&referer=Algoritm",
+  "published": "2026-09-16T23:13:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "gcr",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4a042d5204b61191bacf",
+  "host": "gcr.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Kapitalmarktrecht - Petra Buck-Heeb - Google Books",
+  "url": "https://books.google.de/books?id=PkyqW_qpr9YC&pg=PA41&dq=Multilaterales+Handelssystem&hl=de&sa=X&ved=2ahUKEwjk6qCH3K3tAhUmsKQKHR0FBVoQuwUwAHoECAEQBw",
+  "published": "2026-09-16T23:14:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://books.google.de/books/download/Kapitalmarktrecht.bibtex?id=PkyqW_qpr9YC&amp;hl=de&amp;output=bibtex",
+   "https://books.google.de/books/download/Kapitalmarktrecht.enw?id=PkyqW_qpr9YC&amp;hl=de&amp;output=enw",
+   "https://books.google.de/books/download/Kapitalmarktrecht.ris?id=PkyqW_qpr9YC&amp;hl=de&amp;output=ris"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "7d1deb190326deee0234",
+  "host": "books.google.de",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "DATA MINING: Teori dan Aplikasi Weka - Fricles Ariwisanto Sianturi, Paska Marto Hasugian, Agustina Simangunsong, Berto Nadeak - Google Buku",
+  "url": "https://books.google.co.id/books?id=MWcHEAAAQBAJ&newbks=1&newbks_redir=0&dq=statistika+dan+algoritma+em&hl=id&source=gbs_navlinks_s",
+  "published": "2026-09-16T23:14:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://books.google.co.id/books/download/DATA_MINING.bibtex?id=MWcHEAAAQBAJ&amp;hl=id&amp;output=bibtex",
+   "https://books.google.co.id/books/download/DATA_MINING.enw?id=MWcHEAAAQBAJ&amp;hl=id&amp;output=enw",
+   "https://books.google.co.id/books/download/DATA_MINING.ris?id=MWcHEAAAQBAJ&amp;hl=id&amp;output=ris"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "efca7183bd8ced9dec7e",
+  "host": "books.google.co.id",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Pricing - Financial Data API",
+  "url": "https://financialdata.net/pricing?via=quantpedia",
+  "published": "2026-09-16T23:14:27+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "35aa739633329d56c77f",
+  "host": "financialdata.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Why algo trading is vital for an efficient capital market - Why algo trading is vital for an efficient capital market -",
+  "url": "https://www.indiatodayne.in/lifestyle/story/why-algo-trading-is-vital-for-an-efficient-capital-market-1230717-2025-06-18",
+  "published": "2026-09-16T23:14:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.indiatodayne.in/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f8ae58f04d23f225ad79",
+  "host": "www.indiatodayne.in",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Indian Satire &#8211; India&#039;s Magic Lamp of Mockery",
+  "url": "https://genieknows.in/",
+  "published": "2026-09-16T23:14:30+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "gap",
+   "inventory",
+   "momentum",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fa797e05ac8df53d0a7c",
+  "host": "genieknows.in",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "http://www.chinaforex.com.cn/",
+  "url": "http://www.chinaforex.com.cn/",
+  "published": "2026-09-16T23:14:31+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "68826eb3db142bd27beb",
+  "host": "www.chinaforex.com.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Quantitative Trading",
+  "url": "http://epchan.blogspot.co.uk/",
+  "published": "2026-09-16T23:14:33+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "mean_reversion",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b9dd5b08525c59f8481e",
+  "host": "epchan.blogspot.co.uk",
+  "claims": [
+   {
+    "claim": "Enter short if daily roll > $100 Enter long if daily roll < \u2013$100 Exit criteria : Daily roll falls below $50 (short) or rises above \u2013$50 (long), or Maximum holding period of 9 business days \u2696\ufe0f Hedging Equity Risk: Because VIX futures prices move inversely to equity markets , trades are hedged using mini-S&P 500 futures .",
+    "lang": "en",
+    "quantities": [
+     "vix",
+     "futures"
+    ],
+    "direction": [
+     "short",
+     "long"
+    ],
+    "horizon": [
+     "daily",
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "s&p 500"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "748941609ee2"
+   },
+   {
+    "claim": "Short VIX = Short S&P hedge Long VIX = Long S&P hedge Hedge ratios are computed using regressions of VIX futures price changes on S&P futures returns, updated daily out-of-sample.",
+    "lang": "en",
+    "quantities": [
+     "vix",
+     "futures"
+    ],
+    "direction": [
+     "short",
+     "long"
+    ],
+    "horizon": [
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "s&p"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "c4c42e51ac74"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Part (3/3) - Refiner Trade: A Second Signal and the Case for Trading Less",
+  "url": "https://beyondpassive.substack.com/p/part-33-refiner-trade-a-second-signal",
+  "published": "2026-09-16T23:14:34+00:00",
+  "symbols": [
+   "XTIUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "correlation",
+   "gap",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bf7038b4724278b014d3",
+  "host": "beyondpassive.substack.com",
+  "claims": [
+   {
+    "claim": "Add carry and open a band, and the surface climbs to a ridge a little above one, the carry share between a third and a half, the band around half to one percent.",
+    "lang": "en",
+    "quantities": [
+     "carry",
+     "open"
+    ],
+    "direction": [
+     "climbs"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD"
+     ],
+     "mentioned": [
+      "crude"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "0a6ffaceaebc"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantitative Futures, stocks and Options Trading (AVAILABLE FOR MATLAB FREELANCING): Convert Stock CUSIPs to Stock Symbols with a MATLAB program",
+  "url": "http://tradingwithmatlab.blogspot.in/2009/06/convert-stock-cusips-to-stock-symbols.html",
+  "published": "2026-09-16T23:14:35+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "http://tradingwithmatlab.blogspot.com/2009/01/download-and-analyse-option-chains-data.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "bb7292d5ebf072ce7109",
+  "host": "tradingwithmatlab.blogspot.in",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Intelligent Trading",
+  "url": "http://intelligenttradingtech.blogspot.co.uk/",
+  "published": "2026-09-16T23:14:37+00:00",
+  "symbols": [],
+  "timeframes": [
+   "D1",
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "gap",
+   "momentum",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "http://inside-r.org/r-doc/utils/read.csv",
+   "http://inside-r.org/r-doc/utils/write.csv"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "4103f63846e3a67a8e7f",
+  "host": "intelligenttradingtech.blogspot.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Bloomberght Canl\u0131 Borsa, Alt\u0131n Fiyatlar\u0131, D\u00f6viz Kurlar\u0131 ve Son Dakika Ekonomi, Finans Haberleri",
+  "url": "https://www.bloomberght.com/",
+  "published": "2026-09-16T23:14:39+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XTIUSD",
+   "HK50",
+   "NAS100",
+   "US500",
+   "US30",
+   "GER40",
+   "UK100",
+   "FRA40",
+   "E35",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "USDCHF",
+   "EURJPY",
+   "USDMXN",
+   "USDTRY",
+   "USDPLN",
+   "USDHUF",
+   "USDCZK",
+   "USDRUB",
+   "BTCUSD",
+   "ETHUSD"
+  ],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "basis",
+   "flow",
+   "mean_reversion",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.95,
+  "lang": "tr",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7d5497e7c0e106d03082",
+  "host": "www.bloomberght.com",
+  "claims": [
+   {
+    "claim": "8 teknoloji liderinden dikkat \u00e7eken g\u00f6r\u00fc\u015fler HABERLER Konutta reel kay\u0131p serisi dokuzuncu ay\u0131nda EKONOM\u0130K VER\u0130LER VE G\u00dcNDEM Bloomberg HT T\u00fcketici G\u00fcven \u00d6n Endeksi geriledi HABERLER D\u00fcnya Bankas\u0131'na Nobel \u00f6d\u00fcll\u00fc ba\u015fekonomist K\u00fcresel piyasalarda tek g\u00fcndem Fed T\u00dcM\u00dc Kap Haberleri BALATACILAR BALATACILIK SANAY\u0130 VE T\u0130CARET A.",
+    "lang": "tr",
+    "quantities": [
+     "endeks"
+    ],
+    "direction": [
+     "ay\u0131"
+    ],
+    "horizon": [
+     "ay",
+     "g\u00fcn"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "HK50",
+      "NAS100",
+      "US500",
+      "US30",
+      "GER40",
+      "UK100",
+      "FRA40",
+      "E35",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCHF",
+      "EURJPY",
+      "USDMXN",
+      "USDTRY",
+      "USDPLN",
+      "USDHUF",
+      "USDCZK",
+      "USDRUB",
+      "BTCUSD",
+      "ETHUSD",
+      "COFARA",
+      "USCOCOA"
+     ],
+     "mentioned": [
+      "alt\u0131n",
+      "g\u00fcm\u00fc\u015f",
+      "brent",
+      "hang seng",
+      "nasdaq",
+      "s&p 500",
+      "dow",
+      "dax",
+      "ftse 100",
+      "cac 40",
+      "ibex 35",
+      "bovespa",
+      "bist 100",
+      "eur/usd",
+      "gbp/usd",
+      "usd/jpy",
+      "usd/chf",
+      "eur/jpy",
+      "usd/mxn",
+      "usd/try",
+      "usd/pln",
+      "usd/huf",
+      "usd/czk",
+      "usd/rub",
+      "riyal",
+      "bitcoin",
+      "ethereum",
+      "kahve",
+      "kakao"
+     ],
+     "transfer_only": [
+      "bovespa->indices (B3)",
+      "bist 100->indices (BIST)",
+      "riyal->fx (Gulf pegs)"
+     ],
+     "indirect": [],
+     "channels": [
+      "\u015fim\u015fek: policy: CBRT -> TRY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "ef60b338443b"
+   },
+   {
+    "claim": "Haberler Alt\u0131nda toparlanma En d\u00fc\u015f\u00fck emekli ayl\u0131\u011f\u0131na zam teklifi komisyondan ge\u00e7ti Haberler Trump'tan geri ad\u0131m: Y\u00fczde 20 ge\u00e7i\u015f \u00fccreti yerine ticaret anla\u015fmas\u0131 Alt\u0131n fiyatlar\u0131: 14 Temmuz 2026 Sal\u0131 gram alt\u0131n ne kadar oldu?",
+    "lang": "tr",
+    "quantities": [
+     "alt\u0131n"
+    ],
+    "direction": [
+     "toparlan",
+     "d\u00fc\u015f"
+    ],
+    "horizon": [
+     "ay"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "alt\u0131n"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "9198717f0bfe"
+   },
+   {
+    "claim": "Ekonomik Veriler ve G\u00fcndem ABD'de Haziran'da negatif ayl\u0131k enflasyon Alt\u0131nda toparlanma Haberler Erak\u00e7i'den Trump'\u0131n H\u00fcrm\u00fcz a\u00e7\u0131klamas\u0131na alayc\u0131 yan\u0131t Bloomberg HT Canl\u0131 Yay\u0131n Canl\u0131 Yay\u0131n \u0130nternet sitemizde kullan\u0131lan \u00e7erezlerle ilgili bilgi almak ve tercihlerinizi y\u00f6netmek i\u00e7in \u00c7erez Politikas\u0131 , daha fazla bilgi i\u00e7in Ayd\u0131nlatma Metnini sayfalar\u0131n\u0131 ziyaret edebilirsiniz.",
+    "lang": "tr",
+    "quantities": [
+     "enflasyon",
+     "alt\u0131n"
+    ],
+    "direction": [
+     "toparlan"
+    ],
+    "horizon": [
+     "g\u00fcn",
+     "ayl\u0131k"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "HK50",
+      "NAS100",
+      "US500",
+      "US30",
+      "GER40",
+      "UK100",
+      "FRA40",
+      "E35",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCHF",
+      "EURJPY",
+      "USDMXN",
+      "USDTRY",
+      "USDPLN",
+      "USDHUF",
+      "USDCZK",
+      "USDRUB",
+      "BTCUSD",
+      "ETHUSD",
+      "COFARA",
+      "USCOCOA"
+     ],
+     "mentioned": [
+      "alt\u0131n",
+      "g\u00fcm\u00fc\u015f",
+      "brent",
+      "hang seng",
+      "nasdaq",
+      "s&p 500",
+      "dow",
+      "dax",
+      "ftse 100",
+      "cac 40",
+      "ibex 35",
+      "bovespa",
+      "bist 100",
+      "eur/usd",
+      "gbp/usd",
+      "usd/jpy",
+      "usd/chf",
+      "eur/jpy",
+      "usd/mxn",
+      "usd/try",
+      "usd/pln",
+      "usd/huf",
+      "usd/czk",
+      "usd/rub",
+      "riyal",
+      "bitcoin",
+      "ethereum",
+      "kahve",
+      "kakao"
+     ],
+     "transfer_only": [
+      "bovespa->indices (B3)",
+      "bist 100->indices (BIST)",
+      "riyal->fx (Gulf pegs)"
+     ],
+     "indirect": [],
+     "channels": [
+      "\u015fim\u015fek: policy: CBRT -> TRY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "25fa26c8dc84"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Tilastot",
+  "url": "https://www.suomenpankki.fi/fi/tilastot/",
+  "published": "2026-09-16T23:14:40+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "fi",
+  "endpoints": [
+   "https://www.suomenpankki.fi/img/favicons/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "2fd65ea4b38254c06c7f",
+  "host": "www.suomenpankki.fi",
+  "claims": [],
+  "n_claims": 0
+ }
+]
