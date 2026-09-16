@@ -1158,10 +1158,55 @@ def cancel_pending(st: dict, symbol: str) -> None:
             f"confirmed absent from orders_get")
 
 
+#: How many positions the DESK may hold on one symbol in one direction across EVERY sleeve.
+#: MEASURED 2026-09-16 on EURCHF: seven parameterisations of one discovered mechanism shorted a
+#: 12-pip box ~40 times in twelve hours, re-entering every bar while the pair drifted into their
+#: stops -- one bet taken forty times, each copy paying the spread, 0-for-27 between five of
+#: them. Single-position discipline is per SLEEVE; this is the same discipline at the level
+#: the venue actually nets, symbol-and-direction. The heat a refused copy would have taken stays
+#: in the budget for a sleeve on a leg the book does not already hold (leg_balance's boost side),
+#: so the book is not smaller -- it is not forty copies of one trade.
+MAX_SAME_SIDE_PER_SYMBOL = 2
+MAX_SAME_SIDE_PER_SYMBOL = int(os.environ.get("MAX_SAME_SIDE_PER_SYMBOL", MAX_SAME_SIDE_PER_SYMBOL))
+REFUSALS = BASE / "data" / "refused_orders.jsonl"
+
+
+def same_side_count(symbol: str, side: int, positions: object,
+                    pending: dict[str, float] | None = None) -> int:
+    """Desk-tagged positions already open on `symbol` in `side`'s direction, plus one when this
+    pass has already decided to send one on the same side (`pending`, signed lots by symbol)."""
+    want = 0 if side > 0 else 1                                     # MT5: 0 = buy, 1 = sell
+    n = 0
+    for p in positions or []:
+        if str(getattr(p, "symbol", "") or "") != symbol:
+            continue
+        if int(getattr(p, "type", -1)) == want and str(getattr(p, "comment", "") or "").startswith("DW"):
+            n += 1
+    q = float((pending or {}).get(symbol, 0.0))
+    if q * (1.0 if side > 0 else -1.0) > 0:
+        n += 1
+    return n
+
+
+def journal_refusal(sleeve: str, symbol: str, side: int, stage: str, why: str,
+                    lot: float | None = None, price: float | None = None) -> None:
+    """Every order the desk declines to send is written down, so `missed_growth` can price the
+    refusal instead of the refusal disappearing into a log line. Never raises."""
+    try:
+        REFUSALS.parent.mkdir(parents=True, exist_ok=True)
+        with REFUSALS.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps({"time": now(), "sleeve": sleeve, "symbol": symbol,
+                                 "side": "buy" if side > 0 else "sell", "stage": stage,
+                                 "why": why, "lot": lot, "price": price}) + "\n")
+    except Exception:
+        pass
+
+
 #: A stop closer than this many spreads to the entry is inside the quote's own noise. Three:
 #: the entry pays one spread, and a stop two more away is still hit by a normal widening at a
 #: session open without any move in the mid.
-MIN_STOP_SPREAD_MULT = float(os.environ.get("MIN_STOP_SPREAD_MULT", "3.0"))
+MIN_STOP_SPREAD_MULT = 3.0
+MIN_STOP_SPREAD_MULT = float(os.environ.get("MIN_STOP_SPREAD_MULT", MIN_STOP_SPREAD_MULT))
 
 
 def floor_stop_to_spread(plan: object, tick: object) -> tuple[object, str]:
@@ -2383,6 +2428,13 @@ def resolve_family_order(st: dict, s: dict, equity: float,
     # the book does not hold gets MORE, by the same bound. Total heat stays where `heat_budget`
     # put it -- what changes is which bets it buys, which is the principal's own definition of
     # Tier-1: more independent positive-Elog bets inside the same heat.
+    _same = same_side_count(s["symbol"], side, mt5.positions_get() or [], pending)
+    if _same >= MAX_SAME_SIDE_PER_SYMBOL:
+        _why = (f"{_same} {'long' if side > 0 else 'short'} position(s) already on {s['symbol']} "
+                f"across sleeves (cap {MAX_SAME_SIDE_PER_SYMBOL}): one bet is not taken again")
+        journal_refusal(name, s["symbol"], side, "symbol_side_cap", _why)
+        return {"ok": False, "stage": "symbol_side_cap", "considered": True, "sep": " ",
+                "why": _why, "mark": False, "last_bar": last_bar}
     leg_mult, leg_why = 1.0, ""
     try:
         from mt5desk import leg_balance
@@ -2870,6 +2922,13 @@ def resolve_scalp_order(st: dict, s: dict, equity: float) -> dict:
     # falls, in proportion. Not a cap and not a veto -- the order goes, at a distance the venue
     # can honour.
     plan, _floor_note = floor_stop_to_spread(plan, tick)
+    _same = same_side_count(s["symbol"], int(plan.side), mt5.positions_get() or [])
+    if _same >= MAX_SAME_SIDE_PER_SYMBOL:
+        _why = (f"{_same} {'long' if int(plan.side) > 0 else 'short'} position(s) already on "
+                f"{s['symbol']} across sleeves (cap {MAX_SAME_SIDE_PER_SYMBOL})")
+        journal_refusal(s["name"], s["symbol"], int(plan.side), "symbol_side_cap", _why)
+        return {"ok": False, "stage": "symbol_side_cap", "forming": forming, "mark": True,
+                "why": _why}
     try:
         lot = promoted_lot(equity, n_live, plan.stop_dist, s["symbol"], sym, s.get("risk_frac"),
                            s.get("decay_faded"),
