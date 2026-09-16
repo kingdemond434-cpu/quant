@@ -144,6 +144,11 @@ LEG_LAYER: dict[str, str] = {
     # Whether every docket candidate is still accounted for is a measurement of the desk's own
     # bookkeeping: meta.
     "candidate_conservation": "meta",
+    # Planted point-in-time canaries measure whether the desk can read the future: meta.
+    "pit_canaries": "meta",
+    # Certification fate joined back to the generators that proposed each cell reweights the
+    # predictor search itself: prediction.
+    "mutation_yield": "prediction",
     # sizing: how much
     "capacity": "sizing", "ensemble_optimizer": "sizing",
     # portfolio: how the book is composed
