@@ -1,78 +1,26 @@
-"""Gateway watchdog unit: ONE gateway pass per invocation.
+"""LEGACY ENTRY POINT -- delegates to `research/run_gateway_loop.py`. ONE wrapper, ONE lock rule.
 
-Windows Task Scheduler runs this every minute (task MT5-Gateway). A file lock
-prevents overlapping passes (double-bracket race at window hours).
-
-Never trade a weekend/holiday: gateway.main() itself idles on stale ticks.
+MEASURED 2026-09-16. This file carried its own copy of the loop with a pid-less "locked" lock
+that any later pass would steal after five minutes, while `research/run_gateway_loop.py` holds a
+pid lock and respects a living holder. `gateway_resident.py` imported THIS copy by accident of
+sys.path order and the per-minute task ran the other, so whenever a pass took more than five
+minutes the two ran concurrently and the same signal bar was sent twice. Two wrappers cannot
+disagree about the lock again if there is only one; this shim is what any old invoker now gets.
 """
-
 from __future__ import annotations
 
-import sys
+import importlib.util
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+_RESEARCH = Path(__file__).resolve().parent / "research" / "run_gateway_loop.py"
+_spec = importlib.util.spec_from_file_location("run_gateway_loop_research", _RESEARCH)
+if _spec is None or _spec.loader is None:                       # pragma: no cover
+    raise ImportError(f"cannot load {_RESEARCH}")
+_mod = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_mod)
 
-from mt5desk import gateway  # noqa: E402
-from mt5desk.config import DATA, REPORTS, desk_root  # noqa: E402
-
-LOCK = DATA / "gateway.lock"
-
-
-def main() -> None:
-    if LOCK.exists():
-        age_min = (__import__("time").time() - LOCK.stat().st_mtime) / 60
-        if age_min < 5:
-            return  # another pass is running (or crashed <5 min ago)
-        LOCK.unlink(missing_ok=True)  # stale lock: steal it
-    LOCK.write_text("locked", encoding="utf-8")
-    try:
-        gateway.main()
-        from datetime import datetime, timezone  # noqa: PLC0415
-        if datetime.now(timezone.utc).hour == 22:  # once per UTC day
-            import shadow_forward  # noqa: PLC0415
-            shadow_forward.main()
-            import promoter  # noqa: PLC0415
-            promoter.main()
-            import regime_monitor  # noqa: PLC0415
-            regime_monitor.main()
-        if datetime.now(timezone.utc).weekday() == 0 and datetime.now(timezone.utc).hour == 23:
-            import json as _json  # noqa: PLC0415
-            from pathlib import Path as _Path  # noqa: PLC0415
-            stfile = DATA / "hunt7_state.json"
-            last = 0
-            if stfile.exists():
-                try:
-                    last = _json.loads(stfile.read_text(encoding="utf-8")).get("last_sweep", 0)
-                except Exception:
-                    pass
-            now_ts = datetime.now(timezone.utc).timestamp()
-            if now_ts - last > 6 * 86400:  # weekly standing sweep
-                try:
-                    import fetch_universe  # noqa: PLC0415
-                    fetch_universe.main()
-                    import run_hunt7  # noqa: PLC0415
-                    run_hunt7.main()
-                    import run_hunt8  # noqa: PLC0415
-                    run_hunt8.main()
-                    import run_hunt9  # noqa: PLC0415
-                    run_hunt9.main()
-                    import free_shadows  # noqa: PLC0415
-                    free_shadows.main()
-                    import run_hunt10  # noqa: PLC0415
-                    run_hunt10.main()
-                    import run_hunt12  # noqa: PLC0415
-                    run_hunt12.main()
-                    stfile.write_text(_json.dumps({"last_sweep": now_ts}),
-                                      encoding="utf-8")
-                    gateway.log("weekly hunt7-12 + states sweep completed")
-                except Exception as e2:  # noqa: BLE001
-                    gateway.log(f"HUNT7-12 ERROR: {e2!r}")
-    except Exception as e:  # noqa: BLE001 - watchdog must never die
-        gateway.log(f"LOOP ERROR: {e!r}")
-    finally:
-        LOCK.unlink(missing_ok=True)
-
+LOCK = _mod.LOCK
+main = _mod.main
 
 if __name__ == "__main__":
     main()

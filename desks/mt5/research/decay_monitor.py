@@ -65,6 +65,7 @@ import json
 import math
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 BASE = Path(__file__).resolve().parent.parent
 ROOT = BASE.parent.parent
@@ -92,6 +93,15 @@ DD_HARD_R = -25.0
 TRAIL_DAYS = 45
 TRAIL_MAX_TRADES = 60
 FADE_FACTOR = 0.5
+#: THE POOLED VERDICT (2026-09-16). A family is judged on ALL its live sleeves' trades together,
+#: by asset class: pooled n at or above this and pooled t at or below the bar reads FADE for
+#: every sleeve in the pool; it lifts only when the pooled t is back above zero (a band, so the
+#: verdict does not flip hourly). Measured the day it was written: the `discovered` forex family
+#: had 70 live closes at mean -0.16R, t about -2, spread over eleven sleeves with 3-8 trades each
+#: -- every one of them below the per-sleeve bar, so the family bled at full size for a week
+#: while each sleeve individually "had no statistical verdict either way".
+POOL_FADE_N = 20
+POOL_FADE_T = -1.5
 
 #: THE MODEL HALF's floors. Each is a refusal threshold for publishing a NUMBER, not a rule that
 #: moves capital: below any of them the half-life is UNMEASURED with its n.
@@ -207,6 +217,49 @@ def verdict(s: dict) -> tuple[str, str]:
                         f"statistically absent at the n the desk trusts for promotion; half risk "
                         f"while the question resolves")
     return "HEALTHY", f"trailing t={s['t']}, exp={s['exp_r']}R over n={s['n']}"
+
+
+def pool_key(row: dict) -> str:
+    """The pool a live sleeve is judged in with its siblings: family x asset class."""
+    fam = str(row.get("family") or "?")
+    sym = str(row.get("symbol") or "").upper()
+    cls = "XAU" if sym.startswith("XAU") else "FX"
+    return f"{fam}/{cls}"
+
+
+def pooled_verdicts(live: dict[str, dict], trades: Any = None) -> dict[str, dict]:
+    """Per pool: the pooled trailing stats, a verdict and the sleeves it applies to.
+
+    FADE at n >= POOL_FADE_N and t <= POOL_FADE_T with a negative expectancy; HEALTHY once t is
+    back above zero with a non-negative expectancy; HOLD in between (fades stand); UNMEASURED
+    below the n. Never a RETIRE: a pool mixes sleeves, and retirement stays a per-sleeve verdict
+    on a per-sleeve record.
+    """
+    fetch = trades or sleeve_trades
+    groups: dict[str, list[str]] = {}
+    for name, row in live.items():
+        groups.setdefault(pool_key(row), []).append(name)
+    out: dict[str, dict] = {}
+    for key, names in sorted(groups.items()):
+        rs: list[float] = []
+        for n in names:
+            rs.extend(float(t["r_multiple"]) for t in fetch(n))
+        s = stats(rs)
+        if s["n"] < POOL_FADE_N:
+            v, why = "UNMEASURED", (f"pooled {key}: {s['n']} trailing trade(s) < {POOL_FADE_N} "
+                                    f"across {len(names)} sleeve(s)")
+        elif s["t"] <= POOL_FADE_T and s["exp_r"] < 0.0:
+            v, why = "FADE", (f"pooled {key}: t={s['t']}, exp={s['exp_r']}R over n={s['n']} "
+                              f"across {len(names)} sleeve(s): the family is losing where no "
+                              f"single sleeve has the trades to say so; half risk on all of "
+                              f"them until the pooled record turns (t > 0)")
+        elif s["t"] > 0.0 and s["exp_r"] >= 0.0:
+            v, why = "HEALTHY", f"pooled {key}: t={s['t']}, exp={s['exp_r']}R over n={s['n']}"
+        else:
+            v, why = "HOLD", (f"pooled {key}: t={s['t']}, exp={s['exp_r']}R over n={s['n']}: "
+                              f"inside the band; fades stand as they are")
+        out[key] = {**s, "verdict": v, "why": why, "sleeves": sorted(names)}
+    return out
 
 
 def source_state() -> tuple[str, str]:
@@ -509,14 +562,18 @@ def main(write_queue: bool = True) -> int:
         if v == "FADE" and not row.get("decay_faded"):
             eff = float(row.get("risk_frac") or 0.03)
             row["decay_faded"] = now
+            row["decay_fade_basis"] = "own"
             actions.append({"at": now, "sleeve": name, "action": "FADE",
                             "risk_frac": [eff, round(eff * FADE_FACTOR, 4)], "why": why})
             changed = True
-        elif v == "HEALTHY" and row.get("decay_faded"):
+        elif (v == "HEALTHY" and row.get("decay_faded")
+              and not str(row.get("decay_fade_basis") or "").startswith("pool:")):
             # recovery from a fade is automatic -- the fade was a hedge on uncertainty, not a
             # sentence. RETIRE recovery is NOT automatic: that runs back through the forward window.
+            # A sleeve faded by its POOL is lifted by its pool, never by its own thin record.
             eff = float(row.get("risk_frac") or 0.03)
             del row["decay_faded"]
+            row.pop("decay_fade_basis", None)
             actions.append({"at": now, "sleeve": name, "action": "UNFADE",
                             "risk_frac": [round(eff * FADE_FACTOR, 4), eff], "why": why})
             changed = True
@@ -528,6 +585,36 @@ def main(write_queue: bool = True) -> int:
                                        "on its next daily pass"})
             sleeves.pop(name, None)
             changed = True
+
+    # THE POOLED VERDICT, AFTER THE PER-SLEEVE ONE: a pool that is losing fades every live sleeve
+    # in it; a pool that has turned lifts only the sleeves it faded itself.
+    pools = pooled_verdicts({k: v for k, v in live.items() if k in sleeves})
+    for key, pv in pools.items():
+        for name in pv["sleeves"]:
+            row = sleeves.get(name)
+            if not isinstance(row, dict):
+                continue
+            basis = str(row.get("decay_fade_basis") or "")
+            if pv["verdict"] == "FADE" and not row.get("decay_faded"):
+                eff = float(row.get("risk_frac") or 0.03)
+                row["decay_faded"] = now
+                row["decay_fade_basis"] = f"pool:{key}"
+                actions.append({"at": now, "sleeve": name, "action": "FADE", "pool": key,
+                                "risk_frac": [eff, round(eff * FADE_FACTOR, 4)],
+                                "why": pv["why"]})
+                changed = True
+            elif (pv["verdict"] == "HEALTHY" and row.get("decay_faded")
+                  and basis == f"pool:{key}"):
+                eff = float(row.get("risk_frac") or 0.03)
+                del row["decay_faded"]
+                row.pop("decay_fade_basis", None)
+                actions.append({"at": now, "sleeve": name, "action": "UNFADE", "pool": key,
+                                "risk_frac": [round(eff * FADE_FACTOR, 4), eff],
+                                "why": pv["why"]})
+                changed = True
+            if name in report:
+                report[name]["pool"] = key
+                report[name]["pool_verdict"] = pv["verdict"]
 
     if changed:
         # Write back in the file's OWN shape: the list the promoter writes keeps every row that

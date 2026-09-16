@@ -1340,6 +1340,8 @@ def manage_open_positions(st: dict, sleeves: list[dict]) -> None:
     this idempotent and acknowledgement-driven rather than merely hopeful.
     """
     symbols = list({s["symbol"] for s in sleeves} | {"XAUUSD"})
+    _fixed_tags = {order_comment(str(s.get("name") or "")): str(s.get("name") or "")
+                   for s in sleeves if s.get("exec") == "family_market" and s.get("name")}
     for symbol in symbols:
         positions = mt5.positions_get(symbol=symbol) or []
         if not positions:
@@ -1350,6 +1352,22 @@ def manage_open_positions(st: dict, sleeves: list[dict]) -> None:
             continue
         for p in positions:
             side = 1 if p.type == mt5.POSITION_TYPE_BUY else -1
+            # A FIXED BRACKET IS NOT RATCHETED (2026-09-16). This routine trailed EVERY position,
+            # and the family lane's certificates were earned with a fixed stop, a fixed target
+            # and a time exit (`engine.Signal.runner_trail_k = 0`: "0 = fixed stop"; no
+            # orthogonal family sets it). Trailing them is a lookalike strategy under a certified
+            # name: measured that day, five forex closes at a manage-tightened stop, five losses,
+            # -4.25 EUR, on holds the certificate would have carried to their time exit. Only a
+            # position whose own signal carried a trail (`trail_k` recorded at the send) is
+            # managed here; the gold and scalp lanes are unchanged.
+            _fam_name = _fixed_tags.get(str(getattr(p, "comment", "") or ""))
+            if _fam_name is not None:
+                _trail = float(((st.get("generic") or {}).get(_fam_name) or {})
+                               .get("trail_k") or 0.0)
+                if not _trail > 0.0:
+                    log(f"MANAGE ticket {p.ticket} ({symbol}): certified exit is a fixed "
+                        f"bracket and the time exit; not ratcheted")
+                    continue
             dist = _original_stop_distance(st, p.ticket, p.price_open, p.sl)
             if dist is None:
                 log(f"MANAGE ticket {p.ticket} ({symbol}): no stop on the position; "
@@ -2330,6 +2348,17 @@ def resolve_family_order(st: dict, s: dict, equity: float,
     else:
         # NO HOUR FILTER, BECAUSE THE CLOCK APPLIES NONE -- the family itself owns when it fires.
         last_bar = closed.index[-1] if len(closed) else None
+    # THE MARK IS READ BEFORE THE INPUTS ARE REBUILT (2026-09-16). Input reconstruction is the
+    # expensive step -- peer bars, factor bars, primitives -- and it was paid on every pass for
+    # every sleeve whether or not the bar had already been considered: 64 sleeves at 2-5 s each
+    # made passes 2-7 minutes long, and a slow pass is the entry drift `family_bracket` and the
+    # concurrent-pass double entries both trace back to. A considered bar is the ordinary quiet
+    # outcome (`family_signal_step` returns mark=False for it) and now costs nothing.
+    _srec0 = (st.get("generic") or {}).get(name) or {}
+    if last_bar is not None and str(_srec0.get("last_signal_bar") or "") == str(last_bar):
+        return {"ok": False, "stage": "no_signal", "why": "bar already considered",
+                "mark": False, "last_bar": last_bar, "considered": False}
+    if population != "hunt16":
         call_params, why = _family_call_params(s, str(family), closed)
         if call_params is None:
             return {"ok": False, "stage": "no_inputs",
@@ -2715,6 +2744,9 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
             f"| {order_desc}")
         if rc in (10008, 10009):
             srec["open_ttl_until"] = ttl_until
+            # Whether this signal's certificate carried a trail: `manage_open_positions` ratchets
+            # only positions whose own signal did (engine.Signal.runner_trail_k, 0 = fixed).
+            srec["trail_k"] = float(getattr(g, "runner_trail_k", 0.0) or 0.0)
             fill_px = float(getattr(res, "price", 0.0) or entry_ref)
             _book_fill(name, s["symbol"], side * lot, fill_px)
             _record_exec_outcome(s["symbol"], side, lot, entry_ref, tick, dist, g, fill_px)

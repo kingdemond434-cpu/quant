@@ -432,6 +432,71 @@ def record_door_transition(name: str, *, door: str, from_status: str, to_status:
 _DOOR_EVENTS: list[dict] = []
 
 
+#: Where `certificate_hygiene` moves survivors whose parameterisation was never recorded.
+EVICTED_CERTIFICATES = BASE / "reports" / "UNIVERSAL_SURVIVORS_UNRUNNABLE.json"
+
+
+def evicted_certificate_keys(path: Path | None = None) -> set[str]:
+    """Certificate keys `certificate_hygiene` evicted from the survivors as UNRUNNABLE."""
+    p = path or EVICTED_CERTIFICATES
+    try:
+        doc = json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return set()
+    surv = doc.get("survivors") if isinstance(doc, dict) else None
+    return {str(k) for k in (surv or {})}
+
+
+def _certificate_key(row: dict) -> str:
+    cert = row.get("certificate")
+    if isinstance(cert, dict):
+        return str(cert.get("cell") or "")
+    return str(cert or "")
+
+
+def retire_unrunnable(sleeves: list[dict], evicted: set[str] | None = None) -> bool:
+    """RETIRE roster rows whose certificate hygiene has evicted as UNRUNNABLE. Returns changed.
+
+    FIVE ROWS SAT ON THE ROSTER THAT COULD NEVER PLACE (measured 2026-09-16). Their certificates
+    name a bare cell (`external.CADJPY.session_range_breakout`) and the parameterisation that
+    earned them was never recorded, so `_params_from_certificate` refuses them on every pass:
+    "names no parameterisation and the docket holds 403 distinct ones". `certificate_hygiene`
+    had already moved those certificates out of the survivors as UNRUNNABLE, and the mechanism
+    had been RE-EARNED as parameterised cells (`...rr=1.5_wb=12`) with their own roster rows --
+    but nothing read the eviction back into the roster, so one bare row stayed LIVE with heat
+    assigned to a sleeve that refuses every bar, and four stayed STANDBY waiting for a restore
+    that could only ever restore a refusal. The rows are retired with the reason on them; the
+    parameterised twins carry the mechanism. A row that carries explicit `params` is runnable on
+    its own and is never touched here.
+    """
+    keys = evicted_certificate_keys() if evicted is None else set(evicted)
+    if not keys:
+        return False
+    changed = False
+    stamp = datetime.now(tz=UTC).isoformat(timespec="seconds")
+    for s in sleeves:
+        status = str(s.get("status") or "")
+        if status not in ("LIVE", "STANDBY"):
+            continue
+        if isinstance(s.get("params"), dict) and s.get("params"):
+            continue
+        key = _certificate_key(s)
+        if not key or key not in keys:
+            continue
+        reason = (f"certificate {key!r} is UNRUNNABLE: the parameterisation that earned it was "
+                  f"never recorded (certificate_hygiene evicted it); the re-earned parameterised "
+                  f"cells carry the mechanism")
+        s.update({"status": "RETIRED", "risk_frac": 0.0, "risk_frac_source": "none",
+                  "retired_at": stamp, "retire_reason": reason})
+        plog(f"AUTO-RETIRED {s['name']} ({reason})")
+        note_door(str(s.get("name") or ""), door="RETIRED", from_status=status,
+                  to_status="RETIRED", reason=reason,
+                  evidence={"certificate": s.get("certificate"),
+                            "evicted_by": "certificate_hygiene"})
+        changed = True
+    return changed
+
+
 def note_door(name: str, *, door: str, from_status: str, to_status: str,
               evidence: dict | None = None, reason: str = "") -> None:
     """Remember a door for `flush_door_events`; never writes."""
@@ -1569,6 +1634,9 @@ def main() -> None:
     regrade_fails = regrade_failures()
     identities = clock_identities()
     changed = False
+    # Certificates hygiene has evicted as UNRUNNABLE leave the roster before anything is judged
+    # or restored on them (2026-09-16).
+    changed = retire_unrunnable(sleeves) or changed
 
     # WHAT THE ALLOCATOR CURRENTLY SAYS. Read ONCE per pass: the three promotion doors and the
     # reconciliation below must all decide from the same solve, or two rows written in the same
