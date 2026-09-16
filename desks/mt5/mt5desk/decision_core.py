@@ -1118,9 +1118,11 @@ def book_from_allocation(total: float, book: object, book_fallback: object, *,
     except TypeError:
         n_zero = 0                      # unreadable list: the book stands exactly as it was
     if not n_zero:
-        return book_, f"allocator book authoritative ({len(book_)} sleeve(s)); {why}"
-    return book_, (f"allocator book authoritative ({len(book_) - n_zero} sleeve(s), {n_zero} held "
-                   f"at zero by this solve); {why}")
+        return book_, "; ".join(p for p in (f"allocator book authoritative ({len(book_)} sleeve(s))",
+                                       *why.split("; ")) if p.strip())
+    return book_, "; ".join(p for p in (f"allocator book authoritative ({len(book_) - n_zero} "
+                                       f"sleeve(s), {n_zero} held at zero by this solve)",
+                                       *why.split("; ")) if p.strip())
 
 
 def allocator_rank(base: Path, now: float | None = None) -> dict[str, float] | None:

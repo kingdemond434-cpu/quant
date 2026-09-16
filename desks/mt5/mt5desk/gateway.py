@@ -2489,7 +2489,10 @@ def resolve_family_order(st: dict, s: dict, equity: float,
             _scaled = _scaled * macro_mult
         except Exception as exc:
             macro_mult, macro_why = 1.0, f"macro UNMEASURED ({type(exc).__name__}: {exc})"
-        _final = max(_vmin, round(_scaled / _vstep) * _vstep)
+        # ZERO HEAT STAYS ZERO (2026-09-16, caught by the harness): the venue floor is a floor
+        # for an order the allocator FUNDED, never a way for an unfunded sleeve to trade 0.01.
+        _final = (0.0 if not float(lot) > 0.0
+                  else max(_vmin, round(_scaled / _vstep) * _vstep))
         _held = leg_balance.already_held(s["symbol"], side, mt5.positions_get() or [], pending)
         if _held > 0 and _final <= _vmin + 1e-12:
             return {"ok": False, "stage": "duplicate_at_floor", "considered": True,

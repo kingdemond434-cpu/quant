@@ -368,10 +368,13 @@ def test_allocator_heat_fails_closed_on_every_doubt(tmp_path) -> None:
     assert total is None and "min stale" in why
     _artifact(tmp_path, {**_OK, "heat": {"total": 0.2, "certified": False}})
     assert dc.allocator_heat(tmp_path)[1] == "allocator did not certify the utilisation target"
+    # An over-filled solve is SCALED to the measured bar (relative weights kept), not thrown
+    # away; a non-positive one is refused.
     _artifact(tmp_path, {**_OK, "heat": {"total": 0.31, "certified": True}})
-    assert "outside (0, 0.30]" in dc.allocator_heat(tmp_path)[1]
+    total, why = dc.allocator_heat(tmp_path)
+    assert total == pytest.approx(0.30) and "SCALED to the measured 0.3000 bar" in why
     _artifact(tmp_path, {**_OK, "heat": {"total": 0.0, "certified": True}})
-    assert "outside" in dc.allocator_heat(tmp_path)[1]
+    assert "not positive" in dc.allocator_heat(tmp_path)[1]
     _artifact(tmp_path, {**_OK, "growth": {"annual_growth_pct": float("-inf")}})
     assert "no finite growth" in dc.allocator_heat(tmp_path)[1]
     _artifact(tmp_path, {**_OK, "growth": {}})
@@ -439,8 +442,11 @@ def test_book_from_allocation_sizes_the_proven_book_and_refuses_a_drifted_or_emp
                                         certified=True, why="proof 1h old")
     assert book == {"a": 0.12, "b": 0.08}
     assert why == "allocator book authoritative (2 sleeve(s)); proof 1h old"
-    assert dc.book_from_allocation(0.2, {"a": 0.5}, None, certified=True, why="")[1] == (
-        "book sums to 0.5000, heat says 0.2000")
+    # A book solved above the measured survival bar is SCALED to it, weights kept, and says so.
+    book, why = dc.book_from_allocation(0.2, {"a": 0.5}, None, certified=True, why="")
+    assert book == {"a": 0.2} and why == (
+        "allocator book authoritative (1 sleeve(s)); book scaled 0.5000 -> 0.2000 to the "
+        "measured survival bar, relative weights preserved")
     assert dc.book_from_allocation(0.2, {}, None, certified=True, why="")[1] == (
         "allocator book is empty (no positive-heat sleeve)")
     assert dc.book_from_allocation(0.2, None, None, certified=True, why="")[0] is None
@@ -693,7 +699,9 @@ def test_bracket_from_bars_is_the_loop_and_the_veto_record_in_one_place() -> Non
 # ====================================================================== diagnosis and placement
 
 def test_diagnose_turns_a_retcode_into_something_actionable() -> None:
-    assert "terminal connection is gone" in dc.diagnose(None)
+    # `None` is UNKNOWN, not "the terminal is gone": measured 2026-09-14, another sleeve's
+    # order was accepted in the same second as a None.
+    assert "UNKNOWN" in dc.diagnose(None) and "returned nothing" in dc.diagnose(None)
     assert dc.diagnose(10008) == "" and dc.diagnose(10009) == ""
     assert dc.diagnose(10017).startswith("10017 Trade disabled: the ACCOUNT")
     assert "PENDING ORDER PRICE" in dc.diagnose(10015)
