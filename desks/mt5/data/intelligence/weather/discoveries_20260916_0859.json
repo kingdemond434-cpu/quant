@@ -1,0 +1,13 @@
+[
+  {
+    "source": "weather",
+    "type": "hurricane",
+    "name": "Fifteen-E",
+    "symbols": [
+      "USOIL",
+      "NATGAS"
+    ],
+    "confidence": 0.5,
+    "description": "Active hurricane Fifteen-E - may impact energy prices"
+  }
+]
