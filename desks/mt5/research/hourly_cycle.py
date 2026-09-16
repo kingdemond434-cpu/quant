@@ -1430,6 +1430,20 @@ def compile_candidates() -> dict:
     return _producer("miner_candidate_compiler", "research/miner_candidate_compiler.py")
 
 
+def pit_canaries() -> dict:
+    """`pit_canaries`: planted past/now/future rows read point-in-time every hour; green only
+    when the future row is invisible at now (closed-loop `truth.pit_canaries_green`)."""
+    return _producer("pit_canaries", "scripts/check_pit_canaries.py")
+
+
+def mutation_yield() -> dict:
+    """`mutation_yield`: certification fate joined back to the generator and operator that
+    proposed each cell, rewriting data/generator_weights.json -- the compute reallocation the
+    closed loop measures (`meta.compute_reallocated_from_outcomes`). It was written by nothing
+    on a clock; the weights were two days stale."""
+    return _producer("mutation_yield", "research/mutation_yield.py")
+
+
 def candidate_conservation() -> dict:
     """`candidate_conservation`: every docket candidate accounted for -- judged, waiting or
     evicted with a reason -- written for the closed-loop attestation's `truth` block."""
@@ -2181,6 +2195,8 @@ def main() -> None:
     se = _costed("search", search)
     bs = _costed("breadth_sweep", breadth_sweep)
     ccv = _costed("candidate_conservation", candidate_conservation)
+    pcn = _costed("pit_canaries", pit_canaries)
+    myd = _costed("mutation_yield", mutation_yield)
     sw = _costed("sweep", sweep)
     cc = _costed("compile_candidates", compile_candidates)
     dp = _costed("deepen", deepen)
@@ -2526,6 +2542,7 @@ def main() -> None:
                     "regime_monitor": rg,
                     "deepening": dp, "heal_clocks": hc, "mine": m,
                     "search": se, "breadth_sweep": bs, "candidate_conservation": ccv,
+                    "pit_canaries": pcn, "mutation_yield": myd,
                     "sweep": sw, "compile": cc,
                     "execution_twin": et, "causal_graph": cg, "alpha_rl": arl,
                     "research_exchange_score": rxs, "lake_promote": lkp,

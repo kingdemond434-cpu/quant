@@ -2775,15 +2775,46 @@ def main():
         _tf = timeframe_of(sp.get("params"), str(sp.get("family") or ""))
         return 0 if _tf in ("M1", "M5", "M15", "M30") else (1 if _tf == "H4" else 2)
 
+    # THE CEO DOCKET IS AUTHORITATIVE OVER THE ORDER (closed-loop
+    # `research.frontier_scheduler_authoritative`, 2026-09-16). Its proposals name families;
+    # never-judged cells of a proposed family are reached before the rest of their chart rank,
+    # and how many were served is written for `frontier_ceo` to read back -- the claim is
+    # measured on the next run's order, never asserted by the proposer.
+    _ceo_fams: set[str] = set()
+    try:
+        _ceo = json.loads((BASE / "desks" / "mt5" / "reports" / "CEO_DOCKET.json").read_text("utf-8"))
+        for _p in (_ceo.get("proposals") or []):
+            _f = str((_p.get("family") if isinstance(_p, dict) else _p) or "").strip()
+            if _f:
+                _ceo_fams.add(_f)
+    except Exception:
+        _ceo_fams = set()
+
+    def _ceo_rank(sp: dict) -> int:
+        return 0 if str(sp.get("family") or "") in _ceo_fams else 1
+
     eligible_specs = sorted(
         eligible_specs,
         key=lambda sp: (_is_new(sp),
                         _tf_rank(sp),
+                        _ceo_rank(sp),
                         _judged_in_bucket.get(_bucket(sp), 0),
                         _cursor.get(str(sp.get("sym") or ""), ""),
                         str(sp.get("sym") or ""),
                         timeframe_of(sp.get("params"), str(sp.get("family") or "")),
                         str(sp.get("family") or "")))
+    try:
+        _served = sum(1 for sp in eligible_specs if _is_new(sp) == 0 and _ceo_rank(sp) == 0)
+        _order_doc = {"at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+                      "ceo_families": sorted(_ceo_fams), "ceo_cells_first": _served,
+                      "never_judged": sum(1 for sp in eligible_specs if _is_new(sp) == 0),
+                      "buckets_judged": {f"{k[0]}/{k[1]}": v for k, v in _judged_in_bucket.items()},
+                      "order": "never-judged, intraday first, CEO-proposed families first, "
+                               "least-covered chart x session bucket first, symbol rotation"}
+        (BASE / "desks" / "mt5" / "reports" / "GAUNTLET_ORDER.json").write_text(
+            json.dumps(_order_doc, indent=1), encoding="utf-8")
+    except Exception as _exc:
+        print(f"  gauntlet order record unwritten ({type(_exc).__name__}: {_exc})")
     if _judged_in_bucket:
         _cov = sorted(_judged_in_bucket.items(), key=lambda kv: kv[1])
         print(f"  breadth: {len(_judged_in_bucket)} chart x session bucket(s) judged so far; "

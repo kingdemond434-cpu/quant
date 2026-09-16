@@ -56,6 +56,28 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
 
 REPORTS = DESK / "reports"
 DOCKET = REPORTS / "CEO_DOCKET.json"
+GAUNTLET_ORDER = REPORTS / "GAUNTLET_ORDER.json"
+
+
+def _served_by_gauntlet() -> tuple[bool, str]:
+    """Did the gauntlet's last sweep put this docket's proposed families first? Read from the
+    order record the gauntlet writes; absent or stale reads as NOT authoritative."""
+    try:
+        import time as _time
+        doc = json.loads(GAUNTLET_ORDER.read_text(encoding="utf-8"))
+        age_h = (_time.time() - GAUNTLET_ORDER.stat().st_mtime) / 3600.0
+    except (OSError, ValueError):
+        return False, ("no GAUNTLET_ORDER.json: the gauntlet has not recorded an order this "
+                       "docket shaped")
+    served = int(doc.get("ceo_cells_first") or 0)
+    fams = doc.get("ceo_families") or []
+    if age_h > 26.0:
+        return False, f"gauntlet order record is {age_h:.1f}h old"
+    if served <= 0:
+        return False, (f"the last sweep placed no never-judged cell of a proposed family first "
+                       f"(proposed: {', '.join(fams) or 'none'})")
+    return True, (f"the last sweep ({doc.get('at')}) placed {served} never-judged cell(s) of "
+                  f"the proposed families first: {', '.join(fams)}")
 DECIDED = DESK / "data" / "ceo_decided.jsonl"
 
 #: Asked verbatim, every day. Wording is fixed on purpose: a question that drifts produces answers
@@ -433,6 +455,10 @@ def build() -> dict:
         "n_proposals": len(props),
         "n_undecided": len(fresh),
         "proposals": props,
+        # MEASURED ON THE GAUNTLET'S OWN ORDER, never asserted here: the docket is authoritative
+        # when the last sweep placed cells of its proposed families first (GAUNTLET_ORDER.json).
+        "authoritative": _served_by_gauntlet()[0],
+        "authority_evidence": _served_by_gauntlet()[1],
         "decision_rule": (
             "ACCEPT if and only if the proposal raises robust forward E[log W] or widens genuinely "
             "INDEPENDENT edge discovery, and is ADDITIVE. Refuse anything whose value comes from "
