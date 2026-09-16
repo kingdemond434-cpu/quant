@@ -466,16 +466,22 @@ def test_a_bar_the_venue_already_holds_an_entry_for_is_not_traded_again(tmp_path
     sleeve's tag is asked as well, and it says no."""
     rows = _rows()
     mt5 = _fake_mt5(rows)
-    mt5.history_deals_get = lambda a, b: [SimpleNamespace(entry=0, comment=f"DW{_NAME}",
-                                                          ticket=77,
-                                                          time=int(a.timestamp()) + 60)]
+    windows: list[tuple[int, int]] = []
+    mt5.history_deals_get = lambda a, b: (windows.append((a, b)) or [
+        SimpleNamespace(entry=0, comment=f"DW{_NAME}", ticket=77, time=int(a) + 60)])
     ns = _family_ns(tmp_path, mt5, monkeypatch, armed_file=True, sig_hour=_sig_hour(rows))
     st = {"armed": True}
     _run_family(ns, st, [_sleeve()], 10_000.0)
     assert mt5.sent == []
     assert any("already opened on bar" in x and "deal 77" in x for x in ns["_logs"])
     # The bar is consumed: a stop-out on it does not re-arm the same signal.
-    assert st["generic"][_NAME]["last_signal_bar"] == str(dc.h1_frame(rows).index[-2])
+    bar = dc.h1_frame(rows).index[-2]
+    assert st["generic"][_NAME]["last_signal_bar"] == str(bar)
+    # The window is the bar AFTER the signal bar, in EPOCH SECONDS (the venue reads a datetime
+    # in the box's local zone; the bar label is server time stamped UTC).
+    (win,) = windows
+    assert isinstance(win[0], int) and isinstance(win[1], int)
+    assert win == (int(bar.timestamp()) + 3600, int(bar.timestamp()) + 7200)
 
 
 def test_an_entry_that_drifted_from_the_signal_close_is_bracketed_from_the_entry(tmp_path,
