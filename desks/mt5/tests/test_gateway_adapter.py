@@ -459,6 +459,69 @@ def test_armed_the_family_executor_sends_the_signals_levels_once_per_bar(tmp_pat
     assert len(mt5.sent) == 1
 
 
+def test_a_bar_the_venue_already_holds_an_entry_for_is_not_traded_again(tmp_path,
+                                                                       monkeypatch) -> None:
+    """The second witness (2026-09-16): the state mark was lost between two passes and the same
+    signal bar was sold twice, 10 minutes apart, for two -1R. The venue's deal history under the
+    sleeve's tag is asked as well, and it says no."""
+    rows = _rows()
+    mt5 = _fake_mt5(rows)
+    mt5.history_deals_get = lambda a, b: [SimpleNamespace(entry=0, comment=f"DW{_NAME}",
+                                                          ticket=77,
+                                                          time=int(a.timestamp()) + 60)]
+    ns = _family_ns(tmp_path, mt5, monkeypatch, armed_file=True, sig_hour=_sig_hour(rows))
+    st = {"armed": True}
+    _run_family(ns, st, [_sleeve()], 10_000.0)
+    assert mt5.sent == []
+    assert any("already opened on bar" in x and "deal 77" in x for x in ns["_logs"])
+    # The bar is consumed: a stop-out on it does not re-arm the same signal.
+    assert st["generic"][_NAME]["last_signal_bar"] == str(dc.h1_frame(rows).index[-2])
+
+
+def test_an_entry_that_drifted_from_the_signal_close_is_bracketed_from_the_entry(tmp_path,
+                                                                                monkeypatch
+                                                                                ) -> None:
+    """The 0.27-lot, 1.3-pip stop (2026-09-16): the family's levels sit around its bar's close
+    and the quote has moved on. Past a quarter of the certified stop the same distances are laid
+    from the entry the venue gives, so the stop the order carries is the certificate's."""
+    rows = _rows()
+    mt5 = _fake_mt5(rows)
+    frame = dc.h1_frame(rows)
+    bar = frame.index[-2]
+    px = float(frame["close"].loc[bar])
+    # Certified: 1.6 pips to the stop, 2.4 to the target; the ask is 1.4 pips above the close.
+    ns = _family_ns(tmp_path, mt5, monkeypatch, armed_file=True, sig_hour=_sig_hour(rows),
+                    signals=lambda closed, side: [_signal(bar, stop=px - 0.00016,
+                                                          target=px + 0.00024)])
+    st = {"armed": True}
+    _run_family(ns, st, [_sleeve()], 10_000.0)
+    (req,) = mt5.sent
+    assert req["price"] == 1.1102
+    assert req["sl"] == pytest.approx(1.1102 - 0.00016)
+    assert req["tp"] == pytest.approx(1.1102 + 0.00024)
+    assert any("re-anchored to the entry" in x for x in ns["_logs"])
+
+
+def test_a_signal_the_market_has_already_played_out_is_refused_as_stale(tmp_path,
+                                                                        monkeypatch) -> None:
+    """A short whose certified target sat half a pip below its bar's close, with the bid now a
+    further half pip lower: the replay's trade has already taken its profit. Opening one here is
+    not the certified trade, so it is refused, journaled, and the bar is consumed."""
+    rows = _rows()
+    mt5 = _fake_mt5(rows)
+    frame = dc.h1_frame(rows)
+    bar = frame.index[-2]
+    px = float(frame["close"].loc[bar])
+    ns = _family_ns(tmp_path, mt5, monkeypatch, armed_file=True, sig_hour=_sig_hour(rows),
+                    signals=lambda closed, side: [_signal(bar, stop=px + 0.0010,
+                                                          target=px - 0.00005)])
+    st = {"armed": True}
+    _run_family(ns, st, [_sleeve(side="SHORT")], 10_000.0)
+    assert mt5.sent == []
+    assert any("refused: stale signal" in x and "certified target" in x for x in ns["_logs"])
+    assert st["generic"][_NAME]["last_signal_bar"] == str(bar)
+
+
 # ------------------------------------------------------------- the bracket lane's theoretical book
 
 class _BracketTerminal:
@@ -655,8 +718,12 @@ def test_the_executor_refuses_what_it_cannot_replay_exactly(tmp_path, monkeypatc
     assert f"[{_NAME}] FAMILY-EXEC: H1 bars unavailable; skipped" in ns["_logs"]
     # A degenerate stop and a zero lot each stop the order before the venue.
     flat = _fake_mt5(rows)
+    # A certified stop AT the signal bar's close is no distance at all (2026-09-16: the bracket
+    # is laid from the entry by the certified distances, so a stop that merely coincides with
+    # the current quote is a drifted entry, not a degenerate one).
     ns = _family_ns(tmp_path, flat, monkeypatch, armed_file=True, sig_hour=_sig_hour(rows),
-                    signals=lambda closed, side: [_signal(closed.index[-2], stop=1.1102)])
+                    signals=lambda closed, side: [
+                        _signal(closed.index[-2], stop=float(closed["close"].iloc[-2]))])
     _run_family(ns, {"armed": True}, [_sleeve()], 10_000.0)
     assert f"[{_NAME}] FAMILY-EXEC: degenerate stop distance; skipped" in ns["_logs"]
     ns = _family_ns(tmp_path, _fake_mt5(rows), monkeypatch, armed_file=True,
