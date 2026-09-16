@@ -284,7 +284,8 @@ def _declared_basis(arm: str) -> str:
 
 def evidence(graph_rows: Iterable[dict[str, Any]],
              marginal_by_source: dict[str, float] | None = None,
-             measured: dict[str, dict[str, Any]] | None = None) -> dict[str, dict[str, Any]]:
+             measured: dict[str, dict[str, Any]] | None = None,
+             credit: dict[str, float] | None = None) -> dict[str, dict[str, Any]]:
     """Per-arm counts and the Beta posterior of certification, shrunk to the pooled rate.
 
     `measured` is `measured_cost()`; an arm found there is priced from the ledger and every
@@ -312,6 +313,8 @@ def evidence(graph_rows: Iterable[dict[str, Any]],
         alpha = 1.0 + PSEUDO * pooled + c["certified"]
         beta = 1.0 + PSEUDO * (1.0 - pooled) + c["failed"]
         worth = float((marginal_by_source or {}).get(a, 1.0))
+        rc = float((credit or {}).get(a, 1.0))
+        worth = worth * rc
         mc = (measured or {}).get(a)
         if isinstance(mc, dict) and isinstance(mc.get("cost"), (int, float)) and mc["cost"] > 0:
             cost, basis = float(mc["cost"]), str(mc.get("basis") or "measured")
@@ -319,6 +322,7 @@ def evidence(graph_rows: Iterable[dict[str, Any]],
             cost, basis = float(sum(COST[a])), _declared_basis(a)
         out[a] = {**c, "alpha": round(alpha, 3), "beta": round(beta, 3),
                   "p_survivor": round(alpha / (alpha + beta), 4), "worth": worth,
+                  "realised_credit": rc,
                   "cost": cost, "cost_basis": basis, "group": group_of(a),
                   "score_mean": round(worth * alpha / (alpha + beta) / cost, 5)}
     out["_pooled_rate"] = round(pooled, 5)
@@ -489,6 +493,61 @@ def _research_pnl_worth() -> dict[str, float]:
         return {}
 
 
+CREDIT_CLIP = (0.5, 2.0)
+CREDIT_N0 = 30.0
+CREDIT_K = 2.0
+
+
+def _credit_factor(realised_r: float, n_trades: int) -> float:
+    """Bounded multiplier from realised R: mean R per trade shrunk toward 0 by n/(n+N0),
+    then 1 + K x that, clipped. Thirty trades at +0.25R/trade -> x1.25; a thin record -> ~1."""
+    n = max(0, int(n_trades))
+    if n <= 0:
+        return 1.0
+    shrunk = (float(realised_r) / n) * (n / (n + CREDIT_N0))
+    return float(min(CREDIT_CLIP[1], max(CREDIT_CLIP[0], 1.0 + CREDIT_K * shrunk)))
+
+
+def realised_credit() -> dict[str, Any]:
+    """Per-arm realised-R credit from research/credit_assignment.py (CREDIT_ASSIGNMENT.json).
+
+    DELAYED TRUTH REACHES THE INFORMATION BUDGET HERE (principal F12, 2026-09-12). The credit
+    organ publishes what each scientist's certificates went on to EARN -- live deals when the
+    live ledger holds at least its floor, forward clocks otherwise, and it says which. Each
+    scientist maps to the arm that funds it (`arm_of`), the arm's factor is its trade-weighted
+    mean, and the factor multiplies the arm's worth. `basis` is carried onto the report so the
+    attestation can tell live credit from forward credit instead of reading a label.
+    """
+    out: dict[str, Any] = {"basis": "none", "applied": False, "by_arm": {},
+                           "why": "no CREDIT_ASSIGNMENT.json: worth unchanged"}
+    try:
+        doc = json.loads((DESK / "reports" / "CREDIT_ASSIGNMENT.json").read_text("utf-8-sig"))
+    except (OSError, ValueError):
+        return out
+    rows = doc.get("by_scientist") if isinstance(doc.get("by_scientist"), list) else []
+    acc: dict[str, list[tuple[float, int]]] = {}
+    for r in rows:
+        if not isinstance(r, dict):
+            continue
+        try:
+            rr, n = float(r.get("realised_r") or 0.0), int(r.get("n_trades") or 0)
+        except (TypeError, ValueError):
+            continue
+        if n <= 0:
+            continue
+        acc.setdefault(arm_of(str(r.get("source") or "")), []).append((rr, n))
+    by_arm = {a: round(_credit_factor(sum(x for x, _ in v), sum(n for _, n in v)), 4)
+              for a, v in acc.items()}
+    basis = str(doc.get("evidence_source") or "none")
+    out.update({"basis": basis, "applied": bool(by_arm), "by_arm": by_arm,
+                "n_live_deals": doc.get("n_live_deals"), "at": doc.get("at"),
+                "why": (f"{len(by_arm)} arm(s) carry realised credit on {basis} evidence; "
+                        f"factor = 1 + {CREDIT_K} x (R/trade shrunk by n/(n+{CREDIT_N0:.0f})), "
+                        f"clipped to {list(CREDIT_CLIP)}" if by_arm else
+                        "CREDIT_ASSIGNMENT.json credits no scientist yet: worth unchanged")})
+    return out
+
+
 def _marginal_by_arm() -> dict[str, float]:
     """Mean allocator marginal dElogW of certified sleeves, grouped by the arm that found them;
     arms without a funded sleeve fall back to the research P&L's lifetime worth."""
@@ -613,7 +672,8 @@ def run(seed: int = 0, write: bool = True,
         rows = []
     marginal = _marginal_by_arm()
     mc = measured_cost()
-    ev = evidence(rows, marginal, measured=mc)
+    rcred = realised_credit()
+    ev = evidence(rows, marginal, measured=mc, credit=rcred.get("by_arm") or None)
     bc = breadth_credit()
     audit: dict[str, Any] = {}
     shares = allocate({a: v for a, v in ev.items() if a in ARMS}, np.random.default_rng(seed),
@@ -638,6 +698,7 @@ def run(seed: int = 0, write: bool = True,
            "frontier_regret": regret(ev, shares, worth_unmeasured=[a for a in ARMS
                                                                    if a not in marginal]),
            "breadth_credit": bc,
+           "realised_credit": rcred,
            "rule": ("score = E[dElogW] x P(survivor) x breadth_credit / cost, where the credit is "
                     "the marginal dk_eff this arm's output buys the CURRENT book -- dE[log W] is "
                     "proportional to k_eff for a Kelly book, so a duplicate scores below a weaker "

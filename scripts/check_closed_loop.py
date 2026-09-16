@@ -218,9 +218,21 @@ def research() -> dict[str, Any]:
     if "authoritative" not in bandit:
         out["evig_why"] = "RESEARCH_BANDIT.json prices arms but does not schedule them: advisory"
     gw = _read(DESK / "data" / "generator_weights.json") or {}
-    out["delayed_truth_credit_live"] = False
-    out["credit_why"] = ("generator weights move on certification fate (mutation_yield); credit does not yet "
-                         "flow back from LIVE marginal Elog" if gw else "no generator_weights.json")
+    rc = bandit.get("realised_credit") if isinstance(bandit.get("realised_credit"), dict) else {}
+    gw_credit = gw.get("_realised_credit") if isinstance(gw.get("_realised_credit"), dict) else {}
+    if rc.get("applied") and str(rc.get("basis")) == "live":
+        out["delayed_truth_credit_live"] = True
+        out["credit_why"] = (f"realised LIVE credit multiplies the bandit's worth on {len(rc.get('by_arm') or {})} arm(s)"
+                             f" and the generator weights on {len(gw_credit)} generator(s) (bounded)")
+    elif rc.get("applied"):
+        out["delayed_truth_credit_live"] = False
+        out["credit_why"] = (f"realised credit flows on {rc.get('basis')} evidence (live ledger has "
+                             f"{rc.get('n_live_deals')} deals; live basis needs the credit organ's floor)")
+    else:
+        out["delayed_truth_credit_live"] = False
+        out["credit_why"] = (str(rc.get("why")) if rc else
+                             ("generator weights move on certification fate only; the bandit carries no "
+                              "realised_credit block yet" if gw else "no generator_weights.json"))
     return out
 
 

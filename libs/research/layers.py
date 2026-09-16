@@ -149,6 +149,9 @@ LEG_LAYER: dict[str, str] = {
     # Certification fate joined back to the generators that proposed each cell reweights the
     # predictor search itself: prediction.
     "mutation_yield": "prediction",
+    # Realised R credited back to the scientist and lane that proposed each cell: the delayed
+    # truth that reweights the predictor search (bandit worth, generator weights): prediction.
+    "credit_assignment": "prediction",
     # sizing: how much
     "capacity": "sizing", "ensemble_optimizer": "sizing",
     # portfolio: how the book is composed

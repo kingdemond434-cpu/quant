@@ -2217,6 +2217,12 @@ def main() -> None:
     ccv = _costed("candidate_conservation", candidate_conservation)
     pcn = _costed("pit_canaries", pit_canaries)
     myd = _costed("mutation_yield", mutation_yield)
+    # DELAYED TRUTH (principal F12, 2026-09-12; wired 2026-09-16): realised R credited back
+    # to the scientist that proposed each cell, live when the live ledger is thick enough,
+    # forward otherwise and labelled. The bandit and the generator weights read it, bounded.
+    cra = _costed("credit_assignment", lambda: _producer("credit_assignment",
+                                                          "research/credit_assignment.py",
+                                                          "--apply"))
     sw = _costed("sweep", sweep)
     cc = _costed("compile_candidates", compile_candidates)
     dp = _costed("deepen", deepen)
@@ -2562,7 +2568,7 @@ def main() -> None:
                     "regime_monitor": rg,
                     "deepening": dp, "heal_clocks": hc, "mine": m,
                     "search": se, "breadth_sweep": bs, "candidate_conservation": ccv,
-                    "pit_canaries": pcn, "mutation_yield": myd,
+                    "pit_canaries": pcn, "mutation_yield": myd, "credit_assignment": cra,
                     "sweep": sw, "compile": cc,
                     "execution_twin": et, "causal_graph": cg, "alpha_rl": arl,
                     "research_exchange_score": rxs, "lake_promote": lkp,
