@@ -2368,7 +2368,9 @@ def resolve_family_order(st: dict, s: dict, equity: float,
         macro_mult, macro_why = 1.0, ""
         try:
             from mt5desk import macro_view
-            macro_mult, macro_why = macro_view.multiplier(s["symbol"], side)
+            macro_mult, macro_why = macro_view.multiplier(
+                s["symbol"], side, family=str(family or ""),
+                ttl_bars=getattr(g, "ttl_bars", None), bar_minutes=_BAR_MINUTES.get(tf, 60))
             _scaled = _scaled * macro_mult
         except Exception as exc:                                    # noqa: BLE001
             macro_mult, macro_why = 1.0, f"macro UNMEASURED ({type(exc).__name__}: {exc})"
