@@ -1138,3 +1138,53 @@ def test_the_family_send_records_whether_its_signal_carried_a_trail(tmp_path,
     _run_family(ns, st, [_sleeve()], 10_000.0)
     assert len(mt5.sent) == 1
     assert st["generic"][_NAME]["trail_k"] == 0.0
+
+
+# ------------------------------------------------- a sleeve that leaves the roster leaves the book
+
+def test_retired_sleeves_open_positions_are_closed_from_the_queue(tmp_path) -> None:
+    """The decay monitor retired the discovered forex family at pooled t=-4.5 (2026-09-16); its
+    seven open positions had nobody to run their time exit. The queue names them and the
+    gateway closes them, then drops the name once the venue shows no position under its tag."""
+    sent: list[dict] = []
+    logs: list[str] = []
+    pos = SimpleNamespace(ticket=901, type=1, volume=0.03, symbol="AUDUSD", comment=f"DW{_NAME}")
+    book = [pos]
+    mt5 = SimpleNamespace(
+        TRADE_ACTION_DEAL=1, ORDER_TYPE_BUY=0, ORDER_TYPE_SELL=1, POSITION_TYPE_BUY=0,
+        positions_get=lambda *a, **k: list(book),
+        symbol_info_tick=lambda symbol: SimpleNamespace(bid=0.7130, ask=0.7132),
+        order_send=lambda req: (sent.append(req) or SimpleNamespace(retcode=10009)))
+    queue = tmp_path / "RETIRED_CLOSE_QUEUE.json"
+    queue.write_text(json.dumps({"names": [_NAME, "already_flat"]}), "utf-8")
+    ns = _exec(("close_retired_positions", "order_comment"),
+               {"mt5": mt5, "log": logs.append, "MAGIC": 1, "RETIRED_CLOSE_QUEUE": queue})
+    ns["close_retired_positions"]({"armed": True})
+    (req,) = sent
+    # A short is closed with a BUY at the ask, against the position ticket.
+    assert req["type"] == 0 and req["position"] == 901 and req["price"] == 0.7132
+    assert req["volume"] == 0.03 and req["comment"] == f"DW{_NAME}"
+    left = json.loads(queue.read_text("utf-8"))["names"]
+    assert left == [_NAME]                      # kept until the venue shows it gone
+    assert any("already_flat] RETIRED: no open position" in x for x in logs)
+    # Next pass, the position is gone: the name leaves the queue and nothing is sent.
+    book.clear()
+    ns["close_retired_positions"]({"armed": True})
+    assert len(sent) == 1 and json.loads(queue.read_text("utf-8"))["names"] == []
+
+
+def test_unarmed_the_retired_close_only_logs(tmp_path) -> None:
+    sent: list[dict] = []
+    logs: list[str] = []
+    pos = SimpleNamespace(ticket=902, type=0, volume=0.02, symbol="EURCHF", comment=f"DW{_NAME}")
+    mt5 = SimpleNamespace(TRADE_ACTION_DEAL=1, ORDER_TYPE_BUY=0, ORDER_TYPE_SELL=1,
+                          POSITION_TYPE_BUY=0, positions_get=lambda *a, **k: [pos],
+                          symbol_info_tick=lambda symbol: SimpleNamespace(bid=0.944, ask=0.9441),
+                          order_send=lambda req: sent.append(req))
+    queue = tmp_path / "q.json"
+    queue.write_text(json.dumps({"names": [_NAME]}), "utf-8")
+    ns = _exec(("close_retired_positions", "order_comment"),
+               {"mt5": mt5, "log": logs.append, "MAGIC": 1, "RETIRED_CLOSE_QUEUE": queue})
+    ns["close_retired_positions"]({"armed": False})
+    assert sent == [] and any("SHADOW would close 1 retired position" in x for x in logs)
+    assert json.loads(queue.read_text("utf-8"))["names"] == [_NAME]

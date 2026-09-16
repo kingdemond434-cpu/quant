@@ -96,6 +96,9 @@ from mt5desk.sizing import decay_factor
 BASE = desk_root()
 STATE = BASE / "data" / "gateway_state.json"
 SLEEVES_FILE = BASE / "data" / "sleeves.json"
+#: Sleeves the decay monitor retired whose open positions must still be closed
+#: (`close_retired_positions` reads and drains it).
+RETIRED_CLOSE_QUEUE = BASE / "data" / "RETIRED_CLOSE_QUEUE.json"
 LEDGER = BASE / "data" / "live_ledger.jsonl"
 LOG = BASE / "logs" / "gateway.log"
 #: The pause flag `gateway_paused()` reads. Named here so the desk can set the
@@ -2791,6 +2794,59 @@ def _sleeve_positions(symbol: str, name: str) -> list:
             if str(getattr(p, "comment", "") or "") == tag]
 
 
+def close_retired_positions(st: dict) -> None:
+    """A SLEEVE THAT LEAVES THE ROSTER LEAVES THE BOOK (2026-09-16).
+
+    The decay monitor's RETIRE popped the row and nothing else: its open positions kept their
+    stop and target and nobody ran their time exit, because the TTL housekeeping walks the
+    ROSTER. Seven positions of the retired `discovered` forex family sat open at ~1% risk each
+    the day the family was retired at pooled t=-4.5. The monitor now queues the retired names
+    in data/RETIRED_CLOSE_QUEUE.json and this closes their positions on the next pass, by the
+    order comment, one sleeve at a time; a name leaves the queue once the venue shows no
+    position under its tag. SHADOW unless armed, like every other close here.
+    """
+    try:
+        doc = json.loads(RETIRED_CLOSE_QUEUE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return
+    names = [str(n) for n in (doc.get("names") or []) if n]
+    if not names:
+        return
+    remaining: list[str] = []
+    for name in names:
+        tag = order_comment(name)
+        held = [p for p in (mt5.positions_get() or [])
+                if str(getattr(p, "comment", "") or "") == tag]
+        if not held:
+            log(f"[{name}] RETIRED: no open position under its tag; dropped from the close queue")
+            continue
+        remaining.append(name)                  # verified gone on a later pass, never assumed
+        if not st.get("armed"):
+            log(f"[{name}] SHADOW would close {len(held)} retired position(s)")
+            continue
+        for p in held:
+            tick = mt5.symbol_info_tick(p.symbol)
+            if tick is None:
+                log(f"[{name}] RETIRED: no tick for {p.symbol}; ticket {p.ticket} left for "
+                    f"the next pass")
+                continue
+            res = mt5.order_send({
+                "action": mt5.TRADE_ACTION_DEAL, "symbol": p.symbol, "volume": p.volume,
+                "type": (mt5.ORDER_TYPE_SELL if p.type == mt5.POSITION_TYPE_BUY
+                         else mt5.ORDER_TYPE_BUY),
+                "position": p.ticket,
+                "price": tick.bid if p.type == mt5.POSITION_TYPE_BUY else tick.ask,
+                "deviation": 20, "magic": MAGIC, "comment": order_comment(name),
+            })
+            log(f"[{name}] RETIRED: CLOSE ticket {p.ticket} ({p.symbol} {p.volume}) -> "
+                f"retcode={res.retcode if res else None}")
+    with contextlib.suppress(OSError):
+        RETIRED_CLOSE_QUEUE.write_text(json.dumps(
+            {"names": remaining,
+             "at": datetime.now(tz=UTC).isoformat(timespec="seconds")}, indent=1),
+            encoding="utf-8")
+
+
 def close_sleeve_positions(st: dict, symbol: str, name: str) -> None:
     """Close ONE sleeve's positions on a symbol, never the symbol's whole book.
 
@@ -3322,6 +3378,12 @@ def main() -> None:
         # degraded; a desk that cannot place or reconcile anything because management raised is
         # broken, and the second is strictly worse than the first.
         log(f"MANAGE FAILED (positions left untouched): {type(exc).__name__}: {exc}")
+    # A sleeve that left the roster leaves the book: retired names queued by the decay monitor
+    # have their open positions closed here, one pass at a time, never from inside management.
+    try:
+        close_retired_positions(st)
+    except Exception as exc:
+        log(f"RETIRED CLOSE FAILED (positions left untouched): {type(exc).__name__}: {exc}")
     save_state(st)
 
     # RELEASE IDENTITY: measured after management and before anything that could open a
