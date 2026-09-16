@@ -36,9 +36,9 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
 | B The principal's 28-item closed-loop blueprint (2026-09-16), measured against this tree | 2 | 0 | 26 | 0 | 0 |
 | C The 2026-09-16 blueprint (principal): production truth, PIT lake, axis registry, effective breadth, mechanism genome, ten engines, macro state, causal graph, residual research, forced flows, event surfaces, execution intelligence, hostile validation, scarce forward slots, posterior alpha, E[log W] allocator, exposure decomposition, hazard engine, self-recorded moat, LLM roles, semantic memory, unknown-unknowns, failures as data, Tier-1 scorecard | 0 | 0 | 16 | 0 | 9 |
 | D The nine Asian research mechanisms (principal, 2026-09-16): AlphaSchema semantic frontier, QuantaAlpha trajectory evolution, RD-Agent factor x model arms, FactorEngine program-alpha lane, AlphaSAGE reward-proportional sampling, AlphaAgent novelty filter, Alpha Jungle MCTS deepening, TRA/DoubleAdapt regime router, AlphaBench model-role benchmark | 0 | 0 | 6 | 0 | 3 |
-| Q The open-ended Quant Scientist (principal, 2026-09-16): self-evolving research OS behind an immutable constitution, co-evolving evaluators behind a sealed anchor, program evolution over research algorithms, world-model lab, synthetic regimes, causal discovery lab, value-of-data acquisition, one typed research API, Quant Co-Scientist, evolvable ontology, unexplained-residual queue, meta research allocator; plus the donor mechanisms: AgonAlpha blind reviewer, GoAnt quality-diversity frontier, Agora evaluator lab, AI-Scientist experiment tree, AlphaCrafter state-conditioned alpha, FactorMiner positive/negative memory | 0 | 0 | 11 | 0 | 7 |
+| Q The open-ended Quant Scientist (principal, 2026-09-16): self-evolving research OS behind an immutable constitution, co-evolving evaluators behind a sealed anchor, program evolution over research algorithms, world-model lab, synthetic regimes, causal discovery lab, value-of-data acquisition, one typed research API, Quant Co-Scientist, evolvable ontology, unexplained-residual queue, meta research allocator; plus the donor mechanisms: AgonAlpha blind reviewer, GoAnt quality-diversity frontier, Agora evaluator lab, AI-Scientist experiment tree, AlphaCrafter state-conditioned alpha, FactorMiner positive/negative memory | 0 | 0 | 9 | 0 | 9 |
 | W The Global Autonomous Quant Intelligence Organization (principal, 2026-09-16): six organisations in one system -- Global Intelligence Agency, Quant Science Lab, Alpha Search Supercomputer, Adversarial Evidence Lab, Portfolio & Execution Lab, Meta-Research Lab -- sharing one lake, one ontology, one memory, one gauntlet, one live truth; built in the order P0 production truth -> P1 Global Intelligence OS -> P2 knowledge graph + canonical mechanisms -> P3 semantic frontier + unseen-frontier estimator -> P4 cheap scouts -> P5 scientist swarm -> P6 diverse search algorithms -> P7 PIT macro/cross-asset world model -> P8 residual/forced-flow/event/microstructure labs -> P9 artifact-level replication -> P10 forward evidence allocator -> P11 posterior E[log W] allocator -> P12 self-improving Research OS -> P13 proprietary-data flywheel | 0 | 0 | 17 | 0 | 3 |
-| **all** | 5 | 0 | 85 | 0 | 123 |
+| **all** | 5 | 0 | 83 | 0 | 125 |
 
 ## Items
 
@@ -1253,14 +1253,15 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
   - libs/research/search_populations.py
   - clock: hourly_cycle:alpha_evolution, MT5-FrontierAudit (joint_evolution, representation_discovery) · artifact: desks/mt5/reports/JOINT_EVOLUTION.json · consumer: proposer_common.donate (joint_evolution winners reach the docket)
   - next: algorithm_db.py: a program database (data/algorithm_db.jsonl) of parameterised ALGORITHM CONFIGS per class (search policy, regime detector, execution model, cost model, validator battery) with lineage and an automated evaluator per class (the class's own scoring organ), evolved by mutation/crossover of configs under research_os_archive's variants; a program-IR lane (D4) supplies code-level candidates later.
-- **Q4 Market world-model laboratory: heterogeneous simulated participants grounded in real information, used as an intervention lab (CPI -> rates -> USD -> dealer inventory -> XAU liquidity -> residual) whose hypotheses go through the real gauntlet; synthetic never gets promotion authority** — PARTIAL
-  - gap: MEASURED 2026-09-16: world_model and market_ecology are observational estimators; no simulator, no do() operator, no hypothesis generated from a counterfactual world state; economic_constraint_graph is on no desk clock.
-  - desks/mt5/research/world_model.py
+- **Q4 Market world-model laboratory: heterogeneous simulated participants grounded in real information, used as an intervention lab (CPI -> rates -> USD -> dealer inventory -> XAU liquidity -> residual) whose hypotheses go through the real gauntlet; synthetic never gets promotion authority** — LANDED
+  - gap: LANDED 2026-09-17: a linear-Gaussian structural impulse response over the desk's causal graph (76 nodes / 174 arcs) with measured participant operators and a do() operator; six scenario chains; three hypotheses donated and compiled EXACT_RECIPE. The graph admits 0 arcs today, so every number rests on the shrunk RECORDED_NOT_ADMITTED set and says so.
+  - desks/mt5/research/world_lab.py
+  - desks/mt5/tests/test_world_lab.py
+  - desks/mt5/research/world_causal_graph.py
   - desks/mt5/research/market_ecology.py
-  - libs/research/participant_phenotype.py
-  - desks/mt5/side_channels/economic_constraint_graph.py
-  - clock: MT5-FrontierAudit (world_model, market_ecology), hourly_cycle:causal_graph · artifact: desks/mt5/reports/WORLD_MODEL.json · consumer: none: reports only
+  - clock: hourly_cycle:world_lab (macro department), hourly_cycle:causal_graph · artifact: desks/mt5/reports/WORLD_LAB.json · consumer: data/intelligence/world_lab/ -> miner_candidate_compiler (authority ZERO; the gauntlet judges on real history)
   - next: world_lab.py: an intervention operator over the admitted causal graph (do(node=shock) propagated along edges with lag distributions and betas, participant responses from market_ecology's measured behaviours), producing predicted residual effects per instrument and donating them as `world_lab` hypotheses (authority ZERO by source tag; the gauntlet judges on real history); economic_constraint_graph on the heavy plan.
+  - landed: wave-4 2026-09-17
 - **Q5 Adversarial synthetic regimes: a named, replayable scenario set absent from history (USD shock + liquidity crash, spread x5, correlations -> 1, instant trend break, central-bank surprise, vol doubling, weekend gap, feed latency, partial fills, missing releases) applied to certified and live sleeves to expose hidden structural failure modes, never to optimise synthetic profit** — LANDED
   - gap: LANDED 2026-09-16: eleven named worlds (USD shock + liquidity crash, spread x5, correlations to one, instant trend break, central-bank surprise, vol doubling, weekend gap and its inverse, feed latency, partial fills, missing releases) replayed through the engine that certifies; six one-directional failure flags; the gold windows read UNMEASURED because their rule lives in the gateway.
   - desks/mt5/research/synthetic_regimes.py
@@ -1270,14 +1271,15 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
   - clock: hourly_cycle:synthetic_regimes (validate department) · artifact: desks/mt5/reports/SYNTHETIC_REGIMES.json · consumer: hazard_engine (flags, next); the CEO docket
   - next: synthetic_regimes.py (wave 4, building): the scenario set as transforms of a sleeve's bars/trade series and cost model, applied to every certified/live sleeve with the family re-run, reporting per-scenario expectancy, drawdown and the structural failure flags (blows up under spread x5, needs the weekend gap, dies when correlations collapse); reports/SYNTHETIC_REGIMES.json every heavy pass; hazard_engine reads the flags.
   - landed: 494744b2c01
-- **Q6 Formal causal discovery lab: PC, GES, NOTEARS, PCMCI/temporal methods with economic restrictions on PIT data; edge classes OBSERVATIONAL / PLAUSIBLE_MECHANISM / INTERVENTION_SUPPORTED; chains conditioned on positioning/liquidity/regime; LLMs never invent edges** — PARTIAL
-  - gap: MEASURED 2026-09-16: PC-style conditional independence plus Granger/transfer entropy exist; no GES, NOTEARS or PCMCI; the edge vocabulary encodes measurement status (PLAUSIBLE_UNMEASURED/ADMITTED/RECORDED_NOT_ADMITTED/STRUCTURAL), not evidence class, so a difference-in-differences natural experiment can never promote an edge to INTERVENTION_SUPPORTED.
+- **Q6 Formal causal discovery lab: PC, GES, NOTEARS, PCMCI/temporal methods with economic restrictions on PIT data; edge classes OBSERVATIONAL / PLAUSIBLE_MECHANISM / INTERVENTION_SUPPORTED; chains conditioned on positioning/liquidity/regime; LLMs never invent edges** — LANDED
+  - gap: LANDED 2026-09-17: PCMCI-style lagged discovery with one Benjamini-Hochberg charge at q=0.05, a NOTEARS-lite contemporaneous DAG (scale-free score; 9/9 seeds recover planted colliders), economic restrictions before testing, edge classes OBSERVATIONAL / PLAUSIBLE_MECHANISM / INTERVENTION_SUPPORTED (difference-in-differences on release days), regime stability per edge; the ECB fixing artifact and axis crowding are screened. fred.json holds 0 series, so macro coverage is thin until that ingest is repaired.
+  - desks/mt5/research/causal_lab.py
+  - desks/mt5/tests/test_causal_lab.py
   - desks/mt5/research/causal_discovery.py
-  - desks/mt5/research/world_causal_graph.py
-  - libs/research/causal_graph.py
-  - libs/research/information_flow.py
-  - clock: hourly_cycle:causal_graph, MT5-FrontierAudit (causal_discovery) · artifact: desks/mt5/reports/CAUSAL_DISCOVERY.json · consumer: state_vector_build conditioning hints
+  - libs/research/natural_experiment.py
+  - clock: hourly_cycle:causal_lab (macro department), hourly_cycle:causal_graph · artifact: desks/mt5/reports/CAUSAL_LAB.json · consumer: world_lab (edges with classes); state_vector_build hints
   - next: causal_lab.py (wave 4, building): PCMCI-style lagged discovery with FDR over the PIT-aligned daily panel (bars + axes), economic restrictions (no edge into a release, no future lag), a NOTEARS-lite continuous optimisation for the contemporaneous DAG, edge classes attached from evidence (observational test, mechanism_ontology plausibility, natural_experiment DiD -> INTERVENTION_SUPPORTED), chains published; hourly heavy leg.
+  - landed: wave-4 2026-09-17
 - **Q7 Autonomous information acquisition: ValueOfData(d) = E[uncertainty reduction or decision improvement] / cost(d) per missing observation, then a search of public/licensed sources for it** — LANDED
   - gap: LANDED 2026-09-16: 151 needs priced on the local copy in R of posterior sd removed; the acquirer fetches, this prices.
   - desks/mt5/research/value_of_data.py

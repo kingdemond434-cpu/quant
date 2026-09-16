@@ -2514,6 +2514,14 @@ def main() -> None:
     era = _costed("event_response_atlas", lambda: _producer("event_response_atlas",
                                                              "research/event_response_atlas.py",
                                                              "--budget-s", "240"))
+    # THE WORLD-MODEL LAB: do(shock) propagated over the admitted causal graph with measured
+    # participant responses; hypotheses donated with authority ZERO (the gauntlet judges on
+    # real history). Macro department.
+    wlb = _costed("world_lab", lambda: _producer("world_lab", "research/world_lab.py",
+                                                  "--max-donations", "20"))
+    # THE CAUSAL DISCOVERY LAB: PCMCI-style lagged discovery with FDR, a NOTEARS-lite DAG,
+    # economic restrictions and edge classes on the PIT panel; an LLM never invents an edge.
+    clb = _costed("causal_lab", lambda: _producer("causal_lab", "research/causal_lab.py"))
     # EVERY BUILD ON A CLOCK: the auto-clocked organs of this plan (data/auto_legs.json).
     auto = run_auto_legs()
     sw = _costed("sweep", sweep)
@@ -2870,7 +2878,8 @@ def main() -> None:
                     "evaluator_lab": evl, "synthetic_regimes": syr, "value_of_data": vod,
                     "research_api_status": rap,
                     "artifact_chain": acv, "residual_queue": rsq, "unseen_frontier": usf,
-                    "source_registry": srg, "event_response_atlas": era,
+                    "source_registry": srg, "event_response_atlas": era, "world_lab": wlb,
+                    "causal_lab": clb,
                     "probation": prb, "standing_questions": sqs, "exposure_decomposition": exd,
                     "auto_legs": auto,
                     "sweep": sw, "compile": cc,
