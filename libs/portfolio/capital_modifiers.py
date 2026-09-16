@@ -80,6 +80,17 @@ REGISTRY: tuple[Modifier, ...] = (
     # both long CHF). Replaying that cluster through this, the 3rd and 4th EURCHF shorts size at
     # 0.55x and the CHF leg lands at 0.166 lots instead of 0.200, with 1.45x available on any leg
     # the book was not already holding.
+    # THE CURRENCY-LEVEL MACRO LEAN, two-sided by construction (2026-09-16). Sizes an order
+    # UP when it agrees with the lean of the currencies it expresses and DOWN by the same
+    # bound when it opposes them; heat is unchanged and no trade is refused. Measured the
+    # night it landed: every currency leg the book held was losing at once, and the view --
+    # on 12-day-stale FRED data -- leaned CHF -0.31 while the desk was short EURCHF and
+    # USDCHF, its three largest losers. Confidence decays to zero with data age, so a stale
+    # view tilts gently and says so rather than pretending to be current.
+    Modifier("macro_view", 0.6, 1.4, "two_sided",
+             "mt5desk.macro_view.multiplier, applied in gateway.resolve_family_order beside "
+             "leg_balance, before the venue lot step",
+             "desks/mt5/reports/MACRO_VIEW.json"),
     Modifier("leg_balance", 0.55, 1.45, "two_sided",
              "mt5desk.leg_balance.multiplier, applied in gateway.resolve_family_order after "
              "promoted_lot and before the venue lot step",

@@ -584,8 +584,16 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None) -> dict
             from mt5desk import leg_balance
             _lm, _lw = leg_balance.multiplier(sym, 1 if side == "buy" else -1,
                                               _leg_positions, pending=_pending_legs)
-            lot = _quantise(lot * _lm, venue, sym)
+            # The same macro lean the MT5 lane applies -- a prop account with a hard drawdown
+            # has the most to gain from not fighting the currency regime.
+            try:
+                from mt5desk import macro_view
+                _mm, _mw = macro_view.multiplier(sym, 1 if side == "buy" else -1)
+            except Exception as _exc:                          # noqa: BLE001
+                _mm, _mw = 1.0, f"macro UNMEASURED ({type(_exc).__name__})"
+            lot = _quantise(lot * _lm * _mm, venue, sym)
             row["leg_mult"], row["leg_why"] = float(_lm), _lw
+            row["macro_mult"], row["macro_why"] = float(_mm), _mw
         except Exception as exc:                                    # noqa: BLE001
             # UNMEASURED IS 1.0. A decomposition that cannot be trusted must never become a
             # silent reason to trade smaller.
