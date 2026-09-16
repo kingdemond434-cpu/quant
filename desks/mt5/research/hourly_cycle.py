@@ -1430,6 +1430,12 @@ def compile_candidates() -> dict:
     return _producer("miner_candidate_compiler", "research/miner_candidate_compiler.py")
 
 
+def candidate_conservation() -> dict:
+    """`candidate_conservation`: every docket candidate accounted for -- judged, waiting or
+    evicted with a reason -- written for the closed-loop attestation's `truth` block."""
+    return _producer("candidate_conservation", "scripts/check_candidate_conservation.py")
+
+
 def breadth_sweep() -> dict:
     """`breadth_sweep`: cells for every unbanned READY family on every chart the desk holds bars
     for, merged into the docket idempotently (principal 2026-09-16: the discovery hunt is banned;
@@ -2174,6 +2180,7 @@ def main() -> None:
     m = _costed("mine", mine)
     se = _costed("search", search)
     bs = _costed("breadth_sweep", breadth_sweep)
+    ccv = _costed("candidate_conservation", candidate_conservation)
     sw = _costed("sweep", sweep)
     cc = _costed("compile_candidates", compile_candidates)
     dp = _costed("deepen", deepen)
@@ -2518,7 +2525,8 @@ def main() -> None:
                     "health": h, "tape": t, "state_vector": s, "daily": d,
                     "regime_monitor": rg,
                     "deepening": dp, "heal_clocks": hc, "mine": m,
-                    "search": se, "breadth_sweep": bs, "sweep": sw, "compile": cc,
+                    "search": se, "breadth_sweep": bs, "candidate_conservation": ccv,
+                    "sweep": sw, "compile": cc,
                     "execution_twin": et, "causal_graph": cg, "alpha_rl": arl,
                     "research_exchange_score": rxs, "lake_promote": lkp,
                     "orthogonality": orth,
