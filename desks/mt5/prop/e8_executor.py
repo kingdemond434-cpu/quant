@@ -61,6 +61,35 @@ ARMED_MARKER = DESK / "data" / "E8_ARMED"
 #: it, so an order without it is not this lane's and is never closed or counted here.
 TAG = "E8"
 
+
+def _family_banned(family: str) -> bool:
+    """research/family_policy.family_banned from this lane; unreadable reads as not banned."""
+    try:
+        from research.family_policy import family_banned
+    except ImportError:                                    # pragma: no cover
+        try:
+            from family_policy import family_banned
+        except ImportError:
+            return False
+    try:
+        return bool(family_banned(family))
+    except Exception:
+        return False
+
+
+def _ban_reason(family: str) -> str:
+    try:
+        from research.family_policy import ban_reason
+    except ImportError:                                    # pragma: no cover
+        try:
+            from family_policy import ban_reason
+        except ImportError:
+            return "banned family"
+    try:
+        return str(ban_reason(family)) or "banned family"
+    except Exception:
+        return "banned family"
+
 #: Hourly bars fetched per sleeve. The families need enough history for their ATR and session
 #: aggregates; 900 hours is about five weeks, comfortably past the longest lookback in the
 #: registered grid, and small enough that twenty sleeves do not exhaust the venue's rate limit.
@@ -520,6 +549,34 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None) -> dict
         sym, fam = s["symbol"], s["family"]
         tag = f"{TAG}{fam[:6]}{sym}"[:31]
         row: dict[str, Any] = {"symbol": sym, "family": fam, "tag": tag}
+        # A BANNED FAMILY TRADES NOTHING HERE EITHER, AND WHAT IT STILL HOLDS LEAVES WITH IT
+        # (2026-09-16, `discovered`; data/banned_families.json, the same file the MT5 roster
+        # reads). The book builder no longer lists such a sleeve; this branch covers a book built
+        # before the ban and closes the sleeve's open position on its symbol.
+        if _family_banned(fam):
+            row["status"] = "BANNED_FAMILY"
+            row["why"] = _ban_reason(fam)
+            closed: list[int] = []
+            for p in venue.positions():
+                _iid = p.get("tradableInstrumentId") or p.get("instrumentId")
+                if _iid is None or _iid_to_sym.get(int(_iid)) != sym:
+                    continue
+                _pid = p.get("id") or p.get("positionId")
+                if _pid is None:
+                    row["why"] += "; an open position could not be identified for closing"
+                    continue
+                if armed:
+                    try:
+                        venue.close(int(_pid))
+                        closed.append(int(_pid))
+                    except Exception as exc:
+                        row["why"] += f"; close of {_pid} failed ({type(exc).__name__})"
+                else:
+                    row["why"] += f"; SHADOW would close position {_pid}"
+            row["closed_positions"] = closed
+            doc["sleeves"].append(row)
+            _record(row, now, armed)
+            continue
         func = get_family_func(fam)
         if func is None:
             row["status"] = "NO_FAMILY"

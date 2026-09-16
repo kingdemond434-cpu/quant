@@ -2736,13 +2736,44 @@ def main():
     # CHART GROUPS STAY CONTIGUOUS INSIDE SYMBOL GROUPS, for the same reason symbol groups stay
     # contiguous at all: the frame cache is what makes the build cheap, and one symbol's M5 and
     # H1 frames are two different entries in it.
+    # BANNED FAMILIES ARE SET ASIDE BEFORE ANYTHING IS ORDERED (2026-09-16): the hour they would
+    # have taken goes to every other mechanism, which is the principal's order verbatim.
+    try:
+        from research.family_policy import ban_reason, family_banned
+        _set_aside = [sp for sp in eligible_specs if family_banned(sp.get("family"))]
+        if _set_aside:
+            eligible_specs = [sp for sp in eligible_specs if not family_banned(sp.get("family"))]
+            _fams = sorted({str(sp.get("family") or "") for sp in _set_aside})
+            print(f"  banned families: {len(_set_aside)} cell(s) set aside "
+                  f"({'; '.join(ban_reason(f) for f in _fams)})")
+    except Exception as _exc:
+        print(f"  banned families: policy unreadable ({type(_exc).__name__}); nothing set aside")
+    # BREADTH FIRST AMONG THE NEVER-JUDGED (2026-09-16, principal: "all sessions, all charts,
+    # not tons of H1 Asia"). Never-judged cells are ordered by how many cells of the same
+    # (chart, session) bucket the desk has already judged, fewest first, so the least-covered
+    # chart x session is reached before the hundredth H1 Asia cell. Symbol rotation still
+    # orders cells inside a bucket, so the frame cache keeps a symbol's cells adjacent there.
+    def _bucket(sp: dict) -> tuple[str, str]:
+        _p = sp.get("params") or {}
+        return (timeframe_of(_p, str(sp.get("family") or "")),
+                str(_p.get("session") or _p.get("selector") or sp.get("selector") or "all").lower())
+
+    _judged_in_bucket: dict[tuple[str, str], int] = {}
+    for _sp in eligible_specs:
+        if _is_new(_sp) == 1:
+            _judged_in_bucket[_bucket(_sp)] = _judged_in_bucket.get(_bucket(_sp), 0) + 1
     eligible_specs = sorted(
         eligible_specs,
         key=lambda sp: (_is_new(sp),
+                        _judged_in_bucket.get(_bucket(sp), 0),
                         _cursor.get(str(sp.get("sym") or ""), ""),
                         str(sp.get("sym") or ""),
                         timeframe_of(sp.get("params"), str(sp.get("family") or "")),
                         str(sp.get("family") or "")))
+    if _judged_in_bucket:
+        _cov = sorted(_judged_in_bucket.items(), key=lambda kv: kv[1])
+        print(f"  breadth: {len(_judged_in_bucket)} chart x session bucket(s) judged so far; "
+              f"least covered {_cov[0][0]} ({_cov[0][1]}), most {_cov[-1][0]} ({_cov[-1][1]})")
     # ALLOCATE THE HOUR BY MEASURED YIELD, AFTER the never-judged cells are already at the front.
     # Order decides what gets reached; the quota decides how much of each family the hour spends
     # itself on. Applied here rather than before the sort so a never-judged cell keeps its

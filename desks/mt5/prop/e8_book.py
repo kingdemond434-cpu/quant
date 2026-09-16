@@ -39,6 +39,18 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
         sys.path.insert(0, _p)
 
 SURVIVORS = DESK / "reports" / "UNIVERSAL_SURVIVORS.json"
+
+
+def _family_banned(family: str) -> bool:
+    """research/family_policy.family_banned, reached from this lane's own path; an unreadable
+    policy reads as nothing banned, the same way the policy module itself reads it."""
+    try:
+        if str(DESK / "research") not in sys.path:
+            sys.path.insert(0, str(DESK / "research"))
+        from family_policy import family_banned
+        return bool(family_banned(family))
+    except Exception:
+        return False
 OUT = DESK / "reports" / "E8_BOOK.json"
 
 #: The last catalogue the venue actually reported. Written whenever the live call succeeds, read
@@ -147,6 +159,10 @@ def _load_survivors() -> list[dict[str, Any]]:
         sym = str(spec.get("symbol") or val.get("sym") or "").upper()
         fam = str(spec.get("family") or "")
         if not sym or not fam:
+            continue
+        # A BANNED FAMILY IS NOT IN THE E8 BOOK EITHER (2026-09-16): the same policy file the
+        # MT5 roster reads; the executor closes what such a sleeve still holds.
+        if _family_banned(fam):
             continue
         rows.append({
             "key": key, "symbol": sym, "family": fam,
