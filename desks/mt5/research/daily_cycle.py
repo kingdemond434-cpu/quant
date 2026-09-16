@@ -544,7 +544,19 @@ def main(argv: list[str] | None = None) -> int:
              f"did: {', '.join(n for n, _ in todo)} -- running those now")
     else:
         dlog(f"daily cycle {today} starting")
-    results = {name: run_step(name, fn) for name, fn in todo}
+    # THE STAMP IS WRITTEN AFTER EVERY STEP, NOT ONLY AT THE END (2026-09-16). This chain ran
+    # under a 900 s hourly budget and a daily task that was terminated, and the stamp was only
+    # written when the whole chain finished -- so a pass killed on step six started again at
+    # step one the next hour, forever. Measured: last_run stuck at 2026-09-13 for three days
+    # while every hour spent its full budget re-running the same first steps. Stamping each step
+    # makes a killed pass RESUME: the next hour runs only what has not run today.
+    results: dict[str, dict] = {}
+    STAMP.parent.mkdir(parents=True, exist_ok=True)
+    for name, fn in todo:
+        results[name] = run_step(name, fn)
+        STAMP.write_text(json.dumps({**stamp, "last_run": today,
+                                     "steps": {**prior, **results}}, indent=2),
+                         encoding="utf-8")
 
     # THE STAMP RECORDS THE ATTEMPT, NOT A SUCCESS. Marking the day done only on a clean run would
     # make a broken step retry every hour, and a step that fails at 09:00 because the terminal is
