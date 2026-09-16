@@ -1,0 +1,1685 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Divisas",
+  "url": "https://www.eleconomista.com.mx/mercados/divisas",
+  "published": "2026-09-16T00:12:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "orderflow",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [
+   "https://www.eleconomista.com.mx/mediakit/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "92b9358487d51a441219",
+  "host": "www.eleconomista.com.mx",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Quantifiable Edges: Fed Study",
+  "url": "http://quantifiableedges.blogspot.ca/search/label/Fed%20Study",
+  "published": "2026-09-16T00:12:11+00:00",
+  "symbols": [
+   "US500",
+   "XAUUSD",
+   "XAGUSD",
+   "NAS100",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "carry",
+   "flow",
+   "gap",
+   "night_session",
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e1b9bd3a7af4fc89ffa1",
+  "host": "quantifiableedges.blogspot.ca",
+  "claims": [
+   {
+    "claim": "for a short-term Fed Day bump should perhaps be hoping the SPX does not close",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "day",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spx"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "edf861ecaba7"
+   },
+   {
+    "claim": "Posted by Rob Hanna at 12:12 PM No comments: Labels: Fed Study , Quantitative Study Thursday, September 19, 2013 An Updated Look At Fed Rallies To New Long-Term Highs In \u201cThe Quantifiable Edges Guide to Fed Days\u201d I discussed Fed Days that close at new highs.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "rallies",
+     "long"
+    ],
+    "horizon": [
+     "days",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "NAS100",
+      "US500",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "nasdaq",
+      "spx",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5f78017809be"
+   },
+   {
+    "claim": "The table below shows the hypothetical results of buying at the close on the day before a Fed Day if it was at least the 3rd consecutive lower close.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "close",
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "NAS100",
+      "US500",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "nasdaq",
+      "spx",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a345451910b2"
+   },
+   {
+    "claim": "Posted by Rob Hanna at 9:03 AM No comments: Labels: Fed Study , Quantitative Study Friday, September 14, 2012 When The Fed Sparks A Rally To A Long-Term High In \u201cThe Quantifiable Edges Guide to Fed Days\u201d I discussed Fed Days that close at new highs.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "rally",
+     "long"
+    ],
+    "horizon": [
+     "days",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "0264d357e1ca"
+   },
+   {
+    "claim": "Often leading up to a Fed Day the VIX will rise as traders fret over what the Fed might say or do.",
+    "lang": "en",
+    "quantities": [
+     "vix"
+    ],
+    "direction": [
+     "rise"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "25e35338d195"
+   },
+   {
+    "claim": "Posted by Rob Hanna at 9:05 AM No comments: Labels: Fed Study , Quantitative Study Wednesday, January 25, 2012 When SPX Closes Just Under a 50-day High Prior to a Fed Day Yesterday I showed that Fed Days typically carry a bullish edge, but that edge failed to hold when the SPX closed at a 20-day high just prior to the Fed Day.",
+    "lang": "en",
+    "quantities": [
+     "carry"
+    ],
+    "direction": [
+     "bullish"
+    ],
+    "horizon": [
+     "day",
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spx"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "30cea18b4f8c"
+   },
+   {
+    "claim": "View my complete profile Labels Quantitative Study (683) seasonality (75) gaps (61) VIX (48) Breadth (43) volume (43) CBI (40) Fed Study (30) IBD Follow Through Day (24) Subscriber Letter (14) reversal bar (12) Intraday (11) Using Quantifiable Edges (11) Spyx (10) Capitulation (7) System (7) NYSE Net New Highs (6) Trend Vs.",
+    "lang": "en",
+    "quantities": [
+     "vix",
+     "volume",
+     "reversal",
+     "trend"
+    ],
+    "direction": [
+     "follow"
+    ],
+    "horizon": [
+     "day",
+     "bar"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "NAS100",
+      "US500",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "nasdaq",
+      "spx",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "501411f3012b"
+   }
+  ],
+  "n_claims": 7
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Myslivost, s.r.o. , Praha I\u010cO 45807990 - Obchodn\u00ed rejst\u0159\u00edk firem | Kurzy.cz",
+  "url": "https://rejstrik-firem.kurzy.cz/45807990/myslivost-sro/",
+  "published": "2026-09-16T00:12:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "cs",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3d198c3ddadbd12ff3dc",
+  "host": "rejstrik-firem.kurzy.cz",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Zlato Trade group s.r.o. , Praha I\u010cO 08334706 - Obchodn\u00ed rejst\u0159\u00edk firem | Kurzy.cz",
+  "url": "https://rejstrik-firem.kurzy.cz/08334706/zlato-trade-group-sro/",
+  "published": "2026-09-16T00:12:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "cs",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7608aeaf9ef8ebf4715b",
+  "host": "rejstrik-firem.kurzy.cz",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "FXCM vs. CFTC | Forex Forum - EarnForex",
+  "url": "http://www.earnforex.com/forum/f10/fxcm-vs-cftc-435/",
+  "published": "2026-09-16T00:12:31+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "correlation",
+   "momentum",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0553d6256c187ff40c57",
+  "host": "www.earnforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forex Trading Information",
+  "url": "http://www.earnforex.com/",
+  "published": "2026-09-16T00:12:32+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.55,
+  "lang": "en-us",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2aca35452e3e45b9b9ae",
+  "host": "www.earnforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Louise Bedford - from The Trading Game - Shares for Beginners | Acast",
+  "url": "https://play.acast.com/s/shares-for-beginners/louisebedford-fromthetradinggame",
+  "published": "2026-09-16T00:12:34+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://shows.acast.com/api/oembed/4cf401e4-d184-543c-b73b-5fa7140b9811/341c6781-cfe0-448f-87e9-68c7337bbd77"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "953a5e6b2a802a304c58",
+  "host": "play.acast.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Chris Tate - The Trading Game - Shares for Beginners | Acast",
+  "url": "https://play.acast.com/s/shares-for-beginners/christate-thetradinggame",
+  "published": "2026-09-16T00:12:36+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://shows.acast.com/api/oembed/4cf401e4-d184-543c-b73b-5fa7140b9811/2c2e2a40-1be1-4558-94f4-0cd1f330fd11"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "09f28420dccbe057caca",
+  "host": "play.acast.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Walk Forward Correlation (WFC) - A New Algo Trading Tool",
+  "url": "https://www.tradelikeamachine.com/blog/wfc/using-walk-forward-correlation-in-algo-trading?aid=pY5Tdstmnb8Tgh6s",
+  "published": "2026-09-16T00:12:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "correlation",
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c7590b4ade13ffad8c17",
+  "host": "www.tradelikeamachine.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Opt My Strategy - Free, Subscription, and Lifetime Options",
+  "url": "https://www.tradelikeamachine.com/backtesting-software-opt-my-strategy/opt-my-strategy-purchase-options/m5cgt1tsvc91kjjk5nbw?aid=pY5Tdstmnb8Tgh6s",
+  "published": "2026-09-16T00:12:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "35ca4535c342fc0e8f59",
+  "host": "www.tradelikeamachine.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "A IA precisa de ferramentas para investir",
+  "url": "https://codecapital.substack.com/p/a-ia-precisa-de-ferramentas-para",
+  "published": "2026-09-16T00:12:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "policy",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-br",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d01b47995c9fec4a83bc",
+  "host": "codecapital.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Backtests no S&amp;P 500 - by Rafael Quintanilha - Code Capital",
+  "url": "https://codecapital.substack.com/p/code-night-003-backtests-no-s-and",
+  "published": "2026-09-16T00:12:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-br",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "64062c7d5e7a4d724176",
+  "host": "codecapital.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "KBpedia: ClusteringAlgorithm Reference Concept",
+  "url": "https://kbpedia.org/knowledge-graph/reference-concept/?uri=ClusteringAlgorithm",
+  "published": "2026-09-16T00:12:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://kbpedia.org/resources/downloads/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "02f517954874b035b2aa",
+  "host": "kbpedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Dictionary of Algorithms and Data Structures",
+  "url": "https://www.nist.gov/dads/",
+  "published": "2026-09-16T00:12:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8401bab7032833ba14d0",
+  "host": "www.nist.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Uppslagsverk - NE.se",
+  "url": "https://www.ne.se/uppslagsverk/encyklopedi/l\u00e5ng/algoritm",
+  "published": "2026-09-16T00:12:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion"
+  ],
+  "confidence": 0.35,
+  "lang": "sv",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1620ad4e66739aa61fbb",
+  "host": "www.ne.se",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "KBpedia: Algorithm Reference Concept",
+  "url": "https://kbpedia.org/knowledge-graph/reference-concept/?uri=Algorithm",
+  "published": "2026-09-16T00:12:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://kbpedia.org/resources/downloads/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "816fceca2d3c24cb8962",
+  "host": "kbpedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Category:Algorithms - Wikiversity",
+  "url": "https://en.wikiversity.org/wiki/Category:Algorithms",
+  "published": "2026-09-16T00:12:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d15d85597e142f01d6e4",
+  "host": "en.wikiversity.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Dictionary of Algorithms and Data Structures",
+  "url": "http://www.nist.gov/dads/",
+  "published": "2026-09-16T00:12:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e87db9f097a19ed46819",
+  "host": "www.nist.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Uppslagsverk - NE.se",
+  "url": "http://www.ne.se/uppslagsverk/encyklopedi/l\u00e5ng/algoritm",
+  "published": "2026-09-16T00:12:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion"
+  ],
+  "confidence": 0.35,
+  "lang": "sv",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9e346f03807415d49a13",
+  "host": "www.ne.se",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithms: A Quest for Absolute Definitions - Microsoft Research",
+  "url": "http://research.microsoft.com/~gurevich/Opera/164.pdf",
+  "published": "2026-09-16T00:13:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.microsoft.com/en-us/research/wp-content/themes/microsoft-research-theme/humans.txt",
+   "https://www.microsoft.com/en-us/download"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "2c757f5d0f96817d01a3",
+  "host": "research.microsoft.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Microsoft Research \u2013 Emerging Technology, Computer, &amp; Software Research",
+  "url": "http://research.microsoft.com/~gurevich/Opera/141.pdf",
+  "published": "2026-09-16T00:13:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.microsoft.com/en-us/research/wp-content/themes/microsoft-research-theme/humans.txt",
+   "https://www.microsoft.com/en-us/download"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "4f7f09e9d0c1e9e47684",
+  "host": "research.microsoft.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithms - Wikiversity",
+  "url": "https://en.wikiversity.org/wiki/en:Algorithms",
+  "published": "2026-09-16T00:13:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ec05e6ba28f552966685",
+  "host": "en.wikiversity.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "A book outside currencies, my thoughts on passive investing strategies | Mechanical Forex",
+  "url": "https://mechanicalforex.com/2018/09/a-book-outside-currencies-my-thoughts-on-passive-investing-strategies.html",
+  "published": "2026-09-16T00:13:13+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "17f5c71f85d04be4ed20",
+  "host": "mechanicalforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Calendar Strategy: Fed Days | Systematic Investor",
+  "url": "https://systematicinvestor.wordpress.com/2014/05/06/calendar-strategy-fed-days",
+  "published": "2026-09-16T00:13:14+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum",
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "42b0d4ec3d7934252367",
+  "host": "systematicinvestor.wordpress.com",
+  "claims": [
+   {
+    "claim": "Today, I want to follow up with the Calendar Strategy: Option Expiry post.",
+    "lang": "en",
+    "quantities": [
+     "expiry"
+    ],
+    "direction": [
+     "follow"
+    ],
+    "horizon": [
+     "expiry"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "30208030d2d7"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Calendar Strategy: Option Expiry | Systematic Investor",
+  "url": "http://systematicinvestor.wordpress.com/2014/05/03/calendar-strategy-option-expiry/",
+  "published": "2026-09-16T00:13:16+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8a123375527bb14de4d3",
+  "host": "systematicinvestor.wordpress.com",
+  "claims": [
+   {
+    "claim": "Calendar Strategy: Option Expiry | Systematic Investor Systematic Investor Systematic Investor Blog Home About Systematic Investor Toolbox Research Shiny Home > Backtesting , R > Calendar Strategy: Option Expiry Calendar Strategy: Option Expiry May 3, 2014 systematicinvestor Leave a comment Go to comments Today, I want to follow up with the Calendar Strategy: Month End post.",
+    "lang": "en",
+    "quantities": [
+     "expiry"
+    ],
+    "direction": [
+     "follow"
+    ],
+    "horizon": [
+     "expiry",
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5b497b93f2da"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "I Ran Two Strategies Past 80 Meaningless Versions of Themselves. The Control Group Told Them Apart.",
+  "url": "https://yizon.substack.com/p/i-ran-two-strategies-past-80-meaningless",
+  "published": "2026-09-16T00:13:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "61b750fad60851d66ec5",
+  "host": "yizon.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Alvarez Quant Trading &#8211; Providing confidence in your trading",
+  "url": "http://www.AlvarezQuantTrading.com",
+  "published": "2026-09-16T00:13:30+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "712313e24db4556c544c",
+  "host": "www.AlvarezQuantTrading.com",
+  "claims": [
+   {
+    "claim": "The 30% Selloff Signal: What History Tells Us About Market Recoveries SPY, SSO and TLT Strategy Join my email list For the best curated research in quantitative finance, bookmark Popular Posts Internal Bar Strength for Mean Reversion February 16, 2022 SPY, SSO and TLT Strategy November 13, 2024 The Power of Strategy Diversification August 19, 2026 The 100% Club.",
+    "lang": "en",
+    "quantities": [
+     "mean reversion"
+    ],
+    "direction": [
+     "selloff"
+    ],
+    "horizon": [
+     "bar"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e36e92265eb4"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "My Backtest Said &quot;SURVIVES.&quot; The Per-Year Numbers Said No. I Learned to Trust the Second One.",
+  "url": "https://yizon.substack.com/p/my-backtest-said-survives-the-per",
+  "published": "2026-09-16T00:13:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "correlation",
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "567c4297ccfe7b2705b1",
+  "host": "yizon.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Supertrend, flipped to death: the most-taught indicator on the internet | The Refutation",
+  "url": "https://therefutation.com/essays/does-supertrend-work/",
+  "published": "2026-09-16T00:13:33+00:00",
+  "symbols": [
+   "USDTRY",
+   "BTCUSD"
+  ],
+  "timeframes": [
+   "4H"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fc61d700be2148894f7b",
+  "host": "therefutation.com",
+  "claims": [
+   {
+    "claim": "Each flip is a signal: green means close the short and go long, red means the reverse.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "short",
+     "long"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "9db4b9e2a918"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "MACD: The Indicator Is a Passenger | The Refutation",
+  "url": "https://therefutation.com/essays/macd-the-indicator-is-a-passenger/",
+  "published": "2026-09-16T00:13:35+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "gap",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f64ce695cb0c858503b9",
+  "host": "therefutation.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Most of the insider trading alpha is gone by the time you see the filing: poof!",
+  "url": "https://tommijohnsen.substack.com/p/most-of-the-insider-trading-alpha",
+  "published": "2026-09-16T00:13:36+00:00",
+  "symbols": [
+   "US500",
+   "TSMC",
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "1M",
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "carry",
+   "inventory"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3ee002939af5267c3250",
+  "host": "tommijohnsen.substack.com",
+  "claims": [
+   {
+    "claim": "The cluster definition needs an extra filter The standard academic definition of a cluster buy \u2014 three or more distinct insiders making open-market purchases in a short window, with role and 10b5-1 filtering applied \u2014 flagged four tickers on May 19: TSM (Taiwan Semiconductor), ONON (On Holding), GEHC (GE HealthCare), and SPGI (S&P Global).",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "buy",
+     "short"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "TSMC"
+     ],
+     "mentioned": [
+      "s&p",
+      "taiwan semiconductor"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "5ba0f4e2373c"
+   },
+   {
+    "claim": "With twenty to fifty cluster observations, the per-buy and same-day-same-price thresholds become tunable against an actual false-positive rate.",
+    "lang": "en",
+    "quantities": [
+     "rate"
+    ],
+    "direction": [
+     "buy",
+     "positive"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "US500",
+      "TSMC"
+     ],
+     "mentioned": [
+      "gold",
+      "s&p",
+      "taiwan semiconductor"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "1a26a347de24"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Alvarez Quant Trading &#8211; Providing confidence in your trading",
+  "url": "https://www.alvarezquanttrading.com",
+  "published": "2026-09-16T00:13:38+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c0615138f86b555709dc",
+  "host": "www.alvarezquanttrading.com",
+  "claims": [
+   {
+    "claim": "The 30% Selloff Signal: What History Tells Us About Market Recoveries SPY, SSO and TLT Strategy Join my email list For the best curated research in quantitative finance, bookmark Popular Posts Internal Bar Strength for Mean Reversion February 16, 2022 SPY, SSO and TLT Strategy November 13, 2024 The Power of Strategy Diversification August 19, 2026 The 100% Club.",
+    "lang": "en",
+    "quantities": [
+     "mean reversion"
+    ],
+    "direction": [
+     "selloff"
+    ],
+    "horizon": [
+     "bar"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e36e92265eb4"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Backtesting Limitations: Slippage and Liquidity Explained | LuxAlgo Blog",
+  "url": "https://www.luxalgo.com/blog/backtesting-limitations-slippage-and-liquidity-explained/",
+  "published": "2026-09-16T00:13:39+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "flow",
+   "momentum",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3ecca02fb615cbfc46e5",
+  "host": "www.luxalgo.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Top 7 Metrics for Backtesting Results | LuxAlgo Blog",
+  "url": "https://www.luxalgo.com/blog/top-7-metrics-for-backtesting-results/",
+  "published": "2026-09-16T00:13:42+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "mean_reversion",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "73ea27df5cb9b6d391a5",
+  "host": "www.luxalgo.com",
+  "claims": [
+   {
+    "claim": "A value above one indicates a positive difference between those groups, not necessarily profitability after omitted costs or unresolved open positions.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "positive"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "s&p 500"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "21cfc5f19117"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "NGX up 50% in 2026, but one sector has surged 111% &#8211; NM Staging",
+  "url": "https://nm-stag.nairametrics.com/ngx-up-50-in-2026-but-one-sector-has-surged-111/",
+  "published": "2026-09-16T00:13:43+00:00",
+  "symbols": [],
+  "timeframes": [
+   "H1"
+  ],
+  "patterns": [
+   "basis",
+   "gap",
+   "mean_reversion",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ef38e3bd9a3c467d5bf7",
+  "host": "nm-stag.nairametrics.com",
+  "claims": [
+   {
+    "claim": "NGX up 50% in 2026, but one sector has surged 111% \u2013 NM Staging Close Home Exclusives Economy Markets Sectors Financial Literacy Lifestyle Opinions Search Latest News Equities Airtel Africa, FUGAZ Banks sustain NGX rebound with N1.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "rebound"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "ngx"
+     ],
+     "transfer_only": [
+      "ngx->indices (African exchanges)"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "7878c7d7465b"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "NGX ETFs close mixed as trading value rises to N1.18 billion &#8211; NM Staging",
+  "url": "https://nm-stag.nairametrics.com/ngx-etfs-close-mixed-as-trading-value-rises-to-n1-18-billion/",
+  "published": "2026-09-16T00:13:45+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "239843b3d9648ab99f65",
+  "host": "nm-stag.nairametrics.com",
+  "claims": [
+   {
+    "claim": "NGX ETFs close mixed as trading value rises to N1.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "rises"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "ngx"
+     ],
+     "transfer_only": [
+      "ngx->indices (African exchanges)"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "6a63388ed53a"
+   },
+   {
+    "claim": "18 billion \u2013 NM Staging Close Home Exclusives Economy Markets Sectors Financial Literacy Lifestyle Opinions Search Latest News Equities Airtel Africa, FUGAZ Banks sustain NGX rebound with N1.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "rebound"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "ngx"
+     ],
+     "transfer_only": [
+      "ngx->indices (African exchanges)"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "8ff956894d2c"
+   },
+   {
+    "claim": "More insights ETF trading activity strengthened during the week, with total trading volume rising to 7.",
+    "lang": "en",
+    "quantities": [
+     "volume"
+    ],
+    "direction": [
+     "strengthened"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "s&p",
+      "ngx"
+     ],
+     "transfer_only": [
+      "ngx->indices (African exchanges)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "298c8efbe2ec"
+   },
+   {
+    "claim": "Trading activity also strengthened in the previous week, as total volume rose to 7.",
+    "lang": "en",
+    "quantities": [
+     "volume"
+    ],
+    "direction": [
+     "strengthened",
+     "rose"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "s&p",
+      "ngx"
+     ],
+     "transfer_only": [
+      "ngx->indices (African exchanges)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "c60da40285d9"
+   }
+  ],
+  "n_claims": 4
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Most of the insider trading alpha is gone by the time you see the filing: poof!",
+  "url": "https://tommijohnsen.substack.com/p/most-of-the-insider-trading-alpha/comments",
+  "published": "2026-09-16T00:13:46+00:00",
+  "symbols": [
+   "US500",
+   "TSMC",
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "1M",
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "carry",
+   "inventory"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9964b49303b93bd616d6",
+  "host": "tommijohnsen.substack.com",
+  "claims": [
+   {
+    "claim": "The cluster definition needs an extra filter The standard academic definition of a cluster buy \u2014 three or more distinct insiders making open-market purchases in a short window, with role and 10b5-1 filtering applied \u2014 flagged four tickers on May 19: TSM (Taiwan Semiconductor), ONON (On Holding), GEHC (GE HealthCare), and SPGI (S&P Global).",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "buy",
+     "short"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "TSMC"
+     ],
+     "mentioned": [
+      "s&p",
+      "taiwan semiconductor"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "5ba0f4e2373c"
+   },
+   {
+    "claim": "With twenty to fifty cluster observations, the per-buy and same-day-same-price thresholds become tunable against an actual false-positive rate.",
+    "lang": "en",
+    "quantities": [
+     "rate"
+    ],
+    "direction": [
+     "buy",
+     "positive"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "US500",
+      "TSMC"
+     ],
+     "mentioned": [
+      "gold",
+      "s&p",
+      "taiwan semiconductor"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "1a26a347de24"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Introduction to Futures | Trading Course | Traders&#039; Academy",
+  "url": "https://ibkrcampus.com/trading-course/introduction-to-futures/",
+  "published": "2026-09-16T00:13:49+00:00",
+  "symbols": [
+   "SOYBEAN",
+   "UST10Y"
+  ],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.com/campus/traders-academy/api/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "9e65144d224767111bea",
+  "host": "ibkrcampus.com",
+  "claims": [
+   {
+    "claim": "Go To Lesson Lesson #9 Closing and Rolling Futures Positions This lesson goes over how to close a simple long or short future position or roll an existing futures position to another expiration.",
+    "lang": "en",
+    "quantities": [
+     "futures",
+     "close"
+    ],
+    "direction": [
+     "long",
+     "short"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "SOYBEAN",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "soybean",
+      "treasuries"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "monetary authority of singapore: policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "dbc7ac9a5b4c"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Futures Fundamental Analysis | Trading Course",
+  "url": "https://ibkrcampus.com/trading-course/cme-futures-fundamental-analysis/",
+  "published": "2026-09-16T00:13:51+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.com/campus/traders-academy/api/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "08db871c94fcbd564cd6",
+  "host": "ibkrcampus.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Inicio | Rava Burs\u00e1til",
+  "url": "https://www.rava.com/",
+  "published": "2026-09-16T00:13:53+00:00",
+  "symbols": [
+   "NVIDIA"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "35e5ab0c8f6396576ab3",
+  "host": "www.rava.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "World Cup Trading Championship Standings - World Cup Trading Championships",
+  "url": "https://www.worldcupchampionships.com/world-cup-trading-championship-standings",
+  "published": "2026-09-16T00:13:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "654ceb3bc666111a6bd8",
+  "host": "www.worldcupchampionships.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]
