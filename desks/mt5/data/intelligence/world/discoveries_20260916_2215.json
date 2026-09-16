@@ -1,0 +1,2558 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "QuantLib Python Cookbook [Leanpub PDF/iPad/Kindle]",
+  "url": "https://leanpub.com/quantlibpythoncookbook",
+  "published": "2026-09-16T22:12:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0dbd67e4d9729bc502eb",
+  "host": "leanpub.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Introduction to Margin | Trading Course | Traders&#039; Academy",
+  "url": "https://ibkrcampus.eu/trading-course/introduction-to-margin/",
+  "published": "2026-09-16T22:12:32+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.eu/campus/traders-academy/api/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "3ee8798533d86aee8f1d",
+  "host": "ibkrcampus.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Volatility Risk Premium: The Growing Importance of Overnight and Intraday Dynamics",
+  "url": "https://quant.harbourfrontweekly.com/p/volatility-risk-premium-the-growing-importance-of-overnight-and-intraday-dynamics",
+  "published": "2026-09-16T22:12:34+00:00",
+  "symbols": [
+   "NAS100",
+   "US500",
+   "US30",
+   "COFARA",
+   "UST10Y"
+  ],
+  "timeframes": [
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "gap",
+   "inventory",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://quant.harbourfrontweekly.com/assets/exports-CsgSliUa.js"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "b378f022b3fddd277118",
+  "host": "quant.harbourfrontweekly.com",
+  "claims": [
+   {
+    "claim": "Strong positive overnight returns suggest that the VRP in Nifty options prices mainly compensates for overnight risk.",
+    "lang": "en",
+    "quantities": [
+     "options"
+    ],
+    "direction": [
+     "positive"
+    ],
+    "horizon": [
+     "overnight"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "nifty"
+     ],
+     "transfer_only": [
+      "nifty->indices (NSE/BSE)"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "27018f27d9c0"
+   },
+   {
+    "claim": "A strategy of selling index options at the end of the trading day and covering them at the beginning of the next day yields positive returns before transaction costs but is not profitable after accounting for transaction costs.",
+    "lang": "en",
+    "quantities": [
+     "options"
+    ],
+    "direction": [
+     "positive"
+    ],
+    "horizon": [
+     "day",
+     "next day"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "US30",
+      "COFARA",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "s&p 500",
+      "dow",
+      "nifty",
+      "coffee",
+      "10-year yield"
+     ],
+     "transfer_only": [
+      "nifty->indices (NSE/BSE)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "98c6da5701e6"
+   },
+   {
+    "claim": "Market makers\u2019 short positions in puts expose them to overnight equity price \u201cgap\u201d risks, while their call option positions are more balanced between long and short, resulting in minimal exposure to gap risk.",
+    "lang": "en",
+    "quantities": [
+     "gap"
+    ],
+    "direction": [
+     "short",
+     "long"
+    ],
+    "horizon": [
+     "overnight"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "US30",
+      "COFARA",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "s&p 500",
+      "dow",
+      "nifty",
+      "coffee",
+      "10-year yield"
+     ],
+     "transfer_only": [
+      "nifty->indices (NSE/BSE)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "17770c11e022"
+   },
+   {
+    "claim": "Stocks erased their weekly gains on Friday as investors reacted to signs of a sluggish economy.",
+    "lang": "en",
+    "quantities": [
+     "stocks"
+    ],
+    "direction": [
+     "gains"
+    ],
+    "horizon": [
+     "weekly"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "US30",
+      "COFARA",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "s&p 500",
+      "dow",
+      "nifty",
+      "coffee",
+      "10-year yield"
+     ],
+     "transfer_only": [
+      "nifty->indices (NSE/BSE)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "4848d52c901b"
+   }
+  ],
+  "n_claims": 4
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "NGX low-cap stocks drive rally as market gains 29.11% YtD - Nairametrics",
+  "url": "https://nm-staging-aws.nairametrics.com/2026/03/30/ngx-low-cap-stocks-drive-rally-as-market-gains-29-11-ytd/",
+  "published": "2026-09-16T22:12:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "47a094c8d6b9fe8fb9f9",
+  "host": "nm-staging-aws.nairametrics.com",
+  "claims": [
+   {
+    "claim": "Market activity shows that the rally has been largely driven by low market capitalization stocks, [\u2026] Idika Aja Senior Analyst 3 min read Follow Us on Google Discover As of the close of trading on March 27th, the NGX equities market recorded a year-to-date (YtD) gain of 29.",
+    "lang": "en",
+    "quantities": [
+     "stocks",
+     "close"
+    ],
+    "direction": [
+     "rally",
+     "follow"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "ngx"
+     ],
+     "transfer_only": [
+      "ngx->indices (African exchanges)"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "bb28d2b2272a"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "QuantPedia | The Encyclopedia of Algorithmic and Quantitative Trading Strategies",
+  "url": "http://www.quantpedia.com/",
+  "published": "2026-09-16T22:12:38+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3787b491d9eeae656d14",
+  "host": "www.quantpedia.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Blox \u2014 Portfolio Back Testing &amp; Order Generation",
+  "url": "https://www.tradingblox.com/",
+  "published": "2026-09-16T22:12:43+00:00",
+  "symbols": [
+   "AUDCAD",
+   "AUDJPY",
+   "AUDUSD",
+   "EURAUD",
+   "EURCAD",
+   "EURCHF",
+   "EURGBP",
+   "EURJPY",
+   "EURUSD",
+   "GBPCHF",
+   "GBPJPY",
+   "GBPUSD",
+   "NVIDIA",
+   "USDCAD",
+   "USDCHF",
+   "USDJPY",
+   "USDKRW"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "breakout",
+   "inventory",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "45e8938f92ba32382904",
+  "host": "www.tradingblox.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithmic trading systems and strategy testing forum \u2013 Forex Forum MQL5 community",
+  "url": "http://www.forex-tsd.com/tradestation/2997-tradestation-39.html",
+  "published": "2026-09-16T22:12:47+00:00",
+  "symbols": [
+   "AUDNZD",
+   "BTCUSD",
+   "EURUSD",
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "DAILY",
+   "H1",
+   "M1",
+   "M15",
+   "M30",
+   "M5"
+  ],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "breakout",
+   "flow",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.mql5.com/manifest.json",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/MetaTrader5.pkg.zip?utm_source=www.mql5.com&amp;utm_campaign=download",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/mt5setup.exe?utm_source=www.mql5.com&amp;utm_campaign=download",
+   "https://download.terminal.free/cdn/mobile/mt5/ios?utm_source=www.mql5.com&amp;utm_campaign=install.metaquotes&amp;hl=en",
+   "https://download.terminal.free/cdn/mobile/mt5/android?utm_source=www.mql5.com&amp;utm_campaign=install.metaquotes&amp;hl=en",
+   "https://download.terminal.free/cdn/mobile/mt5/android/app-gallery?utm_source=www.mql5.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mt5/metatrader5.apk?utm_source=www.mql5.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/ios?utm_source=www.mql5.com&amp;utm_campaign=download&amp;hl=en",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android?utm_source=www.mql5.com&amp;utm_campaign=download&amp;hl=en",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android/app-gallery?utm_source=www.mql5.com&amp;utm_campaign=download",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mql5channels/mql5channels.apk?utm_source=www.mql5.com&amp;utm_campaign=download",
+   "https://www.tradays.com/en/download?utm_source=www.mql5.com&amp;utm_campaign=download",
+   "https://download.terminal.free/cdn/mobile/tradays/ios?utm_source=www.mql5.com&amp;utm_campaign=download&amp;hl=en",
+   "https://download.terminal.free/cdn/mobile/tradays/android?utm_source=www.mql5.com&amp;utm_campaign=download&amp;hl=en",
+   "https://download.terminal.free/cdn/mobile/tradays/android/app-gallery?utm_source=www.mql5.com&amp;utm_campaign=download",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/tradays/tradays.apk?utm_source=www.mql5.com&amp;utm_campaign=download"
+  ],
+  "n_endpoints": 16,
+  "vault_sha": "ffd3cf65034dc222d17f",
+  "host": "www.forex-tsd.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "CSS Analytics Minimum Correlation Algorithm | PDF | Diversification (Finance) | Covariance",
+  "url": "http://www.scribd.com/doc/106570475/CSS-Analytics-Minimum-Correlation-Algorithm",
+  "published": "2026-09-16T22:12:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "317c7cce8e317fba8791",
+  "host": "www.scribd.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Blog | Options Trading IQ",
+  "url": "https://optionstradingiq.com/blog/",
+  "published": "2026-09-16T22:12:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2095d19b39b6ee6e9329",
+  "host": "optionstradingiq.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Best Forex Brokers and Trading Platforms in 2026",
+  "url": "https://www.independentinvestor.com/forex/brokers/",
+  "published": "2026-09-16T22:12:53+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "gap",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "51d41473fc3c15ef8697",
+  "host": "www.independentinvestor.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "024 \u2013 Trading Think Tank 02 \u2013 Battle of the Back-Testers by The Algorithmic Advantage",
+  "url": "https://podcasters.spotify.com/pod/show/algoadvantage/episodes/024--Trading-Think-Tank-02--Battle-of-the-Back-Testers-e2ngp1p",
+  "published": "2026-09-16T22:12:58+00:00",
+  "symbols": [
+   "XTIUSD",
+   "USDKRW",
+   "USDTRY",
+   "BTCUSD"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "basis",
+   "breakout",
+   "carry",
+   "correlation",
+   "flow",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://anchor.fm/pod/api/v3/episodes/e2ngp1p/oembed?title=024%20%E2%80%93%20Trading%20Think%20Tank%2002%20%E2%80%93%20Battle%20of%20the%20Back-Testers%20by%20The%20Algorithmic%20Advantage",
+   "https://podcasters.spotify.com/api/shell/gateway"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "bfa0187ab083517bedc0",
+  "host": "podcasters.spotify.com",
+  "claims": [
+   {
+    "claim": "Toby Crabel \u2014 founder of Crabel Capital Management (~$5B AUM) and author of the legendary *Day Trading with Short Term Price Patterns and Intraday Breakouts* (1990), the book that gave the world the opening range breakout and NR4/NR7 patterns \u2014 joins the show for a rare, wide-ranging conversation.",
+    "lang": "en",
+    "quantities": [
+     "range",
+     "breakout"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "day",
+     "intraday"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD",
+      "USDKRW",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "brent",
+      "won",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "07bb48ab20f0"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Long Straddle Earnings Option Strategy Results",
+  "url": "https://optionalpha.com/long-straddle-earnings-option-strategy-106301.html",
+  "published": "2026-09-16T22:12:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "90f2fb84fb6a73165045",
+  "host": "optionalpha.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u8a55\u4fa1\u984d1.5\u5146\u5186\u306e\u7c73\u91cf\u5b50\u5927\u624b\u3001AI\u3068\u878d\u5408\u3067\u300c\u6307\u6570\u95a2\u6570\u7684\u306b\u52b9\u7387\u5316\u300d | \u65e5\u7d4c\u30af\u30ed\u30b9\u30c6\u30c3\u30af\uff08xTECH\uff09",
+  "url": "https://xtech.nikkei.com/atcl/nxt/column/18/00001/11082/",
+  "published": "2026-09-16T22:13:02+00:00",
+  "symbols": [
+   "NVIDIA"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1d198d772160949f3871",
+  "host": "xtech.nikkei.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "FX Options Quotes | Forex Options - Investing.com",
+  "url": "https://www.investing.com/currencies/forex-options",
+  "published": "2026-09-16T22:13:03+00:00",
+  "symbols": [
+   "NVIDIA"
+  ],
+  "timeframes": [
+   "1M",
+   "DAILY"
+  ],
+  "patterns": [
+   "carry",
+   "correlation",
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "51db51df8902a71eb2a5",
+  "host": "www.investing.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Investor Education &amp; Resources | NFA",
+  "url": "http://www.nfa.futures.org/forex_training/content/coverpage.htm",
+  "published": "2026-09-16T22:13:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "http://www.nfa.futures.org/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "3128e42405937df07778",
+  "host": "www.nfa.futures.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Live Forex Analysis, Currency Rates, Economic Calendar, Technical Forecast, Fundamental News, Free Trading Signals. Best. USD Dollar, EUR Euro, JPY Yen, GBP Pound, CHF Swiss Franc, CAD Canadian Dollar",
+  "url": "http://www.actionforex.com/",
+  "published": "2026-09-16T22:13:07+00:00",
+  "symbols": [
+   "AUDUSD",
+   "EURAUD",
+   "EURCHF",
+   "EURGBP",
+   "EURJPY",
+   "EURUSD",
+   "GBPJPY",
+   "GBPUSD",
+   "NZDCAD",
+   "NZDUSD",
+   "USDCAD",
+   "USDCHF",
+   "USDJPY"
+  ],
+  "timeframes": [
+   "4H",
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0bf2d737040d8f8f6dc9",
+  "host": "www.actionforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Home - Trading Game",
+  "url": "https://tradinggame.com.au/",
+  "published": "2026-09-16T22:13:14+00:00",
+  "symbols": [
+   "USDKRW",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "79a4ad4ce98be3552128",
+  "host": "tradinggame.com.au",
+  "claims": [
+   {
+    "claim": "BUY NOW The Secret of Candlestick Charting Louise Bedford Most traders in the Australian stock and futures market begin by using conventional bar charts to generate buy and sell signals - until they discover the power of candlestick charting.",
+    "lang": "en",
+    "quantities": [
+     "futures"
+    ],
+    "direction": [
+     "buy",
+     "sell"
+    ],
+    "horizon": [
+     "bar"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDKRW",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "won",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "06bbeb064cc7"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u201dTrading and Investment Psychology\u201d with Louise Bedford | Personal Financial Strategy the podcast",
+  "url": "https://tking6.podbean.com/e/inspiring-behavioural-finance-expert-with-louise-bedford/",
+  "published": "2026-09-16T22:13:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e2aff8676397353f5c6d",
+  "host": "tking6.podbean.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Collective - Algo Advantage",
+  "url": "https://algoadvantage.io/collective",
+  "published": "2026-09-16T22:13:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a47708f7e8aed5f8c532",
+  "host": "algoadvantage.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Smart Stock Trading Automation Engine &#8211; Smart Systematic Trading",
+  "url": "https://smartsystematictrading.com/product/smart-stock-trading-automation-engine/",
+  "published": "2026-09-16T22:13:22+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4fff5fc902cd1d702d21",
+  "host": "smartsystematictrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "QuantStrat TradeR &#8211; Trading, QuantStrat, R, and more.",
+  "url": "http://www.quantstrattrader.wordpress.com/",
+  "published": "2026-09-16T22:13:34+00:00",
+  "symbols": [
+   "XAUUSD",
+   "US500",
+   "USDKRW",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "flow",
+   "momentum",
+   "night_session",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e04e6a8a89a7e3e26dde",
+  "host": "www.quantstrattrader.wordpress.com",
+  "claims": [
+   {
+    "claim": "Of course, this sets the return dates off by one day, so you\u2019ll have to lag the total portfolio returns by a positive one to readjust for that.",
+    "lang": "en",
+    "quantities": [
+     "lag"
+    ],
+    "direction": [
+     "positive"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "US500",
+      "USDKRW",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "gold",
+      "spy",
+      "won",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "7c7529a609e7"
+   },
+   {
+    "claim": "colnames(compare) <- c(\"Obs_Close_Buy_Close\", \"Buy_Open_Next_Day\")",
+    "lang": "en",
+    "quantities": [
+     "close",
+     "open"
+    ],
+    "direction": [
+     "buy"
+    ],
+    "horizon": [
+     "close",
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "US500",
+      "USDKRW",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "gold",
+      "spy",
+      "won",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a27e1ac6fdb0"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "5 Backtesting Mistakes That Kill Live Accounts (2026)",
+  "url": "https://backtrex.com/en/blog/common-backtesting-mistakes",
+  "published": "2026-09-16T22:13:35+00:00",
+  "symbols": [
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "flow",
+   "gap",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://backtrex.com/en/features/export"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5b0089e1eae7642db6b3",
+  "host": "backtrex.com",
+  "claims": [
+   {
+    "claim": "Test with slightly higher costs than expected, if the strategy still profits, it has a buffer for the days when liquidity dries up and spreads widen.",
+    "lang": "en",
+    "quantities": [
+     "liquidity"
+    ],
+    "direction": [
+     "higher",
+     "widen"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "0465f2ea3144"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Aktier, Fonder, Swingtrading &amp; Daytrading \u2013 Strategier och Teknisk Analys | Samuelssons Rapport",
+  "url": "http://samuelssonsrapport.se/trend-indicators/",
+  "published": "2026-09-16T22:13:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "251f2e92d4f5c7795db9",
+  "host": "samuelssonsrapport.se",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "http://www.stellartradingsystems.com",
+  "url": "http://www.stellartradingsystems.com",
+  "published": "2026-09-16T22:13:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dfee213b2ad7aaebe9a8",
+  "host": "www.stellartradingsystems.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u9999\u6e2f\u4ea4\u6613\u6240\u96c6\u5718",
+  "url": "http://www.hkexgroup.com/?sc_lang=zh-HK",
+  "published": "2026-09-16T22:13:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "zh-HK",
+  "endpoints": [
+   "https://www.hkexgroup.com/-/media/HKEX-Group-Site/Ir/Monthly-market-highlights/HKEX-HK-market-monthly-highlight-statistics-(Updated-to-Aug-2026).xlsx",
+   "https://www.hkexgroup.com/Corporate-Governance/Download-List?sc_lang=zh-HK"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "24fe2483293f939ccb6a",
+  "host": "www.hkexgroup.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Praxisnah traden: von der Idee bis zur Order | stock3",
+  "url": "https://as.stock3.com/redi?sid=403784&kid=8714963&bid=26491335",
+  "published": "2026-09-16T22:13:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "de",
+  "endpoints": [
+   "https://as.stock3.com/site.webmanifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "534079ed9208b2e15ef5",
+  "host": "as.stock3.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The Market Is Never Going To Close - TrendLabs",
+  "url": "https://links.mb.trendlabs.com/s/c/zRUOy7BtCpt2zhRDWZGzqBNQ4HHqO9dvYddQvgUtach849or_5SEIGDuIxMg3nGMkqRaVvlFRf68qJx1hn_nKA-mbciEqOLTMxmdx8cixYwchIjVkRpNkh3cfRc_2-J_9GNyhHqQr7lS--u3b7f7LOCojKYgc_pmDSzZxpu2DSow5Ul3-JSUgsu5jTBFrhTrnaoqO4T_VHd3ap9LMD5CagN3uqSeLNMYacQEdX5iGjbre2Zs44T0ETWotzjM5Je8yfs93NHxwZjZyNy0JoaCop0D3CLrH5aS1mjtfKh7XBSgPKl34TxCETo_kr9QIxd26u7qwuJx1jG5AR2DOT8Obi-SIzNOg1dTMChXK_FkA7UxWO6YbJBWVeoJAVeWzvPY_ML-Z_1CQJnMqsDKyWAWA8A5zJz_ElpLQPh5A0k9VuIxp58j_FMKPYM-jpoNN8CppGTlDvZQe_9N78DMYGregPgXCGYErDOLWUvXrt2KFITKuDzYxPE5HDg8Ex90An3hvcjxIuQvAmz3WuLkjNy9CldPuDBZpdQWxpYukmUNMrB7vf0bvFXA5YPHk9NgzL8wWdeOFzZfO1381d7rfUF4vvspTPJH3MGZ5Bmxok8kds7jTRhEjmIJePGp8Z2-juI1Xl3-ZUdHgBl6GNj_BVqPb1gxOynCMAyYyzb8lv3V1hmNm0jpq3k-8EKGRcspiZq87djrtakb5pgxAB409rnAtGXv0VN-DS7MWI1J38UsceBSu6s3yFsJf7gmQMj9iwi7z-rXBCY/ffI7bNG_jkmEHu8A48vyQC_d-EytEDeX/24",
+  "published": "2026-09-16T22:13:45+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a08a904aa2710d18b718",
+  "host": "links.mb.trendlabs.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "China\u2019s New Photonic Quantum Chip for Complex Tasks",
+  "url": "https://thequantuminsider.com/2025/11/15/chinas-new-photonic-quantum-chip-promises-1000-fold-gains-for-complex-computing-tasks/",
+  "published": "2026-09-16T22:13:47+00:00",
+  "symbols": [
+   "NVIDIA"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://thequantuminsider.com/datasets/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "b0df34b71c68de03c845",
+  "host": "thequantuminsider.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Home - Hispatrading Magazine",
+  "url": "https://www.hispatrading.es/",
+  "published": "2026-09-16T22:13:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "018bbef682cb18a20c69",
+  "host": "www.hispatrading.es",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\u3084\u3063\u3066\u306f\u3044\u3051\u306a\u3044\u3053\u308c\u3060\u3051\u306e\u7406\u7531 \u7b2c65\u56de\u300c\u6708\u672b\u306f\u4f59\u88d5\u304c\u306a\u3044\u4eba\u306f\u3084\u3063\u3066\u306f\u3044\u3051\u306a\u3044\u300d | \u3044\u307e\u304b\u3089\u6295\u8cc7",
+  "url": "https://imakara.traders.co.jp/articles/2688",
+  "published": "2026-09-16T22:13:54+00:00",
+  "symbols": [
+   "EURUSD",
+   "EURGBP",
+   "GBPUSD",
+   "USDJPY",
+   "AUDUSD",
+   "USDCHF",
+   "GBPJPY",
+   "BTCUSD",
+   "Toyota"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "mean_reversion",
+   "orderflow",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://imakara.traders.co.jp/series/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "3d191579adbde9e91bb0",
+  "host": "imakara.traders.co.jp",
+  "claims": [
+   {
+    "claim": "\u3057\u304b\u3057\u3001\u30e6\u30fc\u30ed\u30c9\u30eb\u306f\u5168\u304f\u4e0a\u304c\u3089\u305a\u3001\u6642\u9593\u5dee\u3067\u6025\u843d\u3059\u308b\u3053\u3068\u3082\u3042\u308a\u307e\u3059\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u30e6\u30fc\u30ed\u30c9\u30eb"
+    ],
+    "direction": [
+     "\u6025\u843d"
+    ],
+    "horizon": [
+     "\u6642\u9593"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "\u30e6\u30fc\u30ed\u30c9\u30eb"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "58f06640e027"
+   },
+   {
+    "claim": "\u5178\u578b\u7684\u306a\u30e6\u30fc\u30ed\u30dd\u30f3\u30c9\u306e\u58f2\u308a\u304c\u6708\u672b\u306b\u5165\u3063\u3066\u3044\u308b\u3053\u3068\u306b\u306a\u308a\u307e\u3059\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u6708\u672b"
+    ],
+    "direction": [
+     "\u58f2\u308a"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURGBP"
+     ],
+     "mentioned": [
+      "\u30e6\u30fc\u30ed\u30dd\u30f3\u30c9"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "83569bff6ab6"
+   },
+   {
+    "claim": "\u300d \u7b2c83\u56de\u300c\u4e2d\u592e\u9280\u884c\u3082\u5909\u308f\u308b\u30fb\u30fb\u30fb\u30de\u30a4\u30ca\u30fc\u30c1\u30a7\u30f3\u30b8\u3092\u77e5\u3089\u306a\u3044\u3067\u3084\u3063\u3066\u306f\u3044\u3051\u306a\u3044\u300d \u7b2c82\u56de\u300c\u30b3\u30f3\u30d7\u30e9\u30a4\u30a2\u30f3\u30b9\u30fb\u30fb\u30fb\u6642\u4ee3\u306e\u79fb\u308a\u5909\u308f\u308a\u3092\u77e5\u3089\u305a\u306b\u3084\u3063\u3066\u306f\u3044\u3051\u306a\u3044\u300d \u7b2c81\u56de\u300c\u3053\u3046\u3044\u3046\u4eba\u306fFX\u3092\u3084\u3063\u3066\u306f\u3044\u3051\u306a\u3044\u2462\u30fb\u30fb\u30fb\u5229\u98df\u3048\u306a\u3044\u4eba\u306f\u3084\u3063\u3066\u306f\u3044\u3051\u306a\u3044\u300d \u7b2c80\u56de\u300c\u3053\u3046\u3044\u3046\u4eba\u306fFX\u3092\u3084\u3063\u3066\u306f\u3044\u3051\u306a\u3044\u2461\u30fb\u30fb\u30fb\u640d\u5207\u308a\u304c\u9045\u3044\u4eba\u306f\u3084\u3063\u3066\u306f\u3044\u3051\u306a\u3044\u300d \u7b2c79\u56de\u300c\u3053\u3046\u3044\u3046\u4eba\u306fFX\u3092\u3084\u3063\u3066\u306f\u3044\u3051\u306a\u3044\u2460\u30fb\u30fb\u30fb\u81ea\u5206\u304c\u6b63\u3057\u3044\u3068\u601d\u3046\u4eba\u306f\u3084\u3063\u3066\u306f\u3044\u3051\u306a\u3044\u300d \u7b2c78\u56de\u300c\u306a\u305c\u5e74\u672b\u306f\u53d6\u5f15\u3092\u3084\u3063\u3066\u306f\u3044\u3051\u306a\u3044\u306e\u304b\u30fb\u30fb\u30fb\u5fdc\u5f53\u65e5\u306e\u7279\u6b8a\u4e8b\u60c5\u300d \u7b2c77\u56de\u300c\u4eca\u5e741\u5e74\u306f\u4f55\u3092\u3084\u3063\u305f\u3089\u5132\u304b\u3063\u305f\u304b\u30fb\u30fb\u30fb\u53cd\u7701\u305b\u305a\u306b\u6765\u5e74\u306f\u3084\u3063\u3066\u306f\u3044\u3051\u306a\u3044\u300d \u7b2c76\u56de\u300c\u6628\u5e74\u306e\u5024\u52d5\u304d\u3092\u5fd8\u308c\u305a\u306b\u3084\u3063\u3066\u306f\u3044\u3051\u306a\u3044\u300d \u7b2c75\u56de\u300c\u4eca\u5e74\u306f\u4eca\u9031\u3067\u304a\u3057\u307e\u3044?",
+    "lang": "ja",
+    "quantities": [
+     "\u9280"
+    ],
+    "direction": [
+     "\u640d\u5207\u308a"
+    ],
+    "horizon": [
+     "\u5206",
+     "\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCHF",
+      "GBPJPY",
+      "EURGBP",
+      "BTCUSD",
+      "Toyota"
+     ],
+     "mentioned": [
+      "\u30e6\u30fc\u30ed\u30c9\u30eb",
+      "\u30dd\u30f3\u30c9\u30c9\u30eb",
+      "\u30c9\u30eb\u5186",
+      "\u8c6a\u30c9\u30eb",
+      "\u30b9\u30a4\u30b9\u30d5\u30e9\u30f3",
+      "\u30dd\u30f3\u30c9\u5186",
+      "\u30e6\u30fc\u30ed\u30dd\u30f3\u30c9",
+      "\u30d3\u30c3\u30c8\u30b3\u30a4\u30f3",
+      "\u30c8\u30e8\u30bf"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities",
+      "\u70ba\u66ff\u4ecb\u5165: policy: BoJ / MoF intervention -> JPY",
+      "\u6295\u4fe1: flow: Japanese outbound investment -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "e8b13906562d"
+   },
+   {
+    "claim": "\u30fb\u30fb\u30fb\u6700\u5f8c\u306e2\u9031\u9593\u306f\u3084\u3063\u3066\u306f\u3044\u3051\u306a\u3044\u3053\u3068\u300d \u7b2c74\u56de\u300c\u5b9f\u5f3e\u4ecb\u5165\u3057\u304b\u9632\u3052\u306a\u3044\u30fb\u30fb\u30fb\u6839\u5f37\u3044\u5186\u5b89\u57fa\u8abf\u3067\u3084\u3063\u3066\u306f\u3044\u3051\u306a\u3044\u3053\u3068\u300d \u7b2c73\u56de\u300c\u611f\u8b1d\u796d\u76f8\u5834\u30fb\u30fb\u30fb11\u6708\u306e\u7279\u5225\u4e8b\u60c5\u3092\u77e5\u3089\u306a\u3044\u3067\u3084\u3063\u3066\u3044\u3051\u306a\u3044\u300d \u7b2c72\u56de\u300c\u8981\u4eba\u767a\u8a00\u3092\u541f\u5473\u3057\u306a\u3044\u3067\u3084\u3063\u3066\u306f\u3044\u3051\u306a\u3044\u3053\u3068\u30fb\u30fb\u30fb\u4ecb\u5165\u306f\u5165\u3089\u306a\u3044\uff1f",
+    "lang": "ja",
+    "quantities": [
+     "\u4ecb\u5165"
+    ],
+    "direction": [
+     "\u5186\u5b89"
+    ],
+    "horizon": [
+     "\u9031",
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCHF",
+      "GBPJPY",
+      "EURGBP",
+      "BTCUSD",
+      "Toyota"
+     ],
+     "mentioned": [
+      "\u30e6\u30fc\u30ed\u30c9\u30eb",
+      "\u30dd\u30f3\u30c9\u30c9\u30eb",
+      "\u30c9\u30eb\u5186",
+      "\u8c6a\u30c9\u30eb",
+      "\u30b9\u30a4\u30b9\u30d5\u30e9\u30f3",
+      "\u30dd\u30f3\u30c9\u5186",
+      "\u30e6\u30fc\u30ed\u30dd\u30f3\u30c9",
+      "\u30d3\u30c3\u30c8\u30b3\u30a4\u30f3",
+      "\u30c8\u30e8\u30bf"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities",
+      "\u70ba\u66ff\u4ecb\u5165: policy: BoJ / MoF intervention -> JPY",
+      "\u6295\u4fe1: flow: Japanese outbound investment -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "1d4c8e0b0896"
+   },
+   {
+    "claim": "\u300d \u7b2c26\u56de\u300c\u63d0\u4f9b\u3055\u308c\u3066\u3044\u308b\u30d2\u30f3\u30c8\u3092\u7121\u8996\u3059\u308b\u3053\u3068\u3092\u3001\u3084\u3063\u3066\u306f\u3044\u3051\u306a\u3044\u300d \u3010\u3084\u3063\u3066\u306f\u3044\u3051\u306a\u3044\u3053\u308c\u3060\u3051\u306e\u7406\u7531\u3011\u7b2c25\u56de\u300c\u91cd\u8981\u30a4\u30d9\u30f3\u30c8\u524d\u306b\u30dd\u30b8\u30b7\u30e7\u30f3\u3092\u53d6\u3063\u3066\u306f\u3044\u3051\u306a\u3044\u300d \u3010\u3084\u3063\u3066\u306f\u3044\u3051\u306a\u3044\u3053\u308c\u3060\u3051\u306e\u7406\u7531\u3011\u7b2c24\u56de\u300c12\u6708\u306b\u30c8\u30ec\u30fc\u30c9\u3092\u3084\u3063\u3066\u306f\u3044\u3051\u306a\u3044\u300d \u3010\u3084\u3063\u3066\u306f\u3044\u3051\u306a\u3044\u3053\u308c\u3060\u3051\u306e\u7406\u7531\u3011\u7b2c23\u56de\u300c\u30b9\u30b1\u30b8\u30e5\u30fc\u30eb\u3092\u898b\u306a\u3044\u3067\u53d6\u5f15\u3092\u3084\u3063\u3066\u306f\u3044\u3051\u306a\u3044\u2026\u5148\u9031\u306a\u305c\u5927\u304d\u304f\u52d5\u3044\u305f\u304b\u300d \u3010\u3084\u3063\u3066\u306f\u3044\u3051\u306a\u3044\u3053\u308c\u3060\u3051\u306e\u7406\u7531\u3011\u7b2c22\u56de\u300c\u91d1\u5229\u4e0a\u6607\uff1d\u901a\u8ca8\u8cb7\u3044\u3092\u3084\u3063\u3066\u306f\u3044\u3051\u306a\u3044\u300d \u3010\u3084\u3063\u3066\u306f\u3044\u3051\u306a\u3044\u3053\u308c\u3060\u3051\u306e\u7406\u7531\u3011\u7b2c21\u56de\u300cFOMC\u2026\u4e57\u308a\u9045\u308c\u306a\u3044\uff01",
+    "lang": "ja",
+    "quantities": [
+     "\u91d1",
+     "fomc"
+    ],
+    "direction": [
+     "\u8cb7\u3044",
+     "\u4e0a\u6607"
+    ],
+    "horizon": [
+     "\u9031",
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "730962d75b89"
+   }
+  ],
+  "n_claims": 5
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Inside the Russell Reconstitution: Getting Tactical on Volatility, Options and Trading Opportunities",
+  "url": "https://futures.anthonycrudele.com/podcast/481/",
+  "published": "2026-09-16T22:13:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a98ad2221d468cebd0d9",
+  "host": "futures.anthonycrudele.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algo Nation",
+  "url": "https://d2t.link/AlgoNation",
+  "published": "2026-09-16T22:13:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6b8a4b299916b4a6aac1",
+  "host": "d2t.link",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Search &#x27;Algorithm&#x27; on etymonline",
+  "url": "https://www.etymonline.com/search?q=Algorithm",
+  "published": "2026-09-16T22:13:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.etymonline.com/download/app"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f50f46f80ee1380c7b51",
+  "host": "www.etymonline.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "algoritme \u2013 Store norske leksikon",
+  "url": "https://snl.no/algoritme",
+  "published": "2026-09-16T22:13:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory"
+  ],
+  "confidence": 0.35,
+  "lang": "no",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "369f1e6054a3ea6f4511",
+  "host": "snl.no",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Newest &#39;algorithms&#39; Questions - Computer Science Stack Exchange",
+  "url": "https://cs.stackexchange.com/tags/algorithms",
+  "published": "2026-09-16T22:14:03+00:00",
+  "symbols": [
+   "XAGUSD",
+   "USDTRY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "03ca7bb506a497180bc8",
+  "host": "cs.stackexchange.com",
+  "claims": [
+   {
+    "claim": "Newest 'algorithms' Questions - Computer Science Stack Exchange Skip to main content 184 communities for the curious Computer Science is part of Stack Overflow\u2019s open communities: specialist spaces where curiosity is welcome, knowledge is shared freely, and the best answers rise to the top.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "rise"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAGUSD",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "silver",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b993af236277"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Newest &#39;algorithms&#39; Questions - TeX - LaTeX Stack Exchange",
+  "url": "https://tex.stackexchange.com/tags/algorithms",
+  "published": "2026-09-16T22:14:05+00:00",
+  "symbols": [
+   "USDKRW",
+   "USDTRY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5c29a6f374c06e06267b",
+  "host": "tex.stackexchange.com",
+  "claims": [
+   {
+    "claim": "Newest 'algorithms' Questions - TeX - LaTeX Stack Exchange Skip to main content 184 communities for the curious TeX - LaTeX is part of Stack Overflow\u2019s open communities: specialist spaces where curiosity is welcome, knowledge is shared freely, and the best answers rise to the top.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "rise"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDKRW",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "won",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "4995e55a9db3"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cultureel Woordenboek - Wiskunde ~ algoritme",
+  "url": "https://www.cultureelwoordenboek.nl/wiskunde/algoritme",
+  "published": "2026-09-16T22:14:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "nl",
+  "endpoints": [
+   "https://www.cultureelwoordenboek.nl/navigatie/images/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "586c693380e7a13a0a3b",
+  "host": "www.cultureelwoordenboek.nl",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Definition:Algorithm - ProofWiki",
+  "url": "https://proofwiki.org/wiki/Definition%3AAlgorithm",
+  "published": "2026-09-16T22:14:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "aeb191f5bc6c8dd55961",
+  "host": "proofwiki.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "https://hackernoon.com/founder-interviews-lucas-liew-of-algotrading101-250a58b50e34",
+  "url": "https://hackernoon.com/founder-interviews-lucas-liew-of-algotrading101-250a58b50e34",
+  "published": "2026-09-16T22:14:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "471582841c25bfe20113",
+  "host": "hackernoon.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Art of Computer Programming, The: Volume 1: Fundamental Algorithms, 3rd Edition | InformIT",
+  "url": "https://www.informit.com/store/art-of-computer-programming-volume-1-fundamental-algorithms-9780201896831",
+  "published": "2026-09-16T22:14:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "68f43f335ab0cc81c7ce",
+  "host": "www.informit.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Learn Algorithmic Trading &#38; Python | Investopedia-Recommended Course",
+  "url": "http://b.link/algotrading101_blog_to_course",
+  "published": "2026-09-16T22:14:13+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "inventory",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.filepicker.io/api/file/17HniYF8TFymzWNN35Vc"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "86ae36a1940d6e0863a7",
+  "host": "b.link",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "The Definitive Glossary of Higher Math Jargon | Math Vault",
+  "url": "https://mathvault.ca/math-glossary/",
+  "published": "2026-09-16T22:14:21+00:00",
+  "symbols": [
+   "US2000"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "carry",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "26ffecfa1aad0ca67373",
+  "host": "mathvault.ca",
+  "claims": [
+   {
+    "claim": "By using terms such as sufficiently large, sufficiently negative, sufficient small and sufficiently close, it is possible to rephrase many definitions in analysis (e.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US2000"
+     ],
+     "mentioned": [
+      "russell"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "3d70c2b85c85"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "algoritmo | Definici\u00f3n | Diccionario de la lengua espa\u00f1ola | RAE - ASALE",
+  "url": "http://buscon.rae.es/draeI/SrvltGUIBusUsual?TIPO_HTML=2&TIPO_BUS=3&LEMA=algoritmo",
+  "published": "2026-09-16T22:14:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [
+   "http://buscon.rae.es/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "fcd99a4f74a09698fd36",
+  "host": "buscon.rae.es",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "algoritmas - Visuotin\u0117 lietuvi\u0173 enciklopedija",
+  "url": "https://www.vle.lt/straipsnis/algoritmas/",
+  "published": "2026-09-16T22:14:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "lt",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "696e87878d4bdeea4116",
+  "host": "www.vle.lt",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithms and Data Structures",
+  "url": "http://www.softpanorama.org/Algorithms/index.shtml",
+  "published": "2026-09-16T22:14:38+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "MN",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "breakout",
+   "carry",
+   "flow",
+   "gap",
+   "inventory",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "http://blog.i-no.de/archives/2008/05/08/index.html#e2008-05-08T16_35_13.txt",
+   "http://tukaani.org/xz/xz-file-format.txt",
+   "http://www.7-zip.org/history.txt",
+   "http://epaperpress.com/sortsearch/download/code.zip",
+   "http://www-cs-faculty.stanford.edu/~knuth/fasc0a.ps.gz",
+   "http://www-cs-faculty.stanford.edu/~knuth/fasc0b.ps.gz",
+   "http://www-cs-faculty.stanford.edu/~knuth/fasc0c.ps.gz",
+   "http://www-cs-faculty.stanford.edu/~knuth/fasc1a.ps.gz",
+   "http://www-cs-faculty.stanford.edu/~knuth/fasc2a.ps.gz",
+   "http://www-cs-faculty.stanford.edu/~knuth/fasc2b.ps.gz",
+   "http://www-cs-faculty.stanford.edu/~knuth/fasc3a.ps.gz",
+   "http://www-cs-faculty.stanford.edu/~knuth/fasc3b.ps.gz",
+   "http://www-cs-faculty.stanford.edu/~knuth/fasc4a.ps.gz",
+   "http://www-cs-faculty.stanford.edu/~knuth/fasc4b.ps.gz",
+   "http://www.math.tau.ac.il/~rshamir/atga/archive/atga.ps.gz",
+   "http://www.math.tau.ac.il/~rshamir/atga/archive/lec0.ps.gz",
+   "http://www.math.tau.ac.il/~rshamir/atga/archive/lec1.ps.gz",
+   "http://www.tezcat.com/~cosine/pub/AVLTree/AVLTree.tar.gz",
+   "http://www.webglimpse.org/pubs/suffix.txt",
+   "http://epaperpress.com/sortsearch/download/sortsearch.pdf",
+   "http://link.springer.de/series/lncs/",
+   "http://developer.gnome.org/doc/API/glib/glib-doubly-linked-lists.html"
+  ],
+  "n_endpoints": 22,
+  "vault_sha": "7cdc53fce37bda5f633c",
+  "host": "www.softpanorama.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "ALGORITHM | English meaning - Cambridge Dictionary",
+  "url": "https://dictionary.cambridge.org/dictionary/english/algorithm",
+  "published": "2026-09-16T22:14:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8566b84768bcc7b198ec",
+  "host": "dictionary.cambridge.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "What is an algorithm? | TechTarget",
+  "url": "https://www.techtarget.com/whatis/definition/algorithm",
+  "published": "2026-09-16T22:14:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "94847f9c84b35165a606",
+  "host": "www.techtarget.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Chambers &#8211; Search Chambers",
+  "url": "http://chambers.co.uk/search/?query=algorithm&title=21st",
+  "published": "2026-09-16T22:14:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.35,
+  "lang": "en-GB",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a867bbe62a6e71b67d7f",
+  "host": "chambers.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Gratis woordenboek | Van Dale Uitgevers",
+  "url": "http://www.vandale.nl/opzoeken/woordenboek/?zoekwoord=algoritme",
+  "published": "2026-09-16T22:14:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "nl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e7dabf9bc1e3154e3e23",
+  "host": "www.vandale.nl",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Is uw gemeente al overgenomen door algoritmen? - Sociale Vraagstukken",
+  "url": "https://www.socialevraagstukken.nl/is-uw-gemeente-al-overgenomen-door-algoritmen/",
+  "published": "2026-09-16T22:14:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.35,
+  "lang": "nl-NL",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "96bd14147bf13c702484",
+  "host": "www.socialevraagstukken.nl",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "ahead (Time Series Forecasting with uncertainty quantification) gets a lot faster to install: most dependencies are now optional | R-bloggers",
+  "url": "https://www.r-bloggers.com/2026/09/ahead-time-series-forecasting-with-uncertainty-quantification-gets-a-lot-faster-to-install-most-dependencies-are-now-optional/",
+  "published": "2026-09-16T22:14:44+00:00",
+  "symbols": [],
+  "timeframes": [
+   "D1",
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "82d5aad62009f243a718",
+  "host": "www.r-bloggers.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Wall Street Currents: Quant Currents",
+  "url": "http://www.wallstreetcurrents.com/p/quant-currents.html",
+  "published": "2026-09-16T22:14:46+00:00",
+  "symbols": [
+   "US500",
+   "US30",
+   "US2000"
+  ],
+  "timeframes": [
+   "DAILY",
+   "H1",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "night_session",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "50391a82703b49e5dfea",
+  "host": "www.wallstreetcurrents.com",
+  "claims": [
+   {
+    "claim": "Quant Blog Currents Quantified Strategies Short The Close, Cover At The Next Open (Strategy) - Short the close, cover at the next open.",
+    "lang": "en",
+    "quantities": [
+     "close",
+     "open"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "close",
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "US30",
+      "US2000"
+     ],
+     "mentioned": [
+      "spy",
+      "dow",
+      "russell",
+      "ars"
+     ],
+     "transfer_only": [
+      "ars->fx (LatAm not quoted)"
+     ],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "9a2716d27916"
+   },
+   {
+    "claim": "On that day, the VIX rallied from",
+    "lang": "en",
+    "quantities": [
+     "vix"
+    ],
+    "direction": [
+     "rallied"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "US30",
+      "US2000"
+     ],
+     "mentioned": [
+      "spy",
+      "dow",
+      "russell",
+      "ars"
+     ],
+     "transfer_only": [
+      "ars->fx (LatAm not quoted)"
+     ],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "39b0e5c81ca3"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Forum IEX | Van beleggers voor beleggers",
+  "url": "https://www.iex.nl/forum/",
+  "published": "2026-09-16T22:14:47+00:00",
+  "symbols": [
+   "US30",
+   "XAUUSD",
+   "XTIUSD",
+   "US500",
+   "FRA40",
+   "NETH25"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "nl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3bd45ce2a0ab0a9b111e",
+  "host": "www.iex.nl",
+  "claims": [
+   {
+    "claim": "Markt Monitor Inloggen Word abonnee \u2715 Met IEX wordt u een betere belegger en verhoogt u het rendement op uw beleggingen Vanaf 13,95 per maand leest u dagelijks onze professionele aandelenanalyses en kooptips.",
+    "lang": "nl",
+    "quantities": [
+     "rendement"
+    ],
+    "direction": [
+     "koop"
+    ],
+    "horizon": [
+     "maand",
+     "dagelijks"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "US500",
+      "US30",
+      "FRA40",
+      "NETH25"
+     ],
+     "mentioned": [
+      "goud",
+      "olie",
+      "sp500",
+      "us30",
+      "cac40",
+      "aex"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "0aaf8d27eccc"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trading Educators",
+  "url": "http://www.tradingeducators.com/",
+  "published": "2026-09-16T22:14:49+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "mean_reversion",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en-gb",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "443bb1dffd4ace4d0599",
+  "host": "www.tradingeducators.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Definitive Guide to Position Sizing Strategies",
+  "url": "http://www.vantharp.com/products/definitive-guide-position-sizing.asp",
+  "published": "2026-09-16T22:14:53+00:00",
+  "symbols": [
+   "XAUUSD",
+   "USDTRY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "correlation",
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fd1d01cbbd860796c2ef",
+  "host": "www.vantharp.com",
+  "claims": [
+   {
+    "claim": "Start Here Workshops Courses Bundles Books Toggle child menu Expand Van Tharp\u2019s Books Best Trading Books Best Non-Trading Books Resources Toggle child menu Expand Free ebook Tools YouTube Tharp Think Concepts Blog Glossary Newsletter Archive View All Resources Toggle Menu Close Search for: Search Van Tharp\u2019s Definitive Guide to Position Sizing Strategies $ 249.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "expand"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "gold",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "4a13ffa148f1"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Newest &#39;algorithm&#39; Questions - Stack Overflow",
+  "url": "https://stackoverflow.com/tags/algorithm",
+  "published": "2026-09-16T22:14:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f9e2d97bc48288738346",
+  "host": "stackoverflow.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\u30b4\u30fc\u30eb\u30c9FX\u3092\u653b\u7565\u3059\u308b\u305f\u3081\u306e\u30d5\u30a1\u30f3\u30c0\u30e1\u30f3\u30bf\u30eb\u5206\u6790\u3068\u30c6\u30af\u30cb\u30ab\u30eb\u5206\u6790\uff5c\u3075\u3041\u3058\u304a",
+  "url": "https://note.com/porepore26/n/n36ea3e41e80b",
+  "published": "2026-09-16T22:14:57+00:00",
+  "symbols": [
+   "XAUUSD",
+   "UST10Y",
+   "XAGUSD",
+   "US30"
+  ],
+  "timeframes": [
+   "\u65e5\u8db3",
+   "\u9031\u8db3"
+  ],
+  "patterns": [
+   "correlation",
+   "policy",
+   "positioning",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "ja-JP",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3a66e26931959d57c644",
+  "host": "note.com",
+  "claims": [
+   {
+    "claim": "\u6559\u79d1\u66f8\u901a\u308a\u3067\u8a00\u3046\u3068\u30b4\u30fc\u30eb\u30c9\u3068\u7c73\u91d1\u5229\u306f\u9006\u76f8\u95a2\u306e\u95a2\u4fc2\u3067\u3059\u304c\u30012024\u5e742\u6708\u9803\u304b\u3089\u9006\u76f8\u95a2\u3092\u7121\u8996\u3057\u3066\u3001\u30b4\u30fc\u30eb\u30c9\u304c\u6025\u9a30\u3057\u3066\u3044\u307e\u3059\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u30b4\u30fc\u30eb\u30c9",
+     "\u91d1",
+     "\u76f8\u95a2",
+     "\u9006\u76f8\u95a2"
+    ],
+    "direction": [
+     "\u6025\u9a30"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u30b4\u30fc\u30eb\u30c9"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e95e1c9dc5d6"
+   },
+   {
+    "claim": "MACD\u30a4\u30f3\u30b8\u30b1\u30fc\u30bf\u30fc\u65e5\u8db3\u304b\u3089\u3001\u8d64\u8272\u306e\u80cc\u666f\u3067\u3042\u308b\u671f\u9593(2024\u5e742\u6708\u982d\u9803)\u3067\u30de\u30a4\u30ca\u30b9\u570f\u3078\u306e\u30c7\u30c3\u30c9\u30af\u30ed\u30b9\u4ee5\u964d\u304b\u3089\u7c73\u56fd\u50b5\u58f2\u308a\u2192\u30b4\u30fc\u30eb\u30c9\u8cb7\u3044\u306b\u52d5\u3044\u3066\u3044\u308b\u3053\u3068\u304c\u5206\u304b\u308a\u307e\u3059\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u30b4\u30fc\u30eb\u30c9",
+     "macd",
+     "\u56fd\u50b5"
+    ],
+    "direction": [
+     "\u8cb7\u3044",
+     "\u58f2\u308a"
+    ],
+    "horizon": [
+     "\u5206",
+     "\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "\u30b4\u30fc\u30eb\u30c9",
+      "\u7c73\u56fd\u50b5"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "502853998ec9"
+   },
+   {
+    "claim": "XAU/USD\u9031\u8db3\u3068COT\u30ec\u30dd\u30fc\u30c8 2024\u5e74\u4ee5\u964d\u306e\u30b4\u30fc\u30eb\u30c9\u6295\u6a5f\u7b4b\u30dd\u30b8\u30b7\u30e7\u30f3-\u30d2\u30fc\u30c8\u30de\u30c3\u30d7 \u307e\u305f\u672a\u6c7a\u6e08\u5efa\u7389OI\uff08Open Interest\uff09\u306e\u63a8\u79fb\u3068\u51fa\u6765\u9ad8\u3092\u898b\u308b\u3053\u3068\u3067\u3001\u6295\u6a5f\u7b4b\u306e\u52d5\u5411\u306e\u5f62\u8de1\u3092\u8fbf\u308b\u3053\u3068\u304c\u3067\u304d\u307e\u3059\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u51fa\u6765\u9ad8",
+     "\u5efa\u7389",
+     "\u30b4\u30fc\u30eb\u30c9",
+     "cot"
+    ],
+    "direction": [
+     "\u6c7a\u6e08"
+    ],
+    "horizon": [
+     "\u9031",
+     "\u8db3"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "xau"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "b956e4cc95dd"
+   },
+   {
+    "claim": "\u6843\u82724/26~6/7 \u4fa1\u683c-\u51fa\u6765\u9ad8-OI\u306e\u5e02\u5834\u30bb\u30f3\u30c1\u30e1\u30f3\u30c8\u306e\u95a2\u4fc2\u6027 2024/6/7\u306e\u30d8\u30c3\u30c9\u30e9\u30a4\u30f3\u3067\u3001\u4e2d\u56fd\u4e2d\u592e\u9280\u884c\u306b\u3088\u308b\u91d1\u8cfc\u5165\u304c\u7d9a\u3044\u3066\u3044\u305f\u304c5\u6708\u306b\u8cfc\u5165\u304c\u306a\u304b\u3063\u305f\u3068\u306e\u5831\u9053\u304c\u3042\u308a\u3001\u6295\u6a5f\u7b4b\u8cb7\u3044\u30dd\u30b8\u30b7\u30e7\u30f3\u306e\u6c7a\u6e08\u304c\u5165\u308a\u4e0b\u843d\u306b\u8ee2\u3058\u305f\u601d\u308f\u308c\u307e\u3059\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u51fa\u6765\u9ad8",
+     "\u91d1",
+     "\u9280"
+    ],
+    "direction": [
+     "\u8cb7\u3044",
+     "\u4e0b\u843d"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "US30",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "\u30b4\u30fc\u30eb\u30c9",
+      "\u30b7\u30eb\u30d0\u30fc",
+      "\u30c0\u30a6",
+      "\u7c73\u56fd\u50b5"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "EURUSD",
+      "USDJPY",
+      "USDINR"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "\u70ba\u66ff\u4ecb\u5165: policy: BoJ / MoF intervention -> JPY",
+      "rbi: policy: RBI -> INR",
+      "\u91d1etf: fund flows: gold ETFs -> gold"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "bebd5935baa3"
+   },
+   {
+    "claim": "\u76f4\u8fd1\u306e\u5229\u4e0b\u3052\u671f\u9593\uff08\u7dd1\u30b7\u30e3\u30c9\u30fc\uff09\u3067\u306f\u3001\u30b4\u30fc\u30eb\u30c9\u306f\u4e0a\u6607\u3057\u3066\u3044\u308b\u3053\u3068\u304c\u5206\u304b\u308a\u307e\u3059\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u30b4\u30fc\u30eb\u30c9"
+    ],
+    "direction": [
+     "\u4e0a\u6607"
+    ],
+    "horizon": [
+     "\u5206"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u30b4\u30fc\u30eb\u30c9"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "99b24f9a38c0"
+   },
+   {
+    "claim": "\u5b63\u7bc0\u6027\u304b\u3089\u306f\u3001\u3056\u3063\u304f\u308a\u306811\u6708\u306f\u8abf\u6574\uff5e\u30ec\u30f3\u30b8\u3092\u523b\u3093\u3067\u304b\u308912\u6708\u304b\u3089\u5e74\u672b\u306b\u304b\u3051\u3066\u4e0a\u6607\u3059\u308b\u30d1\u30bf\u30fc\u30f3\u304c\u591a\u3044\u3067\u3059\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u5b63\u7bc0",
+     "\u5b63\u7bc0\u6027",
+     "\u30ec\u30f3\u30b8"
+    ],
+    "direction": [
+     "\u4e0a\u6607"
+    ],
+    "horizon": [
+     "\u6708",
+     "\u5e74\u672b"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "US30",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "\u30b4\u30fc\u30eb\u30c9",
+      "\u30b7\u30eb\u30d0\u30fc",
+      "\u30c0\u30a6",
+      "\u7c73\u56fd\u50b5"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "EURUSD",
+      "USDJPY",
+      "USDINR"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "\u70ba\u66ff\u4ecb\u5165: policy: BoJ / MoF intervention -> JPY",
+      "rbi: policy: RBI -> INR",
+      "\u91d1etf: fund flows: gold ETFs -> gold"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "09f1e95f71c0"
+   },
+   {
+    "claim": "\ud83d\udd34open interest \u3068 volume \u307e\u305f\u5f37\u3044\u30c8\u30ec\u30f3\u30c9\u304c\u51fa\u3066\u3044\u308b\u3068\u304d\u3001OI\u306f\u4e0a\u6607\u3057\u307e\u3059\u306e\u3067\u3001\u30b4\u30fc\u30eb\u30c9\u306eOI\u306b\u3082\u6ce8\u76ee\u3057\u3066\u3044\u307e\u3059\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u30c8\u30ec\u30f3\u30c9",
+     "\u30b4\u30fc\u30eb\u30c9",
+     "open interest",
+     "volume"
+    ],
+    "direction": [
+     "\u4e0a\u6607"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u30b4\u30fc\u30eb\u30c9"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "fb7741e90843"
+   },
+   {
+    "claim": "\u65e5\u8db3\u30ec\u30d9\u30eb\u3067OI\u4e0a\u6607\u3068\u51fa\u6765\u9ad8\u4e0a\u6607\u306b\u6ce8\u76ee\u3057\u3066\u307f\u305f\u3044\u3067\u3059\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u51fa\u6765\u9ad8"
+    ],
+    "direction": [
+     "\u4e0a\u6607"
+    ],
+    "horizon": [
+     "\u65e5",
+     "\u8db3"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "US30",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "\u30b4\u30fc\u30eb\u30c9",
+      "\u30b7\u30eb\u30d0\u30fc",
+      "\u30c0\u30a6",
+      "\u7c73\u56fd\u50b5"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "EURUSD",
+      "USDJPY",
+      "USDINR"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "\u70ba\u66ff\u4ecb\u5165: policy: BoJ / MoF intervention -> JPY",
+      "rbi: policy: RBI -> INR",
+      "\u91d1etf: fund flows: gold ETFs -> gold"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "34ee28aade92"
+   }
+  ],
+  "n_claims": 8
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Organization of the Petroleum Exporting Countries",
+  "url": "https://www.opec.org/pr-detail/29-05-dec-2024.html",
+  "published": "2026-09-16T22:14:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ce341460833701ccd197",
+  "host": "www.opec.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "IMHO BEST LINKS FROM QUANTOCRACY FOR THE WEEK 28 SEP 15 \u2014 4 OCT 15 | Quantitative Investor Blog",
+  "url": "https://quantinvestblog.wordpress.com/2015/10/05/imho-best-links-from-quantocracy-for-the-week-28-sep-15-4-oct-15/",
+  "published": "2026-09-16T22:14:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "ru-RU",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "43390c144e26a1ebd0dc",
+  "host": "quantinvestblog.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]
