@@ -124,6 +124,55 @@ def backfill_behaviour(registry_path: Path, *, apply: bool) -> int:
     return changed
 
 
+def legacy_identity(key: str, row: dict) -> dict | None:
+    """The identity a legacy clock key names: `SYM.window[.STATE]` is the hunt16 lane's
+    session_range_breakout at that window, LONG unless the row says otherwise. A key with the
+    modern dotted family form is left to the engine's own enrolment."""
+    parts = str(key).split(".")
+    if len(parts) < 2 or "=" in key or "#" in key:
+        return None
+    sym, window = parts[0], parts[1]
+    if not sym.isupper() or not window:
+        return None
+    ident = {"symbol": sym, "selector": window, "family": "session_range_breakout",
+             "side": str(row.get("side") or "LONG").upper(), "params": {}}
+    if len(parts) > 2:
+        ident["state"] = parts[2]
+    return ident
+
+
+def freeze_unfrozen(registry: dict, *, apply: bool) -> int:
+    """Freeze every running main-lane clock that has no frozen identity. Returns the count."""
+    shadow_path = DESK / "reports" / "shadow" / "shadow_state.json"
+    try:
+        shadow = json.loads(shadow_path.read_text("utf-8"))
+    except (OSError, ValueError):
+        return 0
+    frozen = {k for k, v in (registry.get("sleeves") or {}).items()
+              if isinstance(v, dict) and v.get("identity")}
+    n = 0
+    for key, row in sorted(shadow.items()):
+        if not isinstance(row, dict) or key in frozen:
+            continue
+        if str(row.get("status") or "").upper() not in ("ACTIVE", "PROMOTION CANDIDATE",
+                                                        "PROMOTION_CANDIDATE"):
+            continue
+        ident = legacy_identity(key, row)
+        if ident is None:
+            continue
+        n += 1
+        if apply:
+            try:
+                reg.freeze(key, ident, forward_start=row.get("forward_start"))
+                print(f"  FROZEN {key}: {ident['symbol']} {ident['selector']} "
+                      f"{ident['family']} {ident['side']} forward_start={row.get('forward_start')}")
+            except Exception as exc:
+                print(f"  FREEZE FAILED {key}: {type(exc).__name__}: {exc}")
+        else:
+            print(f"  would freeze {key}")
+    return n
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--apply", action="store_true",
@@ -142,6 +191,17 @@ def main() -> int:
               f"-- a prose edit can no longer stop them")
         registry = json.loads((DESK / "data" / "sleeve_registry.json").read_text("utf-8"))
 
+    # NO RUNNING CLOCK WITHOUT A FROZEN IDENTITY (principal 2026-09-16: "no forward lane should
+    # ever be inactive; the fixer makes all reachable and working"). The reconciler reported 46
+    # ACTIVE clocks with no frozen identity -- legacy hunt16 keys enrolled before the registry
+    # froze anything -- and left them standing ("freezing is the engine's job"). It is this
+    # healer's job now: freeze each one with the identity its key names and the forward_start
+    # the clock already carries. `freeze` is idempotent, so a frozen clock is never re-based.
+    frozen_now = freeze_unfrozen(registry, apply=args.apply)
+    if frozen_now:
+        print(f"identity healer: froze {frozen_now} running clock(s) that had no identity"
+              f"{'' if args.apply else ' (dry run -- pass --apply)'}")
+        registry = json.loads((DESK / "data" / "sleeve_registry.json").read_text("utf-8"))
     broken = {k: v for k, v in (registry.get("sleeves") or {}).items()
               if str(v.get("status") or "").upper() == "IDENTITY_BROKEN"}
     if not broken:
