@@ -37,7 +37,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -283,6 +283,72 @@ def _last_closed(frame: Any) -> Any:
 
 
 # ------------------------------------------------------------------ sizing
+#: The MT5 desk's own live record for the same mechanism on the same symbol -- the roster with
+#: its FADE flags and the live ledger with real R. The E8 book is built from certificates alone,
+#: so a mechanism the MT5 lane has measured 0-for-9 live kept full risk here (measured 2026-09-16:
+#: the `discovered` EURCHF/AUDCAD/AUDNZD sleeves, 22% wins on MT5, were E8's entire order flow).
+MT5_SLEEVES = DESK / "data" / "sleeves.json"
+MT5_LEDGER = DESK / "data" / "live_ledger.jsonl"
+TWIN_TRAIL_DAYS = 45
+TWIN_FADE_N = 5
+TWIN_FADE_R = 0.25
+TWIN_FADE_FACTOR = 0.5
+
+
+def twin_fade(symbol: str, family: str, *, now: datetime | None = None) -> tuple[float, str]:
+    """0.5 when the MT5 twins of this (symbol, family) are faded or measured doing bad, else 1.0.
+
+    Two readings, either one fades: (1) any MT5 roster row for the same symbol and family carries
+    `decay_faded` (the decay monitor's own verdict on real R); (2) the pooled trailing live record
+    of those twins has no win in its first TWIN_FADE_N trades or loses >= TWIN_FADE_R per trade.
+    Two-sided: the multiplier returns to 1.0 the moment the twins are unfaded and the record
+    turns. Unreadable files read as 1.0 with the reason -- absence is not a verdict.
+    """
+    stem = f"{str(symbol).lower()}_{str(family).lower()}"
+    if not stem.strip("_"):
+        return 1.0, "twin fade 1.00: no symbol/family"
+    faded: list[str] = []
+    try:
+        doc = json.loads(MT5_SLEEVES.read_text("utf-8"))
+        rows = doc.get("sleeves") if isinstance(doc, dict) else doc
+        rows = list(rows.values()) if isinstance(rows, dict) else (rows or [])
+        for r in rows:
+            if isinstance(r, dict) and str(r.get("name", "")).lower().startswith(stem)                     and r.get("decay_faded"):
+                faded.append(str(r.get("name"))[:30])
+    except (OSError, ValueError):
+        pass
+    rs: list[float] = []
+    try:
+        cutoff = (now or datetime.now(tz=UTC)) - timedelta(days=TWIN_TRAIL_DAYS)
+        for ln in MT5_LEDGER.read_text("utf-8").splitlines():
+            try:
+                r = json.loads(ln)
+            except ValueError:
+                continue
+            if not str(r.get("sleeve", "")).lower().startswith(stem):
+                continue
+            if not isinstance(r.get("r_multiple"), (int, float)):
+                continue
+            try:
+                ts = datetime.fromisoformat(str(r.get("time", "")).replace("Z", "+00:00"))
+                ts = ts if ts.tzinfo else ts.replace(tzinfo=UTC)
+            except ValueError:
+                ts = None
+            if ts is None or ts >= cutoff:
+                rs.append(float(r["r_multiple"]))
+    except OSError:
+        pass
+    n, wins = len(rs), sum(1 for x in rs if x > 0)
+    exp = (sum(rs) / n) if n else 0.0
+    if faded:
+        return TWIN_FADE_FACTOR, (f"twin fade {TWIN_FADE_FACTOR:.2f}: MT5 twin(s) faded by the decay "
+                                  f"monitor ({', '.join(faded[:3])}); pooled live n={n} exp={exp:+.2f}R")
+    if n >= TWIN_FADE_N and (wins == 0 or exp <= -TWIN_FADE_R):
+        return TWIN_FADE_FACTOR, (f"twin fade {TWIN_FADE_FACTOR:.2f}: MT5 twins {wins}-for-{n} live, "
+                                  f"exp={exp:+.2f}R (bar n>={TWIN_FADE_N}, no wins or exp<=-{TWIN_FADE_R}R)")
+    return 1.0, f"twin fade 1.00: MT5 twins n={n} wins={wins} exp={exp:+.2f}R"
+
+
 def lot_for_risk(venue: Any, symbol: str, stop_dist: float, risk_usd: float) -> tuple[float, str]:
     """Lot such that a stop-out costs about `risk_usd`, floored at the venue minimum.
 
@@ -563,6 +629,11 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None) -> dict
             _record(row, now, armed)
             continue
         lot, basis = lot_for_risk(venue, sym, stop_dist, risk_usd)
+        # THE MT5 LANE'S LIVE VERDICT ON THE SAME MECHANISM, applied here too (2026-09-16).
+        _fm, _fw = twin_fade(sym, str(fam or ""), now=now)
+        if _fm != 1.0:
+            lot = _quantise(lot * _fm, venue, sym)
+        row["fade_mult"], row["fade_why"] = float(_fm), _fw
         row.update({"side": side, "entry_ref": entry, "stop": float(g.stop),
                     "target": float(g.target), "stop_dist": stop_dist,
                     "lot": lot, "sizing_basis": basis, "bar": str(last_bar)})
