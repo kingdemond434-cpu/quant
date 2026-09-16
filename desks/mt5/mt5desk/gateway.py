@@ -2215,6 +2215,33 @@ def resolve_family_order(st: dict, s: dict, equity: float,
                            f"`side` -- refusing to trade it LONG"}
     if last_bar is None:
         return {"ok": False, "stage": "no_signal_bar", "why": "no signal bar due on these bars"}
+    # SINGLE-POSITION DISCIPLINE, BECAUSE THAT IS WHAT THE CERTIFICATE WAS EARNED UNDER.
+    #
+    # `engine.py` replays every cell with an explicit rule -- `last_exit_idx = -1  # single-
+    # position discipline: no overlapping trades`, and `if i <= last_exit_idx: continue`. A
+    # signal that arrives while the trade is open is SKIPPED in the replay. Every expectancy,
+    # every gate verdict and every certificate this desk holds was measured that way.
+    #
+    # The live lane had no such check, so a sleeve re-entered on every firing bar and stacked.
+    # MEASURED 2026-09-16: 48 open positions, TWENTY-TWO of them EURCHF -- 0.16 lots long and
+    # 0.68 short at the same time, 0.32 lots hedged against itself paying spread twice for zero
+    # exposure -- with margin at 211.79 on 568 equity. That book is not the certified strategy
+    # run larger; it is a different strategy, which is the one thing the family executor refuses
+    # everywhere else it looks.
+    #
+    # THIS IS NOT A RISK REDUCTION AND DOES NOT SHRINK THE BOOK. It makes live match the replay.
+    # The heat the allocator grants is unchanged and is spent on ONE position per sleeve, exactly
+    # as the certificate spends it; breadth still comes from more SLEEVES, which is the only
+    # place it ever came from.
+    _open_now = _sleeve_positions(s["symbol"], name)
+    if _open_now:
+        _lots = sum(float(getattr(p, "volume", 0.0) or 0.0) for p in _open_now)
+        return {"ok": False, "stage": "already_open", "considered": True, "sep": " ",
+                "why": (f"refused: this sleeve already holds {len(_open_now)} position(s) "
+                        f"({_lots:g} lot) on {s['symbol']}; the certificate was earned under "
+                        f"engine.py's single-position discipline (no overlapping trades), so a "
+                        f"second entry trades a strategy the gates never judged"),
+                "mark": False, "last_bar": last_bar}
     srec = (st.get("generic") or {}).get(name) or {}
     step = family_signal_step(closed, last_bar, last_signal_bar=srec.get("last_signal_bar"),
                               want_state=s.get("state"), side=side, family_fn=fam_fn,
