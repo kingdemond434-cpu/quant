@@ -319,6 +319,8 @@ def _fake_mt5(rows: list[dict]) -> SimpleNamespace:
         copy_rates_from_pos=lambda symbol, tf, start, count: rows,
         symbol_info_tick=lambda symbol: SimpleNamespace(bid=1.1100, ask=1.1102),
         symbol_info=lambda symbol: SimpleNamespace(volume_min=0.01, volume_step=0.01),
+        # single-position discipline (2026-09-15) reads the open book before sizing
+        positions_get=lambda *a, **k: [],
         order_send=lambda req: (sent.append(req) or SimpleNamespace(retcode=10009, order=9,
                                                                     comment="done",
                                                                     price=1.1103)),
@@ -368,7 +370,10 @@ def _family_ns(tmp_path: Path, mt5: SimpleNamespace, monkeypatch, *, armed_file:
     # raise NameError inside `<gw>` and report the adapter broken at a line about logging.
     return _exec(("run_family_sleeves", "resolve_family_order", "_family_chart",
                   "_family_constructor", "_family_takes_side", "_family_call_params",
-                  "_sleeve_identity", "unarmed_why"), ns)
+                  "_sleeve_identity", "unarmed_why",
+                  # 2026-09-15/16: single-position discipline, the per-sleeve TTL close, the
+                  # allocator book key and the shared order-comment helper.
+                  "_sleeve_positions", "close_sleeve_positions", "_book_key", "order_comment"), ns)
 
 
 def _run_family(ns: dict, st: dict, sleeves: list[dict], equity: float) -> None:
@@ -466,7 +471,7 @@ def _bracket_book_ns(tmp_path: Path, term: _BracketTerminal) -> dict:
     book = netting.TheoreticalBook(tmp_path / "theoretical_positions.jsonl")
     logs: list[str] = []
     ns = _exec(("_book_bracket_lane", "_closing_fill", "_sleeve_positions", "_book_target",
-                "_book_fill"),
+                "_book_fill", "order_comment"),
                {"mt5": term, "log": logs.append, "_netting_book": lambda: book})
     ns["_book"], ns["_logs"], ns["netting"] = book, logs, netting
     return ns
@@ -714,7 +719,7 @@ def test_the_end_of_day_close_leaves_the_scalp_lane_s_positions_to_their_own_exi
     logs: list[str] = []
     mt5 = _positions_mt5([_pos(1, "DWgold_london_am"), _pos(2, "DWxau_m15_anti_momentum_all"),
                           _pos(3, "DWgold_afternoon")])
-    ns = _exec(("close_positions", "scalp_position_tags"),
+    ns = _exec(("close_positions", "scalp_position_tags", "order_comment"),
                {"mt5": mt5, "log": logs.append, "MAGIC": 1})
     sleeves = [{"name": "gold_london_am", "symbol": "XAUUSD"},
                {"name": "xau_m15_anti_momentum_all", "symbol": "XAUUSD", "exec": "scalp_market"}]
@@ -729,11 +734,11 @@ def test_the_end_of_day_close_leaves_the_scalp_lane_s_positions_to_their_own_exi
 
 
 def test_the_scalp_tag_is_the_lane_s_own_and_only_the_scalp_lane_s() -> None:
-    ns = _exec(("scalp_position_tags",), {})
+    ns = _exec(("scalp_position_tags", "order_comment"), {})
     assert ns["scalp_position_tags"]([{"name": "gold_asia"}, {"name": "x", "exec": "family_market"},
                                       {"exec": "scalp_market"}]) == frozenset()
     tag = ns["scalp_position_tags"]([{"name": "a" * 40, "exec": "scalp_market"}])
-    assert tag == frozenset({("DW" + "a" * 40)[:31]})            # the venue's 31-char comment
+    assert tag == frozenset({("DW" + "a" * 40)[:29]})            # the venue's measured 29-char comment
 
 
 def test_main_scopes_the_daily_close_and_not_the_friday_one() -> None:
@@ -918,7 +923,8 @@ def _main_ns(tmp_path: Path, monkeypatch, mt5: _Terminal, *, paused: bool,
     # nothing -- a green "sends nothing" test that never reached the code it names.
     return _exec(("main", "_past_cancel_hour", "place_bracket", "note_placement",
                   "_rejection_streak_expired", "load_state", "save_state", "now",
-                  "_sleeve_identity", "resolve_pending_bracket", "bracket_lane_lot"), ns)
+                  "_sleeve_identity", "resolve_pending_bracket", "bracket_lane_lot",
+                  "_book_key", "order_comment", "_sleeve_positions", "close_sleeve_positions", "family_position_tags", "scalp_position_tags", "_send_error"), ns)
 
 
 def test_main_with_the_pause_file_present_sends_nothing_and_writes_no_state(

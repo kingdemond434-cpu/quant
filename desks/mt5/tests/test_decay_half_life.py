@@ -170,9 +170,11 @@ def _live_row(name: str, **kw) -> dict:
             "window": "asia", "state": None, "status": "LIVE", "risk_frac": 0.03, **kw}
 
 
-def test_a_promoter_shaped_roster_gets_a_half_life_and_a_successor_hunt_and_no_verdict(desk):
-    """The promoter writes a LIST. The verdict loop reads a DICT and judges none of it -- a
-    standing defect this wave reports and does not touch. The model half reads both."""
+def test_a_promoter_shaped_roster_gets_a_half_life_a_successor_hunt_and_a_verdict(desk):
+    """The promoter writes a LIST. Until 2026-09-16 the verdict loop read a DICT and judged none
+    of it -- measured on the trading box as "0 live sleeve(s)" beside a 21-trade loser. The loop
+    now reads the roster through `roster_rows`, so a promoter-written row is judged like any
+    other, and the model half still reads both shapes."""
     name = "CADJPY.asia"
     desk.roster_list([_live_row(name)])
     before = (desk.root / "sleeves.json").read_bytes()
@@ -184,11 +186,12 @@ def test_a_promoter_shaped_roster_gets_a_half_life_and_a_successor_hunt_and_no_v
     m = out["decay_model"][name]
     assert m["status"] == "MEASURED" and m["half_life_days"] == pytest.approx(HL, abs=0.05)
     assert m["basis"] == "live_ledger" and m["roster_status"] == "LIVE"
-    assert out["verdicts"] == {} and out["actions_taken"] == []        # the loop, unchanged
-    assert out["live_sleeves"] == 0 and out["roster_rows_seen"] == 1
-    assert "LIST" in out["roster_shape_note"] and "NOT changed" in out["roster_shape_note"]
-    assert (desk.root / "sleeves.json").read_bytes() == before, "the model must not edit the roster"
-    assert not (desk.root / "decay_actions.jsonl").exists()
+    assert name in out["verdicts"], "a promoter-written row is judged"
+    assert out["live_sleeves"] == 1 and out["roster_rows_seen"] == 1
+    assert not out["roster_shape_note"], "the LIST shape is no longer a mismatch"
+    if out["verdicts"][name]["verdict"] in ("HEALTHY", "UNMEASURED"):
+        assert (desk.root / "sleeves.json").read_bytes() == before
+        assert out["actions_taken"] == []
     (task,) = out["successor_hunts"]
     assert task["source"] == "decay_monitor" and task["kind"] == "successor_hunt"
     assert task["sleeve"] == name and task["symbol"] == "CADJPY"

@@ -224,6 +224,49 @@ def _judge(scored: Mapping[str, Mapping[str, float]]) -> tuple[bool, str, str]:
             f"(needs > {need:.6f}, margin {MARGIN_FRAC:.0%})", best_name)
 
 
+def held_book_still_wins(scores: Mapping[str, Mapping[str, float]],
+                         margin: float = MARGIN_FRAC) -> tuple[bool, str]:
+    """Does the HELD book (`static_incumbent`) beat the best baseline by the margin, on the
+    worlds a fresh contest was scored on? The same arithmetic as `_judge`, asked of the incumbent.
+
+    WHY THIS QUESTION EXISTS (2026-09-16). The no-trade filter holds the book the desk already
+    runs unless the fresh solve buys more growth than the turnover costs -- correct on its own.
+    But the contest that decides whether the allocator may SIZE was run on the HELD book, solved
+    on older worlds, against baselines computed fresh on today's. A held book drifts, loses the
+    contest, and the gateway falls back to `robust_kelly` -- a full rebalance to a book the
+    allocator never chose -- while the fresh solve that would have won sat uncontested in
+    `proposed_book`. Measured: the proof failed on 261 of 318 passes and the dynamic weights
+    were "withheld" every time. Holding a book that has lost its certificate is not a hold; it
+    is a rebalance to the baseline wearing the no-trade filter's clothes.
+    """
+    inc = scores.get("static_incumbent")
+    if not isinstance(inc, Mapping):
+        return False, "no static_incumbent was scored"
+    try:
+        held = float(inc.get("robust_score", float("nan")))
+    except (TypeError, ValueError):
+        return False, "static_incumbent carries no robust score"
+    if not math.isfinite(held):
+        return False, f"held book has no finite robust score ({held!r})"
+    rivals: dict[str, float] = {}
+    for k, v in scores.items():
+        if k in ("dynamic", "static_incumbent") or not isinstance(v, Mapping):
+            continue
+        try:
+            s = float(v.get("robust_score", float("nan")))
+        except (TypeError, ValueError):
+            continue
+        if math.isfinite(s):
+            rivals[k] = s
+    if not rivals:
+        return True, "no finite baseline to lose to"
+    best_name = max(rivals, key=lambda k: rivals[k])
+    best = rivals[best_name]
+    need = best + abs(best) * margin
+    return (held > need,
+            f"held {held:.6f} vs best baseline {best_name} {best:.6f} (needs > {need:.6f})")
+
+
 def contest(ev: Sequence[SleeveEvidence], dynamic: Mapping[str, float],
             incumbent: Mapping[str, float] | None = None, *,
             cfg: WorldConfig | None = None,

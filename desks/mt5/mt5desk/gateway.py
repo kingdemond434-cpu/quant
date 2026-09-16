@@ -30,6 +30,7 @@ from __future__ import annotations
 import contextlib
 import hashlib
 import json
+import os
 import re
 import sys
 import time
@@ -1157,12 +1158,55 @@ def cancel_pending(st: dict, symbol: str) -> None:
             f"confirmed absent from orders_get")
 
 
+#: A stop closer than this many spreads to the entry is inside the quote's own noise. Three:
+#: the entry pays one spread, and a stop two more away is still hit by a normal widening at a
+#: session open without any move in the mid.
+MIN_STOP_SPREAD_MULT = float(os.environ.get("MIN_STOP_SPREAD_MULT", "3.0"))
+
+
+def floor_stop_to_spread(plan: object, tick: object) -> tuple[object, str]:
+    """Scale a scalp plan's stop AND target so the stop is at least MIN_STOP_SPREAD_MULT
+    spreads from the entry. Returns (plan, note); the plan is unchanged when already outside."""
+    try:
+        spread = float(getattr(tick, "ask", 0.0)) - float(getattr(tick, "bid", 0.0))
+        dist = float(getattr(plan, "stop_dist", 0.0))
+        side = int(getattr(plan, "side", 0))
+        entry = float(getattr(plan, "entry_ref", 0.0))
+        target = float(getattr(plan, "target", 0.0))
+    except (TypeError, ValueError):
+        return plan, "stop floor: plan unreadable, left as planned"
+    if not (spread > 0.0 and dist > 0.0 and side in (1, -1)):
+        return plan, "stop floor: no spread or no stop to compare, left as planned"
+    floor = MIN_STOP_SPREAD_MULT * spread
+    if dist >= floor:
+        return plan, f"stop floor: {dist:.5g} >= {floor:.5g} ({MIN_STOP_SPREAD_MULT:g}x spread)"
+    k = floor / dist
+    try:
+        from dataclasses import replace as _replace
+        new = _replace(plan, stop=entry - side * floor,
+                       target=entry + side * abs(target - entry) * k,
+                       stop_dist=floor)
+    except Exception as exc:
+        return plan, f"stop floor: could not rescale the plan ({type(exc).__name__}); left as planned"
+    return new, (f"stop floor: {dist:.5g} -> {floor:.5g} ({MIN_STOP_SPREAD_MULT:g}x spread "
+                 f"{spread:.5g}); target scaled x{k:.2f} to keep the certified R:R")
+
+
 def scalp_position_tags(sleeves: list[dict]) -> frozenset[str]:
     """The order-comment tags of the scalp lane's positions: the ones the gold book's end-of-day
     close must leave alone. Every lane tags its positions `DW<sleeve name>` (`place_bracket`,
     `run_scalp_sleeves`), so the tag is the lane."""
     return frozenset(order_comment(s["name"]) for s in sleeves
                      if s.get("exec") == "scalp_market" and s.get("name"))
+
+
+def family_position_tags(sleeves: list[dict]) -> frozenset[str]:
+    """The order-comment tags of the family lane's positions -- the second lane the gold book's
+    end-of-day close must leave alone. Same tag, same reason as `scalp_position_tags`: a family
+    sleeve's exit is its certified `ttl_bars`, run by the TTL housekeeping in
+    `run_family_sleeves`, never the 19:30 UTC backstop."""
+    return frozenset(order_comment(s["name"]) for s in sleeves
+                     if s.get("exec") == "family_market" and s.get("name"))
 
 
 def close_positions(st: dict, symbol: str, keep_tags: frozenset[str] = frozenset()) -> None:
@@ -2809,6 +2853,16 @@ def resolve_scalp_order(st: dict, s: dict, equity: float) -> dict:
     if plan is None:
         return {"ok": False, "stage": "no_signal", "forming": forming, "mark": True,
                 "why": "no signal on this bar"}
+    # THE STOP MUST SIT OUTSIDE THE SPREAD'S REACH (2026-09-16). An M5 ATR on EURGBP is a pip
+    # or two, so the plan's stop landed 1.8 pips from entry and the lot sizer -- correctly --
+    # inverted that into 0.27 lots on a 560 EUR account. A stop inside two spreads is hit by the
+    # spread itself: measured 24h to 07:00 UTC, `eurgbp_discovered_asia_p_8e` was stopped three
+    # times for -11.87 EUR, each exit a slippage loss past a stop the quote could reach without
+    # the price moving. The stop and target are scaled by the SAME factor so the certified
+    # reward-to-risk geometry is unchanged, and the risk fraction is unchanged; only the lot
+    # falls, in proportion. Not a cap and not a veto -- the order goes, at a distance the venue
+    # can honour.
+    plan, _floor_note = floor_stop_to_spread(plan, tick)
     try:
         lot = promoted_lot(equity, n_live, plan.stop_dist, s["symbol"], sym, s.get("risk_frac"),
                            s.get("decay_faded"),
@@ -3648,7 +3702,16 @@ def main() -> None:
     if hour >= CLOSE_HOUR:
         # The gold book's day ends here; the scalp lane's positions run to their own time exit
         # (see `close_positions`). Friday's weekend close below is every lane's.
-        keep = scalp_position_tags(sleeves)
+        #
+        # THE FAMILY LANE RUNS TO ITS OWN TTL TOO (2026-09-16). `keep` protected only the scalp
+        # lane, so from 19:30 UTC until midnight every pass force-closed every FAMILY-lane
+        # position on any symbol a bracket sleeve trades -- including the ones the family loop
+        # had opened seconds earlier in the same pass. Measured over the 24h to 07:00 UTC: 34
+        # positions closed within 120 s of opening, every one an expert close with no stop and
+        # no target tag, -20.60 EUR of pure spread and commission (EURCHF, AUDUSD, CHFNOK at
+        # 21:11 and 21:16 UTC alike). The certified behaviour of a family sleeve is its own
+        # `ttl_bars` exit; the gold windows' day-trade backstop is not part of its certificate.
+        keep = scalp_position_tags(sleeves) | family_position_tags(sleeves)
         for s in sleeves:
             close_positions(st, s["symbol"], keep_tags=keep)
     if tnow.dayofweek == 4 and hour >= CLOSE_HOUR:  # Friday: weekend close, EVERY lane

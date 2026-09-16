@@ -452,12 +452,20 @@ def main(write_queue: bool = True) -> int:
     now = datetime.now(tz=UTC).isoformat(timespec="seconds")
     source, source_why = source_state()
     doc = _read_json(SLEEVES_FILE, {})
-    sleeves = doc.get("sleeves") if isinstance(doc, dict) else None
-    if not isinstance(sleeves, dict):
-        sleeves = doc if isinstance(doc, dict) else {}
+    # THE VERDICT LOOP READS THE ROSTER IN THE SHAPE THE PROMOTER WRITES (2026-09-16). It read a
+    # DICT keyed by name; `promoter.save_sleeves` writes `{"sleeves": [row, ...]}`, a LIST. On
+    # every promoter-written roster the loop therefore judged NO row -- `roster_rows` had named
+    # the mismatch in the artifact since 2026-09-08 and the demotion path stayed unarmed. Measured
+    # 2026-09-16 on the trading box: "decay monitor: 0 live sleeve(s) [READ], 0 flagged" while
+    # `xau_m15_anti_breakout` sat at 21 live trades, 31% wins and -39 EUR on the day, and five
+    # EURCHF sleeves were 0-for-27. `roster_rows` reads both shapes; the rows it returns are the
+    # roster's own dict objects, so a FADE flag written here lands in the file, and a RETIRE
+    # removes the row from whichever container holds it.
+    sleeves = roster_rows(doc)
     report, actions, changed = {}, [], False
 
-    live = {k: v for k, v in sleeves.items() if isinstance(v, dict)}
+    live = {k: v for k, v in sleeves.items()
+            if isinstance(v, dict) and str(v.get("status") or "LIVE").upper() == "LIVE"}
     for name, row in live.items():
         s = stats([float(t["r_multiple"]) for t in sleeve_trades(name)])
         v, why = verdict(s)
@@ -496,7 +504,15 @@ def main(write_queue: bool = True) -> int:
             changed = True
 
     if changed:
-        if isinstance(doc, dict) and "sleeves" in doc:
+        # Write back in the file's OWN shape: the list the promoter writes keeps every row that
+        # was not retired (edited rows are the same objects, so FADE flags are already on them);
+        # a dict-shaped roster is rebuilt from the surviving rows.
+        if isinstance(doc, dict) and isinstance(doc.get("sleeves"), list):
+            doc["sleeves"] = [r for r in doc["sleeves"]
+                              if not (isinstance(r, dict) and r.get("name")
+                                      and str(r["name"]) not in sleeves)]
+            SLEEVES_FILE.write_text(json.dumps(doc, indent=2), "utf-8")
+        elif isinstance(doc, dict) and isinstance(doc.get("sleeves"), dict):
             doc["sleeves"] = sleeves
             SLEEVES_FILE.write_text(json.dumps(doc, indent=2), "utf-8")
         else:
