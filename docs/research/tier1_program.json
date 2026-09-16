@@ -3756,22 +3756,25 @@
    "item": "Market world-model laboratory: heterogeneous simulated participants grounded in real information, used as an intervention lab (CPI -> rates -> USD -> dealer inventory -> XAU liquidity -> residual) whose hypotheses go through the real gauntlet; synthetic never gets promotion authority",
    "domain": "Q",
    "phase": "Q",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "desks/mt5/research/world_model.py",
-    "desks/mt5/research/market_ecology.py",
-    "libs/research/participant_phenotype.py",
-    "desks/mt5/side_channels/economic_constraint_graph.py",
+    "desks/mt5/research/world_lab.py",
+    "desks/mt5/tests/test_world_lab.py",
     "desks/mt5/research/world_causal_graph.py",
-    "libs/portfolio/multiperiod_worlds.py"
+    "desks/mt5/research/market_ecology.py",
+    "desks/mt5/research/world_model.py",
+    "libs/research/participant_phenotype.py",
+    "desks/mt5/side_channels/economic_constraint_graph.py"
    ],
-   "scheduled_by": "MT5-FrontierAudit (world_model, market_ecology), hourly_cycle:causal_graph",
-   "artifact": "desks/mt5/reports/WORLD_MODEL.json",
-   "consumer": "none: reports only",
-   "gap": "MEASURED 2026-09-16: world_model and market_ecology are observational estimators; no simulator, no do() operator, no hypothesis generated from a counterfactual world state; economic_constraint_graph is on no desk clock.",
+   "scheduled_by": "hourly_cycle:world_lab (macro department), hourly_cycle:causal_graph",
+   "artifact": "desks/mt5/reports/WORLD_LAB.json",
+   "consumer": "data/intelligence/world_lab/ -> miner_candidate_compiler (authority ZERO; the gauntlet judges on real history)",
+   "gap": "LANDED 2026-09-17: a linear-Gaussian structural impulse response over the desk's causal graph (76 nodes / 174 arcs) with measured participant operators and a do() operator; six scenario chains; three hypotheses donated and compiled EXACT_RECIPE. The graph admits 0 arcs today, so every number rests on the shrunk RECORDED_NOT_ADMITTED set and says so.",
    "next_step": "world_lab.py: an intervention operator over the admitted causal graph (do(node=shock) propagated along edges with lag distributions and betas, participant responses from market_ecology's measured behaviours), producing predicted residual effects per instrument and donating them as `world_lab` hypotheses (authority ZERO by source tag; the gauntlet judges on real history); economic_constraint_graph on the heavy plan.",
-   "landed": []
+   "landed": [
+    "wave-4 2026-09-17"
+   ]
   },
   {
    "id": "Q5",
@@ -3802,21 +3805,26 @@
    "item": "Formal causal discovery lab: PC, GES, NOTEARS, PCMCI/temporal methods with economic restrictions on PIT data; edge classes OBSERVATIONAL / PLAUSIBLE_MECHANISM / INTERVENTION_SUPPORTED; chains conditioned on positioning/liquidity/regime; LLMs never invent edges",
    "domain": "Q",
    "phase": "Q",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
+    "desks/mt5/research/causal_lab.py",
+    "desks/mt5/tests/test_causal_lab.py",
     "desks/mt5/research/causal_discovery.py",
+    "libs/research/natural_experiment.py",
+    "libs/research/mechanism_ontology.py",
     "desks/mt5/research/world_causal_graph.py",
     "libs/research/causal_graph.py",
-    "libs/research/information_flow.py",
-    "libs/research/natural_experiment.py"
+    "libs/research/information_flow.py"
    ],
-   "scheduled_by": "hourly_cycle:causal_graph, MT5-FrontierAudit (causal_discovery)",
-   "artifact": "desks/mt5/reports/CAUSAL_DISCOVERY.json",
-   "consumer": "state_vector_build conditioning hints",
-   "gap": "MEASURED 2026-09-16: PC-style conditional independence plus Granger/transfer entropy exist; no GES, NOTEARS or PCMCI; the edge vocabulary encodes measurement status (PLAUSIBLE_UNMEASURED/ADMITTED/RECORDED_NOT_ADMITTED/STRUCTURAL), not evidence class, so a difference-in-differences natural experiment can never promote an edge to INTERVENTION_SUPPORTED.",
+   "scheduled_by": "hourly_cycle:causal_lab (macro department), hourly_cycle:causal_graph",
+   "artifact": "desks/mt5/reports/CAUSAL_LAB.json",
+   "consumer": "world_lab (edges with classes); state_vector_build hints",
+   "gap": "LANDED 2026-09-17: PCMCI-style lagged discovery with one Benjamini-Hochberg charge at q=0.05, a NOTEARS-lite contemporaneous DAG (scale-free score; 9/9 seeds recover planted colliders), economic restrictions before testing, edge classes OBSERVATIONAL / PLAUSIBLE_MECHANISM / INTERVENTION_SUPPORTED (difference-in-differences on release days), regime stability per edge; the ECB fixing artifact and axis crowding are screened. fred.json holds 0 series, so macro coverage is thin until that ingest is repaired.",
    "next_step": "causal_lab.py (wave 4, building): PCMCI-style lagged discovery with FDR over the PIT-aligned daily panel (bars + axes), economic restrictions (no edge into a release, no future lag), a NOTEARS-lite continuous optimisation for the contemporaneous DAG, edge classes attached from evidence (observational test, mechanism_ontology plausibility, natural_experiment DiD -> INTERVENTION_SUPPORTED), chains published; hourly heavy leg.",
-   "landed": []
+   "landed": [
+    "wave-4 2026-09-17"
+   ]
   },
   {
    "id": "Q7",
