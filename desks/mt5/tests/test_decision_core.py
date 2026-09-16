@@ -285,10 +285,28 @@ def test_the_books_fraction_reaches_the_venue_unshrunk(monkeypatch) -> None:
     assert lot(1000.0, 3, 10.0, "EURUSD", None, 0.017, None) == pytest.approx(0.75)
     assert lot(1000.0, 3, 10.0, "EURUSD", None, 0.5, None, from_book=True) == pytest.approx(5.0)
     assert lot(1000.0, 3, 10.0, "EURUSD", None, 0.04, True, from_book=True) == pytest.approx(2.0)
-    assert lot(1000.0, 3, 10.0, "EURUSD", None, 0.0, None, from_book=True) == 0.0
-    assert lot(1000.0, 3, 10.0, "EURUSD", None, None, None, from_book=True) == 0.0
-    assert lot(1000.0, 3, 10.0, "EURUSD", None, "x", None, from_book=True) == 0.0
-    assert lot(1000.0, 3, 10.0, "EURUSD", None, -0.01, None, from_book=True) == 0.0
+    # THE PRINCIPAL REVERSED THIS ON 2026-09-12: "all sleeves must trade at least 0.01 lots
+    # overriding the risk per trade cuz thats broker minimum no matter what". A rostered sleeve
+    # the allocator zeroed used to return 0.0 and be skipped at three gateway sites; it now
+    # trades the symbol's own venue minimum. The allocator's zero still travels in the sizing
+    # basis, so the record still says the optimiser declined -- what changed is the lot.
+    assert lot(1000.0, 3, 10.0, "EURUSD", None, 0.0, None,
+               from_book=True) == dc.venue_min_lot("EURUSD")
+    # AN UNPARSEABLE FRACTION TRADES THE MINIMUM TOO, under the same 2026-09-12 order. A
+    # missing h_i is a DATA defect rather than an allocator decision, and the two are not the
+    # same thing -- but "no matter what" covers both, and a live rostered sleeve that silently
+    # stops trading because a number was malformed is the failure the order exists to end. The
+    # distinction survives in the sizing BASIS, which says whether the allocator declined or the
+    # fraction was unreadable, so a data defect stays visible as one.
+    assert lot(1000.0, 3, 10.0, "EURUSD", None, None, None,
+               from_book=True) == dc.venue_min_lot("EURUSD")
+    # A GARBAGE FRACTION AND A NEGATIVE ONE LAND IN THE SAME PLACE, and deliberately so: both
+    # are "this sleeve has no usable positive fraction", which is exactly the case the order
+    # covers. A negative heat is not an instruction to go short a smaller amount.
+    assert lot(1000.0, 3, 10.0, "EURUSD", None, "x", None,
+               from_book=True) == dc.venue_min_lot("EURUSD")
+    assert lot(1000.0, 3, 10.0, "EURUSD", None, -0.01, None,
+               from_book=True) == dc.venue_min_lot("EURUSD")
 
 
 def test_promoted_lot_end_to_end_prices_in_the_sleeves_own_units() -> None:
@@ -496,11 +514,22 @@ def test_cap_by_heat_budgets_from_the_allocator_verdict_when_given() -> None:
 
 
 def test_cap_by_heat_orders_by_the_allocators_marginal_value() -> None:
+    """RANK DECIDES THE ORDER; the floor mandate decides how far down the order funding reaches.
+
+    This test pins the ORDERING, which is what its name is about: the allocator's marginal value
+    puts `new` ahead of `old`, and registry order stands in when no rank is given. It used to pin
+    the CUT as well -- exactly one admitted leg -- and that stopped being right when the floor
+    fill landed (2026-09-11). Two 0.15 legs against a derived 20% budget leave the book at 15%
+    with a fundable leg deferred, and a 15% book under a 20% floor is the idle capital the
+    principal's standing order forbids: "trading should never be idle ... capital should never be
+    idle ever". So the fill takes the next leg IN RANK ORDER and the book lands at 30%, inside
+    MAX_HEAT_CEILING. The property that survives is the one being tested -- who goes first.
+    """
     sl = [{"name": "old", "q_charge": 0.15}, {"name": "new", "q_charge": 0.15}]
     admitted, _ = dc.cap_by_heat(sl, EQ, rank={"new": 0.02, "old": 0.01})
-    assert [s["name"] for s in admitted] == ["new"]
+    assert [s["name"] for s in admitted] == ["new", "old"]
     admitted, _ = dc.cap_by_heat(sl, EQ)
-    assert [s["name"] for s in admitted] == ["old"]
+    assert [s["name"] for s in admitted] == ["old", "new"]
 
 
 def test_the_slide_is_a_tolerance_and_the_ceiling_is_absolute() -> None:
@@ -718,12 +747,22 @@ def test_sleeve_from_comment_and_closed_trade_r() -> None:
     assert dc.sleeve_from_comment("DWgold_asia") == "gold_asia"
     assert dc.sleeve_from_comment("", "UNATTRIBUTED") == "UNATTRIBUTED"
     assert dc.sleeve_from_comment("broker rewrote") == "broker rewrote"
-    assert dc.closed_trade_r(100.0, 90.0, True, 100.0, 500.0) == (pytest.approx(10.0),
+    # Risk is |entry - stop| x contract x volume in the caller's units; R is P&L over it.
+    assert dc.closed_trade_r(100.0, 90.0, True, 100.0, 500.0) == (pytest.approx(1000.0),
                                                                     pytest.approx(0.5))
-    assert dc.closed_trade_r(100.0, 110.0, False, 100.0, -1000.0) == (pytest.approx(10.0),
+    assert dc.closed_trade_r(100.0, 110.0, False, 100.0, -1000.0) == (pytest.approx(1000.0),
                                                                         pytest.approx(-1.0))
     assert dc.closed_trade_r(0.0, 90.0, True, 100.0, 5.0) == (0.0, 0.0)
-    assert dc.closed_trade_r(100.0, 110.0, True, 100.0, 5.0) == (pytest.approx(-10.0), 0.0)
+    # THE SIDE IS NOT RE-DERIVED (2026-09-16): the closing deal's type is the opposite of the
+    # position's, and taking it as the side zeroed every R the ledger ever recorded. A stop is
+    # on the loss side by construction, so the distance is unsigned whichever flag is passed.
+    assert dc.closed_trade_r(100.0, 110.0, True, 100.0, 5.0) == (pytest.approx(1000.0),
+                                                                   pytest.approx(0.005))
+    # Volume and the venue's tick value put the risk in the account currency for the position's
+    # own size: 10 points / 0.01 tick x 1.0 per tick per lot x 0.02 lots = 20; P&L 5 -> 0.25R.
+    assert dc.closed_trade_r(100.0, 90.0, True, 100.0, 5.0, volume=0.02, tick_value=1.0,
+                             tick_size=0.01) == (pytest.approx(20.0), pytest.approx(0.25))
+    assert dc.closed_trade_r(100.0, 90.0, True, 100.0, 5.0, volume=0.0) == (0.0, 0.0)
 
 
 # ================================================================== execution context and gates

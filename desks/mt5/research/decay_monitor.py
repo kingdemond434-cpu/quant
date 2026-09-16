@@ -84,6 +84,9 @@ N_MIN_VERDICT = 20
 #: reads as "doing bad" once it is reached.
 EARLY_FADE_N = 6
 EARLY_FADE_R = 0.25
+#: The sleeve-name stem the ledger can carry: `gateway.COMMENT_MAX` (29, measured on the venue)
+#: minus the "DW" tag. Mirrored, not imported: this organ runs without the terminal bindings.
+LEDGER_NAME_MAX = 27
 DD_HARD_R = -25.0
 #: Trailing window: judge the sleeve the market currently sees, not its lifetime average.
 TRAIL_DAYS = 45
@@ -133,8 +136,13 @@ def sleeve_trades(name: str) -> list[dict]:
             r = json.loads(line)
         except ValueError:
             continue
-        if r.get("sleeve") != name or "r_multiple" not in r:
+        # THE LEDGER NAMES A SLEEVE BY ITS ORDER COMMENT, which the venue truncates to 29 chars
+        # ("DW" + 27): a roster name longer than that never joined and was judged on zero trades
+        # (L0346, join by derived identity). Match the roster name and its 27-char stem.
+        if r.get("sleeve") not in (name, name[:LEDGER_NAME_MAX]) or "r_multiple" not in r:
             continue
+        if not isinstance(r.get("r_multiple"), (int, float)):
+            continue                                       # unreconstructible R: not a zero
         try:
             ts = datetime.fromisoformat(str(r.get("time", "")).replace("Z", "+00:00"))
         except ValueError:
