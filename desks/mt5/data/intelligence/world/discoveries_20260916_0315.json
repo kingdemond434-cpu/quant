@@ -1,0 +1,1288 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Titouro\u00f9 evit \"Algoritm\" - Wikipedia",
+  "url": "https://br.wikipedia.org/w/index.php?title=Algoritm&action=info",
+  "published": "2026-09-16T03:13:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "br",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "91650c79bbfb1c51a94b",
+  "host": "br.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Trading Systems | Metals Mine",
+  "url": "https://www.metalsmine.com/forum/71-trading-systems?order=desc&sort=replycount",
+  "published": "2026-09-16T03:13:52+00:00",
+  "symbols": [
+   "XAUUSD",
+   "US30",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "1H",
+   "4H",
+   "H1",
+   "H4",
+   "INTRADAY",
+   "M15",
+   "M5",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "orderflow",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.metalsmine.com/manifests/manifest-mm.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "1563fe3758dc387abc7c",
+  "host": "www.metalsmine.com",
+  "claims": [
+   {
+    "claim": "87 J1mm's Intraday Trend follow Strategy auricforecas Dec 9 , 2019 Dec 9 , 2019 The strategy seems to evolve in something else.",
+    "lang": "en",
+    "quantities": [
+     "trend"
+    ],
+    "direction": [
+     "follow"
+    ],
+    "horizon": [
+     "intraday"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "US30",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "gold",
+      "dow",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "4e8ca4a230d8"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Nova Volume Trading System | Metals Mine",
+  "url": "https://www.metalsmine.com/thread/1311538-nova-volume-trading-system",
+  "published": "2026-09-16T03:13:53+00:00",
+  "symbols": [
+   "EURUSD",
+   "XAUUSD",
+   "XNGUSD",
+   "USDKRW"
+  ],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.metalsmine.com/manifests/manifest-mm.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "2b8caf892e2b537062ed",
+  "host": "www.metalsmine.com",
+  "claims": [
+   {
+    "claim": "The Sell Entry Model Volume Confirmation (Bearish): Look for a red bar crossing below 0 on the Nova Volume Indicator\u2014this signals selling pressure.",
+    "lang": "en",
+    "quantities": [
+     "volume"
+    ],
+    "direction": [
+     "sell",
+     "bearish"
+    ],
+    "horizon": [
+     "bar"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XNGUSD",
+      "EURUSD",
+      "USDKRW"
+     ],
+     "mentioned": [
+      "gold",
+      "ttf",
+      "eurusd",
+      "won"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "4a26afcd1b45"
+   },
+   {
+    "claim": "Wait for it to change to GREEN (Bullish) or Red (Bearish) and watch the volume bars.",
+    "lang": "en",
+    "quantities": [
+     "volume"
+    ],
+    "direction": [
+     "bullish",
+     "bearish"
+    ],
+    "horizon": [
+     "bars"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XNGUSD",
+      "EURUSD",
+      "USDKRW"
+     ],
+     "mentioned": [
+      "gold",
+      "ttf",
+      "eurusd",
+      "won"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "4a01179544f2"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "4 + 1 (Metals) strategy | Metals Mine",
+  "url": "https://www.metalsmine.com/thread/922895-4-1-metals-strategy",
+  "published": "2026-09-16T03:13:55+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "H1",
+   "H4",
+   "M15",
+   "M5"
+  ],
+  "patterns": [
+   "correlation",
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.metalsmine.com/manifests/manifest-mm.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f681a85cfdfc8adac1a9",
+  "host": "www.metalsmine.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Gold Trading Strategy \ufffd New York Open Range Breakout Scalping | Metals Mine",
+  "url": "https://www.metalsmine.com/thread/1385208-gold-trading-strategy-new-york-open-range",
+  "published": "2026-09-16T03:14:01+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "1M",
+   "30M",
+   "5M",
+   "DAILY"
+  ],
+  "patterns": [
+   "auction",
+   "breakout",
+   "gap",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "policy",
+   "positioning",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.metalsmine.com/manifests/manifest-mm.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "e0e5ffc5fe1225eb8bcd",
+  "host": "www.metalsmine.com",
+  "claims": [
+   {
+    "claim": "Every trade is recorded only to measure one thing: Did I follow the rules of the NY Open Range Breakout model?",
+    "lang": "en",
+    "quantities": [
+     "open",
+     "range",
+     "breakout"
+    ],
+    "direction": [
+     "follow"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "13be0cf7fb14"
+   },
+   {
+    "claim": "2nd Trade: didnt pullback to FVG but pull backed & printed bearish engulf supporting session momentum.",
+    "lang": "en",
+    "quantities": [
+     "pullback",
+     "session",
+     "momentum"
+    ],
+    "direction": [
+     "bearish"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "1b68474312ef"
+   },
+   {
+    "claim": "I tried London open but with lower win rate.",
+    "lang": "en",
+    "quantities": [
+     "open",
+     "rate"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "dba7b4d0098f"
+   },
+   {
+    "claim": "You will notice, it broke and close below range confirming bearish bias.",
+    "lang": "en",
+    "quantities": [
+     "close",
+     "range"
+    ],
+    "direction": [
+     "bearish"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "afcc4850a371"
+   }
+  ],
+  "n_claims": 4
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "EA Studio &amp; StrategyQuant - Real Systems &amp; Live Experience | Metals Mine",
+  "url": "https://www.metalsmine.com/thread/1390964-ea-studio-strategyquant-real-systems",
+  "published": "2026-09-16T03:14:05+00:00",
+  "symbols": [
+   "USDJPY",
+   "XAUUSD",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "1M",
+   "DAILY",
+   "M1",
+   "M30",
+   "M5"
+  ],
+  "patterns": [
+   "flow",
+   "orderflow",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.metalsmine.com/manifests/manifest-mm.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f31c306123e3e09ead06",
+  "host": "www.metalsmine.com",
+  "claims": [
+   {
+    "claim": "The curve structure in EA Studio and the curve structure in the MT4 tick-data backtest follow the same overall behavior.",
+    "lang": "en",
+    "quantities": [
+     "curve"
+    ],
+    "direction": [
+     "follow"
+    ],
+    "horizon": [
+     "tick"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "USDJPY",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "xauusd",
+      "usdjpy",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "bff2ec7931aa"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Stats Edge Evening Note - 9/14/26",
+  "url": "https://letters.statsedgetrading.com/p/stats-edge-evening-note-91426",
+  "published": "2026-09-16T03:14:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6d4a93da7ead70031eca",
+  "host": "letters.statsedgetrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u6570\u636e - \u56fd\u5bb6\u7edf\u8ba1\u5c40",
+  "url": "https://www.stats.gov.cn/sj/",
+  "published": "2026-09-16T03:14:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "80acda22500b22c8ba21",
+  "host": "www.stats.gov.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Inicio | Rava Burs\u00e1til",
+  "url": "https://www.rava.com/",
+  "published": "2026-09-16T03:14:24+00:00",
+  "symbols": [
+   "NVIDIA"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "82bce4f2bdea49cd43f4",
+  "host": "www.rava.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Media movil | Rava Burs\u00e1til",
+  "url": "https://www.rava.com/indicadores/media-movil",
+  "published": "2026-09-16T03:14:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a64ced642a3f6d271d1c",
+  "host": "www.rava.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Macd | Rava Burs\u00e1til",
+  "url": "https://www.rava.com/indicadores/macd",
+  "published": "2026-09-16T03:14:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a3fe85d8a7ca9bffee16",
+  "host": "www.rava.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Estocastico | Rava Burs\u00e1til",
+  "url": "https://www.rava.com/indicadores/estocastico",
+  "published": "2026-09-16T03:14:31+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1d00645c52c5813a5af6",
+  "host": "www.rava.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Home - World Cup Trading Championships",
+  "url": "https://www.worldcupchampionships.com/",
+  "published": "2026-09-16T03:14:35+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "night_session"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a0a5b30b56457bf95af7",
+  "host": "www.worldcupchampionships.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Enter The World Cup Trading Championships - 2025 - World Cup Trading Championships",
+  "url": "https://www.worldcupchampionships.com/enter-the-world-cup-trading-championships",
+  "published": "2026-09-16T03:14:37+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ff9835427dae68f4e652",
+  "host": "www.worldcupchampionships.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Conformal Prediction in Quantitative Finance - VertoxQuant",
+  "url": "https://www.vertoxquant.com/p/conformal-prediction",
+  "published": "2026-09-16T03:14:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "55ada0c8e83396c5caff",
+  "host": "www.vertoxquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Fast Option Pricing using Fourier Transform - VertoxQuant",
+  "url": "https://www.vertoxquant.com/p/fast-option-pricing-using-fourier",
+  "published": "2026-09-16T03:14:41+00:00",
+  "symbols": [],
+  "timeframes": [
+   "MN"
+  ],
+  "patterns": [
+   "basis",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "15bdd8d3ac019cd8825a",
+  "host": "www.vertoxquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "The Effective Number of Tested Strategies - VertoxQuant",
+  "url": "https://www.vertoxquant.com/p/the-effective-number-of-tested-strategies",
+  "published": "2026-09-16T03:14:43+00:00",
+  "symbols": [
+   "XTIUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://download.ssrn.com/19/05/30/ssrn_id2460551_code87814.pdf?response-content-disposition=inline&amp;X-Amz-Security-Token=IQoJb3JpZ2luX2VjEJn%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIHWbneth2mI6u1rupjNkDmsC24r7YhYtKqwzBrCdrBu1AiEA0WU%2B4iCvwSVB5ONW7ALjmPrdNS6r5OrCqrozPtwM%2FQIqvQUIYRAEGgwzMDg0NzUzMDEyNTciDCm525KNaW%2F%2FvbobXiqaBbM%2F10wzVAYLOFWs%2FBdHXoSs6z5TXKBRa4bQHQy6BIHTYZVfS6SLO4RbFKq5vL90d4VompUznee4RwIw3OsdFEJI2pEHmfDfklheeL8yN1MV8f4DR%2FRVhgvD2%2BPW3PPDL5HVERXsgHm9zDsPg7kkNifeAJBJEq%2FAvLsXA5j0Rib7JO3LWuDD6p0hCGU80x9345MhtxoyeZqCp5xndHj9UPhQzihMHPCRTH3KF3BFCCCB9OU3NPk7LNRcKGFo79dmnBdYnwqG7vhmLKp79MSxpeCQ%2BwEHl%2BKWF5tSlsVUOcQ8BwpbXT%2BfV8JQ6AM1MWAwy8XBAQ26FyrzzyqRsMuztXukttYEqyoybKKfzlF3bsXFk9fwF%2BWIMXm7C7SGxjC6NlGGgOQlE%2BI3jrbtm3zWMhMOeZK8ECyHe693vpzCW3fBsDhgi4GV%2BZIdQQKd%2BCoUoEHYQazMy6wku2sj9gG8PkNwIuLSLLIkcLdzCE1cmk6xZlHSEGGHKPZSpw4vHsw5m4xKnZOiquQlJGyHeIvvrl9yIjLVWdfInTlvvIp%2BK5CBvgVeP4Cx%2FKTUL4NmDx%2FB8ho5hfl2So6vKLFCy6B56b1oVoDPcCV5tMnRMk8yjy591i84Ulf2C5zphuEs4IYOLbGuTI9eqnUD57ifgOxnb%2B305GtO0nv6giMHgywu5O6pPH6IYH6vdxLxOnbbU8pjOad10Q53Wb2jQ39%2B0MZhbaprdcfinrz2wBoZZC6CmWsZzsbj5apKFAkGVOXXrmB4tihcRCtGsDfkD5P%2BpYJeZX%2FjqWR4VyqN4tFHvtjmXKP6C%2BMzpt5aej2KSZBR7po%2BCFm4%2BxkUl4DcucaL3fMJN4bNj9SOCakqON8ObGeWgsStFK9c0eFuv2hSSzC355fQBjqxAQoG21%2Ba57fWqweZ7Kb8BR1WXwhe7bE20M0VSwGZL5HZdsLE0mio22kgEM5%2BxQbVyKClcKNBkL%2B5RuwOmF5jJsxmf4N09LHgKWodjBVIMD549%2BnebRGLp%2BxbQNtfg9kNKJO%2FzmJFGzyqU%2B07e0H7cvz%2Fl3mAsntZUcRyWCxYsOc0OS03J88Xj9%2FFrqVA3nWoCL9tftQpH6CjtMFLjBAoVp7UrXYJdpxhA49yGnCh5PyVEA%3D%3D&amp;X-Amz-Algorithm=AWS4-HMAC-SHA256&amp;X-Amz-Date=20260514T164544Z&amp;X-Amz-SignedHeaders=host&amp;X-Amz-Expires=300&amp;X-Amz-Credential=ASIAUPUUPRWES6RLE2DD%2F20260514%2Fus-east-1%2Fs3%2Faws4_request&amp;X-Amz-Signature=83dcbd6f904a7443203ec090e39e9feccf55d87f98e12cc0830d61f80c432d91&amp;abstractId=2460551"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "cd2bcd032138512fe203",
+  "host": "www.vertoxquant.com",
+  "claims": [
+   {
+    "claim": "gg/X7TsxKNbXg Quick reminder that I\u2019m now open for consulting and short-term engagements.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD"
+     ],
+     "mentioned": [
+      "brent"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "e840b20d524e"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Backtests Lie: Building a Stress-Test Framework for ML Trading Signals",
+  "url": "https://www.vertoxquant.com/p/backtests-lie",
+  "published": "2026-09-16T03:14:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "cabae78dc9325dd8b5f7",
+  "host": "www.vertoxquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Looking Inside The Black Box - VertoxQuant",
+  "url": "https://www.vertoxquant.com/p/looking-inside-the-black-box",
+  "published": "2026-09-16T03:14:47+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "correlation",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "813f4a268ad06c86737d",
+  "host": "www.vertoxquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u00bfPor qu\u00e9 el Sol peruano es una de las monedas m\u00e1s fuertes de Latinoam\u00e9rica? | Te lo cuento f\u00e1cil | blogs | gestion.pe",
+  "url": "https://blogs.gestion.pe/te-lo-cuento-facil/2022/10/por-que-el-sol-peruano-es-una-de-las-monedas-mas-fuertes-de-latinoamerica.html",
+  "published": "2026-09-16T03:14:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5bff32cd34a109290254",
+  "host": "blogs.gestion.pe",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Invertir en la BVL: 6 errores comunes que te alejan de la ganancia | Invirtiendo a futuro | blogs | gestion.pe",
+  "url": "https://blogs.gestion.pe/invirtiendo-a-futuro/2025/07/invertir-en-la-bvl-6-errores-comunes-que-te-alejan-de-la-ganancia.html",
+  "published": "2026-09-16T03:14:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "741fb1eca6c0f066e7b1",
+  "host": "blogs.gestion.pe",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "GenAI for Trading and Asset Management by Ernest Chan | PDF",
+  "url": "https://www.slideshare.net/slideshow/genai-for-trading-and-asset-management-by-ernest-chan/277806725",
+  "published": "2026-09-16T03:14:55+00:00",
+  "symbols": [
+   "US500",
+   "NVIDIA"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "inventory",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1569438c908aaa704727",
+  "host": "www.slideshare.net",
+  "claims": [
+   {
+    "claim": "by QuantInsti 19 slides 758 views PDF How to automate an options day trading strategy by QuantInsti 15 slides 2.",
+    "lang": "en",
+    "quantities": [
+     "options"
+    ],
+    "direction": [
+     "slides"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "spx",
+      "nvidia"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "fc8c43d9e884"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Code a Strategy on Pine Script With the Help of ChatGPT by Akshay Choudhary | PDF",
+  "url": "https://www.slideshare.net/slideshow/code-a-strategy-on-pine-script-with-the-help-of-chatgpt-by-akshay-choudhary/277806950",
+  "published": "2026-09-16T03:14:57+00:00",
+  "symbols": [
+   "XAUUSD",
+   "US500"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d3d7b3872aeb0d43548c",
+  "host": "www.slideshare.net",
+  "claims": [
+   {
+    "claim": "by QuantInsti 19 slides 758 views PDF How to automate an options day trading strategy by QuantInsti 15 slides 2.",
+    "lang": "en",
+    "quantities": [
+     "options"
+    ],
+    "direction": [
+     "slides"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "US500"
+     ],
+     "mentioned": [
+      "emas",
+      "spx"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "fc8c43d9e884"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Why Use Python to Automate Your Trading? - Varun Pothula, Quantitative Analyst, Quantinsti | PDF",
+  "url": "https://www.slideshare.net/slideshow/why-use-python-to-automate-your-trading-varun-pothula-quantitative-analyst-quantinsti/277806850",
+  "published": "2026-09-16T03:14:59+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "inventory",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3bb3a605c10bc651cb3c",
+  "host": "www.slideshare.net",
+  "claims": [
+   {
+    "claim": "by QuantInsti 19 slides 758 views PDF How to automate an options day trading strategy by QuantInsti 15 slides 2.",
+    "lang": "en",
+    "quantities": [
+     "options"
+    ],
+    "direction": [
+     "slides"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spx"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "fc8c43d9e884"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "A Common Sense Guide to Volatility Trading [Code Included]",
+  "url": "https://www.quant-galore.com/p/a-common-sense-guide-to-volatility",
+  "published": "2026-09-16T03:15:01+00:00",
+  "symbols": [
+   "USDKRW"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "gap",
+   "inventory",
+   "mean_reversion",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.alphanume.com/datasets"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "4c5de200c70dcc1b6581",
+  "host": "www.quant-galore.com",
+  "claims": [
+   {
+    "claim": "The pattern is about as clean as anything you\u2019ll see in markets: Names entering the top decile of their own IV range saw implied vol fall about -18% over the next month, on average.",
+    "lang": "en",
+    "quantities": [
+     "range"
+    ],
+    "direction": [
+     "fall"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDKRW"
+     ],
+     "mentioned": [
+      "won"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "cb0a339212f5"
+   },
+   {
+    "claim": "The flagship version of this is the conditioned premium sell, and it runs in five steps: Pull the universe from IV/HV Premium for the day, settled rows only ( only_final=true ), so you\u2019re not trading off a provisional intraday print.",
+    "lang": "en",
+    "quantities": [
+     "premium"
+    ],
+    "direction": [
+     "sell"
+    ],
+    "horizon": [
+     "day",
+     "intraday"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDKRW"
+     ],
+     "mentioned": [
+      "won"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "ffe8a16bd8ee"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "A Junior Quant&#x27;s Guide to Event-Driven Trading",
+  "url": "https://www.quant-galore.com/p/a-junior-quants-guide-to-event-driven",
+  "published": "2026-09-16T03:15:02+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "night_session"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7eecf9c293ba68ed827b",
+  "host": "www.quant-galore.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Brave New Backtest - Robot Wealth",
+  "url": "https://robotwealth.com/brave-new-backtest/",
+  "published": "2026-09-16T03:15:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "auction",
+   "carry",
+   "correlation",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "630dcaffd5652a739eea",
+  "host": "robotwealth.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "A Quant&#x27;s Guide to Cross-Section Maxxing [Code Included]",
+  "url": "https://www.quant-galore.com/p/a-quants-guide-to-cross-section-maxxing",
+  "published": "2026-09-16T03:15:05+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://cdn.cboe.com/api/global/us_indices/governance/Volatility_Index_Methodology_Selected_SPX_Target_Expected_Volatility_Term_Indices.pdf"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "8c7d1d8c17c13a918543",
+  "host": "www.quant-galore.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trade Like a Quant / Quant Like a Trader",
+  "url": "https://robotwealth.com/trade-like-a-quant-bootcamp/",
+  "published": "2026-09-16T03:15:07+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1ae85067db52fb70f947",
+  "host": "robotwealth.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Machine Learning for Trading - What Does it Really Look Like?",
+  "url": "https://robotwealth.com/machine-learning-financial-prediction-david-aronson/",
+  "published": "2026-09-16T03:15:12+00:00",
+  "symbols": [
+   "EURUSD",
+   "GBPUSD",
+   "USDKRW",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "D1",
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "flow",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "night_session",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f02c46a930d04848d414",
+  "host": "robotwealth.com",
+  "claims": [
+   {
+    "claim": "# Residual Deviance: 8593000 AIC: 22670 The final model selected 2 of the 15 variables: the ratio of the 20- to 100-day ATR, and the difference between a short-term and long-term trend indicator.",
+    "lang": "en",
+    "quantities": [
+     "residual",
+     "trend"
+    ],
+    "direction": [
+     "short",
+     "long"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "GBPUSD",
+      "USDKRW",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "eur/usd",
+      "gbp/usd",
+      "won",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "6fb0c3bfc49a"
+   },
+   {
+    "claim": "On any given day, all things being equal, a small negative return could turn out to be a small positive return by the time the close rolls around, or vice versa, as a result of any number of random occurrences related to the fundamentals of the exchange rate.",
+    "lang": "en",
+    "quantities": [
+     "close",
+     "rate"
+    ],
+    "direction": [
+     "negative",
+     "positive"
+    ],
+    "horizon": [
+     "day",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "GBPUSD",
+      "USDKRW",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "eur/usd",
+      "gbp/usd",
+      "won",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "adb16283f414"
+   }
+  ],
+  "n_claims": 2
+ }
+]
