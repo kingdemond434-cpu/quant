@@ -791,6 +791,9 @@ def sleeve_evidence(daily: pd.DataFrame, forward: dict[str, dict[str, float]],
          f"{cost_doc['summary']['n_undercharged']} under-charged, worst "
          f"{cost_doc['summary']['worst_undercharge']}")
     costs = cost_doc["sleeves"]
+    # THE REGIME AND THE FACTOR SET, ONCE PER PASS. Every sleeve below reads the same kernel and
+    # the same factor history; the per-sleeve work is a dict lookup and one small ridge solve.
+    mctx = _MacroContext([str(d) for d in daily.index])
 
     out: list[SleeveEvidence] = []
     # NO ZERO-FILL HERE. `align` reindexes every sleeve onto the union of trading days, so a
@@ -806,9 +809,16 @@ def sleeve_evidence(daily: pd.DataFrame, forward: dict[str, dict[str, float]],
     }
     for name, hist in series.items():
         fwd = forward.get(name, {})
+        dates = [str(d) for d in daily.index]
         if fwd:
             hist = np.concatenate([hist, np.array(list(fwd.values()), dtype=float)])
+            dates = dates + [str(k) for k in fwd]
         parts = name.split("_")
+        # The macro regime weights and the factor loadings for THIS sleeve, on its own calendar.
+        # Both are empty when unmeasured, which the posterior and the covariance read as "no
+        # claim" (see `_MacroContext`).
+        macro_w = mctx.weights(dates)
+        fl = mctx.loadings(hist, dates, parts[0])
         # FAMILY IS THE MECHANISM, NOT THE SYMBOL. The hierarchical posterior pools a sleeve
         # toward its family mean, and pooling by SYMBOL pools EURJPY_asia_TREND with
         # EURJPY_london_NORMAL -- two different mechanisms that happen to share an instrument --
@@ -857,8 +867,109 @@ def sleeve_evidence(daily: pd.DataFrame, forward: dict[str, dict[str, float]],
             # bucket moves the estimate slightly and forty move it fully.
             state_r=_state_returns(name, phase, trades_by_sleeve, broker_utc_offset_h),
             state_key=phase or "",
+            macro_w=macro_w,
+            factor_load=(tuple(float(x) for x in fl.load) if fl is not None and fl.n >= 3
+                         else ()),
+            factor_resid_var=(float(fl.resid_var) if fl is not None and fl.n >= 3 else 0.0),
         ))
+    mmeta = mctx.finish(len(out))
+    _st = mmeta.get("state") or {}
+    _k = mmeta.get("kernel") or {}
+    _f = mmeta.get("factors") or {}
+    _log(f"macro regime: {_st.get('status')} conf={_st.get('confidence')} "
+         f"labels={_st.get('labels')} kernel={_k.get('status')} "
+         f"n_eff={_k.get('n_eff')} fresh={_k.get('freshness')}; factors {_f.get('status')} "
+         f"{_f.get('note', '')} loadings on {_f.get('n_with_loadings')}/{len(out)} sleeves "
+         f"(median explained {_f.get('median_explained')})")
     return out
+
+
+#: What the last `sleeve_evidence` pass learned about the macro regime and the factor model, for
+#: the allocation artifact. Written by `_MacroContext`, read by `run`.
+_MACRO_META: dict[str, Any] = {}
+
+
+class _MacroContext:
+    """The macro state and the factor set for ONE pass, built once and applied per sleeve.
+
+    TWO INPUTS THE POSTERIOR DID NOT HAVE, EACH FAILING TO "NOTHING CLAIMED". The kernel weights
+    (`libs.portfolio.macro_state`) give every day of the matrix a similarity to today's macro
+    state; the factor loadings (`libs.portfolio.leg_factors`) give every sleeve a position in
+    currency-leg / macro factor space. A sleeve gets an empty weight vector or no loadings when
+    either cannot be built, and `_posterior_mu` / `_corr_abs` then behave exactly as they did
+    before those fields existed -- absence is never a regime of 0.5 or a correlation of 0.0.
+    """
+
+    def __init__(self, dates: list[str]) -> None:
+        self.meta: dict[str, Any] = {}
+        self._w_by_date: dict[str, float] = {}
+        self._macro_state: Any = None
+        self._leg_factors: Any = None
+        self.fs: Any = None
+        self.n_loaded = 0
+        self.explained: list[float] = []
+        try:
+            from libs.portfolio import macro_state
+            self._macro_state = macro_state
+            self.meta["state"] = macro_state.now()
+            w, kmeta = macro_state.kernel_weights(dates)
+            self._w_by_date = {str(d)[:10]: float(x) for d, x in zip(dates, w, strict=True)}
+            self.meta["kernel"] = kmeta
+        except Exception as exc:
+            self.meta["kernel"] = {"status": "UNMEASURED",
+                                   "why": f"{type(exc).__name__}: {exc}"}
+        try:
+            from libs.portfolio import leg_factors
+            self._leg_factors = leg_factors
+            self.fs = leg_factors.factor_set(leg_factors.daily_factor_returns())
+            self.meta["factors"] = ({"status": "MEASURED", "note": self.fs.note,
+                                     "names": list(self.fs.names)} if self.fs is not None
+                                    else {"status": "UNMEASURED",
+                                          "why": "no factor history could be built from the "
+                                                 "universe bars"})
+        except Exception as exc:
+            self.fs = None
+            self.meta["factors"] = {"status": "UNMEASURED",
+                                    "why": f"{type(exc).__name__}: {exc}"}
+
+    def weights(self, dates: list[str]) -> np.ndarray:
+        """Kernel weight per date; empty when the regime is unmeasured."""
+        if not self._w_by_date:
+            return np.array([], dtype=float)
+        missing = [d for d in dates if str(d)[:10] not in self._w_by_date]
+        if missing and self._macro_state is not None:
+            try:
+                w_extra, _ = self._macro_state.kernel_weights(missing)
+                for d, x in zip(missing, w_extra, strict=True):
+                    self._w_by_date[str(d)[:10]] = float(x)
+            except Exception:
+                pass
+        # A date the kernel never saw is NaN (no state), never 0.0 (a day unlike today).
+        return np.array([self._w_by_date.get(str(d)[:10], float("nan")) for d in dates],
+                        dtype=float)
+
+    def loadings(self, hist: np.ndarray, dates: list[str], symbol: str) -> Any:
+        if self.fs is None or self._leg_factors is None:
+            return None
+        try:
+            fl = self._leg_factors.fit_loadings(hist, dates, self.fs, symbol)
+        except Exception:
+            return None
+        if fl.n >= 3:
+            self.n_loaded += 1
+            self.explained.append(float(fl.explained))
+        return fl
+
+    def finish(self, n_sleeves: int) -> dict[str, Any]:
+        f = dict(self.meta.get("factors") or {})
+        f["n_with_loadings"] = self.n_loaded
+        f["n_sleeves"] = n_sleeves
+        if self.explained:
+            f["median_explained"] = round(float(np.median(self.explained)), 4)
+        self.meta["factors"] = f
+        _MACRO_META.clear()
+        _MACRO_META.update(self.meta)
+        return self.meta
 
 
 def _state_returns(name: str, phase: str | None,
@@ -941,6 +1052,15 @@ def _admitted_extra_dims() -> tuple[tuple[str, str], ...]:
         from datetime import datetime as _dt
         now_bucket = {"event": str((sv.get("event") or {}).get("phase") or ""),
                       "weekday": _dt.now(UTC).strftime("%a")}
+        # The macro dimensions' CURRENT buckets, so an admitted `dollar` or `risk` can narrow the
+        # state bucket exactly as the admission test labelled it (`macro_state.labeller`).
+        try:
+            from libs.portfolio.macro_state import now as _macro_now
+            for _dim, _b in (_macro_now().get("labels") or {}).items():
+                if _b:
+                    now_bucket[str(_dim)] = str(_b)
+        except Exception:
+            pass
         out = tuple((d, now_bucket[d]) for d in sorted(allowed)
                     if now_bucket.get(d))
         _EXTRA_DIMS_CACHE = (key, out)
@@ -2624,6 +2744,31 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                          # names -- they are not in `forward` -- so nothing else supplies it.
                          forward_only_days={n: len(sr) for n, sr in scalp.items()})
     dd = worst_dd_r(daily)
+    # THE MACRO TILTS THIS PASS APPLIES, MEASURED ONCE FOR THE ARTIFACT. `_posterior_mu` is the
+    # only place the contrast is formed; asking it with `diag` returns exactly the tilts the
+    # world draw below will use, so the artifact reports the arithmetic and not a re-derivation.
+    try:
+        from libs.portfolio.robust_elog import _posterior_mu as _pm
+        _diag: dict[str, Any] = {}
+        _pm(ev, np.random.default_rng(0), 1, diag=_diag)
+        _tilts = _diag.get("macro") or {}
+        _ranked = sorted(_tilts.items(), key=lambda kv: -abs(float(kv[1].get("tilt", 0.0))))
+        _MACRO_META["tilts"] = {
+            "n_tilted": sum(1 for _, v in _tilts.items() if abs(float(v.get("tilt", 0.0))) > 0),
+            "n_sleeves": len(ev),
+            "up": sum(1 for _, v in _tilts.items() if float(v.get("tilt", 0.0)) > 0),
+            "down": sum(1 for _, v in _tilts.items() if float(v.get("tilt", 0.0)) < 0),
+            "largest": dict(_ranked[:15]),
+            "rule": ("tilt = lam * (regime-weighted mean - unconditional mean) on the sleeve's "
+                     "own days, lam = n_eff/(n_eff+60), bounded by max(|posterior mean|, "
+                     "se/2); registered two-sided as capital_modifiers `macro_regime`"),
+        }
+        if _ranked:
+            _top = ", ".join(f"{k}={float(v['tilt']):+.4f}" for k, v in _ranked[:4])
+            _log(f"macro tilts: {_MACRO_META['tilts']['up']} up / "
+                 f"{_MACRO_META['tilts']['down']} down of {len(ev)}; largest {_top}")
+    except Exception as exc:
+        _MACRO_META["tilts"] = {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
 
     # THE STATE VECTOR ENTERS AS INFORMATION, NOT AS AUTHORITY. `state_vector_build` fits the
     # per-asset, per-factor and per-clock states the hourly cycle can afford and this reads the
@@ -3644,6 +3789,12 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         "drift_overlay": {"crisis_prob": round(crisis_share, 6),
                           "standing": WorldConfig().crisis_prob,
                           "why": crisis_why, "source": drift_why},
+        # THE MACRO REGIME THIS BOOK WAS SOLVED IN, AND WHAT IT MOVED (2026-09-16): the state
+        # (dollar / risk / rates / curve / liquidity ranks and buckets), the kernel that weighted
+        # every sleeve's history by its resemblance to today, the per-sleeve tilts the posterior
+        # applied, and the factor model that gave `_corr_abs` a covariance for pairs with no
+        # common history. Each block says UNMEASURED with a reason when it could not be built.
+        "macro_regime": dict(_MACRO_META),
         "book": funded,
         # ROSTERED SLEEVES THIS SOLVE GAVE ZERO. Read by `decision_core.book_from_allocation`,
         # which carries them into the sizing book AT ZERO so the gateway can size them at zero

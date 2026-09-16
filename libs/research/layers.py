@@ -125,6 +125,9 @@ LEG_LAYER: dict[str, str] = {
     "orthogonality": "portfolio",
     "lake_promote": "information",
     "research_exchange_score": "information",
+    # The FRED archive and the macro view it feeds are inputs about the world, refreshed hourly
+    # when older than six hours: information, and the state the allocator conditions on.
+    "fred_macro": "information",
     # sizing: how much
     "capacity": "sizing", "ensemble_optimizer": "sizing",
     # portfolio: how the book is composed

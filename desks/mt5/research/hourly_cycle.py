@@ -1832,6 +1832,44 @@ def time_joins() -> dict:
     return _producer("time_joins", "scripts/check_time_joins.py")
 
 
+#: The FRED archive is refreshed when older than this. FRED publishes daily series once a day
+#: (VIX and the 10-year in the evening, the dollar index with a lag), so six hours keeps the
+#: macro state at most a print behind without asking the API for the same file 24 times.
+FRED_REFRESH_S = 6 * 3600
+
+
+def fred_macro() -> dict:
+    """KEEP THE MACRO STATE FRESH. The archive was 14 days stale on 2026-09-16, and nothing
+    scheduled the collector on the box that trades.
+
+    `data/fred_macro.json` is read by three organs that size capital -- `mt5desk.macro_view`
+    (per-order lean), `libs.portfolio.macro_state` (the allocator's regime kernel) and
+    `libs.portfolio.leg_factors` (the VIX and 10-year change factors) -- and by
+    `orthogonal_sweep._macro_series` on the research side. It was written only by a VPS pipeline
+    and a manual run. Freshness decays every one of those consumers toward "no claim" by design,
+    so a stale archive silently switched the macro layer off. This leg runs the collector when
+    the archive is older than `FRED_REFRESH_S` (it needs `data/secrets/fred.json`; without it the
+    collector says so and exits 0) and rebuilds `reports/MACRO_VIEW.json` from whatever is there.
+    """
+    arch = REPO / "data" / "fred_macro.json"
+    age = time.time() - arch.stat().st_mtime if arch.exists() else float("inf")
+    if age < FRED_REFRESH_S:
+        out: dict = {"status": "FRESH", "age_h": round(age / 3600.0, 2),
+                     "at": datetime.now(UTC).isoformat()}
+    else:
+        out = _producer("fred_macro", "scripts/collect_fred_macro.py")
+        out["age_h_before"] = (round(age / 3600.0, 2) if age != float("inf") else None)
+    try:
+        if str(BASE) not in sys.path:
+            sys.path.insert(0, str(BASE))
+        from mt5desk import macro_view as _mv
+        _mv.main()
+        out["macro_view"] = "rebuilt"
+    except Exception as exc:
+        out["macro_view"] = f"not rebuilt: {type(exc).__name__}: {exc}"
+    return out
+
+
 def allocator_join() -> dict:
     """DOES THE ALLOCATOR'S BOOK REACH THE SLEEVES IT FUNDS? It did not, and nothing said so.
 
@@ -2059,6 +2097,8 @@ def main() -> None:
     fll = _costed("futures_lead_lag", futures_lead_lag)
     tj = _costed("time_joins", time_joins)
     aj = _costed("allocator_join", allocator_join)
+    # BEFORE pf_allocator, which conditions on the state this refreshes.
+    fm = _costed("fred_macro", fred_macro)
     fzc = _costed("fusion_cost", fusion_cost)
     cxc = _costed("cost_construction", cost_construction)
     emf = _costed("edges_macro_fusion_sweep", edges_macro_fusion_sweep)
@@ -2493,6 +2533,7 @@ def main() -> None:
                     "microstructure_census": mx, "entry_timing": ety,
                     "spread_provenance": sp, "tape_features": tf,
                     "futures_lead_lag": fll, "time_joins": tj, "allocator_join": aj,
+                    "fred_macro": fm,
                     "fusion_cost": fzc, "cost_construction": cxc,
                     "edges_macro_fusion_sweep": emf,
                     "recertify_canon": rc, "hunt12": h12,

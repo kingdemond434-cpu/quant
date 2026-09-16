@@ -38,8 +38,16 @@ _KEYFILE = Path("data/secrets/fred.json")
 _ARCHIVE = Path("data/fred_macro.json")
 _WEB = Path("web/fred_macro.json")
 _BASE = "https://api.stlouisfed.org/fred/series/observations"
-_SERIES = ("DGS10", "T10Y2Y", "VIXCLS", "DTWEXBGS", "WALCL", "M2SL")
-_LOOKBACK_DAYS = 1200                            # ~3y daily obs: enough for regime research
+#: DFII10 (10-year TIPS real yield) added 2026-09-16 for the macro state's `real_rates` axis.
+_SERIES = ("DGS10", "T10Y2Y", "VIXCLS", "DTWEXBGS", "WALCL", "M2SL", "DFII10")
+#: ~11.5y fetched: the allocator's regime kernel (`libs.portfolio.macro_state`) ranks each day's
+#: state against its trailing year and needs that state on EVERY day of the backtest matrix
+#: (2018+) -- a day with no state is excluded from the regime contrast, and at 1200 days two
+#: thirds of every sleeve's history was excluded (measured 2026-09-16). The full fetch goes to
+#: `_ARCHIVE_LONG`; `_ARCHIVE` keeps the rolling `_SHORT_DAYS` window its consumers were built on.
+_LOOKBACK_DAYS = 4200
+_SHORT_DAYS = 1200
+_ARCHIVE_LONG = Path("data/fred_macro_long.json")
 
 
 def _key() -> str | None:
@@ -95,7 +103,18 @@ def main() -> None:
         revised += record(_ROOT, sid, dict(rows), vintage=ts)
 
     _ARCHIVE.parent.mkdir(parents=True, exist_ok=True)
-    _ARCHIVE.write_text(json.dumps({"updated": ts, "series": series}), "utf-8")
+    # TWO ARCHIVES FROM ONE FETCH. `data/fred_macro.json` keeps its rolling `_SHORT_DAYS` window
+    # because `orthogonal_sweep._macro_series` ranks each print against an EXPANDING history: on
+    # the full 11-year fetch the dollar's 2024-2026 level is above 98% of everything before it,
+    # the regime reads "high" on every bar, and `test_the_macro_regime_is_a_series_not_a_
+    # broadcast_scalar` fails (measured 2026-09-16). `data/fred_macro_long.json` holds the whole
+    # fetch for the allocator's regime kernel and factor set (`libs.portfolio.macro_state`,
+    # `libs.portfolio.leg_factors`), which rank against a TRAILING year and need every day of the
+    # backtest matrix to carry a state.
+    _ARCHIVE_LONG.write_text(json.dumps({"updated": ts, "series": series}), "utf-8")
+    cut = (datetime.now(tz=UTC) - timedelta(days=_SHORT_DAYS)).date().isoformat()
+    short = {sid: [r for r in rows if r[0] >= cut] for sid, rows in series.items()}
+    _ARCHIVE.write_text(json.dumps({"updated": ts, "series": short}), "utf-8")
     latest = {sid: {"date": rows[-1][0], "value": rows[-1][1],
                     "chg_30obs": (round(rows[-1][1] - rows[-31][1], 4)
                                   if len(rows) > 31 else None)}
