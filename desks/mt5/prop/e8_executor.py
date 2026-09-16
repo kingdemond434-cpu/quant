@@ -616,6 +616,30 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None) -> dict
             doc["sleeves"].append(row)
             continue
         entry = ask if side == "buy" else bid
+        # THE BRACKET IS LAID FROM THIS ENTRY, NOT FROM THE SIGNAL BAR'S CLOSE (2026-09-16): the
+        # MT5 lane's `family_bracket`, same rule for the same reason (L0352). The family's levels
+        # sit around its bar's close; this pass reaches the sleeve minutes later at a quote that
+        # has moved, and an absolute stop can then be a pip from the fill while `lot_for_risk`
+        # inflates the size against that pip. Past a quarter of the certified stop the certified
+        # DISTANCES are re-laid from the entry; a signal the market has already stopped or paid
+        # is stale and not opened. Unmeasurable keeps the levels as they are.
+        try:
+            from mt5desk.decision_core import family_bracket, signal_with_levels
+            _close = float(closed["close"].iloc[-1])
+            _sgn = 1 if side == "buy" else -1
+            _e, _stop, _target, _d, _note, _drift, _verdict = family_bracket(
+                g, _sgn, float(bid), float(ask), _close)
+            row["entry_drift"], row["entry_drift_note"] = _drift, _note
+            if _verdict == "stale":
+                row["status"] = "STALE_SIGNAL"
+                row["why"] = _note
+                doc["sleeves"].append(row)
+                _record(row, now, armed)
+                continue
+            if _verdict == "re_anchored":
+                g = signal_with_levels(g, _stop, _target)
+        except Exception as exc:
+            row["entry_drift_note"] = f"UNMEASURED ({type(exc).__name__}: {exc})"
         stop_dist = abs(float(entry) - float(g.stop))
         spread = float(ask) - float(bid)
         row["spread"] = spread
