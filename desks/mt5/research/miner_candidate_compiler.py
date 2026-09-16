@@ -44,7 +44,16 @@ def _read(path: Path):
 
 
 def known_symbols() -> set[str]:
-    return {p.stem.removesuffix("_H1").upper() for p in UNIVERSE.glob("*_H1.parquet")}
+    """The registry's symbols IN THE REGISTRY'S OWN CASE (2026-09-16).
+
+    This uppercased every stem, so a share CFD the terminal names `Adobe` was minted as
+    `ADOBE` -- a symbol no bars file, no terminal and no gauntlet can price -- and every one
+    of those candidates went to the deepening queue as NOT_LISTED. Measured on the box:
+    10,926 rows whose instrument was already written on the row. Matching is case-folded
+    wherever a token is compared (`resolve_symbols`, `_declared_symbols`, `text_symbols`);
+    the minted symbol is always the registry's spelling.
+    """
+    return {p.stem.removesuffix("_H1") for p in UNIVERSE.glob("*_H1.parquet")}
 
 
 def _rows(doc) -> list[dict]:
@@ -622,10 +631,12 @@ def _declared_symbols(row: dict, universe: set[str]) -> list[str]:
         if isinstance(row.get(key), list):
             raw.extend(row[key])
     out: list[str] = []
+    folded = {u.upper(): u for u in universe}
     for value in raw:
         token = str(value).upper().replace("/", "").replace("-", "").strip()
-        if token in universe and token not in out:
-            out.append(token)
+        hit = folded.get(token)
+        if hit is not None and hit not in out:
+            out.append(hit)
     return out
 
 
@@ -634,20 +645,21 @@ def text_symbols(text: str, universe: set[str]) -> list[str]:
     slash/dash pairs, and aliases; never a bare three-letter currency expanded to its pairs."""
     import re
     found: list[str] = []
+    folded = {u.upper(): u for u in universe}
     for m in re.finditer(r"(?<![a-z0-9])([a-z]{6})(?![a-z0-9])", text):
-        s = m.group(1).upper()
-        if s in universe and s not in found:
+        s = folded.get(m.group(1).upper())
+        if s is not None and s not in found:
             found.append(s)
     for m in re.finditer(r"(?<![a-z0-9])([a-z]{3})\s?[/\-]\s?([a-z]{3})(?![a-z0-9])", text):
-        s = (m.group(1) + m.group(2)).upper()
-        if s in universe and s not in found:
+        s = folded.get((m.group(1) + m.group(2)).upper())
+        if s is not None and s not in found:
             found.append(s)
     for alias, targets in _ALIASES.items():
         if _phrase_re(alias).search(text):
             for t in targets:
-                if t in universe:
-                    if t not in found:
-                        found.append(t)
+                hit = folded.get(str(t).upper())
+                if hit is not None and hit not in found:
+                    found.append(hit)
                     break
     return found[:_MAX_TEXT_SYMBOLS]
 
