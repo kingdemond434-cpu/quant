@@ -136,3 +136,52 @@ def test_an_unreadable_certificate_fails_closed(tmp_path: Path) -> None:
     (tmp_path / ap.PROOF).write_text("{not json")
     cert, why = ap.read_certificate(tmp_path)
     assert cert is None and "unreadable" in why
+
+
+# ---------------------------------------------------------------- hysteresis (2026-09-16)
+
+def _scored(dyn: float, best: float) -> dict:
+    return {"dynamic": {"robust_score": dyn}, "equal_weight": {"robust_score": best},
+            "inverse_vol": {"robust_score": best - 0.01}}
+
+
+def test_authority_is_earned_above_the_margin_and_lost_only_below_it() -> None:
+    best = 0.0178
+    inside_band = best * (1 - ap.MARGIN_FRAC * 0.5)          # a hair below the best baseline
+    # Not holding: a score inside the band does not earn authority.
+    passed, why, _ = ap._judge(_scored(inside_band, best), holding=False)
+    assert not passed and "needs >" in why
+    # Holding: the same score keeps it -- the verdict is not re-litigated inside the band.
+    passed, why, _ = ap._judge(_scored(inside_band, best), holding=True)
+    assert passed and "holds authority" in why
+    # Holding: a clear loss still loses it.
+    passed, _, _ = ap._judge(_scored(best * 0.9, best), holding=True)
+    assert not passed
+    # Earning it still needs the margin above.
+    passed, _, _ = ap._judge(_scored(best * (1 + ap.MARGIN_FRAC * 2), best), holding=False)
+    assert passed
+
+
+def test_previous_verdicts_read_the_fresh_certificate_and_hold_nothing_when_stale(
+        tmp_path: Path) -> None:
+    assert ap.previous_verdicts(None)["global"] is False
+    assert ap.previous_verdicts(tmp_path)["global"] is False
+    p = tmp_path / ap.PROOF
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps({"passed": True, "by_state": {"s1": {"passed": True},
+                                                          "s2": {"passed": False}}}), "utf-8")
+    prev = ap.previous_verdicts(tmp_path)
+    assert prev["global"] is True and prev["by_state"] == {"s1": True, "s2": False}
+    stale = ap.previous_verdicts(tmp_path, now=time.time() + ap.MAX_AGE_S + 10)
+    assert stale["global"] is False and stale["by_state"] == {}
+
+
+def test_the_contest_carries_the_previous_verdict_into_its_hysteresis(book, monkeypatch,
+                                                                       tmp_path: Path) -> None:
+    monkeypatch.setattr(ap, "score_book", lambda ev, b, cfg=None, worlds=None: {
+        "robust_score": 0.02 if sum(b.values()) > 0.0999 else 0.01})
+    res = ap.contest(book, {"a": 0.05, "b": 0.03, "c": 0.02}, root=tmp_path)
+    assert res["hysteresis"]["holding_global"] is False
+    ap.certify(res, root=tmp_path, book={"a": 0.05, "b": 0.03, "c": 0.02})
+    res2 = ap.contest(book, {"a": 0.05, "b": 0.03, "c": 0.02}, root=tmp_path)
+    assert res2["hysteresis"]["holding_global"] == bool(res["passed"])

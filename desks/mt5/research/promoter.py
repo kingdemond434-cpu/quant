@@ -73,7 +73,9 @@ RETIRE (fully automatic):
 The armed gold book is NOT managed here (hunt5 authority, armed by human).
 """
 
+import hashlib
 import json
+import re
 import math
 import sys
 import time
@@ -232,7 +234,7 @@ def artifact_of(row: dict) -> dict:
         v = validate(a)
         return {"version_hash": v["version_hash"], "ok": bool(v["ok"]),
                 "problems": list(v["problems"])}
-    except Exception as exc:                                        # noqa: BLE001
+    except Exception as exc:
         return {"version_hash": None, "ok": False,
                 "problems": [f"artifact unavailable: {type(exc).__name__}: {exc}"]}
 
@@ -428,6 +430,71 @@ def record_door_transition(name: str, *, door: str, from_status: str, to_status:
 #: fixture sleeves to the repository's real data/ (measured on the first run of this change).
 #: `main` is the only caller that has a roster to write and the only one that flushes.
 _DOOR_EVENTS: list[dict] = []
+
+
+#: Where `certificate_hygiene` moves survivors whose parameterisation was never recorded.
+EVICTED_CERTIFICATES = BASE / "reports" / "UNIVERSAL_SURVIVORS_UNRUNNABLE.json"
+
+
+def evicted_certificate_keys(path: Path | None = None) -> set[str]:
+    """Certificate keys `certificate_hygiene` evicted from the survivors as UNRUNNABLE."""
+    p = path or EVICTED_CERTIFICATES
+    try:
+        doc = json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return set()
+    surv = doc.get("survivors") if isinstance(doc, dict) else None
+    return {str(k) for k in (surv or {})}
+
+
+def _certificate_key(row: dict) -> str:
+    cert = row.get("certificate")
+    if isinstance(cert, dict):
+        return str(cert.get("cell") or "")
+    return str(cert or "")
+
+
+def retire_unrunnable(sleeves: list[dict], evicted: set[str] | None = None) -> bool:
+    """RETIRE roster rows whose certificate hygiene has evicted as UNRUNNABLE. Returns changed.
+
+    FIVE ROWS SAT ON THE ROSTER THAT COULD NEVER PLACE (measured 2026-09-16). Their certificates
+    name a bare cell (`external.CADJPY.session_range_breakout`) and the parameterisation that
+    earned them was never recorded, so `_params_from_certificate` refuses them on every pass:
+    "names no parameterisation and the docket holds 403 distinct ones". `certificate_hygiene`
+    had already moved those certificates out of the survivors as UNRUNNABLE, and the mechanism
+    had been RE-EARNED as parameterised cells (`...rr=1.5_wb=12`) with their own roster rows --
+    but nothing read the eviction back into the roster, so one bare row stayed LIVE with heat
+    assigned to a sleeve that refuses every bar, and four stayed STANDBY waiting for a restore
+    that could only ever restore a refusal. The rows are retired with the reason on them; the
+    parameterised twins carry the mechanism. A row that carries explicit `params` is runnable on
+    its own and is never touched here.
+    """
+    keys = evicted_certificate_keys() if evicted is None else set(evicted)
+    if not keys:
+        return False
+    changed = False
+    stamp = datetime.now(tz=UTC).isoformat(timespec="seconds")
+    for s in sleeves:
+        status = str(s.get("status") or "")
+        if status not in ("LIVE", "STANDBY"):
+            continue
+        if isinstance(s.get("params"), dict) and s.get("params"):
+            continue
+        key = _certificate_key(s)
+        if not key or key not in keys:
+            continue
+        reason = (f"certificate {key!r} is UNRUNNABLE: the parameterisation that earned it was "
+                  f"never recorded (certificate_hygiene evicted it); the re-earned parameterised "
+                  f"cells carry the mechanism")
+        s.update({"status": "RETIRED", "risk_frac": 0.0, "risk_frac_source": "none",
+                  "retired_at": stamp, "retire_reason": reason})
+        plog(f"AUTO-RETIRED {s['name']} ({reason})")
+        note_door(str(s.get("name") or ""), door="RETIRED", from_status=status,
+                  to_status="RETIRED", reason=reason,
+                  evidence={"certificate": s.get("certificate"),
+                            "evicted_by": "certificate_hygiene"})
+        changed = True
+    return changed
 
 
 def note_door(name: str, *, door: str, from_status: str, to_status: str,
@@ -931,9 +998,145 @@ def promoted_risk_frac(row: dict | None, *, cap: float = PROMOTED_RISK_FRAC) -> 
         return 0.0, ("the allocator's solve gives this sleeve no heat; the row carries zero and "
                      "the sleeve holds no capital until a solve wants it")
     frac = min(h, float(cap))
-    return round(frac, 6), (
+
+    # ESTIMATION ERROR IS PRICED, AND THIS IS THE MISSING HALF OF PROMOTION.
+    #
+    # `libs/risk/kelly_shrink.py` has existed on this tree with a full derivation and was imported
+    # by NOTHING (measured 2026-09-12). Without it promotion is a BINARY door doing a job that
+    # wants a continuous answer: a sleeve that cleared the bar on 14 days of evidence and one with
+    # 180 days at the same Sharpe are sized identically, because the allocator prices dE[log W]
+    # but not the UNCERTAINTY of the Sharpe it was handed.
+    #
+    #     shrink = S^2 / (S^2 + SE(S)^2),  SE from Lo (2002)
+    #
+    # which is the James-Stein / normal-posterior shrinkage toward a zero-edge prior. It ramps
+    # continuously with evidence -- roughly 0.17x Kelly at day 15, 0.36x at 40, 0.55x at 90,
+    # 0.71x at 180 -- so strong evidence self-authorises size and weak evidence cannot.
+    #
+    # THIS RAISES E[log W], IT DOES NOT REDUCE AGGRESSIVENESS, and the distinction matters because
+    # the standing order forbids the second. The module's own docstring records the measurement:
+    # estimation noise alone does NOT move the growth optimum (E[log W] is linear in mu, so
+    # symmetric noise about a correct mean cannot shift the argmax). What justifies the shrink is
+    # that S-hat is BIASED for the quantity being bet on -- an edge reaches this function BECAUSE
+    # it measured well, so it carries a winner's curse, and the growth-optimal input is the
+    # posterior mean under a prior that most candidates have none. Betting the raw S-hat is
+    # betting an over-estimate, which is below-optimal growth, not above it.
+    #
+    # UNMEASURED EVIDENCE LEAVES THE NUMBER ALONE. If the row carries no Sharpe or no day count
+    # the shrink is not applied and the reason says so. Shrinking on ABSENCE would be reducing
+    # size by fiat on a sleeve nobody measured, which is the one thing the standing order rules
+    # out -- and it is also just wrong: an unmeasured SE is not a large SE.
+    shrink, shrink_why = _evidence_shrink(row)
+    if shrink is None:
+        return round(frac, 6), (
+            f"the allocator's current solve gives this sleeve {h:.2%} heat"
+            + (f", written at the {cap:.0%} promoter ceiling" if h > cap else "")
+            + f"; estimation shrink UNMEASURED ({shrink_why}), so the allocator's number stands")
+    shrunk = frac * shrink
+    return round(shrunk, 6), (
         f"the allocator's current solve gives this sleeve {h:.2%} heat"
-        + (f", written at the {cap:.0%} promoter ceiling" if h > cap else ""))
+        + (f", written at the {cap:.0%} promoter ceiling" if h > cap else "")
+        + f"; x{shrink:.3f} estimation shrink ({shrink_why}) -> {shrunk:.2%}")
+
+
+def _evidence_shrink(row: dict | None) -> tuple[float | None, str]:
+    """(shrink factor, why) from the row's own forward evidence, or (None, why) if unmeasured.
+
+    The Sharpe is annualised from the row's expectancy and its dispersion where both are present;
+    where the row already carries an annualised Sharpe that is used directly. `days_active` is the
+    forward day count -- NOT the trade count, because the standard error is over TIME, and a
+    sleeve that fired forty times in two days has two days of independent information.
+    """
+    if not isinstance(row, dict):
+        return None, "no row"
+    try:
+        from libs.risk.kelly_shrink import shrink_fraction
+    except Exception as exc:
+        return None, f"kelly_shrink unimportable: {type(exc).__name__}"
+
+    s = row.get("sharpe_ann") or row.get("sharpe_annual") or row.get("sharpe")
+    try:
+        s = float(s)
+    except (TypeError, ValueError):
+        return None, "the row carries no annualised Sharpe"
+    days = row.get("days_active") or row.get("days") or row.get("forward_days")
+    try:
+        days = float(days)
+    except (TypeError, ValueError):
+        return None, "the row carries no forward day count"
+    if days < 5:
+        return None, f"only {days:.0f} forward day(s); below the 5 the estimator needs"
+    f = shrink_fraction(s, days)
+    if not (f > 0.0):
+        return None, f"shrink returned {f} at S={s:.2f} over {days:.0f}d -- unproven edge"
+    return f, f"S={s:.2f} over {days:.0f} forward day(s)"
+
+
+#: How many LIVE sleeves may share one parameter signature.
+#:
+#: ORTHOGONALITY WAS MEASURED AND NOT BINDING, which is the difference between knowing a book is
+#: concentrated and having a book that is not. Measured 2026-09-14: parameter hash
+#: `44136fa355b3678a` held FOUR live sleeves -- chfdkk, eurnok, gbpmxn, gbpnok -- the identical
+#: overnight_gap_decay parameter set on four exotics in the same session. Earlier in the campaign
+#: it held twelve. That is ONE hypothesis promoted four times, and every consumer counted it as
+#: four bets.
+#:
+#: IT IS THE MOST DANGEROUS NUMBER ON THE DESK. `n_effective` is 5.592 against a ceiling of
+#: 1/rho = 6.1 -- the book is already AT its ceiling, so each replication adds gross exposure and
+#: no diversification whatever. A drawdown in that parameter set arrives on four sleeves at once,
+#: on four wide-spread high-swap crosses, at the thinnest liquidity hour of the day.
+#:
+#: TWO, NOT ONE. A second instrument is a genuine out-of-sample test of the same parameters and
+#: the desk should be allowed to hold it; a third and fourth are replication dressed as breadth.
+#: The refusal is STANDBY, never RETIRED -- the sleeve keeps its clock and its evidence, and
+#: becomes promotable the moment a sibling retires. Nothing is destroyed, only un-funded.
+PARAM_HASH_MAX_LIVE = 2
+
+
+def _live_param_hashes() -> dict[str, list[str]]:
+    """param signature -> the LIVE sleeve names already holding it."""
+    out: dict[str, list[str]] = {}
+    try:
+        doc = json.loads((BASE / "data" / "sleeves.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return out
+    rows = doc.get("sleeves") if isinstance(doc, dict) else doc
+    for r in (rows or []):
+        if not isinstance(r, dict) or str(r.get("status") or "").upper() != "LIVE":
+            continue
+        name = str(r.get("name") or "")
+        m = re.search(r"_p_([0-9a-f]{8,})$", name)
+        h = m.group(1) if m else ""
+        if not h:
+            params = r.get("params")
+            if isinstance(params, dict) and params:
+                h = hashlib.sha256(json.dumps(params, sort_keys=True, default=str)
+                                   .encode("utf-8")).hexdigest()[:16]
+        if h:
+            out.setdefault(h, []).append(name)
+    return out
+
+
+def param_hash_saturated(name: str, params: object = None) -> tuple[bool, str]:
+    """Does this sleeve's parameter signature already hold its share of the live book?
+
+    Returns (refuse, why). A sleeve ALREADY LIVE under this signature does not count against
+    itself -- re-affirming an existing row must never be read as a new replication.
+    """
+    m = re.search(r"_p_([0-9a-f]{8,})$", str(name))
+    h = m.group(1) if m else ""
+    if not h and isinstance(params, dict) and params:
+        h = hashlib.sha256(json.dumps(params, sort_keys=True, default=str)
+                           .encode("utf-8")).hexdigest()[:16]
+    if not h:
+        return False, ""
+    siblings = [n for n in _live_param_hashes().get(h, []) if n != str(name)]
+    if len(siblings) < PARAM_HASH_MAX_LIVE:
+        return False, ""
+    return True, (f"parameter signature {h} already holds {len(siblings)} live sleeve(s) "
+                  f"({', '.join(siblings[:3])}): same hypothesis, not a new bet. n_eff is at "
+                  f"its 1/rho ceiling, so a replication adds exposure and no diversification. "
+                  f"STANDBY not retired -- promotable when a sibling goes")
 
 
 def capital_verdict(view: dict, name: str, *, symbol: str = "", family: str = "",
@@ -989,6 +1192,13 @@ def capital_verdict(view: dict, name: str, *, symbol: str = "", family: str = ""
     if not (frac > 0.0):
         out["status"] = "STANDBY"
         out["why"] = f"admitted but sized at zero: {why_frac}"
+        return out
+    # ORTHOGONALITY, BINDING. Measured everywhere on this desk and enforced nowhere until now.
+    saturated, why_sat = param_hash_saturated(name)
+    if saturated:
+        out["status"] = "STANDBY"
+        out["param_hash_saturated"] = True
+        out["why"] = why_sat
         return out
     out.update({"status": "LIVE", "risk_frac": frac,
                 # BOTH NUMBERS, because they can legitimately differ: the gateway sizes a funded
@@ -1424,6 +1634,9 @@ def main() -> None:
     regrade_fails = regrade_failures()
     identities = clock_identities()
     changed = False
+    # Certificates hygiene has evicted as UNRUNNABLE leave the roster before anything is judged
+    # or restored on them (2026-09-16).
+    changed = retire_unrunnable(sleeves) or changed
 
     # WHAT THE ALLOCATOR CURRENTLY SAYS. Read ONCE per pass: the three promotion doors and the
     # reconciliation below must all decide from the same solve, or two rows written in the same
@@ -1535,7 +1748,7 @@ def main() -> None:
                 # is refused by the handler below. Fail-closed on the one path that spends money.
                 gap = (executables.executor_gap(family) if _sleeve_timeframe(params) == "H1"
                        else executables.executor_gap(family, _sleeve_timeframe(params)))
-            except Exception as exc:                                    # noqa: BLE001
+            except Exception as exc:
                 gap = (f"executor registry unavailable on this box "
                        f"({type(exc).__name__}: {exc}) -- refusing the row, not the pass")
             if gap:

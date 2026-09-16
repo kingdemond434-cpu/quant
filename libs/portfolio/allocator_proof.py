@@ -201,11 +201,21 @@ def _subworlds(worlds: Worlds, idx: Sequence[int]) -> Worlds:
                   note=f"{worlds.note} | state subset of {take.size} world(s)")
 
 
-def _judge(scored: Mapping[str, Mapping[str, float]]) -> tuple[bool, str, str]:
+def _judge(scored: Mapping[str, Mapping[str, float]], *,
+           holding: bool = False) -> tuple[bool, str, str]:
     """Did the dynamic book beat the best rival by the margin? Returns (passed, why, best_name).
 
     One arithmetic, used by the global verdict and by every per-state one, so a bucket can never
     be judged on a softer rule than the population it came from.
+
+    HYSTERESIS (2026-09-16). Authority is EARNED above the best baseline by the margin and LOST
+    below it by the same margin -- never re-litigated inside the band. Measured that day on the
+    live box: the verdict flipped pass by pass (09:00 dynamic 0.01855 vs 0.01620 PASS, 09:40 a
+    loss to multiperiod, 10:48 dynamic 0.01008 vs 0.01783 FAIL), and every flip re-sized the
+    whole book on a difference inside the sampled-world noise the margin exists to name. A
+    Schmitt trigger costs nothing when the books are clearly apart and stops the churn when they
+    are not. `holding` is whether the previous certificate granted authority for this same
+    verdict (global or the same state bucket).
     """
     dyn = float(scored["dynamic"]["robust_score"])
     rivals = {k: float(v["robust_score"]) for k, v in scored.items() if k != "dynamic"}
@@ -218,10 +228,44 @@ def _judge(scored: Mapping[str, Mapping[str, float]]) -> tuple[bool, str, str]:
     if not math.isfinite(best):
         # Every baseline ruinous and the dynamic book finite is a genuine, large win.
         return True, "every baseline is ruinous on these worlds; dynamic is finite", best_name
+    if holding:
+        keep = best - abs(best) * MARGIN_FRAC
+        return (dyn > keep,
+                f"dynamic {dyn:.6f} vs best baseline {best_name} {best:.6f} "
+                f"(holds authority: keeps it while > {keep:.6f}, margin {MARGIN_FRAC:.0%})",
+                best_name)
     need = best + abs(best) * MARGIN_FRAC
     return (dyn > need,
             f"dynamic {dyn:.6f} vs best baseline {best_name} {best:.6f} "
             f"(needs > {need:.6f}, margin {MARGIN_FRAC:.0%})", best_name)
+
+
+def previous_verdicts(root: Path | None, *, now: float | None = None) -> dict[str, Any]:
+    """What the certificate on disk granted, if it is still fresh: the `holding` input to
+    `_judge`. Absent, unreadable or stale reads as holding nothing -- the strict bar applies."""
+    out: dict[str, Any] = {"global": False, "by_state": {}, "why": "no previous certificate"}
+    if root is None:
+        return out
+    p = root / PROOF
+    try:
+        import time as _time
+        if not p.exists():
+            return out
+        age = (now if now is not None else _time.time()) - p.stat().st_mtime
+        if age > MAX_AGE_S:
+            out["why"] = f"previous certificate {age / 3600:.1f}h old; holding nothing"
+            return out
+        doc = json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        out["why"] = "previous certificate unreadable; holding nothing"
+        return out
+    out["global"] = bool(doc.get("passed"))
+    out["by_state"] = {str(k): bool((v or {}).get("passed"))
+                       for k, v in (doc.get("by_state") or {}).items()
+                       if isinstance(v, Mapping)}
+    out["why"] = (f"previous certificate {'granted' if out['global'] else 'withheld'} "
+                  f"authority; {sum(out['by_state'].values())} state(s) held")
+    return out
 
 
 def held_book_still_wins(scores: Mapping[str, Mapping[str, float]],
@@ -345,7 +389,8 @@ def contest(ev: Sequence[SleeveEvidence], dynamic: Mapping[str, float],
             pass
 
     scored = {k: score_book(ev, b, cfg=cfg, worlds=worlds) for k, b in books.items()}
-    passed, why, best_name = _judge(scored)
+    prev = previous_verdicts(root)
+    passed, why, best_name = _judge(scored, holding=bool(prev["global"]))
 
     # ------------------------------------------------------------------ the per-state contest
     by_state: dict[str, Any] = {}
@@ -368,7 +413,8 @@ def contest(ev: Sequence[SleeveEvidence], dynamic: Mapping[str, float],
                                  "why": f"unscorable ({type(exc).__name__}: {exc})",
                                  "best": "", "scores": {}}
                 continue
-            s_passed, s_why, s_best = _judge(s_scored)
+            s_passed, s_why, s_best = _judge(
+                s_scored, holding=bool((prev.get("by_state") or {}).get(sid)))
             by_state[sid] = {
                 "passed": bool(s_passed), "why": s_why, "best": s_best,
                 "n_worlds": len(idx),
@@ -377,6 +423,10 @@ def contest(ev: Sequence[SleeveEvidence], dynamic: Mapping[str, float],
     return {"passed": bool(passed), "why": why, "best_baseline": best_name,
             "scores": scored, "total_heat_equalised": total,
             "posterior_certificate": posterior_cert,
+            # THE BAND THE VERDICT WAS JUDGED IN: earned above the margin, lost below it.
+            "hysteresis": {"holding_global": bool(prev["global"]),
+                           "holding_states": sorted(k for k, v in prev["by_state"].items() if v),
+                           "previous": prev.get("why", ""), "margin_frac": MARGIN_FRAC},
             # PER-STATE VERDICTS. `select(cert, state_id)` reads these to pick A*_t; a state with
             # no entry falls back to the global verdict, never to an unmeasured claim.
             "by_state": by_state, "by_state_why": state_why,
@@ -405,6 +455,7 @@ def certify(result: dict[str, Any], *, root: Path, book: Mapping[str, float]) ->
         # size with it instead of only learning its name.
         "books": result.get("books", {}),
         "margin_frac": MARGIN_FRAC,
+        "hysteresis": result.get("hysteresis", {}),
         "max_age_s": MAX_AGE_S,
         "note": ("Beating four baselines on sampled worlds is EVIDENCE, not proof of future "
                  "superiority. This certificate expires, so authority is re-earned rather than "

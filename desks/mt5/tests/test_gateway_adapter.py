@@ -1080,3 +1080,55 @@ def test_the_pause_file_readers_look_under_data_and_main_consults_gateway_paused
     assert _cfg.PAUSE_FILE != _DESK / "GATEWAY_PAUSED"
     monkeypatch.setattr(_cfg, "PAUSE_FILE", tmp_path / "data" / "GATEWAY_PAUSED")
     assert _cfg.gateway_paused() is False
+
+
+# ------------------------------------------- the manage step and the family lane's fixed bracket
+
+def _manage_ns(mt5: SimpleNamespace) -> dict:
+    logs: list[str] = []
+    ns = {"mt5": mt5, "log": logs.append, "MAGIC": 1, "_logs": logs}
+    return _exec(("manage_open_positions", "order_comment", "_original_stop_distance"), ns)
+
+
+def _manage_mt5(comment: str, sent: list) -> SimpleNamespace:
+    pos = SimpleNamespace(ticket=501, type=0, price_open=1.1100, sl=1.1050, tp=1.1150,
+                          comment=comment, time=1_800_000_000, symbol="EURUSD")
+    return SimpleNamespace(
+        POSITION_TYPE_BUY=0, TIMEFRAME_H1=16385, TRADE_ACTION_SLTP=6,
+        positions_get=lambda symbol=None: [pos],
+        symbol_info=lambda symbol: SimpleNamespace(trade_stops_level=0, trade_tick_size=0.00001),
+        # No bars since entry: a position that IS managed stops at "fewer than 2 bars".
+        copy_rates_range=lambda *a, **k: None,
+        order_send=lambda req: sent.append(req))
+
+
+def test_a_family_position_with_a_fixed_certified_bracket_is_not_ratcheted() -> None:
+    """2026-09-16: five forex closes at a manage-tightened stop, five losses. The family lane's
+    certificates carry no trail, so the manage step leaves their stops where the certificate
+    put them."""
+    sent: list = []
+    ns = _manage_ns(_manage_mt5(f"DW{_NAME}", sent))
+    st = {"armed": True, "generic": {_NAME: {"trail_k": 0.0, "open_ttl_until": "x"}}}
+    ns["manage_open_positions"](st, [_sleeve()])
+    assert sent == []
+    assert any("certified exit is a fixed bracket" in x for x in ns["_logs"])
+
+
+def test_a_family_position_whose_signal_carried_a_trail_is_still_managed() -> None:
+    sent: list = []
+    ns = _manage_ns(_manage_mt5(f"DW{_NAME}", sent))
+    st = {"armed": True, "generic": {_NAME: {"trail_k": 4.0}}}
+    ns["manage_open_positions"](st, [_sleeve()])
+    assert not any("fixed bracket" in x for x in ns["_logs"])
+    assert any("fewer than 2 bars since entry" in x for x in ns["_logs"])
+
+
+def test_the_family_send_records_whether_its_signal_carried_a_trail(tmp_path,
+                                                                     monkeypatch) -> None:
+    rows = _rows()
+    mt5 = _fake_mt5(rows)
+    ns = _family_ns(tmp_path, mt5, monkeypatch, armed_file=True, sig_hour=_sig_hour(rows))
+    st = {"armed": True}
+    _run_family(ns, st, [_sleeve()], 10_000.0)
+    assert len(mt5.sent) == 1
+    assert st["generic"][_NAME]["trail_k"] == 0.0

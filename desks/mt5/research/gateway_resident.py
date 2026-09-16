@@ -31,9 +31,49 @@ from pathlib import Path
 
 DESK = Path(__file__).resolve().parents[1]
 ROOT = DESK.parent.parent
+# THE ORDER IS THE POINT, AND `if not in sys.path` BROKE IT (measured 2026-09-16). Python puts
+# this script's own directory (`desks/mt5/research`) at sys.path[0] before anything runs, so the
+# guard skipped it and then inserted `desks/mt5` in front of it. `import run_gateway_loop` then
+# resolved to the LEGACY wrapper at the desk root -- the one that writes a pid-less "locked" lock
+# and steals any lock older than five minutes -- while the per-minute task ran the modern wrapper
+# with a pid lock. Two wrappers with different lock rules ran passes CONCURRENTLY whenever a pass
+# took more than five minutes, and the same signal bar was sent twice, 8-18 minutes apart, by
+# both. Every entry is inserted at the front in this order, so `research` is always first.
 for _p in (str(ROOT), str(DESK), str(DESK / "research")):
-    if _p not in sys.path:
-        sys.path.insert(0, _p)
+    while _p in sys.path:
+        sys.path.remove(_p)
+    sys.path.insert(0, _p)
+
+#: Seconds after a minute boundary at which a pass starts, so the pass that follows a bar close
+#: sees the new bar (the venue needs a tick to open it) and starts as early as it usefully can.
+BOUNDARY_SLACK_S = float(os.environ.get("GATEWAY_BOUNDARY_SLACK_S", "3"))
+
+
+def next_boundary_wait(now_s: float, elapsed_s: float, *, interval_s: float = 60.0,
+                       slack_s: float = BOUNDARY_SLACK_S) -> float:
+    """Seconds to sleep so the next pass starts `slack_s` after the next minute boundary.
+
+    PASSES ARE ALIGNED TO THE CLOCK, NOT TO EACH OTHER. `sleep(interval - elapsed)` kept the
+    passes a minute apart from wherever the first one happened to start, so the pass after a bar
+    close began anywhere in the following minute. The families fill "at the open of the next
+    bar"; a pass that begins three seconds after the boundary is the closest the live lane can
+    get to that contract. A pass that overran the interval starts again after one second.
+    """
+    if elapsed_s >= interval_s:
+        return 1.0
+    into = now_s % interval_s
+    wait = (interval_s - into) + slack_s
+    if into < slack_s:
+        wait = slack_s - into
+    return max(1.0, float(wait))
+
+
+def loop_module_path() -> str:
+    """Where `import run_gateway_loop` resolves from this module's sys.path: the test pins it to
+    the research wrapper so the legacy desk-root copy can never be imported again by accident."""
+    import importlib.util
+    spec = importlib.util.find_spec("run_gateway_loop")
+    return str(spec.origin) if spec and spec.origin else ""
 
 #: Seconds between passes. The gateway's own work is bar-driven, so this only decides how soon
 #: after a bar closes the desk looks -- not how often it trades.
@@ -180,11 +220,51 @@ def _claim_singleton() -> object | None:
         return True
 
 
+def _release_singleton(handle: object) -> None:
+    """Hand the slot back BEFORE the successor is started, so it can claim it at once."""
+    try:
+        import ctypes
+        if isinstance(handle, int):
+            ctypes.windll.kernel32.ReleaseMutex(handle)
+            ctypes.windll.kernel32.CloseHandle(handle)
+    except Exception:
+        pass
+
+
+def _spawn_successor() -> bool:
+    """Start a fresh resident, detached, so a recycle costs seconds rather than the up-to-ten
+    minutes until the keep-alive trigger. Measured 2026-09-16: every recycle left the desk with
+    no pass until that trigger, and the families' bar-close entries slipped by that much."""
+    import subprocess
+    exe = sys.executable
+    args = [exe, "-u", "-W", "ignore", str(Path(__file__).resolve())]
+    base = (getattr(subprocess, "DETACHED_PROCESS", 0)
+            | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0))
+    breakaway = 0x01000000                                  # CREATE_BREAKAWAY_FROM_JOB
+    for flags in (base | breakaway, base):
+        try:
+            subprocess.Popen(args, cwd=str(DESK), creationflags=flags, close_fds=True,
+                             stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                             stderr=subprocess.DEVNULL)
+            return True
+        except Exception:
+            continue
+    return False
+
+
 def main() -> int:
-    if _claim_singleton() is None:
+    handle = _claim_singleton()
+    if handle is None:
         print("another resident gateway already holds the slot; exiting")
         return 0
     import run_gateway_loop
+    try:
+        from mt5desk import gateway as _gw
+        _gw.log(f"RESIDENT: started pid {os.getpid()}; loop wrapper {loop_module_path()}; "
+                f"recycle at {RECYCLE_RSS_MB:.0f}MB / {RECYCLE_AFTER_PASSES} passes; passes "
+                f"aligned {BOUNDARY_SLACK_S:g}s after each minute boundary")
+    except Exception:
+        pass
 
     passes = 0
     while True:
@@ -192,14 +272,18 @@ def main() -> int:
         passes += 1
         rss = _rss_mb()
         if (rss is not None and rss >= RECYCLE_RSS_MB) or passes > RECYCLE_AFTER_PASSES:
-            # END CLEANLY BETWEEN PASSES, never inside one. The keep-alive trigger starts a fresh
-            # loop within ten minutes and the singleton makes that a no-op if one is already up.
+            # END CLEANLY BETWEEN PASSES, never inside one. The slot is released first and a
+            # successor started at once; the keep-alive trigger remains the backstop should the
+            # spawn fail, and the singleton makes that a no-op if one is already up.
+            _release_singleton(handle)
+            spawned = _spawn_successor()
             try:
                 from mt5desk import gateway
                 gateway.log(f"RESIDENT: recycling after {passes} pass(es) at "
                             f"{'unmeasured' if rss is None else f'{rss:.0f}MB'} resident "
                             f"(limit {RECYCLE_RSS_MB:.0f}MB / {RECYCLE_AFTER_PASSES} passes); "
-                            f"the keep-alive trigger starts a clean one")
+                            f"{'successor started' if spawned else 'successor spawn FAILED'}; "
+                            f"the keep-alive trigger is the backstop")
             except Exception:
                 pass
             return 0
@@ -213,7 +297,8 @@ def main() -> int:
                 gateway.log(f"RESIDENT: pass raised {type(exc).__name__}: {exc}")
             except Exception:
                 pass
-        time.sleep(max(1.0, INTERVAL_S - (time.monotonic() - started)))
+        time.sleep(next_boundary_wait(time.time(), time.monotonic() - started,
+                                      interval_s=float(INTERVAL_S)))
 
 
 if __name__ == "__main__":
