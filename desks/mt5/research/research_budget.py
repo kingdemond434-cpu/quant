@@ -50,6 +50,15 @@ def _ladder_factor(leg: str) -> float:
         return 1.0
 
 
+def _department_factor(leg: str) -> float:
+    """The resource exchange's elastic factor for the leg's department (1.0 when unmeasured)."""
+    try:
+        import research_departments
+        return float(research_departments.factor_for(leg))
+    except Exception:
+        return 1.0
+
+
 def budget_s(leg: str, base: float) -> tuple[int, dict[str, Any]]:
     """(seconds, record) for `leg`: base x (share of its arms / equal-share baseline), clipped."""
     bandit = _read(BANDIT)
@@ -65,10 +74,11 @@ def budget_s(leg: str, base: float) -> tuple[int, dict[str, Any]]:
     share = float(sum(float(shares[a]) for a in arms))
     baseline = len(arms) / max(1, len(shares))
     ladder = _ladder_factor(leg)
-    factor = max(FLOOR, min(CEIL, (share / baseline if baseline > 0 else 1.0) * ladder))
+    dept = _department_factor(leg)
+    factor = max(FLOOR, min(CEIL, (share / baseline if baseline > 0 else 1.0) * ladder * dept))
     applied = round(base * factor)
     rec.update({"share": round(share, 4), "baseline": round(baseline, 4),
-                "ladder_factor": round(ladder, 3),
+                "ladder_factor": round(ladder, 3), "department_factor": round(dept, 3),
                 "factor": round(factor, 3), "applied_s": applied, "applied": True,
                 "why": f"share {share:.3f} of arms {list(arms)} vs equal-share baseline "
                        f"{baseline:.3f} -> x{factor:.2f}, clipped to [{FLOOR}, {CEIL}]"})
