@@ -247,9 +247,18 @@ def already_supervised() -> bool:
     return False
 
 
+def _switched_off() -> str:
+    """Which sentinel, if any, forbids this supervisor to run on this box: `SUPERVISOR_OFF`
+    (this organ only) or `BOX_RETIRED` (the whole desk has left this machine; 2026-09-16)."""
+    for name in ("SUPERVISOR_OFF", "BOX_RETIRED"):
+        if (BASE / "data" / name).exists():
+            return name
+    return ""
+
+
 def main() -> int:
-    if (BASE / "data" / "SUPERVISOR_OFF").exists():
-        log("supervisor: disabled (data/SUPERVISOR_OFF present)")
+    if _switched_off():
+        log(f"supervisor: disabled (data/{_switched_off()} present)")
         return 0
     if already_supervised():
         log("supervisor: another instance alive, exiting")
@@ -263,8 +272,8 @@ def main() -> int:
         pass
     log("supervisor: started")
     while True:
-        if (BASE / "data" / "SUPERVISOR_OFF").exists():
-            log("supervisor: disabled flag appeared, exiting")
+        if _switched_off():
+            log(f"supervisor: disabled flag appeared (data/{_switched_off()}), exiting")
             return 0
         now = time.time()
         if now - float(state.get("last_verify", 0) or 0) > 3600:
