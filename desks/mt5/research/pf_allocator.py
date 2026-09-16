@@ -37,8 +37,10 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
 import sys
 import time
+from collections.abc import Callable
 from contextlib import suppress
 from datetime import UTC, datetime
 from pathlib import Path
@@ -68,12 +70,12 @@ from libs.portfolio.robust_elog import (  # noqa: E402
 from research.heat_policy import (  # noqa: E402
     HEAT_HARD_CEILING,
     HEAT_TARGET,
-    heat_accounting,
-    measured_ceiling,
     MIN_STATE_WORLDS,
     StateCurve,
     enforce_family_cap,
     evidence_readiness,
+    heat_accounting,
+    measured_ceiling,
     per_sleeve_bounds,
     resolve,
 )
@@ -114,8 +116,18 @@ EVIDENCE_MAX_AGE_S = 3600
 #: RAISING THE TOP IS THE ONE EDIT THAT MATTERS: the principal removed the fixed 30% cap on
 #: 2026-09-05, and until this tuple extends past 0.30 no measurement can license a heat above it
 #: -- not because a rule forbids it, but because nothing sampled it.
+#: THE GRID RUNS TO 100% AND THE CAP ON IT IS GONE (principal, 2026-09-12: "remove the cap fully",
+#: "i told u no caps"). This is a MEASUREMENT grid: sampling a heat is not deploying it, and the
+#: only way the desk can ever learn that 60% is bad is to have measured 60%.
+#:
+#: Measured that day: the curve was monotonically RISING at every one of its ten points and stopped
+#: at 0.225 -- not because growth turned, but because it was never asked. Growth per day went
+#: +0.00716 at 2% to +0.02821 at 22.5% and was still climbing; the free optimum wanted 40.7%. The
+#: reported "measured ceiling 22.5%" was the edge of the sweep wearing the name of an economic
+#: limit, and its own reason string said so: "sweep further out to earn more."
 CURVE_GRID = (0.02, 0.04, 0.06, 0.08, 0.10, 0.125, 0.15, 0.175, 0.20, 0.225, 0.25, 0.275,
-              0.30, 0.325, 0.35, 0.375, 0.40, 0.425, 0.45)
+              0.30, 0.325, 0.35, 0.375, 0.40, 0.425, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70,
+              0.80, 0.90, 1.00)
 
 #: The highest heat the growth curve is MEASURED at. A MEASUREMENT bound, not a policy bound, and
 #: the distinction is the whole point of this constant existing separately from HEAT_HARD_CEILING.
@@ -141,13 +153,29 @@ CURVE_GRID = (0.02, 0.04, 0.06, 0.08, 0.10, 0.125, 0.15, 0.175, 0.20, 0.225, 0.2
 #: ("20, 21, 23, 25, 27, 30, 34, 39, 45"). Raising it further is a decision about how far the desk
 #: is willing to SIMULATE, which costs solver time and nothing else -- it is not a decision about
 #: how much risk to take, because no heat is deployed that the curve did not first justify.
-CURVE_SAMPLE_MAX = 0.45
+#: RAISED FROM 0.45 TO 1.00 (principal, 2026-09-12). Solver time is the only thing this costs:
+#: no heat is deployed that the curve did not first justify, `measured_ceiling` still refuses
+#: every heat past the turnover point, and it still never runs past the last SAMPLED point. The
+#: previous 0.45 was itself a range the principal had named; the instruction now is that the
+#: measurement must not be bounded at all, so the desk can find where growth genuinely turns
+#: instead of reporting the edge of its own grid as an economic result.
+CURVE_SAMPLE_MAX = 1.00
 
 #: Round-trip execution cost charged against a unit of heat moved, in account fraction. Turnover
 #: below the growth it buys is not an improvement, and this is the price that decides.
+#: Round-trip execution cost charged against a unit of heat moved, in account fraction. Derived
+#: from the measured cost stack on this book: spread plus commission is ~0.03R one way, so the
+#: round trip is ~0.06R. Turnover below the growth it buys is not an improvement and this is
+#: the price that decides. Deliberately the MEASURED cost and not a padded one -- padding it
+#: would suppress rebalances that genuinely pay, which is a growth cut wearing a cost estimate.
 TURNOVER_COST_R = 0.06
 #: Days of growth the rebalance is expected to earn before the next one supersedes it. Short on
 #: purpose: a rebalance justified only by a month of undisturbed holding is not justified.
+#: Days of growth the rebalance is expected to earn before the next supersedes it. Derived from
+#: the allocator's own cadence: it re-solves hourly and the book changes materially on a weekly
+#: scale, so 5.0 is one trading week -- the longest horizon a single rebalance can honestly
+#: claim. Short on purpose: a rebalance justified only by a month of undisturbed holding is not
+#: justified.
 NO_TRADE_HORIZON_DAYS = 5.0
 
 #: Annual growth above which the pass is REFUSED as an input defect. The armed gold book replays
@@ -155,7 +183,34 @@ NO_TRADE_HORIZON_DAYS = 5.0
 #: produced by anything real on this desk. Set well above every honest number so it can only fire
 #: on a defect, and it fires by refusing the pass rather than by clipping the number -- a clipped
 #: number is a defect wearing a plausible answer.
-IMPLAUSIBLE_ANNUAL_PCT = 5000.0
+#: PRINCIPAL OVERRIDE (2026-09-11, instructed in session 01WZHzZoD3QX9Tx668fkAaw6): "make it
+#: follow the optimum always no coping or getting scared js cuz returns show extreme".
+#: QUANT_IMPLAUSIBLE_ANNUAL_PCT raises or removes the fence (0 or a negative value disables it).
+#:
+#: WHAT THE FENCE WAS FOR, kept here because the override does not make the reasoning wrong.
+#: It fires on a BROKEN INPUT, not on a big number -- the case that justified it produced 2.8e14
+#: percent from sleeves stacked on mismatched date clocks. On 2026-09-11 the desk's own realised
+#: record was measured against it and the fence lost that argument on the evidence: six trading
+#: days at +0.0327 log/day realised against the model's +0.0174 claim, i.e. the model was HALF
+#: the realised rate, not a fantasy multiple of it. On a EUR 600 account four figures a year is
+#: arithmetic, not absurdity.
+#:
+#: WHAT DISABLING IT COSTS, stated plainly. The fence was the only check standing between a
+#: date-misalignment defect and a sized book: with it off, an input error that inflates growth
+#: is deployed rather than refused. The compensating measurements are `heat.effective`
+#: (where the heat actually lands) and the survival ceiling from `kelly_surface.envelope`,
+#: both of which still bind every pass and neither of which is disabled here.
+#: THE DEFAULT NOW APPLIES THE OVERRIDE INSTEAD OF DESCRIBING IT (2026-09-11). The reasoning
+#: above was written and the constant was left at 5000, so the fence went on refusing every pass
+#: while the file explained why it should not. Measured that evening: three consecutive passes
+#: reported a free optimum of 2.8e5 - 5.1e5 percent a year, which is 0.0319 log/day -- BELOW the
+#: +0.0327 log/day the desk realised over the preceding six trading days. A fence that refuses a
+#: rate the account has already earned is not measuring plausibility, and 5000%/yr is 0.0156
+#: log/day, under half the realised rate. The bar is set where it can only catch ARITHMETIC
+#: corruption (the 2.8e14 date-clock defect is seven orders of magnitude above it) and can never
+#: again fire on a book a real account could produce. Set QUANT_IMPLAUSIBLE_ANNUAL_PCT=0 to
+#: remove it entirely.
+IMPLAUSIBLE_ANNUAL_PCT = float(os.environ.get("QUANT_IMPLAUSIBLE_ANNUAL_PCT", "1e7"))
 
 #: Regime-mixture bounds. No regime the desk has enough history for is ever assigned zero worlds
 #: (MIN), and no regime may own more than MAX of the population however certain the classifier
@@ -484,7 +539,8 @@ def regime_state(daily: pd.DataFrame,
 
         eng = RegimeEngine().fit(close)
         lab = {j: str(ch["label"]) for j, ch in eng.hmm_char.items()}
-        by_day = {str(d): lab[int(j)] for d, j in zip(close.index, eng.hmm_states, strict=True)}
+        by_day = {str(d): lab[int(j)]
+                  for d, j in zip(close.index, eng.filtered_states, strict=True)}
         labels = tuple(by_day.get(str(d)[:10], "") for d in daily.index)
 
         # The filtered posterior is the STARTING point, summed onto LABELS rather than latent
@@ -494,7 +550,13 @@ def regime_state(daily: pd.DataFrame,
         for j, pj in enumerate(post):
             filtered[lab[int(j)]] = filtered.get(lab[int(j)], 0.0) + float(pj)
 
-        fc = regime_forecast(eng.hmm.transmat, post, lab, eng.hmm_states,
+        # CAUSAL PATH, NOT THE SMOOTHED ONE. `forecast` reads this path twice: `_runs` for the
+        # current run's age and `age_hazard` for the dwell-time hazard fitted on historical run
+        # LENGTHS. Viterbi produces artificially crisp blocks -- that is what smoothing is for --
+        # so a hazard fitted on it says regimes persist longer than a desk watching in real time
+        # would ever have seen, and the current age is measured off a run whose start was chosen
+        # with hindsight. The filtered path is noisier and is the honest input.
+        fc = regime_forecast(eng.hmm.transmat, post, lab, eng.filtered_states,
                              horizons=REGIME_TERM_STRUCTURE)
         raw = dict(fc.p_ahead.get(REGIME_FORECAST_H) or filtered)
         diag = {
@@ -661,7 +723,7 @@ def search_trials() -> dict[str, int]:
             out[f"family:{fam}"] = max(int(out.get(f"family:{fam}", 0)), int(n))
         out["lifetime_total"] = max(int(out.get("lifetime_total", 0)),
                                     int(life.get("lifetime_trials", 0)))
-    except Exception:                                            # noqa: BLE001
+    except Exception:
         pass
     return out
 
@@ -729,6 +791,9 @@ def sleeve_evidence(daily: pd.DataFrame, forward: dict[str, dict[str, float]],
          f"{cost_doc['summary']['n_undercharged']} under-charged, worst "
          f"{cost_doc['summary']['worst_undercharge']}")
     costs = cost_doc["sleeves"]
+    # THE REGIME AND THE FACTOR SET, ONCE PER PASS. Every sleeve below reads the same kernel and
+    # the same factor history; the per-sleeve work is a dict lookup and one small ridge solve.
+    mctx = _MacroContext([str(d) for d in daily.index])
 
     out: list[SleeveEvidence] = []
     # NO ZERO-FILL HERE. `align` reindexes every sleeve onto the union of trading days, so a
@@ -744,9 +809,16 @@ def sleeve_evidence(daily: pd.DataFrame, forward: dict[str, dict[str, float]],
     }
     for name, hist in series.items():
         fwd = forward.get(name, {})
+        dates = [str(d) for d in daily.index]
         if fwd:
             hist = np.concatenate([hist, np.array(list(fwd.values()), dtype=float)])
+            dates = dates + [str(k) for k in fwd]
         parts = name.split("_")
+        # The macro regime weights and the factor loadings for THIS sleeve, on its own calendar.
+        # Both are empty when unmeasured, which the posterior and the covariance read as "no
+        # claim" (see `_MacroContext`).
+        macro_w = mctx.weights(dates)
+        fl = mctx.loadings(hist, dates, parts[0])
         # FAMILY IS THE MECHANISM, NOT THE SYMBOL. The hierarchical posterior pools a sleeve
         # toward its family mean, and pooling by SYMBOL pools EURJPY_asia_TREND with
         # EURJPY_london_NORMAL -- two different mechanisms that happen to share an instrument --
@@ -795,8 +867,109 @@ def sleeve_evidence(daily: pd.DataFrame, forward: dict[str, dict[str, float]],
             # bucket moves the estimate slightly and forty move it fully.
             state_r=_state_returns(name, phase, trades_by_sleeve, broker_utc_offset_h),
             state_key=phase or "",
+            macro_w=macro_w,
+            factor_load=(tuple(float(x) for x in fl.load) if fl is not None and fl.n >= 3
+                         else ()),
+            factor_resid_var=(float(fl.resid_var) if fl is not None and fl.n >= 3 else 0.0),
         ))
+    mmeta = mctx.finish(len(out))
+    _st = mmeta.get("state") or {}
+    _k = mmeta.get("kernel") or {}
+    _f = mmeta.get("factors") or {}
+    _log(f"macro regime: {_st.get('status')} conf={_st.get('confidence')} "
+         f"labels={_st.get('labels')} kernel={_k.get('status')} "
+         f"n_eff={_k.get('n_eff')} fresh={_k.get('freshness')}; factors {_f.get('status')} "
+         f"{_f.get('note', '')} loadings on {_f.get('n_with_loadings')}/{len(out)} sleeves "
+         f"(median explained {_f.get('median_explained')})")
     return out
+
+
+#: What the last `sleeve_evidence` pass learned about the macro regime and the factor model, for
+#: the allocation artifact. Written by `_MacroContext`, read by `run`.
+_MACRO_META: dict[str, Any] = {}
+
+
+class _MacroContext:
+    """The macro state and the factor set for ONE pass, built once and applied per sleeve.
+
+    TWO INPUTS THE POSTERIOR DID NOT HAVE, EACH FAILING TO "NOTHING CLAIMED". The kernel weights
+    (`libs.portfolio.macro_state`) give every day of the matrix a similarity to today's macro
+    state; the factor loadings (`libs.portfolio.leg_factors`) give every sleeve a position in
+    currency-leg / macro factor space. A sleeve gets an empty weight vector or no loadings when
+    either cannot be built, and `_posterior_mu` / `_corr_abs` then behave exactly as they did
+    before those fields existed -- absence is never a regime of 0.5 or a correlation of 0.0.
+    """
+
+    def __init__(self, dates: list[str]) -> None:
+        self.meta: dict[str, Any] = {}
+        self._w_by_date: dict[str, float] = {}
+        self._macro_state: Any = None
+        self._leg_factors: Any = None
+        self.fs: Any = None
+        self.n_loaded = 0
+        self.explained: list[float] = []
+        try:
+            from libs.portfolio import macro_state
+            self._macro_state = macro_state
+            self.meta["state"] = macro_state.now()
+            w, kmeta = macro_state.kernel_weights(dates)
+            self._w_by_date = {str(d)[:10]: float(x) for d, x in zip(dates, w, strict=True)}
+            self.meta["kernel"] = kmeta
+        except Exception as exc:
+            self.meta["kernel"] = {"status": "UNMEASURED",
+                                   "why": f"{type(exc).__name__}: {exc}"}
+        try:
+            from libs.portfolio import leg_factors
+            self._leg_factors = leg_factors
+            self.fs = leg_factors.factor_set(leg_factors.daily_factor_returns())
+            self.meta["factors"] = ({"status": "MEASURED", "note": self.fs.note,
+                                     "names": list(self.fs.names)} if self.fs is not None
+                                    else {"status": "UNMEASURED",
+                                          "why": "no factor history could be built from the "
+                                                 "universe bars"})
+        except Exception as exc:
+            self.fs = None
+            self.meta["factors"] = {"status": "UNMEASURED",
+                                    "why": f"{type(exc).__name__}: {exc}"}
+
+    def weights(self, dates: list[str]) -> np.ndarray:
+        """Kernel weight per date; empty when the regime is unmeasured."""
+        if not self._w_by_date:
+            return np.array([], dtype=float)
+        missing = [d for d in dates if str(d)[:10] not in self._w_by_date]
+        if missing and self._macro_state is not None:
+            try:
+                w_extra, _ = self._macro_state.kernel_weights(missing)
+                for d, x in zip(missing, w_extra, strict=True):
+                    self._w_by_date[str(d)[:10]] = float(x)
+            except Exception:
+                pass
+        # A date the kernel never saw is NaN (no state), never 0.0 (a day unlike today).
+        return np.array([self._w_by_date.get(str(d)[:10], float("nan")) for d in dates],
+                        dtype=float)
+
+    def loadings(self, hist: np.ndarray, dates: list[str], symbol: str) -> Any:
+        if self.fs is None or self._leg_factors is None:
+            return None
+        try:
+            fl = self._leg_factors.fit_loadings(hist, dates, self.fs, symbol)
+        except Exception:
+            return None
+        if fl.n >= 3:
+            self.n_loaded += 1
+            self.explained.append(float(fl.explained))
+        return fl
+
+    def finish(self, n_sleeves: int) -> dict[str, Any]:
+        f = dict(self.meta.get("factors") or {})
+        f["n_with_loadings"] = self.n_loaded
+        f["n_sleeves"] = n_sleeves
+        if self.explained:
+            f["median_explained"] = round(float(np.median(self.explained)), 4)
+        self.meta["factors"] = f
+        _MACRO_META.clear()
+        _MACRO_META.update(self.meta)
+        return self.meta
 
 
 def _state_returns(name: str, phase: str | None,
@@ -879,6 +1052,15 @@ def _admitted_extra_dims() -> tuple[tuple[str, str], ...]:
         from datetime import datetime as _dt
         now_bucket = {"event": str((sv.get("event") or {}).get("phase") or ""),
                       "weekday": _dt.now(UTC).strftime("%a")}
+        # The macro dimensions' CURRENT buckets, so an admitted `dollar` or `risk` can narrow the
+        # state bucket exactly as the admission test labelled it (`macro_state.labeller`).
+        try:
+            from libs.portfolio.macro_state import now as _macro_now
+            for _dim, _b in (_macro_now().get("labels") or {}).items():
+                if _b:
+                    now_bucket[str(_dim)] = str(_b)
+        except Exception:
+            pass
         out = tuple((d, now_bucket[d]) for d in sorted(allowed)
                     if now_bucket.get(d))
         _EXTRA_DIMS_CACHE = (key, out)
@@ -910,7 +1092,9 @@ def worst_dd_r(daily: pd.DataFrame) -> dict[str, float]:
 # ---------------------------------------------------------------------------------------
 
 def growth_curve(ev: list[SleeveEvidence], worlds: Worlds, bounds: dict[str, float],
-                 cfg: WorldConfig) -> dict[float, float]:
+                 cfg: WorldConfig,
+                 *, bounds_at: Callable[[float], dict[str, float]] | None = None,
+                 ) -> dict[float, float]:
     """Mean log growth of the OPTIMALLY COMPOSED book at each total heat on the grid.
 
     This is the curve `heat_policy.certify` reads, and it must be measured with the same
@@ -926,7 +1110,28 @@ def growth_curve(ev: list[SleeveEvidence], worlds: Worlds, bounds: dict[str, flo
         # heat past its turnover point, so measuring 45% is how the desk learns 45% is bad.
         if h > CURVE_SAMPLE_MAX:
             continue
-        ub = {k: min(v, h) for k, v in bounds.items()}
+        # THE BOUNDS MUST BE THE ONES THE DESK WOULD RUN *AT THIS HEAT*, and passing one fixed set
+        # made the curve unable to measure its own ceiling.
+        #
+        # MEASURED 2026-09-12. The caller passed `per_sleeve_bounds(dd, HEAT_TARGET)` -- the bounds
+        # for a 20% book -- and they sum to ~22.5%. Every grid point above that failed
+        # `sum(ub) < h` and was skipped, so the curve stopped at 0.225 with growth STILL RISING
+        # (+0.02693/day at 0.200, +0.02821 at 0.225, monotone throughout, never turning).
+        # `measured_ceiling` then correctly reported "the bound is the edge of the MEASUREMENT,
+        # not of the opportunity -- sweep further out to earn more" and returned 22.5%.
+        #
+        # So the deployed ceiling was the SUM OF THE FLOOR'S BOUNDS wearing the name of an
+        # economic limit, while the free optimum wanted 40.7% and the survival envelope allowed
+        # 28.5%. The desk was not being held back by where growth turns; it was being held back by
+        # never having asked.
+        #
+        # `bounds_at(h)` re-derives the per-sleeve bounds for the heat under test, which is the
+        # only honest question: what would this book do IF it ran at h, under the bounds it would
+        # have at h. Every safety property is untouched -- measured_ceiling still refuses past the
+        # turnover point, still never runs past the last SAMPLED point, and the survival envelope
+        # still binds independently.
+        b = bounds_at(h) if bounds_at is not None else bounds
+        ub = {k: min(v, h) for k, v in b.items()}
         if sum(ub.values()) < h:
             continue                     # bounds cannot fund this heat; not a growth finding
         try:
@@ -1116,6 +1321,22 @@ def current_book() -> dict[str, float]:
     Read from the previous allocation when there is one, else from the gateway's own sleeve set
     priced at Q_OPT. NOT from a list in this file: a second opinion about what is live is the
     exact drift this whole module exists to remove.
+
+    THE FALLBACK IS NORMALISED TO THE MANDATE FLOOR, and until 2026-09-11 it was not. Q_OPT is a
+    PER-SLEEVE nominal quantum, so a flat book of it totals whatever the roster size happens to
+    make: 46 live sleeves x 1.2702% = 58.43% "held" heat, and 100 sleeves would have read 127%.
+    A baseline whose total is a function of how many rows are live is not a measurement of
+    anything, and it fed `bind_verdict`, whose one hard rule is that it may not hold the desk
+    outside the mandated band.
+
+    THAT BUILT A TRAP THE BOOK COULD NOT ESCAPE. Measured this evening: the plausibility fence
+    refused a pass, the book published empty, so the next pass found no `book` to read and fell
+    through to this branch, which returned 58.43% -- out of band -- so `bind_verdict` declined to
+    hold it and published the empty solve AGAIN. Once the book emptied it could never come back
+    under its own power, and the gateway logged `sizing: no allocator book` on every pass while
+    the allocator logged "the previous book stands". Scaling the flat book to HEAT_TARGET keeps
+    the baseline in band, so a refused pass now HOLDS instead of zeroing, which is what the
+    refusal always claimed to do.
     """
     if OUT.exists():
         try:
@@ -1125,17 +1346,22 @@ def current_book() -> dict[str, float]:
                 return {str(k): float(v) for k, v in book.items()}
         except (OSError, ValueError):
             pass
+
+    def _flat(names: list[str]) -> dict[str, float]:
+        """A flat book over `names` totalling the mandate floor, not Q_OPT x len(names)."""
+        if not names:
+            return {}
+        each = float(HEAT_TARGET) / float(len(names))
+        return dict.fromkeys(names, each)
+
     try:
         from mt5desk.gateway import sleeve_set
-        from mt5desk.gateway_config_fallback import Q_OPT
-        return {str(s["name"]): float(Q_OPT) for s in sleeve_set()}
+        return _flat([str(s["name"]) for s in sleeve_set()])
     except Exception:
         try:
-            from mt5desk.gateway_config_fallback import Q_OPT
-
             from research.promoter import GOLD_SLEEVE_NAMES, _load_gold_retired
             retired = set(_load_gold_retired())
-            return {n: float(Q_OPT) for n in GOLD_SLEEVE_NAMES if n not in retired}
+            return _flat([n for n in GOLD_SLEEVE_NAMES if n not in retired])
         except Exception:
             return {}
 
@@ -1158,16 +1384,57 @@ def bind_verdict(nt: dict[str, Any], prev_book: dict[str, float], held: dict[str
     ceiling: a held book outside the band is a defect the filter has no authority over, and the
     solve goes out unchanged with the reason on `nt["why_not_binding"]`. A held book the worlds
     cannot score is not a book to keep either. `nt["binding"]` says which way it went.
+
+    OUT OF BAND NEVER MEANS ZERO (2026-09-11, principal: "fix that permanently"). Declining to
+    hold is only safe when there is a SOLVE to publish instead. Measured this evening: the
+    plausibility fence refused three consecutive passes, so `book` arrived EMPTY, the held book
+    read 58.43% (out of band), this branch declined to bind -- and the empty solve went out. Zero
+    heat, `allocator_ok=False`, `CATASTROPHE GUARD: allocator produced no usable book`, and the
+    gateway logging `sizing: no allocator book` on every pass. Refusing to hold 58% because it is
+    above a 30% ceiling, and publishing 0% instead, misses the ceiling by more than holding did
+    and violates the 20% floor as well; it is the strictly worst of the three available answers.
+
+    So when there is no solve to fall back on, the held book is SCALED into the band rather than
+    discarded -- same composition, mandated total. The growth numbers travel with a note saying
+    which total they were measured at, because scaling the weights does not rescore them and
+    publishing them as if it had would be the defect wearing a plausible answer.
     """
     nt["binding"] = False
     if nt.get("verdict") != "NO CHANGE":
         return book, funded
     held_total = float(sum(float(v) for v in prev_book.values()))
-    if not prev_book or not math.isfinite(float(held.get("mean_log_growth", float("nan")))):
+    scorable = bool(prev_book) and math.isfinite(float(held.get("mean_log_growth", float("nan"))))
+    out_of_band = held_total < floor - 1e-4 or held_total > ceiling + 1e-4
+    # A solve worth publishing instead of the held book: non-empty and carrying real heat.
+    have_solve = bool(book.heat) and book.total_heat > 1e-9
+    if not scorable:
         nt["why_not_binding"] = "no scorable held book to keep"
-    elif held_total < floor - 1e-4 or held_total > ceiling + 1e-4:
+    elif out_of_band and have_solve:
         nt["why_not_binding"] = (f"held book at {held_total:.2%} is outside the mandated "
-                                 f"[{floor:.0%}, {ceiling:.0%}] band")
+                                 f"[{floor:.0%}, {ceiling:.0%}] band; publishing the solve")
+    elif out_of_band:
+        target = min(max(held_total, floor), ceiling)
+        k = target / held_total if held_total > 1e-12 else 0.0
+        scaled = {str(s): float(v) * k for s, v in prev_book.items() if float(v) * k > 1e-5}
+        nt["binding"] = True
+        nt["held_rescaled"] = {"from": round(held_total, 6), "to": round(target, 6),
+                               "factor": round(k, 6)}
+        nt["why_not_binding"] = ""
+        kept = AllocationResult(
+            heat=scaled, total_heat=float(sum(scaled.values())),
+            robust_score=float(held["robust_score"]),
+            mean_log_growth=float(held["mean_log_growth"]),
+            cvar_log_growth=float(held["cvar_log_growth"]),
+            annual_growth_pct=float(held["annual_growth_pct"]),
+            prob_annual_loss=float(held["prob_annual_loss"]),
+            marginal=dict(book.marginal),
+            note=(f"held and rescaled: the solve was empty, so the held book was scaled "
+                  f"{held_total:.2%} -> {target:.2%} into the mandated band rather than "
+                  f"published as zero. Growth numbers were measured at {held_total:.2%}."))
+        _log(f"NO SOLVE TO PUBLISH: holding the book, rescaled {held_total:.2%} -> "
+             f"{target:.2%} into the [{floor:.0%}, {ceiling:.0%}] band across "
+             f"{len(scaled)} sleeves. Zero heat is not the safe answer here.")
+        return kept, {k2: round(v, 6) for k2, v in scaled.items()}
     else:
         nt["binding"] = True
         kept = AllocationResult(
@@ -1589,7 +1856,7 @@ def effective_heat_of(ev: list[SleeveEvidence], book: dict[str, float]) -> dict[
         from libs.portfolio.latent_factors import effective as _effective
         out: dict[str, Any] = _effective(ev, book)
         return out
-    except Exception as exc:                                             # noqa: BLE001
+    except Exception as exc:
         return {"error": f"{type(exc).__name__}: {exc}"}
 
 
@@ -1614,7 +1881,7 @@ def state_growth_curves(ev: list[SleeveEvidence], worlds: Worlds, book: dict[str
         return {}, "no book or no regime-labelled worlds: the global curve stands"
     try:
         from libs.portfolio.allocator_proof import _subworlds, buckets_from_worlds
-    except Exception as exc:                                             # noqa: BLE001
+    except Exception as exc:
         return {}, f"state buckets unavailable ({type(exc).__name__}: {exc})"
     buckets = buckets_from_worlds(worlds, now_buckets, min_worlds=MIN_STATE_WORLDS)
     if not buckets:
@@ -1764,6 +2031,11 @@ ADMISSION_CANDIDATE_BUDGET_S = 8.0
 #: its own noise says it wins, and billed as the `explore_thompson` rail. Five percent of the
 #: book is one percent of account heat on the 20% floor: enough to accrue a forward record,
 #: small enough that the growth it can cost is inside the margin by construction.
+#: Derived as a fraction of the account's own floor: 5% of the book is 1.0% of account heat
+#: at the 20% floor (0.05 x 0.20 = 0.01), which is enough to accrue a forward record on an
+#: ambiguous candidate and small enough that the growth it can cost sits inside the
+#: admission margin by construction. Lent from WITHIN the total -- incumbents scale
+#: proportionally and the total is unchanged -- so this is never an addition to heat.
 EXPLORE_SHARE = 0.05
 #: Iterations a candidate's re-solve gets, warm-started from the incumbent's own optimum. One
 #: sleeve added to a solved book is a small perturbation; a cold solve of the same problem
@@ -1771,6 +2043,14 @@ EXPLORE_SHARE = 0.05
 ADMISSION_ITERATIONS = 120
 #: How stale a published scan may be before a reader must treat it as absent. Matches
 #: `allocator_proof.MAX_AGE_S`: one number for "this measurement still describes today's book".
+#:
+#: WHERE 26 COMES FROM: the heavy admission scan is on a 24-HOUR clock, so the tolerance must
+#: exceed 24h or a scan is judged stale in the minutes before its own successor runs -- a reader
+#: would then see ABSENT once a day, every day, at the moment the book was in fact freshest.
+#: 26 = 24 + 2, and the 2 is one missed run's worth of slack measured against the scan's own
+#: observed runtime (829s on the 2026-09-12 pass, so ~0.23h) plus scheduler jitter. Anything
+#: below 25 re-creates the daily false-absent; far above 26 starts admitting a scan taken before
+#: the previous session's book, which is a different book.
 ADMISSION_MAX_AGE_S = 26 * 3600
 #: Marginal growth this small is inside the noise of a sampled-world estimate, so it is not a
 #: win. Expressed as a fraction of the incumbent book's OWN growth rate, and it is the same
@@ -2464,6 +2744,31 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                          # names -- they are not in `forward` -- so nothing else supplies it.
                          forward_only_days={n: len(sr) for n, sr in scalp.items()})
     dd = worst_dd_r(daily)
+    # THE MACRO TILTS THIS PASS APPLIES, MEASURED ONCE FOR THE ARTIFACT. `_posterior_mu` is the
+    # only place the contrast is formed; asking it with `diag` returns exactly the tilts the
+    # world draw below will use, so the artifact reports the arithmetic and not a re-derivation.
+    try:
+        from libs.portfolio.robust_elog import _posterior_mu as _pm
+        _diag: dict[str, Any] = {}
+        _pm(ev, np.random.default_rng(0), 1, diag=_diag)
+        _tilts = _diag.get("macro") or {}
+        _ranked = sorted(_tilts.items(), key=lambda kv: -abs(float(kv[1].get("tilt", 0.0))))
+        _MACRO_META["tilts"] = {
+            "n_tilted": sum(1 for _, v in _tilts.items() if abs(float(v.get("tilt", 0.0))) > 0),
+            "n_sleeves": len(ev),
+            "up": sum(1 for _, v in _tilts.items() if float(v.get("tilt", 0.0)) > 0),
+            "down": sum(1 for _, v in _tilts.items() if float(v.get("tilt", 0.0)) < 0),
+            "largest": dict(_ranked[:15]),
+            "rule": ("tilt = lam * (regime-weighted mean - unconditional mean) on the sleeve's "
+                     "own days, lam = n_eff/(n_eff+60), bounded by max(|posterior mean|, "
+                     "se/2); registered two-sided as capital_modifiers `macro_regime`"),
+        }
+        if _ranked:
+            _top = ", ".join(f"{k}={float(v['tilt']):+.4f}" for k, v in _ranked[:4])
+            _log(f"macro tilts: {_MACRO_META['tilts']['up']} up / "
+                 f"{_MACRO_META['tilts']['down']} down of {len(ev)}; largest {_top}")
+    except Exception as exc:
+        _MACRO_META["tilts"] = {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
 
     # THE STATE VECTOR ENTERS AS INFORMATION, NOT AS AUTHORITY. `state_vector_build` fits the
     # per-asset, per-factor and per-clock states the hourly cycle can afford and this reads the
@@ -2599,14 +2904,18 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     # a number that large is a broken input, and the one that produced 2.8e14% was sleeves stacked
     # on mismatched date clocks. The fence does not clip the number -- clipping would hide the
     # defect behind a plausible-looking answer -- it refuses the whole pass.
-    implausible = free.annual_growth_pct > IMPLAUSIBLE_ANNUAL_PCT
+    # A fence at or below zero is OFF (QUANT_IMPLAUSIBLE_ANNUAL_PCT=0), and the pass then follows
+    # the optimum whatever it computes -- the principal's instruction of 2026-09-11.
+    implausible = (IMPLAUSIBLE_ANNUAL_PCT > 0
+                   and free.annual_growth_pct > IMPLAUSIBLE_ANNUAL_PCT)
     if implausible:
         _log(f"REFUSING THIS PASS: free optimum reports {free.annual_growth_pct:.3g}% a year, "
              f"above the {IMPLAUSIBLE_ANNUAL_PCT:.0f}% plausibility fence. That is an input "
              f"defect, not an opportunity. The previous book stands.")
 
     # 2. THE CURVE, then the law.
-    curve = growth_curve(ev, worlds, bounds, cfg) if heavy else {}
+    curve = growth_curve(ev, worlds, bounds, cfg,
+                         bounds_at=lambda _h: per_sleeve_bounds(dd, _h)) if heavy else {}
     if not curve and OUT.exists():
         try:                                    # a fast pass inherits the last heavy curve
             prev = json.loads(OUT.read_text("utf-8")).get("heat", {}).get("curve") or []
@@ -2647,7 +2956,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         from libs.portfolio.allocator_proof import admitted_now, state_id
         kept_dims, adm_why = admitted_now(ROOT, now_buckets)
         current_state = state_id(kept_dims, top_regime)
-    except Exception as exc:                                             # noqa: BLE001
+    except Exception as exc:
         kept_dims, adm_why, current_state = {}, f"{type(exc).__name__}: {exc}", ""
     curves, curves_why = ((state_growth_curves(ev, worlds, free.heat, cfg, kept_dims))
                           if heavy else ({}, f"{mode} clock: the global curve stands"))
@@ -2716,10 +3025,57 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             # measurement rides in `survival["margin_use"]` where the principal can read it and
             # decide, and the envelope is computed exactly as it was before this wave.
             # Flip `margin_use=_mu` back on only on the principal's explicit yes.
-            survival = _envelope(_pre_surface.get("rows") or [], alpha=cfg.cvar_alpha,
-                                 fallback=HEAT_HARD_CEILING,
-                                 margin_use=None,
-                                 capacity_max=_capacity_ceiling())
+            # P13 CLOSED BY MEASURING BOTH ANSWERS INSTEAD OF ASSUMING ONE (2026-09-13).
+            #
+            # The refusal above was correct and it rested on a claim nobody had checked: that
+            # feeding `margin_use` can only SHORTEN the envelope. It cannot only shorten it. The
+            # clause binds the run where margin use exceeds MAX_MARGIN_USE, so on a
+            # margin-STARVED account it shortens and on an account with HEADROOM it is slack and
+            # changes nothing -- and the envelope's own fallback can be the tighter of the two.
+            # Which of those this account is, is an arithmetic question about a broker fact, and
+            # leaving it unanswered turned a measurable thing into a standing argument.
+            #
+            # So both envelopes are computed and the DELTA is published. The fed one is still the
+            # unconstrained envelope unless `data/MARGIN_CLAUSE_ENABLED` exists, because arming
+            # a clause that CAN reduce heat is the principal's act and not a session's -- but the
+            # principal now decides against a number rather than against a worry.
+            _env_free = _envelope(_pre_surface.get("rows") or [], alpha=cfg.cvar_alpha,
+                                  fallback=HEAT_HARD_CEILING,
+                                  margin_use=None,
+                                  capacity_max=_capacity_ceiling())
+            _env_margin = _env_free
+            if _mu:
+                try:
+                    _env_margin = _envelope(_pre_surface.get("rows") or [], alpha=cfg.cvar_alpha,
+                                            fallback=HEAT_HARD_CEILING,
+                                            margin_use=_mu,
+                                            capacity_max=_capacity_ceiling())
+                except Exception as _exc:
+                    _env_margin = _env_free
+                    _mu_why = f"{_mu_why}; counterfactual envelope failed ({type(_exc).__name__})"
+            _armed_margin = (BASE / "data" / "MARGIN_CLAUSE_ENABLED").exists()
+            survival = _env_margin if (_armed_margin and _mu) else _env_free
+            _c_free = _env_free.get("operative_ceiling")
+            _c_marg = _env_margin.get("operative_ceiling")
+            survival["margin_clause"] = {
+                # WHAT THE CLAUSE WOULD DO, whether or not it is fed. This is the number the
+                # decision to arm it turns on, and it did not exist before today.
+                "armed": _armed_margin,
+                "fed": bool(_armed_margin and _mu),
+                "operative_ceiling_without": _c_free,
+                "operative_ceiling_with": _c_marg,
+                "delta": (None if (_c_free is None or _c_marg is None)
+                          else round(float(_c_marg) - float(_c_free), 6)),
+                "direction": ("UNMEASURED" if (_c_free is None or _c_marg is None or not _mu)
+                              else "SLACK -- the clause does not bind; arming costs nothing"
+                              if float(_c_marg) >= float(_c_free)
+                              else "BINDS LOWER -- arming would shrink the book; principal's call"),
+                "arm_with": "create desks/mt5/data/MARGIN_CLAUSE_ENABLED",
+                "why_gated": ("this is the one term in the wave that can bind the envelope BELOW "
+                              "today's ceiling, and a risk reduction by fiat is exactly what the "
+                              "standing order forbids -- so it is measured, published and fed "
+                              "only on an explicit yes"),
+            }
             survival["margin_use"] = {
                 "status": "MEASURED" if _mu else "UNMEASURED", "why": _mu_why,
                 "account_margin": _acc_margin, "account_equity": _acc_equity,
@@ -2735,7 +3091,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                 surv_ceiling = float(survival["ceiling"])
             surv_why = str(survival.get("why") or "")
             survival["surface_max_fraction"] = _top
-    except Exception as exc:                                             # noqa: BLE001
+    except Exception as exc:
         survival = {"error": f"{type(exc).__name__}: {exc}", "status": "UNMEASURED",
                     "why": "survival surface unavailable this pass; the recorded constant stands"}
     _log(f"heat survival ceiling: {survival.get('why') or survival.get('error')}")
@@ -2848,11 +3204,35 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             _pg_prev = current_book()
             _pg_paths_ = _pg_paths(ev, n_paths=400, horizon=max(1, int(NO_TRADE_HORIZON_DAYS)),
                                    worlds=worlds, seed=seed)
+            # A MEASUREMENT BOUND IS NOT A DEPLOY BOUND, and this line was the one place the two
+            # were conflated. `CURVE_SAMPLE_MAX` is documented above as "a MEASUREMENT bound, not
+            # a policy bound... the whole point of this constant existing separately from
+            # HEAT_HARD_CEILING", and its safety argument is stated just as plainly: "THIS CANNOT
+            # RAISE TODAY'S HEAT... It changes what is MEASURED, never what is DEPLOYED."
+            #
+            # Here it DID change what is deployed. Every other solve in this file that produces a
+            # publishable book passes `target=` and per-sleeve caps at the resolved heat, so the
+            # target binds however wide the hard_cap is. The posterior challenger passes NO target
+            # -- it is free to choose its own heat between floor and ceiling -- so the ceiling IS
+            # the policy for it, and raising CURVE_SAMPLE_MAX from 0.45 to 1.00 to let the growth
+            # curve find its true optimum silently handed the posterior a 100% licence.
+            #
+            # MEASURED ON THE LIVE BOX, 2026-09-12 11:21: the posterior solved to 52.96% heat and
+            # was ADOPTED on a genuine dE of +0.01469 CI [+0.01105, +0.01870]. The ruin check then
+            # correctly refused it -- "at least one sampled world wipes it out" -- and, having
+            # nothing else to publish, the pass emitted ZERO heat. The desk fell back to the 20%
+            # floor with a flat book while its own solve had earned 22.5%, and the artifact read
+            # `binding: catastrophe` on a desk that was working perfectly.
+            #
+            # Bounded by HEAT_HARD_CEILING (30%), which is the desk's standing policy ceiling and
+            # what every other deploy path already respects. The growth curve keeps its full 1.00
+            # sampling grid, so nothing about what the desk can MEASURE changes -- which is what
+            # the comment above promised in the first place.
+            _post_ceiling = max(HEAT_HARD_CEILING, float(verdict.total_heat))
             _pbook = _pg_solve(ev, h_prev=_pg_prev, paths=_pg_paths_,
                                floor=float(verdict.total_heat),
-                               ceiling=max(CURVE_SAMPLE_MAX, verdict.total_heat),
-                               caps=per_sleeve_bounds(dd, max(CURVE_SAMPLE_MAX,
-                                                              verdict.total_heat)),
+                               ceiling=_post_ceiling,
+                               caps=per_sleeve_bounds(dd, _post_ceiling),
                                turnover_cost=TURNOVER_COST_R)
             _cmp = _pg_compare(_pbook, funded, _pg_paths_, h_prev=_pg_prev,
                                turnover_cost=TURNOVER_COST_R, seed=seed)
@@ -2865,24 +3245,54 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                  f"{'ADOPT' if _cmp.get('beats') else 'funded book stands'}")
             if _cmp.get("beats") and _pbook.h:
                 sc = score_book(ev, _pbook.h, cfg=cfg, worlds=worlds)
-                book = AllocationResult(
-                    heat=dict(_pbook.h), total_heat=float(_pbook.total_heat),
-                    robust_score=float(sc["robust_score"]),
-                    mean_log_growth=float(sc["mean_log_growth"]),
-                    cvar_log_growth=float(sc["cvar_log_growth"]),
-                    annual_growth_pct=float(sc["annual_growth_pct"]),
-                    prob_annual_loss=float(sc["prob_annual_loss"]),
-                    note=(f"posterior multi-period book adopted: dE[log W] "
-                          f"{_cmp['delta_elogw_per_day']:+.5f}/day with the CI excluding 0; "
-                          f"binding={_pbook.binding}"))
-                funded = {k: round(v, 6) for k, v in book.heat.items() if v > 1e-5}
-                posterior["adopted"] = True
-                if _pbook.binding == "ruin_guard":
-                    # The one mechanism licensed below the resolved floor, and it has just
-                    # proved its dE[log W] on the same paths -- said out loud, never quietly.
-                    _log(f"POSTERIOR RUIN GUARD: the adopted book holds {_pbook.total_heat:.2%},"
-                         f" below the resolved {verdict.total_heat:.2%}; p_ruin at the floor "
-                         f"breached eps and the reduction raised robust E[log W]")
+                # A CHALLENGER THAT CANNOT BE PUBLISHED MUST NOT UNSEAT THE INCUMBENT.
+                #
+                # `score_book` returns mean_log_growth = -inf for a book wiped out in at least one
+                # sampled world, and the guard further down correctly refuses to publish such a
+                # book. But the adoption above it had ALREADY overwritten `book` and `funded` --
+                # so a ruinous challenger did not merely fail, it took the perfectly good funded
+                # book down with it, and the pass then published ZERO and fell back to the flat
+                # floor.
+                #
+                # MEASURED ON THE LIVE BOX, 2026-09-12: the posterior solved to 30.00% heat,
+                # beat the funded book on a genuine dE of +0.00778 with the CI excluding zero, was
+                # adopted, scored -inf, and the desk published 0.00% and deployed the 20% floor --
+                # while the funded book it discarded had earned 22.5% and was not ruinous at all.
+                # `binding: catastrophe` on an allocator that was working.
+                #
+                # The comparison that licensed the swap is E[log W] on the sampled paths; ruin on
+                # those same paths is the one condition that comparison cannot express, because
+                # -inf is not a number the CI machinery can order. So it is tested separately,
+                # here, BEFORE the incumbent is touched. This removes nothing the challenger had
+                # legitimately won: a book that may never be deployed has won nothing.
+                if not math.isfinite(float(sc["mean_log_growth"])):
+                    posterior["adopted"] = False
+                    posterior["refused"] = (
+                        f"challenger at {_pbook.total_heat:.2%} is RUINOUS on the sampled paths "
+                        f"(mean_log_growth -inf) -- it beat the funded book on dE[log W] but "
+                        f"cannot be published, so the funded book stands. Adopting it would have "
+                        f"discarded a publishable book for one that is not.")
+                    _log(f"POSTERIOR REFUSED: {posterior['refused']}")
+                else:
+                    book = AllocationResult(
+                        heat=dict(_pbook.h), total_heat=float(_pbook.total_heat),
+                        robust_score=float(sc["robust_score"]),
+                        mean_log_growth=float(sc["mean_log_growth"]),
+                        cvar_log_growth=float(sc["cvar_log_growth"]),
+                        annual_growth_pct=float(sc["annual_growth_pct"]),
+                        prob_annual_loss=float(sc["prob_annual_loss"]),
+                        note=(f"posterior multi-period book adopted: dE[log W] "
+                              f"{_cmp['delta_elogw_per_day']:+.5f}/day with the CI excluding 0; "
+                              f"binding={_pbook.binding}"))
+                    funded = {k: round(v, 6) for k, v in book.heat.items() if v > 1e-5}
+                    posterior["adopted"] = True
+                    if _pbook.binding == "ruin_guard":
+                        # The one mechanism licensed below the resolved floor, and it has just
+                        # proved its dE[log W] on the same paths -- said out loud, never quietly.
+                        _log(f"POSTERIOR RUIN GUARD: the adopted book holds "
+                             f"{_pbook.total_heat:.2%}, below the resolved "
+                             f"{verdict.total_heat:.2%}; p_ruin at the floor breached eps and "
+                             f"the reduction raised robust E[log W]")
         except Exception as exc:
             posterior = {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
             _log(f"posterior book unmeasured: {posterior['why']}")
@@ -3192,7 +3602,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             }
             _log(f"next 10bp -> {_step.get('best')} "
                  f"({_step.get('best_gain_per_day')}/day); {_step.get('why')}")
-    except Exception as exc:                                             # noqa: BLE001
+    except Exception as exc:
         growth_derivs = {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
 
     # THE FOUR HEATS AND THE WORLDS-BASED TRADE VALUE: what the nominal heat is really made of
@@ -3208,7 +3618,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             _log(f"effective heat: nominal={effective_heat.get('nominal')} "
                  f"eff={effective_heat.get('effective')} n_eff={effective_heat.get('n_eff')}; "
                  f"trade value {trade_value.get('verdict')} ({trade_value.get('trade_value')})")
-    except Exception as exc:                                         # noqa: BLE001
+    except Exception as exc:
         effective_heat = {"error": f"{type(exc).__name__}: {exc}"}
     # NOMINAL VS EFFECTIVE, AND WHICH BOUND BOUND -- on the published book beside the candidate
     # the ceiling was actually derived from, so the artifact can be read as an argument rather
@@ -3379,6 +3789,12 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         "drift_overlay": {"crisis_prob": round(crisis_share, 6),
                           "standing": WorldConfig().crisis_prob,
                           "why": crisis_why, "source": drift_why},
+        # THE MACRO REGIME THIS BOOK WAS SOLVED IN, AND WHAT IT MOVED (2026-09-16): the state
+        # (dollar / risk / rates / curve / liquidity ranks and buckets), the kernel that weighted
+        # every sleeve's history by its resemblance to today, the per-sleeve tilts the posterior
+        # applied, and the factor model that gave `_corr_abs` a covariance for pairs with no
+        # common history. Each block says UNMEASURED with a reason when it could not be built.
+        "macro_regime": dict(_MACRO_META),
         "book": funded,
         # ROSTERED SLEEVES THIS SOLVE GAVE ZERO. Read by `decision_core.book_from_allocation`,
         # which carries them into the sizing book AT ZERO so the gateway can size them at zero

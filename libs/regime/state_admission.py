@@ -272,6 +272,26 @@ def build_labeller(name: str) -> Callable[[Trade], str] | None:
                 return ""
         return _weekday
 
+    if name in ("dollar", "risk", "rates", "real_rates", "curve", "liquidity"):
+        # THE MACRO STATE, POINT-IN-TIME (2026-09-16). Each is the trailing-year percentile rank
+        # of a FRED level as of the day BEFORE the trade, bucketed into terciles, so a print
+        # released the evening of the trade cannot label it. The allocator already conditions
+        # its posterior on the same state through a kernel (`libs.portfolio.macro_state`); this
+        # is the walk-forward judgement of whether that conditioning predicts trades it has never
+        # seen, on the desk's own realised record -- the same graveyard every other dimension
+        # faces, and the only thing that can bury it.
+        try:
+            from libs.portfolio.macro_state import labeller as _macro_labeller
+        except ImportError:
+            return None
+        fn = _macro_labeller(name)
+        if fn is None:
+            return None
+
+        def _macro(t: Trade) -> str:
+            return fn(t.when)
+        return _macro
+
     if name == "event":
         # POINT-IN-TIME BY CONSTRUCTION. The calendar rows carry the SCHEDULED stamp of each
         # release, so a trade from January is classified against the releases around January.

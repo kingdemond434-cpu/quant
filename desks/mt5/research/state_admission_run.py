@@ -50,7 +50,7 @@ LIVE = BASE / "data" / "live_ledger.jsonl"
 #: ranked point-in-time among that symbol's earlier readings and read off the last bar stamped
 #: strictly before the trade. Four dimensions, not three -- and every one is charged for the
 #: search of four (`judge` deflates by `dimensions_tried`); the judge and its bars are unchanged.
-DEFAULT_DIMENSIONS = ("session", "weekday", "event", "rvol")
+DEFAULT_DIMENSIONS = ("session", "weekday", "event", "rvol", "dollar", "risk")
 
 
 def _entry_time(row: dict) -> str:

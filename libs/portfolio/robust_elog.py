@@ -45,6 +45,7 @@ import time
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 
@@ -120,6 +121,23 @@ class SleeveEvidence:
     #: field -- so it can only relieve today's haircut, never deepen it, and a reference
     #: population drawn with `decay_prob=0` stays decay-free whatever the sleeves carry.
     decay_prob_i: float | None = None
+    #: THE MACRO REGIME, AS A WEIGHT PER DAY OF `daily_r` (2026-09-16). Each entry in [0, 1] is
+    #: how much that day's macro state (dollar / risk / rates rank, `libs.portfolio.macro_state`)
+    #: resembled TODAY's. `_posterior_mu` forms the sleeve's regime-weighted mean as a CONTRAST
+    #: against its unconditional mean on the same days, shrinks it, bounds it, and tilts the
+    #: posterior by it. Empty (the default) or mismatched in length means "no regime
+    #: information", and the posterior is exactly what it was before this field existed. Uniform
+    #: weights mean the same thing arithmetically: the contrast is zero.
+    macro_w: np.ndarray = field(default_factory=lambda: np.array([], dtype=float))
+    #: WHITENED FACTOR LOADINGS (`libs.portfolio.leg_factors.fit_loadings`): `u = L' b` with
+    #: `F = L L'` the factor correlation, so the dot product of two sleeves' loadings IS their
+    #: factor covariance. `_corr_abs` uses it as the correlation TARGET for every pair whose
+    #: realised history is too short to measure -- the covariance the book has on day one, before
+    #: any two sleeves have twenty common days. Empty means no structure is claimed.
+    factor_load: tuple[float, ...] = ()
+    #: Residual (idiosyncratic) variance left by the factors, in (R/day)^2; the denominator that
+    #: turns a factor covariance into a factor correlation.
+    factor_resid_var: float = 0.0
 
     def __post_init__(self) -> None:
         if self.daily_r.ndim != 1:
@@ -325,8 +343,12 @@ def _asset_class(symbol: str) -> str:
 
 
 def _posterior_mu(ev: Sequence[SleeveEvidence], rng: np.random.Generator,
-                  n_worlds: int) -> tuple[np.ndarray, np.ndarray]:
+                  n_worlds: int, diag: dict[str, Any] | None = None,
+                  ) -> tuple[np.ndarray, np.ndarray]:
     """Hierarchical posterior draws of each sleeve's mean daily R.
+
+    `diag`, when a dict is passed, is filled with the macro-regime tilt per sleeve and the final
+    posterior mean and standard error -- for the allocation artifact, never for the arithmetic.
 
     THE PRIOR IS NO EDGE, and that is the whole point. A sleeve is in this matrix because it
     measured well, so its sample mean is biased upward by selection. The posterior mean is the
@@ -504,6 +526,68 @@ def _posterior_mu(ev: Sequence[SleeveEvidence], rng: np.random.Generator,
         conditioned = lam_state * m_state + (1.0 - lam_state) * post_mean
         se = se + np.abs(conditioned - post_mean)
         post_mean = conditioned
+
+    # ------------------------------------------------------------ THE MACRO REGIME, FIFTH LEVEL
+    # THE WORLD OUTSIDE THE PRICE SERIES WAS NOT IN THE ESTIMATE. Every level above conditions
+    # on the sleeve's own history and on the hour; none asks whether the desk is in a strong-
+    # dollar year or a weak one, a risk-on tape or a risk-off one. So a dollar-bull sleeve and a
+    # dollar-bear sleeve on the same pair carried the same expectancy into a regime that can only
+    # pay one of them, and the only thing that could tell them apart was a per-ORDER multiplier
+    # at the venue (`mt5desk.macro_view`), which cannot move heat between sleeves at all.
+    #
+    # THE ESTIMATE IS A CONTRAST, NOT A CONDITIONAL MEAN, and that is what keeps it honest under
+    # the deflation above. `macro_w` weights each of the sleeve's OWN days by how much that day's
+    # macro state resembled today's; the regime-weighted mean minus the plain mean OVER THE SAME
+    # DAYS is the sleeve's excess return in regimes like this one. A conditional mean used raw
+    # would walk around the winner's-curse deflation (a backtest bucket at lam 0.9 is the
+    # unshrunk backtest again); a contrast cancels the selection bias and every pooling above it
+    # to first order, because both sides carry them equally.
+    #
+    # SHRUNK AT k=60 EFFECTIVE DAYS -- `n_eff = (sum w)^2 / sum w^2`, the Kish count, so a kernel
+    # that puts most of its mass on a handful of days is treated as the handful it is -- and
+    # BOUNDED by the larger of the posterior's own magnitude and half its standard error: a
+    # regime may double a sleeve's expectancy or take it to zero, and may move a heavily-shrunk
+    # new sleeve within its own uncertainty, but it cannot manufacture an edge the evidence does
+    # not carry. Uncertainty widens by the tilt, as at the state level; the CVaR objective then
+    # sizes the doubt. TWO-SIDED (registered `macro_regime`): sleeves that earned LESS in
+    # regimes like this one are tilted down by the same rule, and the total heat is untouched --
+    # what moves is which sleeves the heat buys.
+    k_macro = 60.0
+    macro_tilt = np.zeros(n)
+    macro_meta: list[dict[str, float]] = []
+    for i, e in enumerate(ev):
+        w = np.asarray(getattr(e, "macro_w", ()), dtype=float)
+        a = np.asarray(e.daily_r, dtype=float)
+        if w.size == 0 or w.size != a.size:
+            continue
+        # A day with a KNOWN weight is on the unconditional side whatever its weight; only a day
+        # with no state (NaN) leaves the contrast. Keeping only w > 0 compared the regime days
+        # with themselves and returned exactly zero (the first test of this level caught it).
+        keep = np.isfinite(a) & np.isfinite(w)
+        if int(keep.sum()) < 2:
+            continue
+        ww, aa = w[keep], a[keep]
+        sw = float(ww.sum())
+        if sw <= 0.0:
+            continue
+        m_regime = float((ww * aa).sum() / sw)
+        n_eff_w = sw * sw / float((ww * ww).sum())
+        delta = m_regime - float(aa.mean())
+        lam_m = n_eff_w / (n_eff_w + k_macro)
+        tilt = lam_m * delta
+        bound = max(abs(float(post_mean[i])), 0.5 * float(se[i]))
+        tilt = float(min(bound, max(-bound, tilt)))
+        macro_tilt[i] = tilt
+        macro_meta.append({"i": float(i), "n_eff": n_eff_w, "delta": delta, "lam": lam_m,
+                           "tilt": tilt, "bound": bound})
+    if np.any(macro_tilt != 0.0):
+        post_mean = post_mean + macro_tilt
+        se = se + np.abs(macro_tilt)
+    if diag is not None:
+        diag["macro"] = {ev[int(m["i"])].name: {k: round(float(v), 8) for k, v in m.items()
+                                                if k != "i"} for m in macro_meta}
+        diag["post_mean"] = {e.name: float(post_mean[i]) for i, e in enumerate(ev)}
+        diag["se"] = {e.name: float(se[i]) for i, e in enumerate(ev)}
 
     draws = post_mean[None, :] + rng.standard_normal((n_worlds, n)) * se[None, :]
     return draws, post_mean
@@ -782,21 +866,92 @@ def _objective(worlds: Worlds, h: np.ndarray, corr_abs: np.ndarray, cfg: WorldCo
     return score - cfg.redundancy_lambda * red, grad - cfg.redundancy_lambda * red_grad, g_w
 
 
+#: Common days at which the REALISED correlation of a pair carries half the weight against the
+#: structured target. Sixty: three months of overlap before the measurement outranks the model.
+CORR_BLEND_K = 60.0
+#: The structural prior for pairs the factor model cannot see inside. Two sleeves running the
+#: same mechanism on the same instrument take the same trades with different parameters; two
+#: mechanisms on one instrument share its path. Neither is measurable from a fortnight of
+#: returns, and both were being scored as independent.
+SAME_SYMBOL_FAMILY_CORR = 0.80
+SAME_SYMBOL_CORR = 0.35
+
+
+def _structured_corr(ev: Sequence[SleeveEvidence]) -> tuple[np.ndarray, dict[str, int]]:
+    """|corr| from the loadings, floored by the structural prior; zeros where nothing is known."""
+    n = len(ev)
+    t = np.zeros((n, n))
+    loads = [np.asarray(getattr(e, "factor_load", ()), dtype=float) for e in ev]
+    rv = np.array([max(0.0, float(getattr(e, "factor_resid_var", 0.0) or 0.0)) for e in ev])
+    ok = [i for i in range(n) if loads[i].size]
+    n_factor = 0
+    if len(ok) > 1:
+        k = max(loads[i].size for i in ok)
+        m = np.zeros((len(ok), k))
+        for row, i in enumerate(ok):
+            m[row, : loads[i].size] = loads[i]
+        g = m @ m.T
+        d = np.diag(g) + rv[ok]
+        den = np.sqrt(np.outer(d, d))
+        with np.errstate(divide="ignore", invalid="ignore"):
+            f = np.where(den > 0, np.abs(g) / den, 0.0)
+        t[np.ix_(ok, ok)] = np.minimum(1.0, f)
+        n_factor = len(ok)
+    n_struct = 0
+    syms = [str(e.symbol or "") for e in ev]
+    fams = [str(e.family or "") for e in ev]
+    for i in range(n):
+        if not syms[i]:
+            continue
+        for j in range(i + 1, n):
+            if syms[i] != syms[j]:
+                continue
+            s = SAME_SYMBOL_FAMILY_CORR if fams[i] == fams[j] else SAME_SYMBOL_CORR
+            if s > t[i, j]:
+                t[i, j] = t[j, i] = s
+                n_struct += 1
+    np.fill_diagonal(t, 1.0)
+    return t, {"n_with_loadings": n_factor, "n_structural_pairs": n_struct}
+
+
 def _corr_abs(ev: Sequence[SleeveEvidence]) -> np.ndarray:
-    """|correlation| between sleeves on their common history, zeros where it cannot be measured."""
+    """|correlation| between sleeves: realised where measured, factor-structured where not.
+
+    THE REALISED NUMBER NEEDS COMMON DAYS AND A NEW SLEEVE HAS NONE. Measured 2026-09-16: the
+    gateway reported `k_eff UNMEASURED: no sleeve pair has 20 overlapping trading days yet` on
+    every pass, and here every such pair read as 0.0 -- independent -- so the redundancy charge
+    that exists to stop five copies of one dollar bet was switched off for precisely the sleeves
+    it was written for. Each pair is now the overlap-weighted blend of its realised |corr| and a
+    structured target (`_structured_corr`: the factor model's implied |corr|, floored by the
+    same-instrument prior). At 60 common days the two carry equal weight; a pair with a year in
+    common is 86% measurement, a pair with a fortnight is 81% model, and a pair with no common
+    day at all is the model alone -- which is a claim the sleeves' own loadings support, never a
+    convenient zero.
+    """
+    n = len(ev)
     obs = min(int(e.daily_r.size) for e in ev)
+    raw = np.stack([np.asarray(e.daily_r[-obs:], dtype=float) for e in ev], axis=1)
+    fin = np.isfinite(raw)
     # Absent days are flat for a CO-MOVEMENT measure: correlation is a portfolio-level statistic
-    # over the shared calendar, so nan_to_num here is the protocol's "flat only at portfolio
+    # over the shared calendar, so the zero-fill here is the protocol's "flat only at portfolio
     # level, explicitly" -- not the sleeve-level zero-fill that defect #4 names.
-    m = np.stack([np.nan_to_num(e.daily_r[-obs:], nan=0.0) for e in ev], axis=1)
+    m = np.where(fin, raw, 0.0)
     sd = m.std(axis=0)
     live = sd > 0
-    c = np.zeros((len(ev), len(ev)))
+    c = np.zeros((n, n))
     if live.sum() > 1:
         sub = np.corrcoef(m[:, live], rowvar=False)
         c[np.ix_(live, live)] = np.abs(np.nan_to_num(sub, nan=0.0))
     np.fill_diagonal(c, 1.0)
-    return c
+    target, _meta = _structured_corr(ev)
+    if not np.any(target - np.eye(n)):
+        return c
+    f = fin.astype(float)
+    overlap = f.T @ f                                              # common days per pair
+    w = overlap / (overlap + CORR_BLEND_K)
+    out: np.ndarray = w * c + (1.0 - w) * target
+    np.fill_diagonal(out, 1.0)
+    return out
 
 
 def optimise(ev: Sequence[SleeveEvidence], *, hard_cap: float, target: float | None = None,

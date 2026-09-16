@@ -95,6 +95,18 @@ REGISTRY: tuple[Modifier, ...] = (
              "mt5desk.leg_balance.multiplier, applied in gateway.resolve_family_order after "
              "promoted_lot and before the venue lot step",
              "desks/mt5/reports/MISSED_GROWTH.json"),
+    # THE MACRO REGIME, AT THE ALLOCATOR (2026-09-16). Each sleeve's OWN returns, kernel-weighted
+    # by how much each historical day's macro state (dollar, risk, rates ranks from the FRED
+    # archive) resembles today's, as a CONTRAST against its unconditional mean: a sleeve that
+    # earned more on days like today is tilted up, one that earned less is tilted down, shrunk
+    # at k=60 effective days and bounded by the posterior's own magnitude. Two-sided by
+    # construction and heat-neutral: it moves capital BETWEEN sleeves, never the total. This is
+    # the level that lets a strong-dollar regime fund the dollar-bull sleeves and defund the
+    # bears without any sleeve being told which way to trade.
+    Modifier("macro_regime", 0.0, 2.0, "two_sided",
+             "libs/portfolio/robust_elog._posterior_mu (macro level of the hierarchy, from "
+             "SleeveEvidence.macro_w set by pf_allocator via libs.portfolio.macro_state)",
+             "desks/mt5/reports/pf_allocation.json (macro_regime)"),
     Modifier("fade", 0.5, 1.0, "reduce_only",
              "mt5desk.sizing.decay_factor (L1.59 fade flag from decay_monitor)",
              "desks/mt5/reports/MISSED_GROWTH.json"),
