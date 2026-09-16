@@ -128,6 +128,10 @@ LEG_LAYER: dict[str, str] = {
     # The FRED archive and the macro view it feeds are inputs about the world, refreshed hourly
     # when older than six hours: information, and the state the allocator conditions on.
     "fred_macro": "information",
+    # Route repair for dead sources and bars-file integrity are both about whether the desk's
+    # inputs can be read at all: information.
+    "source_fixer": "information",
+    "universe_integrity": "information",
     # sizing: how much
     "capacity": "sizing", "ensemble_optimizer": "sizing",
     # portfolio: how the book is composed

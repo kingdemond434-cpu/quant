@@ -87,8 +87,10 @@ def test_an_operational_row_is_refused_not_mined() -> None:
 
 def test_a_bare_currency_code_is_never_expanded_from_prose() -> None:
     """"The euro" must not mint ten pairs. Structured rows may expand (resolve_symbols does);
-    prose may not."""
-    assert mcc.text_symbols("the ecb said the eur would weaken", UNI) == []
+    prose may not. An INSTITUTION is not bare (2026-09-16): the ECB names the euro as surely as
+    a pair does, and mints at most its currency's two most liquid pairs the registry holds."""
+    assert mcc.text_symbols("traders said the eur would weaken", UNI) == []
+    assert mcc.text_symbols("the ecb said the eur would weaken", UNI) == ["EURUSD"]
 
 
 def test_an_alias_resolves_only_to_a_symbol_the_registry_holds() -> None:

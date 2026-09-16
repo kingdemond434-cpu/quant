@@ -260,7 +260,10 @@ def _resolve_url(src: dict[str, Any]) -> str:
     A url with no placeholder is returned untouched, so nothing existing changes.
     """
     from datetime import timedelta
-    url = str(src.get("url") or "")
+    # A ROUTE THE FIXER REPAIRED WINS OVER THE REGISTERED ONE (2026-09-16). `source_fixer`
+    # writes `url_override` when a webmaster's variant of a dead URL answers in the declared
+    # shape; the registered url stays as written so the repair is auditable and revertible.
+    url = str(src.get("url_override") or src.get("url") or "")
     if "{" not in url:
         return url
     lag = src.get("url_lag_days")
@@ -379,6 +382,50 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
     return rec
 
 
+FOUND = BASE / "data" / "intelligence" / "asia_endpoints"
+MAX_DERIVED = int(os.environ.get("ASIA_COLLECTOR_MAX_DERIVED", "150"))
+
+
+def _derived_sources(sources: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """The data files index pages POINT AT, as sources of their own.
+
+    `asia_parser` reads an index page, finds the csv/xlsx/json/xml/zip links on it and hands
+    them back in `data/intelligence/asia_endpoints/endpoints_*.json` -- and until 2026-09-16
+    nothing read that file, so nine INDEX_PAGE sources handed back their payloads every hour to
+    nobody. Each address becomes a derived source: the parent's plane, pit block and targets, a
+    daily cadence, an id of `<parent>__ep<hash>` so the vault, the parser and the fixer all
+    treat it as the parent's child. Capped, newest first, so a runaway index cannot flood a pass.
+    """
+    import hashlib
+    by_id = {str(r.get("id")): r for r in sources if isinstance(r, dict)}
+    seen = {str(r.get("url_override") or r.get("url")) for r in sources if isinstance(r, dict)}
+    out: list[dict[str, Any]] = []
+    if not FOUND.is_dir():
+        return out
+    for f in sorted(FOUND.glob("endpoints_*.json"), reverse=True)[:6]:
+        for row in _read(f, []) or []:
+            if not isinstance(row, dict) or row.get("kind") != "address":
+                continue
+            url = str(row.get("url") or "")
+            parent = str(row.get("route") or "").split(":")[-1]
+            src = by_id.get(parent)
+            if not url or src is None or url in seen:
+                continue
+            seen.add(url)
+            low = url.lower().split("?")[0]
+            expect = ("json" if low.endswith(".json") else "csv" if low.endswith(".csv")
+                      else "xml" if low.endswith(".xml") else "binary"
+                      if low.endswith((".xlsx", ".xls", ".zip")) else "any")
+            out.append({"id": f"{parent}__ep{hashlib.sha1(url.encode()).hexdigest()[:8]}",
+                        "plane": src.get("plane"), "name": f"{src.get('name')} :: {low[-60:]}",
+                        "url": url, "expect": expect, "access": src.get("access") or "public",
+                        "cadence": "daily", "pit": src.get("pit"), "targets": src.get("targets"),
+                        "derived_from": parent, "role": "derived"})
+            if len(out) >= MAX_DERIVED:
+                return out
+    return out
+
+
 def due(src: dict[str, Any], state: dict[str, Any], now: float) -> bool:
     last = (state.get(str(src.get("id"))) or {}).get("last_attempt_epoch")
     if not isinstance(last, (int, float)):
@@ -399,6 +446,11 @@ def main(argv: list[str] | None = None) -> int:
 
     registry = _read(REGISTRY, {})
     sources = [s for s in (registry.get("sources") or []) if isinstance(s, dict)]
+    derived = _derived_sources(sources)
+    if derived:
+        print(f"asia collector: {len(derived)} endpoint(s) handed back by the parser "
+              f"join this pass")
+    sources = [*sources, *derived]
     if args.id:
         want = set(args.id)
         sources = [s for s in sources if str(s.get("id")) in want]
