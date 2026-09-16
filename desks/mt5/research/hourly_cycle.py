@@ -704,6 +704,38 @@ def in_plan(name: str, plan: str | None = None) -> bool:
     return True
 
 
+_LEG_ARTIFACTS: dict[str, list[Path]] | None = None
+
+
+def _leg_artifacts(name: str) -> list[Path]:
+    """The artifact(s) the Tier-1 ledger says leg `name` writes -- declared outputs for the
+    provenance envelope (output_hash). Read once per process; unknown legs declare nothing."""
+    global _LEG_ARTIFACTS
+    if _LEG_ARTIFACTS is None:
+        table: dict[str, list[Path]] = {}
+        try:
+            doc = json.loads((REPO / "docs" / "research" / "tier1_program.json")
+                             .read_text(encoding="utf-8-sig"))
+            for it in doc.get("items", []):
+                sched = str(it.get("scheduled_by") or "")
+                art = str(it.get("artifact") or "")
+                if not art or "hourly_cycle:" not in sched:
+                    continue
+                for tok in sched.split(","):
+                    tok = tok.strip()
+                    if tok.startswith("hourly_cycle:"):
+                        leg = tok.split(":", 1)[1]
+                        for root in (REPO, BASE):
+                            cand = root / art
+                            if cand.exists():
+                                table.setdefault(leg, []).append(cand)
+                                break
+        except (OSError, ValueError):
+            table = {}
+        _LEG_ARTIFACTS = table
+    return list(_LEG_ARTIFACTS.get(name, []))
+
+
 def _costed(name: str, fn):
     """Run one leg and record what it COST, whatever it returns or raises.
 
@@ -813,7 +845,7 @@ def _costed(name: str, fn):
             outcome = (f"verdict_exit={_code}" if _code in VERDICT_EXITS.get(name, ())
                        else f"exit_code={_code}")
     if close_run and run is not None:
-        close_run(run, outcome=outcome)
+        close_run(run, outcome=outcome, outputs=_leg_artifacts(name))
     _emit_leg(name, outcome)
     return out
 

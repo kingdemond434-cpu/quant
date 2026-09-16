@@ -231,6 +231,27 @@ def _release_singleton(handle: object) -> None:
         pass
 
 
+#: A RELEASE ASKS THE RESIDENT TO RECYCLE; IT NEVER KILLS IT (2026-09-16). Adopt-And-Seal used to
+#: restart MT5-Gateway, a task that is DISABLED, so a sealed release kept running the previous
+#: code until the memory ceiling or the pass ceiling recycled the resident -- up to two hours in
+#: which release_identity said one sha and the process was another. Killing the resident instead
+#: would end a pass mid-order. The seal now drops this marker; the resident sees it BETWEEN
+#: passes, releases the slot, starts a successor on the adopted tree and exits cleanly.
+RECYCLE_MARKER = DESK / "data" / "GATEWAY_RECYCLE"
+
+
+def recycle_requested(marker: Path | None = None) -> bool:
+    """True once when a release has asked for a recycle; the marker is consumed."""
+    p = marker if marker is not None else RECYCLE_MARKER
+    try:
+        if not p.exists():
+            return False
+        p.unlink()
+        return True
+    except OSError:
+        return False
+
+
 def _spawn_successor() -> bool:
     """Start a fresh resident, detached, so a recycle costs seconds rather than the up-to-ten
     minutes until the keep-alive trigger. Measured 2026-09-16: every recycle left the desk with
@@ -271,7 +292,8 @@ def main() -> int:
         started = time.monotonic()
         passes += 1
         rss = _rss_mb()
-        if (rss is not None and rss >= RECYCLE_RSS_MB) or passes > RECYCLE_AFTER_PASSES:
+        asked = recycle_requested()
+        if asked or (rss is not None and rss >= RECYCLE_RSS_MB) or passes > RECYCLE_AFTER_PASSES:
             # END CLEANLY BETWEEN PASSES, never inside one. The slot is released first and a
             # successor started at once; the keep-alive trigger remains the backstop should the
             # spawn fail, and the singleton makes that a no-op if one is already up.
@@ -281,7 +303,8 @@ def main() -> int:
                 from mt5desk import gateway
                 gateway.log(f"RESIDENT: recycling after {passes} pass(es) at "
                             f"{'unmeasured' if rss is None else f'{rss:.0f}MB'} resident "
-                            f"(limit {RECYCLE_RSS_MB:.0f}MB / {RECYCLE_AFTER_PASSES} passes); "
+                            f"(limit {RECYCLE_RSS_MB:.0f}MB / {RECYCLE_AFTER_PASSES} passes"
+                            f"{'; a release asked for it' if asked else ''}); "
                             f"{'successor started' if spawned else 'successor spawn FAILED'}; "
                             f"the keep-alive trigger is the backstop")
             except Exception:

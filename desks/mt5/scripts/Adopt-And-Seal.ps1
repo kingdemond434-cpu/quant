@@ -73,7 +73,31 @@ if (-not (Test-Path $py)) {
     else { "$((Get-Date).ToUniversalTime().ToString('u')) adopt-and-seal: no python interpreter found (.venv, py, python)"; exit 2 }
 }
 
-function Log([string] $m) { "$((Get-Date).ToUniversalTime().ToString('u')) adopt-and-seal: $m" }
+# EVERY LINE ALSO GOES TO A FILE, BECAUSE A SCHEDULED TASK'S STDOUT GOES NOWHERE (2026-09-14).
+#
+# THIS SCRIPT IS THE BOX'S ONLY CODE-DELIVERY PATH and its sole failure report was the exit code
+# `schtasks` records. Measured today: MT5-AdoptRelease sat at `Last Result: 1` across consecutive
+# hours while the box silently ran code older than the branch -- and the one instruction in
+# CLAUDE.md for this case, "if the box is not adopting, that task is the first thing to check",
+# had nothing to check. Every reason this script can fail (a partial adoption, a lost mutex, no
+# interpreter, a refused seal) was written to a stdout that no scheduled run has.
+#
+# Appending is deliberate: the interesting question is never "what happened on the last run" but
+# "when did this start failing", and only a history answers it. Failing to write the log NEVER
+# fails the adoption -- an unwritable log is a lost diagnostic, not a reason to stop delivering
+# code to a live trading box.
+$script:AdoptLog = Join-Path $PSScriptRoot "..\logs\adopt_and_seal.log"
+try {
+    $null = New-Item -ItemType Directory -Force -Path (Split-Path $script:AdoptLog) -ErrorAction Stop
+} catch { $script:AdoptLog = $null }
+
+function Log([string] $m) {
+    $line = "$((Get-Date).ToUniversalTime().ToString('u')) adopt-and-seal: $m"
+    if ($script:AdoptLog) {
+        try { Add-Content -Path $script:AdoptLog -Value $line -Encoding utf8 -ErrorAction Stop } catch { }
+    }
+    $line
+}
 
 # ------------------------------------------- 0. never adopt under a ShadowSync that is running
 # TWO GIT WRITERS IN ONE REPOSITORY IN THE SAME SECOND (2026-09-08). MT5-ShadowSync repeats every
@@ -102,11 +126,39 @@ while ((Get-ScheduledTask -TaskName "MT5-ShadowSync" -ErrorAction SilentlyContin
 # keeps it through the seal commit: Adopt-Release is a child process, but the lock is ours, and
 # the sync yields on it. An abandoned mutex (a writer that died holding it) is a grant, not a
 # wedge. Nine minutes, as above.
-$script:GitWriterMutex = New-Object System.Threading.Mutex($false, "Local\MT5-GitWriter")
+# AND A MUTEX WE COULD NOT CREATE IS NOT A MUTEX SOMEBODY ELSE HOLDS (2026-09-15).
+#
+# `New-Object System.Threading.Mutex` throws UnauthorizedAccessException when the named object
+# already exists and the caller's token cannot open it with default rights -- which is exactly the
+# case here: the scheduled tasks run under S4U principals and an interactive/SSH session does not.
+# The throw left $script:GitWriterMutex NULL, `.WaitOne()` then failed non-terminating with
+# InvokeMethodOnNull, $gotLock stayed $false, and the script reported
+#
+#     "another git writer holds Local\MT5-GitWriter after 9 min; not adopting under it"
+#
+# having waited zero seconds and having no idea whether anyone held it. The refusal was right and
+# the reason was invented -- the same shape as "the terminal connection is gone", which was also
+# a guess this desk printed as fact. An operator reading the log is sent to look for a phantom
+# writer, and the number 9 is a lie about a wait that never happened.
+$script:GitWriterMutex = $null
+$mutexWhy = ""
+try {
+    $script:GitWriterMutex = New-Object System.Threading.Mutex($false, "Local\MT5-GitWriter")
+} catch {
+    $mutexWhy = $_.Exception.GetType().Name + ": " + $_.Exception.Message
+}
 $gotLock = $false
+if ($null -eq $script:GitWriterMutex) {
+    Log ("could not OPEN Local\MT5-GitWriter (" + $mutexWhy + ") -- this is not evidence that " +
+         "another writer holds it; the lock could not be examined at all. Not adopting.")
+    exit 6
+}
 try { $gotLock = $script:GitWriterMutex.WaitOne(540000) }
 catch [System.Threading.AbandonedMutexException] { $gotLock = $true }
-if (-not $gotLock) { Log "another git writer holds Local\MT5-GitWriter after 9 min; not adopting under it"; exit 6 }
+if (-not $gotLock) {
+    Log "another git writer held Local\MT5-GitWriter for the full 9 min; not adopting under it"
+    exit 6
+}
 
 # ---------------------------------------------------------------- 1. adopt the branch's tree
 $adoptScript = Join-Path $desk "scripts\Adopt-Release.ps1"
@@ -170,7 +222,12 @@ git commit -q -m "Seal release $($head.Substring(0,12)) (Adopt-And-Seal, unatten
 if ($LASTEXITCODE -ne 0) { Log "seal commit failed (exit $LASTEXITCODE)"; exit 5 }
 
 # ---------------------------------------- 4. the gateway reads the seal at start; restart it
-Stop-ScheduledTask  -TaskName "MT5-Gateway" -ErrorAction SilentlyContinue
-Start-ScheduledTask -TaskName "MT5-Gateway" -ErrorAction SilentlyContinue
-Log "sealed $($head.Substring(0,12)) from $Branch and restarted MT5-Gateway"
+# THE RESIDENT IS ASKED, NOT KILLED (2026-09-16). MT5-Gateway is disabled; the sole pass runner
+# is MT5-GatewayResident, which recycles itself between passes when this marker exists. Starting
+# the task is the backstop for a resident that is not running (the singleton makes it a no-op
+# otherwise). The gate attestation re-tests the sealed sha at once so tested_sha never lags.
+New-Item -ItemType File -Path (Join-Path $desk "data\GATEWAY_RECYCLE") -Force | Out-Null
+Start-ScheduledTask -TaskName "MT5-GatewayResident" -ErrorAction SilentlyContinue
+Start-ScheduledTask -TaskName "MT5-GateAttest" -ErrorAction SilentlyContinue
+Log "sealed $($head.Substring(0,12)) from $Branch; resident asked to recycle; gate attestation triggered"
 exit 0

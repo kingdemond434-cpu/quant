@@ -76,14 +76,69 @@ def _append(row: dict[str, Any]) -> None:
     fifty-nine costed legs an hour, and a silent `except OSError: pass` is one of the two ways
     that happens (the other, an import path, is fixed at the caller). A denominator that fails
     silently is a scaling law nobody can draw."""
-    try:
-        LEDGER.parent.mkdir(parents=True, exist_ok=True)
-        with open(LEDGER, "a", encoding="utf-8") as fh:
-            fh.write(json.dumps(row, default=str) + "\n")
-    except OSError as exc:
-        print(f"compute_ledger: row for {row.get('run')!r} NOT written "
-              f"({type(exc).__name__}: {exc}) -- this hour's cost is unrecorded",
-              file=sys.stderr, flush=True)
+    # RETRY, BECAUSE THE COMMON FAILURE IS CONTENTION AND NOT A PERMISSION. On Windows a second
+    # process appending to the same file raises PermissionError (errno 13) for as long as the
+    # first holds it -- the message reads like a broken ACL and is nothing of the kind. Measured
+    # 2026-09-11: MT5-Hourly lost the 'deepen', 'merge_docket' and 'backtest' rows of a single
+    # pass this way while the file was writable and unlocked seconds later. Three short retries
+    # cover a concurrent append; anything that survives them is a real failure and still says so.
+    for attempt in range(3):
+        try:
+            LEDGER.parent.mkdir(parents=True, exist_ok=True)
+            with open(LEDGER, "a", encoding="utf-8") as fh:
+                fh.write(json.dumps(row, default=str) + "\n")
+            return
+        except OSError as exc:
+            if attempt == 2:
+                print(f"compute_ledger: row for {row.get('run')!r} NOT written "
+                      f"({type(exc).__name__}: {exc}) after 3 attempts "
+                      f"-- this hour's cost is unrecorded", file=sys.stderr, flush=True)
+                return
+            time.sleep(0.15 * (attempt + 1))
+
+
+_SHA_CACHE: dict[str, str | None] = {}
+
+
+def commit_sha() -> str | None:
+    """The tree's HEAD, read once per process; None when git cannot answer (never a guess)."""
+    if "sha" not in _SHA_CACHE:
+        sha: str | None = None
+        try:
+            import subprocess
+            r = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True,
+                               cwd=str(ROOT), timeout=10, check=False)
+            if r.returncode == 0 and r.stdout.strip():
+                sha = r.stdout.strip()[:40]
+        except Exception:
+            sha = None
+        _SHA_CACHE["sha"] = sha
+    return _SHA_CACHE["sha"]
+
+
+def _sha256_files(paths: list[Path] | None) -> str | None:
+    """One digest over the given files' bytes (sorted by path); None when nothing is readable."""
+    if not paths:
+        return None
+    import hashlib
+    h = hashlib.sha256()
+    n = 0
+    for p in sorted(paths, key=str):
+        try:
+            h.update(str(p).encode("utf-8"))
+            h.update(p.read_bytes())
+            n += 1
+        except OSError:
+            continue
+    return h.hexdigest() if n else None
+
+
+def _config_hash(run: Run) -> str:
+    """Digest of the run's declared configuration: its meta plus the cycle plan it ran under."""
+    import hashlib
+    cfg = {"name": run.name, "kind": run.kind, "meta": run.meta,
+           "plan": os.environ.get("HOURLY_PLAN", "all")}
+    return hashlib.sha256(json.dumps(cfg, sort_keys=True, default=str).encode("utf-8")).hexdigest()
 
 
 def open_run(name: str, kind: str = "research", **meta: Any) -> Run:
@@ -91,13 +146,29 @@ def open_run(name: str, kind: str = "research", **meta: Any) -> Run:
                cpu_started=_cpu_seconds(), meta=dict(meta))
 
 
-def close_run(run: Run, *, outcome: str = "ok", **result: Any) -> dict[str, Any]:
-    """Record what the run cost and what it produced. `outcome` is free text the caller owns."""
+def close_run(run: Run, *, outcome: str = "ok", inputs: list[Path] | None = None,
+              outputs: list[Path] | None = None, **result: Any) -> dict[str, Any]:
+    """Record what the run cost and what it produced. `outcome` is free text the caller owns.
+
+    THE PROVENANCE ENVELOPE (principal's blueprint, 2026-09-16, item 1): every scheduled organ
+    publishes {commit_sha, config_hash, input_hash, started_at, finished_at, output_hash}. The
+    sha is the tree that ran; config_hash digests the run's declared meta and plan; input_hash
+    and output_hash digest the files the caller DECLARES (None when it declares none -- an
+    undeclared input is reported as absent, never as an empty hash).
+    """
+    finished = datetime.now(tz=UTC)
+    started = finished.timestamp() - (time.monotonic() - run.started)
     row = {
-        "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+        "at": finished.isoformat(timespec="seconds"),
         "run": run.name, "kind": run.kind, "outcome": str(outcome),
         "wall_s": round(time.monotonic() - run.started, 3),
         "cpu_s": round(_cpu_seconds() - run.cpu_started, 3),
+        "started_at": datetime.fromtimestamp(started, tz=UTC).isoformat(timespec="seconds"),
+        "finished_at": finished.isoformat(timespec="seconds"),
+        "commit_sha": commit_sha(),
+        "config_hash": _config_hash(run),
+        "input_hash": _sha256_files(inputs),
+        "output_hash": _sha256_files(outputs),
         **run.meta, **result,
     }
     _append(row)
