@@ -45,6 +45,21 @@ def main() -> int:
     ap.add_argument("--seed", type=int, default=0)
     a = ap.parse_args()
     d = run(seed=a.seed)
+    # AUTHORITY IS CLAIMED BY THE ORGAN THAT OBEYED (2026-09-16): `research_budget` records which
+    # legs spent by these shares; this only reads that record back onto its own report.
+    try:
+        import json as _json
+
+        from research_budget import authority as _authority
+        ok, why = _authority()
+        p = Path(bandit.BUDGET)
+        doc = _json.loads(p.read_text(encoding="utf-8"))
+        doc["authoritative"] = bool(ok)
+        doc["authority_evidence"] = why
+        p.write_text(_json.dumps(doc, indent=1, default=str), encoding="utf-8")
+        print(f"  authoritative: {ok} -- {why[:110]}")
+    except Exception as exc:
+        print(f"  authoritative: unmeasured ({type(exc).__name__}: {exc})")
     print(f"RESEARCH BANDIT  {d['graph_rows']} graph rows, pooled certify rate "
           f"{d['arms'].get('_pooled_rate')}")
     for arm, s in sorted(d["shares"].items(), key=lambda kv: -kv[1]):

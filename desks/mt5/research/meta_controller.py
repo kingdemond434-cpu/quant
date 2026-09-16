@@ -323,6 +323,68 @@ def _beta_gain(a: float, b: float) -> float:
     return max(0.0, _h(p, q) - (m * _h(p + 1, q) + (1 - m) * _h(p, q + 1)))
 
 
+#: Which hourly leg executes each kind of action the board ranks. An epoch is complete when
+#: every ranked kind's leg has a compute-ledger run newer than the previous board.
+KIND_LEGS: dict[str, tuple[str, ...]] = {
+    "new_hypothesis": ("breadth_sweep", "compile_candidates", "alpha_evolution"),
+    "deepen_existing": ("deepen",),
+    "acquire_dataset": ("source_fixer", "exogenous_search", "asia_collector"),
+    "run_falsifier": ("falsifier_run", "adversaries"),
+    "investigate_anomaly": ("weak_signals", "residual_factors"),
+    "gather_forward": ("forward_reconcile", "heal_clocks", "enrol_clocks"),
+    "evolve_family": ("alpha_evolution",),
+    "cross_market_transfer": ("session_chart_expansion", "futures_lead_lag"),
+    "abandon_region": ("queue_compact", "requeue_unrunnable"),
+}
+
+
+def _epoch(kinds: list[str]) -> dict[str, Any]:
+    """Did every ranked kind's owning leg run since the previous board? Read from the ledger."""
+    from datetime import datetime as _dt
+    prev_at = None
+    try:
+        prev = json.loads(OUT.read_text(encoding="utf-8-sig"))
+        prev_at = _dt.fromisoformat(str(prev.get("at")).replace("Z", "+00:00"))
+    except Exception:
+        prev_at = None
+    ledger = DESK / "data" / "compute_ledger.jsonl"
+    ran: dict[str, str] = {}
+    try:
+        for ln in ledger.read_text(encoding="utf-8", errors="replace").splitlines()[-4000:]:
+            try:
+                r = json.loads(ln)
+            except ValueError:
+                continue
+            name = str(r.get("run") or r.get("leg") or r.get("name") or "")
+            at = str(r.get("at") or r.get("time") or r.get("ended") or "")
+            if not name or not at:
+                continue
+            try:
+                t = _dt.fromisoformat(at.replace("Z", "+00:00"))
+            except ValueError:
+                continue
+            if prev_at is None or t > prev_at:
+                ran[name] = max(ran.get(name, ""), at)
+    except OSError:
+        return {"complete": None, "why": "compute ledger unreadable", "since": str(prev_at)}
+    served: dict[str, str | None] = {}
+    for kind in kinds:
+        legs = KIND_LEGS.get(kind, ())
+        hit = next((f"{leg} @ {ran[leg]}" for leg in legs if leg in ran), None)
+        served[kind] = hit
+    missing = [k for k, v in served.items() if v is None]
+    return {
+        "since": prev_at.isoformat(timespec="seconds") if prev_at else None,
+        "complete": (not missing) if kinds else None,
+        "served": served,
+        "missing": missing,
+        "why": ("every ranked kind's owning leg ran since the previous board"
+                if kinds and not missing else
+                f"{len(missing)} kind(s) had no owning-leg run since the previous board: {missing}"
+                if kinds else "no ranked kinds"),
+    }
+
+
 def build() -> dict[str, Any]:
     now = datetime.now(tz=UTC)
     budget = _read(BUDGET)
@@ -423,6 +485,11 @@ def build() -> dict[str, Any]:
         },
         "by_kind": by_kind,
         "action_kinds": list(COSTS),
+        # THE EPOCH, MEASURED (2026-09-16): an epoch completes when every kind of action this
+        # board ranked was executed by the organ that owns it since the previous board was
+        # published -- read from the compute ledger, never assumed from the schedule.
+        "epoch": _epoch([k for k, v in by_kind.items() if v]),
+        "epoch_complete": _epoch([k for k, v in by_kind.items() if v]).get("complete"),
         "costs_note": (
             "trials are NOT compute. Running a falsifier against an existing certificate costs a "
             "cell of compute and ZERO trials, because it tests a claim the desk has already "

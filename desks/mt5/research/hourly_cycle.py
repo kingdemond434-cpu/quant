@@ -382,6 +382,18 @@ def smoke_release() -> dict:
         return {"rc": None, "error": f"{type(exc).__name__}: {exc}"}
 
 
+def _bandit_budget(leg: str, base: int) -> tuple[int, dict]:
+    """The bandit-scaled budget for a leg, recorded; the base on any failure (never a stall)."""
+    try:
+        import research_budget
+        applied, rec = research_budget.budget_s(leg, base)
+        research_budget.record(rec)
+        return int(applied), rec
+    except Exception as exc:
+        return int(base), {"leg": leg, "applied": False, "factor": 1.0,
+                           "why": f"research_budget unavailable: {type(exc).__name__}: {exc}"}
+
+
 def deepen() -> dict:
     """Drain the deepening queue -- THE conversion bottleneck, and it was scheduled nowhere.
 
@@ -405,7 +417,11 @@ def deepen() -> dict:
     """
     try:
         import deepening_worker
-        return {"exit_code": deepening_worker.main([]),
+        # THE BANDIT HAS AUTHORITY HERE (2026-09-16): the drain limit is the worker's default
+        # scaled by the bandit's share of the deepening arms (research_budget), recorded.
+        _lim, _rec = _bandit_budget("deepen", int(getattr(deepening_worker, "DEFAULT_LIMIT", 25)))
+        return {"exit_code": deepening_worker.main(["--limit", str(max(1, _lim))]),
+                "limit": int(max(1, _lim)), "bandit_factor": _rec.get("factor"),
                 "at": datetime.now(UTC).isoformat(timespec="seconds")}
     except SystemExit as exc:                       # argparse exits rather than returning
         return {"exit_code": int(exc.code or 0),
@@ -2130,9 +2146,13 @@ def main() -> None:
     # DEPTH, HOURLY (2026-09-16). alpha_evolution ran once a day with a 1500 s budget; the
     # docket it feeds is judged every ten minutes now, so the generator runs every hour with
     # a bounded budget and its IC pre-screen keeps unstable expressions off the docket.
+    # THE BANDIT HAS AUTHORITY HERE (2026-09-16): the seconds this leg spends are its base
+    # budget scaled by the bandit's share of the arms it serves (research_budget), recorded in
+    # reports/RESEARCH_BUDGET.json so the attestation reads an obeyed price, not a printed one.
+    _aev_s, _aev_rec = _bandit_budget("alpha_evolution", 240)
     aev = _costed("alpha_evolution", lambda: _producer("alpha_evolution",
                                                         "research/alpha_evolution.py",
-                                                        "--budget-s", "240"))
+                                                        "--budget-s", str(_aev_s)))
     # The closed-loop attestation: every flag derived from another organ's artifact.
     clp = _costed("closed_loop", lambda: _producer("closed_loop", "scripts/check_closed_loop.py"))
     rc = _costed("regime_coverage", regime_coverage)

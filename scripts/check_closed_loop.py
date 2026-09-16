@@ -181,9 +181,14 @@ def forward() -> dict[str, Any]:
     if isinstance(rdoc, dict) and "identities_ok" not in rdoc and "ok" not in rdoc:
         # research/forward_reconcile.py's own shape: what it could not read or reach, by name.
         def _n(v: Any) -> int | None:
+            if isinstance(v, bool):
+                return None
             if isinstance(v, (int, float)):
                 return int(v)
-            if isinstance(v, (list, dict)):
+            if isinstance(v, dict):
+                # forward_reconcile's dict shape carries its own count under `n`.
+                return int(v["n"]) if isinstance(v.get("n"), (int, float)) else len(v)
+            if isinstance(v, list):
                 return len(v)
             return None
         unfrozen, unreachable = _n(rdoc.get("identity_unfrozen")), _n(rdoc.get("unreachable_certified"))
