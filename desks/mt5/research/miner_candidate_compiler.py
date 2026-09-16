@@ -422,6 +422,51 @@ def _candidate(symbol: str, family: str, params: dict, source: str, row: dict,
     }
 
 
+#: EVERY MINED MECHANISM IS HUNTED INTRADAY, IN EVERY SESSION (principal 2026-09-16: "the miners
+#: crawlers swarms should prioritise and produce rows in massive quantity of intraday, giving
+#: less priority to H1"). A compiled candidate named its symbol and family; the chart and the
+#: session are axes the source never chose, so each candidate becomes one cell per intraday
+#: chart the desk holds bars for, in every session, with the H1 row kept last. `timeframe` and
+#: `session` are identity keys the gauntlet, the forward clock and the live executor already
+#: read (`family_call.session_filter`, `external_gauntlet.timeframe_of`). A source that named
+#: its own chart or session is respected as written.
+INTRADAY_CHARTS = ("M5", "M15", "M30")
+SESSION_AXIS = ("all", "asia", "london", "ny")
+
+
+def _charts_with_bars(symbol: str) -> list[str]:
+    return [tf for tf in INTRADAY_CHARTS if (UNIVERSE / f"{symbol}_{tf}.parquet").exists()]
+
+
+def expand_axes(cands: list[dict]) -> list[dict]:
+    """Every candidate on every intraday chart with bars, in every session; H1 kept, ranked
+    last (`priority` 1 against 0). A candidate whose params already name a chart or a session
+    is returned as it is."""
+    out: list[dict] = []
+    for c in cands:
+        base = dict(c.get("params") or {})
+        if "timeframe" in base or "session" in base:
+            out.append(c)
+            continue
+        sym, fam = str(c.get("symbol") or ""), str(c.get("family") or "")
+        for tf in [*_charts_with_bars(sym), "H1"]:
+            for sess in SESSION_AXIS:
+                p = dict(base)
+                if tf != "H1":
+                    p["timeframe"] = tf
+                if sess != "all":
+                    p["session"] = sess
+                v = dict(c)
+                v["params"] = p
+                gid = _genome_id(sym, fam, p)
+                if gid:
+                    v["genome_id"] = gid
+                v["axis"] = {"chart": tf, "session": sess}
+                v["priority"] = 1 if tf == "H1" else 0
+                out.append(v)
+    return out
+
+
 def _registered_family(name: str) -> bool:
     try:
         from mt5desk import families, families_orthogonal
@@ -1075,6 +1120,7 @@ def main() -> int:
     sources_by_identity: dict[str, set[str]] = {}
     for source, row in recent_rows(now):
         produced, disposition = compile_row(source, row, universe)
+        produced = expand_axes(produced)
         stats = per_source.setdefault(source, {"rows": 0, "candidates": 0, "deepening": 0})
         stats["rows"] += 1
         for candidate in produced:

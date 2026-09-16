@@ -64,6 +64,42 @@ def accepts_side(fn: Any) -> bool:
     return any(p.kind is p.VAR_KEYWORD for p in sig.parameters.values())
 
 
+#: THE SESSION AXIS, GENERIC (principal 2026-09-16: "all sessions maximised fully for true 24/7
+#: trading"). A family that takes no session can still be certified INSIDE one: the same rule,
+#: fired only on bars whose hour falls in the window. Hours are the SERVER clock, the clock every
+#: bar and every gold window on this desk is written in (`decision_core.GOLD_WINDOWS`). The
+#: filter lives here, in the one call the gauntlet, the forward clock and the live executor
+#: share, so a cell certified in a session is replayed and traded in that session and nowhere
+#: else. `session` is an identity key like `timeframe`: it names the cell, it is never an
+#: argument the family sees.
+SESSIONS: dict[str, tuple[int, int] | None] = {
+    "asia": (0, 8), "london": (8, 16), "ny": (14, 22), "all": None,
+}
+
+
+def session_window(session: Any) -> tuple[int, int] | None:
+    """[start, end) server hours for a session name; None for `all`, missing or unknown."""
+    key = str(session or "all").strip().lower()
+    return SESSIONS.get(key)
+
+
+def session_filter(sigs: list, session: Any) -> list:
+    """Only the signals whose bar hour falls inside the session window; every signal when the
+    session is `all` or unknown. A signal with no readable time is kept: absence is not a
+    reason to drop a trade the family emitted."""
+    win = session_window(session)
+    if win is None:
+        return list(sigs)
+    lo, hi = win
+    out = []
+    for g in sigs:
+        t = getattr(g, "time", None)
+        h = getattr(t, "hour", None)
+        if h is None or lo <= int(h) < hi:
+            out.append(g)
+    return out
+
+
 def signals(fn: Any, bars: Any, *, side: int, params: dict[str, Any] | None = None) -> list:
     """The family's signals over `bars`, called exactly as the forward clock calls it.
 
@@ -76,11 +112,13 @@ def signals(fn: Any, bars: Any, *, side: int, params: dict[str, Any] | None = No
     explicitly. See the module docstring for why the asymmetry is load-bearing.
     """
     kwargs = dict(params or {})
+    session = kwargs.pop("session", None)
     short = int(side) < 0
     try:
-        return list(fn(bars, side=-1, **kwargs) if short else fn(bars, **kwargs))
+        out = list(fn(bars, side=-1, **kwargs) if short else fn(bars, **kwargs))
     except TypeError:
-        return list(fn(bars, side=-1 if short else 1, **kwargs))
+        out = list(fn(bars, side=-1 if short else 1, **kwargs))
+    return session_filter(out, session)
 
 
 def hunt16_signals(fn: Any, bars: Any, side: int) -> list:
