@@ -694,7 +694,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     # THE 2026-09-16 BLUEPRINT ORGANS (phases C/D of the Tier-1 ledger), all cheap readers.
     "axis_registry", "tier1_scorecard", "novelty_gate", "forced_flow_calendar", "breadth_ladder",
     "wiring_ceo", "live_system_state", "hazard_engine", "posterior_alpha", "semantic_memory",
-    "model_role_benchmark", "research_departments", "qd_frontier",
+    "model_role_benchmark", "research_departments", "qd_frontier", "value_of_data",
+    "research_api_status", "artifact_chain", "residual_queue", "unseen_frontier",
 })
 
 
@@ -2434,6 +2435,10 @@ def main() -> None:
     # clock today.
     axr = _costed("axis_registry", lambda: _producer("axis_registry",
                                                       "research/axis_registry.py"))
+    # THE UNSEEN FRONTIER: Chao1 / Good-Turing over canonical mechanism hashes per ground, so
+    # the allocator knows which grounds are saturating (reads the axis registry's vocabulary).
+    usf = _costed("unseen_frontier", lambda: _producer("unseen_frontier",
+                                                        "research/unseen_frontier.py"))
     bld = _costed("breadth_ladder", lambda: _producer("breadth_ladder",
                                                        "research/breadth_ladder.py"))
     ffc = _costed("forced_flow_calendar", lambda: _producer("forced_flow_calendar",
@@ -2464,6 +2469,25 @@ def main() -> None:
     bvr = _costed("blind_reviewer", lambda: _producer("blind_reviewer",
                                                        "research/blind_reviewer.py",
                                                        "--max-cells", "12"))
+    # THE EVALUATOR LAB (Agora / Red Queen): attack variants evolved against fixed controls
+    # behind the sealed anchor; the validate department, ~15 s at five seeds.
+    evl = _costed("evaluator_lab", lambda: _producer("evaluator_lab",
+                                                      "libs/validation/evaluator_lab.py",
+                                                      "--seeds", "5"))
+    # VALUE OF DATA: one ratio per missing observation, handed to the acquirer as targets.
+    vod = _costed("value_of_data", lambda: _producer("value_of_data",
+                                                      "research/value_of_data.py",
+                                                      "--no-prospector-append"))
+    # THE TYPED RESEARCH API's coverage and the immutable artifact chain's integrity, published.
+    rap = _costed("research_api_status", lambda: _producer("research_api_status",
+                                                            "scripts/research_api_status.py"))
+    acv = _costed("artifact_chain", lambda: _producer("artifact_chain",
+                                                       "scripts/verify_artifact_chain.py"))
+    # THE IGNORANCE LEDGER: every unexplained thing in one queue, priority = magnitude x
+    # recurrence x unexplained fraction; the top items donated as hypotheses.
+    rsq = _costed("residual_queue", lambda: _producer("residual_queue",
+                                                       "research/residual_queue.py",
+                                                       "--max-donations", "15"))
     # THE WIRING CEO hunts every build that is on no clock (principal 2026-09-16: "always
     # hunting"); probation (heavy plan) exercises the safe ones until they earn a named leg.
     wce = _costed("wiring_ceo", lambda: _producer("wiring_ceo", "research/wiring_ceo.py",
@@ -2827,6 +2851,8 @@ def main() -> None:
                     "semantic_memory": smm, "model_role_benchmark": mrb,
                     "live_system_state": lss, "tier1_scorecard": t1s, "wiring_ceo": wce,
                     "research_departments": rdp, "qd_frontier": qdf, "blind_reviewer": bvr,
+                    "evaluator_lab": evl, "value_of_data": vod, "research_api_status": rap,
+                    "artifact_chain": acv, "residual_queue": rsq, "unseen_frontier": usf,
                     "probation": prb, "standing_questions": sqs, "exposure_decomposition": exd,
                     "auto_legs": auto,
                     "sweep": sw, "compile": cc,

@@ -36,9 +36,9 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
 | B The principal's 28-item closed-loop blueprint (2026-09-16), measured against this tree | 2 | 0 | 26 | 0 | 0 |
 | C The 2026-09-16 blueprint (principal): production truth, PIT lake, axis registry, effective breadth, mechanism genome, ten engines, macro state, causal graph, residual research, forced flows, event surfaces, execution intelligence, hostile validation, scarce forward slots, posterior alpha, E[log W] allocator, exposure decomposition, hazard engine, self-recorded moat, LLM roles, semantic memory, unknown-unknowns, failures as data, Tier-1 scorecard | 0 | 0 | 16 | 0 | 9 |
 | D The nine Asian research mechanisms (principal, 2026-09-16): AlphaSchema semantic frontier, QuantaAlpha trajectory evolution, RD-Agent factor x model arms, FactorEngine program-alpha lane, AlphaSAGE reward-proportional sampling, AlphaAgent novelty filter, Alpha Jungle MCTS deepening, TRA/DoubleAdapt regime router, AlphaBench model-role benchmark | 0 | 0 | 6 | 0 | 3 |
-| Q The open-ended Quant Scientist (principal, 2026-09-16): self-evolving research OS behind an immutable constitution, co-evolving evaluators behind a sealed anchor, program evolution over research algorithms, world-model lab, synthetic regimes, causal discovery lab, value-of-data acquisition, one typed research API, Quant Co-Scientist, evolvable ontology, unexplained-residual queue, meta research allocator; plus the donor mechanisms: AgonAlpha blind reviewer, GoAnt quality-diversity frontier, Agora evaluator lab, AI-Scientist experiment tree, AlphaCrafter state-conditioned alpha, FactorMiner positive/negative memory | 0 | 0 | 18 | 0 | 0 |
+| Q The open-ended Quant Scientist (principal, 2026-09-16): self-evolving research OS behind an immutable constitution, co-evolving evaluators behind a sealed anchor, program evolution over research algorithms, world-model lab, synthetic regimes, causal discovery lab, value-of-data acquisition, one typed research API, Quant Co-Scientist, evolvable ontology, unexplained-residual queue, meta research allocator; plus the donor mechanisms: AgonAlpha blind reviewer, GoAnt quality-diversity frontier, Agora evaluator lab, AI-Scientist experiment tree, AlphaCrafter state-conditioned alpha, FactorMiner positive/negative memory | 0 | 0 | 16 | 0 | 2 |
 | W The Global Autonomous Quant Intelligence Organization (principal, 2026-09-16): six organisations in one system -- Global Intelligence Agency, Quant Science Lab, Alpha Search Supercomputer, Adversarial Evidence Lab, Portfolio & Execution Lab, Meta-Research Lab -- sharing one lake, one ontology, one memory, one gauntlet, one live truth; built in the order P0 production truth -> P1 Global Intelligence OS -> P2 knowledge graph + canonical mechanisms -> P3 semantic frontier + unseen-frontier estimator -> P4 cheap scouts -> P5 scientist swarm -> P6 diverse search algorithms -> P7 PIT macro/cross-asset world model -> P8 residual/forced-flow/event/microstructure labs -> P9 artifact-level replication -> P10 forward evidence allocator -> P11 posterior E[log W] allocator -> P12 self-improving Research OS -> P13 proprietary-data flywheel | 0 | 0 | 19 | 0 | 1 |
-| **all** | 5 | 0 | 94 | 0 | 114 |
+| **all** | 5 | 0 | 92 | 0 | 116 |
 
 ## Items
 
@@ -1324,22 +1324,23 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
   - desks/mt5/research/meta_controller.py
   - clock: daily_cycle:research_bandit, hourly_cycle:alpha_evolution (research_budget), MT5-FrontierAudit (budget_market, meta_controller) · artifact: desks/mt5/reports/RESEARCH_BUDGET.json · consumer: research_budget.budget_s -> the budgeted legs
   - next: research_budget gains a third factor from meta_controller's per-kind prices via meta_controller.KIND_LEGS (a leg whose kind is priced above the median gets more seconds, below gets fewer, clipped), so compute follows E[dElogW] per compute-second; RESEARCH_BUDGET.json records all three factors.
-- **Q13 AgonAlpha: immutable research artifacts searched as objects; a fresh-context BLIND REVIEWER that reloads data, re-runs the experiment, reproduces the statistics, attacks assumptions and can VETO; a pending-aware scheduler** — PARTIAL
-  - gap: MEASURED 2026-09-16: replay2_agreement compares two engines on the same evidence inside the gauntlet; no organ reproduces a certificate from the data with fresh eyes and no veto reaches the promoter; the gauntlet's queue does not account for pending experiments.
-  - desks/mt5/research/adversary.py
-  - libs/validation/replay2.py
-  - desks/mt5/scripts/external_gauntlet.py
+- **Q13 AgonAlpha: immutable research artifacts searched as objects; a fresh-context BLIND REVIEWER that reloads data, re-runs the experiment, reproduces the statistics, attacks assumptions and can VETO; a pending-aware scheduler** — LANDED
+  - gap: LANDED 2026-09-16: fresh-context re-execution with the engine that minted the certificate, hostile battery, PASS/VETO ledger, promoter veto; a real XAUUSD certificate reproduced (n=2117, t=6.5) and passed. Pending-aware scheduling of the gauntlet queue remains open.
+  - desks/mt5/research/blind_reviewer.py
+  - desks/mt5/tests/test_blind_reviewer.py
+  - desks/mt5/research/promoter.py
   - libs/validation/hostile.py
-  - clock: hourly_cycle:adversaries, MT5-Gauntlet (replay2_agreement) · artifact: desks/mt5/reports/UNIVERSAL_SURVIVORS.json · consumer: promoter
+  - clock: hourly_cycle:blind_reviewer (validate department) · artifact: desks/mt5/data/blind_review_ledger.jsonl · consumer: promoter.blind_review_veto (BLOCKED_BLIND_REVIEW at both promotion doors)
   - next: blind_reviewer.py (wave 3, building): reloads bars, re-runs the family through family_call, reproduces the stats, runs hostile.run_all, writes PASS/VETO to data/blind_review_ledger.jsonl; promoter refuses a LIVE row for a VETOed certificate; core leg; pending-aware scheduling via the gauntlet's cursor.
-- **Q14 GoAnt: quality-diversity search with Explorer/Exploiter/Connector workers over a niche Mental Map (actor, constraint, information, mechanism, asset, horizon, session, regime), one elite per niche** — PARTIAL
-  - gap: MEASURED 2026-09-16: MAP-Elites exists inside alpha_evolution's populations over expression features, not over economic niches; no elite-per-niche map, no explorer/exploiter/connector split.
+  - landed: 92b640a3f2e
+- **Q14 GoAnt: quality-diversity search with Explorer/Exploiter/Connector workers over a niche Mental Map (actor, constraint, information, mechanism, asset, horizon, session, regime), one elite per niche** — LANDED
+  - gap: LANDED 2026-09-16: 258 occupied niches, 31 elite families, dominance 0.13 measured on the local copy; explorer/exploiter/connector donate 45 proposals per run; regime axis is read-only for proposals.
+  - desks/mt5/research/qd_frontier.py
+  - desks/mt5/tests/test_qd_frontier.py
   - desks/mt5/research/axis_registry.py
-  - libs/research/search_populations.py
-  - desks/mt5/research/alpha_evolution.py
-  - desks/mt5/research/breadth_frontier.py
-  - clock: hourly_cycle:axis_registry, hourly_cycle:alpha_evolution · artifact: desks/mt5/reports/AXIS_REGISTRY.json · consumer: data/intelligence/axis_registry/
+  - clock: hourly_cycle:qd_frontier · artifact: desks/mt5/reports/QD_FRONTIER.json · consumer: data/intelligence/qd_frontier/ -> miner_candidate_compiler; research_departments
   - next: qd_frontier.py (wave 3, building): the Mental Map from the axis registry's cells, elites by forward evidence, three workers donating into data/intelligence/qd_frontier/; core leg; dominance and elite_families published as the anti-monoculture numbers.
+  - landed: 92b640a3f2e
 - **Q15 AI-Scientist-v2: progressive agentic tree search over whole research projects managed by an experiment manager (macro liquidity -> metals/FX/indices -> real yield/USD/carry/basis -> XAU/XAG ...), results deciding which branches deepen** — PARTIAL
   - gap: MEASURED 2026-09-16: research_tree is a beam over a generic kinds ladder; no experiment manager owns a project tree whose branches are asset classes and mechanisms with results deciding depth.
   - desks/mt5/research/research_tree.py

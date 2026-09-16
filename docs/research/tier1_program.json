@@ -3953,42 +3953,43 @@
    "item": "AgonAlpha: immutable research artifacts searched as objects; a fresh-context BLIND REVIEWER that reloads data, re-runs the experiment, reproduces the statistics, attacks assumptions and can VETO; a pending-aware scheduler",
    "domain": "Q",
    "phase": "Q",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "desks/mt5/research/adversary.py",
-    "libs/validation/replay2.py",
-    "desks/mt5/scripts/external_gauntlet.py",
-    "libs/validation/hostile.py",
-    "libs/research/artifacts.py"
+    "desks/mt5/research/blind_reviewer.py",
+    "desks/mt5/tests/test_blind_reviewer.py",
+    "desks/mt5/research/promoter.py",
+    "libs/validation/hostile.py"
    ],
-   "scheduled_by": "hourly_cycle:adversaries, MT5-Gauntlet (replay2_agreement)",
-   "artifact": "desks/mt5/reports/UNIVERSAL_SURVIVORS.json",
-   "consumer": "promoter",
-   "gap": "MEASURED 2026-09-16: replay2_agreement compares two engines on the same evidence inside the gauntlet; no organ reproduces a certificate from the data with fresh eyes and no veto reaches the promoter; the gauntlet's queue does not account for pending experiments.",
+   "scheduled_by": "hourly_cycle:blind_reviewer (validate department)",
+   "artifact": "desks/mt5/data/blind_review_ledger.jsonl",
+   "consumer": "promoter.blind_review_veto (BLOCKED_BLIND_REVIEW at both promotion doors)",
+   "gap": "LANDED 2026-09-16: fresh-context re-execution with the engine that minted the certificate, hostile battery, PASS/VETO ledger, promoter veto; a real XAUUSD certificate reproduced (n=2117, t=6.5) and passed. Pending-aware scheduling of the gauntlet queue remains open.",
    "next_step": "blind_reviewer.py (wave 3, building): reloads bars, re-runs the family through family_call, reproduces the stats, runs hostile.run_all, writes PASS/VETO to data/blind_review_ledger.jsonl; promoter refuses a LIVE row for a VETOed certificate; core leg; pending-aware scheduling via the gauntlet's cursor.",
-   "landed": []
+   "landed": [
+    "92b640a3f2e"
+   ]
   },
   {
    "id": "Q14",
    "item": "GoAnt: quality-diversity search with Explorer/Exploiter/Connector workers over a niche Mental Map (actor, constraint, information, mechanism, asset, horizon, session, regime), one elite per niche",
    "domain": "Q",
    "phase": "Q",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "desks/mt5/research/axis_registry.py",
-    "libs/research/search_populations.py",
-    "desks/mt5/research/alpha_evolution.py",
-    "desks/mt5/research/breadth_frontier.py",
-    "desks/mt5/research/empty_cluster_forcer.py"
+    "desks/mt5/research/qd_frontier.py",
+    "desks/mt5/tests/test_qd_frontier.py",
+    "desks/mt5/research/axis_registry.py"
    ],
-   "scheduled_by": "hourly_cycle:axis_registry, hourly_cycle:alpha_evolution",
-   "artifact": "desks/mt5/reports/AXIS_REGISTRY.json",
-   "consumer": "data/intelligence/axis_registry/",
-   "gap": "MEASURED 2026-09-16: MAP-Elites exists inside alpha_evolution's populations over expression features, not over economic niches; no elite-per-niche map, no explorer/exploiter/connector split.",
+   "scheduled_by": "hourly_cycle:qd_frontier",
+   "artifact": "desks/mt5/reports/QD_FRONTIER.json",
+   "consumer": "data/intelligence/qd_frontier/ -> miner_candidate_compiler; research_departments",
+   "gap": "LANDED 2026-09-16: 258 occupied niches, 31 elite families, dominance 0.13 measured on the local copy; explorer/exploiter/connector donate 45 proposals per run; regime axis is read-only for proposals.",
    "next_step": "qd_frontier.py (wave 3, building): the Mental Map from the axis registry's cells, elites by forward evidence, three workers donating into data/intelligence/qd_frontier/; core leg; dominance and elite_families published as the anti-monoculture numbers.",
-   "landed": []
+   "landed": [
+    "92b640a3f2e"
+   ]
   },
   {
    "id": "Q15",
