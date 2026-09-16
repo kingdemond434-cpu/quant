@@ -57,6 +57,7 @@ def _repo(tmp_path: Path) -> Path:
 #: The prefixes the script keeps for the box, verbatim from the script (the test below pins
 #: them to `libs.ops.release.STATE_PREFIXES` minus docs/).
 STATE_PREFIXES = ("desks/mt5/data/", "desks/mt5/reports/", "desks/mt5/logs/",
+                  "desks/mt5/frontier_intel/data/", "desks/mt5/side_channels/data/",
                   "data/", "reports/", "logs/", "web/")
 
 

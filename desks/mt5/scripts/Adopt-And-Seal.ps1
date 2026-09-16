@@ -201,7 +201,8 @@ if ($sealed) {
 # ever seal in the seconds after a sync (it never did). The same prefixes
 # `libs.ops.release.STATE_PREFIXES` names, and `release.seal` applies the same rule itself.
 $statePrefixes = @("desks/mt5/data/", "desks/mt5/reports/", "desks/mt5/logs/",
-                   "data/", "reports/", "logs/", "web/", "docs/")
+                   "desks/mt5/frontier_intel/data/", "desks/mt5/side_channels/data/",
+                   "data/", "reports/", "logs/", "web/", "docs/")  # mirror libs/ops/release.py STATE_PREFIXES
 $dirty = @(git status --porcelain --untracked-files=no 2>$null | Where-Object { $_ } | ForEach-Object {
     $p = ("$_".Substring(3) -split ' -> ')[-1].Trim().Trim('"') -replace '\\', '/'
     $isState = $false

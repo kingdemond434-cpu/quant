@@ -329,7 +329,7 @@ function Write-InPlace {
 # never writes, so origin's docs are adopted like code). Kept as a literal because this script
 # runs BEFORE the adopted `libs` is on disk; test_adopt_release_keeps_the_box_s_state pins the
 # two lists to each other.
-$StatePrefixes = @("desks/mt5/data/", "desks/mt5/reports/", "desks/mt5/logs/",
+$StatePrefixes = @("desks/mt5/data/", "desks/mt5/reports/", "desks/mt5/logs/", "desks/mt5/frontier_intel/data/", "desks/mt5/side_channels/data/",
                    "data/", "reports/", "logs/", "web/")
 
 # STATE ARTIFACTS THAT SIT AT THE DESK ROOT INSTEAD OF UNDER data/. Every prefix above ends in a
