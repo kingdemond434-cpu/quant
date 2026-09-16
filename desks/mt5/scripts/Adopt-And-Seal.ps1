@@ -222,7 +222,12 @@ git commit -q -m "Seal release $($head.Substring(0,12)) (Adopt-And-Seal, unatten
 if ($LASTEXITCODE -ne 0) { Log "seal commit failed (exit $LASTEXITCODE)"; exit 5 }
 
 # ---------------------------------------- 4. the gateway reads the seal at start; restart it
-Stop-ScheduledTask  -TaskName "MT5-Gateway" -ErrorAction SilentlyContinue
-Start-ScheduledTask -TaskName "MT5-Gateway" -ErrorAction SilentlyContinue
-Log "sealed $($head.Substring(0,12)) from $Branch and restarted MT5-Gateway"
+# THE RESIDENT IS ASKED, NOT KILLED (2026-09-16). MT5-Gateway is disabled; the sole pass runner
+# is MT5-GatewayResident, which recycles itself between passes when this marker exists. Starting
+# the task is the backstop for a resident that is not running (the singleton makes it a no-op
+# otherwise). The gate attestation re-tests the sealed sha at once so tested_sha never lags.
+New-Item -ItemType File -Path (Join-Path $desk "data\GATEWAY_RECYCLE") -Force | Out-Null
+Start-ScheduledTask -TaskName "MT5-GatewayResident" -ErrorAction SilentlyContinue
+Start-ScheduledTask -TaskName "MT5-GateAttest" -ErrorAction SilentlyContinue
+Log "sealed $($head.Substring(0,12)) from $Branch; resident asked to recycle; gate attestation triggered"
 exit 0

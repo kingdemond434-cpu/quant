@@ -50,3 +50,13 @@ def test_the_recycle_ceiling_is_a_tenth_of_measured_memory_floored_at_the_8gb_tu
     assert gr.default_recycle_mb(8_186.0) == 900.0
     assert gr.default_recycle_mb(None) == 900.0
     assert gr.default_recycle_mb(0.0) == 900.0
+
+
+def test_a_release_can_ask_for_a_recycle_once(tmp_path) -> None:
+    import gateway_resident as gr
+    marker = tmp_path / "GATEWAY_RECYCLE"
+    assert gr.recycle_requested(marker) is False
+    marker.write_text("", encoding="utf-8")
+    assert gr.recycle_requested(marker) is True     # consumed
+    assert not marker.exists()
+    assert gr.recycle_requested(marker) is False    # asked once, recycled once
