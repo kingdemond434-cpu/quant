@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-09-16T15:54:25.276589+00:00",
+  "generated_at": "2026-09-16T18:54:44.437112+00:00",
   "scope": "MT5_FUSION_ONLY",
   "execution_authority": false,
   "universe": {
     "metadata_entities": 251,
     "h1_bar_files": 304,
-    "metadata_mtime": "2026-09-16T15:54:17.482114+00:00",
+    "metadata_mtime": "2026-09-16T18:54:14.296009+00:00",
     "newest_h1_mtime": "2026-09-10T22:28:41.305028+00:00"
   },
   "conversion": {
@@ -18,7 +18,7 @@
     },
     "universal_survivors": 58,
     "shadow_sleeves": 648,
-    "shadow_observations": 993,
+    "shadow_observations": 1017,
     "shadow_last_run": "2026-09-16"
   },
   "freshness": {
@@ -33,7 +33,7 @@
   },
   "capability_reuse": {
     "artifact": "data/intelligence/mt5_capability_reuse.json",
-    "generated_at": "2026-09-16T15:54:24.815950+00:00",
+    "generated_at": "2026-09-16T18:54:27.495126+00:00",
     "counts": {
       "DISPOSED_BLOCKED": 5,
       "DISPOSED_SUPERSEDED": 9,
@@ -44,6 +44,7 @@
     "proof_level": "STATIC_REACHABILITY_ONLY"
   },
   "defects": [
+    "canonical research pipeline stale or unmeasured",
     "execution markout stale; current costs remain unmeasured",
     "MT5 universe bars stale"
   ]

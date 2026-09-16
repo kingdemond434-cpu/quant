@@ -1,0 +1,42 @@
+[
+  {
+    "source": "central_bank",
+    "bank": "Fed",
+    "currency": "USD",
+    "feed": "https://www.federalreserve.gov/feeds/press_monetary.xml",
+    "published_utc": "2026-09-16T18:00:00+00:00",
+    "title": "Federal Reserve issues FOMC statement",
+    "link": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20260916a.htm",
+    "policy_signals": [],
+    "instruments": [
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDCHF",
+      "NZDUSD",
+      "XAUUSD"
+    ]
+  },
+  {
+    "source": "central_bank",
+    "bank": "Fed",
+    "currency": "USD",
+    "feed": "https://www.federalreserve.gov/feeds/press_monetary.xml",
+    "published_utc": "2026-09-16T18:00:00+00:00",
+    "title": "Federal Reserve Board and Federal Open Market Committee release economic projections from the September 15-16 FOMC meeting",
+    "link": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20260916b.htm",
+    "policy_signals": [],
+    "instruments": [
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDCHF",
+      "NZDUSD",
+      "XAUUSD"
+    ]
+  }
+]

@@ -1,0 +1,29 @@
+[
+ {
+  "source": "deep_forest",
+  "kind": "dataset",
+  "title": "MMI – Telegram",
+  "url": "https://t.me/s/russianmacro",
+  "published": "2026-09-16T17:59:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.4,
+  "lang": "ru",
+  "endpoints": [
+   "https://economy.gov.ru/material/file/download/e80cdf11bc160fc1f8235399b6d9809d/2026_09_01.pdf"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "3068c5e73ed964e8f247",
+  "host": "t.me",
+  "ground": "Telegram RU markets",
+  "region": "ru",
+  "cluster": "ru",
+  "dataset_class": null,
+  "available_time": "2026-09-16T17:59:22+00:00",
+  "ingested_time": "2026-09-16T17:59:22+00:00",
+  "source_hash": "3068c5e73ed964e8f247",
+  "claims": [],
+  "n_claims": 0
+ }
+]
