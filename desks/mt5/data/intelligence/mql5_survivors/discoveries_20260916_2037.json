@@ -1,0 +1,65 @@
+[
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2361280",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-16T20:37:53+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "high_pf",
+   "algo_survivor",
+   "gold"
+  ],
+  "ev_score": 2.848,
+  "growth_pct": 381.43,
+  "weeks": 29.0,
+  "pf": 2.05,
+  "max_dd_pct": null,
+  "trades": 367.0,
+  "win_pct": 241.0,
+  "algo_pct": 92.0,
+  "subscribers": 0.0,
+  "author": "/en/users/dermasupratman",
+  "author_other_signals": [
+   {
+    "sid": "2346593",
+    "title": "'Vasa Trading Sistem 22' by Evan Rahma Pradipta",
+    "growth": "85%",
+    "curve_points": 20,
+    "curve_dd": -12.0
+   },
+   {
+    "sid": "2370297",
+    "title": "'Vasa Trading Sistem 17' by Evan Rahma Pradipta",
+    "growth": "23%",
+    "curve_points": 20,
+    "curve_dd": -25.0
+   },
+   {
+    "sid": "2386465",
+    "title": "'VTS Single Scalp High Risk' by Evan Rahma Pradipta",
+    "growth": "57%",
+    "curve_points": 20,
+    "curve_dd": -42.0
+   }
+  ],
+  "hour_histogram": {
+   "13": 5,
+   "17": 3,
+   "15": 2,
+   "19": 1,
+   "06": 1,
+   "14": 5,
+   "21": 1,
+   "16": 1,
+   "20": 1,
+   "04": 1,
+   "03": 1
+  }
+ }
+]
