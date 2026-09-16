@@ -696,6 +696,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     "wiring_ceo", "live_system_state", "hazard_engine", "posterior_alpha", "semantic_memory",
     "model_role_benchmark", "research_departments", "qd_frontier", "value_of_data",
     "research_api_status", "artifact_chain", "residual_queue", "unseen_frontier",
+    "source_registry",
 })
 
 
@@ -2488,6 +2489,10 @@ def main() -> None:
     rsq = _costed("residual_queue", lambda: _producer("residual_queue",
                                                        "research/residual_queue.py",
                                                        "--max-donations", "15"))
+    # THE SOURCE REGISTRY: every ground with provenance and result-based reputation, and the
+    # intel ROI share each source earns (the crawlers read it as their crawl budget).
+    srg = _costed("source_registry", lambda: _producer("source_registry",
+                                                        "research/source_registry.py"))
     # THE WIRING CEO hunts every build that is on no clock (principal 2026-09-16: "always
     # hunting"); probation (heavy plan) exercises the safe ones until they earn a named leg.
     wce = _costed("wiring_ceo", lambda: _producer("wiring_ceo", "research/wiring_ceo.py",
@@ -2853,6 +2858,7 @@ def main() -> None:
                     "research_departments": rdp, "qd_frontier": qdf, "blind_reviewer": bvr,
                     "evaluator_lab": evl, "value_of_data": vod, "research_api_status": rap,
                     "artifact_chain": acv, "residual_queue": rsq, "unseen_frontier": usf,
+                    "source_registry": srg,
                     "probation": prb, "standing_questions": sqs, "exposure_decomposition": exd,
                     "auto_legs": auto,
                     "sweep": sw, "compile": cc,

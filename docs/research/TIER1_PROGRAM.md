@@ -36,9 +36,9 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
 | B The principal's 28-item closed-loop blueprint (2026-09-16), measured against this tree | 2 | 0 | 26 | 0 | 0 |
 | C The 2026-09-16 blueprint (principal): production truth, PIT lake, axis registry, effective breadth, mechanism genome, ten engines, macro state, causal graph, residual research, forced flows, event surfaces, execution intelligence, hostile validation, scarce forward slots, posterior alpha, E[log W] allocator, exposure decomposition, hazard engine, self-recorded moat, LLM roles, semantic memory, unknown-unknowns, failures as data, Tier-1 scorecard | 0 | 0 | 16 | 0 | 9 |
 | D The nine Asian research mechanisms (principal, 2026-09-16): AlphaSchema semantic frontier, QuantaAlpha trajectory evolution, RD-Agent factor x model arms, FactorEngine program-alpha lane, AlphaSAGE reward-proportional sampling, AlphaAgent novelty filter, Alpha Jungle MCTS deepening, TRA/DoubleAdapt regime router, AlphaBench model-role benchmark | 0 | 0 | 6 | 0 | 3 |
-| Q The open-ended Quant Scientist (principal, 2026-09-16): self-evolving research OS behind an immutable constitution, co-evolving evaluators behind a sealed anchor, program evolution over research algorithms, world-model lab, synthetic regimes, causal discovery lab, value-of-data acquisition, one typed research API, Quant Co-Scientist, evolvable ontology, unexplained-residual queue, meta research allocator; plus the donor mechanisms: AgonAlpha blind reviewer, GoAnt quality-diversity frontier, Agora evaluator lab, AI-Scientist experiment tree, AlphaCrafter state-conditioned alpha, FactorMiner positive/negative memory | 0 | 0 | 16 | 0 | 2 |
-| W The Global Autonomous Quant Intelligence Organization (principal, 2026-09-16): six organisations in one system -- Global Intelligence Agency, Quant Science Lab, Alpha Search Supercomputer, Adversarial Evidence Lab, Portfolio & Execution Lab, Meta-Research Lab -- sharing one lake, one ontology, one memory, one gauntlet, one live truth; built in the order P0 production truth -> P1 Global Intelligence OS -> P2 knowledge graph + canonical mechanisms -> P3 semantic frontier + unseen-frontier estimator -> P4 cheap scouts -> P5 scientist swarm -> P6 diverse search algorithms -> P7 PIT macro/cross-asset world model -> P8 residual/forced-flow/event/microstructure labs -> P9 artifact-level replication -> P10 forward evidence allocator -> P11 posterior E[log W] allocator -> P12 self-improving Research OS -> P13 proprietary-data flywheel | 0 | 0 | 19 | 0 | 1 |
-| **all** | 5 | 0 | 92 | 0 | 116 |
+| Q The open-ended Quant Scientist (principal, 2026-09-16): self-evolving research OS behind an immutable constitution, co-evolving evaluators behind a sealed anchor, program evolution over research algorithms, world-model lab, synthetic regimes, causal discovery lab, value-of-data acquisition, one typed research API, Quant Co-Scientist, evolvable ontology, unexplained-residual queue, meta research allocator; plus the donor mechanisms: AgonAlpha blind reviewer, GoAnt quality-diversity frontier, Agora evaluator lab, AI-Scientist experiment tree, AlphaCrafter state-conditioned alpha, FactorMiner positive/negative memory | 0 | 0 | 12 | 0 | 6 |
+| W The Global Autonomous Quant Intelligence Organization (principal, 2026-09-16): six organisations in one system -- Global Intelligence Agency, Quant Science Lab, Alpha Search Supercomputer, Adversarial Evidence Lab, Portfolio & Execution Lab, Meta-Research Lab -- sharing one lake, one ontology, one memory, one gauntlet, one live truth; built in the order P0 production truth -> P1 Global Intelligence OS -> P2 knowledge graph + canonical mechanisms -> P3 semantic frontier + unseen-frontier estimator -> P4 cheap scouts -> P5 scientist swarm -> P6 diverse search algorithms -> P7 PIT macro/cross-asset world model -> P8 residual/forced-flow/event/microstructure labs -> P9 artifact-level replication -> P10 forward evidence allocator -> P11 posterior E[log W] allocator -> P12 self-improving Research OS -> P13 proprietary-data flywheel | 0 | 0 | 18 | 0 | 2 |
+| **all** | 5 | 0 | 87 | 0 | 121 |
 
 ## Items
 
@@ -1236,14 +1236,15 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
   - desks/mt5/research/meta_rnd.py
   - clock: hourly_cycle:brain_ab, hourly_cycle:model_skill, MT5-FrontierAudit (meta_rnd) · artifact: desks/mt5/reports/META_RND.json · consumer: research_budget (knobs); check_immutable_evaluator (the wall)
   - next: research_os_archive.py: variants = named research POLICIES (leg budgets, arm weights, population mix, retrieval depth, prompt template ids) kept as an archive with lineage; each hour one variant is active (rotation with a UCB over the six-metric fitness computed from hypothesis_graph, EFFECTIVE_BREADTH history, NOVELTY_GATE, gate verdicts, compute ledger, shadow ledgers); research_budget reads the active variant; the wall is asserted by refusing any variant that names an IMMUTABLE file. Put scripts/run_research_loop.py on the heavy plan with a budget.
-- **Q2 Co-evolving evaluators (Red Queen): an EvaluatorLab that invents attack variants and keeps the discriminating ones, behind a FIXED reality anchor (sealed OOS, forward clock, real fills, real costs)** — PARTIAL
-  - gap: MEASURED 2026-09-16: adversary_evolution searches eight numeric genes of known failure modes and cannot invent an attack class; hostile.py (eight strategy-level attacks, built today) is on no clock; the anchor (lockbox, shadow_forward, real fills, cost surface) is real and separately governed.
-  - desks/mt5/research/adversary_evolution.py
-  - desks/mt5/research/adversary.py
+- **Q2 Co-evolving evaluators (Red Queen): an EvaluatorLab that invents attack variants and keeps the discriminating ones, behind a FIXED reality anchor (sealed OOS, forward clock, real fills, real costs)** — LANDED
+  - gap: LANDED 2026-09-16: twelve attack families, six synthetic controls, keep/retire by power, SEALED tuple asserted by test, disagreement preserved; first generation promoted a stacked stress attack that catches a real-but-uneconomic edge the standing tests let through.
+  - libs/validation/evaluator_lab.py
+  - tests/validation/test_evaluator_lab.py
   - libs/validation/hostile.py
-  - libs/validation/redteam.py
-  - clock: hourly_cycle:adversaries, hourly_cycle:falsifier_run, MT5-FrontierAudit (adversary_evolution, evidence_vault) · artifact: desks/mt5/reports/ADVERSARY_EVOLUTION.json · consumer: external_gauntlet (falsifiers), promoter
+  - desks/mt5/research/blind_reviewer.py
+  - clock: hourly_cycle:evaluator_lab (validate department), hourly_cycle:blind_reviewer · artifact: desks/mt5/reports/EVALUATOR_LAB.json · consumer: blind_reviewer; external_gauntlet (next: run battery() on the would-be certificates)
   - next: libs/validation/evaluator_lab.py (wave 3, building): attack variants with parameter families, positive/negative controls, keep/retire by discriminating power, SEALED tuple documented, judge() preserving disagreement; blind_reviewer runs hostile+battery on certified cells; wire as heavy leg evaluator_lab.
+  - landed: 3052765e267
 - **Q3 AlphaEvolve-style program evolution over research algorithms (feature generators, cross-asset models, portfolio optimisers, regime detectors, execution models, search policies, validation procedures, schedulers) with automated evaluators and a program database** — PARTIAL
   - gap: MEASURED 2026-09-16: evolution is over expressions and genome axes inside a fixed harness; nothing evolves the CODE of optimisers, regime detectors, execution models, search policies, validators or schedulers; no program database keyed by program text with per-program evaluators; search_populations has no scheduled importer.
   - desks/mt5/research/alpha_evolution.py
@@ -1276,22 +1277,24 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
   - libs/research/information_flow.py
   - clock: hourly_cycle:causal_graph, MT5-FrontierAudit (causal_discovery) · artifact: desks/mt5/reports/CAUSAL_DISCOVERY.json · consumer: state_vector_build conditioning hints
   - next: causal_lab.py (wave 4, building): PCMCI-style lagged discovery with FDR over the PIT-aligned daily panel (bars + axes), economic restrictions (no edge into a release, no future lag), a NOTEARS-lite continuous optimisation for the contemporaneous DAG, edge classes attached from evidence (observational test, mechanism_ontology plausibility, natural_experiment DiD -> INTERVENTION_SUPPORTED), chains published; hourly heavy leg.
-- **Q7 Autonomous information acquisition: ValueOfData(d) = E[uncertainty reduction or decision improvement] / cost(d) per missing observation, then a search of public/licensed sources for it** — PARTIAL
-  - gap: MEASURED 2026-09-16: EVSI is computed over docket experiments and value-of-data over sources, never as one ratio per missing observation; research_os blocking_observables() has no reader; no organ asks which single observation would most reduce uncertainty about a named hypothesis.
-  - desks/mt5/research/information_value.py
+- **Q7 Autonomous information acquisition: ValueOfData(d) = E[uncertainty reduction or decision improvement] / cost(d) per missing observation, then a search of public/licensed sources for it** — LANDED
+  - gap: LANDED 2026-09-16: 151 needs priced on the local copy in R of posterior sd removed; the acquirer fetches, this prices.
+  - desks/mt5/research/value_of_data.py
+  - desks/mt5/tests/test_value_of_data.py
   - desks/mt5/research/data_prospector.py
   - desks/mt5/research/acquire_datasets.py
-  - desks/mt5/research/experiment_design.py
-  - clock: MT5-FrontierAudit (information_value), daily_cycle:proposers (data_prospector), hourly_cycle:experiment_design, quant-prospector.timer · artifact: desks/mt5/reports/DATA_PROSPECTOR.json · consumer: acquire_datasets -> data/intelligence + registry
+  - clock: hourly_cycle:value_of_data · artifact: desks/mt5/reports/VALUE_OF_DATA.json · consumer: acquire_datasets (data/value_of_data_targets.json); data_prospector targets
   - next: value_of_data.py (wave 4, building): per hypothesis (docket cell or standing question finding) the observation that would most reduce its posterior uncertainty, priced by the prospector's cost table into one ratio, ranked, handed to acquire_datasets as targets and published in reports/VALUE_OF_DATA.json; core leg.
-- **Q8 One typed deterministic research API: data.query, event.query, macro.query, causal.test, factor.build, alpha.backtest, execution.simulate, portfolio.evaluate, gauntlet.run, forward.register, evidence.lookup with aligned schemas and deterministic replay** — PARTIAL
-  - gap: MEASURED 2026-09-16: no research_api or tool_env module; the eleven verbs have no common schema or call log; bars loading, cost basis and universe are re-implemented per organ; deterministic replay is a property of replay2/lockbox alone.
+  - landed: 3052765e267
+- **Q8 One typed deterministic research API: data.query, event.query, macro.query, causal.test, factor.build, alpha.backtest, execution.simulate, portfolio.evaluate, gauntlet.run, forward.register, evidence.lookup with aligned schemas and deterministic replay** — LANDED
+  - gap: LANDED 2026-09-16: eleven verbs bound to real delegates (11/11 available), typed schemas, deterministic call log, PIT refusal in macro.query; forward.register queues a request that shadow_admission does not yet read.
+  - libs/research/research_api.py
+  - tests/research/test_research_api.py
+  - scripts/research_api_status.py
   - libs/research_os/adapters/base.py
-  - libs/research/measurement_resolver.py
-  - libs/research_os/dsl.py
-  - desks/mt5/research/proposer_common.py
-  - clock: none (each surface is invoked ad hoc) · artifact: none · consumer: none
+  - clock: hourly_cycle:research_api_status · artifact: desks/mt5/reports/RESEARCH_API.json · consumer: every organ and seat that loads bars/events/macro/backtests (migration ongoing); the call log data/research_api_calls.jsonl
   - next: libs/research/research_api.py (wave 4, building): one typed facade whose eleven verbs delegate to the existing organs with dataclass schemas, a deterministic call log (data/research_api_calls.jsonl with input hashes) and PIT enforcement on every query; the seats and new organs call it instead of re-implementing loaders.
+  - landed: 3052765e267
 - **Q9 Quant Co-Scientist: separate competing functions Generation -> Mechanism -> Criticism -> Simulation -> Replication -> Meta-review; no majority voting; evidence that survives attacks wins** — PARTIAL
   - gap: MEASURED 2026-09-16: the panel is all critics -- Generation and Simulation are not seats; Replication (shadow_forward) never reads a tournament verdict; one subject per day; no tournament outcome writes a docket row or gates the promoter.
   - desks/mt5/research/scientist_tournament.py
@@ -1308,14 +1311,15 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
   - desks/mt5/research/axis_registry.py
   - clock: hourly_cycle:axis_registry, hourly_cycle:frontier_ontology, MT5-FrontierAudit (representation_discovery) · artifact: desks/mt5/reports/AXIS_REGISTRY.json · consumer: data/intelligence/axis_registry/
   - next: axis_proposer.py (wave 5): candidate axes from representation_discovery composites, standing_questions residual correlates and mechanism_ontology observables; each scored by the share of unexplained residual it explains out of sample; proposals published with evidence and registered into axis_registry's vocabulary table only after two consecutive passes clear the bar.
-- **Q11 Unexplained-residual hunting: Residual = Reality - ExistingModels at every level, one queue for unexplained returns, volatility, live losses, slippage, cross-asset moves, macro reactions, prioritised by magnitude x recurrence x unexplained fraction** — PARTIAL
-  - gap: MEASURED 2026-09-16: six residual producers and no single queue; data/unknown_unknowns_queue.jsonl has no consumer; no organ ranks residuals by economic magnitude x recurrence x unexplained fraction.
+- **Q11 Unexplained-residual hunting: Residual = Reality - ExistingModels at every level, one queue for unexplained returns, volatility, live losses, slippage, cross-asset moves, macro reactions, prioritised by magnitude x recurrence x unexplained fraction** — LANDED
+  - gap: LANDED 2026-09-16: nine producers merged (207 items from 304 sightings on the local copy), stable ids, recurrence, EXPLAINED/STALE transitions, top items donated to registered families; unknown_unknowns_queue consumed.
+  - desks/mt5/research/residual_queue.py
+  - desks/mt5/tests/test_residual_queue.py
   - desks/mt5/research/standing_questions.py
   - desks/mt5/research/factor_residual_engine.py
-  - desks/mt5/research/unknown_unknowns.py
-  - libs/research/counterfactual_world.py
-  - clock: hourly_cycle:standing_questions, daily_cycle:factor_residual, hourly_cycle:exogenous_search, hourly_cycle:counterfactual_world, hourly_cycle:opportunity_gap · artifact: desks/mt5/reports/STANDING_QUESTIONS.json · consumer: data/intelligence (standing_questions, factor_residual); reports otherwise
+  - clock: hourly_cycle:residual_queue · artifact: desks/mt5/reports/RESIDUAL_QUEUE.json · consumer: proposer_common.donate (data/intelligence/residual_queue/); the CEO docket
   - next: residual_queue.py (wave 4, building): merges every producer into data/residual_queue.jsonl with one priority, consumes unknown_unknowns_queue.jsonl, donates the top items as hypotheses through proposer_common.donate and publishes reports/RESIDUAL_QUEUE.json; core leg.
+  - landed: 3052765e267
 - **Q12 Meta research allocator: ROI_research_j = E[delta E[log W]] / (compute + data + time) allocating compute to research directions the way capital is allocated to alphas** — PARTIAL
   - gap: MEASURED 2026-09-16: the bandit's numerator is survivor posteriors x breadth credit (and realised credit since today), research_budget scales seconds by shares x the breadth ladder; meta_controller and budget_market price nine action kinds in dElogW but nothing reads their ranking to decide what runs.
   - libs/research/bandit.py
@@ -1400,14 +1404,15 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
   - libs/research/mechanism_claims.py
   - clock: hourly_cycle:compile_candidates, hourly_cycle:semantic_memory, hourly_cycle:novelty_gate · artifact: desks/mt5/data/hypothesis_graph.jsonl · consumer: the docket; novelty_gate; semantic_memory queries
   - next: lead_schema enforcement at the compiler (INCOMPLETE_LEAD disposition when actor/mechanism/falsifier are missing from an LLM row) and a knowledge_graph.py that projects sources, claims, mechanisms, datasets, experiments, failures and survivors into one typed graph (data/knowledge_graph.jsonl) queried by semantic_memory.
-- **W3 P3 semantic frontier + unseen-frontier estimator: the A x P x C x E x I x M x H x S x R x X periodic table with explicit frontier coverage of ~40 mechanism clusters, and N_unseen(language, source, asset, mechanism) from Good-Turing / Chao estimators and discovery curves so the allocator knows which grounds are saturating** — PARTIAL
-  - gap: MEASURED 2026-09-16: the ten-axis registry, the ladder and (wave 3) the QD frontier exist; no organ estimates how many mechanisms a ground still hides (no Chao/Good-Turing over mechanism observations), so 'Korean commodities 80% explored' is not a statement the desk can make.
+- **W3 P3 semantic frontier + unseen-frontier estimator: the A x P x C x E x I x M x H x S x R x X periodic table with explicit frontier coverage of ~40 mechanism clusters, and N_unseen(language, source, asset, mechanism) from Good-Turing / Chao estimators and discovery curves so the allocator knows which grounds are saturating** — LANDED
+  - gap: LANDED 2026-09-16: Chao1 / Good-Turing / discovery curves per ground over canonical mechanism hashes (24,329 sightings, 3,199 species, 34 grounds on the local copy; the Chinese forest at coverage 0.33 OPEN).
+  - desks/mt5/research/unseen_frontier.py
+  - desks/mt5/tests/test_unseen_frontier.py
   - desks/mt5/research/axis_registry.py
   - desks/mt5/research/qd_frontier.py
-  - desks/mt5/research/breadth_ladder.py
-  - libs/research/alpha_schema.py
-  - clock: hourly_cycle:axis_registry, hourly_cycle:breadth_ladder · artifact: desks/mt5/reports/AXIS_REGISTRY.json · consumer: breadth_ladder (floor); qd_frontier; research_budget
+  - clock: hourly_cycle:axis_registry, hourly_cycle:unseen_frontier, hourly_cycle:breadth_ladder, hourly_cycle:qd_frontier · artifact: desks/mt5/reports/UNSEEN_FRONTIER.json · consumer: source_registry (exploration term); research_departments
   - next: unseen_frontier.py (wave 4b): per (language, source, asset_class, mechanism) the observed mechanism frequency table from deep_forest claims, repo_miner rows and the hypothesis graph, Chao1 and Good-Turing coverage estimates, discovery curves per source, published in reports/UNSEEN_FRONTIER.json; source_registry reads it as the exploration term of the intel ROI.
+  - landed: 3052765e267
 - **W4 P4 thousands of cheap scouts: deterministic/small-model scouts per ground (ChinaFactorScout, JapanMacroScout, CentralBankScout, ExchangeNoticeScout, CompetitionScout, CodeCommitScout, FailureScout, ...) that extract structured mechanisms and provenance only, never trades; 70-90% of information handled without frontier models** — PARTIAL
   - gap: MEASURED 2026-09-16: the crawler and forest miner are the scouts today and they call seats for extraction; no per-ground scout roster with a cheap deterministic filter before any model, and no scout yield accounting per ground.
   - desks/mt5/research/deep_forest_miner.py
@@ -1449,12 +1454,12 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
   - clock: hourly_cycle:standing_questions, hourly_cycle:forced_flow_calendar, MT5-CostState, hourly_cycle:fill_attribution · artifact: desks/mt5/data/forced_flow_calendar.json · consumer: breadth_sweep (forced_flow family); gauntlet costs
   - next: residual_queue.py (wave 4), event_response_atlas.py (price reactions around every calendar event by horizon and regime, no consensus needed), cost_surface dimensions (C12).
 - **W9 P9 immutable research artifacts + independent adversarial replication: SOURCE -> CLAIM -> HYPOTHESIS -> CODE -> DATA HASH -> CONFIG HASH -> RESULTS -> REVIEW frozen and hash-linked; a new experiment is a new artifact; the blind reviewer re-executes with minimal context and can veto** — PARTIAL
-  - gap: MEASURED 2026-09-16: the provenance envelope hashes each run's declared outputs and the blind reviewer (wave 3) re-executes certificates; there is no hash-linked artifact chain from source to review as one immutable record.
+  - gap: PARTIAL 2026-09-16: the hash-linked chain library and its hourly verifier LANDED (33 tests); the writers (compiler, gauntlet, reviewer, promoter appends) are not wired yet, so the chain is empty and verifies ok at n=0.
+  - libs/research/artifact_chain.py
+  - tests/research/test_artifact_chain.py
+  - scripts/verify_artifact_chain.py
   - libs/research/artifacts.py
-  - libs/ops/compute_ledger.py
-  - desks/mt5/research/blind_reviewer.py
-  - libs/validation/replay2.py
-  - clock: hourly_cycle:blind_reviewer (wave 3), MT5-Gauntlet · artifact: desks/mt5/data/blind_review_ledger.jsonl · consumer: promoter (veto)
+  - clock: hourly_cycle:artifact_chain (verify), hourly_cycle:blind_reviewer · artifact: desks/mt5/reports/ARTIFACT_CHAIN.json · consumer: promoter (veto)
   - next: research_artifacts.py (wave 4b): an append-only chain data/research_artifacts.jsonl where each record carries the sha256 of its predecessor and of its own payload (source lead -> claim -> hypothesis card -> code identity (behaviour_hash) -> data hash (bars parquet digests) -> config hash -> gauntlet result -> blind review), written by the compiler, the gauntlet, the reviewer and the promoter; a verifier walks the chain hourly.
 - **W10 P10 forward evidence allocator: scarce forward slots ranked by PosteriorEdge x expected delta n_eff x expected delta g / (Uncertainty x ForwardTime)** — PARTIAL
   - gap: MEASURED 2026-09-16: same gap as C15 -- enrolment is eligibility-driven; posterior_alpha now supplies the posterior edge and breadth.py the marginal k_eff, so the ranker's inputs exist.

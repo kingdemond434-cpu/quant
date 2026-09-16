@@ -164,6 +164,7 @@ LEG_LAYER: dict[str, str] = {
     "qd_frontier": "information", "blind_reviewer": "meta",
     "evaluator_lab": "meta", "value_of_data": "information", "research_api_status": "meta",
     "artifact_chain": "meta", "residual_queue": "information", "unseen_frontier": "information",
+    "source_registry": "information",
     # sizing: how much
     "capacity": "sizing", "ensemble_optimizer": "sizing",
     # portfolio: how the book is composed
