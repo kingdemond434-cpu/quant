@@ -47,6 +47,29 @@ def timeframe_of(params: dict[str, Any] | None) -> str:
     return str((params or {}).get("timeframe") or "H1").upper()
 
 
+def events_for_symbol(events: object, symbol: str) -> list[dict]:
+    """A DatetimeIndex / iterable of stamps -> the event mappings the event_reaction family
+    reads ({symbol, at}); mappings pass through unchanged. Never raises on an odd shape."""
+    out: list[dict] = []
+    try:
+        it = iter(() if events is None else events)  # type: ignore[arg-type]
+    except TypeError:
+        return out
+    for e in it:
+        if hasattr(e, "get"):
+            out.append(dict(e))
+            continue
+        try:
+            import pandas as pd
+            ts = pd.Timestamp(e)
+        except (TypeError, ValueError):
+            continue
+        if ts.tzinfo is None:
+            ts = ts.tz_localize("UTC")
+        out.append({"symbol": str(symbol), "at": ts.isoformat()})
+    return out
+
+
 def resolve(sym: str, family: str, params: dict[str, Any],
             h1: Any) -> tuple[dict[str, Any] | None, str]:
     """Return (extra kwargs, reason). `None` kwargs means this cell cannot be run here.
@@ -212,7 +235,12 @@ def resolve(sym: str, family: str, params: dict[str, Any],
             events = inputs._event_index()
             if events is None or len(events) == 0:
                 return None, "no event calendar vintages on this box"
-            extra["events"] = events
+            # THE FAMILY READS EVENT MAPPINGS, NOT A BARE INDEX (measured 2026-09-16). The sweep's
+            # `_event_index` is a DatetimeIndex; `family_event_reaction._event_times` skips any
+            # element without `.get`, so every live event_reaction cell produced ZERO signals
+            # and the event-response atlas's donations could never be judged. The index is now
+            # handed over as the mappings the family's contract names, for this cell's symbol.
+            extra["events"] = events_for_symbol(events, sym)
             # THE CALENDAR IS GENUINELY UTC AND THE BAR INDEX IS NOT. Bars carry BROKER time
             # under a UTC tzinfo -- +2 winter, +3 summer, measured by `research/futures_lead_lag`
             # against a feed stamped in epoch seconds (0.978 correlation at the right offset,
