@@ -214,6 +214,72 @@ def probe_depth(symbols: list[str]) -> dict:
     return verdict
 
 
+TICK_DEDUPE = ("time_msc", "bid", "ask", "last")
+
+
+def merge_day(prev: pd.DataFrame | None, chunk: pd.DataFrame) -> pd.DataFrame:
+    """The union of a day file and the new ticks, deduplicated on (time_msc, bid, ask, last),
+    ordered by time_msc, columns aligned to the union and `ts` recomputed from time_msc.
+
+    TWO WRITERS, ONE DAY FILE (measured 2026-09-16). `recorders/tick_recorder` writes
+    recv_utc/recv_mono and no `ts`; this writer wrote `ts` and nothing else extra. Concatenating
+    the two shapes and handing the frame to pandas' parquet writer raised
+    `ArrowInvalid: Column 8 named ts expected length 44656 but got length 0` on every hourly
+    pass, so the tape leg had failed for a day while the recorder task kept the tape alive.
+    `ts` is now DERIVED from time_msc after the merge, and the file is written through an
+    explicit Arrow table (`ticks_table`) so no pandas extension array reaches pyarrow.
+    """
+    frames = [f for f in (prev, chunk) if f is not None and len(f)]
+    if not frames:
+        return chunk.iloc[0:0].copy()
+    cols: list[str] = []
+    for f in frames:
+        for c in f.columns:
+            if c != "ts" and c not in cols:
+                cols.append(c)
+    both = pd.concat([f.reindex(columns=cols) for f in frames], ignore_index=True)
+    subset = [c for c in TICK_DEDUPE if c in both.columns]
+    if subset:
+        both = both.drop_duplicates(subset=subset)
+    if "time_msc" in both.columns:
+        both = both.sort_values("time_msc", kind="stable")
+        both["ts"] = pd.to_datetime(both["time_msc"], unit="ms", utc=True)
+    return both.reset_index(drop=True)
+
+
+def ticks_table(df: pd.DataFrame):
+    """An explicit Arrow table for a tick frame: every column from its numpy values, `ts` as
+    timestamp[ms, UTC] built from time_msc. Nothing here depends on pandas' datetime dtype."""
+    import numpy as np
+    import pyarrow as pa
+    cols: dict[str, object] = {}
+    for c in df.columns:
+        if c == "ts":
+            continue
+        arr = df[c].to_numpy()
+        if arr.dtype == object:
+            cols[c] = pa.array([None if (x is None or (isinstance(x, float) and np.isnan(x)))
+                                else str(x) for x in arr], type=pa.string())
+        else:
+            cols[c] = pa.array(arr)
+    if "time_msc" in df.columns:
+        ms = pd.to_numeric(df["time_msc"], errors="coerce").fillna(0).to_numpy().astype("int64")
+        cols["ts"] = pa.array(ms, type=pa.timestamp("ms", tz="UTC"))
+    return pa.table(cols)
+
+
+def write_day(chunk: pd.DataFrame, out: Path) -> int:
+    """Merge `chunk` into the day file at `out` and write it (zstd). Returns rows on disk."""
+    import pyarrow.parquet as pq
+    prev = pd.read_parquet(out) if out.exists() else None
+    merged = merge_day(prev, chunk)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    tmp = out.with_suffix(".parquet.tmp")
+    pq.write_table(ticks_table(merged), tmp, compression="zstd")
+    tmp.replace(out)
+    return len(merged)
+
+
 def record_ticks(symbols: list[str]) -> dict:
     """Append every tick since the last recorded one, per symbol. Resumable and idempotent.
 
@@ -249,27 +315,10 @@ def record_ticks(symbols: list[str]) -> dict:
         written = 0
         for day, chunk in df.groupby(df["ts"].dt.date):
             out = TICKS / sym / f"{day.isoformat()}.parquet"
-            out.parent.mkdir(parents=True, exist_ok=True)
-            if out.exists():
-                # Append by rewriting the day: ticks arrive strictly forward, so the union is
-                # deduplicated on (ts, bid, ask) rather than assumed disjoint.
-                prev = pd.read_parquet(out)
-                chunk = (pd.concat([prev, chunk], ignore_index=True)
-                         .drop_duplicates(subset=["time_msc", "bid", "ask", "last"])
-                         .sort_values("ts"))
-            # ZSTD, LIKE EVERY OTHER PARQUET THIS MODULE WRITES. The contract-terms writer 100
-            # lines above already passes compression="zstd"; this one -- the file that grows
-            # every hour forever and is the largest thing on the box -- passed nothing, so it
-            # took pyarrow's default of snappy. Measured 2026-09-07 on a 300k-row tick frame with
-            # these exact columns: 3.48 MB snappy against 1.69 MB zstd, x2.06. The box's tape was
-            # 5.664 GB with 0.964 GB free, so the codec alone is ~2.9 GB back.
-            #
-            # Lossless and columnar-transparent: a reader passes no codec and pyarrow reads
-            # whatever the file declares, so nothing downstream changes. Tick data compresses
-            # like this because it is the ideal case -- monotonic timestamps, prices inside a
-            # few pips, a volume column of small repeated integers.
-            chunk.to_parquet(out, index=False, compression="zstd")
-            written += len(chunk)
+            # Append by rewriting the day through `write_day`: the union of what is on disk and
+            # the new ticks, deduplicated on (time_msc, bid, ask, last), `ts` derived, written
+            # as an explicit Arrow table (see merge_day for the failure this replaced).
+            written += write_day(chunk, out)
         state[sym] = {"last_tick_ms": int(df["time_msc"].iloc[-1]),
                       "last_run": now.isoformat(timespec="seconds"),
                       "last_tick_utc": str(df["ts"].iloc[-1])}

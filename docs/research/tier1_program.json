@@ -3709,23 +3709,25 @@
    "item": "Co-evolving evaluators (Red Queen): an EvaluatorLab that invents attack variants and keeps the discriminating ones, behind a FIXED reality anchor (sealed OOS, forward clock, real fills, real costs)",
    "domain": "Q",
    "phase": "Q",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
+    "libs/validation/evaluator_lab.py",
+    "tests/validation/test_evaluator_lab.py",
+    "libs/validation/hostile.py",
+    "desks/mt5/research/blind_reviewer.py",
     "desks/mt5/research/adversary_evolution.py",
     "desks/mt5/research/adversary.py",
-    "libs/validation/hostile.py",
-    "libs/validation/redteam.py",
-    "libs/validation/falsifiers.py",
-    "libs/validation/lockbox.py",
-    "desks/mt5/research/evidence_vault.py"
+    "libs/validation/redteam.py"
    ],
-   "scheduled_by": "hourly_cycle:adversaries, hourly_cycle:falsifier_run, MT5-FrontierAudit (adversary_evolution, evidence_vault)",
-   "artifact": "desks/mt5/reports/ADVERSARY_EVOLUTION.json",
-   "consumer": "external_gauntlet (falsifiers), promoter",
-   "gap": "MEASURED 2026-09-16: adversary_evolution searches eight numeric genes of known failure modes and cannot invent an attack class; hostile.py (eight strategy-level attacks, built today) is on no clock; the anchor (lockbox, shadow_forward, real fills, cost surface) is real and separately governed.",
+   "scheduled_by": "hourly_cycle:evaluator_lab (validate department), hourly_cycle:blind_reviewer",
+   "artifact": "desks/mt5/reports/EVALUATOR_LAB.json",
+   "consumer": "blind_reviewer; external_gauntlet (next: run battery() on the would-be certificates)",
+   "gap": "LANDED 2026-09-16: twelve attack families, six synthetic controls, keep/retire by power, SEALED tuple asserted by test, disagreement preserved; first generation promoted a stacked stress attack that catches a real-but-uneconomic edge the standing tests let through.",
    "next_step": "libs/validation/evaluator_lab.py (wave 3, building): attack variants with parameter families, positive/negative controls, keep/retire by discriminating power, SEALED tuple documented, judge() preserving disagreement; blind_reviewer runs hostile+battery on certified cells; wire as heavy leg evaluator_lab.",
-   "landed": []
+   "landed": [
+    "3052765e267"
+   ]
   },
   {
    "id": "Q3",
@@ -3819,45 +3821,49 @@
    "item": "Autonomous information acquisition: ValueOfData(d) = E[uncertainty reduction or decision improvement] / cost(d) per missing observation, then a search of public/licensed sources for it",
    "domain": "Q",
    "phase": "Q",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "desks/mt5/research/information_value.py",
+    "desks/mt5/research/value_of_data.py",
+    "desks/mt5/tests/test_value_of_data.py",
     "desks/mt5/research/data_prospector.py",
     "desks/mt5/research/acquire_datasets.py",
+    "desks/mt5/research/information_value.py",
     "desks/mt5/research/experiment_design.py",
-    "libs/research/source_roi.py",
-    "libs/research_os/store.py"
+    "libs/research/source_roi.py"
    ],
-   "scheduled_by": "MT5-FrontierAudit (information_value), daily_cycle:proposers (data_prospector), hourly_cycle:experiment_design, quant-prospector.timer",
-   "artifact": "desks/mt5/reports/DATA_PROSPECTOR.json",
-   "consumer": "acquire_datasets -> data/intelligence + registry",
-   "gap": "MEASURED 2026-09-16: EVSI is computed over docket experiments and value-of-data over sources, never as one ratio per missing observation; research_os blocking_observables() has no reader; no organ asks which single observation would most reduce uncertainty about a named hypothesis.",
+   "scheduled_by": "hourly_cycle:value_of_data",
+   "artifact": "desks/mt5/reports/VALUE_OF_DATA.json",
+   "consumer": "acquire_datasets (data/value_of_data_targets.json); data_prospector targets",
+   "gap": "LANDED 2026-09-16: 151 needs priced on the local copy in R of posterior sd removed; the acquirer fetches, this prices.",
    "next_step": "value_of_data.py (wave 4, building): per hypothesis (docket cell or standing question finding) the observation that would most reduce its posterior uncertainty, priced by the prospector's cost table into one ratio, ranked, handed to acquire_datasets as targets and published in reports/VALUE_OF_DATA.json; core leg.",
-   "landed": []
+   "landed": [
+    "3052765e267"
+   ]
   },
   {
    "id": "Q8",
    "item": "One typed deterministic research API: data.query, event.query, macro.query, causal.test, factor.build, alpha.backtest, execution.simulate, portfolio.evaluate, gauntlet.run, forward.register, evidence.lookup with aligned schemas and deterministic replay",
    "domain": "Q",
    "phase": "Q",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
+    "libs/research/research_api.py",
+    "tests/research/test_research_api.py",
+    "scripts/research_api_status.py",
     "libs/research_os/adapters/base.py",
     "libs/research/measurement_resolver.py",
-    "libs/research_os/dsl.py",
-    "desks/mt5/research/proposer_common.py",
-    "libs/validation/replay2.py",
-    "libs/data/pit.py",
-    "desks/mt5/research/shadow_forward.py"
+    "libs/research_os/dsl.py"
    ],
-   "scheduled_by": "none (each surface is invoked ad hoc)",
-   "artifact": "none",
-   "consumer": "none",
-   "gap": "MEASURED 2026-09-16: no research_api or tool_env module; the eleven verbs have no common schema or call log; bars loading, cost basis and universe are re-implemented per organ; deterministic replay is a property of replay2/lockbox alone.",
+   "scheduled_by": "hourly_cycle:research_api_status",
+   "artifact": "desks/mt5/reports/RESEARCH_API.json",
+   "consumer": "every organ and seat that loads bars/events/macro/backtests (migration ongoing); the call log data/research_api_calls.jsonl",
+   "gap": "LANDED 2026-09-16: eleven verbs bound to real delegates (11/11 available), typed schemas, deterministic call log, PIT refusal in macro.query; forward.register queues a request that shadow_admission does not yet read.",
    "next_step": "libs/research/research_api.py (wave 4, building): one typed facade whose eleven verbs delegate to the existing organs with dataclass schemas, a deterministic call log (data/research_api_calls.jsonl with input hashes) and PIT enforcement on every query; the seats and new organs call it instead of re-implementing loaders.",
-   "landed": []
+   "landed": [
+    "3052765e267"
+   ]
   },
   {
    "id": "Q9",
@@ -3907,23 +3913,24 @@
    "item": "Unexplained-residual hunting: Residual = Reality - ExistingModels at every level, one queue for unexplained returns, volatility, live losses, slippage, cross-asset moves, macro reactions, prioritised by magnitude x recurrence x unexplained fraction",
    "domain": "Q",
    "phase": "Q",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
+    "desks/mt5/research/residual_queue.py",
+    "desks/mt5/tests/test_residual_queue.py",
     "desks/mt5/research/standing_questions.py",
     "desks/mt5/research/factor_residual_engine.py",
     "desks/mt5/research/unknown_unknowns.py",
-    "libs/research/counterfactual_world.py",
-    "desks/mt5/research/missed_growth.py",
-    "desks/mt5/research/opportunity_gap.py",
-    "desks/mt5/research/fill_attribution.py"
+    "libs/research/counterfactual_world.py"
    ],
-   "scheduled_by": "hourly_cycle:standing_questions, daily_cycle:factor_residual, hourly_cycle:exogenous_search, hourly_cycle:counterfactual_world, hourly_cycle:opportunity_gap",
-   "artifact": "desks/mt5/reports/STANDING_QUESTIONS.json",
-   "consumer": "data/intelligence (standing_questions, factor_residual); reports otherwise",
-   "gap": "MEASURED 2026-09-16: six residual producers and no single queue; data/unknown_unknowns_queue.jsonl has no consumer; no organ ranks residuals by economic magnitude x recurrence x unexplained fraction.",
+   "scheduled_by": "hourly_cycle:residual_queue",
+   "artifact": "desks/mt5/reports/RESIDUAL_QUEUE.json",
+   "consumer": "proposer_common.donate (data/intelligence/residual_queue/); the CEO docket",
+   "gap": "LANDED 2026-09-16: nine producers merged (207 items from 304 sightings on the local copy), stable ids, recurrence, EXPLAINED/STALE transitions, top items donated to registered families; unknown_unknowns_queue consumed.",
    "next_step": "residual_queue.py (wave 4, building): merges every producer into data/residual_queue.jsonl with one priority, consumes unknown_unknowns_queue.jsonl, donates the top items as hypotheses through proposer_common.donate and publishes reports/RESIDUAL_QUEUE.json; core leg.",
-   "landed": []
+   "landed": [
+    "3052765e267"
+   ]
   },
   {
    "id": "Q12",
@@ -4150,21 +4157,25 @@
    "item": "P3 semantic frontier + unseen-frontier estimator: the A x P x C x E x I x M x H x S x R x X periodic table with explicit frontier coverage of ~40 mechanism clusters, and N_unseen(language, source, asset, mechanism) from Good-Turing / Chao estimators and discovery curves so the allocator knows which grounds are saturating",
    "domain": "W",
    "phase": "W",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
+    "desks/mt5/research/unseen_frontier.py",
+    "desks/mt5/tests/test_unseen_frontier.py",
     "desks/mt5/research/axis_registry.py",
     "desks/mt5/research/qd_frontier.py",
     "desks/mt5/research/breadth_ladder.py",
     "libs/research/alpha_schema.py",
     "desks/mt5/research/frontier_map.py"
    ],
-   "scheduled_by": "hourly_cycle:axis_registry, hourly_cycle:breadth_ladder",
-   "artifact": "desks/mt5/reports/AXIS_REGISTRY.json",
-   "consumer": "breadth_ladder (floor); qd_frontier; research_budget",
-   "gap": "MEASURED 2026-09-16: the ten-axis registry, the ladder and (wave 3) the QD frontier exist; no organ estimates how many mechanisms a ground still hides (no Chao/Good-Turing over mechanism observations), so 'Korean commodities 80% explored' is not a statement the desk can make.",
+   "scheduled_by": "hourly_cycle:axis_registry, hourly_cycle:unseen_frontier, hourly_cycle:breadth_ladder, hourly_cycle:qd_frontier",
+   "artifact": "desks/mt5/reports/UNSEEN_FRONTIER.json",
+   "consumer": "source_registry (exploration term); research_departments",
+   "gap": "LANDED 2026-09-16: Chao1 / Good-Turing / discovery curves per ground over canonical mechanism hashes (24,329 sightings, 3,199 species, 34 grounds on the local copy; the Chinese forest at coverage 0.33 OPEN).",
    "next_step": "unseen_frontier.py (wave 4b): per (language, source, asset_class, mechanism) the observed mechanism frequency table from deep_forest claims, repo_miner rows and the hypothesis graph, Chao1 and Good-Turing coverage estimates, discovery curves per source, published in reports/UNSEEN_FRONTIER.json; source_registry reads it as the exploration term of the intel ROI.",
-   "landed": []
+   "landed": [
+    "3052765e267"
+   ]
   },
   {
    "id": "W4",
@@ -4286,16 +4297,17 @@
    "status": "PARTIAL",
    "gate": "none",
    "evidence": [
+    "libs/research/artifact_chain.py",
+    "tests/research/test_artifact_chain.py",
+    "scripts/verify_artifact_chain.py",
     "libs/research/artifacts.py",
     "libs/ops/compute_ledger.py",
-    "desks/mt5/research/blind_reviewer.py",
-    "libs/validation/replay2.py",
-    "desks/mt5/research/evidence_vault.py"
+    "desks/mt5/research/blind_reviewer.py"
    ],
-   "scheduled_by": "hourly_cycle:blind_reviewer (wave 3), MT5-Gauntlet",
-   "artifact": "desks/mt5/data/blind_review_ledger.jsonl",
+   "scheduled_by": "hourly_cycle:artifact_chain (verify), hourly_cycle:blind_reviewer",
+   "artifact": "desks/mt5/reports/ARTIFACT_CHAIN.json",
    "consumer": "promoter (veto)",
-   "gap": "MEASURED 2026-09-16: the provenance envelope hashes each run's declared outputs and the blind reviewer (wave 3) re-executes certificates; there is no hash-linked artifact chain from source to review as one immutable record.",
+   "gap": "PARTIAL 2026-09-16: the hash-linked chain library and its hourly verifier LANDED (33 tests); the writers (compiler, gauntlet, reviewer, promoter appends) are not wired yet, so the chain is empty and verifies ok at n=0.",
    "next_step": "research_artifacts.py (wave 4b): an append-only chain data/research_artifacts.jsonl where each record carries the sha256 of its predecessor and of its own payload (source lead -> claim -> hypothesis card -> code identity (behaviour_hash) -> data hash (bars parquet digests) -> config hash -> gauntlet result -> blind review), written by the compiler, the gauntlet, the reviewer and the promoter; a verifier walks the chain hourly.",
    "landed": []
   },
