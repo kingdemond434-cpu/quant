@@ -789,8 +789,12 @@ NODES: tuple[Node, ...] = (
          writes=("desks/mt5/reports/ASIA_PLANE.json",)),
     Node("cost_to_edge", "desks/mt5/research/cost_to_edge.py",
          writes=("desks/mt5/reports/COST_TO_EDGE.json",)),
+    # Prices every arm of one decision (veto, sizing, execution, exit, missed trade); the rent
+    # ledger already bills two of those arms under their own names, and this node's output is
+    # the union of them rather than a new line.
     Node("counterfactual_world", "libs/research/counterfactual_world.py",
-         writes=("desks/mt5/reports/COUNTERFACTUAL_WORLD.json",)),
+         writes=("desks/mt5/reports/COUNTERFACTUAL_WORLD.json",),
+         billed_as=("counterfactual_replay", "action_counterfactuals")),
     Node("dead_architecture", "scripts/check_dead_architecture.py",
          writes=("desks/mt5/reports/dead_architecture.json",)),
     Node("deep_forest", "desks/mt5/research/deep_forest_miner.py",

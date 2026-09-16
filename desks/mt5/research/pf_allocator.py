@@ -3356,7 +3356,48 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     # handles on its own schedule.
     nt["gain_per_day"] = round(gain, 10) if math.isfinite(gain) else None
     proposed_book = dict(funded)
+    _solved_book = book
     book, funded = bind_verdict(nt, prev_book, held, book, funded)
+    # A HOLD IS ONLY A HOLD IF THE HELD BOOK STILL HOLDS ITS CERTIFICATE (2026-09-16). When the
+    # no-trade filter binds, the fresh solve is contested here FIRST. If the fresh solve beats the
+    # bench and the held book does not, the hold is overridden and the solve is published: the
+    # alternative is not "no trade" but the gateway falling back to `robust_kelly` -- a different
+    # book, a full rebalance, and the allocator's own intelligence withheld. If the fresh solve
+    # loses too, the hold stands and the fallback applies exactly as before. Turnover for the
+    # override is billed in `no_trade` like any rebalance.
+    nt["proof_override"] = {"applied": False}
+    if nt.get("binding") and proposed_book and \
+            {k: round(float(v), 6) for k, v in proposed_book.items() if float(v) > 1e-5} != funded:
+        try:
+            from libs.portfolio.allocator_proof import contest as _contest_fresh
+            from libs.portfolio.allocator_proof import held_book_still_wins as _held_wins
+            _pf = _contest_fresh(ev, proposed_book, prev_book, cfg=cfg, worlds=worlds,
+                                 now_buckets=kept_dims or None, root=ROOT)
+            _held_ok, _held_why = _held_wins(_pf.get("scores") or {})
+            nt["proof_override"].update({
+                "fresh_passed": bool(_pf.get("passed")), "fresh_why": _pf.get("why", ""),
+                "held_wins": bool(_held_ok), "held_why": _held_why})
+            if _pf.get("passed") and not _held_ok:
+                funded = {k: round(float(v), 6) for k, v in proposed_book.items()
+                          if float(v) > 1e-5}
+                book = _solved_book
+                nt["binding"] = False
+                nt["verdict"] = "REBALANCE"
+                nt["proof_override"]["applied"] = True
+                nt["proof_override"]["why"] = (
+                    "the held book lost the contest on today's worlds while the fresh solve "
+                    "won it; holding would have deployed the best baseline instead, which is a "
+                    "larger rebalance than adopting the solve")
+                _log(f"PROOF OVERRIDE: the held book lost ({_held_why}) and the fresh solve "
+                     f"passed ({_pf.get('why', '')}); publishing the solve at "
+                     f"{sum(funded.values()):.2%}")
+            else:
+                nt["proof_override"]["why"] = (
+                    "hold stands: " + ("the held book still beats the bench" if _held_ok
+                                       else "the fresh solve does not beat the bench either"))
+        except Exception as exc:
+            nt["proof_override"] = {"applied": False,
+                                    "why": f"UNMEASURED ({type(exc).__name__}: {exc})"}
     opp = opportunity(free, funded, HEAT_TARGET)
 
     # ------------------------------------------------- ADMISSION BY dE[log W], NOT BY SHARPE
