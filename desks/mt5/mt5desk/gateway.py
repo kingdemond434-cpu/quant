@@ -2433,8 +2433,10 @@ def resolve_family_order(st: dict, s: dict, equity: float,
         _why = (f"{_same} {'long' if side > 0 else 'short'} position(s) already on {s['symbol']} "
                 f"across sleeves (cap {MAX_SAME_SIDE_PER_SYMBOL}): one bet is not taken again")
         journal_refusal(name, s["symbol"], side, "symbol_side_cap", _why)
+        # The bar is MARKED: the copy is refused for this bar, not retried every minute (which
+        # would journal one refusal per sleeve per pass); a slot that frees is taken next bar.
         return {"ok": False, "stage": "symbol_side_cap", "considered": True, "sep": " ",
-                "why": _why, "mark": False, "last_bar": last_bar}
+                "why": _why, "mark": True, "last_bar": last_bar}
     leg_mult, leg_why = 1.0, ""
     try:
         from mt5desk import leg_balance
