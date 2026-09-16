@@ -82,7 +82,7 @@ T_PROMOTE = 2.5
 N_MIN_VERDICT = 20
 #: The early-fade bar: trades before which no early verdict is read, and the per-trade loss that
 #: reads as "doing bad" once it is reached.
-EARLY_FADE_N = 6
+EARLY_FADE_N = 5
 EARLY_FADE_R = 0.25
 #: The sleeve-name stem the ledger can carry: `gateway.COMMENT_MAX` (29, measured on the venue)
 #: minus the "DW" tag. Mirrored, not imported: this organ runs without the terminal bindings.
@@ -185,7 +185,8 @@ def verdict(s: dict) -> tuple[str, str]:
                           f"-- the same bar every forward verdict applies; harm this large does "
                           f"not wait for a t-test")
     # EARLY FADE (principal, 2026-09-16: "fade all the sleeves doing bad"). A sleeve that has not
-    # won once in its first EARLY_FADE_N live trades, or is losing EARLY_FADE_R or more per
+    # won once in its first EARLY_FADE_N live trades (0-for-5: p = 0.6^5 = 8% under a 40%-win
+    # edge), or is losing EARLY_FADE_R or more per
     # trade after that many, runs at half risk until its trailing record says otherwise. The
     # same FADE rail at an earlier bar, not a new rail: two-sided (the next HEALTHY reading
     # UNFADEs it), billed by missed_growth, and nothing retires here -- retirement keeps its
