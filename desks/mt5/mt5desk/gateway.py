@@ -1552,8 +1552,15 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
         pl_quote = float(d.profit) + float(d.commission or 0.0) + float(d.swap or 0.0)
         # UNRECONSTRUCTIBLE IS RECORDED, NEVER GUESSED -- `decision_core.closed_trade_r` returns
         # zeros without both the entry and the stop, and the row below says so.
+        # THE POSITION'S OWN VOLUME AND THE VENUE'S TICK VALUE (2026-09-16): see
+        # `decision_core.closed_trade_r` for the zero this replaced.
         risk_quote, r = closed_trade_r(entry_price, sl_price, d.type == mt5.POSITION_TYPE_BUY,
-                                       sym_info.trade_contract_size, pl_quote)
+                                       sym_info.trade_contract_size, pl_quote,
+                                       volume=float(getattr(d, "volume", 0.0) or 0.0),
+                                       tick_value=float(getattr(sym_info, "trade_tick_value",
+                                                                0.0) or 0.0),
+                                       tick_size=float(getattr(sym_info, "trade_tick_size",
+                                                               0.0) or 0.0))
         rec = {"time": now(), "sleeve": sleeve, "symbol": d.symbol,
                "side": d.type, "pl_quote": round(pl_quote, 2),
                "r_multiple": round(r, 4), "volume": d.volume,

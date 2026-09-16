@@ -295,7 +295,13 @@ def contest(ev: Sequence[SleeveEvidence], dynamic: Mapping[str, float],
     # rescaled to the dynamic total. Rescaling it would turn the do-nothing baseline into a
     # different, more-levered strategy nobody is running, and the question this baseline answers
     # is precisely whether moving at all was worth it.
-    if incumbent:
+    # A BOOK IS NOT ITS OWN RIVAL (2026-09-16). When the no-trade filter holds the book, the
+    # contested "dynamic" book IS the incumbent, and entering it as `static_incumbent` too asked
+    # it to beat itself by the margin -- impossible by construction, so every held pass read
+    # "dynamic 0.018607 vs best baseline static_incumbent 0.018607: FAIL" and the gateway
+    # deployed the fallback, which was the same book with its authority withheld.
+    if incumbent and any(abs(float(incumbent.get(k, 0.0)) - float(dynamic.get(k, 0.0))) > 1e-9
+                         for k in set(incumbent) | set(dynamic)):
         books["static_incumbent"] = dict(incumbent)
     # THE CHALLENGER BENCH (2026-09-04): HRP, HERC, min-variance, mean-CVaR and three Kellys,
     # all long-only at the same total heat. More rivals can only make the proof harder; the

@@ -747,12 +747,22 @@ def test_sleeve_from_comment_and_closed_trade_r() -> None:
     assert dc.sleeve_from_comment("DWgold_asia") == "gold_asia"
     assert dc.sleeve_from_comment("", "UNATTRIBUTED") == "UNATTRIBUTED"
     assert dc.sleeve_from_comment("broker rewrote") == "broker rewrote"
-    assert dc.closed_trade_r(100.0, 90.0, True, 100.0, 500.0) == (pytest.approx(10.0),
+    # Risk is |entry - stop| x contract x volume in the caller's units; R is P&L over it.
+    assert dc.closed_trade_r(100.0, 90.0, True, 100.0, 500.0) == (pytest.approx(1000.0),
                                                                     pytest.approx(0.5))
-    assert dc.closed_trade_r(100.0, 110.0, False, 100.0, -1000.0) == (pytest.approx(10.0),
+    assert dc.closed_trade_r(100.0, 110.0, False, 100.0, -1000.0) == (pytest.approx(1000.0),
                                                                         pytest.approx(-1.0))
     assert dc.closed_trade_r(0.0, 90.0, True, 100.0, 5.0) == (0.0, 0.0)
-    assert dc.closed_trade_r(100.0, 110.0, True, 100.0, 5.0) == (pytest.approx(-10.0), 0.0)
+    # THE SIDE IS NOT RE-DERIVED (2026-09-16): the closing deal's type is the opposite of the
+    # position's, and taking it as the side zeroed every R the ledger ever recorded. A stop is
+    # on the loss side by construction, so the distance is unsigned whichever flag is passed.
+    assert dc.closed_trade_r(100.0, 110.0, True, 100.0, 5.0) == (pytest.approx(1000.0),
+                                                                   pytest.approx(0.005))
+    # Volume and the venue's tick value put the risk in the account currency for the position's
+    # own size: 10 points / 0.01 tick x 1.0 per tick per lot x 0.02 lots = 20; P&L 5 -> 0.25R.
+    assert dc.closed_trade_r(100.0, 90.0, True, 100.0, 5.0, volume=0.02, tick_value=1.0,
+                             tick_size=0.01) == (pytest.approx(20.0), pytest.approx(0.25))
+    assert dc.closed_trade_r(100.0, 90.0, True, 100.0, 5.0, volume=0.0) == (0.0, 0.0)
 
 
 # ================================================================== execution context and gates

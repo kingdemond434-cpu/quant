@@ -1766,22 +1766,45 @@ def sleeve_from_comment(comment: str, unattributed: str = "") -> str:
 
 
 def closed_trade_r(entry_price: float, sl_price: float, is_buy: bool, contract_size: float,
-                   pl_quote: float) -> tuple[float, float]:
-    """(risk_quote, r_multiple) for a closed deal: quote-currency P&L per lot over the
-    entry-risk distance per lot (bracket SL distance x contract size in quote units).
+                   pl_quote: float, *, volume: float = 1.0, tick_value: float | None = None,
+                   tick_size: float | None = None) -> tuple[float, float]:
+    """(risk_at_entry, r_multiple) for a closed position: realised P&L over the money the
+    stop put at risk when the position was opened.
+
+    THE ZERO THAT JUDGED EVERY SLEEVE (measured 2026-09-16). Every row in the live ledger carried
+    `r_multiple: 0.0` -- entry, stop and volume all present -- because `is_buy` was taken from
+    the CLOSING deal, whose type is the opposite of the position's (a sell closes with a buy), so
+    the signed stop distance came out negative, was floored at zero, and R was 0.0 for every
+    closed trade the desk has ever recorded. The decay monitor then read `exp=0.0R, t=0.0` for
+    a sleeve at -61 EUR and for one at +22 EUR alike. The distance is now taken as |entry - stop|:
+    a stop is on the loss side by construction, and the side is not the writer's to re-derive.
+
+    THE RISK IS IN THE ACCOUNT CURRENCY AND FOR THE POSITION'S OWN VOLUME. `pl_quote` is the
+    deal's profit in the account currency for `volume` lots; the old denominator was one lot's
+    distance in the QUOTE currency. With the venue's tick value (account currency per tick per
+    lot) and tick size the ratio is a real R: distance / tick_size * tick_value * volume. Without
+    them the contract-size distance is used, which is exact only when the quote currency is the
+    account currency.
 
     UNRECONSTRUCTIBLE IS RECORDED, NEVER GUESSED. Without both the entry and the stop there is
     no R multiple, and inventing one would put a fabricated number into the ledger the promoter
     uses to retire live sleeves (L1.28a): both come back as 0.0 and the caller stamps the row
     `r_unreconstructible`.
     """
+    del is_buy                                                    # kept for the call signature
     if entry_price <= 0 or sl_price <= 0:
-        risk_quote = 0.0
+        return 0.0, 0.0
+    dist = abs(float(entry_price) - float(sl_price))
+    lots = max(float(volume or 0.0), 0.0)
+    if dist <= 0 or lots <= 0:
+        return 0.0, 0.0
+    if tick_value and tick_size and float(tick_value) > 0 and float(tick_size) > 0:
+        risk = dist / float(tick_size) * float(tick_value) * lots
     else:
-        risk_quote = (entry_price - sl_price if is_buy else sl_price - entry_price)
-    risk_per_lot = max(risk_quote, 0.0) * contract_size
-    r = pl_quote / risk_per_lot if risk_per_lot > 0 else 0.0
-    return risk_quote, r
+        risk = dist * float(contract_size) * lots
+    if risk <= 0:
+        return 0.0, 0.0
+    return risk, float(pl_quote) / risk
 
 
 # --------------------------------------------------------------------- execution context and gate
