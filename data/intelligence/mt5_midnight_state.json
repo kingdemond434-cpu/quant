@@ -1,32 +1,31 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-09-16T11:52:10.379704+00:00",
+  "generated_at": "2026-09-16T15:54:25.276589+00:00",
   "scope": "MT5_FUSION_ONLY",
   "execution_authority": false,
   "universe": {
     "metadata_entities": 251,
     "h1_bar_files": 304,
-    "metadata_mtime": "2026-09-16T11:51:23.119015+00:00",
+    "metadata_mtime": "2026-09-16T15:54:17.482114+00:00",
     "newest_h1_mtime": "2026-09-10T22:28:41.305028+00:00"
   },
   "conversion": {
     "research_queue": {
-      "AWAITING_CANONICAL_GAUNTLET": 1193,
+      "AWAITING_CANONICAL_GAUNTLET": 253,
       "BLOCKED_CANONICAL_DOCKET_MISSING": 115,
       "DONE": 10,
-      "GAUNTLET_REJECTED": 24156,
-      "QUEUED_CANONICAL_GAUNTLET": 25
+      "GAUNTLET_REJECTED": 25131
     },
     "universal_survivors": 58,
-    "shadow_sleeves": 595,
-    "shadow_observations": 958,
+    "shadow_sleeves": 648,
+    "shadow_observations": 993,
     "shadow_last_run": "2026-09-16"
   },
   "freshness": {
     "research_loop": "2026-09-04T03:31:09.889825+00:00",
-    "research_pipeline": "2026-09-16T04:30:03.999490+00:00",
-    "external_gauntlet": "2026-09-15T14:23:00+00:00",
-    "universal_gate": "2026-09-16T04:30:03.999490+00:00",
+    "research_pipeline": "2026-09-16T15:52:35.689682+00:00",
+    "external_gauntlet": "2026-09-16T15:07:10+00:00",
+    "universal_gate": "2026-09-16T15:52:35.689682+00:00",
     "allocation": "2026-09-04T03:30:52.359489+00:00",
     "markout": "2026-08-30T08:35:16+00:00",
     "markout_usable": false,
@@ -34,7 +33,7 @@
   },
   "capability_reuse": {
     "artifact": "data/intelligence/mt5_capability_reuse.json",
-    "generated_at": "2026-09-16T11:52:09.249674+00:00",
+    "generated_at": "2026-09-16T15:54:24.815950+00:00",
     "counts": {
       "DISPOSED_BLOCKED": 5,
       "DISPOSED_SUPERSEDED": 9,
@@ -45,7 +44,6 @@
     "proof_level": "STATIC_REACHABILITY_ONLY"
   },
   "defects": [
-    "canonical research pipeline stale or unmeasured",
     "execution markout stale; current costs remain unmeasured",
     "MT5 universe bars stale"
   ]
