@@ -565,6 +565,10 @@ def build_cell(sym: str, family: str, params: dict, meta: dict,
     # "this family takes no side" and retry, and the second failure returns None: an entire
     # chart's worth of cells would read as unbuildable.
     call_params.pop("timeframe", None)
+    # THE SESSION IS AN IDENTITY KEY, NEVER A FAMILY ARGUMENT (2026-09-16): the same filter the
+    # forward clock and the live executor apply in `family_call.signals`, applied here to the
+    # replay, so a cell certified inside a session is judged inside it.
+    _session = call_params.pop("session", None)
     side = 1  # both sides tested externally; use LONG default
     try:
         sigs = fn(h1, side=side, **call_params)
@@ -573,6 +577,9 @@ def build_cell(sym: str, family: str, params: dict, meta: dict,
             sigs = fn(h1, **call_params)
         except Exception:
             return None
+    if _session is not None:
+        from mt5desk.family_call import session_filter
+        sigs = session_filter(list(sigs or []), _session)
     # CHARGE THE HOUR THIS CELL FILLS IN. `universe.json` carries ONE median spread per symbol,
     # collapsed at ingest, so every gate has been dividing by a number that averages away the hour
     # structure -- and the families that fill in thin books are exactly the ones that lose by it.
@@ -2762,9 +2769,16 @@ def main():
     for _sp in eligible_specs:
         if _is_new(_sp) == 1:
             _judged_in_bucket[_bucket(_sp)] = _judged_in_bucket.get(_bucket(_sp), 0) + 1
+
+    # INTRADAY BEFORE H1 AND D1 (principal 2026-09-16: "more priority to intraday than h1s").
+    def _tf_rank(sp: dict) -> int:
+        _tf = timeframe_of(sp.get("params"), str(sp.get("family") or ""))
+        return 0 if _tf in ("M1", "M5", "M15", "M30") else (1 if _tf == "H4" else 2)
+
     eligible_specs = sorted(
         eligible_specs,
         key=lambda sp: (_is_new(sp),
+                        _tf_rank(sp),
                         _judged_in_bucket.get(_bucket(sp), 0),
                         _cursor.get(str(sp.get("sym") or ""), ""),
                         str(sp.get("sym") or ""),

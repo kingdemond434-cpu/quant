@@ -34,6 +34,7 @@ import json
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 DESK = Path(__file__).resolve().parents[1]
 ROOT = DESK.parent.parent
@@ -169,7 +170,18 @@ CORE = ("XAUUSD", "XAGUSD", "EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "USDCAD", "U
 #: sessions, not tons of H1"). A cell is emitted on a chart only when that symbol's bars for it
 #: are on disk; H1 keeps the bare identity every existing cell has, the others carry
 #: `timeframe`, which is the chart to load and stays in the cell's identity.
-CHARTS = ("M5", "M15", "M30", "H1", "H4")
+CHARTS = ("M1", "M5", "M15", "M30", "H1", "H4", "D1")
+#: THE SESSION AXIS (principal 2026-09-16: "all sessions maximised fully for true 24/7 trading").
+#: `family_call.SESSIONS` defines the windows in server hours and applies the filter in the one
+#: call path the gauntlet, the forward clock and the live executor share; here it is only an
+#: identity key on the cell. Daily bars carry no session.
+SESSION_AXIS = ("all", "asia", "london", "ny")
+#: Constructors that are not families of their own: they take a spec and build others.
+NOT_A_FAMILY = frozenset({"generic", "formula", "ensemble", "cross_sectional"})
+#: How many new cells one run may merge, most intraday first: the sweep is idempotent, so a
+#: docket of every family on every chart in every session fills over a few hourly runs rather
+#: than in one write the gauntlet then has to load whole.
+MAX_NEW_PER_RUN = 40_000
 
 
 def _with_bars() -> list[str]:
@@ -189,6 +201,72 @@ def _with_bars() -> list[str]:
 
 def _charts_for(sym: str) -> list[str]:
     return [tf for tf in CHARTS if (UNIVERSE / f"{sym}_{tf}.parquet").exists()]
+
+
+def _sessions_for(tf: str) -> tuple[str, ...]:
+    return ("all",) if tf == "D1" else SESSION_AXIS
+
+
+def _banned(family: str) -> bool:
+    try:
+        from research.family_policy import family_banned
+        return bool(family_banned(family))
+    except Exception:
+        return False
+
+
+def default_families() -> tuple[dict[str, str], dict[str, str]]:
+    """(sweepable, blocked): EVERY registered family the desk can call on bars alone, with its
+    default parameters, and the ones it cannot with the reason (principal 2026-09-16: "make them
+    hunt every family ever and anything which isn't discovery").
+
+    A family is sweepable at its defaults when every argument beyond the bars and the side has a
+    default. One that REQUIRES an input (a peer, factors, a COT frame, a tape series) is blocked
+    here and swept only through the READY grid that names that input; the banned family and the
+    spec-driven constructors are set aside by name.
+    """
+    import inspect
+    try:
+        from mt5desk import families as fam_mod
+        from mt5desk import families_orthogonal as fo
+    except Exception as exc:                                     # pragma: no cover
+        return {}, {"*": f"families unimportable ({type(exc).__name__}: {exc})"}
+    names: dict[str, Any] = {}
+    for name, entry in getattr(fam_mod, "FAMILY_REGISTRY", {}).items():
+        fn = entry.get("func") if isinstance(entry, dict) else entry
+        if callable(fn):
+            names[str(name)] = fn
+    for name, fn in getattr(fo, "ORTHOGONAL_FAMILIES", {}).items():
+        names.setdefault(str(name), fn)
+    ok: dict[str, str] = {}
+    blocked: dict[str, str] = {}
+    for name, fn in sorted(names.items()):
+        if name in READY:
+            continue
+        if name in NOT_A_FAMILY:
+            blocked[name] = "a constructor that builds families from a spec, not a family"
+            continue
+        if _banned(name):
+            blocked[name] = "banned (data/banned_families.json)"
+            continue
+        try:
+            sig = inspect.signature(fn)
+        except (TypeError, ValueError):
+            blocked[name] = "signature unreadable"
+            continue
+        params = list(sig.parameters.values())[1:]
+        need = [p.name for p in params
+                if p.default is inspect.Parameter.empty and p.name != "side"
+                and p.kind in (p.POSITIONAL_OR_KEYWORD, p.KEYWORD_ONLY)]
+        if need:
+            blocked[name] = f"requires input(s) {need} the sweep cannot name at defaults"
+            continue
+        ok[name] = "default parameters, every chart, every session"
+    return ok, blocked
+
+
+def _tf_rank(tf: str) -> int:
+    return 0 if tf in ("M1", "M5", "M15", "M30") else (1 if tf == "H4" else 2)
 
 
 def _targets(fam: str, spec: dict, syms: list[str]) -> list[tuple[str, dict]]:
@@ -215,14 +293,36 @@ def cells(only: str | None = None) -> list[dict]:
     for fam, spec in READY.items():
         if only and fam != only:
             continue
+        if _banned(fam):
+            continue
         for sym, extra in _targets(fam, spec, syms):
             for params in spec["grid"]:
                 for tf in _charts_for(sym) or ["H1"]:
-                    p = dict(params)
-                    p.update(extra)
+                    for sess in _sessions_for(tf):
+                        p = dict(params)
+                        p.update(extra)
+                        if tf != "H1":
+                            p["timeframe"] = tf
+                        if sess != "all":
+                            p["session"] = sess
+                        out.append(_cell(sym, fam, p, spec, now))
+    sweepable, _blocked = default_families()
+    for fam, why in sweepable.items():
+        if only and fam != only:
+            continue
+        spec = {"why": f"every family, {why}"}
+        for sym in syms:
+            for tf in _charts_for(sym) or ["H1"]:
+                for sess in _sessions_for(tf):
+                    p: dict = {}
                     if tf != "H1":
                         p["timeframe"] = tf
+                    if sess != "all":
+                        p["session"] = sess
                     out.append(_cell(sym, fam, p, spec, now))
+    # Most intraday first, so a capped merge reaches the charts the principal ranked highest.
+    out.sort(key=lambda r: (_tf_rank(str((r.get("params") or {}).get("timeframe") or "H1")),
+                            r["symbol"], r["family"]))
     return out
 
 
@@ -241,9 +341,10 @@ def _cell(sym: str, fam: str, p: dict, spec: dict, now: str) -> dict:
     }
 
 
-def apply(new: list[dict]) -> tuple[int, int]:
-    """Merge, deduped on the executable spec, so a daily clock cannot grow the
-    docket without bound."""
+def apply(new: list[dict], max_new: int = MAX_NEW_PER_RUN) -> tuple[int, int]:
+    """Merge, deduped on the executable spec, at most `max_new` per run (the input order is
+    most-intraday-first), so a daily clock cannot grow the docket without bound and one run
+    never hands the gauntlet a docket it has to load whole."""
     try:
         docket = json.loads(DOCKET.read_text(encoding="utf-8"))
     except (OSError, ValueError):
@@ -256,7 +357,7 @@ def apply(new: list[dict]) -> tuple[int, int]:
                           sort_keys=True, default=str)
 
     seen = {key(r) for r in docket if isinstance(r, dict)}
-    add = [r for r in new if key(r) not in seen]
+    add = [r for r in new if key(r) not in seen][:max(0, int(max_new))]
     if add:
         docket.extend(add)
         tmp = DOCKET.with_suffix(".json.tmp")
@@ -278,6 +379,15 @@ def main(argv: list[str] | None = None) -> int:
             continue
         tg = _targets(fam, spec, syms)
         print(f"  READY   {fam:<22} {len(spec['grid'])} param set(s) x {len(tg)} target(s)")
+    sweepable, blocked_default = default_families()
+    print(f"  DEFAULT {len(sweepable)} more famil(ies) at their defaults: "
+          f"{', '.join(sorted(sweepable))}")
+    for fam, why in sorted(blocked_default.items()):
+        print(f"  SET ASIDE {fam:<20} {why[:90]}")
+    from collections import Counter
+    by_tf = Counter(str((r.get('params') or {}).get('timeframe') or 'H1') for r in new)
+    by_sess = Counter(str((r.get('params') or {}).get('session') or 'all') for r in new)
+    print(f"  by chart {dict(by_tf)}; by session {dict(by_sess)}")
     for fam, why in BLOCKED.items():
         print(f"  BLOCKED {fam:<22} {why[:96]}")
     if not BLOCKED:
