@@ -1,0 +1,261 @@
+[
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2308093",
+  "symbols": [
+   "AUDCAD"
+  ],
+  "found_at": "2026-09-16T06:13:08+00:00",
+  "platform": "mt4",
+  "phenotypes": [
+   "max_growth",
+   "long_lived",
+   "algo_survivor"
+  ],
+  "ev_score": 5.091,
+  "growth_pct": 294.85,
+  "weeks": 155.0,
+  "pf": 1.9,
+  "max_dd_pct": null,
+  "trades": 1691.0,
+  "win_pct": 1234.0,
+  "algo_pct": 99.0,
+  "subscribers": 12.0,
+  "author": "/en/users/tec_daniel",
+  "author_other_signals": [
+   {
+    "sid": "2262642",
+    "title": "'NoPain MT5' by Daniel Moraes Da Silva",
+    "growth": "2125%",
+    "curve_points": 20,
+    "curve_dd": 0.0
+   },
+   {
+    "sid": "2308095",
+    "title": "'UpFuji MT5' by Daniel Moraes Da Silva",
+    "growth": "107%",
+    "curve_points": 20,
+    "curve_dd": 0.0
+   },
+   {
+    "sid": "2363323",
+    "title": "'UpEverest MT4' by Daniel Moraes Da Silva",
+    "growth": "539%",
+    "curve_points": 20,
+    "curve_dd": 0.0
+   }
+  ],
+  "hour_histogram": {
+   "06": 1,
+   "12": 2,
+   "10": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/734515",
+  "symbols": [
+   "AUDCAD",
+   "AUDCHF",
+   "AUDJPY",
+   "AUDNZD",
+   "AUDUSD",
+   "BTCUSD",
+   "CADCHF",
+   "CADJPY",
+   "CHFJPY",
+   "ETHUSD",
+   "EURAUD",
+   "EURCAD"
+  ],
+  "found_at": "2026-09-16T06:13:08+00:00",
+  "platform": "mt4",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "long_lived",
+   "algo_survivor",
+   "multi_fx"
+  ],
+  "ev_score": 75.701,
+  "growth_pct": 2934.71,
+  "weeks": 346.0,
+  "pf": 1.22,
+  "max_dd_pct": null,
+  "trades": 33873.0,
+  "win_pct": 23133.0,
+  "algo_pct": 99.0,
+  "subscribers": 0.0,
+  "author": "/en/users/johnmacknamara",
+  "author_other_signals": [
+   {
+    "sid": "743742",
+    "title": "'RFactor Portfolio JM' by Raphael Minato",
+    "growth": "1441%",
+    "curve_points": 20,
+    "curve_dd": -6.0
+   },
+   {
+    "sid": "973927",
+    "title": "'R Factor Broker FPMarkets' by Raphael Minato",
+    "growth": "240%",
+    "curve_points": 20,
+    "curve_dd": -10.0
+   },
+   {
+    "sid": "1911819",
+    "title": "'R Factor Neural Network 2' by Raphael Minato",
+    "growth": "100%",
+    "curve_points": 20,
+    "curve_dd": -13.0
+   }
+  ],
+  "hour_histogram": {
+   "03": 4,
+   "05": 2,
+   "23": 5,
+   "00": 3,
+   "18": 3,
+   "09": 1,
+   "01": 7,
+   "08": 2,
+   "17": 2,
+   "19": 3,
+   "16": 5,
+   "14": 3,
+   "11": 2,
+   "10": 1,
+   "02": 1,
+   "13": 1,
+   "22": 3,
+   "15": 3
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2153920",
+  "symbols": [
+   "EURUSD",
+   "GBPUSD",
+   "XAUEUR",
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-16T06:13:08+00:00",
+  "platform": "mt4",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "long_lived",
+   "algo_survivor",
+   "gold",
+   "multi_fx"
+  ],
+  "ev_score": 32.943,
+  "growth_pct": 1952.68,
+  "weeks": 148.0,
+  "pf": 1.56,
+  "max_dd_pct": null,
+  "trades": 419.0,
+  "win_pct": 236.0,
+  "algo_pct": 100.0,
+  "subscribers": 5.0,
+  "author": "/en/users/liehtw",
+  "author_other_signals": [
+   {
+    "sid": "2222743",
+    "title": "'Tick Multiprod' by LU KUEI LIEH",
+    "growth": "3008%",
+    "curve_points": 20,
+    "curve_dd": -3.0
+   },
+   {
+    "sid": "2340704",
+    "title": "'XAUUSD AND XAUEUR' by LU KUEI LIEH",
+    "growth": "303%",
+    "curve_points": 20,
+    "curve_dd": -8.0
+   },
+   {
+    "sid": "2299696",
+    "title": "'Chicken dinner' by LU KUEI LIEH",
+    "growth": "2399%",
+    "curve_points": 20,
+    "curve_dd": -8.0
+   }
+  ],
+  "hour_histogram": {
+   "07": 2,
+   "13": 6,
+   "06": 3,
+   "15": 4,
+   "14": 1,
+   "03": 2,
+   "08": 1,
+   "17": 1,
+   "04": 3,
+   "01": 1,
+   "02": 1,
+   "18": 4,
+   "16": 1,
+   "12": 1,
+   "20": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2329267",
+  "symbols": [
+   "AUDCAD",
+   "AUDNZD",
+   "AUDUSD",
+   "BTCUSD",
+   "ETHUSD",
+   "EURUSD",
+   "GBPCHF",
+   "NZDCAD",
+   "NZDUSD",
+   "USDCAD",
+   "XAUUSD"
+  ],
+  "found_at": "2026-09-16T06:13:08+00:00",
+  "platform": "mt4",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "long_lived",
+   "high_pf",
+   "algo_survivor",
+   "gold",
+   "multi_fx"
+  ],
+  "ev_score": 22.537,
+  "growth_pct": 1378.46,
+  "weeks": 139.0,
+  "pf": 2.0,
+  "max_dd_pct": null,
+  "trades": 2549.0,
+  "win_pct": 1831.0,
+  "algo_pct": 100.0,
+  "subscribers": 0.0,
+  "author": "/en/users/nekto61",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "06": 1,
+   "02": 1,
+   "16": 2,
+   "15": 1,
+   "18": 3,
+   "09": 1,
+   "03": 1,
+   "13": 1
+  }
+ }
+]
