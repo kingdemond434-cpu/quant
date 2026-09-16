@@ -188,7 +188,7 @@ LOT = 0.02
 #: module. The redundant `X as X` alias is the explicit re-export form, not a typo, and it is why
 #: the block carries `noqa: I001`: isort wants every explicit re-export in a statement of its own,
 #: which would turn one readable list of fourteen re-exported names into fourteen import lines.
-from mt5desk.decision_core import (  # noqa: E402, I001
+from mt5desk.decision_core import (
     CONTRACT_OZ as CONTRACT_OZ,
     DIST_USD as DIST_USD,
     FX_EUR as FX_EUR,
@@ -207,7 +207,7 @@ from mt5desk.decision_core import (  # noqa: E402, I001
     live_heat_ceiling as live_heat_ceiling,
     min_lot_risk_eur as min_lot_risk_eur,
 )
-from mt5desk.gateway_config_fallback import (  # noqa: E402
+from mt5desk.gateway_config_fallback import (
     HEAT_HARD_CEILING as HEAT_HARD_CEILING,
     HEAT_TARGET as HEAT_TARGET,
     Q_OPT as Q_OPT,
@@ -916,6 +916,9 @@ def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float,
                   sleeve_row: dict | None = None) -> dict:
     """Send both legs of a bracket exactly as before; `sleeve_row` (the roster row, optional) is
     read only to carry the sleeve's certificate and registry id onto the intent row."""
+    if _DESK_STALE is not None:
+        log(f"[{sleeve}] refused: desk stale ({_DESK_STALE['verdict']}), no new risk")
+        return {"ok": False, "stage": "desk_stale", "why": _DESK_STALE["why"]}
     if not st["armed"]:
         log(f"SHADOW [{sleeve}] would place bracket: {json.dumps(spec, default=str)}")
         for side in ("buy_stop", "sell_stop"):
@@ -1656,6 +1659,9 @@ def _fill_surface():
 
 
 _BOOK: object = None
+#: The desk-staleness verdict for THIS pass (`mt5desk.desk_staleness`), None while the research
+#: organs are alive. Set once in `main`, read by every path that opens new risk.
+_DESK_STALE: dict | None = None
 
 
 def _netting_book():
@@ -2251,6 +2257,10 @@ def resolve_family_order(st: dict, s: dict, equity: float,
     # The heat the allocator grants is unchanged and is spent on ONE position per sleeve, exactly
     # as the certificate spends it; breadth still comes from more SLEEVES, which is the only
     # place it ever came from.
+    if _DESK_STALE is not None:
+        return {"ok": False, "stage": "desk_stale", "considered": True, "sep": " ",
+                "why": f"desk stale ({_DESK_STALE['verdict']}): no new risk", "mark": False,
+                "last_bar": last_bar}
     _open_now = _sleeve_positions(s["symbol"], name)
     if _open_now:
         _lots = sum(float(getattr(p, "volume", 0.0) or 0.0) for p in _open_now)
@@ -2372,7 +2382,7 @@ def resolve_family_order(st: dict, s: dict, equity: float,
                 s["symbol"], side, family=str(family or ""),
                 ttl_bars=getattr(g, "ttl_bars", None), bar_minutes=_BAR_MINUTES.get(tf, 60))
             _scaled = _scaled * macro_mult
-        except Exception as exc:                                    # noqa: BLE001
+        except Exception as exc:
             macro_mult, macro_why = 1.0, f"macro UNMEASURED ({type(exc).__name__}: {exc})"
         _final = max(_vmin, round(_scaled / _vstep) * _vstep)
         _held = leg_balance.already_held(s["symbol"], side, mt5.positions_get() or [], pending)
@@ -2386,7 +2396,7 @@ def resolve_family_order(st: dict, s: dict, equity: float,
                             f"{leg_why}"),
                     "mark": bool(step.mark), "last_bar": last_bar, "note": step.note}
         lot = _final
-    except Exception as exc:                                        # noqa: BLE001
+    except Exception as exc:
         # UNMEASURED IS 1.0, NEVER A SILENT SHRINK: a decomposition that cannot be trusted must
         # not quietly become a reason to trade smaller.
         leg_mult, leg_why = 1.0, f"leg balance UNMEASURED ({type(exc).__name__}: {exc})"
@@ -3044,6 +3054,32 @@ def main() -> None:
         return
     equity = float(mt5.account_info().equity)
     st["equity"] = round(equity, 2)
+
+    # STALENESS MUST DISARM (principal, 2026-09-16). If every research heartbeat on this box has
+    # been silent for DISARM_DAYS the desk is trading blind: no new risk this pass, loudly. At
+    # FLATTEN_DAYS nobody is coming: the book goes flat and waits for a human. Open positions
+    # are otherwise untouched -- their brackets and exits still run below.
+    global _DESK_STALE
+    try:
+        from mt5desk import desk_staleness as _ds
+        _stale = _ds.staleness()
+        _DESK_STALE = _stale if _stale["verdict"] != "OK" else None
+        if _DESK_STALE is not None:
+            log(f"DESK STALE -- {_stale['verdict']}: {_stale['why']}")
+            _flat = None
+            if _stale["verdict"] == "FLATTEN" and st.get("armed"):
+                _syms = sorted({str(p.symbol) for p in (mt5.positions_get() or [])})
+                for _sym in _syms:
+                    close_positions(st, _sym)
+                _flat = len(_syms)
+                log(f"DESK STALE -- flattened {_flat} symbol(s); waiting for a human")
+            _ds.publish(_stale, flattened=_flat)
+        else:
+            _ds.publish(_stale)
+    except Exception as _exc:
+        # The rule must never take the gateway down; an unreadable clock is logged, not obeyed.
+        _DESK_STALE = None
+        log(f"desk staleness unreadable ({type(_exc).__name__}: {_exc}); pass continues")
 
     tnow = pd.Timestamp(tick.time, unit="s", tz="UTC")
     today = tnow.date()

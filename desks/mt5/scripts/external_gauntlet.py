@@ -202,7 +202,24 @@ def _worker_count() -> int:
         return max(1, int(float(override)))
     cores = os.cpu_count() or 1
     by_mem = int(MEMORY_BUDGET_MB // PER_WORKER_MB) if PER_WORKER_MB > 0 else 1
-    return max(1, min(cores - 1, by_mem))
+    # WEEKEND MAX, SESSION MINIMUM (2026-09-16). Friday 21:00 -> Sunday 21:00 UTC nothing trades,
+    # the gateway needs no core and no live capital is at risk, so every core goes to the judge.
+    # In session the terminal, the gateway and the hourly cycle keep SESSION_RESERVED_CORES for
+    # themselves; measured on the trading box (18 cores, 98 GB) that is 15 workers in session
+    # and 18 at the weekend, against 12 before. The memory bound still applies to both.
+    return max(1, min(cores if market_closed() else cores - SESSION_RESERVED_CORES, by_mem))
+
+
+#: Cores the gauntlet leaves alone while the market is open: the terminal, the gateway pass and
+#: the hourly cycle each need one to stay on their clocks.
+SESSION_RESERVED_CORES = int(os.environ.get("GAUNTLET_SESSION_RESERVED_CORES", "3"))
+
+
+def market_closed(now: datetime | None = None) -> bool:
+    """True inside the weekly FX close, Friday 21:00 UTC to Sunday 21:00 UTC."""
+    t = now or datetime.now(tz=UTC)
+    wd, h = t.weekday(), t.hour
+    return (wd == 4 and h >= 21) or wd == 5 or (wd == 6 and h < 21)
 
 
 WORKERS = _worker_count()
