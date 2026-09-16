@@ -15,7 +15,7 @@
    "status": "DONE"
   },
   "certificate_yield_fence": {
-   "finished_at": "2026-09-16T06:33:13.173488+00:00",
+   "finished_at": "2026-09-16T11:51:09.677973+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -33,19 +33,16 @@
    "status": "DONE"
   },
   "forward_clock_fence": {
-   "finished_at": "2026-09-16T06:33:24.048857+00:00",
+   "finished_at": "2026-09-16T11:51:20.902499+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "DONE"
   },
   "forward_clock_reconciliation": {
-   "command": [
-    "/home/quant/quant-platform/.venv/bin/python",
-    "scripts/check_forward_clock.py"
-   ],
-   "passes_completed": 0,
-   "started_at": "2026-09-16T11:33:58.987419+00:00",
-   "status": "RUNNING"
+   "finished_at": "2026-09-16T11:50:12.888453+00:00",
+   "passes_completed": 1,
+   "returncode": 1,
+   "status": "FAILED"
   },
   "forward_identity_reconciliation": {
    "finished_at": "2026-09-16T10:52:33.134854+00:00",
@@ -54,7 +51,7 @@
    "status": "DONE"
   },
   "forward_lane_heal": {
-   "finished_at": "2026-09-16T06:30:28.881663+00:00",
+   "finished_at": "2026-09-16T11:50:30.195624+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "FAILED"
@@ -66,23 +63,23 @@
    "status": "DONE"
   },
   "mechanism_independence": {
-   "finished_at": "2026-09-16T06:31:06.358366+00:00",
+   "finished_at": "2026-09-16T11:50:55.322819+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "same_day_fence": {
-   "finished_at": "2026-09-16T06:33:02.836254+00:00",
+   "finished_at": "2026-09-16T11:51:01.417322+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "DONE"
   },
   "zero_capital_shadow_forward": {
-   "finished_at": "2026-09-16T06:30:49.013566+00:00",
+   "finished_at": "2026-09-16T11:50:45.573968+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   }
  },
- "updated_at": "2026-09-16T11:33:58.987419+00:00"
+ "updated_at": "2026-09-16T11:51:20.902499+00:00"
 }
