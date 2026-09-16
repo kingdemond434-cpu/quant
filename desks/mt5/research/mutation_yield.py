@@ -284,6 +284,40 @@ def weights_from(groups: dict[str, dict[str, Any]],
     return out, pooled, f"{len(groups)} groups, {judged} judged, pooled mean {pooled}"
 
 
+CREDIT = _DESK / "reports" / "CREDIT_ASSIGNMENT.json"
+
+
+def realised_credit_by_generator(rows: dict[str, dict[str, Any]]) -> tuple[dict[str, float], str]:
+    """Generator -> bounded realised-R factor, through the sources its rows were proposed by.
+
+    DELAYED TRUTH REACHES THE GENERATOR WEIGHTS HERE (principal F12). credit_assignment
+    publishes realised R per scientist (source); a generator's factor is the trade-weighted
+    factor of the sources it produced rows for, using the bandit's own shrink-and-clip so the
+    two consumers of the same evidence move by the same rule."""
+    try:
+        from libs.research.bandit import _credit_factor
+        doc = _json(CREDIT)
+    except Exception:
+        return {}, "credit unreadable"
+    by_src: dict[str, tuple[float, int]] = {}
+    for r in (doc.get("by_scientist") or []) if isinstance(doc, dict) else []:
+        if isinstance(r, dict) and int(r.get("n_trades") or 0) > 0:
+            by_src[str(r.get("source"))] = (float(r.get("realised_r") or 0.0),
+                                            int(r.get("n_trades") or 0))
+    if not by_src:
+        return {}, "no scientist credited yet"
+    acc: dict[str, list[tuple[float, int]]] = {}
+    for row in rows.values():
+        gen, src = row.get("generator"), row.get("source")
+        if gen and src in by_src:
+            acc.setdefault(str(gen), []).append(by_src[str(src)])
+    out = {g: round(_credit_factor(sum(x for x, _ in v), sum(n for _, n in v)), 4)
+           for g, v in acc.items()}
+    basis = str(doc.get("evidence_source") or "none") if isinstance(doc, dict) else "none"
+    return out, (f"{len(out)} generator(s) carry realised credit on {basis} evidence"
+                 if out else "no lineage row joins a credited source")
+
+
 def run(write: bool = True) -> dict[str, Any]:
     inputs: dict[str, str] = {}
     graph_rows = _graph_rows(inputs)
@@ -295,6 +329,11 @@ def run(write: bool = True) -> dict[str, Any]:
     by_generator = tally(rows, verd, depth, "generator")
     op_w, op_pooled, op_why = weights_from(by_operator)
     gen_w, gen_pooled, gen_why = weights_from(by_generator, always=GENERATORS)
+    gen_credit, credit_why = realised_credit_by_generator(rows)
+    if gen_credit:
+        gen_w = {g: round(min(CLIP[1], max(CLIP[0], w * gen_credit.get(g, 1.0))), 4)
+                 for g, w in gen_w.items()}
+        gen_why = f"{gen_why}; x realised credit ({credit_why})"
     now = datetime.now(tz=UTC).isoformat()
     rep: dict[str, Any] = {
         "generated_at": now, "inputs": inputs, "n_lineage_rows": len(rows),
@@ -302,7 +341,8 @@ def run(write: bool = True) -> dict[str, Any]:
         "n_with_generator": sum(1 for r in rows.values() if r.get("generator")),
         "by_operator": by_operator, "by_source": by_source, "by_generator": by_generator,
         "operator_weights": {"weights": op_w, "pooled_mean": op_pooled, "reason": op_why},
-        "generator_weights": {"weights": gen_w, "pooled_mean": gen_pooled, "reason": gen_why},
+        "generator_weights": {"weights": gen_w, "pooled_mean": gen_pooled, "reason": gen_why,
+                              "realised_credit": gen_credit, "credit_why": credit_why},
         "clip": list(CLIP)}
     if write:
         REPORT.parent.mkdir(parents=True, exist_ok=True)
@@ -313,7 +353,8 @@ def run(write: bool = True) -> dict[str, Any]:
              "_clip": list(CLIP)}, indent=1), "utf-8")
         GENERATOR_WEIGHTS.write_text(json.dumps(
             {**gen_w, "_generated_at": now, "_reason": gen_why, "_pooled_mean": gen_pooled,
-             "_clip": list(CLIP)}, indent=1), "utf-8")
+             "_clip": list(CLIP), "_realised_credit": gen_credit,
+             "_credit_why": credit_why}, indent=1), "utf-8")
     return rep
 
 

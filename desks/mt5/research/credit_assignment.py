@@ -139,6 +139,44 @@ def _live_rows() -> list[dict[str, Any]]:
     return out
 
 
+def _credit_live(live: list[dict[str, Any]], certs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Join live deals -> sleeve -> certificate -> scientist. Rows carry n=1 per deal so the
+    same `_rollup` counts trades and realised R without a second code path."""
+    sl = _read(SLEEVES)
+    rows = sl.get("sleeves") if isinstance(sl, dict) else sl
+    if isinstance(rows, dict):
+        rows = list(rows.values())
+    by_name: dict[str, dict[str, Any]] = {}
+    for r in rows or []:
+        if isinstance(r, dict) and r.get("name"):
+            by_name[str(r["name"])] = r
+    by_sym: dict[str, list[dict[str, Any]]] = {}
+    for c in certs:
+        by_sym.setdefault(str(c["symbol"]), []).append(c)
+    out: list[dict[str, Any]] = []
+    for d in live:
+        srow = by_name.get(d["sleeve"]) or {}
+        sym = str(srow.get("symbol") or d.get("symbol") or "")
+        fam = str(srow.get("family") or "")
+        cands = by_sym.get(sym) or []
+        best = None
+        for c in cands:
+            if fam and str(c.get("family")) == fam:
+                sel = c.get("selector")
+                if not sel or str(sel) in d["sleeve"] or str(sel) in str(srow.get("session") or ""):
+                    best = c
+                    break
+        if best is None and len(cands) == 1 and (not fam or str(cands[0].get("family")) == fam):
+            best = cands[0]
+        if best is None:
+            continue
+        out.append({"clock": d["sleeve"], "lane": "live", "exp_r": d["realised_r"], "n": 1,
+                    "realised_r": d["realised_r"], "status": "LIVE", "symbol": sym,
+                    "certificate": best["certificate"], "source": best["source"],
+                    "family": best["family"], "selector": best.get("selector")})
+    return out
+
+
 def build() -> dict[str, Any]:
     now = datetime.now(tz=UTC)
 
@@ -173,6 +211,12 @@ def build() -> dict[str, Any]:
     fwd = _forward_rows()
     live = _live_rows()
     use_live = len(live) >= MIN_LIVE_DEALS
+    # LIVE CREDIT (2026-09-16): when the live ledger is thick enough, a live deal is credited
+    # through the sleeve that placed it (data/sleeves.json: name -> symbol, family) to the
+    # certificate and on to the scientist. Until this existed `use_live` only relabelled the
+    # forward join: live rows were read and never credited, so "evidence_source: live" was a
+    # label on forward evidence.
+    live_credited = _credit_live(live, certs) if use_live else []
     by_sym_fam: dict[str, list[dict[str, Any]]] = {}
     for c in certs:
         by_sym_fam.setdefault(c["symbol"], []).append(c)
@@ -219,8 +263,9 @@ def build() -> dict[str, Any]:
         out.sort(key=lambda r: -float(r["realised_r"]))
         return out
 
-    by_source = _rollup(credited, "source")
-    by_lane = _rollup(credited, "lane")
+    by_source = _rollup(live_credited if use_live and live_credited else credited, "source")
+    by_lane = _rollup(live_credited if use_live and live_credited else credited, "lane")
+    by_source_forward = _rollup(credited, "source")
     n_attributed = sum(1 for c in certs if c["attributed"])
 
     # THE NUMBER THAT MATTERS MOST IS THE ONE A ROLLUP HIDES: certificates that have earned
@@ -238,8 +283,12 @@ def build() -> dict[str, Any]:
 
     return {
         "at": now.isoformat(timespec="seconds"),
-        "status": "OK" if credited else "UNMEASURED",
-        "evidence_source": ("live" if use_live else "forward"),
+        "status": "OK" if (credited or live_credited) else "UNMEASURED",
+        "evidence_source": ("live" if (use_live and live_credited) else "forward"),
+        "n_live_deals": len(live),
+        "n_live_credited": len(live_credited),
+        "min_live_deals": MIN_LIVE_DEALS,
+        "by_scientist_forward": by_source_forward,
         "evidence_note": (
             f"LIVE is the intended source and is too thin: the ledger holds {len(live)} deal(s) "
             f"against a floor of {MIN_LIVE_DEALS}. Forward evidence is used instead -- the same "
@@ -286,10 +335,12 @@ def build() -> dict[str, Any]:
             "the certificate count beside it is the only way to tell productivity from "
             "performance, and the desk has been optimising the first."),
         "boundary": (
-            "NOTHING HERE REWEIGHTS A GENERATOR. It publishes what each scientist's output has "
-            "actually earned; changing a generator's weight on that evidence is a decision for "
-            "the docket, and doing it automatically off a thin forward record is how a desk "
-            "starves the lane that was merely unlucky."),
+            "THIS PUBLISHES; THE REWEIGHTING HAPPENS DOWNSTREAM AND IS BOUNDED (principal F12, "
+            "2026-09-12; wired 2026-09-16). libs.research.bandit multiplies an arm's worth by "
+            "the realised credit of the scientists it funds, and mutation_yield multiplies a "
+            "generator's weight by the credit of the sources it produced -- both shrunk by "
+            "trade count toward 1.0 and clipped to [0.5, 2.0], so a thin record moves nothing "
+            "far and a long one moves it honestly."),
         "why": (
             "a miner is rewarded today for producing candidates that pass the gauntlet, and "
             "nothing asks whether they went on to earn anything. Those are different objectives, "
