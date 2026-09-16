@@ -4103,26 +4103,6 @@
    "url": "https://blog.thinknewfound.com/"
   },
   {
-   "name": "AQR insights",
-   "region": "us",
-   "language": "en",
-   "route": "http",
-   "kind": "research",
-   "weight": 0.7,
-   "why": "factor mechanisms",
-   "url": "https://www.aqr.com/Insights/Research"
-  },
-  {
-   "name": "Man Institute",
-   "region": "us",
-   "language": "en",
-   "route": "http",
-   "kind": "research",
-   "weight": 0.7,
-   "why": "systematic macro and trend",
-   "url": "https://www.man.com/insights"
-  },
-  {
    "name": "QuantStart articles",
    "region": "us",
    "language": "en",
@@ -6777,5 +6757,29 @@
   "bing",
   "duckduckgo"
  ],
- "policy": "every claim -> deepening queue kind=story_mechanism under its cluster's source with PIT provenance; one task per mechanism key with every telling attached; the worker seat extracts an exact MT5 recipe or rejects; nothing bypasses the gauntlet; discovered URLs feed the world crawler's frontier and dataset endpoints feed acquire_datasets so the forest keeps growing"
+ "policy": "every claim -> deepening queue kind=story_mechanism under its cluster's source with PIT provenance; one task per mechanism key with every telling attached; the worker seat extracts an exact MT5 recipe or rejects; nothing bypasses the gauntlet; discovered URLs feed the world crawler's frontier and dataset endpoints feed acquire_datasets so the forest keeps growing",
+ "reading_list": [
+  {
+   "name": "AQR insights",
+   "region": "us",
+   "language": "en",
+   "route": "http",
+   "kind": "research",
+   "weight": 0.7,
+   "why": "literature to READ, not prose to crawl: a paper never carries a registered family with exact parameters, so the compiler discarded every row (2 rows -> 0 candidates each); see docs/research/READING_LIST.md",
+   "url": "https://www.aqr.com/Insights/Research",
+   "moved_at": "2026-09-16"
+  },
+  {
+   "name": "Man Institute",
+   "region": "us",
+   "language": "en",
+   "route": "http",
+   "kind": "research",
+   "weight": 0.7,
+   "why": "literature to READ, not prose to crawl: a paper never carries a registered family with exact parameters, so the compiler discarded every row (2 rows -> 0 candidates each); see docs/research/READING_LIST.md",
+   "url": "https://www.man.com/insights",
+   "moved_at": "2026-09-16"
+  }
+ ]
 }

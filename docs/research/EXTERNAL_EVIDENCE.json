@@ -1,0 +1,44 @@
+{
+ "_": "External evidence cards: results about other firms, papers and benchmarks, graded by evidence class. A card is never a track record unless its grade says LIVE / AUDITED. Added by hand from the principal's intelligence briefs; the desk's own gauntlet rules cite cards by id.",
+ "cards": [
+  {
+   "id": "FINRL_DEEPSEEK_REPRODUCTION_SEED_INSTABILITY_2026-09-15",
+   "added": "2026-09-16",
+   "grade": ["INDEPENDENT_REPRODUCTION", "PRIMARY_WORKING_PAPER", "HISTORICAL_BACKTEST", "NOT_PEER_REVIEWED", "NOT_LIVE", "NOT_REAL_CAPITAL"],
+   "source": "Cambridge Open Engage working paper, posted 2026-09-15 (reproduction of FinRL-DeepSeek, 2025)",
+   "period": "2019-2023 backtest on agent-ready Nasdaq-100 data (dataset 2013-2023)",
+   "verdict": "single-seed DeepSeek uplift reproduced for PPO and CPPO; PPO-DeepSeek's Sharpe ranking versus plain PPO REVERSES on a second independent seed; CPPO-DeepSeek shows the lowest two-seed total-return dispersion of the four agents",
+   "tags": ["REPLICATION", "SEED_SENSITIVITY", "DEEP_RL_INSTABILITY", "LLM_ALPHA_ROBUSTNESS", "CVAR", "SINGLE_RUN_SELECTION_RISK", "REPRODUCIBLE_CODE"],
+   "rule_for_the_desk": "no stochastic ML/RL strategy earns survivor status from one trained instance: promotion needs a distribution over independent training seeds -- median OOS, worst seed, dispersion, sign consistency of the incremental alpha, P(beat the non-LLM baseline). An augmentation whose advantage changes sign across seeds is UNSTABLE_INCREMENTAL_EDGE until many more repetitions say otherwise."
+  },
+  {
+   "id": "CHINA_QUANT_ALPHA_REGIME_REVERSAL_2026_08",
+   "added": "2026-09-16",
+   "grade": ["THIRD_PARTY_FUND_DATABASE", "INDUSTRY_AGGREGATE", "MONTHLY", "NOT_AUDITED"],
+   "source": "Simuwang fund database as reported by Xinhua Finance, 2026-09-14",
+   "period": "August 2026 (one month, not annualised, not YTD)",
+   "numbers": {"TOTAL_RETURN": 0.1154, "EXCESS_RETURN": 0.0495, "LARGE_MANAGER_TOTAL": 0.1185, "LARGE_MANAGER_EXCESS": 0.0516, "excess_by_index": {"CSI500": 0.0507, "CSI1000": 0.0334, "CSI2000": 0.0278, "CSI300": 0.0413, "CSI_A500": 0.0616, "dividend": 0.0129, "other": 0.108}},
+   "verdict": "the July 2026 quant drawdown reads as a regime-specific crowding shock followed by a broad but non-uniform August alpha recovery once cross-sectional breadth returned; manager dispersion widened again in late August. Modifies, does not delete, the July crowding card: crowding/capacity vulnerability is real AND the compression was substantially reversible with breadth.",
+   "tags": ["CROWDING_UNWIND", "BREADTH_EXPANSION", "ALPHA_RECOVERY", "REGIME_DEPENDENCE", "CROSS_MANAGER_DISPERSION", "INDEX_ENHANCEMENT"]
+  },
+  {
+   "id": "LLM_SYSTEMIC_CORRELATION_2026_09_03",
+   "added": "2026-09-16",
+   "grade": ["PRIMARY_PREPRINT", "SIMULATED_FINANCIAL_MARKET", "NOT_LIVE", "NOT_REAL_CAPITAL"],
+   "source": "MIT/Harvard preprint, 2026-09-03: Why Better Models Can Create Riskier Systems: Evidence from LLM Agents in Financial Markets",
+   "design": "7 LLMs x 64 controlled market scenarios x 5 samples",
+   "numbers": {"capability_vs_correlated_noncorrective_trading": {"ELO": {"t": 3.94, "p": 0.001, "R2": 0.475}, "MMLU_Pro": {"t": 4.88, "p": "<0.001", "R2": 0.58}}, "same_provider_membership": "not significant", "residual_variance": {"single_model": 0.021, "ensemble_floor": 0.01}, "tracking_error_under_common_misinformation": "5-7x the noise-trader baseline at full LLM penetration", "directional_accuracy_under_misinformation": {"Claude Haiku 4.5": 0.54, "Gemini 2.0 Flash": 0.68, "Claude Sonnet 4.6": 0.42}},
+   "verdict": "more capable general-purpose models trade MORE alike after removing each model's response to the fundamental gap; mixing vendors does not remove the correlation; roughly half the residual variance survives a very large ensemble; common misleading information degrades a market of LLM agents far below the noise-trader baseline.",
+   "tags": ["AI_CONSENSUS_CROWDING", "CORRELATED_MODEL_ERROR", "NON_DIVERSIFIABLE_ENSEMBLE_RISK", "CAPABILITY_MONOCULTURE", "COMMON_INFORMATION_SHOCK", "CROSS_PROVIDER_CORRELATION"],
+   "rule_for_the_desk": "strip common market/factor responses from each seat's actions, estimate residual pairwise correlation, convert nominal seat count into an effective independent count, cap ensemble confidence when residual correlation rises, and stress every ensemble with an identical false narrative before promotion. Cross-provider diversity alone is not diversification."
+  },
+  {
+   "id": "TRADERANK_SEASON9_INTERIM",
+   "added": "2026-09-16",
+   "grade": ["INTERIM", "INSUFFICIENT_SAMPLE", "SIMULATED_CAPITAL"],
+   "source": "TradeRank Season 9 initial snapshot, 2026-09-13",
+   "verdict": "DeepSeek V4.1 Flash at -0.26% after one cycle; no performance conclusion is owed or drawn.",
+   "tags": ["LIVE_AI_BENCHMARK", "INSUFFICIENT_SAMPLE"]
+  }
+ ]
+}

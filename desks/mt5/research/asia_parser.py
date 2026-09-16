@@ -186,9 +186,228 @@ def _parse_json(body: bytes, source_id: str) -> dict[str, Any]:
     return {"status": "PARSED", "kind": "json", "n": n, "files": [out.name]}
 
 
+
+def _sniff(body: bytes, ctype: str, url: str) -> str:
+    """The payload's SHAPE from its bytes and headers, never from the registry's guess.
+
+    MEASURED 2026-09-16: ABS `format=jsondata` and CFFEX `index.xml` were served with an HTML
+    content-type and handed to the table parser, which raised `Unicode strings with encoding
+    declaration are not supported` and read as NO_TABLE. The bytes said json and xml.
+    """
+    head = body[:400].lstrip().lower()
+    low = url.lower().split("?")[0]
+    if "pdf" in ctype or head.startswith(b"%pdf"):
+        return "pdf"
+    if head.startswith((b"{", b"[")) or ("json" in ctype and not head.startswith(b"<")):
+        return "json"
+    is_xml_ctype = "xml" in ctype and "html" not in ctype
+    if head.startswith(b"<?xml") or low.endswith(".xml") or is_xml_ctype:
+        return "xml"
+    if head.startswith(b"pk\x03\x04"):
+        return "xlsx" if low.endswith((".xlsx", ".xlsm")) else "zip"
+    if low.endswith((".xlsx", ".xls")) or "spreadsheet" in ctype or "ms-excel" in ctype:
+        return "xlsx"
+    if "csv" in ctype or low.endswith(".csv") or (low.endswith(".txt") and _looks_csv(body)):
+        return "csv"
+    if "zip" in ctype or low.endswith(".zip"):
+        return "zip"
+    return "html"
+
+
+def _looks_csv(body: bytes) -> bool:
+    lines = [ln for ln in body[:4000].decode("utf-8", errors="replace").splitlines()
+             if ln.strip()][:6]
+    if len(lines) < 3:
+        return False
+    commas = {ln.count(",") for ln in lines}
+    semis = {ln.count(";") for ln in lines}
+    return (max(commas) >= 1 and len(commas) <= 2) or (max(semis) >= 1 and len(semis) <= 2)
+
+
+def _write_frame(df: Any, source_id: str, suffix: str) -> str:
+    SERIES.mkdir(parents=True, exist_ok=True)
+    out = SERIES / f"{source_id}{suffix}.parquet"
+    try:
+        df.columns = [str(c) for c in df.columns]
+        df.to_parquet(out)
+    except Exception:
+        out = SERIES / f"{source_id}{suffix}.csv"
+        df.to_csv(out, index=False)
+    return out.name
+
+
+def _parse_csv(body: bytes, source_id: str) -> dict[str, Any]:
+    import io
+
+    import pandas as pd
+    try:
+        df = pd.read_csv(io.BytesIO(body), sep=None, engine="python")
+    except Exception as exc:
+        return {"status": "PARSE_ERROR", "kind": "csv",
+                "why": f"{type(exc).__name__}: {str(exc)[:70]}"}
+    if df.empty or df.shape[1] < 2:
+        return {"status": "NO_TABLE", "kind": "csv", "why": f"csv parsed to {df.shape}"}
+    return {"status": "PARSED", "kind": "csv", "n_tables": 1, "rows": [len(df)],
+            "files": [_write_frame(df, source_id, "")]}
+
+
+def _parse_xml(body: bytes, source_id: str) -> dict[str, Any]:
+    """Repeated sibling elements are rows; their leaf children (and attributes) are columns."""
+    import xml.etree.ElementTree as ET
+
+    import pandas as pd
+    try:
+        root = ET.fromstring(body)
+    except ET.ParseError as exc:
+        return {"status": "PARSE_ERROR", "kind": "xml", "why": str(exc)[:80]}
+
+    def _tag(e: ET.Element) -> str:
+        return e.tag.split("}")[-1]
+
+    best: list[ET.Element] = []
+    for parent in root.iter():
+        kids = list(parent)
+        if len(kids) < MIN_TABLE_ROWS:
+            continue
+        tags = [_tag(k) for k in kids]
+        top, n = max(((t, tags.count(t)) for t in set(tags)), key=lambda kv: kv[1])
+        rows = [k for k in kids if _tag(k) == top]
+        if n >= MIN_TABLE_ROWS and len(rows) > len(best):
+            best = rows
+    if not best:
+        return {"status": "NO_TABLE", "kind": "xml", "why": "no element repeats 3+ times"}
+    recs = []
+    for r in best:
+        rec = {f"@{k}": v for k, v in r.attrib.items()}
+        for c in r:
+            if len(list(c)) == 0:
+                rec[_tag(c)] = (c.text or "").strip()
+        if (r.text or "").strip() and not rec:
+            rec["text"] = (r.text or "").strip()
+        recs.append(rec)
+    df = pd.DataFrame(recs)
+    if df.empty or df.shape[1] < 1:
+        return {"status": "NO_TABLE", "kind": "xml", "why": "repeated elements carry no leaves"}
+    return {"status": "PARSED", "kind": "xml_rows", "n_tables": 1, "rows": [len(df)],
+            "files": [_write_frame(df, source_id, "")]}
+
+
+def _parse_xlsx(body: bytes, source_id: str) -> dict[str, Any]:
+    import io
+
+    import pandas as pd
+    try:
+        sheets = pd.read_excel(io.BytesIO(body), sheet_name=None)
+    except ImportError as exc:
+        return {"status": "NEEDS_PARSER", "kind": "xlsx",
+                "why": f"spreadsheet engine missing on this box ({str(exc)[:60]}); bytes vaulted"}
+    except Exception as exc:
+        return {"status": "PARSE_ERROR", "kind": "xlsx",
+                "why": f"{type(exc).__name__}: {str(exc)[:70]}"}
+    written, rows = [], []
+    for i, (_name, df) in enumerate(list(sheets.items())[:MAX_TABLES]):
+        if len(df) >= MIN_TABLE_ROWS and df.shape[1] >= 2:
+            written.append(_write_frame(df, source_id, f"__s{i}"))
+            rows.append(len(df))
+    if not written:
+        return {"status": "NO_TABLE", "kind": "xlsx",
+                "why": "no sheet with 3+ rows and 2+ columns"}
+    return {"status": "PARSED", "kind": "xlsx_sheets", "n_tables": len(written), "rows": rows,
+            "files": written}
+
+
+def _parse_zip(body: bytes, source_id: str, url: str) -> dict[str, Any]:
+    import io
+    import zipfile
+    try:
+        zf = zipfile.ZipFile(io.BytesIO(body))
+    except zipfile.BadZipFile as exc:
+        return {"status": "PARSE_ERROR", "kind": "zip", "why": str(exc)[:80]}
+    members = [m for m in zf.namelist()
+               if m.lower().endswith(DATA_EXT) and not m.endswith("/")]
+    if not members:
+        return {"status": "NO_TABLE", "kind": "zip", "why": "archive holds no data member"}
+    m = sorted(members, key=lambda x: (not x.lower().endswith(".csv"), x))[0]
+    return {**_dispatch(zf.read(m), "", m, source_id), "member": m}
+
+
+def _dispatch(body: bytes, ctype: str, url: str, source_id: str) -> dict[str, Any]:
+    shape = _sniff(body, ctype, url)
+    if shape == "pdf":
+        return _parse_pdf(body, source_id)
+    if shape == "json":
+        return _parse_json(body, source_id)
+    if shape == "xml":
+        rec = _parse_xml(body, source_id)
+        if rec.get("status") == "PARSED":
+            return rec
+        return {**_parse_html(body, source_id, url), "xml_attempt": rec.get("why")}
+    if shape == "csv":
+        return _parse_csv(body, source_id)
+    if shape == "xlsx":
+        return _parse_xlsx(body, source_id)
+    if shape == "zip":
+        return _parse_zip(body, source_id, url)
+    return _parse_html(body, source_id, url)
+
+
+def _registry_rows() -> dict[str, dict[str, Any]]:
+    doc = _read(BASE / "data" / "asia_sources.json", {})
+    rows = doc.get("sources") if isinstance(doc, dict) else None
+    return {str(r.get("id")): r for r in (rows or []) if isinstance(r, dict) and r.get("id")}
+
+
+def _stamp_pit(rec: dict[str, Any], source_id: str, meta: dict[str, Any],
+               registry: dict[str, dict[str, Any]]) -> None:
+    """Add event_time / available_time / ingested_time to every frame this source produced.
+
+    POINT-IN-TIME AT THE PARSER, because this is where a row first has a period. The lag is the
+    registry's declared `pit.publication_lag_days` (an endpoint derived from a parent inherits
+    the parent's), else a conservative default by cadence; the fetch time is the vintage. A
+    frame with no recognisable period column is UNSTAMPED and says so -- it may not be joined
+    point-in-time until someone names its period column.
+    """
+    if rec.get("status") != "PARSED" or not rec.get("files"):
+        return
+    try:
+        import pandas as pd
+
+        from libs.data import pit_stamp
+    except ImportError as exc:
+        rec["pit"] = {"status": "UNSTAMPED", "why": f"pit_stamp unavailable ({exc})"}
+        return
+    parent = source_id.split("__ep")[0]
+    src = registry.get(source_id) or registry.get(parent)
+    lag, lag_why = pit_stamp.lag_for(src)
+    stamped: list[dict[str, Any]] = []
+    for name in rec["files"]:
+        path = SERIES / name
+        try:
+            df = pd.read_parquet(path) if name.endswith(".parquet") else pd.read_csv(path)
+            out, m = pit_stamp.stamp_frame(df, lag_days=lag, observed_at=meta.get("fetched_utc"))
+            if m.get("status") == "STAMPED":
+                if name.endswith(".parquet"):
+                    out.to_parquet(path)
+                else:
+                    out.to_csv(path, index=False)
+            stamped.append({"file": name, **m})
+        except Exception as exc:
+            stamped.append({"file": name, "status": "UNSTAMPED",
+                            "why": f"{type(exc).__name__}: {str(exc)[:60]}"})
+    doc = {"source_id": source_id, "lag_days": lag, "lag_basis": lag_why, "frames": stamped,
+           "stamped_at": datetime.now(UTC).isoformat(timespec="seconds")}
+    (SERIES / f"{source_id}.pit.json").write_text(json.dumps(doc, indent=1), encoding="utf-8")
+    statuses = [f.get("status") for f in stamped]
+    rec["pit"] = {"lag_days": lag, "lag_basis": lag_why,
+                  "status": ("STAMPED" if all(x == "STAMPED" for x in statuses)
+                             else "PARTIAL" if any(x == "STAMPED" for x in statuses)
+                             else "UNSTAMPED")}
+
+
 def parse_all(only: list[str] | None = None) -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
     endpoints_out: list[dict[str, str]] = []
+    registry = _registry_rows()
     for sid, (blob, meta) in sorted(_blobs().items()):
         if only and sid not in only:
             continue
@@ -200,12 +419,8 @@ def parse_all(only: list[str] | None = None) -> dict[str, Any]:
             continue
         ctype = str(meta.get("content_type") or "").lower()
         url = str(meta.get("url") or "")
-        if "pdf" in ctype:
-            rec = _parse_pdf(body, sid)
-        elif "json" in ctype:
-            rec = _parse_json(body, sid)
-        else:
-            rec = _parse_html(body, sid, url)
+        rec = _dispatch(body, ctype, url, sid)
+        _stamp_pit(rec, sid, meta, registry)
         rec.update({"id": sid, "url": url, "bytes": meta.get("bytes"),
                     "fetched_utc": meta.get("fetched_utc")})
         rows.append(rec)
@@ -221,11 +436,12 @@ def parse_all(only: list[str] | None = None) -> dict[str, Any]:
     census = Counter(str(r.get("status")) for r in rows)
     return {
         "generated_utc": datetime.now(UTC).isoformat(timespec="seconds"),
-        "rule": ("keyed by payload SHAPE, never by source: 40 of 44 vaulted payloads are HTML, "
-                 "so one HTML parser covers forty and three shapes cover everything. A parser "
-                 "per source would rot at 43 different rates and block the 44th."),
+        "rule": ("keyed by payload SHAPE sniffed from the bytes, never by the registry's guess: "
+                 "html tables, json, xml rows, csv, xlsx sheets, zip members and pdf text; "
+                 "every parsed frame is point-in-time stamped with the source's declared lag"),
         "n_sources": len(rows),
         "census": dict(census),
+        "pit": dict(Counter(str((r.get("pit") or {}).get("status") or "n/a") for r in rows)),
         "n_endpoints_handed_back": len(endpoints_out),
         "series_dir": str(SERIES),
         "rows": rows,

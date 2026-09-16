@@ -80,6 +80,10 @@ SHADOW_LEDGER_DIRS = (BASE / "reports" / "shadow", ROOT / "backups" / "moat" / "
 #: The promotion bar, mirrored. Change gate_spec.yaml, not this file, if the bar ever moves.
 T_PROMOTE = 2.5
 N_MIN_VERDICT = 20
+#: The early-fade bar: trades before which no early verdict is read, and the per-trade loss that
+#: reads as "doing bad" once it is reached.
+EARLY_FADE_N = 6
+EARLY_FADE_R = 0.25
 DD_HARD_R = -25.0
 #: Trailing window: judge the sleeve the market currently sees, not its lifetime average.
 TRAIL_DAYS = 45
@@ -144,7 +148,7 @@ def sleeve_trades(name: str) -> list[dict]:
 
 def stats(rs: list[float]) -> dict:
     n = len(rs)
-    out = {"n": n, "exp_r": 0.0, "t": 0.0, "max_dd_r": 0.0, "cum_r": 0.0}
+    out = {"n": n, "exp_r": 0.0, "t": 0.0, "max_dd_r": 0.0, "cum_r": 0.0, "wins": 0}
     if not n:
         return out
     cum, peak, dd = 0.0, 0.0, 0.0
@@ -153,7 +157,8 @@ def stats(rs: list[float]) -> dict:
         peak = max(peak, cum)
         dd = min(dd, cum - peak)
     mean = sum(rs) / n
-    out.update({"exp_r": round(mean, 4), "cum_r": round(cum, 3), "max_dd_r": round(dd, 3)})
+    out.update({"exp_r": round(mean, 4), "cum_r": round(cum, 3), "max_dd_r": round(dd, 3),
+                "wins": sum(1 for r in rs if r > 0)})
     if n >= 2:
         var = sum((x - mean) ** 2 for x in rs) / (n - 1)
         if var > 0:
@@ -171,6 +176,18 @@ def verdict(s: dict) -> tuple[str, str]:
         return "RETIRE", (f"trailing maxDD {s['max_dd_r']}R breaches the {DD_HARD_R}R hard rail "
                           f"-- the same bar every forward verdict applies; harm this large does "
                           f"not wait for a t-test")
+    # EARLY FADE (principal, 2026-09-16: "fade all the sleeves doing bad"). A sleeve that has not
+    # won once in its first EARLY_FADE_N live trades, or is losing EARLY_FADE_R or more per
+    # trade after that many, runs at half risk until its trailing record says otherwise. The
+    # same FADE rail at an earlier bar, not a new rail: two-sided (the next HEALTHY reading
+    # UNFADEs it), billed by missed_growth, and nothing retires here -- retirement keeps its
+    # n and its t. Measured the day it was written: five EURCHF sleeves 0-for-27 between them
+    # and an AUDCAD sleeve 0-for-8, every one sized at full risk because n < 20.
+    if EARLY_FADE_N <= s["n"] < N_MIN_VERDICT and (
+            int(s.get("wins", 0)) == 0 or s["exp_r"] <= -EARLY_FADE_R):
+        return "FADE", (f"early fade: {s.get('wins', 0)} win(s) and exp={s['exp_r']}R over "
+                        f"n={s['n']} (bar: n>={EARLY_FADE_N}, no wins or exp<=-{EARLY_FADE_R}R); "
+                        f"half risk until the trailing record turns")
     if s["n"] < N_MIN_VERDICT:
         return "HEALTHY", f"{s['n']} trailing trade(s) < {N_MIN_VERDICT}: no statistical verdict either way; DD rail armed"
     if s["t"] <= -T_PROMOTE:

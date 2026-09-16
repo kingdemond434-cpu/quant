@@ -468,6 +468,42 @@ _MAX_TEXT_FAMILIES = 2
 #: Instrument aliases -> registry symbols, in preference order. A target is used ONLY when it is
 #: in the live universe: the alias list is vocabulary, the registry is the authority, and an
 #: alias can never mint a symbol the desk cannot price.
+#: INSTITUTIONS -> CURRENCY (2026-09-16). "The RBA held" names the Australian dollar as surely as
+#: "AUDUSD" does, and tens of thousands of queued rows named a central bank, a statistics office
+#: or a treasury and nothing the six-letter regex could read. A bare currency code in prose is
+#: still refused (too weak a claim); an institution is not bare -- it is the currency's own
+#: issuer or statistician. Each maps to the currency's most liquid pairs the registry prices
+#: (`_CCY_PAIRS`), inside the same four-instrument bound as every other text symbol. Short
+#: acronyms that are also English words (abs, ons, mas, safe) are deliberately absent.
+_INSTITUTIONS: dict[str, str] = {
+    "rba": "AUD", "reserve bank of australia": "AUD", "australian bureau of statistics": "AUD",
+    "rbnz": "NZD", "reserve bank of new zealand": "NZD", "stats nz": "NZD",
+    "boj": "JPY", "bank of japan": "JPY", "ministry of finance japan": "JPY", "meti": "JPY",
+    "boe": "GBP", "bank of england": "GBP", "office for national statistics": "GBP",
+    "ecb": "EUR", "european central bank": "EUR", "eurostat": "EUR", "bundesbank": "EUR",
+    "snb": "CHF", "swiss national bank": "CHF",
+    "boc": "CAD", "bank of canada": "CAD", "statistics canada": "CAD", "statcan": "CAD",
+    "fomc": "USD", "federal reserve": "USD", "the fed": "USD", "fed funds": "USD",
+    "bureau of labor statistics": "USD", "nonfarm payrolls": "USD", "us treasury": "USD",
+    "norges bank": "NOK", "riksbank": "SEK", "danmarks nationalbank": "DKK",
+    "pboc": "CNH", "people's bank of china": "CNH", "gacc": "CNH", "china customs": "CNH",
+    "banxico": "MXN", "banco de mexico": "MXN", "sarb": "ZAR", "south african reserve bank": "ZAR",
+    "bcb": "BRL", "banco central do brasil": "BRL", "copom": "BRL", "cbrt": "TRY",
+    "monetary authority of singapore": "SGD", "hkma": "HKD", "hong kong monetary authority": "HKD",
+    "rbi": "INR", "reserve bank of india": "INR", "cnb": "CZK", "czech national bank": "CZK",
+    "nbp": "PLN", "national bank of poland": "PLN", "mnb": "HUF", "magyar nemzeti bank": "HUF",
+}
+#: The pairs an institution's currency is expressed through, most liquid first. Only pairs the
+#: registry prices are minted (`text_symbols` folds through the universe).
+_CCY_PAIRS: dict[str, tuple[str, ...]] = {
+    "AUD": ("AUDUSD", "AUDJPY"), "NZD": ("NZDUSD", "AUDNZD"), "JPY": ("USDJPY", "EURJPY"),
+    "GBP": ("GBPUSD", "EURGBP"), "EUR": ("EURUSD", "EURGBP"), "CHF": ("USDCHF", "EURCHF"),
+    "CAD": ("USDCAD", "CADJPY"), "USD": ("EURUSD", "USDJPY"), "NOK": ("EURNOK", "USDNOK"),
+    "SEK": ("EURSEK", "USDSEK"), "DKK": ("EURDKK", "USDDKK"), "CNH": ("USDCNH",),
+    "MXN": ("USDMXN",), "ZAR": ("USDZAR",), "BRL": ("USDBRL",), "TRY": ("USDTRY",),
+    "SGD": ("USDSGD",), "HKD": ("USDHKD",), "INR": ("USDINR",), "CZK": ("EURCZK",),
+    "PLN": ("EURPLN", "USDPLN"), "HUF": ("EURHUF", "USDHUF"),
+}
 _ALIASES: dict[str, tuple[str, ...]] = {
     "gold": ("XAUUSD",), "xau": ("XAUUSD",), "silver": ("XAGUSD",), "xag": ("XAGUSD",),
     "brent": ("UKOIL", "BRENT", "XBRUSD"), "wti": ("USOIL", "WTI", "XTIUSD"),
@@ -660,7 +696,13 @@ def text_symbols(text: str, universe: set[str]) -> list[str]:
                 hit = folded.get(str(t).upper())
                 if hit is not None and hit not in found:
                     found.append(hit)
-                    break
+    # An institution names its currency; the currency names its pairs (see `_INSTITUTIONS`).
+    for phrase, ccy in _INSTITUTIONS.items():
+        if _phrase_re(phrase).search(text):
+            for t in _CCY_PAIRS.get(ccy, ()):
+                hit = folded.get(t)
+                if hit is not None and hit not in found:
+                    found.append(hit)
     return found[:_MAX_TEXT_SYMBOLS]
 
 
@@ -951,8 +993,13 @@ def compile_row(source: str, row: dict, universe: set[str]) -> tuple[list[dict],
     # deepseek seat outright: its claim lives in `testable_claim`, so a perfectly readable
     # hypothesis was labelled an empty capture and thrown away. A guard that silences a working
     # lane is worse than the mislabelling it was written to fix.
+    # WHATEVER ITS KIND (2026-09-16). The `kind not in {"fetch_error", ""}` exemption let every
+    # link-only crawler capture -- which carries no kind at all -- through to the deepening
+    # queue as NEEDS_SYMBOL_EXTRACTION: tens of thousands of rows with a title, a url and
+    # nothing to read, each one an LLM call that could not succeed. A row with no instrument,
+    # no structure and no body is an empty capture whatever field the crawler forgot to set.
     if (not symbols and not (row.get("mechanism_tags") or row.get("phenotypes"))
-            and not _body_text(row).strip() and kind not in {"fetch_error", ""}):
+            and not _body_text(row).strip()):
         return [], "EMPTY_CAPTURE"
     if not symbols and text_disp != "NEEDS_EXACT_RULE_EXTRACTION":
         return [], "NEEDS_SYMBOL_EXTRACTION"

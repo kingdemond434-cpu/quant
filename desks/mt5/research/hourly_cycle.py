@@ -2312,6 +2312,13 @@ def main() -> None:
     sge = _costed("sge_premium", sge_premium)
     aco = _costed("asia_collector", asia_collector)
     apr = _costed("asia_parser", asia_parser)
+    # AFTER the collector has recorded its verdicts: every source it could not read gets the
+    # webmaster's variants tried and the Wayback copy located (`research/source_fixer.py`).
+    sfx = _costed("source_fixer", lambda: _producer("source_fixer", "research/source_fixer.py"))
+    # The bars every study reads: an unreadable parquet is quarantined for the fetcher to
+    # rebuild, a stale one is named by asset class (`scripts/check_universe_integrity.py`).
+    uin = _costed("universe_integrity",
+                  lambda: _producer("universe_integrity", "scripts/check_universe_integrity.py"))
     srt = _costed("source_routes", source_routes)
     spa = _costed("strategy_paths", strategy_paths)
     wse = _costed("weak_signals", weak_signal_ensembles)
@@ -2498,6 +2505,8 @@ def main() -> None:
                     "sge_premium": sge,
                     "asia_collector": aco,
                     "asia_parser": apr,
+                    "source_fixer": sfx,
+                    "universe_integrity": uin,
                     "source_routes": srt,
                     "strategy_paths": spa,
                     "weak_signals": wse,
