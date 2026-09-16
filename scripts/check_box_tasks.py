@@ -56,6 +56,8 @@ _KV = re.compile(r'(\w+)="([^"]*)"')
 #: a fence whose first run is mostly false positives gets muted, which is the one outcome that
 #: makes it worthless. Windows task names on this box are all CamelCase by convention.
 _TASK_NAME = re.compile(r"MT5-[A-Z][a-z][A-Za-z0-9]*")
+#: Names shaped like a task that are not one: the git-writer MUTEX both box writers hold.
+_NOT_A_TASK = frozenset({"MT5-GitWriter"})
 
 #: Files that MENTION task names without being a declaration -- the manifest itself, and this
 #: checker. Everything else naming an `MT5-*` task is a real reference the manifest must cover.
@@ -71,7 +73,7 @@ _SCAN = (".ps1", ".py", ".cmd", ".bat")
 #: Directories whose contents are OUTPUT, never a declaration. A task name appearing in something
 #: this desk generated is not evidence that the task exists.
 _NOT_A_DECLARATION = ("data/", "reports/", "desks/mt5/data/", "desks/mt5/reports/", "docs/",
-                      "backups/", "web/")
+                      "backups/", "web/", "tests/", "scratch/")
 
 #: Manifested tasks whose trigger this repo does not know. RATCHET: it may fall, never rise.
 #: Fourteen today -- the five `stall_watch` heals with no installer, plus the deadman, the vol
@@ -111,6 +113,8 @@ def referenced_tasks(root: Path | None = None) -> dict[str, list[str]]:
         except OSError:
             continue
         for name in set(_TASK_NAME.findall(text)):
+            if name in _NOT_A_TASK:
+                continue
             out.setdefault(name, []).append(rel)
     return out
 

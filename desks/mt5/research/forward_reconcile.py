@@ -322,6 +322,14 @@ def gauntlet(cells: list[dict]) -> dict:
     return out
 
 
+def _running_unfrozen(actions: list[dict]) -> int:
+    """Keys flagged IDENTITY_UNFROZEN this pass that the same pass did not retire."""
+    flagged = {str(a.get("key")) for a in actions if a.get("action") == "IDENTITY_UNFROZEN"}
+    retired = {str(a.get("key")) for a in actions
+               if str(a.get("action", "")).startswith("RETIRED")}
+    return len(flagged - retired)
+
+
 def main() -> int:
     now = datetime.now(tz=UTC).isoformat(timespec="seconds")
     enrolled = enrolled_keys()
@@ -581,8 +589,11 @@ def main() -> int:
          "enrolment_readable": not unknown_enrolment,
          "certified_clocks": None if cert_clock_keys is None else len(cert_clock_keys),
          "certified_pairs": len(certs),
-         "identity_unfrozen": (None if _frozen is None
-                               else sum(a["action"] == "IDENTITY_UNFROZEN" for a in actions)),
+         # A CLOCK THIS PASS RETIRED IS NOT A RUNNING CLOCK. The unfrozen check runs before the
+         # orphan retirement in the same loop, so eleven RETIRED_ORPHAN rows were also counted as
+         # "running clock with no frozen identity" (2026-09-16) and the attestation read a
+         # defect that no longer existed. Count only the keys still running after the pass.
+         "identity_unfrozen": (None if _frozen is None else _running_unfrozen(actions)),
          # THE CEILING, AS A NUMBER. `certified_pairs` minus `certified_clocks` is a
          # discrepancy a reader has to notice and then investigate; this is the part of
          # that gap the desk can already explain -- certificates that passed all ten

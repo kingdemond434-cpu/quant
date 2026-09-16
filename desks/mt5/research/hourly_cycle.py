@@ -663,6 +663,47 @@ VERDICT_EXITS: dict[str, tuple[int, ...]] = {
 }
 
 
+#: THE HOURLY CYCLE COULD NOT FINISH IN AN HOUR, AND ITS TAIL NEVER RAN (measured 2026-09-16).
+#: One full pass sums the legs' budgets: backtest 36 min, deepen 20, daily 15, and six legs at
+#: their 12-minute cap -- 110 to 200 minutes -- under a task limit of 55 minutes. Every pass was
+#: killed mid-way, and the legs after the kill point (deepen, forward_reconcile, falsifier_run,
+#: credit_assignment, mutation_yield, closed_loop, ...) simply never ran: the daily chain had not
+#: completed since 2026-09-13, the generator weights were two days old, and the closed-loop
+#: attestation read those absences as false verdicts. The cure is two clocks, one code path:
+#:   HOURLY_PLAN=core   -- the cheap governance / forward / publication legs, every hour, ~15 min
+#:   HOURLY_PLAN=heavy  -- the research producers, back to back, on a limit that fits them
+#:   HOURLY_PLAN=all    -- the historical single pass (default, so nothing changes uninvited)
+#: A leg outside the plan is SKIPPED_BY_PLAN: no ledger row, so `opportunity_cost` and the
+#: meta-controller's epoch read the truth (it did not run here) rather than a phantom run.
+HOURLY_PLAN = str(os.environ.get("HOURLY_PLAN", "all") or "all").strip().lower()
+CORE_LEGS: frozenset[str] = frozenset({
+    "smoke_release", "health", "release_identity", "input_identity", "burn_in", "record_tape",
+    "regime_monitor", "state_vector", "heal_clocks", "wiring_audit", "promoter",
+    "forward_reconcile", "closed_loop", "acceptance", "candidate_conservation", "pit_canaries",
+    "mutation_yield", "credit_assignment", "publish_survivors", "publish_dashboard",
+    "stamp_freshness", "time_joins", "layer_census", "opportunity_cost", "dead_architecture",
+    "prosecutor", "scaling_laws", "arena", "session_capital", "session_allocation",
+    "allocator_join", "rebalance_trigger", "edge_reliability", "edge_confidence", "capacity",
+    "fill_attribution", "execution_resolver", "markout", "swap_rejudge", "queue_compact",
+    "requeue_unrunnable", "merge_docket", "miner_conversion", "graveyard_model",
+    "research_exchange_score", "model_skill", "research_org", "experiment_design",
+    "experiment_cache", "opportunity_gap", "opportunity_forecast", "forecast_contract",
+    "alpha_breadth", "alpha_periodic_table", "regime_coverage", "timeframe_coverage",
+    "frontier_unknowns", "frontier_report", "frontier_ontology", "counterfactual_world",
+    "strategy_paths", "reclaim_disk", "archive_tape", "queue_cycle", "release_authority",
+})
+
+
+def in_plan(name: str, plan: str | None = None) -> bool:
+    """Does leg `name` run under `plan`? core = CORE_LEGS only; heavy = everything else; all."""
+    p = (plan if plan is not None else HOURLY_PLAN)
+    if p == "core":
+        return name in CORE_LEGS
+    if p == "heavy":
+        return name not in CORE_LEGS
+    return True
+
+
 def _costed(name: str, fn):
     """Run one leg and record what it COST, whatever it returns or raises.
 
@@ -699,6 +740,10 @@ def _costed(name: str, fn):
     KeyboardInterrupt and SystemExit are re-raised: those are someone stopping the pass, not the
     pass failing, and catching them would make the cycle unkillable.
     """
+    if not in_plan(name):
+        # Not this clock's leg: no ledger row, no verdict -- the other plan owns it.
+        return {"status": "SKIPPED_BY_PLAN", "plan": HOURLY_PLAN,
+                "at": datetime.now(UTC).isoformat(timespec="seconds")}
     try:
         from libs.ops.compute_ledger import close_run, open_run
     except Exception as exc:
@@ -2130,6 +2175,7 @@ def refresh_regime() -> dict:
 
 
 def main() -> None:
+    print(f"hourly cycle plan={HOURLY_PLAN} ({'core legs only' if HOURLY_PLAN == 'core' else 'research producers only' if HOURLY_PLAN == 'heavy' else 'every leg'})", flush=True)
     # BARS FIRST. Every leg below reasons about a chart, so a stale chart makes all of them
     # confidently wrong rather than merely late.
     rb = _costed("refresh_bars", refresh_bars)

@@ -141,8 +141,21 @@ def legacy_identity(key: str, row: dict) -> dict | None:
     return ident
 
 
-def freeze_unfrozen(registry: dict, *, apply: bool) -> int:
-    """Freeze every running main-lane clock that has no frozen identity. Returns the count."""
+def engine_identities() -> dict[str, dict]:
+    """clock key -> identity for every certificate the forward engine enrols (the promoter's own
+    resolver); empty when the engine cannot be loaded here."""
+    try:
+        import promoter
+        return dict(promoter.clock_identities() or {})
+    except Exception:
+        return {}
+
+
+def freeze_unfrozen(registry: dict, *, apply: bool, identities: dict | None = None) -> int:
+    """Freeze every running main-lane clock that has no frozen identity. Returns the count.
+
+    Legacy keys (`SYM.window[.STATE]`) freeze the identity their key names; modern keys
+    (`SYM.family.selector#params`) freeze the identity the engine enrolled them with."""
     shadow_path = DESK / "reports" / "shadow" / "shadow_state.json"
     try:
         shadow = json.loads(shadow_path.read_text("utf-8"))
@@ -150,6 +163,7 @@ def freeze_unfrozen(registry: dict, *, apply: bool) -> int:
         return 0
     frozen = {k for k, v in (registry.get("sleeves") or {}).items()
               if isinstance(v, dict) and v.get("identity")}
+    engine = identities if identities is not None else None
     n = 0
     for key, row in sorted(shadow.items()):
         if not isinstance(row, dict) or key in frozen:
@@ -158,14 +172,19 @@ def freeze_unfrozen(registry: dict, *, apply: bool) -> int:
                                                         "PROMOTION_CANDIDATE"):
             continue
         ident = legacy_identity(key, row)
+        if ident is None and "#" in key:
+            if engine is None:
+                engine = engine_identities()
+            ident = dict(engine.get(key) or {}) or None
         if ident is None:
             continue
         n += 1
         if apply:
             try:
                 reg.freeze(key, ident, forward_start=row.get("forward_start"))
-                print(f"  FROZEN {key}: {ident['symbol']} {ident['selector']} "
-                      f"{ident['family']} {ident['side']} forward_start={row.get('forward_start')}")
+                print(f"  FROZEN {key}: {ident.get('symbol')} {ident.get('selector')} "
+                      f"{ident.get('family')} {ident.get('side')} "
+                      f"forward_start={row.get('forward_start')}")
             except Exception as exc:
                 print(f"  FREEZE FAILED {key}: {type(exc).__name__}: {exc}")
         else:

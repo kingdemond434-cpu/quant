@@ -102,7 +102,7 @@ def _schedulers(root: Path) -> dict[str, set[str]]:
 
 
 def _scheduler_known(spec: str, clocks: dict[str, set[str]]) -> bool:
-    """`quant-x.timer` | `MT5-Name` | `hourly_cycle:leg` | `daily_cycle:leg`; comma-separated."""
+    """`quant-x.timer` | `MT5-<TaskName>` | `hourly_cycle:leg` | `daily_cycle:leg`; comma-separated."""
     ok = False
     for token in (t.strip() for t in spec.split(",") if t.strip()):
         if token.endswith(".timer"):
