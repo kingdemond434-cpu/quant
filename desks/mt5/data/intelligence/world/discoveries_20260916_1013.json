@@ -1,0 +1,1703 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithm - Wikipedia",
+  "url": "https://tw.wikipedia.org/w/index.php?title=Algorithm&oldid=177338",
+  "published": "2026-09-16T10:12:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "tw",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5269afdda96c8e21fea1",
+  "host": "tw.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithm - Wikipedia",
+  "url": "https://tw.wikipedia.org/w/index.php?title=Algorithm&useparsoid=0",
+  "published": "2026-09-16T10:12:31+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "tw",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0bb704f4e675880913bf",
+  "host": "tw.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Book creator - Wikipedia",
+  "url": "https://tw.wikipedia.org/w/index.php?title=Soronko:Book&bookcmd=book_creator&referer=Algorithm",
+  "published": "2026-09-16T10:12:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "tw",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dd93b75b55eb8b83cd19",
+  "host": "tw.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Automated Trading System &#8211; Internal Order Matching | Systematic Edge",
+  "url": "https://systematicedge.wordpress.com/2015/02/22/automated-trading-system-internal-order-matching/",
+  "published": "2026-09-16T10:12:35+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "mean_reversion",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3e03fc419c5bd2dcfd31",
+  "host": "systematicedge.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Kapitalmarktrecht - Petra Buck-Heeb - Google Books",
+  "url": "https://books.google.de/books?id=PkyqW_qpr9YC&pg=PA41&dq=Multilaterales+Handelssystem&hl=de&sa=X&ved=2ahUKEwjk6qCH3K3tAhUmsKQKHR0FBVoQuwUwAHoECAEQBw",
+  "published": "2026-09-16T10:12:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://books.google.de/books/download/Kapitalmarktrecht.bibtex?id=PkyqW_qpr9YC&amp;hl=de&amp;output=bibtex",
+   "https://books.google.de/books/download/Kapitalmarktrecht.enw?id=PkyqW_qpr9YC&amp;hl=de&amp;output=enw",
+   "https://books.google.de/books/download/Kapitalmarktrecht.ris?id=PkyqW_qpr9YC&amp;hl=de&amp;output=ris"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "6029d9fae6557c2b10ed",
+  "host": "books.google.de",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "https://systematicedge.wordpress.com/2015/02/22/automated-trading-system-internal-order-matching/?share=twitter",
+  "url": "https://systematicedge.wordpress.com/2015/02/22/automated-trading-system-internal-order-matching/?share=twitter",
+  "published": "2026-09-16T10:12:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://systematicedge.wordpress.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "59a25c763a2bd5818a87",
+  "host": "systematicedge.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "IMHO BEST LINKS FROM QUANTOCRACY FOR THE WEEK 28 SEP 15 \u2014 4 OCT 15 | Quantitative Investor Blog",
+  "url": "https://quantinvestblog.wordpress.com/2015/10/05/imho-best-links-from-quantocracy-for-the-week-28-sep-15-4-oct-15/",
+  "published": "2026-09-16T10:12:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "ru-RU",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f2ca9057b59ca15dd315",
+  "host": "quantinvestblog.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Penelusuran Buku Lanjutan",
+  "url": "https://books.google.co.id/advanced_book_search?q=statistika+dan+algoritma+em&hl=id",
+  "published": "2026-09-16T10:12:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3631b27b2fe7454127cd",
+  "host": "books.google.co.id",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "DATA MINING: Teori dan Aplikasi Weka - Fricles Ariwisanto Sianturi, Paska Marto Hasugian, Agustina Simangunsong, Berto Nadeak - Google Buku",
+  "url": "https://books.google.co.id/books?id=MWcHEAAAQBAJ&newbks=1&newbks_redir=0&dq=statistika+dan+algoritma+em&hl=id&source=gbs_navlinks_s",
+  "published": "2026-09-16T10:12:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://books.google.co.id/books/download/DATA_MINING.bibtex?id=MWcHEAAAQBAJ&amp;hl=id&amp;output=bibtex",
+   "https://books.google.co.id/books/download/DATA_MINING.enw?id=MWcHEAAAQBAJ&amp;hl=id&amp;output=enw",
+   "https://books.google.co.id/books/download/DATA_MINING.ris?id=MWcHEAAAQBAJ&amp;hl=id&amp;output=ris"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "f83922efce64aadb09dd",
+  "host": "books.google.co.id",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Erweiterte Buchsuche",
+  "url": "https://books.google.de/advanced_book_search?q=Multilaterales+Handelssystem&hl=de",
+  "published": "2026-09-16T10:12:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a9e677b43dfa2cf63a34",
+  "host": "books.google.de",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Nu ut\u00f6kar vi handeln i USA \u2013 s\u00e5 nyttjar du de nya \u00f6ppettiderna!",
+  "url": "https://blogg.avanza.se/nu-utokar-vi-handeln-i-usa-sa-nyttjar-du-de-nya-oppettiderna/",
+  "published": "2026-09-16T10:12:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "sv-SE",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a167f394f20b8adfc7e4",
+  "host": "blogg.avanza.se",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "2026\u5e7409\u6708\u7b2c37\u9031 GitHub\u3067\u8a71\u984c\u306b\u306a\u3063\u305f\u30ea\u30dd\u30b8\u30c8\u30ea\u307e\u3068\u3081 #AI - Qiita",
+  "url": "https://qiita.com/keishin_nishiura/items/efac90eaed146edce769",
+  "published": "2026-09-16T10:12:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "ja",
+  "endpoints": [
+   "https://qiita.com/manifest.json",
+   "https://qiita.com/api/v2/docs"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "8d3e80b299b3f460d10b",
+  "host": "qiita.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "MT5\u306e\u30b9\u30d7\u30ec\u30c3\u30c9\u3092Python\u3067\u5b9f\u6e2c\u3059\u308b \u2014 \u3064\u3044\u3067\u306b\u300c\u5e73\u5747\u3067\u5272\u308b\u300d\u30684\u5272\u30ba\u30ec\u305f\u8a71 #\u7d71\u8a08 - Qiita",
+  "url": "https://qiita.com/shin5nack/items/efa2fabcf34a5563dc26",
+  "published": "2026-09-16T10:12:45+00:00",
+  "symbols": [
+   "USDJPY"
+  ],
+  "timeframes": [
+   "D1",
+   "H1",
+   "H4",
+   "M15",
+   "M30",
+   "M5"
+  ],
+  "patterns": [
+   "orderflow",
+   "session"
+  ],
+  "confidence": 0.75,
+  "lang": "ja",
+  "endpoints": [
+   "https://qiita.com/manifest.json",
+   "https://qiita.com/api/v2/docs"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "31d1c374b8523e8d2d09",
+  "host": "qiita.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Momentum Mini-Portfolio Development - Part 2: USA Pullback Momentum",
+  "url": "https://www.tradequantixnewsletter.com/p/momentum-mini-portfolio-development-302",
+  "published": "2026-09-16T10:12:48+00:00",
+  "symbols": [
+   "NAS100",
+   "US500",
+   "US2000",
+   "CA60",
+   "USDKRW",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "carry",
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "46cb1ccdfaa30eb71f62",
+  "host": "www.tradequantixnewsletter.com",
+  "claims": [
+   {
+    "claim": "If the shorter term holds (N = 5 and N = 10 days especially) showed zero to negative edge, that would be a bad sign for the fidelity of the pullback entry.",
+    "lang": "en",
+    "quantities": [
+     "pullback"
+    ],
+    "direction": [
+     "negative"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "US2000",
+      "CA60",
+      "USDKRW",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "s&p 500",
+      "russell",
+      "tsx",
+      "won",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "58905b839e2d"
+   },
+   {
+    "claim": "But the correlation math can\u2019t tell us if next month the pullback version of the system will buy the bottom of a sell-off before a rip higher, while the non-pullback version sits in cash and misses the whole move (which is exactly what happened in my own portfolio!",
+    "lang": "en",
+    "quantities": [
+     "correlation",
+     "pullback"
+    ],
+    "direction": [
+     "buy",
+     "sell-off"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "US2000",
+      "CA60",
+      "USDKRW",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "s&p 500",
+      "russell",
+      "tsx",
+      "won",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "306ad157458f"
+   },
+   {
+    "claim": "We showed the pullback entry gets positive expectancy quickly (even at just 5 to 10 day holds), the winning trades bought in the pullback revert back to the highs within a few weeks, and the trade quality holds up across a wide range of pullback thresholds.",
+    "lang": "en",
+    "quantities": [
+     "pullback",
+     "range"
+    ],
+    "direction": [
+     "positive",
+     "revert"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "US2000",
+      "CA60",
+      "USDKRW",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "s&p 500",
+      "russell",
+      "tsx",
+      "won",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "298aeda93a4c"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Momentum Mini-Portfolio Development - Part 1: TSX Momentum",
+  "url": "https://www.tradequantixnewsletter.com/p/momentum-mini-portfolio-development",
+  "published": "2026-09-16T10:12:50+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "correlation",
+   "gap",
+   "inventory",
+   "mean_reversion",
+   "momentum",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fc31e401058ba30e8986",
+  "host": "www.tradequantixnewsletter.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantitative Value - by Concretum Research",
+  "url": "https://concretumgroup.substack.com/p/quantitative-value",
+  "published": "2026-09-16T10:12:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0e4420de31570b81fa93",
+  "host": "concretumgroup.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Building the Market Effect Mini-Portfolio",
+  "url": "https://www.tradequantixnewsletter.com/p/building-the-market-effect-mini-portfolio",
+  "published": "2026-09-16T10:12:52+00:00",
+  "symbols": [
+   "NAS100",
+   "US500",
+   "US2000",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "correlation",
+   "inventory",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "policy",
+   "positioning",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1d66474e11556d2ca56f",
+  "host": "www.tradequantixnewsletter.com",
+  "claims": [
+   {
+    "claim": "I'm always open to exposure on the short side to help balance out my mostly-long equities portfolio, so I'm happy to implement it.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "short",
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "US2000",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "s&p 500",
+      "russell",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "3e3511e6933d"
+   },
+   {
+    "claim": "72% and the average drawdown length drops to 81 days.",
+    "lang": "en",
+    "quantities": [
+     "drawdown"
+    ],
+    "direction": [
+     "drops"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "US2000",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "s&p 500",
+      "russell",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "7d20c808fb98"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Estimating the Capacity of a Trading Strategy",
+  "url": "https://concretumgroup.substack.com/p/estimating-the-capacity-of-a-trading",
+  "published": "2026-09-16T10:12:53+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M",
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5391fb2065e2b93ad543",
+  "host": "concretumgroup.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Automating a Volatility Strategy With Python and Interactive Brokers",
+  "url": "https://concretumgroup.substack.com/p/automating-a-volatility-strategy",
+  "published": "2026-09-16T10:12:56+00:00",
+  "symbols": [
+   "US500",
+   "USDKRW"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "correlation",
+   "gap",
+   "inventory",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5745e98d99415c39569c",
+  "host": "concretumgroup.substack.com",
+  "claims": [
+   {
+    "claim": "The VIX Index, which represents the market\u2019s 30-day volatility forecast for the S&P 500, has overestimated realized volatility roughly 80% of the time over the past two decades.",
+    "lang": "en",
+    "quantities": [
+     "vix",
+     "volatility"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "s&p 500"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "f60a1868b705"
+   },
+   {
+    "claim": "VXX tracks a rolling position in the two nearest-month VIX futures contracts, maintaining an average maturity of about 30 days.",
+    "lang": "en",
+    "quantities": [
+     "vix",
+     "futures"
+    ],
+    "direction": [
+     "contracts"
+    ],
+    "horizon": [
+     "month",
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "USDKRW"
+     ],
+     "mentioned": [
+      "s&p 500",
+      "won"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "7092cbc4bdb2"
+   },
+   {
+    "claim": "Think of it as a daily rolling bet on short-term VIX futures.",
+    "lang": "en",
+    "quantities": [
+     "vix",
+     "futures"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "USDKRW"
+     ],
+     "mentioned": [
+      "s&p 500",
+      "won"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "9df677c560ba"
+   },
+   {
+    "claim": "Today, several VIX-linked products exist: VXX / VIXY : Long volatility (1x exposure to 30-day VIX futures) SVXY : Short volatility (-0.",
+    "lang": "en",
+    "quantities": [
+     "vix",
+     "volatility",
+     "futures"
+    ],
+    "direction": [
+     "long",
+     "short"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "USDKRW"
+     ],
+     "mentioned": [
+      "s&p 500",
+      "won"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b651535ca30b"
+   },
+   {
+    "claim": "Subscribe The Results Over the January 2008 to May 2025 backtest period, after 5 basis points of transaction costs per trade: The strategy was short volatility on 90% of days, in cash for 6%, and long volatility for 4%.",
+    "lang": "en",
+    "quantities": [
+     "basis",
+     "volatility"
+    ],
+    "direction": [
+     "short",
+     "long"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "USDKRW"
+     ],
+     "mentioned": [
+      "s&p 500",
+      "won"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "923e9854a21c"
+   }
+  ],
+  "n_claims": 5
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Market Effect Research: Turnaround Tuesday Effect",
+  "url": "https://www.tradequantixnewsletter.com/p/market-effect-research-turnaround",
+  "published": "2026-09-16T10:12:57+00:00",
+  "symbols": [
+   "US500",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "gap",
+   "mean_reversion",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5145216294820ff8c1b2",
+  "host": "www.tradequantixnewsletter.com",
+  "claims": [
+   {
+    "claim": "But, when Monday is a red day, it does seem to predictably lead to higher returns on Tuesdays.",
+    "lang": "en",
+    "quantities": [
+     "lead"
+    ],
+    "direction": [
+     "higher"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "c2b9e22580c6"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The Non-Linear Costs of Trading - by Concretum Research",
+  "url": "https://concretumgroup.substack.com/p/the-non-linear-costs-of-trading",
+  "published": "2026-09-16T10:12:57+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M",
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2bcf8fa17ec2b44955f1",
+  "host": "concretumgroup.substack.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Market Effect Research: Holiday Seasonality - Part 2",
+  "url": "https://www.tradequantixnewsletter.com/p/market-effect-research-holiday-seasonality-8fd",
+  "published": "2026-09-16T10:12:59+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "policy",
+   "positioning",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d7aa0b2defcbb3dd7eda",
+  "host": "www.tradequantixnewsletter.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "How to Build a Reliable Algo Trading Infrastructure",
+  "url": "https://concretumgroup.substack.com/p/operational-pitfalls-of-algo-trading",
+  "published": "2026-09-16T10:13:00+00:00",
+  "symbols": [
+   "US500",
+   "USDKRW"
+  ],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "899d86d9fb301b3dab58",
+  "host": "concretumgroup.substack.com",
+  "claims": [
+   {
+    "claim": "We\u2019ve also seen that some data providers continue emitting bars after the official close on half-day sessions, while others truncate the session correctly.",
+    "lang": "en",
+    "quantities": [
+     "close",
+     "session"
+    ],
+    "direction": [
+     "continue"
+    ],
+    "horizon": [
+     "bars",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "USDKRW"
+     ],
+     "mentioned": [
+      "spy",
+      "won"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "9277c64877b8"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Market Effect Research: Turn of the Month Effect",
+  "url": "https://www.tradequantixnewsletter.com/p/market-effect-research-turn-of-the",
+  "published": "2026-09-16T10:13:01+00:00",
+  "symbols": [
+   "US500",
+   "USDKRW",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "gap",
+   "policy",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "076390d2262643b301f3",
+  "host": "www.tradequantixnewsletter.com",
+  "claims": [
+   {
+    "claim": "Month end is a natural checkpoint for institutional portfolios, and you get predictable flow patterns as managers buy winners and sell losers to clean up their books and to produce attractive month end holdings snapshots for their investors.",
+    "lang": "en",
+    "quantities": [
+     "flow"
+    ],
+    "direction": [
+     "buy",
+     "sell"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "USDKRW",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "won",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "22febcf5da54"
+   },
+   {
+    "claim": "Days +2 and +3 add a bit more rise to the curve, and then the line flattens again as we move into mid-month territory again.",
+    "lang": "en",
+    "quantities": [
+     "curve"
+    ],
+    "direction": [
+     "rise",
+     "flattens"
+    ],
+    "horizon": [
+     "days",
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "USDKRW",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "won",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "1144b523a845"
+   },
+   {
+    "claim": "See the zoomed in right side of the exceedance plot below: You\u2019ll notice the orange line (early new month days) sits clearly above the gray line (non-EOM days) across the entire positive range from 0% to about +3%.",
+    "lang": "en",
+    "quantities": [
+     "range"
+    ],
+    "direction": [
+     "positive"
+    ],
+    "horizon": [
+     "month",
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "USDKRW",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "won",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b02360071420"
+   },
+   {
+    "claim": "The +-5 day EOM window also has slightly lower volatility and slightly lower risk than the non-EOM window.",
+    "lang": "en",
+    "quantities": [
+     "volatility"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "USDKRW",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "won",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5db50bd6e6e3"
+   },
+   {
+    "claim": "All the evidence points to the same conclusion, which is the +-5 day EOM window produces higher returns with less volatility and downside risk, and it persists across eras.",
+    "lang": "en",
+    "quantities": [
+     "volatility"
+    ],
+    "direction": [
+     "higher"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "USDKRW",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "won",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "6aa72f94e1b4"
+   }
+  ],
+  "n_claims": 5
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "About - Systematic Trading with TradeQuantiX",
+  "url": "https://www.tradequantixnewsletter.com/about",
+  "published": "2026-09-16T10:13:03+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "mean_reversion",
+   "momentum",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e337cb5bbd92bb0c1883",
+  "host": "www.tradequantixnewsletter.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "The Hidden Tax Behind Free Trading - by Concretum Research",
+  "url": "https://concretumgroup.substack.com/p/the-hidden-tax-behind-free-trading",
+  "published": "2026-09-16T10:13:04+00:00",
+  "symbols": [
+   "XAUUSD",
+   "Tesla"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "night_session",
+   "orderflow"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e2948aa185aa08300063",
+  "host": "concretumgroup.substack.com",
+  "claims": [
+   {
+    "claim": "The paper also finds that retail investors overwhelmingly preferred call options , cheap contracts, and especially ultra-short-dated maturities : the authors report that nearly half of retail option trading volume was concentrated in contracts with less than a week to expiration.",
+    "lang": "en",
+    "quantities": [
+     "options",
+     "volume"
+    ],
+    "direction": [
+     "contracts",
+     "short"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "Tesla"
+     ],
+     "mentioned": [
+      "gold",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "936522fb1bf1"
+   },
+   {
+    "claim": "The Rise of Lottery Finance In a sense, weekly options were the perfect product for this new smartphone-trading era : cheap, leveraged, fast-moving and emotionally stimulating.",
+    "lang": "en",
+    "quantities": [
+     "options"
+    ],
+    "direction": [
+     "rise"
+    ],
+    "horizon": [
+     "weekly"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "Tesla"
+     ],
+     "mentioned": [
+      "gold",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "651fa04bea53"
+   },
+   {
+    "claim": "\u201d From Weekly Options to 0DTE In hindsight, the paper may have actually understated the long-term trend behind this new way of interacting with financial markets: the studied sample mostly predates the full explosion of 0DTE options (i.",
+    "lang": "en",
+    "quantities": [
+     "options",
+     "trend"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "weekly"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "Tesla"
+     ],
+     "mentioned": [
+      "gold",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "feaa6ef2a45e"
+   },
+   {
+    "claim": "The logic is identical to the weekly contracts cited in the paper, just accelerated : lower upfront cost, higher leverage, more frequent trading, stronger gambling dynamics, and even more flow for wholesalers.",
+    "lang": "en",
+    "quantities": [
+     "flow"
+    ],
+    "direction": [
+     "contracts",
+     "lower"
+    ],
+    "horizon": [
+     "weekly"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "Tesla"
+     ],
+     "mentioned": [
+      "gold",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "0b4af180c1c0"
+   }
+  ],
+  "n_claims": 4
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "How to Build a Reliable Algo Trading Infrastructure",
+  "url": "https://concretumgroup.substack.com/p/operational-pitfalls-of-algo-trading?utm_source=substack&utm_medium=email&utm_content=share&action=share",
+  "published": "2026-09-16T10:13:06+00:00",
+  "symbols": [
+   "US500",
+   "USDKRW"
+  ],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ff11d2e41db17ec66ab4",
+  "host": "concretumgroup.substack.com",
+  "claims": [
+   {
+    "claim": "We\u2019ve also seen that some data providers continue emitting bars after the official close on half-day sessions, while others truncate the session correctly.",
+    "lang": "en",
+    "quantities": [
+     "close",
+     "session"
+    ],
+    "direction": [
+     "continue"
+    ],
+    "horizon": [
+     "bars",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "USDKRW"
+     ],
+     "mentioned": [
+      "spy",
+      "won"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "9277c64877b8"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Strategy Development Languages for Futures Trading: Choosing the Right Tool for Every Trading Style - NexusFi Academy",
+  "url": "https://futures.io/a/automation/strategy-development-languages",
+  "published": "2026-09-16T10:13:31+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "gap",
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://nexusfi.com/download/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "0b0410654635684c51de",
+  "host": "futures.io",
+  "claims": [
+   {
+    "claim": "A 1-minute bar-close strategy checking for a breakout above a level can miss the move entirely if price breaks out and reverses within the same bar.",
+    "lang": "en",
+    "quantities": [
+     "close",
+     "breakout"
+    ],
+    "direction": [
+     "reverses"
+    ],
+    "horizon": [
+     "minute",
+     "bar"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "php"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8090212734ac"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Inflation bonds &mdash; Implementing QuantLib",
+  "url": "https://www.implementingquantlib.com/2025/11/inflation-bonds.html",
+  "published": "2026-09-16T10:13:34+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0351c10d4ac47c405f56",
+  "host": "www.implementingquantlib.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Bonds and CDS curves &mdash; Implementing QuantLib",
+  "url": "https://www.implementingquantlib.com/2025/10/bonds-and-cds-curves.html",
+  "published": "2026-09-16T10:13:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b83094e4da3d9fad7b4f",
+  "host": "www.implementingquantlib.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\"Implementing QuantLib\" as a paperback: five years later &mdash; Implementing QuantLib",
+  "url": "https://www.implementingquantlib.com/2025/10/implementing-quantlib-today.html",
+  "published": "2026-09-16T10:13:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "cdf0584048c59234c8e2",
+  "host": "www.implementingquantlib.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Default-probability curves &mdash; Implementing QuantLib",
+  "url": "https://www.implementingquantlib.com/2025/09/default-probability-curves.html",
+  "published": "2026-09-16T10:13:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "202a65b10abfa9685f48",
+  "host": "www.implementingquantlib.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cash-flow analysis &mdash; Implementing QuantLib",
+  "url": "https://www.implementingquantlib.com/2025/08/cash-flow-analysis.html",
+  "published": "2026-09-16T10:13:42+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow",
+   "night_session"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "66f40da2ecc5d8140502",
+  "host": "www.implementingquantlib.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "More improvements to \"A QuantLib Guide\" &mdash; Implementing QuantLib",
+  "url": "https://www.implementingquantlib.com/2025/07/new-in-1-39.html",
+  "published": "2026-09-16T10:13:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c8eb9e22d9af3035dc36",
+  "host": "www.implementingquantlib.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Pricing - Financial Data API",
+  "url": "https://financialdata.net/pricing?via=quantpedia",
+  "published": "2026-09-16T10:13:44+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3babba8ceefa98f1b995",
+  "host": "financialdata.net",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Gold Is Unpredictable. Your Trading Doesn\u2019t Have to Be | Republic World",
+  "url": "https://www.republicworld.com/initiatives/gold-is-unpredictable-your-trading-doesnt-have-to-be/",
+  "published": "2026-09-16T10:13:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0046d5a62661351a1d11",
+  "host": "www.republicworld.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Why algo trading is vital for an efficient capital market - Why algo trading is vital for an efficient capital market -",
+  "url": "https://www.indiatodayne.in/lifestyle/story/why-algo-trading-is-vital-for-an-efficient-capital-market-1230717-2025-06-18",
+  "published": "2026-09-16T10:13:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.indiatodayne.in/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "d7e48213a61c6eb5bd89",
+  "host": "www.indiatodayne.in",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Indian Satire &#8211; India&#039;s Magic Lamp of Mockery",
+  "url": "https://genieknows.in/",
+  "published": "2026-09-16T10:13:51+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "gap",
+   "inventory",
+   "momentum",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "22f1413248976e7c05e4",
+  "host": "genieknows.in",
+  "claims": [],
+  "n_claims": 0
+ }
+]
