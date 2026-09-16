@@ -588,7 +588,9 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None) -> dict
             # has the most to gain from not fighting the currency regime.
             try:
                 from mt5desk import macro_view
-                _mm, _mw = macro_view.multiplier(sym, 1 if side == "buy" else -1)
+                _mm, _mw = macro_view.multiplier(sym, 1 if side == "buy" else -1,
+                                                 family=str(fam or ""),
+                                                 ttl_bars=getattr(g, "ttl_bars", None))
             except Exception as _exc:                          # noqa: BLE001
                 _mm, _mw = 1.0, f"macro UNMEASURED ({type(_exc).__name__})"
             lot = _quantise(lot * _lm * _mm, venue, sym)

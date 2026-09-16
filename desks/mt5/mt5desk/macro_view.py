@@ -188,9 +188,50 @@ def score(symbol: str, v: dict[str, Any] | None = None) -> tuple[float | None, s
     return max(-1.0, min(1.0, s)), f"{base} {lean.get(base, 0.0):+.2f} vs {quote} {lean.get(quote, 0.0):+.2f}"
 
 
-def multiplier(symbol: str, side: int, v: dict[str, Any] | None = None) -> tuple[float, str]:
-    """Size an order by its agreement with the macro lean. 1.0 whenever the view cannot speak."""
+#: The families a macro REGIME can legitimately condition. These hold across sessions -- carry
+#: earns the rollover overnight, overnight_gap_decay fades the gap into the next session,
+#: macro_conditional IS the macro trade, and a session-range breakout runs with the day's trend.
+#: A multi-week dollar lean is on the same clock as these and can size them.
+MACRO_HORIZON_FAMILIES = frozenset({
+    "carry", "overnight_gap_decay", "macro_conditional", "session_range_breakout",
+    "vol_transition", "cross_asset_residual", "cot_positioning",
+})
+
+
+def horizon_ok(family: str | None, ttl_bars: object = None, bar_minutes: int = 60) -> bool:
+    """Is this trade's horizon long enough for a macro regime to be the right tool?
+
+    THE ERROR THIS PREVENTS, caught the night the macro layer shipped (2026-09-16). The desk's
+    AUDUSD and AUDCAD SHORTS were its best trades -- short-horizon mean reversion selling the top
+    of the Asian range. The macro view leaned AUD UP (risk-on, low VIX), read those shorts as
+    fighting the trend, and DAMPED the winners 4.3%. A multi-week dollar regime and a nine-hour
+    range scalp are different clocks: a currency leans up on the month while falling for the day,
+    and conditioning the scalp on the month is simply the wrong instrument.
+
+    So macro sizes a trade only when the trade lives long enough for the regime to act on it --
+    by family (the directional, multi-session ones) OR by a genuinely long TTL. Everything else
+    is macro-NEUTRAL, sized as the certificate says, because at the scalp horizon the macro lean
+    carries no information in either direction and must not pretend to.
+    """
+    if str(family or "") in MACRO_HORIZON_FAMILIES:
+        return True
+    try:
+        hold_h = float(ttl_bars) * float(bar_minutes) / 60.0
+    except (TypeError, ValueError):
+        return False
+    return hold_h >= 24.0     # a full day held is long enough for a regime to matter
+
+
+def multiplier(symbol: str, side: int, v: dict[str, Any] | None = None, *,
+               family: str | None = None, ttl_bars: object = None,
+               bar_minutes: int = 60) -> tuple[float, str]:
+    """Size an order by its agreement with the macro lean. 1.0 whenever the view cannot speak,
+    AND 1.0 whenever the trade's horizon is too short for a macro regime to apply."""
     v = v or view()
+    if family is not None or ttl_bars is not None:
+        if not horizon_ok(family, ttl_bars, bar_minutes):
+            return 1.0, (f"macro 1.00: {family or 'this'} is a short-horizon trade; a macro "
+                         f"regime is the wrong clock for it, so it sizes as certified")
     sc, why = score(symbol, v)
     if sc is None:
         return 1.0, f"macro 1.00: {why}"
