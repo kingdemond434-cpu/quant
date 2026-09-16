@@ -80,7 +80,7 @@ import re
 import sys
 import time
 from contextlib import suppress
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -472,9 +472,56 @@ def _queue_close(names: list[str]) -> None:
         pass
 
 
-def retire_banned(sleeves: list[dict]) -> bool:
+#: THE EVIDENCE DOOR OUT OF A BAN (principal 2026-09-16: "what if existing discovery sleeves
+#: actually pass?"). A banned family's existing clocks keep running in shadow for free; pooled
+#: across all of them, this many forward trades in the decay monitor's trailing window at this
+#: t -- twice the trades the desk retires on and the same t -- parole the family: its candidates
+#: may be promoted again and its rows are not retired. Research stays closed to it regardless.
+PAROLE_N = 40
+PAROLE_T = 2.5
+
+
+def family_parole(family: str, identities: dict[str, dict] | None = None
+                  ) -> tuple[bool, str]:
+    """(paroled, why) from the family's pooled FORWARD record across every enrolled clock.
+
+    Reads the main lane's shadow ledgers (`reports/shadow/ledger_<clock>.json`, one row per
+    forward trade with `r_multiple`) through the decay monitor's own readers, so the bar is
+    judged on the same rows the decay monitor judges a sleeve on. Unreadable reads as not
+    paroled: a ban is lifted by evidence, never by an absence of it.
+    """
+    try:
+        import decay_monitor as dm
+    except ImportError:                                    # pragma: no cover
+        from research import decay_monitor as dm
+    fam = str(family or "").lower()
+    ids = identities if identities is not None else clock_identities()
+    keys = [k for k, ident in ids.items()
+            if isinstance(ident, dict) and str(ident.get("family") or "").lower() == fam]
+    cutoff = datetime.now(tz=UTC) - timedelta(days=dm.TRAIL_DAYS)
+    rs: list[float] = []
+    for k in keys:
+        for row in dm._shadow_ledger_rows(k):
+            r = dm._row_r(row)
+            if r is None:
+                continue
+            t = dm._row_time(row)
+            if t is not None and t < cutoff:
+                continue
+            rs.append(float(r))
+    s = dm.stats(rs)
+    record = (f"pooled forward n={s['n']}, exp={s['exp_r']}R, t={s['t']} across "
+              f"{len(keys)} clock(s) in the trailing {dm.TRAIL_DAYS} days "
+              f"(parole bar: n>={PAROLE_N}, t>={PAROLE_T}, exp>0)")
+    if s["n"] >= PAROLE_N and s["t"] >= PAROLE_T and s["exp_r"] > 0.0:
+        return True, f"PAROLED by its forward clocks: {record}"
+    return False, f"not paroled: {record}"
+
+
+def retire_banned(sleeves: list[dict], identities: dict[str, dict] | None = None) -> bool:
     """RETIRE every LIVE or STANDBY row of a family the principal has banned
-    (research/family_policy.py, data/banned_families.json). Returns changed.
+    (research/family_policy.py, data/banned_families.json) -- unless the family has been
+    paroled by its forward clocks (`family_parole`, judged over `identities`). Returns changed.
 
     2026-09-16: the `discovered` family. The decay monitor had already retired its live forex
     sleeves on the pooled bar; this is the standing order that keeps them out -- a candidate of
@@ -489,12 +536,22 @@ def retire_banned(sleeves: list[dict]) -> bool:
     changed = False
     stamp = datetime.now(tz=UTC).isoformat(timespec="seconds")
     gone: list[str] = []
+    parole: dict[str, tuple[bool, str]] = {}
     for s in sleeves:
         status = str(s.get("status") or "")
         if status not in ("LIVE", "STANDBY"):
             continue
         fam = str(s.get("family") or "")
         if not family_banned(fam):
+            continue
+        if fam not in parole:
+            try:
+                parole[fam] = family_parole(fam, identities)
+            except Exception as exc:                       # unreadable: not paroled
+                parole[fam] = (False, f"parole unreadable ({type(exc).__name__}: {exc})")
+            if parole[fam][0]:
+                plog(f"banned family {fam!r} keeps its rows -- {parole[fam][1]}")
+        if parole[fam][0]:
             continue
         reason = ban_reason(fam)
         s.update({"status": "RETIRED", "risk_frac": 0.0, "risk_frac_source": "none",
@@ -1637,11 +1694,16 @@ def promote_generic(sleeves: list[dict], qshadow: dict, existing: set,
             from research.family_policy import ban_reason, family_banned
         _fam = str((spec or {}).get("family") or row.get("family") or "")
         if family_banned(_fam):
-            row["status"] = "BANNED_FAMILY"
-            row["gate_reason"] = ban_reason(_fam)
-            plog(f"{key}: live promotion refused -- {row['gate_reason']}")
-            changed = True
-            continue
+            _ok, _pwhy = family_parole(_fam)
+            if _ok:
+                plog(f"{key}: banned family {_fam!r} -- {_pwhy}; promotion proceeds on the "
+                     f"clock's own record")
+            else:
+                row["status"] = "BANNED_FAMILY"
+                row["gate_reason"] = f"{ban_reason(_fam)}; {_pwhy}"
+                plog(f"{key}: live promotion refused -- {row['gate_reason']}")
+                changed = True
+                continue
         if not spec:
             plog(f"{key}: qquant PROMOTION_CANDIDATE but no exact-policy shadow_spec; refused")
             continue
@@ -1707,7 +1769,7 @@ def main() -> None:
     # or restored on them (2026-09-16).
     changed = retire_unrunnable(sleeves) or changed
     # And rows of a family the principal has banned (data/banned_families.json).
-    changed = retire_banned(sleeves) or changed
+    changed = retire_banned(sleeves, identities) or changed
 
     # WHAT THE ALLOCATOR CURRENTLY SAYS. Read ONCE per pass: the three promotion doors and the
     # reconciliation below must all decide from the same solve, or two rows written in the same
@@ -1752,12 +1814,17 @@ def main() -> None:
             from research.family_policy import ban_reason as _ban_reason
             from research.family_policy import family_banned as _family_banned
         if _family_banned(family):
-            st["status"] = "BANNED_FAMILY"
-            st["promotion_authority"] = False
-            st["gate_reason"] = _ban_reason(family)
-            plog(f"{key}: live promotion refused -- {st['gate_reason']}")
-            changed = True
-            continue
+            _ok, _pwhy = family_parole(family, identities)
+            if _ok:
+                plog(f"{key}: banned family {family!r} -- {_pwhy}; promotion proceeds on the "
+                     f"clock's own record")
+            else:
+                st["status"] = "BANNED_FAMILY"
+                st["promotion_authority"] = False
+                st["gate_reason"] = f"{_ban_reason(family)}; {_pwhy}"
+                plog(f"{key}: live promotion refused -- {st['gate_reason']}")
+                changed = True
+                continue
         gate_spec = (sym, win, cond, family, False)
         # THE TEN GATES GATE ENROLMENT, NOT PROMOTION. A clock exists only because a certificate
         # enrolled it (grandfathering ended 2026-08-26), so re-checking the authority set here
