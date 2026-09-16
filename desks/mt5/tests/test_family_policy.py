@@ -68,3 +68,48 @@ def test_the_compiler_refuses_a_banned_family(tmp_path: Path, monkeypatch) -> No
     cands, why = mcc.compile_row("edge_search", {"family": "discovered", "symbols": ["EURCHF"],
                                                  "params": {"feature": "x"}}, {"EURCHF"})
     assert cands == [] and why == "BANNED_FAMILY"
+
+
+def test_a_banned_family_is_paroled_only_by_its_pooled_forward_record(tmp_path: Path,
+                                                                       monkeypatch) -> None:
+    """Principal 2026-09-16: 'what if existing discovery sleeves actually pass?' They pass through
+    their forward clocks: pooled n >= 40 at t >= 2.5 and a positive expectancy paroles the family;
+    its rows then stay and its candidates may be promoted. Below the bar the ban holds."""
+    import decay_monitor as dm
+    monkeypatch.setattr(fp, "BANNED_FAMILIES_FILE", _ban_file(tmp_path, "discovered"))
+    monkeypatch.setattr(promoter, "SLEEVES_FILE", tmp_path / "sleeves.json")
+    shadow = tmp_path / "shadow"
+    shadow.mkdir()
+    monkeypatch.setattr(dm, "SHADOW_LEDGER_DIRS", (shadow,))
+    ids = {"AUDCAD.discovered.asia": {"family": "discovered"},
+           "EURCHF.discovered.asia": {"family": "discovered"},
+           "CHFNOK.carry.asia": {"family": "carry"}}
+    from datetime import UTC, datetime, timedelta
+    t0 = datetime.now(tz=UTC) - timedelta(days=3)
+
+    def _ledger(key: str, rs: list[float]) -> None:
+        rows = [{"entry_time": (t0 + timedelta(hours=i)).isoformat(),
+                 "exit_time": (t0 + timedelta(hours=i + 1)).isoformat(), "r_multiple": r}
+                for i, r in enumerate(rs)]
+        (shadow / f"ledger_{key.replace('.', '_')}.json").write_text(json.dumps(rows), "utf-8")
+
+    # Below the bar: 30 forward trades, however good.
+    _ledger("AUDCAD.discovered.asia", [0.6, 0.4, 0.5, 0.7, 0.3] * 3)
+    _ledger("EURCHF.discovered.asia", [0.5, 0.4, 0.6, 0.3, 0.7] * 3)
+    ok, why = promoter.family_parole("discovered", ids)
+    assert not ok and "n=30" in why and "not paroled" in why
+    rows = [{"name": "audcad_discovered_x", "status": "LIVE", "family": "discovered"}]
+    assert promoter.retire_banned(rows, ids) is True and rows[0]["status"] == "RETIRED"
+    promoter._DOOR_EVENTS.clear()
+    # At the bar: 40 forward trades, strongly positive -> paroled, rows kept.
+    _ledger("AUDCAD.discovered.asia", [0.6, 0.4, 0.5, 0.7, 0.3] * 4)
+    _ledger("EURCHF.discovered.asia", [0.5, 0.4, 0.6, 0.3, 0.7] * 4)
+    ok, why = promoter.family_parole("discovered", ids)
+    assert ok and "PAROLED" in why and "n=40" in why
+    rows = [{"name": "audcad_discovered_y", "status": "LIVE", "family": "discovered"}]
+    assert promoter.retire_banned(rows, ids) is False and rows[0]["status"] == "LIVE"
+    # A losing forward record never paroles, whatever its size.
+    _ledger("AUDCAD.discovered.asia", [-0.3, 0.1, -0.4, -0.2, -0.5] * 8)
+    _ledger("EURCHF.discovered.asia", [-0.2, -0.4, 0.1, -0.3, -0.6] * 8)
+    ok, why = promoter.family_parole("discovered", ids)
+    assert not ok
