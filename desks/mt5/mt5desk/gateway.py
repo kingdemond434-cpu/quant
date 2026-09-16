@@ -2445,9 +2445,14 @@ def resolve_family_order(st: dict, s: dict, equity: float,
     # signal's entry is sent -- so the previous signal's fill never shadows a new bar.
     _bar_min = int(_BAR_MINUTES.get(tf, 60))
     try:
-        _from = pd.Timestamp(last_bar).to_pydatetime().replace(tzinfo=None) \
-            + timedelta(minutes=_bar_min)
-        _deals = mt5.history_deals_get(_from, _from + timedelta(minutes=_bar_min)) or []
+        # EPOCH SECONDS, NEVER A DATETIME (measured 2026-09-16, CHFNOK sold twice 7 minutes
+        # apart with the witness live). The MetaTrader5 API reads a naive datetime in the BOX'S
+        # local zone (UTC+2 here) while deal times are the server's clock stamped as UTC, so an
+        # H1 window handed over as a datetime landed two hours away from the bar it named and
+        # saw nothing. The bar label is already server time stamped UTC; its epoch is the
+        # deal's own convention.
+        _from_s = int(pd.Timestamp(last_bar).timestamp()) + _bar_min * 60
+        _deals = mt5.history_deals_get(_from_s, _from_s + _bar_min * 60) or []
     except Exception:
         _deals = []                                  # UNMEASURED: the state mark still stands
     _traded = bar_already_traded(_deals, order_comment(name))
