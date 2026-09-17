@@ -374,8 +374,17 @@ def sleeve_live_n(name: str) -> int:
 
 
 def load_sleeves() -> list[dict]:
-    """Promoted sleeves from data/sleeves.json (writer: research/promoter.py)."""
-    return _core.load_sleeves(SLEEVES_FILE)
+    """Promoted sleeves from data/sleeves.json (writer: research/promoter.py), minus anything the
+    live policy refuses (`mt5desk/live_policy.py`) -- and every refusal is LOGGED, because a
+    sleeve that vanishes from a roster silently is indistinguishable from one nobody wrote.
+
+    The principal stopped the forex sleeves and the XAUUSD M15 sleeve on 2026-09-17 after they
+    had already been retired twice and come back through automatic promotion. This door is why
+    they cannot come back a third time: admission is re-checked here on every pass."""
+    sleeves, notes = _core.load_sleeves_verbose(SLEEVES_FILE)
+    for note in notes:
+        log(note)
+    return sleeves
 
 
 def allocator_heat() -> tuple[float | None, str]:

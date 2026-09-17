@@ -95,9 +95,15 @@ stopped reaching ANY organ — the prompt ratchet named all five and the finding
   information a competitor would have to pay to reconstruct — regardless of format, language, age
   or prestige. It is not a menu. A seat returning one class of artifact is under-mining its
   ground, and the narrowing is invisible from the output because what is missing was never named.
-- **NO THIRD-PARTY TOOLING.** Never install or run third-party agent tooling on desk hardware —
-  mine it as TEXT. The supply-chain rule: an AI-quant framework is the most tempting thing a
-  miner finds and the one class of find that can execute.
+- **THIRD-PARTY RESEARCH CODE IS SANDBOXED, NOT FORBIDDEN (principal 2026-09-17; this clause
+  REPLACES the blanket prohibition).** The text here read "NO THIRD-PARTY TOOLING — never install
+  or run third-party agent tooling on desk hardware; mine it as TEXT", and it is SUPERSEDED by
+  §5h: **run research code aggressively in sandboxes; never give it live authority.** The
+  supply-chain danger that wrote the old rule — an AI-quant framework is the most tempting thing a
+  miner finds and the one class of find that can execute — is answered by the sandbox law (pinned
+  commit, recorded licence, no secrets, no broker credentials, no live-order path, no canonical
+  write authority, controlled filesystem and network), never by refusing to run anything. A
+  capability with measured positive research value may NOT rest at TEXT_ONLY.
 
 A sixth, stated here for a different reason: **NEGATIVE SCREENS ARE FIRST-CLASS DELIVERABLES** —
 refutations and graded residual gaps are reported with what was actually searched, because a desk
@@ -413,6 +419,294 @@ news is a first-class event stream into the world model and the allocator, never
 bot; no stranded data. Capital is deployed whenever the posterior says deployment improves
 geometric growth, never forced into a position every second.
 
+## 5e. THE ACCESS ROUTING LAW (principal's standing order, 2026-09-17, permanent)
+
+**Mine aggressively; classify precisely; restrict only the specific use that is actually
+prohibited.** Legality is a surgical routing system sitting beside the research system, never a
+timid global filter that throws away half the internet because something looks unusual. The
+pipeline on every source is DISCOVER -> CAPTURE METADATA -> LEGAL/ACCESS CLASSIFICATION ->
+EVIDENCE CLASSIFICATION -> RESEARCH, never "looks risky -> discard".
+
+Every source carries THREE INDEPENDENT labels, never collapsed into one:
+
+- `access_label`: PUBLIC, PUBLIC_WITH_TERMS, LICENSED, OPEN_DATA, PUBLIC_ARCHIVE, PUBLIC_SOCIAL,
+  USER_SUBMITTED, ACCESS_UNCLEAR, PRIVATE, CONFIDENTIAL_MNPI, STOLEN_UNAUTHORIZED.
+- `credibility`: AUTHORITATIVE, RELIABLE, UNRELIABLE, FRINGE, CONTRADICTED, UNKNOWN.
+- `predictive_state`: UNTESTED, PREDICTIVE, NOT_PREDICTIVE, NARRATIVE_FEATURE.
+
+Behaviour by access label: a public source of questionable reliability is researchable and simply
+carries low evidence weight; PUBLIC_WITH_TERMS whose terms forbid machine extraction is reached
+through an allowed API or a manual-review path and is registered `machine_use_allowed=false`,
+never scraped and never omitted; LICENSED is used per its licence; ACCESS_UNCLEAR is QUARANTINED
+(metadata kept, content not consumed) until access rights are resolved; PRIVATE,
+CONFIDENTIAL_MNPI and STOLEN_UNAUTHORIZED never become an alpha input and are recorded as refused
+with the reason.
+
+**Legality, credibility and predictive value are independent dimensions.** An anonymous forum post
+can be perfectly lawful and unreliable; a government release can be lawful, authoritative and
+useless for alpha; a public rumour can be lawful, false as a factual claim and still predictive as
+a crowding or narrative feature. The system never says "this claim is probably false, therefore
+delete it"; it asks "can we lawfully observe it, what does it represent, and does its existence
+predict anything". Strange, low-confidence, contradictory and fringe PUBLIC information is
+preserved as an evidence object. **Do not over-normalise the world.**
+
+The hard boundary is specific and unchanged: no credential theft, no access-control bypass, no
+private or confidential data harvesting, no doxxing, no stolen datasets, and no material nonpublic
+information used for trading. Everything else is classified narrowly and exploited as far as its
+lawful use permits. Enforced by `libs/research/access_classifier.py`, the evidence router and the
+ingestion law (§5c).
+
+## 5f. THE MAXIMUM FORM (principal's standing order, 2026-09-17, permanent)
+
+Regional deep forests run in parallel with the global forest, the physical/data forest, the
+academic/code forest and the market/archaeology forest — Japan 24/7 || Korea 24/7 || China 24/7 ||
+Russia/CIS 24/7 || India || ASEAN || Oceania || Europe || North America || LATAM || MENA || Africa
+|| Global 24/7 — each a native-language research civilization with its own eleven agent roles
+(source scouts, official-data, practitioner, academic, code, archive, failure miners, mechanism
+extractors, data agents, candidate compilers, local source-ROI), all feeding ONE factory:
+
+PIT truth -> entity/source graph -> World Model -> unknown-unknown residual search ->
+representation forge -> orthogonal candidate factory -> EVIG/MCTS -> gauntlet -> Forward Lab ->
+live E[log W] -> delayed credit -> compute/information/capital reallocation -> repeat 24/7.
+
+The thirteen final rules, each binding:
+
+1. No shallow country coverage. 2. No stranded data. 3. No duplicate mechanism inflation.
+4. No fixed source list. 5. No English-only bias. 6. No static research agenda. 7. Every region
+continuously discovers new sources. 8. Every source recursively expands into papers, datasets,
+authors, apps, code, forums and archives. 9. Every unexplained market residual can trigger a new
+information hunt. 10. Every mechanism competes for compute and statistical budget on future
+portfolio value. 11. Every survivor sends delayed credit back to its source, region,
+representation and scientist. 12. Every failed family becomes negative knowledge so the system
+stops wasting compute. 13. Every new future technique plugs into the existing architecture rather
+than requiring a new top-level module.
+
+Regions and sources compete for resources, two-sided and never to zero:
+
+    ROI_region = (novel mechanisms + useful datasets + survivors + dE[log W]) /
+                 (compute + API + trial budget)
+
+A region suddenly producing useful candidates gets more workers automatically; a low-yield region
+gets fewer routine workers and ALWAYS keeps a source scout so it can detect when conditions
+change. The same at source level: a forum with no useful hypothesis in six months has its budget
+reduced; a dataset with three independent forward survivors has its budget expanded.
+
+The coverage tensors are authoritative. WORLD: country x sector x information type x mechanism x
+representation x asset x session x regime x horizon x execution, states UNOBSERVED -> SOURCE_HUNT
+-> INGESTED -> REPRESENTED -> CANDIDATES -> TESTING -> FAILED/FORWARD -> CERTIFIED -> LIVE ->
+DECAYED. FOREST: country x language x source class x sector x mechanism x asset transmission x
+freshness x accessibility, states UNSEEN -> SOURCE_HUNT -> DISCOVERED -> VERIFIED -> INGESTED ->
+REPRESENTED -> CANDIDATES -> TESTED -> FORWARD -> LIVE/FAILED. The ten source classes are exactly:
+official, institutional, academic, practitioner, retail_ecology, app_ecosystem, media, archive,
+physical_economy, source_graph. **No country is marked covered because five obvious sources were
+added**: coverage rises only when every layer that exists for that country is mapped AND automatic
+discovery keeps adding new sources. An untested cell such as "Indonesia nickel exports x China
+industrial cycle x AUD x Asian session x risk-off" is an explicit research frontier row, not a
+blind spot nobody knows exists.
+
+**Architecture maximum: yes. Implementation saturation: not yet.** Improvement from here is more
+sources, deeper local forests, better PIT history, better representations, better models, more
+compute, better execution, more forward evidence and new science — never another top-level box.
+
+## 5g. THE FRONTIER CIVILIZATION LAW (principal's standing order, 2026-09-17, permanent)
+
+Every publicly accessible quant system, research organisation, researcher, repository, paper,
+dataset and research ecosystem is a potential information mine. The desk recursively exploits each
+one to its maximum economically useful depth, extracts every reproducible capability and data
+axis, creates the largest statistically defensible set of genuinely orthogonal descendants, routes
+all candidates into the one canonical gauntlet, learns from failures and survivors, and
+continuously allocates more search resources toward source lineages that produce incremental
+forward/live E[log W]. **No useful discovery may terminate in prose, no dataset may remain
+stranded, no duplicate may masquerade as breadth, and no named seed list may become the boundary
+of the search universe.**
+
+Named entities are SEEDS, never an ontology, a whitelist or a ceiling. The machine must itself
+discover project -> authors -> other projects -> papers -> citations -> datasets -> code -> forks
+-> issues -> contributors -> communities -> new entities, and spawn new civilizations from
+citation clusters, contributor graphs, stars and forks, conference co-occurrence, package
+dependencies, competition winners, benchmark leaders, unusual public performance evidence,
+high-ROI authors and recurring mentions by independent ecosystems. Recursion depth is bounded by
+marginal value of information, never by a crawler constant. Prestige changes search priority and
+never the verdict: **source reputation is not alpha evidence.** Historical archaeology is
+mandatory (oldest versions, abandoned branches, deprecated modules, closed issues, failed
+experiments, benchmark revisions, renamed repositories, lawfully archived documentation, old
+talks, prior papers, unsuccessful forks, design reversals) because a removed feature says what
+somebody tried and learned not to do, which is negative knowledge.
+
+Candidate conservation holds across the whole frontier:
+
+    DISCOVERED = DEDUPLICATED + TESTED + WAITING + BLOCKED + REJECTED + NONTESTABLE
+
+No queue timeout may silently delete a candidate; backpressure may delay experimentation, never
+erase research history. Deduplication runs BEFORE compute — canonical source, content hash,
+repo/commit lineage, AST similarity, semantic mechanism similarity, dataset overlap, formula
+similarity, and return behaviour only as a later check — so a repost, a fork, a paraphrase and a
+video explanation of one mechanism are one parent lineage, not five discoveries.
+
+A source is never DONE_FOREVER. It reaches CURRENT_PUBLIC_FRONTIER_EXHAUSTED only when all twelve
+conditions hold: (1) all material public surfaces recursively mapped; (2) papers, repos, issues,
+commits, forks and datasets represented; (3) every distinct capability has a disposition; (4)
+every useful dataset or API has a downstream route; (5) every transferable mechanism has generated
+candidate descendants; (6) cross-system combinations considered; (7) failures entered negative
+knowledge; (8) candidate accounting balances; (9) valuable candidates reached the canonical
+gauntlet; (10) research-process improvements entered Meta-R&D; (11) downstream forward/live
+outcomes credited or debited the source; (12) the source remains on delta watch. A new commit
+tomorrow reopens it.
+
+## 5h. THE OPEN-SOURCE RESEARCH FEDERATION LAW (principal 2026-09-17, permanent; supersedes NO
+THIRD-PARTY TOOLING)
+
+Every lawfully usable, security-qualified, positive-ROI public or open-source research system the
+desk discovers — autonomous research agents, alpha-mining frameworks, mathematical discovery
+engines, representation-learning systems, experiment schedulers, evolutionary search systems,
+causal-discovery systems, execution-research engines, portfolio-research systems, data-discovery
+tools, academic implementations and every future equivalent — receives EXACTLY ONE disposition:
+
+- **DIRECT** — execute the upstream research engine itself in an isolated research sandbox when
+  its licence, dependencies, security properties and interface permit.
+- **WRAPPED** — keep its research and search machinery, adapt its inputs and outputs to the desk's
+  canonical contracts.
+- **REBUILT** — independently reproduce the economically useful mechanism inside canonical
+  infrastructure when direct execution is unsuitable.
+- **REJECTED_WITH_EVIDENCE** — licence, security, incompatibility or measured negative ROI, with
+  the evidence and an explicit reopening condition.
+- **DUPLICATE** — collapsed into an existing lineage, contributing only its unique components.
+
+**TEXT_ONLY is not an acceptable resting state** for a capability whose measured expected research
+value is positive. "Mine it" and "use it" are two channels, and both are required: MINE THE SYSTEM
+(repo -> commits -> issues -> PRs -> forks -> contributors -> their repos -> papers -> citations
+-> datasets -> dependencies -> new systems) AND USE THE SYSTEM (as a running research worker).
+
+The objective is not repository collection. It is maximum economically useful orthogonal candidate
+breadth + novel mechanisms + novel representations + data axes + research-process improvements +
+forward survivor production. Every donor idea becomes a typed parent genome
+g = (D, R, M, S, T, H, E, P) — data, representation, mechanism, state, target, horizon, execution,
+portfolio context — and descendants are generated across instrument x session x regime x
+representation x horizon x direction x execution x interaction, scheduled by
+
+    V(a) = P(survive|D) * E[dG_portfolio|survive] * I(a) * N(a) * O(a)
+           / (C_compute + C_data + C_trial + C_delay)
+
+never by brute Cartesian expansion. **Orthogonality is the objective, not candidate count**:
+independence is measured across return, tail, mechanism, information source, geography, session,
+horizon, macro factor, liquidity, execution dependency and failure mode, and the desk maximises
+the number of EFFECTIVE INDEPENDENT opportunities. Twenty near-identical formulas are one
+discovery.
+
+**An external engine is a researcher, never a validator and never a capital authority.** Its own
+backtester, Sharpe, benchmark, leaderboard result, confidence score, reviewer or "survivor" label
+has ZERO promotion authority. The only exit from a sandbox is an ExternalResearchPacket carrying
+candidates, data, mechanisms and representations with full provenance and the real search burden;
+it cannot output SURVIVOR, PROMOTE, TRADE or POSITION_SIZE. Every packet terminates in: canonical
+registry -> trial census -> dedup/orthogonality -> EVIG/MCTS scheduling -> canonical gauntlet ->
+Forward Lab -> portfolio contribution -> delayed credit. Traded candidates still terminate in the
+MT5/Fusion universe (§1); global ingestion is unrestricted, the traded universe is not.
+
+**THE EXTERNAL CODE SANDBOX LAW.** Third-party and open-source research code may execute only
+inside isolated research environments with: no broker credentials, no production secrets, no
+direct live-order route, no write authority over canonical evidence, no authority to merge
+production code, and controlled filesystem and network permissions. Dependencies, source commit or
+version, licence, configuration and input datasets are recorded. Outputs are UNTRUSTED research
+donations until independently ingested and verified. Third-party code never executes inside the
+live trading authority boundary merely because it is open source.
+
+Systems compete permanently for compute:
+
+    ROI_s = (E[future independent dG] + information gain) /
+            (compute + data + engineering + trial budget)
+
+A famous framework producing nothing useful falls to lightweight delta watching; an obscure
+project producing useful independent descendants takes its budget. No prestige budget, no
+permanent entitlement, and no frontier is ever switched off — only reduced to maintenance
+scanning. After the first exhaustive pass, delta scanning by hash (repos, commits, releases, docs,
+issues, papers, websites, datasets) keeps unchanged sources at near-zero compute and re-analyses
+only what changed, which is what makes thousands of watched sources affordable.
+
+The bootstrap roster (`libs/research/external_federation.py`) names the systems in force today —
+RD-Agent(Q), Qlib, AgonAlpha, QuantaAlpha, AlphaAgent, AlphaCrafter, Hubble, AutoHypothesis,
+inalpha, NexQuant, TradingAgents and its KR/CN/A-share regional branches, VerumTrade,
+QuantHarness, AlphaQuanter, ContestTrade, QuantAgent, ATLAS, AI-Trader, AutoHedge,
+ai-hedge-fund, ValueCell, FinRobot, Dexter, FinGPT, Kronos, FinRL/FinRL-X, LEAN, NautilusTrader,
+Hummingbot, vn.py, AKShare, TuShare, OpenBB, OpenFR, Quanti, QuantMind, AI Quant Agent,
+AStockArena, ai-berkshire, zvt, QuantsPlaybook and the public research lineages (RohOnChain,
+L1vsun, bl888m; public artefacts only, never their feeds) — and it is a BOOTSTRAP SET, never a
+whitelist. Admission of a newly discovered system is mechanical:
+EV(new capability) - EV(duplication) - integration cost > 0, and it must introduce at least one
+materially new axis (data, representation, hypothesis language, search algorithm, mathematical
+method, region or language, causal machinery, execution method, adversarial verifier, research
+workflow). "Lawfully inspect, fork where the licence permits, independently reproduce, extract
+public mechanisms" is the whole of it; private or proprietary material is never taken.
+
+Machine enforcement (`scripts/check_external_federation.py`, in the law gate) turns the desk RED
+when: an eligible positive-ROI system has no disposition; a DIRECT or WRAPPED worker has no
+schedule; a process lives while its progress watermark stalls; output exists with no consumer;
+external candidates bypass trial accounting; discovered data is ingested and stranded; the
+lineage from external system to candidate to gauntlet breaks; an upstream agent keeps its own
+authoritative survivor registry, backtester or capital authority; third-party code touches broker
+credentials or live authority; a named seed is declared integrated with no observed output; a
+source list is treated as exhaustive; a regional forest stops source discovery; or a delta scan
+goes stale. A worker counts as operational only when REGISTERED and SANDBOXED and SCHEDULED and
+EXECUTED and PROGRESSED and PRODUCED and CONSUMED.
+
+## 5i. THE 24/7 AUTONOMOUS RESEARCH LAW (principal 2026-09-17, permanent)
+
+**The research factory never goes off duty** — not at weekends, not at market closures, not
+overnight, not in quiet news periods, and never because a frontier "found nothing new". Every
+cycle must discover, ingest, represent, generate, falsify, validate, forward-test, attribute,
+repair, deepen, rediscover or improve the research process. When one frontier temporarily yields
+no novelty, resources migrate immediately to the highest-EV unresolved frontier, backlog,
+unknown-unknown search, data-exploitation gap, wiring defect or Meta-R&D experiment.
+
+24/7 does not mean every expensive model runs flat out every second — that would lower total
+research throughput. The control plane runs continuously and EVIG scheduling puts the right
+researchers at the right intensity: cheap scouts monitoring thousands of sources; regional deep
+forests operating continuously; delta detectors watching known projects; high-value external
+workers generating experiments; expensive mathematical and language scientists invoked when
+expected information value justifies them; gauntlet workers draining the candidate queue;
+negative-knowledge workers deduplicating dead ground; world-model and data pipelines updating; the
+reconciler keeping the whole organism alive. With markets closed, capacity shifts to discovery,
+archaeology, coding, simulation, data, falsification and Meta-R&D; with markets open, all of that
+plus forward observations, live state, execution science and attribution. The health criterion is
+RESEARCH_IDLE = FALSE unless every immediately feasible action has lower marginal value than its
+compute cost, in which case the desk drops to cheap discovery and delta-watch mode rather than
+literally doing nothing. Every eligible DIRECT, WRAPPED or REBUILT system participates in this
+federation according to dynamic expected research value; new systems are continuously discovered
+and admitted; existing ones are continuously delta-scanned.
+
+## 5j. THE LIVE SLEEVE POLICY (principal's order, 2026-09-17, live message)
+
+**Forex sleeves and the XAUUSD M15 sleeve are disabled in the live account.** The principal's
+words: "the forex sleeves still didn't stop they keep firing pls disable all of them in my current
+live account its critical they're losing me money", and "the bad m15 sleeve of gold is too".
+
+MEASURED THE SAME HOUR on account 495044 (EUR), trailing three days: 258 forex deals for
+**-73.24 EUR** — EURCHF -43.54 over 100 deals, CHFNOK -10.38, AUDCAD -5.67, USDCHF -5.30,
+EURGBP -5.19, and eight more pairs negative. The only positive symbol on the account was XAUUSD,
+at +24.94.
+
+WHY IT NEEDED A LAW AND NOT A THIRD RETIREMENT. Those rows had already been retired twice — by
+the decay monitor on the pooled bar, and again by the `discovered` family ban — and they came
+back both times, because AUTOMATIC PROMOTION (principal, 2026-09-04) writes a matured clock's row
+into the live account the same hour, with no waiting and no permission. A rule that deletes rows
+loses that race forever. The policy is therefore an ADMISSION rule at both doors:
+`mt5desk/live_policy.py` is read by `decision_core.load_sleeves` (the gateway will not trade a
+refused row even if one is written) and by `promoter.save_sleeves` (the only writer will not write
+one), and by the E8 executor for the prop account. An absent or unreadable policy file falls back
+to the ban, never to permission.
+
+THIS IS NOT A REDUCTION OF AGGRESSIVENESS UNDER GROWTH GOVERNANCE (§2a, docs/GROWTH_GOVERNANCE.md).
+It is the principal's own instruction about which mechanisms may hold his capital, with the loss
+that caused it measured above — the same class of act as the `discovered` ban and the M15 removal,
+both of which he also ordered. Heat, the 20% floor, the 0.02-lot gold floor, the daily-loss
+parameters and the allocator's fractions are untouched, and the freed heat goes to the XAUUSD
+book rather than sitting idle. A session may widen this ONLY on the principal's word, recorded in
+`desks/mt5/data/live_sleeve_policy.json` with an author and a date, or on evidence he has
+accepted. No session widens it because the book looks narrow.
+
+Research is NOT closed by this: forex mechanisms keep being mined, tested in the gauntlet and run
+on forward clocks, and their evidence keeps accruing. What they may not do is take live capital
+until the principal says otherwise.
+
 ## 6. OPERATING LAWS (every session, human or machine)
 
 - **Gates before any push:** `./ops/gates.sh` (ruff, pytest --co, mypy); `--full` adds suite +
@@ -441,6 +735,33 @@ geometric growth, never forced into a position every second.
   a clock that is not live is a defect the fixer repairs, never a report. Fixers verify by
   observation (an artifact written, a process alive, a clock row advancing), never by parsing
   a label. Lessons L0362-L0364.
+
+- **WIRED IS ONE LAW, AND THE CONTROL PLANE OWNS IT (principal 2026-09-17, permanent).** The desk
+  had several working definitions of wired — imported, scheduled, started, returned zero, left a
+  file — and that is why stale, silent and unconsumed organs kept reappearing. One definition
+  binds everything now:
+
+      WIRED = scheduled AND executed AND progressed AND produced owned output
+              AND consumer acknowledged it
+      CLOSED LOOP = every required edge's producer -> consumer observed inside valid
+                    freshness leases
+
+  DESIRED STATE - OBSERVED STATE = RECONCILIATION WORK. Every executable organ carries a
+  ComponentSpec (inputs, outputs, consumers, dependencies, cadence, maximum silence, progress
+  metric, production arguments, artifact schema, owner, restart action, timeout, criticality,
+  resource budget, code and config identity) and an executable without one fails CI. Health is
+  proven by PROGRESS WATERMARKS, never by a live PID; freshness is a LEASE with a TTL, never a
+  file mtime; every repair carries a POSTCONDITION and a return code of zero is never proof;
+  lineage is proven by producer run id and consumer acknowledgement, never inferred from
+  timestamps; schedules are GENERATED from the registry so "built but never put on a clock"
+  cannot happen; every controller cycle has an immutable epoch id and a stale report can never
+  make a failed pass look green; required failures are fail-closed; recurring defects become
+  invariants and tests, not another fixer. The state model is DECLARED -> STARTING -> HEALTHY ->
+  DEGRADED -> STALE -> STALLED -> BROKEN -> REPAIRING -> HEALTHY, or -> QUARANTINED -> RETIRED,
+  and only the external reconciler may assign HEALTHY: a component cannot certify itself. Stop
+  adding independent fixers; the clock fixer is an actuator underneath the reconciler. The
+  objectives are P(failure exists and the desk does not know) -> 0 and
+  detection time + repair time <= a published SLA.
 
 ## 7. ENFORCEMENT WIRING (what makes this file operative rather than decorative)
 
