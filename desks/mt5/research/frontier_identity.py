@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from typing import Any
 
 #: The chart every historical cell was hunted on, and the one whose name stays unwritten.
 #:
@@ -22,7 +23,7 @@ import json
 REFERENCE_TIMEFRAME = "H1"
 
 
-def timeframe_of(cell: dict) -> str:
+def timeframe_of(cell: dict[str, Any]) -> str:
     """The chart a cell is hunted on: its own `timeframe`, its params', or H1 by default."""
     for source in (cell, cell.get("params") or {}):
         if isinstance(source, dict) and source.get("timeframe"):
@@ -30,12 +31,12 @@ def timeframe_of(cell: dict) -> str:
     return REFERENCE_TIMEFRAME
 
 
-def _tf_suffix(cell: dict) -> str:
+def _tf_suffix(cell: dict[str, Any]) -> str:
     tf = timeframe_of(cell)
     return "" if tf == REFERENCE_TIMEFRAME else f"@{tf}"
 
 
-def cell_id(cell: dict) -> str:
+def cell_id(cell: dict[str, Any]) -> str:
     """Executable identity; arbitrary DSL parameters must never collapse onto rr=?/wb=? IDs."""
     params = dict(cell.get("params") or {})
     # THE LEGACY SHORT FORM IS ONLY SAFE WHEN rr/wait_bars ARE THE WHOLE PARAMETER SET.
@@ -64,7 +65,7 @@ def cell_id(cell: dict) -> str:
     return f"{cell['sym']}{tf}.{cell['family']}.p={digest}"
 
 
-def economic_prior(cell: dict) -> dict:
+def economic_prior(cell: dict[str, Any]) -> dict[str, Any]:
     """Fail closed for unconstrained statistical finds; named mechanisms remain hypotheses."""
     status = str(cell.get("mechanism_status") or "")
     if not status:

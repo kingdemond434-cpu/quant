@@ -179,7 +179,10 @@ LEG_LAYER: dict[str, str] = {
     "gauntlet_backpressure": "meta", "miner_specialisation": "meta",
     "moat_collectors": "information", "source_frontier": "information",
     "scout_swarm": "information", "actor_atlas": "information",
-    "netting_report": "execution",
+    "netting_report": "execution", "execution_alpha": "execution",
+    "paradigm_router": "meta", "meta_controller": "meta", "lead_replication": "information",
+    "data_scout": "information", "japan_department": "information",
+    "global_research_os": "information",
     # sizing: how much
     "capacity": "sizing", "ensemble_optimizer": "sizing",
     # portfolio: how the book is composed

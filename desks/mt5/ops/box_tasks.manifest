@@ -83,6 +83,18 @@ TASK name="MT5-QQuantGatesCertify" trigger="every 1 hour, at :27" runs="desks/mt
 
 # Declared here because their installers are in the repo and were read to write these lines.
 TASK name="MT5-Hourly"             trigger="every 1 hour (keep-alive of the 24/7 discovery resident)" runs="desks/mt5/research/department_resident.py" installer="desks/mt5/scripts/MT5Hourly.cmd" lane="research"
+# THE MOAT SWARMS (M19, principal 2026-09-17): EXPLOIT / EXPLORE / RESURRECT run 100% concurrently
+# as 24/7 residents (moat_swarms.py --swarm <name>: singleton lock, engines as children under
+# budgets by measured generator yield with floors, discovery_compiler last). Unlimited limit,
+# IgnoreNew, SYSTEM; the trigger is a keep-alive.
+TASK name="MT5-Moat-Exploit" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/moat_swarms.py" installer="NONE" lane="research"
+TASK name="MT5-Moat-Explore" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/moat_swarms.py" installer="NONE" lane="research"
+TASK name="MT5-Moat-Resurrect" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/moat_swarms.py" installer="NONE" lane="research"
+# THE REGION DEPARTMENTS (principal 2026-09-17): Japan on its own hourly resident (HOURLY_PLAN=
+# dept:japan) and the global research OS over every country lab (dept:regions), both 24/7
+# residents of department_resident.py like the other nine.
+TASK name="MT5-Dept-Japan" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
+TASK name="MT5-Dept-Regions" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
 TASK name="MT5-Deepening"          trigger="every 1 hour"  runs="desks/mt5/research/deepening_worker.py"  installer="desks/mt5/scripts/install_deepening_task.ps1" lane="research"
 
 # ------------------------------------------------------------------------------- the data moat
