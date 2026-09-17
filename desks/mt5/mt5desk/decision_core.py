@@ -1400,14 +1400,36 @@ def cap_by_heat(sleeves: list[dict], equity: float,
 # ---------------------------------------------------------------------------- roster admission
 
 def load_sleeves(path: Path) -> list[dict]:
-    """Promoted sleeves from a sleeves.json at `path` (writer: research/promoter.py), LIVE only."""
+    """Promoted sleeves from a sleeves.json at `path` (writer: research/promoter.py), LIVE only
+    AND admitted by the live policy (`mt5desk/live_policy.py`).
+
+    THE SECOND HALF IS WHY THE FOREX SLEEVES KEPT FIRING AFTER THEY WERE RETIRED (principal,
+    2026-09-17). Retirement edits rows; automatic promotion writes new ones every hour a clock
+    matures, so a row-level fix loses that race forever. Admission is checked HERE, at the
+    gateway's own door, so a refused sleeve is not traded even if something upstream writes it
+    back. Refusals are returned to the caller's log through `load_sleeves_verbose`.
+    """
+    return load_sleeves_verbose(path)[0]
+
+
+def load_sleeves_verbose(path: Path) -> tuple[list[dict], list[str]]:
+    """(admitted LIVE sleeves, refusal notes). The gateway logs the notes every pass, because a
+    sleeve that silently disappears from a roster is indistinguishable from one nobody wrote."""
     if not path.exists():
-        return []
+        return [], []
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
-        return [s for s in data.get("sleeves", []) if s.get("status") == "LIVE"]
+        live = [s for s in data.get("sleeves", []) if s.get("status") == "LIVE"]
     except Exception:
-        return []
+        return [], []
+    try:
+        from mt5desk.live_policy import admit
+    except ImportError:                                    # pragma: no cover - box path only
+        return live, []
+    keep, refused = admit(live)
+    notes = [f"LIVE POLICY refused {r.get('name') or r.get('symbol')}: {why}"
+             for r, why in refused]
+    return keep, notes
 
 
 def load_retired_gold(path: Path) -> dict:

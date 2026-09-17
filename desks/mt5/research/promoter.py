@@ -239,8 +239,39 @@ def artifact_of(row: dict) -> dict:
                 "problems": [f"artifact unavailable: {type(exc).__name__}: {exc}"]}
 
 
+def _apply_live_policy(rows: list[dict]) -> int:
+    """RETIRE every row the live policy refuses, in place, with the reason on the row.
+
+    The principal stopped the forex sleeves and the XAUUSD M15 sleeve on 2026-09-17 and they had
+    come back twice before, because automatic promotion re-writes a matured clock's row the same
+    hour. The policy is applied HERE, in the only writer of sleeves.json, so the next wave cannot
+    restore them; the gateway checks the same policy again at its own door.
+    """
+    try:
+        from mt5desk.live_policy import policy, refuse
+    except ImportError:                                    # pragma: no cover - box path only
+        return 0
+    pol = policy()
+    stamp = datetime.now(tz=UTC).isoformat(timespec="seconds")
+    n = 0
+    for row in rows:
+        if str(row.get("status") or "").upper() not in ("LIVE", "STANDBY"):
+            continue
+        why = refuse(row, pol)
+        if not why:
+            continue
+        was = str(row.get("status") or "")
+        row.update({"status": "RETIRED", "risk_frac": 0.0, "risk_frac_source": "none",
+                    "retired_at": stamp, "retire_reason": why,
+                    "retired_by": "live_policy"})
+        plog(f"LIVE POLICY retired {row.get('name')} (was {was}): {why}")
+        n += 1
+    return n
+
+
 def save_sleeves(sleeves: list[dict]) -> None:
     SLEEVES_FILE.parent.mkdir(parents=True, exist_ok=True)
+    _apply_live_policy(sleeves)
     kept: list[dict] = []
     for row in sleeves:
         if str(row.get("status") or "").upper() == "LIVE":
