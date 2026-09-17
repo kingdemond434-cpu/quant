@@ -132,6 +132,10 @@ TASK name="E8-Gold" trigger="every 5 minutes" runs="desks/mt5/prop/e8_gold.py" i
 TASK name="MT5-GatewayResident" trigger="every 10 minutes" runs="desks/mt5/research/gateway_resident.py" installer="NONE" lane="ops"
 TASK name="MT5-AdoptRelease" trigger="every 1 hour, at :12" runs="desks/mt5/scripts/Adopt-And-Seal.ps1" installer="desks/mt5/scripts/install_adopt_release_task.ps1" lane="ops"
 TASK name="MT5-IdentityHealer" trigger="every 30 minutes" runs="desks/mt5/scripts/heal_identity_broken_clocks.py" installer="NONE" lane="research"
+# THE CLOCK FIXER (principal 2026-09-17, permanent): every fifteen minutes every certificate and
+# every stopped clock gets a live clock and every dead resident is restarted; verification by
+# observation. SYSTEM, PT12M limit, IgnoreNew.
+TASK name="MT5-ClockFixer" trigger="every 15 minutes" runs="desks/mt5/research/clock_fixer.py" installer="NONE" lane="research"
 TASK name="MT5-Daily" trigger="daily 23:50" runs="desks/mt5/research/daily_cycle.py" installer="NONE" lane="research"
 TASK name="MT5-ForwardReconcile" trigger="daily 04:00" runs="desks/mt5/research/forward_reconcile.py" installer="NONE" lane="research"
 TASK name="MT5-CEODocket" trigger="every 1 hour, at :10" runs="ops/run_ceo_docket.cmd" installer="NONE" lane="research"

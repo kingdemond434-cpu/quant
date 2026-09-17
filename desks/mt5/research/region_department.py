@@ -65,6 +65,9 @@ from libs.research import region_mandate as RM  # noqa: E402
 
 #: Where a region package lives. Module-level so a test can plant one in tmp_path.
 PACKAGE_ROOT: Path = BASE / "research"
+#: A region whose natural package name would shadow an existing package (desks/mt5/macro is
+#: the macro allocator) lives under another directory; the region id stays what the mandate says.
+REGION_PACKAGES: dict[str, str] = {"macro": "macro_region"}
 REPORTS = BASE / "reports"
 DATA = BASE / "data"
 REGIONS = DATA / "regions"
@@ -165,7 +168,7 @@ MinerFn = Callable[["Ctx"], Mapping[str, Any]]
 
 def load_region(region: str) -> tuple[RM.Mandate, dict[str, MinerFn]]:
     """The region's mandate and miners, or RegionMissing naming the first thing that is absent."""
-    pkg = Path(PACKAGE_ROOT) / region
+    pkg = Path(PACKAGE_ROOT) / REGION_PACKAGES.get(region, region)
     if not pkg.is_dir():
         raise RegionMissing(f"no region package at {pkg}: a region is a directory holding "
                             f"mandate.py (exposing MANDATE) and miners.py (exposing MINERS)")

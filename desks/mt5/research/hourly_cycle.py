@@ -749,7 +749,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "weak_signals", "edges_macro_fusion_sweep", "strategy_paths",
                      "counterfactual_world", "opportunity_forecast", "forecast_contract",
                      "exposure_decomposition", "event_response_atlas", "causal_lab",
-                     "world_lab"), "macro"),
+                     "world_lab", "macro_department"), "macro"),
     # execution: the execution research command
     **dict.fromkeys(("execution_twin", "entry_timing", "cost_to_edge", "exit_study",
                      "execution_resolver", "netting_report", "execution_alpha"), "execution"),
@@ -2703,6 +2703,13 @@ def main() -> None:
     gro = _costed("global_research_os", lambda: _producer("global_research_os",
                                                            "research/global_research_os.py",
                                                            "--once", "--budget-s", "3000"))
+    # THE MACRO RESEARCH DIVISION as a region instance (the Japan template for global macro):
+    # nineteen miners over G10 banks, releases, positioning, rates, auctions, interventions,
+    # propagation, fixings, commodity fundamentals, risk regimes; hourly on the macro resident.
+    mcd = _costed("macro_department", lambda: _producer("macro_department",
+                                                         "research/region_department.py",
+                                                         "--region", "macro", "--once",
+                                                         "--budget-s", "1800"))
     # EVERY BUILD ON A CLOCK: the auto-clocked organs of this plan (data/auto_legs.json).
     auto = run_auto_legs()
     sw = _costed("sweep", sweep)
@@ -3074,6 +3081,7 @@ def main() -> None:
                     "actor_atlas": aat, "netting_report": ntr, "execution_alpha": exa,
                     "paradigm_router": prr, "meta_controller": mtc, "lead_replication": lrp,
                     "data_scout": dsc2, "japan_department": jpd, "global_research_os": gro,
+                    "macro_department": mcd,
                     "probation": prb, "standing_questions": sqs, "exposure_decomposition": exd,
                     "auto_legs": auto,
                     "sweep": sw, "compile": cc,

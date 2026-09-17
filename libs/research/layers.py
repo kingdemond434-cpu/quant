@@ -182,7 +182,7 @@ LEG_LAYER: dict[str, str] = {
     "netting_report": "execution", "execution_alpha": "execution",
     "paradigm_router": "meta", "meta_controller": "meta", "lead_replication": "information",
     "data_scout": "information", "japan_department": "information",
-    "global_research_os": "information",
+    "global_research_os": "information", "macro_department": "information",
     # sizing: how much
     "capacity": "sizing", "ensemble_optimizer": "sizing",
     # portfolio: how the book is composed

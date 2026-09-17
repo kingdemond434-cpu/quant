@@ -1972,15 +1972,19 @@
    "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "One sweep a day searches the residual of the LIVE BOOK, not only of the peer panel (MEASURED)"
+    "desks/mt5/research/macro_region/mandate.py",
+    "desks/mt5/research/macro_region/miners.py",
+    "desks/mt5/research/macro_region/intelligence.py",
+    "desks/mt5/tests/test_macro_region_miners.py",
+    "desks/mt5/research/region_department.py"
    ],
-   "scheduled_by": "hourly_cycle:daily",
-   "artifact": "desks/mt5/reports/RESIDUAL_SWEEP.json",
-   "consumer": "desks/mt5/research/miner_candidate_compiler.py (factor_residual rows); desks/mt5/research/merge_hypotheses.py (orthogonal_candidates); external_gauntlet",
-   "gap": "",
-   "next_step": "Add a driver set built from the allocator's sleeve-return matrix (reports/pf_allocation.json daily R) as an extra `DriverSet` inside desks/mt5/research/factor_residual_engine.py `run()`, so one sweep per day searches the residual of the live book rather than only of the peer panel.",
+   "scheduled_by": "hourly_cycle:macro_department (macro department resident)",
+   "artifact": "desks/mt5/reports/REGION_MACRO.json",
+   "consumer": "region_department --region macro; the world model; the compiler",
+   "gap": "LANDED 2026-09-17: 23 actors, 15 domains, 19 miners, 28 datasets, 8 languages; the surprise engine (actual minus expected with matched-day controls, joint OLS on surprise and actual); on the box: COT, fixing, risk regime, propagation, commodity fundamentals and auctions run; rates/curve UNMEASURED because the FRED axis holds 0 series (7 network failures on 2026-09-12); no consensus/actual store yet for decisions and releases.",
+   "next_step": "repair the FRED axis on the box; wire a consensus/actual capture (the browser-agent event scraper, W21)",
    "landed": [
-    "d1538c6a"
+    "macro_region 2026-09-17"
    ]
   },
   {
@@ -5260,6 +5264,28 @@
    "gap": "not started",
    "next_step": "build the browser-agent event scraper (lawful pages only) and the trend core family + its certificate path",
    "landed": []
+  },
+  {
+   "id": "W22",
+   "domain": "W",
+   "phase": "W",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "The fifteen-minute clock fixer: every certificate and every stopped clock gets a live clock, every dead resident is restarted through its keep-alive, the healers (identity, orphaned clocks, silent demotions, wiring, revive, enrolment) run time-boxed, verification by observation",
+   "evidence": [
+    "desks/mt5/research/clock_fixer.py",
+    "desks/mt5/tests/test_clock_fixer.py",
+    "desks/mt5/ops/box_tasks.manifest",
+    "docs/LAWS.md"
+   ],
+   "scheduled_by": "MT5-ClockFixer (every 15 minutes)",
+   "artifact": "desks/mt5/reports/CLOCK_FIXER.json",
+   "consumer": "the residents (restarted), the forward lane (enrolment), the wiring census; data/clock_fixer.jsonl",
+   "gap": "LANDED 2026-09-17: LAWS.md 7 wiring-and-clocks law; lessons L0362-L0364; box registration follows the ship.",
+   "next_step": "register MT5-ClockFixer on the box; watch its first passes",
+   "landed": [
+    "clock_fixer 2026-09-17"
+   ]
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."
