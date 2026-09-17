@@ -18,7 +18,14 @@
   "Q": "The open-ended Quant Scientist (principal, 2026-09-16): self-evolving research OS behind an immutable constitution, co-evolving evaluators behind a sealed anchor, program evolution over research algorithms, world-model lab, synthetic regimes, causal discovery lab, value-of-data acquisition, one typed research API, Quant Co-Scientist, evolvable ontology, unexplained-residual queue, meta research allocator; plus the donor mechanisms: AgonAlpha blind reviewer, GoAnt quality-diversity frontier, Agora evaluator lab, AI-Scientist experiment tree, AlphaCrafter state-conditioned alpha, FactorMiner positive/negative memory",
   "W": "The Global Autonomous Quant Intelligence Organization (principal, 2026-09-16): six organisations in one system -- Global Intelligence Agency, Quant Science Lab, Alpha Search Supercomputer, Adversarial Evidence Lab, Portfolio & Execution Lab, Meta-Research Lab -- sharing one lake, one ontology, one memory, one gauntlet, one live truth; built in the order P0 production truth -> P1 Global Intelligence OS -> P2 knowledge graph + canonical mechanisms -> P3 semantic frontier + unseen-frontier estimator -> P4 cheap scouts -> P5 scientist swarm -> P6 diverse search algorithms -> P7 PIT macro/cross-asset world model -> P8 residual/forced-flow/event/microstructure labs -> P9 artifact-level replication -> P10 forward evidence allocator -> P11 posterior E[log W] allocator -> P12 self-improving Research OS -> P13 proprietary-data flywheel",
   "M": "The moat as a second full-time alpha factory (principal 2026-09-17): one canonical registry, the discovery-to-cell compiler with conversion-debt accounting, the eight internal exploitation engines, the intelligence refinery (scouts, claims, mechanisms, source ROI, frontier), the daily research OS with module rent and a complexity budget",
-  "R": "The 2026-09-17 review: factor-rank breadth, netting, anytime-valid forward monitoring, a deciding research allocator; four machines held as specs with unblock triggers"
+  "R": "The 2026-09-17 review: factor-rank breadth, netting, anytime-valid forward monitoring, a deciding research allocator; four machines held as specs with unblock triggers",
+  "G": "The global native-market research federation (principal 2026-09-17): global research OS -> regional commands -> country labs -> local mechanism departments -> the cell compiler -> one gauntlet; transmission and analogue machinery; every country at Japan's depth with its own mechanics",
+  "K": "The Korea research civilization (principal 2026-09-17): twelve agents, the structured data plane (KRX, Customs, ECOS, DART) as global state sensors, the candidate lattice with EVIG, the five moat stores, the KR x JP x CN interaction miner, delayed source credit",
+  "A": "Global trading archaeology and mechanism recovery (principal 2026-09-17): performance, competition, product, code, forum, lineage, institutional and failure archaeology; phenotypes, archetypes, decompilation, counterfactual reconstruction, survivorship, source scout",
+  "N": "News as a first-class event stream (principal 2026-09-17): fast router + deep reasoning, event ontology, source confidence, entity graph, novelty, surprise, analogues, cross-asset reaction, liquidity and portfolio shock, allocator re-solve, event-conditioned sleeves validated beforehand",
+  "S": "The free shadow-institutional stack (principal 2026-09-17): public proxy ensembles for private capabilities, free crypto L2 / Deribit as sensors, the latency laboratory, retail positioning ecology, latent actor inference, synthetic proprietary datasets, the disagreement dataset, the capability gap map",
+  "X": "The L1vsun and bl888m extraction (principal 2026-09-17): forced flow, funding/OI crowding, narrative lifecycle, thesis staleness, evidence watchtower; prediction-market calibration, crowd disagreement, smart-participant archaeology with provenance, resolution truth, refusal attribution, bounded LLM",
+  "U": "The data-utilization law (LAWS 5c) and the world information coverage (principal 2026-09-17): PIT truth layer, representation forge, world model posteriors, frequency matching, regional state vectors, allocator conditional distributions, counterfactual attribution, delayed ROI, the data-utilization audit, world exhaust coverage, latency map, missing-information hunter, coverage tensor"
  },
  "acceptance_properties": [
   {
@@ -4621,24 +4628,26 @@
    "item": "Eight internal exploitation engines: alpha-card explosion, alpha-event genealogy (lineage search), graveyard resurrection with the ten failure classes, shadow-ledger discovery (unexplained winners/losers, MAE/MFE, session, regime, event, cross-strategy, decay, streaks), execution-tape alpha (P(adverse|spread,state,time), delayed-vs-immediate), forward-result exploitation (backtest vs forward distribution shift), cross-alpha recombination (coherent gene combinations), unused-information miner (UNUSED_DATA/FEATURE/STATE/EVENT/RELATIONSHIP, UNEXPLAINED_PNL/EXECUTION)",
    "domain": "M",
    "phase": "M",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
     "desks/mt5/research/moat_card_explosion.py",
     "desks/mt5/research/alpha_lineage_search.py",
     "desks/mt5/research/graveyard_resurrection.py",
     "desks/mt5/research/shadow_discovery.py",
+    "desks/mt5/research/execution_alpha_miner.py",
     "desks/mt5/research/forward_exploitation.py",
     "desks/mt5/research/alpha_recombination.py",
-    "desks/mt5/research/unused_information.py",
-    "desks/mt5/research/descendants.py"
+    "desks/mt5/research/unused_information.py"
    ],
-   "scheduled_by": "hourly_cycle legs card_explosion, alpha_lineage, graveyard_resurrection, alpha_recombination (discovery); shadow_discovery, forward_exploitation (forward); unused_information (data)",
-   "artifact": "desks/mt5/reports/MOAT_CARD_EXPLOSION.json",
-   "consumer": "moat candidate compiler",
-   "gap": "seven of eight engines LANDED 2026-09-17 on their department clocks; the execution-tape alpha engine is still building",
+   "scheduled_by": "hourly_cycle legs card_explosion, alpha_lineage, graveyard_resurrection, alpha_recombination (discovery); shadow_discovery, forward_exploitation (forward); unused_information (data); execution_alpha (execution); the three moat swarm residents MT5-Moat-Exploit / Explore / Resurrect",
+   "artifact": "desks/mt5/reports/EXECUTION_ALPHA.json",
+   "consumer": "the discovery compiler (every engine records discoveries; the hosting ones donate)",
+   "gap": "LANDED 2026-09-17: all eight engines on their clocks; execution alpha measured 693 adverse-move cells and 924 delayed-vs-immediate cells on 3 tape days with block bootstraps, 231 recurring discoveries (limit/delayed entry, session avoid, spread gate), four defects fixed (zero-width CI, stale quotes, bulk-reconciliation stamps, uncashable suggestion).",
    "next_step": "land execution_alpha_miner.py on the execution clock; then M5 is LANDED",
-   "landed": []
+   "landed": [
+    "execution_alpha 2026-09-17"
+   ]
   },
   {
    "id": "M6",
@@ -4768,56 +4777,61 @@
    "item": "Data-discovery swarm: for every hypothesis its missing information requirements and the cheapest lawful PIT-clean source",
    "domain": "M",
    "phase": "M",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "desks/mt5/research/value_of_data.py",
-    "libs/research_os/store.py"
+    "desks/mt5/research/data_scout.py",
+    "desks/mt5/tests/test_data_scout.py"
    ],
-   "scheduled_by": "hourly_cycle:value_of_data",
-   "artifact": "desks/mt5/reports/VALUE_OF_DATA.json",
-   "consumer": "source registry",
-   "gap": "value_of_data ranks needs; the search for sources per need pending",
+   "scheduled_by": "hourly_cycle:data_scout (intel department resident)",
+   "artifact": "desks/mt5/reports/DATA_SCOUT.json",
+   "consumer": "the registry (dataset discoveries, candidate sources); moat_collectors; the country data planes",
+   "gap": "LANDED 2026-09-17: needs from four registers, a 31-row public/licensed catalogue in twelve classes with the six PIT fields, ranking by needs unblocked x hypotheses blocked x information value over cost + integration, crypto-exchange observables refused by the mandate; live: 13 missing requirements named.",
    "next_step": "extend value_of_data with a source search (DatasetScout beat)",
-   "landed": []
+   "landed": [
+    "data_scout 2026-09-17"
+   ]
   },
   {
    "id": "M13",
    "item": "Blind replication of important leads: freeze the lead, hand it to a second implementation with minimal context, require independent data loading and reproduction before expensive resources",
    "domain": "M",
    "phase": "M",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
+    "desks/mt5/research/lead_replication.py",
+    "desks/mt5/tests/test_lead_replication.py",
     "desks/mt5/research/blind_reviewer.py"
    ],
-   "scheduled_by": "hourly_cycle:blind_reviewer",
-   "artifact": "desks/mt5/reports/BLIND_REVIEW.json",
-   "consumer": "promoter (veto)",
-   "gap": "blind review exists for cells; lead-level replication pending",
+   "scheduled_by": "hourly_cycle:lead_replication (validate department resident)",
+   "artifact": "desks/mt5/reports/LEAD_REPLICATION.json",
+   "consumer": "the registry (BLOCKED replication_failed; expected_info_gain on reproduced leads); research_memory",
+   "gap": "LANDED 2026-09-17: important leads (top decile, certified, or named by the daily OS) frozen to six fields with every implementation and evidence field scrubbed, reproduced by an independent reader and re-derived family/params, REPRODUCED / NOT_REPRODUCED / UNMEASURED; live: 7 leads, all UNMEASURED because the miners record no first-pass t (named for the miners).",
    "next_step": "extend blind_reviewer with a lead replication mode",
-   "landed": []
+   "landed": [
+    "lead_replication 2026-09-17"
+   ]
   },
   {
    "id": "M14",
    "item": "Multi-paradigm discovery routing: every lead fed to LLM, MCTS, MAP-Elites, GFlowNet, GP, symbolic regression, Bayesian search, program evolution and causal discovery; method agreement and disagreement recorded per lead",
    "domain": "M",
    "phase": "M",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "libs/research/search_populations.py",
-    "libs/research/mcts.py",
-    "desks/mt5/research/qd_frontier.py",
-    "desks/mt5/research/program_alpha_lane.py",
-    "desks/mt5/research/causal_lab.py"
+    "desks/mt5/research/paradigm_router.py",
+    "desks/mt5/tests/test_paradigm_router.py"
    ],
-   "scheduled_by": "pending",
+   "scheduled_by": "hourly_cycle:paradigm_router (meta department resident)",
    "artifact": "desks/mt5/reports/PARADIGM_ROUTER.json",
-   "consumer": "discovery compiler",
-   "gap": "the paradigms exist as separate organs; the router and the disagreement record pending",
+   "consumer": "the LLM seats (data/intelligence/paradigm_router intake), research_memory (method_disagreement)",
+   "gap": "LANDED 2026-09-17: every lead meets nine paradigms through their real intake contracts (seats, mcts.project_tree, qd_frontier.proposal, search_populations.run, program IR expressibility, causal edges); plurality agreement, disagreement remembered; gaps named (program lane has no seed intake, mcts unscreened).",
    "next_step": "build paradigm_router.py",
-   "landed": []
+   "landed": [
+    "paradigm_router 2026-09-17"
+   ]
   },
   {
    "id": "M16",
@@ -4888,19 +4902,21 @@
    "item": "Generator-yield learning and worker reallocation: Y_g = independent survivors / tests generated, delta n_eff,g, delta E[log W]_g per generator; three permanent moat swarms (EXPLOIT deepens winners, EXPLORE mines unused data, RESURRECT attacks the graveyard) with dedicated workers rebalanced by yield",
    "domain": "M",
    "phase": "M",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "libs/moat/registry.py",
-    "desks/mt5/research/mutation_yield.py",
-    "desks/mt5/research/research_departments.py"
+    "desks/mt5/research/moat_swarms.py",
+    "desks/mt5/tests/test_moat_swarms.py",
+    "desks/mt5/ops/box_tasks.manifest"
    ],
-   "scheduled_by": "pending",
-   "artifact": "desks/mt5/reports/MOAT_FACTORY.json",
-   "consumer": "department residents",
-   "gap": "generator_yield table and mutation_yield exist; the swarms pending",
+   "scheduled_by": "MT5-Moat-Exploit, MT5-Moat-Explore, MT5-Moat-Resurrect (24/7 residents)",
+   "artifact": "desks/mt5/reports/MOAT_SWARMS.json",
+   "consumer": "the registry (generator_yield compute, workers); research_runs (every engine child closes a compute run)",
+   "gap": "LANDED 2026-09-17: three swarms with dedicated engines, seconds allocated by measured generator yield with a 0.10 floor and a cold share, discovery_compiler last in every pass, heartbeats as workers; box registration follows the ship.",
    "next_step": "build moat_swarms.py as three residents reading generator_yields()",
-   "landed": []
+   "landed": [
+    "moat_swarms 2026-09-17"
+   ]
   },
   {
    "id": "M20",
@@ -5104,6 +5120,145 @@
    "consumer": "the daily research OS (unblock when the trigger is measured)",
    "gap": "the build allocator measures the four triggers daily: crowding/decay not met (14 of 30 closed trades), meta-labeling not met (14 of 200), capacity not met (n_matched 0), regime-conditioned sizing MET (allocator armed, regime present, effective heat present) -- that item is open for build",
    "next_step": "build regime-conditioned sizing (libs/regime posterior conditioning the allocator's fractions, two-sided, with its missed-growth line) now that its trigger is met; the other three stay specs",
+   "landed": []
+  },
+  {
+   "id": "K1",
+   "item": "The Korea structured data plane (KRX, Customs 10-day trade, BOK ECOS with vintages, OpenDART as sector sensors) and the trade nowcasting factory",
+   "domain": "K",
+   "phase": "K",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/countries/__init__.py"
+   ],
+   "scheduled_by": "hourly_cycle:global_research_os (kr lab)",
+   "artifact": "desks/mt5/reports/KR_DATA_PLANE.json",
+   "consumer": "the KR agents; the transmission engine",
+   "gap": "builder cut off while compacting the catalogues",
+   "next_step": "resume the builder",
+   "landed": []
+  },
+  {
+   "id": "K2",
+   "item": "The Korea research civilization agents (twelve), native query territories, the candidate lattice with EVIG, the five moat stores, the KR x JP x CN interaction miner, delayed source credit",
+   "domain": "K",
+   "phase": "K",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/countries/__init__.py"
+   ],
+   "scheduled_by": "hourly_cycle:global_research_os (kr lab)",
+   "artifact": "desks/mt5/data/countries/kr/moat.json",
+   "consumer": "the compiler; the registry",
+   "gap": "builder cut off while writing the lattice",
+   "next_step": "resume the builder",
+   "landed": []
+  },
+  {
+   "id": "U1",
+   "item": "The ingestion-exploitation contract and checker (every ingested unit gets a disposition; stranded units become discoveries; the ratchet floor) and the macro intelligence fusion (posteriors, nowcasts, news lane, two-sided suggestions through the router contract)",
+   "domain": "U",
+   "phase": "U",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "libs/moat/registry.py"
+   ],
+   "scheduled_by": "hourly_cycle:ingestion_ledger (core; pending); hourly_cycle:macro_intelligence (macro; pending)",
+   "artifact": "desks/mt5/reports/INGESTION_EXPLOITATION.json",
+   "consumer": "the daily research OS; the allocator (router contract)",
+   "gap": "builder cut off while writing the ledger",
+   "next_step": "resume the builder; wire both legs; add the checker to the law gate",
+   "landed": []
+  },
+  {
+   "id": "U2",
+   "item": "The representation forge over every dataset (level, delta, acceleration, surprise, percentile, z, relative-to-history, cross-country spread, residual, revision surprise, diffusion, rolling beta, regime transition, abnormality, embedding, interactions) writing representation series with PIT stamps for the compiler and the world model",
+   "domain": "U",
+   "phase": "U",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/representation_discovery.py"
+   ],
+   "scheduled_by": "pending",
+   "artifact": "desks/mt5/reports/REPRESENTATION_FORGE.json",
+   "consumer": "discovery_compiler; macro_intelligence",
+   "gap": "representation_discovery covers learned representations only",
+   "next_step": "build representation_forge.py over data/axes and the country planes",
+   "landed": []
+  },
+  {
+   "id": "U3",
+   "item": "The 24/7 world model: regional state vectors and the global posterior over liquidity, rates, inflation, growth, China demand, industrial cycle, commodity supply, carry, funding stress, risk appetite, volatility, positioning, regional risk and event proximity, with frequency/horizon matching; conditional sleeve distributions for the allocator; counterfactual attribution of every live trade; the data-utilization audit",
+   "domain": "U",
+   "phase": "U",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/regime_router.py",
+    "desks/mt5/research/regime_monitor.py"
+   ],
+   "scheduled_by": "pending",
+   "artifact": "desks/mt5/reports/WORLD_MODEL.json",
+   "consumer": "pf_allocator (through the router contract); the gateway's counterfactual ledger",
+   "gap": "the regime router and monitor are partial views; the fused posterior, frequency matching, conditional distributions and counterfactual attribution pending",
+   "next_step": "build world_model.py, counterfactual_attribution.py and the data-utilization audit",
+   "landed": []
+  },
+  {
+   "id": "N1",
+   "item": "News as a first-class event stream: the fast router (source, timestamp, event ontology, entities, novelty, surprise, affected markets, fast posterior update) and the deep lane (causal interpretation, analogues, transmission, positioning, scenario tree), the liquidity and portfolio shock models, the allocator re-solve hook, the execution scientist, and the event-conditioned sleeve families validated beforehand",
+   "domain": "N",
+   "phase": "N",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/event_response_atlas.py",
+    "desks/mt5/research/moat_collectors.py"
+   ],
+   "scheduled_by": "pending",
+   "artifact": "desks/mt5/reports/NEWS_EVENT_STREAM.json",
+   "consumer": "the world model; the allocator; the gauntlet (event sleeves)",
+   "gap": "collectors capture news-like documents; the event stack pending",
+   "next_step": "build news_event_stream.py (fast + deep lanes) and the event-sleeve family cards",
+   "landed": []
+  },
+  {
+   "id": "S1",
+   "item": "The free shadow-institutional stack: public proxy ensembles for private capabilities, free crypto L2 / Deribit options as risk sensors for MT5 instruments, the latency laboratory (edge after latency, auto-reject below the desk's latency), retail positioning ecology, latent actor inference with UNKNOWN_ACTOR classes, synthetic proprietary datasets by archiving with vintages, the disagreement dataset, the capability gap map",
+   "domain": "S",
+   "phase": "S",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/moat_series.py"
+   ],
+   "scheduled_by": "pending",
+   "artifact": "desks/mt5/reports/SHADOW_INSTITUTIONAL.json",
+   "consumer": "the world model; the compiler",
+   "gap": "the tape and moat series archive the desk's own data; the proxy ensembles, sensors and gap map pending",
+   "next_step": "build shadow_institutional.py (sensors + gap map) and latency_lab.py",
+   "landed": []
+  },
+  {
+   "id": "W21",
+   "item": "Browser agents for non-API data (event actual-vs-consensus for the event-surprise cluster) and the core-plus-sleeve book: a trend-following core across the multi-asset universe beside the tactical sleeves, from the factor model",
+   "domain": "W",
+   "phase": "W",
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/event_response_atlas.py",
+    "libs/risk/fx_exposure.py"
+   ],
+   "scheduled_by": "pending",
+   "artifact": "desks/mt5/reports/EVENT_SURPRISE.json",
+   "consumer": "event_reaction family; the allocator (core sleeve)",
+   "gap": "not started",
+   "next_step": "build the browser-agent event scraper (lawful pages only) and the trend core family + its certificate path",
    "landed": []
   }
  ],

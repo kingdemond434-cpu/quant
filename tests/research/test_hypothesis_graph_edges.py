@@ -13,6 +13,7 @@ from pathlib import Path
 import pytest
 
 from libs.research import hypothesis_graph as hg
+from libs.research import lead_schema as ls
 
 
 def _legacy_row(sym: str, fam: str, params: dict, fate: str = "FAILED") -> dict:
@@ -126,3 +127,114 @@ def test_the_negative_knowledge_index_is_untouched_by_edges(graph: hg.Graph) -> 
     pf = graph.prior_failures("CADCHF", "discovered", {"feature": "spread", "horizon": 1})
     assert pf["n_failed"] == 1 and pf["last_why"] == "canonical verdict REJECTED"
     assert graph.lineage(hg.node_id("CADCHF", "discovered", {"feature": "spread", "horizon": 1}))
+
+
+# --------------------------------------------------------------- lineage (defect, 2026-09-17)
+#
+# THE GRAPH RECORDED THE SEED, NOT THE CELL IT MUTATED. Measured on the live ledger: 0 of 35,199
+# `parent` references resolved to any of the 23,972 node ids, because `record_candidates` stamped
+# the miner-row hash it computed itself over whatever ancestor the donor named. `descendants`
+# writes `parent = root_id` (a real node id) and `operator = descendant:<axis>` on every row it
+# donates; both were dropped one function later, so `alpha_lineage_search.untried_mutations`
+# found no mutation edge under any family and `Graph.lineage` never walked past the first row.
+
+def test_an_explicit_parent_that_the_graph_holds_is_recorded_as_the_parent(graph: hg.Graph
+                                                                          ) -> None:
+    root = hg.node_id("CADCHF", "discovered", {"feature": "spread", "horizon": 1})
+    assert root in graph.current(), "the fixture's own row is the ancestor under test"
+    hg.record_candidates([
+        {"symbol": "CADCHF", "family": "discovered", "params": {"feature": "spread",
+                                                                "horizon": 2},
+         "source": "descendants:chart", "source_title": "a chart descendant", "source_url": "u",
+         "parent": root, "operator": "descendant:chart",
+         "lineage": {"root": root, "axis": "chart"}},
+    ], source="miner_candidate_compiler", graph=graph)
+    child = graph.current()[hg.node_id("CADCHF", "discovered", {"feature": "spread",
+                                                               "horizon": 2})]
+    assert child["parent"] == root, "the parent field must RESOLVE to a node of this graph"
+    assert child["parent"] in graph.current()
+    assert child["operator"] == "descendant:chart"
+    # the seed is never dropped: the BECAME join in knowledge_graph reads exactly this
+    assert child["seed_key"] == hg.seed_key_of({"source": "descendants:chart",
+                                                "source_title": "a chart descendant",
+                                                "source_url": "u"})
+    assert child["seed_key"] != child["parent"]
+    # and the lineage walk now has two rows rather than one
+    assert [r["id"] for r in graph.lineage(child["id"])] == [child["id"], root]
+
+
+def test_a_candidate_with_no_parent_keeps_the_seed_in_both_fields(graph: hg.Graph) -> None:
+    hg.record_candidates([
+        {"symbol": "USDJPY", "family": "cot_positioning", "params": {"lookback": 26},
+         "source": "miner:cot", "source_title": "COT extremes", "source_url": "https://c.test"},
+    ], source="miner_candidate_compiler", graph=graph)
+    row = graph.current()[hg.node_id("USDJPY", "cot_positioning", {"lookback": 26})]
+    seed = hg.seed_key_of({"source": "miner:cot", "source_title": "COT extremes",
+                           "source_url": "https://c.test"})
+    assert row["parent"] == seed == row["seed_key"], "unchanged for every reader of `parent`"
+    assert ls.compiler_parent_key("cot", "COT extremes", "https://c.test") == seed
+    assert "operator" not in row, "never invented; only passed through"
+
+
+def test_a_parent_the_graph_does_not_hold_stays_a_claim_on_the_edge(graph: hg.Graph) -> None:
+    """An unresolvable claim must not go into `parent` -- that is how the field filled with
+    prose ("Renaissance|stock book approximately balanced...") in the first place."""
+    hg.record_candidates([
+        {"symbol": "XAUUSD", "family": "carry", "params": {"input_symbol": "XAUUSD"},
+         "source": "survivor_distiller", "source_title": "t", "source_url": "u",
+         "evidence": {"parent": "external.XAUUSD.carry", "operator": "step_rr_up"}},
+    ], source="miner_candidate_compiler", graph=graph)
+    row = graph.current()[hg.node_id("XAUUSD", "carry", {"input_symbol": "XAUUSD"})]
+    assert row["parent"] == row["seed_key"] != "external.XAUUSD.carry"
+    assert {"type": "mutated_from", "to": "external.XAUUSD.carry",
+            "operator": "step_rr_up"} in row["edges"]
+
+
+def test_every_field_a_donor_may_name_a_parent_in_is_read() -> None:
+    root = hg.node_id("EURUSD", "carry", {"k": 1})
+    for row in ({"parent": root}, {"parent_id": root}, {"mutated_from": root},
+                {"parent_ids": ["nope", root]}, {"lineage": {"root": root}},
+                {"lineage": {"parents": [root]}}, {"evidence": {"parent": root}},
+                {"parent": {"symbol": "EURUSD", "family": "carry", "params": {"k": 1}}}):
+        assert root in hg.parent_claims(row), row
+        assert hg.resolve_parent(row, {root}) == root, row
+    assert hg.parent_claims({"symbol": "EURUSD"}) == [], "nothing is inferred from the spec"
+    assert hg.resolve_parent({"parent": root}, set()) == "", "unknown ids do not resolve"
+
+
+def test_a_batch_can_be_its_own_ancestry(graph: hg.Graph) -> None:
+    """The parent and the child are donated in one call; the child must still resolve."""
+    parent_spec = {"symbol": "EURUSD", "family": "carry", "params": {"k": 1}}
+    root = hg.node_id_for_spec(parent_spec)
+    hg.record_candidates([
+        {**parent_spec, "source": "s", "source_title": "t", "source_url": "u"},
+        {"symbol": "EURUSD", "family": "carry", "params": {"k": 2}, "source": "s",
+         "source_title": "t2", "source_url": "u2", "parent": root, "operator": "step_k_up"},
+    ], source="miner_candidate_compiler", graph=graph)
+    child = graph.current()[hg.node_id("EURUSD", "carry", {"k": 2})]
+    assert child["parent"] == root and root in graph.current()
+
+
+def test_the_judges_terminal_gate_rides_onto_the_verdict_row(graph: hg.Graph) -> None:
+    """24,027 of 26,843 dead cells carry no terminal gate because `gates` holds
+    `canonical_report` alone -- while the judging code had the answer and dropped it."""
+    hg.record_verdicts([{"sym": "XAGUSD", "family": "carry", "params": {"k": 3},
+                         "terminal_gate": "deflated_sharpe",
+                         "gates": {"canonical_report": {"passed": False}}}], graph=graph)
+    row = graph.current()[hg.node_id("XAGUSD", "carry", {"k": 3})]
+    assert row["fate"] == hg.FAILED and row["terminal_gate"] == "deflated_sharpe"
+    hg.record_verdicts([{"sym": "XAGUSD", "family": "carry", "params": {"k": 4},
+                         "gates": {"pbo": {"passed": True}}}], graph=graph)
+    unjudged = graph.current()[hg.node_id("XAGUSD", "carry", {"k": 4})]
+    assert "terminal_gate" not in unjudged, "never invented when the judge did not say"
+
+
+def test_one_identity_function_serves_both_writers_and_the_verdict_ledger() -> None:
+    """`node_id_for_spec` is the join `external_gauntlet` stamps as `graph_id`: a candidate
+    (`symbol`) and the judged cell (`sym`) must land on ONE id or trials join nothing."""
+    cand = {"symbol": "EURAUD", "family": "overnight_gap_decay", "params": {"hold_bars": 4}}
+    verdict = {"sym": "EURAUD", "family": "overnight_gap_decay", "params": {"hold_bars": 4}}
+    assert hg.node_id_for_spec(cand) == hg.node_id_for_spec(verdict)
+    assert hg.node_id_for_spec(verdict) == hg.node_id("EURAUD", "overnight_gap_decay",
+                                                      {"hold_bars": 4})
+    assert hg.spec_identity({"sym": "eurusd"}) == ("eurusd", "", {})

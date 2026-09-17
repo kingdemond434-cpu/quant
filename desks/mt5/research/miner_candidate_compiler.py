@@ -419,6 +419,15 @@ def _candidate(symbol: str, family: str, params: dict, source: str, row: dict,
         # carry the id cannot be counted as the mission's yield, and the acceptance property
         # "the portfolio creates research missions" is measured on exactly that count.
         **({"mission_id": row["mission_id"]} if row.get("mission_id") else {}),
+        # AND SO DOES THE DONOR'S LINEAGE (2026-09-17). `descendants` donates rows carrying
+        # `lineage.root` -- a real `hypothesis_graph` node id -- with the `operator` that made
+        # the step, and this function dropped both, so `record_candidates` saw a candidate with
+        # no ancestor and stamped the miner-row seed instead. Measured on the live ledger: 0 of
+        # 35,199 `parent` values resolved to any of the 23,972 node ids. Only the four
+        # unambiguous lineage fields are copied, and only when the row carries them; the
+        # top-level `parent` of an arbitrary crawler row is NOT lineage and is not read here.
+        **{k: row[k] for k in ("lineage", "operator", "mutated_from", "parent_ids")
+           if row.get(k)},
     }
 
 

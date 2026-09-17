@@ -100,8 +100,15 @@ def test_the_crypto_era_check_vocabularies_are_lifted(reg):
     R.upsert_card("card1", name="n", market="XAUUSD", category="sleeve", status="live")
     conn.close()
     if R.counts()["alpha_cards"] > 1:   # the real backup: its eight cards are still there
-        mig = R.connect().execute("SELECT name FROM schema_migrations WHERE version=?",
-                                  (R.MIGRATION_VERSION,)).fetchone()
+        # CLOSED, because an unclosed connection is finalized by the garbage collector at some
+        # later test's allocation, and `filterwarnings = error` turns that finalization into a
+        # PytestUnraisableExceptionWarning -- a red test with no relation to the code it names.
+        mig_conn = R.connect()
+        try:
+            mig = mig_conn.execute("SELECT name FROM schema_migrations WHERE version=?",
+                                   (R.MIGRATION_VERSION,)).fetchone()
+        finally:
+            mig_conn.close()
         assert mig is not None and mig[0] == R.MIGRATION_NAME
 
 
@@ -282,6 +289,58 @@ def test_sync_from_desk_pours_the_record_in_and_is_idempotent(reg, tmp_path):
     (d / "data" / "sleeves.json").write_text(json.dumps(sl))
     assert R.sync_from_desk(d, lessons=lessons)["events"] == 1
     assert R.events("sleeve:gold_asia")[-1]["to_status"] == "retired"
+
+
+def test_a_verdict_joins_its_graph_candidate_by_graph_id(reg, tmp_path):
+    """THE TRIAL AND THE CANDIDATE HAD DIFFERENT NAMES FOR ONE CELL (measured 2026-09-17).
+
+    `enqueue_candidate` keys every candidate by its `hypothesis_graph` node id (`f668ed18...`),
+    while the gate ledger names the judged cell `EURAUD.overnight_gap_decay.p=<sha>`. Syncing on
+    the cell string alone recorded 3,361 trials against ids that exist in no graph: the candidate
+    stayed "donated" forever and the provenance DAG had trials hanging off nothing. A verdict row
+    that carries `graph_id` is joined by it; one that does not falls back to the backfill map,
+    and then to the cell string exactly as before.
+    """
+    d = _desk(tmp_path)
+    lessons = tmp_path / "lessons.jsonl"
+    lessons.write_text("", encoding="utf-8")
+    graph_id, legacy_id = "f668ed18aa11bb22", "aa11bb22f668ed18"
+    hypotheses = d / "data" / "hypothesis_graph.jsonl"
+    verdicts = d / "data" / "hypotheses" / "gate_verdict_ledger.jsonl"
+    with hypotheses.open("a", encoding="utf-8") as fh:
+        for nid, sym in ((graph_id, "EURAUD"), (legacy_id, "GBPJPY")):
+            fh.write(json.dumps({"id": nid, "symbol": sym, "family": "overnight_gap_decay",
+                                 "params": {"hold_bars": 4}, "source": "miner:cot", "fate": "",
+                                 "seed_key": "a-miner-row-sha", "parent": "a-miner-row-sha",
+                                 "at": "2026-09-16T00:00:00+00:00"}) + "\n")
+    cell = "EURAUD.overnight_gap_decay.p=44136fa355b3678a"
+    with verdicts.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps({"cell": cell, "graph_id": graph_id, "sym": "EURAUD",
+                             "family": "overnight_gap_decay", "passed": False,
+                             "terminal_gate": "deflated_sharpe",
+                             "at": "2026-09-16T03:00:00+00:00"}) + "\n")
+    out = R.sync_from_desk(d, lessons=lessons)
+    assert out["candidates"] == 4 and out["trials"] == 2
+    cands = {c["id"]: c for c in R.candidates()}
+    assert cell not in cands, "the trial joined a candidate; it did not mint a second one"
+    assert cands[graph_id]["status"] == "judged"
+    assert cands[graph_id]["terminal_gate"] == "deflated_sharpe"
+    assert any(e["from_id"] == graph_id and e["to_kind"] == "trial"
+               for e in R.descendants_of("cell", graph_id)), "cell -> trial edge of the DAG"
+
+    # A ROW WRITTEN BEFORE `graph_id` EXISTED joins through the one-off backfill map.
+    legacy_cell = "GBPJPY.overnight_gap_decay.p=44136fa355b3678a"
+    (d / "data" / "hypotheses" / "gate_verdict_graph_ids.json").write_text(
+        json.dumps({"n_resolved": 1, "graph_ids": {legacy_cell: legacy_id}}), encoding="utf-8")
+    with verdicts.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps({"cell": legacy_cell, "sym": "GBPJPY",
+                             "family": "overnight_gap_decay", "passed": True,
+                             "terminal_gate": "PASSED",
+                             "at": "2026-09-16T04:00:00+00:00"}) + "\n")
+    assert R.sync_from_desk(d, lessons=lessons)["trials"] == 1
+    assert {c["id"]: c for c in R.candidates()}[legacy_id]["status"] == "survived"
+    assert R.graph_id_map(d)[legacy_cell] == legacy_id
+    assert R.graph_id_map(tmp_path / "no-such-desk") == {}, "absent reads as empty, never raises"
 
 
 def test_origin_classifier():

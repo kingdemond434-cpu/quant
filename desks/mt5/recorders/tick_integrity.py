@@ -28,6 +28,20 @@ WHAT IS MEASURED, and what each number is actually asking:
                        frozen feed and a calm market are the same bytes and different facts.
   crossed / locked     bid > ask, and bid == ask. Both are real on a retail CFD feed at session
                        roll and around news; a RATE that moves is a feed changing behaviour.
+  one_sided            THE LOCKED RATE, WITH A LINE UNDER IT. A currency pair whose quoted ticks
+                       are locked above ONE_SIDED_FX_FRAC is named ONE_SIDED with its fraction and
+                       its `sided` breakdown, because a zero spread has two completely different
+                       causes and they must never render the same way. Either the venue quoted a
+                       locked market (raw FX: `sided` says BOTH sides moved) or a writer repeated
+                       the other side (`sided` says one). Measured over the last three days on
+                       this box 2026-09-17 (100,808,613 rows, 1,110 instrument-days): 86 of 424 FX
+                       instrument-days are over the line and every other asset class is at
+                       0.0000%, and 97.9% of EURUSD's 41,604 locked rows for 2026-09-15 are
+                       flagged BOTH (98.4% on the other writer's copy of the same day). So this
+                       account's FX lock is REAL, which is why the line REPORTS rather than fails.
+                       A spread of 0.0 on a raw account is a cost of zero only if the commission
+                       is ignored, and that is a modelling decision somebody makes on purpose
+                       rather than inherits from an unquestioned column.
   monotonic_breaks     ticks the broker delivered out of order INSIDE one segment. Cross-segment
                        overlap is expected by design and is counted separately, not as a defect.
   dup_rate             the cost of the overlap policy, measured rather than assumed
@@ -43,7 +57,11 @@ every 6.5-hour cash session and the artifact reported it as a clean build. So th
 here is measured per symbol from its OWN recorded history: a minute-of-day is IN this symbol's
 session if it carried ticks on at least `SESSION_QUORUM` of the days observed. No asset-class
 list exists anywhere in this file, and a symbol with too few days to establish a session is
-UNMEASURED rather than assumed to trade around the clock.
+UNMEASURED rather than assumed to trade around the clock. The ONE_SIDED line above is the one
+check that needs to know an instrument's class, and it still keeps that promise: it asks
+`mt5desk.tape.is_fx`, which reads MetaTrader's OWN registry entry through
+`research/universe_policy`. A symbol the registry does not carry is UNCLASSIFIED and is never
+called FX on the strength of its name -- absence is not a permission, in either direction.
 
 IT FAILS LOUDLY. `main()` returns 2 on any FAIL verdict. The alternative -- a report that records
 a hole and exits 0 -- is a report nobody reads twice, and this desk's own laws call an unread
@@ -72,6 +90,18 @@ _DESK = _HERE.parent
 for _p in (str(_DESK), str(_DESK.parent.parent)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
+
+from mt5desk.tape import (  # noqa: E402
+    ONE_SIDED_FX_FRAC,
+    SIDED_ASK,
+    SIDED_BID,
+    SIDED_BOTH,
+    SIDED_LAST,
+    SIDED_NONE,
+    asset_class_of,
+    is_fx,
+    sided_from_flags,
+)
 
 from recorders.tape_store import GAP_COLD_START, GAP_RESOLVED, TapeStore  # noqa: E402
 
@@ -119,6 +149,20 @@ UNEXPLAINED_DEGRADED_MIN = 1  # ANY unexplained minute is at least DEGRADED
 DUP_DEGRADED = 0.05           # >5% duplicate rows: the overlap policy costs more than it should
 CROSSED_DEGRADED = 0.001      # >0.1% crossed quotes: the feed is not behaving as a feed
 
+#: THE ONE_SIDED LINE IS A REPORTING LINE, NOT A VERDICT LINE, and the choice is deliberate.
+#: `ONE_SIDED_FX_FRAC` (20%, defined once in `mt5desk.tape` so the audit and this checker cannot
+#: be judged at two numbers) is crossed by half this desk's FX instrument-days every single day,
+#: because the account genuinely quotes raw FX. Degrading on it would push ~50 rows a day into a
+#: `degraded` list capped at 200 and bury the findings that mean something -- this file's own
+#: Sunday-coverage note is the record of what that costs: "a checker that reds every weekend
+#: teaches its reader to stop reading it, and then it is not there on the day a Tuesday goes
+#: missing". It would also protect nothing, because `tape_features` refuses days on FAIL and
+#: builds DEGRADED ones regardless. So ONE_SIDED behaves like `monotonic_breaks`: measured,
+#: named, carried on the row, counted in the totals, listed at the top of the report and printed
+#: by `main()` -- recorded, not corrected. The number is in the artifact; what it means for a
+#: cost model is a decision somebody makes on purpose.
+ONE_SIDED_FX = ONE_SIDED_FX_FRAC
+
 
 @dataclass
 class DayVerdict:
@@ -161,6 +205,13 @@ class DayVerdict:
     crossed_rate: float = 0.0
     locked: int = 0
     locked_rate: float = 0.0
+    #: The broker's own class for this instrument (registry, never a symbol list). "" is
+    #: UNCLASSIFIED, which is a verdict about the registry and never a permission.
+    asset_class: str = ""
+    one_sided: bool = False
+    #: How many ticks moved each side, from the recorded `flags`. This is what separates a
+    #: venue-quoted lock (`both`) from a writer repeating a side (`bid`/`ask`).
+    sided_counts: dict[str, int] = field(default_factory=dict)
     stale_runs: int = 0
     longest_stale_s: float = 0.0
     longest_quote_gap_s: float = 0.0
@@ -389,6 +440,18 @@ def judge_day(store: TapeStore, symbol: str, day: str, model: SessionModel,
     n_q = int(np.count_nonzero(quoted)) or 1
     v.crossed_rate = round(v.crossed / n_q, 6)
     v.locked_rate = round(v.locked / n_q, 6)
+
+    # -- WHICH SIDE THE VENUE MOVED. Derived from the stored `flags`, never from the prices, so a
+    # locked quote the broker really published and a side a writer repeated cannot render the
+    # same way. `sided_counts` is the evidence under the ONE_SIDED line: a 98% locked day whose
+    # ticks are almost all `both` is a raw feed, and the identical fraction under `bid` would be
+    # a defect in whatever laid the segment down.
+    sided = sided_from_flags(np.asarray(df["flags"], dtype=np.int64)) if "flags" in df.columns \
+        else np.full(tms.size, SIDED_NONE)
+    v.sided_counts = {name: int(np.count_nonzero(sided == name))
+                      for name in (SIDED_BOTH, SIDED_BID, SIDED_ASK, SIDED_LAST, SIDED_NONE)}
+    v.asset_class = asset_class_of(symbol)
+    v.one_sided = bool(is_fx(symbol) and v.locked_rate > ONE_SIDED_FX)
     if v.point and v.point > 0 and n_q:
         v.median_spread_pts = round(float(np.median((ask - bid)[quoted]) / v.point), 2)
 
@@ -477,6 +540,18 @@ def _verdict(v: DayVerdict) -> tuple[str, list[str]]:
         worst = DEGRADED if worst == OK else worst
         reasons.append(f"{v.post_seal_writes} tick(s) arrived AFTER this day was sealed: the "
                        f"completeness claim was premature")
+    if v.one_sided:
+        counts = v.sided_counts or {SIDED_NONE: 0}
+        top = max(counts, key=lambda k: counts.get(k, 0))
+        cause = ("a VENUE-QUOTED lock: the venue moved BOTH sides on most of these ticks, so the "
+                 "spread really is zero and the cost of crossing is commission, not spread"
+                 if top == SIDED_BOTH else
+                 f"a ONE-SIDED PAYLOAD: most of these ticks moved '{top}' alone, so the other "
+                 f"side is CARRIED and this day's spread is an artefact of the carry")
+        reasons.append(
+            f"ONE_SIDED: {v.locked_rate:.2%} of this day's quoted ticks carry ask == bid on a "
+            f"'{v.asset_class or 'unclassified'}' instrument (line {ONE_SIDED_FX:.0%}) -- {cause}. "
+            f"Recorded, not corrected; the spread column here is not a cost proxy")
     if v.monotonic_breaks:
         reasons.append(f"{v.monotonic_breaks} out-of-order tick(s) inside a segment (the broker's "
                        f"own delivery order; recorded, not corrected)")
@@ -530,6 +605,12 @@ def run(store: TapeStore, symbols: list[str] | None = None, days_back: int | Non
             "weekday_observations": {str(i): int(n)
                                      for i, n in enumerate(model.weekday_obs.tolist())},
             "pooled_weekday_days": int(model.pooled_obs),
+            "asset_class": (sym_rows[-1].asset_class if sym_rows else asset_class_of(sym)),
+            # THE LOCKED SHARE, PER SYMBOL, ALWAYS. Published whether or not it crosses the line,
+            # because a number that only appears when it is bad cannot be compared with yesterday
+            # -- and this file's own doctrine is that a RATE THAT MOVES is the finding.
+            "locked_rate_max": (round(max((r.locked_rate for r in sym_rows), default=0.0), 6)),
+            "one_sided_days": sum(1 for r in sym_rows if r.one_sided),
             "verdicts": _tally([r.verdict for r in sym_rows]),
         }
 
@@ -551,7 +632,7 @@ def run(store: TapeStore, symbols: list[str] | None = None, days_back: int | Non
             "unexplained_degraded_min": UNEXPLAINED_DEGRADED_MIN,
             "dup_degraded": DUP_DEGRADED, "crossed_degraded": CROSSED_DEGRADED,
             "session_quorum": SESSION_QUORUM, "min_session_days": MIN_SESSION_DAYS,
-            "stale_run_s": STALE_RUN_S,
+            "stale_run_s": STALE_RUN_S, "one_sided_fx": ONE_SIDED_FX,
         },
         "totals": {
             "symbols": len(syms), "symbol_days": len(rows), "symbol_days_with_ticks": day_count,
@@ -574,6 +655,11 @@ def run(store: TapeStore, symbols: list[str] | None = None, days_back: int | Non
             "segments_folded": sum(r.segments_folded for r in rows),
             "sealed_but_uncompacted": sum(1 for r in rows
                                           if r.sealed and not r.compactions and r.n_segments > 1),
+            # THE ZERO-SPREAD ACCOUNTING, and the denominator is the point. "50 one-sided days"
+            # means nothing without "of 255 FX days judged"; the pair is what turns a scary count
+            # into a rate a later reader can compare against this one.
+            "fx_symbol_days": sum(1 for r in rows if is_fx(r.symbol) and r.n_ticks),
+            "one_sided_symbol_days": sum(1 for r in rows if r.one_sided),
         },
         "verdicts": tally,
         "recorder": recorder,
@@ -582,6 +668,14 @@ def run(store: TapeStore, symbols: list[str] | None = None, days_back: int | Non
         # rows is how a report becomes decorative.
         "failures": [asdict(r) for r in rows if r.verdict == FAIL][:200],
         "degraded": [asdict(r) for r in rows if r.verdict == DEGRADED][:200],
+        # ONE_SIDED gets its own list rather than a field buried in `days`, for the same reason
+        # `failures` does: the point of a report is the findings, and a finding 250 clean rows
+        # deep is a finding nobody reads. Worst first.
+        "one_sided": [{"symbol": r.symbol, "day": r.day, "asset_class": r.asset_class,
+                       "locked": r.locked, "locked_rate": r.locked_rate,
+                       "median_spread_pts": r.median_spread_pts,
+                       "sided_counts": r.sided_counts}
+                      for r in sorted(rows, key=lambda r: -r.locked_rate) if r.one_sided][:200],
         "days": [asdict(r) for r in rows],
     }
 
@@ -656,6 +750,12 @@ def main(argv: list[str] | None = None) -> int:
           f"(explained by a gap row: {t['explained_minutes']})")
     print(f"  compaction: {t['days_compacted']} day(s) folded, {t['segments_folded']:,} "
           f"container(s) reclaimed; {t['sealed_but_uncompacted']} sealed day(s) NOT yet folded")
+    print(f"  ONE_SIDED: {t['one_sided_symbol_days']} of {t['fx_symbol_days']} FX symbol-day(s) "
+          f"are locked above {ONE_SIDED_FX:.0%} (ask == bid)")
+    for row in rep["one_sided"][:5]:
+        top = max(row["sided_counts"] or {SIDED_NONE: 0}, key=lambda k: row["sided_counts"][k])
+        print(f"    {row['symbol']}/{row['day']}: {row['locked_rate']:.2%} locked, flags say "
+              f"'{top}' on most ticks")
     for row in rep["failures"][:10]:
         print(f"  FAIL {row['symbol']}/{row['day']}: {'; '.join(row['reasons'][:2])}")
     print(f"  -> {args.out}")

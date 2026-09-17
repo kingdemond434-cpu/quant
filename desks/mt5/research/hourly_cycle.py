@@ -714,7 +714,8 @@ CORE_LEGS: frozenset[str] = frozenset({
 #: another. A leg that feeds another in the same pass sits in the same department (search ->
 #: compile -> merge_docket -> deepen is one pipeline). Legs named in no department belong to
 #: `rest`, which also hosts the auto-clocked organs. The core plan is unchanged.
-DEPARTMENTS: tuple[str, ...] = ("data", "intel", "discovery", "validate", "macro", "execution",
+DEPARTMENTS: tuple[str, ...] = ("japan", "regions", "data", "intel", "discovery", "validate",
+                                "macro", "execution",
                                 "forward", "meta", "rest")
 LEG_DEPARTMENT: dict[str, str] = {
     # data: bars, tapes, lakes, sources -- the inputs every other department reads
@@ -729,7 +730,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "exogenous_search", "standing_questions", "frontier", "frontier_report",
                      "frontier_implementer", "hunt12", "scout_roster", "analyst_pipeline",
                      "knowledge_graph", "moat_collectors", "actor_atlas", "scout_swarm",
-                     "source_frontier"), "intel"),
+                     "source_frontier", "data_scout"), "intel"),
     # discovery: the candidate pipeline, in order, plus the evolutionary generators
     **dict.fromkeys(("search", "sweep", "breadth_sweep", "compile_candidates", "merge_docket",
                      "deepen", "alpha_evolution", "alpha_rl", "ml_layer", "ensemble_optimizer",
@@ -742,7 +743,7 @@ LEG_DEPARTMENT: dict[str, str] = {
     # validate: the adversarial evidence lab
     **dict.fromkeys(("external_gauntlet", "backtest", "falsifier_run", "adversaries",
                      "stop_reverse", "orthogonality", "blind_reviewer", "synthetic_regimes",
-                     "evaluator_lab"), "validate"),
+                     "evaluator_lab", "lead_replication"), "validate"),
     # macro: the cross-asset / macro brain
     **dict.fromkeys(("fred_macro", "futures_lead_lag", "causal_graph", "residual_factors",
                      "weak_signals", "edges_macro_fusion_sweep", "strategy_paths",
@@ -751,7 +752,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "world_lab"), "macro"),
     # execution: the execution research command
     **dict.fromkeys(("execution_twin", "entry_timing", "cost_to_edge", "exit_study",
-                     "execution_resolver", "netting_report"), "execution"),
+                     "execution_resolver", "netting_report", "execution_alpha"), "execution"),
     # forward: forward evidence, promotion and the allocator
     **dict.fromkeys(("enrol_clocks", "pf_allocator", "daily", "hunt12_forward", "regime_router",
                      "forward_slot_ranker", "forward_exploitation", "shadow_discovery"),
@@ -760,7 +761,11 @@ LEG_DEPARTMENT: dict[str, str] = {
     **dict.fromkeys(("issue_board", "publish_state", "model_league", "ml_layer_meta",
                      "research_os_archive", "registry_sync", "mining_objective",
                      "research_gap_map", "gauntlet_backpressure", "miner_specialisation",
-                     "research_debt"), "meta"),
+                     "research_debt", "paradigm_router", "meta_controller"), "meta"),
+    # japan: the Japan research division (the principal's 47-section mandate, hourly)
+    **dict.fromkeys(("japan_department",), "japan"),
+    # regions: the global native-market research OS over every country lab
+    **dict.fromkeys(("global_research_os",), "regions"),
 }
 
 
@@ -1057,6 +1062,7 @@ def _producer(name: str, script: str,
 #: must consume its backlog first so that truncation still makes progress. `shadow_forward` gets
 #: the budget to finish; the gauntlet already does the other (never-judged cells sort first).
 LEG_BUDGET_SEC: dict[str, int] = {
+    "probation": 1_800,   # a pass is 40 organs; at 720 s it was cut at ~12 min every hour
     "enrol_clocks": 2_700,
     # THE FOUR ACTIVATION LEGS ARE SEARCHES, NOT RENDERERS. `weak_signals` rebuilds member
     # signals for up to 24 members across 67 symbols and its own `run()` already self-limits at
@@ -2659,6 +2665,44 @@ def main() -> None:
     # exposure and effective rank of the gross book; publishes, sizes nothing. Execution.
     ntr = _costed("netting_report", lambda: _producer("netting_report",
                                                        "research/netting_report.py"))
+    # THE EXECUTION-TAPE ALPHA ENGINE (M5 #5): P(adverse | spread, state, time) and delayed-vs-
+    # immediate entry from the tape and the fills; discoveries for the compiler. Execution.
+    exa = _costed("execution_alpha", lambda: _producer("execution_alpha",
+                                                        "research/execution_alpha_miner.py",
+                                                        "--budget-s", "240"))
+    # THE PARADIGM ROUTER (M14): every lead meets every discovery paradigm; disagreement recorded.
+    prr = _costed("paradigm_router", lambda: _producer("paradigm_router",
+                                                        "research/paradigm_router.py",
+                                                        "--budget-s", "240",
+                                                        "--max-leads", "50"))
+    # THE ONE META-CONTROLLER (F11/F27, canonical item 27): nine kinds of action priced in one
+    # budget market; it was built on 2026-09-12 and clocked by nothing, which is why every
+    # closed-loop reading said the controller had not started. Meta department resident.
+    mtc = _costed("meta_controller", lambda: _producer("meta_controller",
+                                                        "research/meta_controller.py",
+                                                        "--apply"))
+    # LEAD-LEVEL BLIND REPLICATION (M13): important leads frozen and reproduced by a second
+    # implementation with minimal context before they earn expensive resources. Validate.
+    lrp = _costed("lead_replication", lambda: _producer("lead_replication",
+                                                         "research/lead_replication.py",
+                                                         "--max-leads", "10",
+                                                         "--budget-s", "240"))
+    # THE DATA-DISCOVERY SWARM (M12): every missing information requirement and the cheapest
+    # PIT-clean source that could expose it, as dataset discoveries. Intel.
+    dsc2 = _costed("data_scout", lambda: _producer("data_scout", "research/data_scout.py",
+                                                    "--budget-s", "120"))
+    # THE JAPAN RESEARCH DIVISION (the principal's mandate, 2026-09-17, HOURLY): the twenty-step
+    # loop over the twenty-four Japan miners, the compiler, the registers, the frontier and the
+    # dashboard, as one leg of the japan department resident.
+    jpd = _costed("japan_department", lambda: _producer("japan_department",
+                                                         "research/region_department.py",
+                                                         "--region", "japan", "--once",
+                                                         "--budget-s", "1800"))
+    # THE GLOBAL NATIVE-MARKET RESEARCH OS (regions): every country lab at equal priority with
+    # measured adjustments, the transmission engine, the compiler; one pass per hour.
+    gro = _costed("global_research_os", lambda: _producer("global_research_os",
+                                                           "research/global_research_os.py",
+                                                           "--once", "--budget-s", "3000"))
     # EVERY BUILD ON A CLOCK: the auto-clocked organs of this plan (data/auto_legs.json).
     auto = run_auto_legs()
     sw = _costed("sweep", sweep)
@@ -3027,7 +3071,9 @@ def main() -> None:
                     "mining_objective": mob, "research_gap_map": rgm,
                     "gauntlet_backpressure": gbp, "miner_specialisation": msp,
                     "moat_collectors": mcl, "source_frontier": sfr, "scout_swarm": ssw,
-                    "actor_atlas": aat, "netting_report": ntr,
+                    "actor_atlas": aat, "netting_report": ntr, "execution_alpha": exa,
+                    "paradigm_router": prr, "meta_controller": mtc, "lead_replication": lrp,
+                    "data_scout": dsc2, "japan_department": jpd, "global_research_os": gro,
                     "probation": prb, "standing_questions": sqs, "exposure_decomposition": exd,
                     "auto_legs": auto,
                     "sweep": sw, "compile": cc,

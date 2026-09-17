@@ -11,8 +11,10 @@ to the fate that cell met.
 
 HOW A CELL NAMES THE LEAD IT CAME FROM, measured rather than assumed.
 `libs/research/hypothesis_graph.record_candidates` stamps every compiled candidate with
-`parent = sha256({"s": "miner:<source>", "t": title[:300], "u": url})[:16]`, and
-`lead_schema.row_cell_key` reproduces it exactly. Measured against the live ledger on this box:
+`seed_key = sha256({"s": "miner:<source>", "t": title[:300], "u": url})[:16]` -- written into
+`parent` alone until 2026-09-17, and into both when the candidate names no parent cell -- and
+`lead_schema.row_cell_key` reproduces it exactly (`cell_seed_key` reads it back off a graph row,
+`seed_key` first then `parent`). Measured against the live ledger on this box:
 142 of 2,431 sampled rows from `cot`, `forexfactory` and `microstructure` resolve to cells that
 exist -- so BECAME is a JOIN, not an inference. A lead whose key resolves to nothing is not an
 error, it is the backlog, and `unconverted_leads()` is that population by name.
@@ -663,7 +665,11 @@ def ingest_cell(store: dict[str, Any], row: Mapping[str, Any]) -> dict[str, int]
         if new_edge(store, mid, node_id, TESTED_BY, family=family):
             made[TESTED_BY] = 1
 
-    parent = str(row.get("parent") or "")
+    # THE SEED, NOT WHATEVER `parent` HOLDS TODAY. Since 2026-09-17 `parent` carries the CELL a
+    # candidate was mutated from when the donor named one, and the miner-row sha this join needs
+    # lives in `seed_key`; the 35,199 rows written before that date have only `parent`, and
+    # `cell_seed_key` reads both in that order so neither generation loses its BECAME edge.
+    parent = ls.cell_seed_key(row)
     index = store["index"]
     if parent:
         lead_id = index["parents"].get(parent)
