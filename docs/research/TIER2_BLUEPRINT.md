@@ -300,3 +300,70 @@ Also unfixed: the SR 2.34 question. A durable net-of-cost Sharpe of 2.34 from se
 breakout — a mechanism in every retail trading book since the 1990s — on free H1 gold data, is on
 its face implausible. The desk's own law covers it: *"Implausible abundance is a bug report."*
 Forward is the only thing that settles it, and forward is currently **n = 1 fill**.
+
+---
+
+## ERRATUM — 2026-09-17: the universe claim in this document's first revision was WRONG
+
+**What the first revision said:** "22 symbols, one timeframe, 8yr of H1"; "you hold NO indices,
+energy, softs or share CFDs"; and a Phase 3 costing eight weeks to "ingest the universe the MT5
+mandate already claims."
+
+**What is actually on disk.** The first revision read `desks/mt5/universe/` — the legacy
+research universe, 23 symbols — and never opened `desks/mt5/data/universe/`, which holds
+`universe.canon.json`: **251 symbols with full instrument metadata** (asset class, contract size,
+tick value, swap long/short, median spread, bar count, provenance stamps). `bar_coverage_skips.json`
+records the ingest: **attempted 259, written 247, skipped 12.**
+
+| Asset class | Symbols |
+|---|---|
+| Equities | 103 |
+| Forex Exotics | 57 |
+| Forex | 29 |
+| Indices | 16 |
+| Crypto | 14 |
+| Commodities | 12 |
+| Soft Commodity | 11 |
+| Bonds | 3 |
+| Energy | 3 |
+| unset | 3 |
+
+Timeframes: **H1 + H4 + D1** on 248 of 251, not one. Median history **23,077 bars**.
+
+The 12 skips are measured, not missing work: WTI, BRENT, USOIL, USTEC and SPX500 are recorded
+`NOT_OFFERED — the broker does not quote this symbol on this account`. US index and oil exposure
+is a Fusion account limitation, not a research gap.
+
+**Consequences.**
+
+1. **Phase 3 as written is deleted.** The universe expansion it proposed is substantially already
+   done. What remains of it is narrow: fill the M15/M5 axis (currently H1/H4/D1), and source
+   event consensus. Neither is eight weeks.
+2. **The factor-rank ceiling in the first revision was computed on the wrong universe.** Measured
+   on the real one: 86 FX pairs span **27 currencies**, hard rank **26**, participation rank
+   **12.81** — against the ~7 the first revision claimed. Adding 103 equities (market + sector),
+   16 indices (regional), 12 commodities, 11 softs and 3 bonds, the realistic count of independent
+   directions is **35–50**. That is an estimate, not a measurement: it needs the returns matrix,
+   and computing it is the first job of the factor model in M6.
+3. **Cluster blocking is almost entirely relieved.** The first revision called
+   `cross_asset_lead_lag` BLOCKED for want of a leader market; with 16 indices, 3 bonds, 3 energy
+   and 12 commodities on disk, it is unblocked. `macro_rates` is unblocked — `universe.canon.json`
+   carries `swap_long`/`swap_short` per symbol, which is carry, measured, per instrument.
+   **Thirteen of fifteen clusters are now computable on data already held.** Only
+   `options_implied` (no vol feed) and `execution_entry` (blocked by our own markout defect)
+   remain.
+4. **The demotion of `trend` is withdrawn.** It rested on trend consuming factor rank the book
+   already holds — true across 22 FX pairs, false across 251 instruments in 9 asset classes.
+   Cross-asset trend is the canonical diversifying CTA edge and should sit in the first wave.
+
+**What this does NOT change, and what it strengthens.** Every Phase 0 finding stands untouched:
+`realized_r` 7/52, markouts 0/52, a 19% reject rate, `predicted_p_fill` at 1e-267, the coverage
+ratchet guarding five retired Binance modules, `desks/` outside mypy. And the central thesis of
+Part I is now far stronger than when it was argued from scarcity: **247 instruments across nine
+asset classes on three timeframes are on disk, and the live book is four session-breakout sleeves
+on one metal, with measured effective breadth 4.879.** The first revision reached "the constraint
+is aiming, not data" while still believing the data was thin. It is not thin. The desk has
+ingested a genuine multi-asset universe and is researching roughly 1.6% of it.
+
+Headroom within data already held is therefore not the 1.4x the first revision's ceiling implied.
+It is **on the order of 7–10x**, and none of it is gated on an ingest.
