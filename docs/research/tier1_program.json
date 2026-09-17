@@ -5185,13 +5185,15 @@
    "status": "PARTIAL",
    "gate": "none",
    "evidence": [
+    "desks/mt5/research/representation_forge.py",
+    "libs/research/representations.py",
     "desks/mt5/research/representation_discovery.py"
    ],
-   "scheduled_by": "pending",
+   "scheduled_by": "hourly_cycle:representation_forge (data department resident)",
    "artifact": "desks/mt5/reports/REPRESENTATION_FORGE.json",
    "consumer": "discovery_compiler; macro_intelligence",
-   "gap": "representation_discovery covers learned representations only",
-   "next_step": "build representation_forge.py over data/axes and the country planes",
+   "gap": "the forge LANDED 2026-09-17 as U7 (15 transforms plus a composition grammar, PIT-stamped, stored, registry ROI). Still absent from the grammar: cross-country spread, diffusion, rolling beta and learned embeddings",
+   "next_step": "add the four named transforms to libs/research/representations.TRANSFORMS",
    "landed": []
   },
   {
@@ -5202,14 +5204,15 @@
    "status": "PARTIAL",
    "gate": "none",
    "evidence": [
+    "desks/mt5/research/world_model.py",
     "desks/mt5/research/regime_router.py",
     "desks/mt5/research/regime_monitor.py"
    ],
-   "scheduled_by": "pending",
+   "scheduled_by": "hourly_cycle:world_model (macro department resident)",
    "artifact": "desks/mt5/reports/WORLD_MODEL.json",
    "consumer": "pf_allocator (through the router contract); the gateway's counterfactual ledger",
-   "gap": "the regime router and monitor are partial views; the fused posterior, frequency matching, conditional distributions and counterfactual attribution pending",
-   "next_step": "build world_model.py, counterfactual_attribution.py and the data-utilization audit",
+   "gap": "the world model LANDED 2026-09-17 as U5 (per-instrument conditional distributions, per-dataset contribution, regime forecast, residual store). Still absent: the fused GLOBAL posterior over the named macro states, conditional SLEEVE distributions for the allocator, and counterfactual attribution of every live trade",
+   "next_step": "build counterfactual_attribution.py and the sleeve-conditional layer on top of world_model.py; P1 keeps the allocator's routing refused until the principal revisits it",
    "landed": []
   },
   {
@@ -5501,6 +5504,76 @@
    "next_step": "feed the forge's REPRESENTATION_FORGE.json and the ingestion ledger's report into the REPRESENTED/INGESTED rungs once those two builders' organs are on a clock (both read UNMEASURED today); tag the country packs' untagged source lines with their layer so the forest tensor stops losing them to UNTAGGED",
    "landed": [
     "coverage_tensor 2026-09-17"
+   ]
+  },
+  {
+   "id": "U7",
+   "domain": "U",
+   "phase": "U",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "The representation forge and its pure transform library: surprise against a matched-day expectation, z against prior dispersion only, pace, seasonal expectation, regime-conditioned value, lead-lag, diff and acceleration, cross-dataset ratio and product, event-window aggregate, rank/percentile, vintage revision, rolling volatility and a cheap spectral state, plus a GRAMMAR that composes two transforms into a new one -- budgeted by novelty against existing ids times the transform family's measured expected value. Every representation carries its inputs' PIT stamps, is stored with a manifest under an id of the form repr:<dataset>:<transform>:<params>, is read by the world model as an input, and accrues ROI in the registry's representations table (used_by_candidates, survivors, forward rows, explained variance, live attribution)",
+   "evidence": [
+    "desks/mt5/research/representation_forge.py",
+    "libs/research/representations.py",
+    "desks/mt5/tests/test_representation_forge.py",
+    "tests/research/test_representations.py",
+    "libs/moat/registry.py"
+   ],
+   "scheduled_by": "hourly_cycle:representation_forge (data department resident)",
+   "artifact": "desks/mt5/reports/REPRESENTATION_FORGE.json",
+   "consumer": "world_model (reads desks/mt5/data/representations/manifest.json as inputs); the candidate compiler (data/intelligence/representation_forge/discoveries_*.json); the registry's representations table",
+   "gap": "LANDED 2026-09-17: 32 tests (13 organ + 19 library) including composition producing a new id over genuinely new numbers, PIT stamps carried from the inputs rather than regenerated, and a deterministic budget. UNMEASURED by name: representation ROI itself until a candidate cites a representation id (the world model's drop-one credit is the interim signal, and a family with no row takes the 0.25 prior rather than zero); the cross-country spread, diffusion, rolling-beta and embedding transforms U2 also names are not in the grammar yet.",
+   "next_step": "stamp representation ids onto the candidates the compiler builds from representation donations, so used_by_candidates and survivors stop reading zero; add the four transforms U2 names that this grammar lacks",
+   "landed": [
+    "representation_forge 2026-09-17",
+    "representations library 2026-09-17"
+   ]
+  },
+  {
+   "id": "U6",
+   "domain": "U",
+   "phase": "U",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "The unknown-unknowns residual hunt: the world model's epsilon clustered by target x regime x session x calendar class x time of day, the conditional mean and |epsilon| persistence tested against a circular-block permutation null (the mean enumerated exactly over the whole shift group) with one Benjamini-Hochberg charge across every cell the pass tested; each persistent cell becomes a search target naming candidate explanations across the six classes (missing dataset, participant class, region, representation, causal mechanism, market interaction), recorded as a residual_target discovery plus a frontier_map row, donated to the compiler, seeded with native-language queries, and CLOSED with evidence when a later dataset explains it",
+   "evidence": [
+    "desks/mt5/research/residual_hunt.py",
+    "desks/mt5/tests/test_residual_hunt.py",
+    "desks/mt5/research/miner_candidate_compiler.py",
+    "libs/research/polyglot.py",
+    "libs/moat/registry.py"
+   ],
+   "scheduled_by": "hourly_cycle:residual_hunt (intel department resident)",
+   "artifact": "desks/mt5/reports/RESIDUAL_HUNT.json",
+   "consumer": "the candidate compiler (data/intelligence/residual_hunt/discoveries_*.json); the registry's discoveries, frontier_map and source_yield; the scouts (query seeds); desks/mt5/data/world_model/residual_targets.json",
+   "gap": "LANDED 2026-09-17: 19 tests including a planted unexplained cell the hunt must find, a pure-noise panel it must leave alone (measured: per-cell thresholds returned three false targets out of fifteen cells before the FDR charge), a cell below the named minimum n that reads UNMEASURED rather than clean, and delayed dataset credit on close. UNMEASURED by name: any cell with fewer than 60 residual rows, every cell while the residual store is empty, and the calendar's own uncovered window (three states, never two).",
+   "next_step": "route the six explanation classes into the acquisition queue so a named missing dataset becomes a priced acquisition task automatically",
+   "landed": [
+    "residual_hunt 2026-09-17"
+   ]
+  },
+  {
+   "id": "U5",
+   "domain": "U",
+   "phase": "U",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "The global probabilistic world model: forward log returns of every hypothesis-lane instrument at 1h/4h/1d/5d from every PIT-stamped series the desk holds (axes, FRED, the country data planes, the representation store), strictly anti-lookahead (available_time <= t, newest vintage, broker-clock padded); ridge with purged expanding-window CV plus a nonlinear residual learner; predictive distribution from residual quantiles; per-dataset drop-one contribution and explained variance by dataset, region and information type; a regime forecast in the desk's own vocabulary; epsilon published as a residual store. It allocates no capital.",
+   "evidence": [
+    "desks/mt5/research/world_model.py",
+    "desks/mt5/tests/test_world_model.py",
+    "libs/research/representations.py",
+    "desks/mt5/research/universe_policy.py",
+    "libs/moat/registry.py"
+   ],
+   "scheduled_by": "hourly_cycle:world_model (macro department resident)",
+   "artifact": "desks/mt5/reports/WORLD_MODEL.json",
+   "consumer": "residual_hunt (the residual store); representation_forge (dataset credit as representation ROI); the registry's source_yield and kpis; desks/mt5/data/world_model/residuals_<horizon>.parquet",
+   "gap": "LANDED 2026-09-17: 13 tests including a planted relation the model must recover, a planted look-ahead it must refuse, and the inclusive-at-t / exclusive-after-t join boundary. UNMEASURED by name: the single-name equity lane (event-driven by mandate), any axis whose stamps do not parse, and every symbol a budget-bounded pass did not reach this hour (the cursor advances so the next pass starts where this one stopped).",
+   "next_step": "feed the conditional distributions to the allocator's inputs once P1's refusal is revisited by the principal; widen the input set as the country data planes land",
+   "landed": [
+    "world_model 2026-09-17"
    ]
   },
   {

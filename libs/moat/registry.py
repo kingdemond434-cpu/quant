@@ -145,6 +145,14 @@ EXTENSIONS: dict[str, tuple[tuple[str, str], ...]] = {
     "alpha_cards": (("desk_ref", "TEXT"), ("lane", "TEXT"), ("symbol", "TEXT"),
                     ("family", "TEXT"), ("params_json", "TEXT"), ("chart", "TEXT"),
                     ("mechanism", "TEXT")),
+    # THE ACCESS ROUTING LAW (LAWS 5e, 2026-09-17): three INDEPENDENT dimensions on every source
+    # -- access label, credibility, predictive state -- written by research/evidence_router.py
+    # through libs/research/access_classifier.py. `quarantine` is 1 for ACCESS_UNCLEAR (metadata
+    # kept, content not consumed); a refused label (PRIVATE, CONFIDENTIAL_MNPI,
+    # STOLEN_UNAUTHORIZED) keeps its reason in `route_reason`. ADD COLUMN, never a rewrite.
+    "sources": (("access_label", "TEXT"), ("credibility", "TEXT"),
+                ("predictive_state", "TEXT"), ("quarantine", "INTEGER"),
+                ("routed_at", "TEXT"), ("route_reason", "TEXT")),
 }
 
 #: New tables the intelligence side keeps in the SAME file (one registry, no parallel database).
@@ -189,6 +197,19 @@ MOAT_TABLES: dict[str, str] = {
     "generator_yield": "generator TEXT PRIMARY KEY, generated INTEGER, donated INTEGER,"
                        " judged INTEGER, survivors INTEGER, independent_survivors INTEGER,"
                        " delta_n_eff REAL, delta_elogw REAL, compute_s REAL, updated_at TEXT",
+    #: THE REPRESENTATION FORGE'S LEDGER (principal 2026-09-17: "representation invention mints
+    #: new features from ingested series and tracks their ROI"). A representation is neither a
+    #: discovery nor a candidate -- it is the FEATURE a candidate was built out of, and until it
+    #: had a row here the question "which representation earned its compute" had no place to be
+    #: answered. Declared as a MOAT table rather than as columns on an existing one for the
+    #: reason the others are: it is a new noun, not a new adjective on an old one.
+    "representations": "representation_id TEXT PRIMARY KEY, created_at TEXT, updated_at TEXT,"
+                       " dataset TEXT, transform TEXT, family TEXT, params_json TEXT,"
+                       " region TEXT, information_type TEXT, n_points INTEGER,"
+                       " first_available TEXT, last_available TEXT, pit_json TEXT,"
+                       " novelty REAL, expected_value REAL, used_by_candidates INTEGER,"
+                       " survivors INTEGER, forward_rows INTEGER, live_attribution REAL,"
+                       " explained_variance REAL, compute_s REAL, origin TEXT, payload_json TEXT",
     "kpis": "day TEXT, name TEXT, value REAL, detail_json TEXT, updated_at TEXT,"
             " PRIMARY KEY(day, name)",
     "sync_cursor": "key TEXT PRIMARY KEY, value TEXT, updated_at TEXT",
@@ -554,6 +575,15 @@ def enqueue_candidate(*, family: str, symbol: str, params: Mapping[str, Any] | N
             c.commit()
             return str(row["id"]), False
         cid = candidate_id or new_id("cand")
+        if candidate_id and c.execute("SELECT 1 FROM research_candidates WHERE id=?",
+                                      (candidate_id,)).fetchone() is not None:
+            # The cell id is already taken by a DIFFERENT rule (the desk re-used a cell id with
+            # new params, or two donors named the same cell). Measured on the box 2026-09-17:
+            # the desk bridge died on `UNIQUE constraint failed: research_candidates.id` and
+            # poured nothing. A second content under one name is a second candidate whose id
+            # carries the content, and the cell id stays reachable through donated_cell.
+            cid = f"{candidate_id}~{h[:10]}"
+            fields = {**fields, "donated_cell": candidate_id}
         cell = grid_cell({**fields, "mechanism": mechanism, "symbol": symbol})
         empty = c.execute("SELECT 1 FROM research_candidates WHERE grid_cell=? LIMIT 1",
                           (cell,)).fetchone() is None
@@ -1167,6 +1197,91 @@ def generator_yield_update(generator: str, *, conn: sqlite3.Connection | None = 
                    int(vals["survivors"]), int(vals["independent_survivors"]), vals["delta_n_eff"],
                    vals["delta_elogw"], vals["compute_s"], now()))
         c.commit()
+    finally:
+        if conn is None:
+            c.close()
+
+
+def representation_upsert(representation_id: str, *, dataset: str, transform: str, family: str,
+                          conn: sqlite3.Connection | None = None, **fields: Any) -> bool:
+    """Register a minted representation. Returns True when the row is new.
+
+    The IDENTITY columns are rewritten on every pass (a longer series, a later last_available);
+    the ROI counters are NOT touched here -- they are additive and belong to
+    `representation_roi_update`, because a forge pass reports what it minted and never what it
+    thinks the downstream total should now be.
+    """
+    c = conn or connect()
+    try:
+        row = c.execute("SELECT representation_id FROM representations WHERE representation_id=?",
+                        (representation_id,)).fetchone()
+        rec: dict[str, Any] = {"dataset": dataset, "transform": transform, "family": family,
+                               "updated_at": now()}
+        allowed = set(_columns(c, "representations"))
+        for k, v in fields.items():
+            col = {"params": "params_json", "pit": "pit_json", "payload": "payload_json"}.get(k, k)
+            if col in allowed and col not in rec:
+                rec[col] = _j(v) if col.endswith("_json") and not isinstance(v, str) else v
+        if row is None:
+            rec.update({"representation_id": representation_id, "created_at": now()})
+            for counter in ("used_by_candidates", "survivors", "forward_rows"):
+                rec.setdefault(counter, 0)
+            keys = list(rec)
+            c.execute(f'INSERT INTO representations({",".join(keys)}) '
+                      f'VALUES({",".join("?" * len(keys))})', [rec[k] for k in keys])
+            c.commit()
+            return True
+        c.execute("UPDATE representations SET " + ", ".join(f"{k}=?" for k in rec)  # noqa: S608
+                  + " WHERE representation_id=?", [*rec.values(), representation_id])
+        c.commit()
+        return False
+    finally:
+        if conn is None:
+            c.close()
+
+
+def representation_roi_update(representation_id: str, *, conn: sqlite3.Connection | None = None,
+                              **inc: float) -> None:
+    """Additive ROI counters (used_by_candidates, survivors, forward_rows, compute_s) and
+    absolute readings (live_attribution, explained_variance) for one representation."""
+    c = conn or connect()
+    try:
+        row = c.execute("SELECT * FROM representations WHERE representation_id=?",
+                        (representation_id,)).fetchone()
+        if row is None:
+            return
+        cur = dict(row)
+        sets: dict[str, Any] = {"updated_at": now()}
+        for k in ("used_by_candidates", "survivors", "forward_rows"):
+            if k in inc:
+                sets[k] = int(float(cur.get(k) or 0) + float(inc[k]))
+        if "compute_s" in inc:
+            sets["compute_s"] = float(cur.get("compute_s") or 0.0) + float(inc["compute_s"])
+        for k in ("live_attribution", "explained_variance", "novelty", "expected_value"):
+            if k in inc:
+                sets[k] = float(inc[k])
+        c.execute("UPDATE representations SET " + ", ".join(f"{k}=?" for k in sets)  # noqa: S608
+                  + " WHERE representation_id=?", [*sets.values(), representation_id])
+        c.commit()
+    finally:
+        if conn is None:
+            c.close()
+
+
+def representations(family: str | None = None, limit: int = 500,
+                    conn: sqlite3.Connection | None = None) -> list[dict[str, Any]]:
+    """The ROI table: minted representations ordered by what they have actually earned."""
+    c = conn or connect()
+    try:
+        q = "SELECT * FROM representations WHERE 1=1"
+        args: list[Any] = []
+        if family:
+            q += " AND family=?"
+            args.append(family)
+        q += (" ORDER BY COALESCE(survivors,0) DESC, COALESCE(used_by_candidates,0) DESC,"
+              " created_at DESC LIMIT ?")
+        args.append(limit)
+        return _rows(c.execute(q, args))
     finally:
         if conn is None:
             c.close()

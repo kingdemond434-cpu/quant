@@ -620,6 +620,45 @@ def bandit_view(rows: list[dict[str, Any]], w: dict[str, Any]) -> dict[str, Any]
                    "folds this report's class shares into worth_by_arm"}}
 
 
+def trial_budget(out: Path | None = None) -> dict[str, Any]:
+    """THE DELAYED-CREDIT TRIAL BUDGET (LAWS 5f rule 10), read from `research_roi.py`.
+
+    A PRIORITY, NEVER A CAP, and this organ is the right place for that sentence: everything else
+    here says generate DIFFERENTLY rather than generate LESS, and a per-family budget is the one
+    input that could be misread as a ban. Every family keeps a floor share, the total is conserved
+    at 1.0, and a family with no share at all reads 1.0 -- unpriced is not unwanted.
+
+    The path is derived from `OUT` at call time so this organ's own tests, which repoint `OUT`
+    into a tmp tree, never read the live box's allocation.
+    """
+    base = (out or OUT).parent
+    p = (base.parent / "data" / "research_allocation.json") if base.name == "reports" \
+        else base / "data" / "research_allocation.json"
+    note: dict[str, str] = {}
+    doc = _read_json(p, note)
+    block = (doc or {}).get("trial_budget_by_family") if isinstance(doc, dict) else None
+    if not isinstance(block, dict) or not isinstance(block.get("shares"), dict):
+        return {"status": "UNMEASURED", "source": _rel(p),
+                "why": ("no trial budget published: research_roi.py has not written one, so every "
+                        "family is served at its existing rate"),
+                "shares": {}, "applied": False}
+    shares = {str(k): float(v) for k, v in block["shares"].items()
+              if isinstance(v, (int, float))}
+    n = len(shares) or 1
+    equal = 1.0 / n
+    return {
+        "status": "MEASURED", "source": _rel(p), "applied": True,
+        "n_families": len(shares),
+        "floor_share": block.get("floor_share"), "total_share": block.get("total_share"),
+        "shares": dict(sorted(shares.items(), key=lambda kv: -kv[1])),
+        "factors": {k: round(v / equal, 4) for k, v in shares.items()},
+        "above_the_equal_share": sorted(k for k, v in shares.items() if v > equal),
+        "below_the_equal_share": sorted(k for k, v in shares.items() if v < equal),
+        "boundary": ("a share ORDERS the queue, it never bans a family, lowers a bar or shrinks "
+                     "the build: no family is ever served zero cells"),
+    }
+
+
 def build(now: datetime | None = None) -> dict[str, Any]:
     at = now or _now()
     note: dict[str, str] = {}
@@ -685,6 +724,7 @@ def build(now: datetime | None = None) -> dict[str, Any]:
             set(getattr(_registry, "FAILURE_CLASSES", ()))
             - {v for v in GATE_FAILURE_CLASS.values() if v}) if _registry else [],
         "cold_share": cold.get("cold_share"), "cold": cold,
+        "trial_budget": trial_budget(),
         "capacity": capacity(note, at),
         "bandit": bandit_view([r for r in born if r.get("_t") is not None
                                and r["_t"] >= at - timedelta(hours=WINDOWS[-1][1])], primary),
