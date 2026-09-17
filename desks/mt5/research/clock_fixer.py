@@ -55,6 +55,20 @@ RESIDENTS: dict[str, tuple[str, str, int]] = {
     "dept_rest": ("MT5-Dept-Rest", "MT5-Dept-Rest.log", 4 * 3600),
     "dept_japan": ("MT5-Dept-Japan", "MT5-Dept-Japan.log", 4 * 3600),
     "dept_regions": ("MT5-Dept-Regions", "MT5-Dept-Regions.log", 4 * 3600),
+    # THE FOREST FEDERATION (2026-09-17): one 24/7 resident per regional research
+    # civilization. Japan and macro are already above; the four global-LAYER forests
+    # ride dept_regions and so are not separate residents.
+    "dept_korea": ("MT5-Forest-Korea", "MT5-Forest-Korea.log", 4 * 3600),
+    "dept_china": ("MT5-Forest-China", "MT5-Forest-China.log", 4 * 3600),
+    "dept_russia_cis": ("MT5-Forest-RussiaCis", "MT5-Forest-RussiaCis.log", 4 * 3600),
+    "dept_south_asia": ("MT5-Forest-SouthAsia", "MT5-Forest-SouthAsia.log", 4 * 3600),
+    "dept_asean": ("MT5-Forest-Asean", "MT5-Forest-Asean.log", 4 * 3600),
+    "dept_oceania": ("MT5-Forest-Oceania", "MT5-Forest-Oceania.log", 4 * 3600),
+    "dept_europe": ("MT5-Forest-Europe", "MT5-Forest-Europe.log", 4 * 3600),
+    "dept_north_america": ("MT5-Forest-NorthAmerica", "MT5-Forest-NorthAmerica.log", 4 * 3600),
+    "dept_latam": ("MT5-Forest-Latam", "MT5-Forest-Latam.log", 4 * 3600),
+    "dept_mena": ("MT5-Forest-Mena", "MT5-Forest-Mena.log", 4 * 3600),
+    "dept_africa": ("MT5-Forest-Africa", "MT5-Forest-Africa.log", 4 * 3600),
     "moat_exploit": ("MT5-Moat-Exploit", "MT5-Moat-Exploit.log", 4 * 3600),
     "moat_explore": ("MT5-Moat-Explore", "MT5-Moat-Explore.log", 4 * 3600),
     "moat_resurrect": ("MT5-Moat-Resurrect", "MT5-Moat-Resurrect.log", 4 * 3600),
