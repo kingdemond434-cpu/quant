@@ -95,6 +95,22 @@ TASK name="MT5-Moat-Resurrect" trigger="at startup + every 10 minutes (keep-aliv
 # residents of department_resident.py like the other nine.
 TASK name="MT5-Dept-Japan" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
 TASK name="MT5-Dept-Regions" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
+# THE FOREST FEDERATION (principal 2026-09-17). Eleven regional research civilizations,
+# each a 24/7 resident running the eleven agent roles of libs/research/forests.ROLES in
+# parallel through desks/mt5/research/forest_runner.py. Japan and global macro already
+# have residents (MT5-Dept-Japan, MT5-Dept-Macro) and the four global-LAYER forests ride
+# MT5-Dept-Regions, so those six are deliberately NOT repeated here.
+TASK name="MT5-Forest-Korea" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
+TASK name="MT5-Forest-China" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
+TASK name="MT5-Forest-RussiaCis" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
+TASK name="MT5-Forest-SouthAsia" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
+TASK name="MT5-Forest-Asean" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
+TASK name="MT5-Forest-Oceania" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
+TASK name="MT5-Forest-Europe" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
+TASK name="MT5-Forest-NorthAmerica" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
+TASK name="MT5-Forest-Latam" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
+TASK name="MT5-Forest-Mena" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
+TASK name="MT5-Forest-Africa" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
 TASK name="MT5-Deepening"          trigger="every 1 hour"  runs="desks/mt5/research/deepening_worker.py"  installer="desks/mt5/scripts/install_deepening_task.ps1" lane="research"
 
 # ------------------------------------------------------------------------------- the data moat
