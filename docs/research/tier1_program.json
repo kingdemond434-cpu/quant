@@ -5429,6 +5429,126 @@
    "landed": [
     "macro intelligence fusion 2026-09-17"
    ]
+  },
+  {
+   "id": "U10",
+   "item": "The forest federation runtime: every region a 24/7 native-language research civilization running eleven agent roles in parallel (source scouts, official data, practitioner, academic, code, archive, failure miners, mechanism extractors, data agents, candidate compilers, local source ROI), seventeen forests competing for compute with a scout floor nobody can switch off, all feeding one registry",
+   "domain": "U",
+   "phase": "U",
+   "status": "LANDED",
+   "gate": "none",
+   "evidence": [
+    "libs/research/forests.py",
+    "desks/mt5/research/forest_runner.py",
+    "tests/research/test_forests.py",
+    "desks/mt5/tests/test_forest_runner.py",
+    "desks/mt5/ops/box_tasks.manifest",
+    "desks/mt5/research/clock_fixer.py",
+    "libs/research/layers.py"
+   ],
+   "scheduled_by": "hourly_cycle:forest_korea, hourly_cycle:forest_china, hourly_cycle:forest_russia_cis, hourly_cycle:forest_south_asia, hourly_cycle:forest_asean, hourly_cycle:forest_oceania, hourly_cycle:forest_europe, hourly_cycle:forest_north_america, hourly_cycle:forest_latam, hourly_cycle:forest_mena, hourly_cycle:forest_africa, hourly_cycle:forest_global_web, hourly_cycle:forest_global_academic_code, hourly_cycle:forest_global_physical_data, hourly_cycle:forest_global_market_data",
+   "artifact": "desks/mt5/reports/FOREST_KOREA.json",
+   "consumer": "the canonical registry (discoveries, provenance, sources, source_yield); the docket through proposer_common.donate; data/axes for the PIT series; data/forest_runs.jsonl",
+   "gap": "LANDED 2026-09-17. ELEVEN new residents (MT5-Forest-Korea .. MT5-Forest-Africa) are declared in the manifest and healed by clock_fixer; japan and global_macro keep the residents they already had and the four global-LAYER forests ride MT5-Dept-Regions. Registration of the eleven tasks ON the box is the coordinator's step after this ships, so until it runs their residents read DEAD/task_missing rather than ALIVE. north_america has no country pack on this box: its scout runs from the mandate's own terms and its other ten roles report UNMEASURED by name, which is the measurement.",
+   "next_step": "register the eleven MT5-Forest-* tasks on the trading box; wire research_roi to write desks/mt5/data/forest_allocation.json so the forests actually compete",
+   "landed": [
+    "forest_federation 2026-09-17"
+   ]
+  },
+  {
+   "id": "U11",
+   "item": "The dedup chain: canonical source -> content hash -> semantic similarity -> mechanism identity -> genealogy, with the deciding stage named on every verdict, so ten agents finding one strategy on ten repost sites produce ONE mechanism and nine provenance edges while a genuinely different descendant branches and is tested on its own",
+   "domain": "U",
+   "phase": "U",
+   "status": "LANDED",
+   "gate": "none",
+   "evidence": [
+    "libs/research/dedup_chain.py",
+    "tests/research/test_dedup_chain.py",
+    "desks/mt5/research/forest_runner.py",
+    "libs/research/lead_schema.py",
+    "libs/research/hypothesis_graph.py"
+   ],
+   "scheduled_by": "hourly_cycle:forest_korea, hourly_cycle:forest_china, hourly_cycle:forest_russia_cis, hourly_cycle:forest_south_asia, hourly_cycle:forest_asean, hourly_cycle:forest_oceania, hourly_cycle:forest_europe, hourly_cycle:forest_north_america, hourly_cycle:forest_latam, hourly_cycle:forest_mena, hourly_cycle:forest_africa, hourly_cycle:forest_global_web, hourly_cycle:forest_global_academic_code, hourly_cycle:forest_global_physical_data, hourly_cycle:forest_global_market_data",
+   "artifact": "desks/mt5/reports/FOREST_KOREA.json",
+   "consumer": "forest_runner (every write passes the chain before the registry); the provenance DAG in libs/moat/registry; libs/research/external_federation if it imports it",
+   "gap": "LANDED 2026-09-17 as a PURE library with its own view: the chain is exercised by every forest pass and its census rides on each FOREST_*.json. It is not yet applied to the desk's PRE-EXISTING intake (miner_candidate_compiler, deep_forest_miner), which keep their own narrower dedupe on mechanism_key alone -- so the historical duplicate debt is unmeasured by this chain.",
+   "next_step": "seed the view from the whole discoveries table rather than the last 1,500 rows; run the chain over the existing intake to measure the historical duplicate debt",
+   "landed": [
+    "dedup_chain 2026-09-17"
+   ]
+  },
+  {
+   "id": "U4",
+   "item": "THE AUTHORITATIVE COVERAGE TENSORS AND THE FRONTIER/EVIG ENGINE (LAWS 5f). WORLD: country x sector x information type x mechanism x representation x asset x session x regime x horizon x execution, states UNOBSERVED -> SOURCE_HUNT -> INGESTED -> REPRESENTED -> CANDIDATES -> TESTING -> FAILED/FORWARD -> CERTIFIED -> LIVE -> DECAYED. FOREST: country x language x source class x sector x mechanism x asset transmission x freshness x accessibility over the ten source layers, states UNSEEN -> SOURCE_HUNT -> DISCOVERED -> VERIFIED -> INGESTED -> REPRESENTED -> CANDIDATES -> TESTED -> FORWARD -> LIVE/FAILED. Sparse storage, monotone ladders with two named down-moves, marginals, holes ranked by EVIG = prior x reachability x novelty x capacity / cost with every factor in a breakdown, covered() on the principal's two conditions, floors that ratchet up only, and every hole handed to the machine as a coverage_gap discovery naming the one move that raises it a rung",
+   "domain": "U",
+   "phase": "U",
+   "status": "LANDED",
+   "gate": "none",
+   "evidence": [
+    "libs/research/coverage.py",
+    "desks/mt5/research/coverage_tensor.py",
+    "tests/research/test_coverage.py",
+    "desks/mt5/tests/test_coverage_tensor.py",
+    "desks/mt5/research/hourly_cycle.py",
+    "libs/research/layers.py",
+    "docs/LAWS.md"
+   ],
+   "scheduled_by": "hourly_cycle:coverage_tensor (meta department resident)",
+   "artifact": "desks/mt5/reports/COVERAGE_TENSOR.json",
+   "consumer": "discovery_compiler and the scouts/forests (coverage_gap discoveries, UNPROCESSED, origin DESK); global_research_os and meta_controller (registry frontier_map rows); desks/mt5/data/coverage_floors.json; desks/mt5/data/coverage_cursor.json",
+   "gap": "LANDED 2026-09-17: both tensors built from the desk's own evidence and run once on this box (177s). WORLD 6,994 cells -- INGESTED 711, CANDIDATES 1,278, FAILED 3,397, FORWARD 1,251, CERTIFIED 126, LIVE 228, REPRESENTED 0 and TESTING 0 because the forge report and the trials ledger are UNMEASURED here, not because the ground is empty. FOREST 58 cells over the ten source layers (DISCOVERED 50, VERIFIED 7). 39 countries read, 0 COVERED: 37 MAPPING and 2 UNMEASURED -- the two-condition rule refuses every one of them, which is the principal's 'no country is covered because five obvious sources were added' as a measurement. 96 holes ranked by EVIG, top 40 handed over as coverage_gap discoveries (UNPROCESSED) and 40 frontier_map rows; the three named rows of LAWS 5f are explicit and read UNOBSERVED/UNSEEN. 145 hypothesis-lane assets, 106 held in the event lane. UNMEASURED by name: representation_forge_report, ingestion_ledger, certificates_dir, registry.trials_ledger, registry.mechanisms, pack_sources_untagged.",
+   "next_step": "feed the forge's REPRESENTATION_FORGE.json and the ingestion ledger's report into the REPRESENTED/INGESTED rungs once those two builders' organs are on a clock (both read UNMEASURED today); tag the country packs' untagged source lines with their layer so the forest tensor stops losing them to UNTAGGED",
+   "landed": [
+    "coverage_tensor 2026-09-17"
+   ]
+  },
+  {
+   "id": "U8",
+   "item": "The access/legal router and the evidence router: every source walks DISCOVER -> CAPTURE METADATA -> LEGAL/ACCESS CLASSIFICATION -> EVIDENCE CLASSIFICATION -> RESEARCH, carrying three independent labels (eleven access labels, six credibility values, four predictive states); ACCESS_UNCLEAR is quarantined with its metadata kept, PRIVATE/CONFIDENTIAL_MNPI/STOLEN_UNAUTHORIZED are refused with the reason, PUBLIC_WITH_TERMS is reached by API or manual review and never scraped, and fringe public material is preserved at low weight as a narrative feature",
+   "domain": "U",
+   "phase": "U",
+   "status": "LANDED",
+   "gate": "none",
+   "evidence": [
+    "libs/research/access_classifier.py",
+    "tests/research/test_access_classifier.py",
+    "desks/mt5/research/evidence_router.py",
+    "desks/mt5/tests/test_evidence_router.py",
+    "libs/moat/registry.py"
+   ],
+   "scheduled_by": "hourly_cycle:evidence_router (intel department resident)",
+   "artifact": "desks/mt5/reports/EVIDENCE_ROUTER.json",
+   "consumer": "the quarantine/refusal ledger desks/mt5/data/evidence_quarantine.json; the coverage tensor's accessibility axis via registry.memories(category=\"access_coverage\"); research_roi (source ROI carries each source's access label)",
+   "gap": "LANDED 2026-09-17: measured on the box the day it landed -- 159 sources routed (123 of them registered from data/intelligence/** for the first time), 128 PUBLIC, 13 PUBLIC_SOCIAL, 1 PUBLIC_ARCHIVE, 17 ACCESS_UNCLEAR quarantined, 0 refused. Before it ran, the registry's sources table carried no field saying whether the desk could lawfully consume what it had collected.",
+   "next_step": "predictive_state is UNTESTED for every SOURCE (a source is not a claim); the claim-level lane that moves a source to PREDICTIVE or NARRATIVE_FEATURE rides on the evidence objects access_classifier already returns",
+   "landed": [
+    "evidence_router 2026-09-17"
+   ]
+  },
+  {
+   "id": "U9",
+   "item": "The five-ROI delayed-credit reallocator: source, dataset, representation, mechanism and scientist ROI plus ROI_region = (novel mechanisms + useful datasets + survivors + dE[log W]) / (compute + API + trial budget); every survivor credits its source, region, representation and scientist along the provenance DAG; every failed family is published as NEGATIVE_KNOWLEDGE; compute, collection bandwidth, trial budget, forward slots and capital evidence follow the ROI two-sided, with a scout floor in every region",
+   "domain": "U",
+   "phase": "U",
+   "status": "LANDED",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/research_roi.py",
+    "desks/mt5/tests/test_research_roi.py",
+    "desks/mt5/research/research_departments.py",
+    "desks/mt5/research/gauntlet_backpressure.py",
+    "desks/mt5/research/mining_objective.py",
+    "desks/mt5/research/forward_slot_ranker.py"
+   ],
+   "scheduled_by": "hourly_cycle:research_roi (meta department resident)",
+   "artifact": "desks/mt5/reports/RESEARCH_ROI.json",
+   "consumer": "research_departments.spend() (department compute shares via data/research_allocation.json); gauntlet_backpressure.trial_budget and mining_objective.trial_budget (trial budget per family); forward_slot_ranker.roi_weights (forward-slot weights); the forest runner (data/forest_allocation.json); the allocator as EVIDENCE ONLY (data/roi_capital_evidence.json)",
+   "gap": "LANDED 2026-09-17: measured the day it landed -- 7 families published as NEGATIVE_KNOWLEDGE (correlation_regime 249 judged/0 passed, relative_value 172/0, turn_of_month 145/0, vol_mean_reversion 126/0, vol_transition 102/0, pca_residual 91/0, event_reaction 57/0) and all four consumers read the allocation live (31 families, weights 0.5-2.0). Delayed credit reaches 0 sources today because the 98 certified survivors predate the registry's 404 candidates and share no (symbol, family) join; that is a MEASUREMENT, published as delayed_credit.n_unjoined, not a defect in the walk (the two-hop walk is fenced by test_delayed_credit_reaches_the_seed_source_through_two_provenance_hops).",
+   "next_step": "the API term of ROI_region stays UNMEASURED until an organ writes data/research_api_calls.jsonl; representation ROI stays UNMEASURED until the representation forge writes reports/REPRESENTATION_FORGE.json; roi_capital_evidence.json has no allocator consumer and names the wiring that would give it one",
+   "landed": [
+    "research_roi 2026-09-17"
+   ]
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."

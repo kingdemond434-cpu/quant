@@ -717,9 +717,26 @@ CORE_LEGS: frozenset[str] = frozenset({
 #: another. A leg that feeds another in the same pass sits in the same department (search ->
 #: compile -> merge_docket -> deepen is one pipeline). Legs named in no department belong to
 #: `rest`, which also hosts the auto-clocked organs. The core plan is unchanged.
+#: THE FOREST FEDERATION (principal 2026-09-17): every region is its own 24/7 research
+#: civilization running eleven agent roles in parallel, not one global crawler that occasionally
+#: searches Korea. Each is its OWN department with its OWN resident (the per-forest task in
+#: `libs.research.forests.FOREST_TASKS`), so the twelve regions and the five global layers
+#: run CONCURRENTLY and compete for compute through
+#: `libs/research/forests.allocation_for` rather than queueing behind one another. Japan and
+#: global_macro already have residents (`japan`, `macro`); the eleven below are the ones that did
+#: not, and the four global-layer legs join `regions`, which is the department that already hosts
+#: the cross-country research OS.
+FOREST_DEPARTMENTS: tuple[str, ...] = ("korea", "china", "russia_cis", "south_asia", "asean",
+                                       "oceania", "europe", "north_america", "latam", "mena",
+                                       "africa")
+#: The global-layer forests: a LAYER of the world rather than a place, so they do not get a
+#: region resident of their own -- they run on the `regions` resident beside global_research_os.
+GLOBAL_FOREST_LEGS: tuple[str, ...] = ("forest_global_web", "forest_global_academic_code",
+                                       "forest_global_physical_data", "forest_global_market_data")
+
 DEPARTMENTS: tuple[str, ...] = ("japan", "regions", "data", "intel", "discovery", "validate",
                                 "macro", "execution",
-                                "forward", "meta", "rest")
+                                "forward", "meta", "rest", *FOREST_DEPARTMENTS)
 LEG_DEPARTMENT: dict[str, str] = {
     # data: bars, tapes, lakes, sources -- the inputs every other department reads
     **dict.fromkeys(("refresh_bars", "tape_features", "lake_promote", "universe_integrity",
@@ -727,7 +744,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "asia_plane", "archive_tape", "reclaim_disk", "maintain_miners",
                      "spread_provenance", "microstructure_census", "fusion_cost",
                      "cost_construction", "swap_rejudge", "sge_premium", "moat_series",
-                     "unused_information", "ingestion_ledger"), "data"),
+                     "unused_information", "ingestion_ledger", "representation_forge"), "data"),
     # intel: the global intelligence agency -- crawlers, forests, frontier scouts
     **dict.fromkeys(("world_crawler", "deep_forest", "moat_miner", "market_intel", "mine",
                      "exogenous_search", "standing_questions", "frontier", "frontier_report",
@@ -735,7 +752,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "knowledge_graph", "moat_collectors", "actor_atlas", "scout_swarm",
                      "source_frontier", "data_scout", "external_federation",
                      "understanding_seat", "archaeology", "shadow_institutional",
-                     "latent_actors"), "intel"),
+                     "source_civilizations", "evidence_watchtower", "prediction_markets",
+                     "latent_actors", "residual_hunt", "evidence_router"), "intel"),
     # discovery: the candidate pipeline, in order, plus the evolutionary generators
     **dict.fromkeys(("search", "sweep", "breadth_sweep", "compile_candidates", "merge_docket",
                      "deepen", "alpha_evolution", "alpha_rl", "ml_layer", "ensemble_optimizer",
@@ -755,7 +773,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "counterfactual_world", "opportunity_forecast", "forecast_contract",
                      "exposure_decomposition", "event_response_atlas", "causal_lab",
                      "world_lab", "macro_department", "news_event_stream",
-                     "event_sleeves", "macro_intelligence"), "macro"),
+                     "event_sleeves", "macro_intelligence", "world_model"), "macro"),
     # execution: the execution research command
     **dict.fromkeys(("execution_twin", "entry_timing", "cost_to_edge", "exit_study",
                      "execution_resolver", "netting_report", "execution_alpha",
@@ -768,12 +786,17 @@ LEG_DEPARTMENT: dict[str, str] = {
     **dict.fromkeys(("issue_board", "publish_state", "model_league", "ml_layer_meta",
                      "research_os_archive", "registry_sync", "mining_objective",
                      "research_gap_map", "gauntlet_backpressure", "miner_specialisation",
+                     "research_roi",
                      "research_debt", "paradigm_router", "meta_controller",
-                     "ingestion_exploitation"), "meta"),
+                     "ingestion_exploitation", "coverage_tensor"), "meta"),
     # japan: the Japan research division (the principal's 47-section mandate, hourly)
     **dict.fromkeys(("japan_department",), "japan"),
-    # regions: the global native-market research OS over every country lab
-    **dict.fromkeys(("global_research_os",), "regions"),
+    # regions: the global native-market research OS over every country lab, plus the four
+    # GLOBAL-LAYER forests (web, academic+code, physical data, market data) -- layers of the
+    # world that would be mined seventeen times over if each region hunted them itself.
+    **dict.fromkeys(("global_research_os", *GLOBAL_FOREST_LEGS), "regions"),
+    # the forest federation: one department per regional civilization, each its own resident
+    **{f"forest_{_fid}": _fid for _fid in FOREST_DEPARTMENTS},
 }
 
 
@@ -1079,6 +1102,20 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "weak_signals": 2_700,
     "residual_factors": 1_800,
     "exogenous_search": 1_200,
+    # THE THREE 2026-09-17 ORGANS. Each subprocess timeout sits ABOVE the organ's own internal
+    # budget, so it stops itself and WRITES its artifact rather than being killed with the pass
+    # half done. A cycle cap below the organ's own budget is the `enrol_clocks` defect exactly:
+    # truncated at the same prefix every hour, reported as scheduled, and never finishing.
+    "world_model": 1_500,
+    "representation_forge": 1_100,
+    "residual_hunt": 800,
+    # A FOREST IS GIVEN THE BUDGET IT IS ASKED FOR. Each leg passes `--budget-s 3000` down to
+    # `forest_runner`, which divides it across eleven parallel agents; a 720 s cycle cap would
+    # SIGKILL every forest at the same prefix every hour -- the truncated-job failure that cost
+    # this desk eighty-four forward clocks -- so the cycle's own limit sits above it.
+    **{f"forest_{_fid}": 3_300 for _fid in
+       (*FOREST_DEPARTMENTS, "global_web", "global_academic_code", "global_physical_data",
+        "global_market_data")},
 }
 
 
@@ -2562,6 +2599,12 @@ def main() -> None:
     # THE CAUSAL DISCOVERY LAB: PCMCI-style lagged discovery with FDR, a NOTEARS-lite DAG,
     # economic restrictions and edge classes on the PIT panel; an LLM never invents an edge.
     clb = _costed("causal_lab", lambda: _producer("causal_lab", "research/causal_lab.py"))
+    # THE GLOBAL PROBABILISTIC WORLD MODEL (principal 2026-09-17): forward log returns of the
+    # hypothesis lane at 1h/4h/1d/5d from every PIT series the desk holds, strictly
+    # anti-lookahead, with per-dataset contribution and the regime forecast. It ALLOCATES NO
+    # CAPITAL -- it publishes epsilon so `residual_hunt` can hunt what it cannot explain.
+    wmd = _costed("world_model", lambda: _producer("world_model", "research/world_model.py",
+                                                    "--once", "--budget-s", "1200"))
     # THE CANONICAL RESEARCH REGISTRY (principal 2026-09-17: one registry, its research chain
     # populated by the organs that do the work): the bridge leg lands the desk's record --
     # candidates, trials, runs, cards+events, memories, workers -- and publishes the counts,
@@ -2627,6 +2670,21 @@ def main() -> None:
     kng = _costed("knowledge_graph", lambda: _producer("knowledge_graph",
                                                         "research/knowledge_graph.py",
                                                         "--max-rows", "5000"))
+    # THE EVIDENCE ROUTER (LAWS 5e): every source walks DISCOVER -> CAPTURE METADATA ->
+    # LEGAL/ACCESS -> EVIDENCE -> RESEARCH and lands three INDEPENDENT labels plus a quarantine
+    # flag. Legality is a surgical router beside the research system, never a brake on it: an
+    # unclear source is quarantined with its metadata kept, and the three prohibited labels are
+    # refused WITH THE REASON rather than silently skipped. Intel department resident.
+    evr = _costed("evidence_router", lambda: _producer("evidence_router",
+                                                        "research/evidence_router.py",
+                                                        "--once", "--budget-s", "600"))
+    # THE UNKNOWN-UNKNOWNS RESIDUAL HUNT (principal 2026-09-17): the world model's epsilon
+    # clustered by target x regime x session x calendar class x time of day, tested against a
+    # circular-block permutation null, and every persistent cell turned into a search target
+    # naming the missing dataset / participant / region / representation / mechanism /
+    # interaction that could explain it. Intel department: it opens ground for the scouts.
+    rhu = _costed("residual_hunt", lambda: _producer("residual_hunt", "research/residual_hunt.py",
+                                                      "--once", "--budget-s", "600"))
     # THE MOAT ALPHA FACTORY ENGINES (M5, principal 2026-09-17): the desk exploits everything it
     # has already learned. Each engine records discoveries in the canonical registry; the ones
     # that can host a family donate structured hypotheses through the same intake as every miner.
@@ -2653,6 +2711,12 @@ def main() -> None:
     mui = _costed("unused_information", lambda: _producer("unused_information",
                                                            "research/unused_information.py",
                                                            "--budget-s", "120"))
+    # THE REPRESENTATION FORGE (principal 2026-09-17): a dataset is never one feature. Surprise,
+    # pace, z, revision, interaction and the composed grammar over every PIT series, PIT stamps
+    # carried, ROI per representation in the registry. Data department: it makes inputs.
+    rfg = _costed("representation_forge", lambda: _producer("representation_forge",
+                                                             "research/representation_forge.py",
+                                                             "--once", "--budget-s", "900"))
     # THE UNIVERSAL DISCOVERY-TO-CELL COMPILER (M7): every discovery gets a disposition; the
     # closure under economic compatibility, twelve transformation miners, three gates, exact
     # rules compiled into the registry and the docket. Discovery department resident.
@@ -2680,11 +2744,25 @@ def main() -> None:
     # separation-of-powers check, from the registry. Meta.
     mob = _costed("mining_objective", lambda: _producer("mining_objective",
                                                          "research/mining_objective.py"))
+    # THE FIVE-ROI DELAYED-CREDIT REALLOCATOR (LAWS 5f rules 10-12): every survivor credits its
+    # source, region, representation and scientist along the provenance DAG; every failed family
+    # becomes NEGATIVE KNOWLEDGE; regions, departments, trial budget and forward slots follow the
+    # measured ROI, two-sided, with a scout floor nobody falls through. Meta department resident.
+    rroi = _costed("research_roi", lambda: _producer("research_roi", "research/research_roi.py",
+                                                      "--once", "--budget-s", "600"))
     # THE RESEARCH GAP MAP (M21): every economically valid cell of the breadth grid in one of
     # eight states, the highest-value holes named. Meta.
     rgm = _costed("research_gap_map", lambda: _producer("research_gap_map",
                                                          "research/research_gap_map.py",
                                                          "--budget-s", "240"))
+    # THE AUTHORITATIVE COVERAGE TENSORS (U4, LAWS 5f). WORLD: country x sector x information
+    # type x mechanism x representation x asset x session x regime x horizon x execution. FOREST:
+    # country x language x source class x sector x mechanism x asset transmission x freshness x
+    # accessibility. Every hole is an EXPLICIT frontier row with an EVIG breakdown and the one
+    # move that raises it a rung, handed to the compiler as a `coverage_gap` discovery. Meta.
+    cov = _costed("coverage_tensor", lambda: _producer("coverage_tensor",
+                                                        "research/coverage_tensor.py",
+                                                        "--once", "--budget-s", "900"))
     # GAUNTLET BACKPRESSURE (M23) and MINER SPECIALISATION (M24): the gauntlet talks back and
     # the organisation routes work by measured value per miner per domain. Meta.
     gbp = _costed("gauntlet_backpressure", lambda: _producer("gauntlet_backpressure",
@@ -2789,6 +2867,87 @@ def main() -> None:
                                                          "research/region_department.py",
                                                          "--region", "macro", "--once",
                                                          "--budget-s", "1800"))
+    # THE PARALLEL SOURCE CIVILIZATIONS (principal 2026-09-17): the twelve roles over material
+    # frontier_intel and the collectors ALREADY fetched, the six L1vsun and three bl888m families,
+    # the research primitives and the cross-source interaction forge. NOT a fetcher and not a
+    # second frontier miner -- it reads the claims store and the frontier queue, mints discoveries
+    # for the compiler, and writes the thesis clocks and the gate-attribution ledger. Intel.
+    svc = _costed("source_civilizations", lambda: _producer("source_civilizations",
+                                                            "research/source_civilizations.py",
+                                                            "--budget-s", "300"))
+    # THE EVIDENCE WATCHTOWER: every claim checked against a direct observable and an independent
+    # second source, every already-seen object re-scanned, and a transition recorded ONLY when the
+    # evidence changed. Its own false-transition rate is measured on a fixture every pass. Intel.
+    ewt = _costed("evidence_watchtower", lambda: _producer("evidence_watchtower",
+                                                           "research/evidence_watchtower.py",
+                                                           "--budget-s", "120"))
+    # PREDICTION-MARKET INTELLIGENCE: calibration fitted per category, resolution truth, the
+    # disagreement vector and the dependency deviations, as a SENSOR for gold, the dollar, rates,
+    # oil and the indices. No account, no order, no scrape -- `--no-fetch` by default. Intel.
+    pmk = _costed("prediction_markets", lambda: _producer("prediction_markets",
+                                                          "research/prediction_markets.py",
+                                                          "--no-fetch", "--budget-s", "180"))
+    # THE FOREST FEDERATION (principal 2026-09-17). Korea 24/7 || Japan 24/7 || China 24/7 ||
+    # Russia 24/7 || ... || Global 24/7: every region its own research civilization, running the
+    # eleven agent roles in parallel on its own resident, all feeding ONE registry through ONE
+    # dedup chain (`libs/research/dedup_chain.py`) so ten agents finding one strategy on ten
+    # repost sites produce ONE mechanism and nine provenance edges. The leg names are written
+    # out rather than looped because the layer registry, the Tier-1 checker and the wiring
+    # census all read the costed-leg literals out of THIS SOURCE: a leg composed at runtime is a
+    # leg
+    # those three cannot see, which is the same class of defect as not scheduling it at all.
+    forests_out: dict[str, dict] = {}
+    forests_out["forest_korea"] = _costed("forest_korea", lambda: _producer(
+        "forest_korea", "research/forest_runner.py", "--forest", "korea", "--once",
+        "--budget-s", "3000"))
+    forests_out["forest_china"] = _costed("forest_china", lambda: _producer(
+        "forest_china", "research/forest_runner.py", "--forest", "china", "--once",
+        "--budget-s", "3000"))
+    forests_out["forest_russia_cis"] = _costed("forest_russia_cis", lambda: _producer(
+        "forest_russia_cis", "research/forest_runner.py", "--forest", "russia_cis", "--once",
+        "--budget-s", "3000"))
+    forests_out["forest_south_asia"] = _costed("forest_south_asia", lambda: _producer(
+        "forest_south_asia", "research/forest_runner.py", "--forest", "south_asia", "--once",
+        "--budget-s", "3000"))
+    forests_out["forest_asean"] = _costed("forest_asean", lambda: _producer(
+        "forest_asean", "research/forest_runner.py", "--forest", "asean", "--once",
+        "--budget-s", "3000"))
+    forests_out["forest_oceania"] = _costed("forest_oceania", lambda: _producer(
+        "forest_oceania", "research/forest_runner.py", "--forest", "oceania", "--once",
+        "--budget-s", "3000"))
+    forests_out["forest_europe"] = _costed("forest_europe", lambda: _producer(
+        "forest_europe", "research/forest_runner.py", "--forest", "europe", "--once",
+        "--budget-s", "3000"))
+    forests_out["forest_north_america"] = _costed("forest_north_america", lambda: _producer(
+        "forest_north_america", "research/forest_runner.py", "--forest", "north_america",
+        "--once", "--budget-s", "3000"))
+    forests_out["forest_latam"] = _costed("forest_latam", lambda: _producer(
+        "forest_latam", "research/forest_runner.py", "--forest", "latam", "--once",
+        "--budget-s", "3000"))
+    forests_out["forest_mena"] = _costed("forest_mena", lambda: _producer(
+        "forest_mena", "research/forest_runner.py", "--forest", "mena", "--once",
+        "--budget-s", "3000"))
+    forests_out["forest_africa"] = _costed("forest_africa", lambda: _producer(
+        "forest_africa", "research/forest_runner.py", "--forest", "africa", "--once",
+        "--budget-s", "3000"))
+    # The four GLOBAL-LAYER forests ride the `regions` resident: their ground is a layer of the
+    # world rather than a place, and giving each a region resident would have them competing
+    # with the twelve for the same sources.
+    forests_out["forest_global_web"] = _costed("forest_global_web", lambda: _producer(
+        "forest_global_web", "research/forest_runner.py", "--forest", "global_web", "--once",
+        "--budget-s", "3000"))
+    forests_out["forest_global_academic_code"] = _costed(
+        "forest_global_academic_code", lambda: _producer(
+            "forest_global_academic_code", "research/forest_runner.py", "--forest",
+            "global_academic_code", "--once", "--budget-s", "3000"))
+    forests_out["forest_global_physical_data"] = _costed(
+        "forest_global_physical_data", lambda: _producer(
+            "forest_global_physical_data", "research/forest_runner.py", "--forest",
+            "global_physical_data", "--once", "--budget-s", "3000"))
+    forests_out["forest_global_market_data"] = _costed(
+        "forest_global_market_data", lambda: _producer(
+            "forest_global_market_data", "research/forest_runner.py", "--forest",
+            "global_market_data", "--once", "--budget-s", "3000"))
     # EVERY BUILD ON A CLOCK: the auto-clocked organs of this plan (data/auto_legs.json).
     auto = run_auto_legs()
     sw = _costed("sweep", sweep)
@@ -3147,7 +3306,9 @@ def main() -> None:
                     "artifact_chain": acv, "residual_queue": rsq, "unseen_frontier": usf,
                     "source_registry": srg, "event_response_atlas": era, "world_lab": wlb,
                     "news_event_stream": nes, "event_sleeves": evs,
-                    "causal_lab": clb, "registry_sync": rsy, "axis_proposer": axp,
+                    "causal_lab": clb, "world_model": wmd, "residual_hunt": rhu,
+                    "representation_forge": rfg,
+                    "registry_sync": rsy, "axis_proposer": axp,
                     "program_alpha_lane": pal, "trajectory_evolution": tev,
                     "research_os_archive": roa, "regime_router": rgr, "moat_series": mos,
                     "scout_roster": scr, "descendants": dsc, "forward_slot_ranker": fsr,
@@ -3158,6 +3319,8 @@ def main() -> None:
                     "ingestion_ledger": igl, "ingestion_exploitation": ige,
                     "macro_intelligence": mci,
                     "mining_objective": mob, "research_gap_map": rgm,
+                    "evidence_router": evr, "research_roi": rroi,
+                    "coverage_tensor": cov,
                     "gauntlet_backpressure": gbp, "miner_specialisation": msp,
                     "moat_collectors": mcl, "source_frontier": sfr, "scout_swarm": ssw,
                     "actor_atlas": aat, "understanding_seat": usd,
@@ -3165,8 +3328,10 @@ def main() -> None:
                     "paradigm_router": prr, "meta_controller": mtc, "lead_replication": lrp,
                     "data_scout": dsc2, "japan_department": jpd, "global_research_os": gro,
                     "external_federation": xfd, "archaeology": arch,
+                    "source_civilizations": svc, "evidence_watchtower": ewt,
+                    "prediction_markets": pmk,
                     "shadow_institutional": shi, "latent_actors": lat, "latency_lab": lab,
-                    "macro_department": mcd,
+                    "macro_department": mcd, **forests_out,
                     "probation": prb, "standing_questions": sqs, "exposure_decomposition": exd,
                     "auto_legs": auto,
                     "sweep": sw, "compile": cc,
