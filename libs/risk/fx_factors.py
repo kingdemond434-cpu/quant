@@ -47,6 +47,10 @@ _CURRENCIES = frozenset({
     "USD", "EUR", "GBP", "JPY", "CHF", "CAD", "AUD", "NZD",
     "SEK", "NOK", "DKK", "PLN", "CZK", "HUF", "TRY", "RUB",
     "ZAR", "MXN", "SGD", "HKD", "CNH", "THB", "ILS", "INR",
+    # 2026-09-17: the broker quotes 27 currency legs; these three were absent and USDBRL,
+    # USDIDR and USDKRW read UNKNOWN in every concentration report (found by fx_exposure
+    # walking the registry rather than this list).
+    "BRL", "IDR", "KRW",
 })
 
 

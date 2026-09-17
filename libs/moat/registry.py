@@ -44,6 +44,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import shutil
 import socket
 import sqlite3
@@ -257,14 +258,54 @@ def _tables(conn: sqlite3.Connection) -> set[str]:
     return {str(r[0]) for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
 
 
+#: The replicated file carries the crypto-era daemon's CHECK vocabularies (research_candidates
+#: status IN candidate/validation/rejected/...; research_runs status IN running/completed/failed;
+#: research_memory result IN pending/success/failure; alpha_cards status IN candidate/.../retired;
+#: candidate_returns kind IN net/stressed with dtype '<f8'). The moat writes the desk's own
+#: vocabulary (queued/claimed/donated/judged/survived; live/standby/certified; epsilon series),
+#: so every write to the restored file raised IntegrityError while every test on the CANON
+#: schema passed (measured 2026-09-17: 0 of 27 priors landed). SQLite cannot ALTER a CHECK, so
+#: a table whose live DDL still carries one is REBUILT once from CANON with its rows copied --
+#: the rows survive, the constraint goes, and schema_migrations records the migration.
+MIGRATION_VERSION = 8
+MIGRATION_NAME = "moat_lift_check_vocabularies"
+_CHECK_RE = re.compile(r"\bCHECK\s*\(", re.IGNORECASE)   # a real constraint, not the word checksum
+
+
+def _lift_checks(conn: sqlite3.Connection) -> list[str]:
+    rebuilt: list[str] = []
+    for table, ddl in CANON.items():
+        row = conn.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name=?",
+                           (table,)).fetchone()
+        if row is None or not _CHECK_RE.search(str(row[0])):
+            continue
+        cols = _columns(conn, table)
+        canon_cols = [c.split()[0] for c in ddl.split(", ")]
+        keep = [c for c in cols if c in canon_cols]
+        conn.execute(f'ALTER TABLE "{table}" RENAME TO "{table}__old"')
+        conn.execute(f'CREATE TABLE "{table}" ({ddl})')
+        if keep:
+            cl = ", ".join(f'"{c}"' for c in keep)
+            conn.execute(
+                f'INSERT INTO "{table}" ({cl}) SELECT {cl} FROM "{table}__old"')  # noqa: S608
+        conn.execute(f'DROP TABLE "{table}__old"')
+        rebuilt.append(table)
+    if rebuilt:
+        conn.execute("INSERT OR REPLACE INTO schema_migrations(version, name, sha256, applied_at) "
+                     "VALUES(?,?,?,?)", (MIGRATION_VERSION, MIGRATION_NAME,
+                                         _sha(sorted(rebuilt)), now()))
+    return rebuilt
+
+
 def _evolve(conn: sqlite3.Connection) -> dict[str, int]:
-    """Create what is missing, add what is missing, never drop or rewrite."""
-    added = {"tables": 0, "columns": 0}
+    """Create what is missing, add what is missing, lift the crypto-era CHECKs, never lose a row."""
+    added = {"tables": 0, "columns": 0, "rebuilt": 0}
     have = _tables(conn)
     for table, ddl in list(CANON.items()) + list(MOAT_TABLES.items()):
         if table not in have:
             conn.execute(f'CREATE TABLE "{table}" ({ddl})')
             added["tables"] += 1
+    added["rebuilt"] = len(_lift_checks(conn))
     for table, cols in EXTENSIONS.items():
         present = set(_columns(conn, table))
         for col, typ in cols:
@@ -390,8 +431,9 @@ def upsert_card(card_id: str, *, name: str, market: str, category: str, thesis: 
         changed = False
         if row is None:
             fields = {"id": card_id, "created_at": now(), "updated_at": now(), "name": name,
-                      "market": market, "category": category, "thesis": thesis,
-                      "entry_logic": entry_logic, "exit_logic": exit_logic, "status": status,
+                      "market": market, "category": category, "thesis": thesis or "",
+                      "entry_logic": entry_logic or "", "exit_logic": exit_logic or "",
+                      "decay_score": 0.0, "status": status,
                       "extra_json": _j(dict(extra or {})), **extra_cols}
             keys = list(fields)
             c.execute(f'INSERT INTO alpha_cards({",".join(keys)}) '
@@ -520,6 +562,8 @@ def enqueue_candidate(*, family: str, symbol: str, params: Mapping[str, Any] | N
             "symbol": symbol, "params_json": _j(dict(params or {})), "content_hash": h,
             "status": status, "mechanism": mechanism, "origin": origin, "grid_cell": cell,
             "empty_axis_bonus": EMPTY_CELL_BONUS if empty else 0.0, "search_count": 1,
+            "campaign_id": str(fields.get("campaign_id") or ""),
+            "subtype": str(fields.get("transformation") or ""), "survived": 0,
         }
         allowed = set(_columns(c, "research_candidates"))
         for k, v in fields.items():
@@ -848,11 +892,12 @@ def remember(category: str, statement: str, *, kind: str = "note", memory_key: s
                 c.execute("UPDATE research_memory SET statement=?, result=?, failure_cause=?, "
                           "failure_stage=?, lessons=?, metrics_json=?, payload_json=?, "
                           "evidence_json=?, updated_at=? WHERE id=?",
-                          (statement, result, failure_cause, failure_stage, lessons, _j(metrics),
-                           _j(payload), _j(evidence), now(), row["id"]))
+                          (statement, result or "pending", failure_cause, failure_stage, lessons,
+                           _j(metrics), _j(payload), _j(evidence), now(), row["id"]))
                 c.commit()
                 return str(row["id"])
         mid = new_id("mem")
+        result = result or "pending"
         c.execute("INSERT INTO research_memory(id, created_at, category, statement, result, "
                   "failure_cause, failure_stage, lessons, metrics_json, predecessor_id, kind, "
                   "memory_key, payload_json, evidence_json, updated_at) "
@@ -903,9 +948,9 @@ def record_run(run_id: str, *, name: str, status: str, hypothesis_id: str = "",
                   "metrics_json=excluded.metrics_json, finished_at=excluded.finished_at, "
                   "compute_s=excluded.compute_s, outcome=excluded.outcome, "
                   "outputs_json=excluded.outputs_json",
-                  (run_id, now(), now(), hypothesis_id, name, git_commit, config_hash, seed, status,
-                   _j(metrics), organ, department, started_at, finished_at, compute_s, outcome,
-                   _j(inputs), _j(outputs)))
+                  (run_id, now(), now(), hypothesis_id, name, git_commit or "", config_hash or "",
+                   0 if seed is None else int(seed), status, _j(metrics), organ, department,
+                   started_at, finished_at, compute_s, outcome, _j(inputs), _j(outputs)))
         c.commit()
     finally:
         if conn is None:
@@ -1200,6 +1245,29 @@ def origin_of(source: str) -> str:
     return "DESK"
 
 
+def graph_id_map(desk: Path) -> dict[str, str]:
+    """cell string -> `hypothesis_graph` node id, from `scripts/backfill_verdict_graph_ids.py`.
+
+    The gate ledger names a cell `EURAUD.overnight_gap_decay.p=<sha of params>` and the graph
+    names it `f668ed18...`, so a trial recorded under the first name could never join the
+    candidate enqueued under the second. New verdict rows carry `graph_id` themselves; this map
+    is the fallback for the rows written before that field existed. An absent or unreadable file
+    reads as EMPTY -- every cell then keeps its own name, exactly as before, which is the safe
+    direction: a missing map costs a join, a wrong one would merge two hypotheses.
+    """
+    p = desk / "data" / "hypotheses" / "gate_verdict_graph_ids.json"
+    try:
+        doc = json.loads(p.read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(doc, dict):
+        return {}
+    raw = doc.get("graph_ids")
+    if not isinstance(raw, dict):
+        raw = doc
+    return {str(k): str(v) for k, v in raw.items() if isinstance(v, str) and v}
+
+
 def _status_of_fate(fate: Any) -> str:
     f = str(fate or "").lower()
     if not f or f in ("born", "pending", "queued", "donated"):
@@ -1236,19 +1304,25 @@ def sync_from_desk(desk: Path | None = None, *, max_rows: int = 20000,
 
         rows, pos = _new_lines(c, "gate_verdicts",
                                d / "data" / "hypotheses" / "gate_verdict_ledger.jsonl", max_rows)
+        gmap = graph_id_map(d)
         for r in rows:
             cell = str(r.get("cell") or "")
             if not cell:
                 continue
             passed = r.get("passed")
+            # THE CANDIDATE THIS TRIAL JUDGED, under the id the graph enqueued it with. The
+            # trial keeps the cell's own name as its hypothesis id (that is what a reader
+            # recognises), but the CANDIDATE edge needs the graph's node id or the join is to
+            # nothing -- `enqueue_candidate` above keys every candidate by `hypothesis_graph.id`.
+            cand = str(r.get("graph_id") or "") or gmap.get(cell, "") or cell
             record_trial(cell, family=str(r.get("family") or ""), method="gauntlet", params=None,
                          terminal_gate=str(r.get("terminal_gate") or ""),
                          passed=None if passed is None else bool(passed),
                          verdict={"downstream_status": r.get("downstream_status"),
                                   "at": r.get("at")},
-                         symbol=str(r.get("sym") or ""), candidate_id=cell, conn=c)
+                         symbol=str(r.get("sym") or ""), candidate_id=cand, conn=c)
             out["trials"] += 1
-            mark_candidate(cell, "survived" if passed else "judged",
+            mark_candidate(cand, "survived" if passed else "judged",
                            judged_at=str(r.get("at") or now()),
                            terminal_gate=str(r.get("terminal_gate") or ""),
                            survived=1 if passed else 0, conn=c)

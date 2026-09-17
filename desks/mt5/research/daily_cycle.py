@@ -483,6 +483,53 @@ def _module_rent() -> None:
          + (f"; NAMED for retirement: {', '.join(named[:6])}" if named else ""))
 
 
+def _module_rent_research() -> None:
+    """Every research module pays rent in measured downstream research (M22); report only."""
+    import module_rent
+    rc = module_rent.main(["--budget-s", "240"])
+    if rc != 0:
+        raise RuntimeError(f"module_rent returned {rc}")
+
+
+def _build_allocator() -> None:
+    """The daily build allocator ranks machinery improvements by expected orthogonal yield
+    over build + maintenance + complexity, files non-replacing subsystems as LAB (M22)."""
+    import build_allocator
+    rc = build_allocator.main(["--top", "20"])
+    if rc != 0:
+        raise RuntimeError(f"build_allocator returned {rc}")
+
+
+def _simplifier() -> None:
+    """Weekly architecture consolidation (Sundays): overlaps, unifiable helpers, duplicate
+    registries, services, dead machinery -- proposed, never applied (M22)."""
+    from datetime import UTC, datetime
+    if datetime.now(tz=UTC).weekday() != 6:
+        return
+    import simplifier
+    rc = simplifier.main(["--budget-s", "300"])
+    if rc != 0:
+        raise RuntimeError(f"simplifier returned {rc}")
+
+
+def _research_gap_map() -> None:
+    """The day opens with the map: every valid cell of the breadth grid in one state, the
+    highest-value holes named (M21, principal 2026-09-17)."""
+    import research_gap_map
+    rc = research_gap_map.main(["--budget-s", "300"])
+    if rc != 0:
+        raise RuntimeError(f"research_gap_map returned {rc}")
+
+
+def _daily_research_os() -> None:
+    """The day closes with the one canonical loop: observe, diagnose, prioritise, allocate,
+    run, measure, learn, and the release train row (M20, principal 2026-09-17)."""
+    import daily_research_os
+    rc = daily_research_os.main(["--once"])
+    if rc != 0:
+        raise RuntimeError(f"daily_research_os returned {rc}")
+
+
 def _wiring_ceo() -> None:
     """Every build on a clock: the wiring hunter, daily (principal 2026-09-16)."""
     import wiring_ceo
@@ -511,7 +558,8 @@ def _zentech() -> None:
 #: unconditionally: it reads the live ledger, so it reports on the armed book whether or not
 #: shadow could reach a terminal. The Aurum export runs after all of them, so it can carry
 #: anything today's cycle produced.
-STEPS = (("refresh_bars", _refresh_bars), ("cost_fields", _cost_fields),
+STEPS = (("research_gap_map", _research_gap_map),
+         ("refresh_bars", _refresh_bars), ("cost_fields", _cost_fields),
          ("factor_residual", _factor_residual), ("research_bandit", _research_bandit),
          ("world_miners", _world_miners), ("proposers", _proposers),
          ("futures_curves", _futures_curves), ("curve_strategies", _curve_strategies),
@@ -525,7 +573,9 @@ STEPS = (("refresh_bars", _refresh_bars), ("cost_fields", _cost_fields),
          ("research_memory", _research_memory),
          ("module_rent", _module_rent), ("zentech", _zentech), ("conservation", _conservation),
          ("wiring_ceo", _wiring_ceo), ("probation", _probation),
-         ("export_aurum", _export_aurum))
+         ("module_rent_research", _module_rent_research), ("build_allocator", _build_allocator),
+         ("simplifier", _simplifier),
+         ("export_aurum", _export_aurum), ("daily_research_os", _daily_research_os))
 
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv

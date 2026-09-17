@@ -245,7 +245,7 @@ def book_exposure() -> dict[str, Any]:
         kept.append(sleeve)
     n_all = len(rows)
     n_kept = len(kept)
-    return {"exposure": dict(exposure), "kept": kept, "dropped": {k: v for k, v in dropped.items()},
+    return {"exposure": dict(exposure), "kept": kept, "dropped": dict(dropped),
             "n_sleeves_total": n_all, "n_sleeves_measured": n_kept,
             "measured_share_of_sleeves": (n_kept / n_all) if n_all else 0.0}
 
@@ -293,6 +293,20 @@ def trading_minutes() -> dict[str, set[int]]:
         if mins:
             out[sleeve] = mins
     return out
+
+
+def factor_rank_reading() -> dict:
+    """The participation-ratio rank of the currency-factor exposure matrix of the book, read
+    from netting_report (which reads libs/risk/fx_exposure); UNMEASURED with the reason when the
+    organ or its inputs are absent. Informational: beside the readings, never in the headline."""
+    try:
+        import netting_report
+        row = dict(netting_report.factor_rank_reading())
+    except Exception as exc:
+        row = {"name": "factor_rank", "status": UNMEASURED, "n_eff": None, "n_obs": None,
+               "why": f"netting_report unavailable: {type(exc).__name__}: {exc}"}
+    row.update({"informational": True, "in_headline": False, "headline_unchanged": True})
+    return row
 
 
 def timestamp_overlap(minutes: dict[str, set[int]],
@@ -471,6 +485,12 @@ def run(write_queue: bool = True) -> dict[str, Any]:
     # THE FIFTH READING, BESIDE THE FOUR AND OUTSIDE THE MINIMUM. `would_raise_headline_to` is
     # what the headline would read if the allocator consumed this reading and it bound; None
     # when it would not raise it, or when there is no measured headline to raise.
+    # THE SIXTH READING (review 2026-09-17, R1): the currency-factor effective rank of the gross
+    # book from libs/risk/fx_exposure via netting_report -- 18 pairs from 8 currencies span at
+    # most 7 directions, so sleeve counts overstate independence without bound. Published BESIDE
+    # the readings and OUTSIDE the headline minimum until the allocator consumes it, the same
+    # discipline as timestamp_overlap.
+    factor_rank = factor_rank_reading()
     overlap = timestamp_overlap(trading_minutes(), clusters["traded_labels"])
     k_head = head.get("effective_breadth")
     overlap["headline_unchanged"] = True
@@ -481,6 +501,7 @@ def run(write_queue: bool = True) -> dict[str, Any]:
         "generated_utc": datetime.now(tz=UTC).isoformat(),
         "gaps": gaps,
         "timestamp_overlap": overlap,
+        "factor_rank": factor_rank,
         "nominal": {
             "sleeves_with_ledgers": exp["n_sleeves_total"],
             "sleeves_in_the_measurement": int(nominal_measured),
@@ -521,7 +542,7 @@ def run(write_queue: bool = True) -> dict[str, Any]:
         try:
             from research.regime_coverage import _merge_into_queue
             _merge_into_queue(tasks, source="alpha_breadth")
-        except Exception as exc:                                          # noqa: BLE001
+        except Exception as exc:
             doc["queue_error"] = f"{type(exc).__name__}: {exc}"
     doc["tasks"] = tasks
     return doc

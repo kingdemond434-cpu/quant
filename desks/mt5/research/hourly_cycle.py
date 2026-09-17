@@ -699,6 +699,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     "source_registry",
     # THE CANONICAL REGISTRY BRIDGE (2026-09-17): every pass pours the desk's record in.
     "registry_sync",
+    # THE CONVERSION AND RESEARCH DEBT LEDGERS (M7): cheap registry reads, every pass.
+    "research_debt",
 })
 
 
@@ -720,19 +722,23 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "source_routes", "source_fixer", "asia_collector", "asia_parser",
                      "asia_plane", "archive_tape", "reclaim_disk", "maintain_miners",
                      "spread_provenance", "microstructure_census", "fusion_cost",
-                     "cost_construction", "swap_rejudge", "sge_premium", "moat_series"), "data"),
+                     "cost_construction", "swap_rejudge", "sge_premium", "moat_series",
+                     "unused_information"), "data"),
     # intel: the global intelligence agency -- crawlers, forests, frontier scouts
     **dict.fromkeys(("world_crawler", "deep_forest", "moat_miner", "market_intel", "mine",
                      "exogenous_search", "standing_questions", "frontier", "frontier_report",
                      "frontier_implementer", "hunt12", "scout_roster", "analyst_pipeline",
-                     "knowledge_graph"), "intel"),
+                     "knowledge_graph", "moat_collectors", "actor_atlas", "scout_swarm",
+                     "source_frontier"), "intel"),
     # discovery: the candidate pipeline, in order, plus the evolutionary generators
     **dict.fromkeys(("search", "sweep", "breadth_sweep", "compile_candidates", "merge_docket",
                      "deepen", "alpha_evolution", "alpha_rl", "ml_layer", "ensemble_optimizer",
                      "requeue_unrunnable", "queue_cycle", "queue_compact", "miner_conversion",
                      "recertify_canon", "session_chart_expansion", "experiment_design",
                      "experiment_cache", "probation", "axis_proposer", "program_alpha_lane",
-                     "trajectory_evolution", "descendants"), "discovery"),
+                     "trajectory_evolution", "descendants", "card_explosion", "alpha_lineage",
+                     "alpha_recombination", "graveyard_resurrection", "discovery_compiler"),
+                    "discovery"),
     # validate: the adversarial evidence lab
     **dict.fromkeys(("external_gauntlet", "backtest", "falsifier_run", "adversaries",
                      "stop_reverse", "orthogonality", "blind_reviewer", "synthetic_regimes",
@@ -745,13 +751,16 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "world_lab"), "macro"),
     # execution: the execution research command
     **dict.fromkeys(("execution_twin", "entry_timing", "cost_to_edge", "exit_study",
-                     "execution_resolver"), "execution"),
+                     "execution_resolver", "netting_report"), "execution"),
     # forward: forward evidence, promotion and the allocator
     **dict.fromkeys(("enrol_clocks", "pf_allocator", "daily", "hunt12_forward", "regime_router",
-                     "forward_slot_ranker"), "forward"),
+                     "forward_slot_ranker", "forward_exploitation", "shadow_discovery"),
+                    "forward"),
     # meta: the machine that runs the machine (the heavy part of it)
     **dict.fromkeys(("issue_board", "publish_state", "model_league", "ml_layer_meta",
-                     "research_os_archive", "registry_sync"), "meta"),
+                     "research_os_archive", "registry_sync", "mining_objective",
+                     "research_gap_map", "gauntlet_backpressure", "miner_specialisation",
+                     "research_debt"), "meta"),
 }
 
 
@@ -2585,6 +2594,71 @@ def main() -> None:
     kng = _costed("knowledge_graph", lambda: _producer("knowledge_graph",
                                                         "research/knowledge_graph.py",
                                                         "--max-rows", "5000"))
+    # THE MOAT ALPHA FACTORY ENGINES (M5, principal 2026-09-17): the desk exploits everything it
+    # has already learned. Each engine records discoveries in the canonical registry; the ones
+    # that can host a family donate structured hypotheses through the same intake as every miner.
+    mce = _costed("card_explosion", lambda: _producer("card_explosion",
+                                                       "research/moat_card_explosion.py",
+                                                       "--max-per-card", "40",
+                                                       "--budget-s", "240"))
+    mal = _costed("alpha_lineage", lambda: _producer("alpha_lineage",
+                                                      "research/alpha_lineage_search.py",
+                                                      "--budget-s", "240"))
+    mgr = _costed("graveyard_resurrection", lambda: _producer("graveyard_resurrection",
+                                                               "research/graveyard_resurrection.py",
+                                                               "--max-candidates", "60",
+                                                               "--budget-s", "240"))
+    msd = _costed("shadow_discovery", lambda: _producer("shadow_discovery",
+                                                         "research/shadow_discovery.py",
+                                                         "--budget-s", "240"))
+    mfe = _costed("forward_exploitation", lambda: _producer("forward_exploitation",
+                                                             "research/forward_exploitation.py"))
+    mar = _costed("alpha_recombination", lambda: _producer("alpha_recombination",
+                                                            "research/alpha_recombination.py",
+                                                            "--max-combinations", "40",
+                                                            "--budget-s", "240"))
+    mui = _costed("unused_information", lambda: _producer("unused_information",
+                                                           "research/unused_information.py",
+                                                           "--budget-s", "120"))
+    # THE UNIVERSAL DISCOVERY-TO-CELL COMPILER (M7): every discovery gets a disposition; the
+    # closure under economic compatibility, twelve transformation miners, three gates, exact
+    # rules compiled into the registry and the docket. Discovery department resident.
+    dcp = _costed("discovery_compiler", lambda: _producer("discovery_compiler",
+                                                           "research/discovery_compiler.py",
+                                                           "--budget-s", "240",
+                                                           "--max-discoveries", "200"))
+    rdb = _costed("research_debt", lambda: _producer("research_debt",
+                                                      "research/research_debt.py"))
+    # THE MINING OBJECTIVE (M17/M18): the five sovereign KPIs, the miner reward and the
+    # separation-of-powers check, from the registry. Meta.
+    mob = _costed("mining_objective", lambda: _producer("mining_objective",
+                                                         "research/mining_objective.py"))
+    # THE RESEARCH GAP MAP (M21): every economically valid cell of the breadth grid in one of
+    # eight states, the highest-value holes named. Meta.
+    rgm = _costed("research_gap_map", lambda: _producer("research_gap_map",
+                                                         "research/research_gap_map.py",
+                                                         "--budget-s", "240"))
+    # GAUNTLET BACKPRESSURE (M23) and MINER SPECIALISATION (M24): the gauntlet talks back and
+    # the organisation routes work by measured value per miner per domain. Meta.
+    gbp = _costed("gauntlet_backpressure", lambda: _producer("gauntlet_backpressure",
+                                                              "research/gauntlet_backpressure.py"))
+    msp = _costed("miner_specialisation", lambda: _producer("miner_specialisation",
+                                                             "research/miner_specialisation.py"))
+    # THE INTELLIGENCE REFINERY (M2/M8/M9/M10/M11): immutable captures and claims, the scout
+    # swarm over the source frontier, the actor atlas. Intel department resident.
+    mcl = _costed("moat_collectors", lambda: _producer("moat_collectors",
+                                                        "research/moat_collectors.py",
+                                                        "--budget-s", "300",
+                                                        "--max-sources", "20"))
+    sfr = _costed("source_frontier", lambda: _producer("source_frontier",
+                                                        "research/source_frontier.py"))
+    ssw = _costed("scout_swarm", lambda: _producer("scout_swarm", "research/scout_swarm.py",
+                                                    "--once", "--budget-s", "600"))
+    aat = _costed("actor_atlas", lambda: _producer("actor_atlas", "research/actor_atlas.py"))
+    # THE NETTING DIAGNOSTIC (R1/R2): sleeve intents netted per instrument, the currency-factor
+    # exposure and effective rank of the gross book; publishes, sizes nothing. Execution.
+    ntr = _costed("netting_report", lambda: _producer("netting_report",
+                                                       "research/netting_report.py"))
     # EVERY BUILD ON A CLOCK: the auto-clocked organs of this plan (data/auto_legs.json).
     auto = run_auto_legs()
     sw = _costed("sweep", sweep)
@@ -2946,7 +3020,14 @@ def main() -> None:
                     "program_alpha_lane": pal, "trajectory_evolution": tev,
                     "research_os_archive": roa, "regime_router": rgr, "moat_series": mos,
                     "scout_roster": scr, "descendants": dsc, "forward_slot_ranker": fsr,
-                    "analyst_pipeline": anp, "knowledge_graph": kng,
+                    "analyst_pipeline": anp, "knowledge_graph": kng, "card_explosion": mce,
+                    "alpha_lineage": mal, "graveyard_resurrection": mgr, "shadow_discovery": msd,
+                    "forward_exploitation": mfe, "alpha_recombination": mar,
+                    "unused_information": mui, "discovery_compiler": dcp, "research_debt": rdb,
+                    "mining_objective": mob, "research_gap_map": rgm,
+                    "gauntlet_backpressure": gbp, "miner_specialisation": msp,
+                    "moat_collectors": mcl, "source_frontier": sfr, "scout_swarm": ssw,
+                    "actor_atlas": aat, "netting_report": ntr,
                     "probation": prb, "standing_questions": sqs, "exposure_decomposition": exd,
                     "auto_legs": auto,
                     "sweep": sw, "compile": cc,

@@ -4562,17 +4562,21 @@
    "item": "Physical moat layout: data/moat/{sources,raw_intel,normalized_intel} immutable captures with provenance, and the intelligence tables (sources, source_yield, claims, claim_edges, mechanisms, frontier_map, generator_yield, kpis) in the canonical registry",
    "domain": "M",
    "phase": "M",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
+    "desks/mt5/research/moat_collectors.py",
+    "desks/mt5/tests/test_moat_collectors.py",
     "libs/moat/registry.py"
    ],
-   "scheduled_by": "hourly_cycle:registry_sync",
-   "artifact": "desks/mt5/reports/RESEARCH_REGISTRY.json",
-   "consumer": "collectors, mechanism extractor, scouts",
-   "gap": "tables exist in the registry; no collector writes raw_intel/normalized_intel yet",
+   "scheduled_by": "hourly_cycle:moat_collectors (intel department resident)",
+   "artifact": "desks/mt5/reports/MOAT_COLLECTORS.json",
+   "consumer": "claims and claim_edges in the registry; knowledge_graph; discovery_compiler",
+   "gap": "LANDED 2026-09-17: data/moat/{sources,raw_intel,normalized_intel}; content-addressed write-once captures (an overwrite is refused); seven collectors reusing the deep-forest fetch helpers; claims + DUPLICATES/CONTRADICTS edges; the sources table is empty on the box until the swarm and the frontier seed it.",
    "next_step": "moat_collectors.py: cheap collectors over the source registry -> immutable raw captures -> normalized (dedupe/translate) documents -> claims; multimodal (PDF, transcript, table, notebook) with media preserved",
-   "landed": []
+   "landed": [
+    "moat_collectors 2026-09-17"
+   ]
   },
   {
    "id": "M3",
@@ -4620,15 +4624,20 @@
    "status": "PARTIAL",
    "gate": "none",
    "evidence": [
-    "desks/mt5/research/negative_knowledge.py",
-    "desks/mt5/research/residual_queue.py",
+    "desks/mt5/research/moat_card_explosion.py",
+    "desks/mt5/research/alpha_lineage_search.py",
+    "desks/mt5/research/graveyard_resurrection.py",
+    "desks/mt5/research/shadow_discovery.py",
+    "desks/mt5/research/forward_exploitation.py",
+    "desks/mt5/research/alpha_recombination.py",
+    "desks/mt5/research/unused_information.py",
     "desks/mt5/research/descendants.py"
    ],
-   "scheduled_by": "moat swarms EXPLOIT / EXPLORE / RESURRECT (pending)",
-   "artifact": "desks/mt5/reports/MOAT_FACTORY.json",
+   "scheduled_by": "hourly_cycle legs card_explosion, alpha_lineage, graveyard_resurrection, alpha_recombination (discovery); shadow_discovery, forward_exploitation (forward); unused_information (data)",
+   "artifact": "desks/mt5/reports/MOAT_CARD_EXPLOSION.json",
    "consumer": "moat candidate compiler",
-   "gap": "descendants (asset/session/horizon/exit/state/cross-market moves) written; the other seven engines pending",
-   "next_step": "build moat_factory/{card_explosion,alpha_lineage,graveyard_resurrection,shadow_discovery,execution_alpha,forward_exploitation,recombination,unused_information}.py, each writing candidates through the compiler",
+   "gap": "seven of eight engines LANDED 2026-09-17 on their department clocks; the execution-tape alpha engine is still building",
+   "next_step": "land execution_alpha_miner.py on the execution clock; then M5 is LANDED",
    "landed": []
   },
   {
@@ -4653,90 +4662,106 @@
    "item": "Universal discovery-to-cell compiler: every miner row becomes a DiscoveryObject; states UNPROCESSED -> INTERPRETED -> EXPANDED -> COMPILED -> QUEUED -> TESTED or BLOCKED(reason); the closure operator A x T x S x H x R x M x I under economic compatibility; eight transformations (original, inverse, conditional, transfer, residual, interaction, timing, execution) by twelve separate transformation miners; three gates (economic applicability, data/PIT feasibility, novelty) before a cell; CONVERSION_DEBT and RESEARCH_DEBT ledgers; multidimensional candidate distance; gauntlet results recursively generate cells; provenance DAG source -> discovery -> mechanism -> cell -> trial -> verdict",
    "domain": "M",
    "phase": "M",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "libs/moat/registry.py",
-    "desks/mt5/research/proposer_common.py"
+    "desks/mt5/research/discovery_compiler.py",
+    "desks/mt5/research/transformation_miners.py",
+    "desks/mt5/research/research_debt.py",
+    "desks/mt5/tests/test_discovery_compiler.py",
+    "libs/moat/registry.py"
    ],
-   "scheduled_by": "hourly_cycle:registry_sync (debt ledger); every donate (discovery)",
-   "artifact": "desks/mt5/reports/RESEARCH_REGISTRY.json",
-   "consumer": "every miner; the gauntlet",
-   "gap": "DiscoveryObject, state machine, conversion_debt and the provenance DAG live in the registry and every donation records its discovery; the compiler organ, the closure operator, the transformation miners and RESEARCH_DEBT pending",
+   "scheduled_by": "hourly_cycle:discovery_compiler (discovery department resident); hourly_cycle:research_debt (core)",
+   "artifact": "desks/mt5/reports/DISCOVERY_COMPILER.json",
+   "consumer": "the registry (candidates with discovery_id + transformation), proposer_common.donate, RESEARCH_DEBT.json",
+   "gap": "LANDED 2026-09-17: seven intake readers, the closure under twenty mechanism contracts (a session mechanism never gets D1 by derivation), twelve independent transformation miners, three gates with named refusals, exact rules compiled and queued; live dry run 8 discoveries -> 572 possible / 320 generated / 86 compiled / 486 blocked by name; unexplained missing = 0 by construction.",
    "next_step": "build discovery_compiler.py + transformation_miners.py + research_debt.py; every intake (intelligence rows, cards, graveyard, shadow, tape, residuals) records a discovery first",
-   "landed": []
+   "landed": [
+    "discovery_compiler 2026-09-17"
+   ]
   },
   {
    "id": "M8",
    "item": "Scout swarm: nineteen named beats (China, Japan, Korea, India, Russia, Arabic, LatAm, Academic, GitHub, Gitee, GovernmentData, CentralBank, Exchange, MQL5, Darwinex, Forum, Competition, Failure, Dataset) and nine specialists as permanent workers with source-ROI posteriors (P(novel), P(testable), P(survivor), P(independent), expected marginal log growth), exploration / exploitation / cold-search engines and self-expanding source discovery (authors, citations, backlinks, repos, communities, datasets, terminology, archives)",
    "domain": "M",
    "phase": "M",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "desks/mt5/research/scout_roster.py",
-    "desks/mt5/research/source_registry.py",
-    "desks/mt5/research/deep_forest_miner.py"
+    "desks/mt5/research/scout_swarm.py",
+    "desks/mt5/research/source_frontier.py",
+    "desks/mt5/tests/test_scout_swarm.py",
+    "desks/mt5/research/scout_roster.py"
    ],
-   "scheduled_by": "intel department resident (pending)",
-   "artifact": "desks/mt5/reports/SCOUT_ROSTER.json",
-   "consumer": "moat collectors; frontier map",
-   "gap": "roster declares the beats and names OPEN ones; the workers, ROI posteriors, engines and source expansion pending",
+   "scheduled_by": "hourly_cycle:scout_swarm --once (intel department resident); box task MT5-ScoutSwarm (resident, pending registration)",
+   "artifact": "desks/mt5/reports/SCOUT_SWARM.json",
+   "consumer": "the registry sources/source_yield/frontier_map tables; moat_collectors",
+   "gap": "LANDED 2026-09-17: nineteen beats run as registry workers (nine steerable through deep_forest_miner --region/--only), budgets by ROI with a floor and a cold share never below 0.10, six expansion extractors registering candidate sources (crypto-exchange hosts refused), source ROI posteriors with Jeffreys priors.",
    "next_step": "build scout_swarm.py (beats as workers over the registry's sources table, source_yield posteriors, expansion edges) on the intel resident",
-   "landed": []
+   "landed": [
+    "scout_swarm 2026-09-17"
+   ]
   },
   {
    "id": "M9",
    "item": "Multimodal mining with temporal intelligence: video/podcast transcripts, charts, screenshots, PDFs, slide decks, diagrams, notebooks, tables ingested as LEADS never evidence, original media and provenance preserved, knowable_at stamped so the moat can test whether a channel led markets or explained them afterwards",
    "domain": "M",
    "phase": "M",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
+    "desks/mt5/research/moat_collectors.py",
     "libs/research/lead_schema.py"
    ],
-   "scheduled_by": "pending",
-   "artifact": "desks/mt5/reports/KNOWLEDGE_GRAPH.json",
-   "consumer": "claims; event_response_atlas",
-   "gap": "knowable_at is in the schema; no multimodal collector yet",
+   "scheduled_by": "hourly_cycle:moat_collectors (intel department resident)",
+   "artifact": "desks/mt5/reports/MOAT_COLLECTORS.json",
+   "consumer": "claims (kind lead_stub for charts)",
+   "gap": "LANDED 2026-09-17 with M2: pdf/transcript/table/notebook/chart/slides collectors, media preserved, a chart yields a lead stub and never a number, knowable_at from the source's own stamp (UNMEASURED otherwise).",
    "next_step": "collectors for PDF/transcript/table/notebook with media kept under data/moat/raw_intel",
-   "landed": []
+   "landed": [
+    "moat_collectors 2026-09-17"
+   ]
   },
   {
    "id": "M10",
    "item": "Source-space frontier estimation: language x country x source-type x asset x mechanism cells with discovery-curve / capture-recapture (Chao1) unseen mass; the scheduler sends scouts toward high-unseen-mass territory",
    "domain": "M",
    "phase": "M",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "libs/moat/registry.py",
-    "desks/mt5/research/unseen_frontier.py"
+    "desks/mt5/research/source_frontier.py",
+    "desks/mt5/tests/test_source_frontier.py",
+    "libs/moat/registry.py"
    ],
-   "scheduled_by": "pending",
-   "artifact": "desks/mt5/reports/RESEARCH_REGISTRY.json",
-   "consumer": "scout swarm",
-   "gap": "frontier_map table exists; the estimator over source space and the assignment pending",
+   "scheduled_by": "hourly_cycle:source_frontier (intel department resident)",
+   "artifact": "desks/mt5/reports/SOURCE_FRONTIER.json",
+   "consumer": "scout_swarm.assign (exploration / exploitation / cold)",
+   "gap": "LANDED 2026-09-17: language x country x source-type x asset x mechanism cells with Chao1 unseen mass, discovery curves, cold flags and assignments; 446 cells, 427 cold, unseen mass null until claims flow.",
    "next_step": "extend unseen_frontier to the source grid and write frontier_map + assignments",
-   "landed": []
+   "landed": [
+    "source_frontier 2026-09-17"
+   ]
   },
   {
    "id": "M11",
    "item": "Actor / constraint atlas: who is forced to transact and why (actor -> constraint -> observable -> market impact) as a database that generates candidates",
    "domain": "M",
    "phase": "M",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "desks/mt5/research/forced_flow_calendar.py",
-    "desks/mt5/research/axis_registry.py"
+    "desks/mt5/research/actor_atlas.py",
+    "desks/mt5/tests/test_actor_atlas.py"
    ],
-   "scheduled_by": "pending",
+   "scheduled_by": "hourly_cycle:actor_atlas (intel department resident)",
    "artifact": "desks/mt5/reports/ACTOR_ATLAS.json",
-   "consumer": "discovery compiler",
-   "gap": "forced-flow calendar and economic_actor tags exist; the atlas and its generator pending",
+   "consumer": "discovery_compiler (actor_atlas discoveries)",
+   "gap": "LANDED 2026-09-17: 25 declared actor -> constraint -> observable -> impact rows resolved to MT5 instruments through the universe policy, enriched from the calendar, the axis tags and the claims; 24 discoverable, one observable missing.",
    "next_step": "build actor_atlas.py from the ontology, the calendar and the claims",
-   "landed": []
+   "landed": [
+    "actor_atlas 2026-09-17"
+   ]
   },
   {
    "id": "M12",
@@ -4821,34 +4846,42 @@
    "item": "Moat KPIs headline: novel mechanisms/day, high-value candidates/day, independent candidates per 1000 leads, survivors per source, delta n_eff per 1000 candidates, delta E[log W] per research compute, unseen mass per language/source/asset; the five sovereign mining KPIs (orthogonal candidate throughput, frontier coverage gain, candidate independence, gauntlet-worthy conversion, downstream survivor yield) and the miner reward NovelMechanism x ExpectedOrthogonality x EconomicPlausibility x GauntletReadiness + lambda SurvivorOutcome + gamma delta n_eff",
    "domain": "M",
    "phase": "M",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
+    "desks/mt5/research/mining_objective.py",
+    "desks/mt5/tests/test_mining_objective.py",
     "libs/moat/registry.py"
    ],
-   "scheduled_by": "pending",
+   "scheduled_by": "hourly_cycle:mining_objective (meta department resident)",
    "artifact": "desks/mt5/reports/MINING_OBJECTIVE.json",
-   "consumer": "research_departments (elastic share), scout swarm",
-   "gap": "kpis and generator_yield tables exist; the organ pending",
+   "consumer": "research_departments; scout_swarm; the daily research OS",
+   "gap": "LANDED 2026-09-17: the five sovereign KPIs and the moat KPIs from the registry, the miner reward with the anti-gaming assertion, separation_of_powers over 27 organs (0 violations).",
    "next_step": "build mining_objective.py (KPIs from the registry, reward per generator, the anti-gaming law: candidate quantity has zero intrinsic value)",
-   "landed": []
+   "landed": [
+    "mining_objective 2026-09-17"
+   ]
   },
   {
    "id": "M18",
    "item": "The organisational law: the intelligence, moat, exploration, exploitation, transfer, residual, literature, program-search and meta-research systems exist to maximise the quantity and diversity of falsifiable, implementation-ready, economically distinct candidate edges delivered to the canonical gauntlet; they never lower validation standards, promote capital or optimise raw candidate count; mining maximises the opportunity set, the gauntlet truth, forward evidence reality, the allocator growth",
    "domain": "M",
    "phase": "M",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "docs/LAWS.md"
+    "docs/LAWS.md",
+    "tests/test_mining_law.py",
+    "desks/mt5/research/mining_objective.py"
    ],
-   "scheduled_by": "law gate",
+   "scheduled_by": "law gate (tests/test_mining_law.py); hourly_cycle:mining_objective",
    "artifact": "docs/LAWS.md",
    "consumer": "every research organ",
-   "gap": "not yet written into LAWS.md / the constitution check",
+   "gap": "LANDED 2026-09-17: LAWS.md section 5b (the mining law, the anti-gaming rule, the four jobs, the immutable floor), pinned by a test that also runs the separation-of-powers check on the real tree.",
    "next_step": "add the law to LAWS.md; a test pins that no mining organ writes to sleeves.json or the promoter's inputs",
-   "landed": []
+   "landed": [
+    "LAWS 5b 2026-09-17"
+   ]
   },
   {
    "id": "M19",
@@ -4874,129 +4907,149 @@
    "item": "DAILY_RESEARCH_OS controller: one canonical loop Observe -> Diagnose -> Prioritize -> Build/Search -> Verify -> Deploy -> Measure -> Learn; the north star ResearchValue = delta FrontierCoverage + delta OrthogonalCandidates + delta IndependentSurvivorYield + delta n_eff - ComplexityCost; the daily release train (one canonical research-state update: sources added, axes opened, candidates created, conversion debt reduced, mechanisms discovered, gauntlet results, failures learned, machinery tested/promoted/retired, n_eff, frontier gaps, next bottleneck)",
    "domain": "M",
    "phase": "M",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "desks/mt5/research/frontier_ceo.py",
-    "desks/mt5/research/daily_cycle.py",
-    "desks/mt5/research/tier1_scorecard.py"
+    "desks/mt5/research/daily_research_os.py",
+    "desks/mt5/tests/test_daily_research_os.py",
+    "desks/mt5/research/daily_cycle.py"
    ],
-   "scheduled_by": "MT5-Daily",
+   "scheduled_by": "MT5-Daily (daily_cycle step daily_research_os, last)",
    "artifact": "desks/mt5/reports/DAILY_RESEARCH_OS.json",
-   "consumer": "the principal; every department",
-   "gap": "frontier_ceo and the scorecard cover parts; the single controller, the north star and the release train pending",
+   "consumer": "the principal (release train data/research_release_train.jsonl); research_departments (data/daily_allocation.json)",
+   "gap": "LANDED 2026-09-17: one loop observe -> diagnose (nine measured rules) -> prioritise (the north star with UNMEASURED terms named) -> allocate (every department on) -> run (frontier_ceo, gap map, mining objective, registry sync) -> measure -> learn -> the release train row with day_counted_successful and its reason.",
    "next_step": "build daily_research_os.py as the daily chain's first and last step (release train)",
-   "landed": []
+   "landed": [
+    "daily_research_os 2026-09-17"
+   ]
   },
   {
    "id": "M21",
    "item": "RESEARCH_GAP_MAP: asset x mechanism x information x actor x chart x session x horizon x regime with every cell in UNSEEN / DATA_MISSING / READY / TESTING / FAILED / SURVIVED / FORWARD / LIVE; research moves toward the highest-value holes; RESEARCH_DEBT records economically plausible untested extensions per mechanism",
    "domain": "M",
    "phase": "M",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "libs/moat/registry.py",
-    "desks/mt5/research/axis_registry.py",
-    "desks/mt5/research/breadth_ladder.py"
+    "desks/mt5/research/research_gap_map.py",
+    "desks/mt5/tests/test_research_gap_map.py",
+    "desks/mt5/research/daily_cycle.py"
    ],
-   "scheduled_by": "pending",
+   "scheduled_by": "hourly_cycle:research_gap_map (meta department resident); MT5-Daily (first step)",
    "artifact": "desks/mt5/reports/RESEARCH_GAP_MAP.json",
-   "consumer": "discovery compiler, scouts, research_departments",
-   "gap": "grid_cell and grid_coverage exist in the registry; the state machine per cell and the debt ledger pending",
+   "consumer": "daily_research_os; discovery_compiler; scouts",
+   "gap": "LANDED 2026-09-17: 28,884 economically valid cells (contracts per mechanism), eight states by evidence precedence, hole values; measured 53 populated (0.18%), 709 research-debt cells, 195 of 248 evidence cells outside the grid because the discovered family names no mechanism.",
    "next_step": "build research_gap_map.py",
-   "landed": []
+   "landed": [
+    "research_gap_map 2026-09-17"
+   ]
   },
   {
    "id": "M22",
    "item": "Daily build allocator, module rent and the complexity budget: BuildPriority = E[delta orthogonal candidate yield] / (build + maintenance + complexity cost); ModuleROI = useful downstream research / (compute + maintenance + complexity); low-ROI modules reduced, merged or retired; LAB -> SHADOW -> CANONICAL for machinery; a weekly SIMPLIFIER pass",
    "domain": "M",
    "phase": "M",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "desks/mt5/research/wiring_ceo.py",
-    "desks/mt5/research/probation_runner.py",
-    "desks/mt5/research/research_os_archive.py"
+    "desks/mt5/research/module_rent.py",
+    "desks/mt5/research/build_allocator.py",
+    "desks/mt5/research/simplifier.py",
+    "desks/mt5/tests/test_build_allocator.py",
+    "desks/mt5/research/daily_cycle.py"
    ],
-   "scheduled_by": "MT5-Daily (pending)",
+   "scheduled_by": "MT5-Daily (daily_cycle steps module_rent_research, build_allocator; simplifier on Sundays)",
    "artifact": "desks/mt5/reports/BUILD_ALLOCATOR.json",
-   "consumer": "the daily research OS",
-   "gap": "probation is the LAB -> SHADOW step; rent, ROI, the build ranking and the simplifier pending",
+   "consumer": "the daily research OS (bottleneck and build ranking); a session decides merges and retirements",
+   "gap": "LANDED 2026-09-17: rent per module with measured attribution (UNMEASURED never zero: 532 of 1,148 modules have no crediting channel), verdicts KEEP/REDUCE/MERGE/RETIRE_CANDIDATE report-only; the allocator ranks 518 build candidates (top: wire fund_playbook, plumbing_miner; fix the compiler's 688 unexplained debt cells) with the complexity budget filing 125 as LAB and the four R5 triggers measured (regime-conditioned sizing met); the simplifier names 24,621 removable LOC.",
    "next_step": "build module_rent.py + build_allocator.py + simplifier.py",
-   "landed": []
+   "landed": [
+    "module_rent_research 2026-09-17"
+   ]
   },
   {
    "id": "M23",
    "item": "Gauntlet backpressure and failure-to-miner learning: the gauntlet reports upstream (too many duplicates, cost-killed, FX/H1/Asia, weak PIT, weak cross-asset novelty) and the miners change what they generate; every failure class updates candidate priors while cold exploration keeps a floor",
    "domain": "M",
    "phase": "M",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "desks/mt5/research/negative_knowledge.py",
-    "libs/research/bandit.py",
-    "desks/mt5/scripts/external_gauntlet.py"
+    "desks/mt5/research/gauntlet_backpressure.py",
+    "desks/mt5/tests/test_gauntlet_backpressure.py"
    ],
-   "scheduled_by": "pending",
+   "scheduled_by": "hourly_cycle:gauntlet_backpressure (meta department resident)",
    "artifact": "desks/mt5/reports/GAUNTLET_BACKPRESSURE.json",
-   "consumer": "discovery compiler, scouts, research_os_archive",
-   "gap": "negative knowledge and the bandit learn from verdicts; the explicit backpressure report and the prior updates by failure class pending",
+   "consumer": "discovery_compiler and the engines (candidate_prior memories); research_os_archive",
+   "gap": "LANDED 2026-09-17: intake vs capacity, backlog, failure mix by gate and class, duplicates, FX/H1/Asia concentration, PIT and cross-asset novelty, seven upstream messages with triggers, 27 candidate priors written; the bandit accepts no external evidence row, so its feedback is published with applied: false.",
    "next_step": "build gauntlet_backpressure.py reading the trials ledger by failure class",
-   "landed": []
+   "landed": [
+    "gauntlet_backpressure 2026-09-17"
+   ]
   },
   {
    "id": "M24",
    "item": "Miner specialisation and elastic scaling: P(valuable candidate | miner, domain) routes work; every department stays ON and excess compute goes to the hottest queue",
    "domain": "M",
    "phase": "M",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "desks/mt5/research/research_departments.py",
-    "libs/moat/registry.py"
+    "desks/mt5/research/miner_specialisation.py",
+    "desks/mt5/tests/test_miner_specialisation.py"
    ],
-   "scheduled_by": "hourly_cycle:research_departments",
-   "artifact": "desks/mt5/reports/RESEARCH_DEPARTMENTS.json",
-   "consumer": "department residents",
-   "gap": "departments have an elastic factor; per-miner-per-domain routing pending",
+   "scheduled_by": "hourly_cycle:miner_specialisation (meta department resident)",
+   "artifact": "desks/mt5/reports/MINER_SPECIALISATION.json",
+   "consumer": "research_departments / the residents (data/miner_routing.json)",
+   "gap": "LANDED 2026-09-17: P(valuable | miner, domain) with Jeffreys priors, routing per domain, specialities by the 1-SD rule, elastic floors never zero; 20/22 cells measured, heat 0 because the queue is held by unjudged generators.",
    "next_step": "extend research_departments with generator x domain yields from the registry",
-   "landed": []
+   "landed": [
+    "miner_specialisation 2026-09-17"
+   ]
   },
   {
    "id": "R1",
    "item": "Currency-factor exposure and effective rank (libs/risk/fx_exposure.py): the book decomposed into signed currency/metal factors, participation-ratio rank, factor concentration; alpha_breadth gains a factor_rank reading beside the four (never in the headline minimum until the allocator consumes it)",
    "domain": "R",
    "phase": "R",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "libs/risk/fx_factors.py",
-    "desks/mt5/research/alpha_breadth.py"
+    "libs/risk/fx_exposure.py",
+    "tests/risk/test_fx_exposure.py",
+    "desks/mt5/research/alpha_breadth.py",
+    "libs/risk/fx_factors.py"
    ],
-   "scheduled_by": "hourly_cycle:alpha_breadth",
+   "scheduled_by": "hourly_cycle:alpha_breadth (factor_rank reading); hourly_cycle:netting_report",
    "artifact": "desks/mt5/reports/ALPHA_BREADTH.json",
-   "consumer": "alpha_breadth; the optimiser's factor caps (next)",
-   "gap": "the reviewer's finding: 18 pairs from 8 currencies span at most 7 directions, measured effective breadth 4.879; fx_exposure.py pending",
+   "consumer": "alpha_breadth (beside the readings, outside the headline); the optimiser's factor caps (next)",
+   "gap": "LANDED 2026-09-17: signed currency/metal/index factor exposures from the real registry (251 rows, quote legs from currency_profit), participation-ratio rank, concentration; measured 4.23 over 14 factors from 40 sleeves, corroborating the review's ceiling; BRL/IDR/KRW added to fx_factors.",
    "next_step": "write libs/risk/fx_exposure.py + tests; add factor_rank to alpha_breadth beside the readings",
-   "landed": []
+   "landed": [
+    "fx_exposure 2026-09-17"
+   ]
   },
   {
    "id": "R2",
    "item": "Netting layer (libs/portfolio/netting.py): many sleeve intents net to one target per instrument at the venue's lot step; netting_ratio as the diagnostic; an execution economy never a risk decision; every sleeve keeps its intent for attribution",
    "domain": "R",
    "phase": "R",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "desks/mt5/mt5desk/gateway.py"
+    "libs/portfolio/netting.py",
+    "tests/portfolio/test_netting.py",
+    "desks/mt5/research/netting_report.py",
+    "desks/mt5/tests/test_netting_report.py"
    ],
-   "scheduled_by": "pending",
+   "scheduled_by": "hourly_cycle:netting_report (execution department resident)",
    "artifact": "desks/mt5/reports/NETTING.json",
-   "consumer": "gateway (principal-gated: changes per-sleeve fills and attribution)",
-   "gap": "fourteen LIVE/STANDBY rows all on XAUUSD today, so netting binds now; module and diagnostic pending",
+   "consumer": "the gateway (integration pending: per-sleeve fills and attribution change; every intent is preserved for attribution)",
+   "gap": "LANDED 2026-09-17 as the diagnostic: intents netted toward zero at the venue step, netting_ratio, contributors preserved, fills attributed pro rata; today n_intents is UNMEASURED because every sleeve carries lot auto_ramp and the gateway publishes no per-sleeve targets.",
    "next_step": "write libs/portfolio/netting.py + tests; publish NETTING.json from live intents; gateway integration after the principal's yes",
-   "landed": []
+   "landed": [
+    "netting 2026-09-17"
+   ]
   },
   {
    "id": "R3",
@@ -5049,8 +5102,8 @@
    "scheduled_by": "none by design",
    "artifact": "docs/research/TIER2_BLUEPRINT.md",
    "consumer": "the daily research OS (unblock when the trigger is measured)",
-   "gap": "each would be a module with no data and no caller today (III.16); the triggers are the disposition",
-   "next_step": "the build allocator checks the four triggers daily and opens the item when one is met",
+   "gap": "the build allocator measures the four triggers daily: crowding/decay not met (14 of 30 closed trades), meta-labeling not met (14 of 200), capacity not met (n_matched 0), regime-conditioned sizing MET (allocator armed, regime present, effective heat present) -- that item is open for build",
+   "next_step": "build regime-conditioned sizing (libs/regime posterior conditioning the allocator's fractions, two-sided, with its missed-growth line) now that its trigger is met; the other three stay specs",
    "landed": []
   }
  ],
