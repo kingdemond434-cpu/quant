@@ -344,6 +344,75 @@ orthogonality, independent survivor yield and marginal contribution to effective
   actual costs and fills, gauntlet standards and capital authority are immutable
   (`libs/moat/registry.py` triggers; `research_os_archive.assert_constitution`).
 
+## 5c. THE DATA-UTILIZATION LAW (principal's standing order, 2026-09-17, permanent)
+
+No dataset is collected to sit in storage. Every qualified public or licensed source has
+explicit paths into research breadth, macro and world-state intelligence, regime inference,
+live decision context, execution intelligence and portfolio allocation, where its information
+is relevant. Maximum useful exploitation, never brute force: controlled candidate generation,
+orthogonality search and delayed-truth feedback.
+
+1. **One canonical PIT truth layer.** Every observation carries source, event time,
+   publication/availability time, ingestion time, revision and vintage, geography, asset
+   exposure, frequency, horizon, reliability and content hash; a revised value never replaces
+   what the desk knew at the time. Raw data never reaches capital directly.
+2. **The representation forge** runs over every series: level, delta, acceleration, surprise
+   versus consensus or seasonality, percentile, z-score, relative to history, cross-country
+   spread, residual versus common factors, revision surprise, diffusion, rolling beta, regime
+   transition, abnormality, latent embedding and interactions with the current state.
+3. **The global candidate compiler**: Cell = information x representation x mechanism x
+   target x horizon x session x state x execution, with descendants chosen by mechanism
+   plausibility, novelty and expected information gain, never the Cartesian product.
+4. **Orthogonal discovery is an explicit objective**: candidates are rewarded for incremental
+   portfolio E[log W], low residual dependence, a different mechanism, failure mode, session,
+   horizon and information source, and usefulness where the book is weak.
+5. **The 24/7 world model** keeps posteriors P(S_t = k | I_t) over liquidity, rates, inflation,
+   growth, China demand, the industrial cycle, commodity supply, carry, funding stress, risk
+   appetite, volatility, positioning, regional risk and event proximity, with uncertainty.
+6. **Frequency and horizon matching is structural**: slow signals move slow priors; they never
+   cut a five-minute scalp by fiat.
+7. **Regional state vectors, then a global interaction layer** across countries, datasets and
+   mechanisms.
+8. **The allocator consumes the same intelligence**: each sleeve is a conditional distribution
+   p(R_i | S_t, costs, capacity, decay) and the book solves for growth conditional on the world.
+9. **Macro intelligence affects trades in more than one way** (expected return, uncertainty,
+   correlation, tails, capacity, horizon, direction, urgency, the value of waiting), never one
+   crude multiplier.
+10. **Every live trade writes evidence back upstream**, with counterfactuals (no trade, other
+    size, other execution, other regime call).
+11. **Every source has delayed ROI**: source -> features -> cells -> certifications -> forward
+    survivors -> live marginal E[log W]; budgets follow it.
+12. **The meta-controller closes the loop** every epoch: acquire data, refresh, build
+    representations, expand a mechanism, test an orthogonal cell, falsify, fill a forward slot,
+    research execution, or allocate.
+
+The data-utilization audit is non-negotiable: for every dataset, ingestion healthy, PIT
+certified, representations generated, world-model consumer, candidate-generator consumer,
+interaction-miner consumer, allocator-relevant consumer, trials, survivors, forward evidence,
+live contribution and source ROI are measured. A dataset repeatedly `ingested=true` with every
+downstream field at zero is a DATA STRANDING defect that the research OS wires into legitimate
+experiments or retires with evidence. (`scripts/check_ingestion_exploitation.py`,
+`desks/mt5/research/ingestion_ledger.py`.)
+
+## 5d. THE GLOBAL 24/7 INTELLIGENCE LAW (principal's standing order, 2026-09-17, permanent)
+
+Continuously observe every lawfully accessible public or licensed information surface that
+can describe the global economy, markets, physical activity, positioning, behaviour or market
+structure; convert it into PIT-safe world-state intelligence and the largest statistically
+defensible set of novel orthogonal candidate cells; route those cells through the canonical
+gauntlet; and use the same information continuously for regime inference, news interpretation,
+cross-asset forecasting, execution and portfolio allocation. Four loops run at once, never a
+daily scraper: 24/7 world observation, the 24/7 world model, the 24/7 candidate-cell factory,
+and 24/7 scientific selection with capital feedback. Every country and region receives the
+same depth as Japan and its own mechanics; native-language mining is real (native queries,
+sources, terminology, authors and code; translation after retrieval); the coverage tensor
+country x sector x information class x mechanism x asset x timeframe x session x regime x
+direction x horizon is authoritative with states UNOBSERVED -> SOURCE_HUNT -> INGESTED ->
+REPRESENTED -> CANDIDATES -> TESTING -> REJECTED -> FORWARD -> CERTIFIED -> LIVE -> DECAYED;
+news is a first-class event stream into the world model and the allocator, never a headline
+bot; no stranded data. Capital is deployed whenever the posterior says deployment improves
+geometric growth, never forced into a position every second.
+
 ## 6. OPERATING LAWS (every session, human or machine)
 
 - **Gates before any push:** `./ops/gates.sh` (ruff, pytest --co, mypy); `--full` adds suite +
@@ -364,6 +433,14 @@ orthogonality, independent survivor yield and marginal contribution to effective
   design. Non-root controls exist and are the sanctioned path: `data/RECORDERS_OFF` idles the
   recorders/listener; `~/.cloudflared/config.yml` ingress governs the tunnel. Root-level changes
   go through the principal's console, never through workarounds.
+
+- **WIRING AND CLOCKS ARE NEVER QUEUED (2026-09-17, principal, permanent).** Every organ is
+  wired by the wirer and the fixer the hour it appears; nothing waits in a queue for a session
+  to notice. The wirer runs hourly and drains its whole queue; the clock fixer runs every
+  fifteen minutes and gives every certificate and every stopped or stale clock a live clock;
+  a clock that is not live is a defect the fixer repairs, never a report. Fixers verify by
+  observation (an artifact written, a process alive, a clock row advancing), never by parsing
+  a label. Lessons L0362-L0364.
 
 ## 7. ENFORCEMENT WIRING (what makes this file operative rather than decorative)
 

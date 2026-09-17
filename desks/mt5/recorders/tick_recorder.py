@@ -51,6 +51,15 @@ current millisecond. `copy_ticks_range` over a window that closed a moment ago c
 be a beat behind the feed, and a recorder that advances its cursor past a window the server had
 not finished filling drops the tail of every cycle -- a small, permanent, invisible loss. The lag
 plus the overlap re-pull make advancing safe.
+
+EVERY SEGMENT CARRIES A TWO-SIDED QUOTE, AND `flags` SAYS WHICH SIDE IS NEWS (2026-09-17). An MT5
+tick is a one-sided update as often as not. A side that is genuinely ABSENT from the payload is
+filled from the last one this session saw, per symbol and per broker day, and the count is on the
+cycle report -- see `_carry_quote`, which also records why a side the flags call unchanged is
+never touched. `sided` is not a ninth field in the capture dtype: the dtype is a fixed binary
+layout the manifest hashes and the seal verifies, and the answer is already implied by `flags`,
+which is stored verbatim. `mt5desk.tape.sided_from_flags` derives it at read time from bytes that
+are already on disk, so the two can never disagree.
 """
 from __future__ import annotations
 
@@ -71,6 +80,8 @@ _DESK = _HERE.parent
 for _p in (str(_DESK), str(_DESK.parent.parent)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
+
+from mt5desk.tape import carry_sides  # noqa: E402
 
 from recorders.tape_store import (  # noqa: E402
     GAP_COLD_START,
@@ -241,6 +252,7 @@ class CycleReport:
     clock_behind: int = 0
     compacted: int = 0
     bytes_reclaimed: int = 0
+    sides_filled: int = 0
     paused: str = ""
     errors: dict[str, str] = field(default_factory=dict)
     budget_exhausted: bool = False
@@ -266,6 +278,9 @@ class CycleReport:
         if self.compacted:
             bits.append(f"compacted {self.compacted} day(s), "
                         f"{self.bytes_reclaimed/1e6:.1f} MB reclaimed")
+        if self.sides_filled:
+            bits.append(f"{self.sides_filled} row(s) had an ABSENT bid or ask filled from the "
+                        f"session's last quote -- this feed is publishing one-sided payloads")
         if self.truncations:
             bits.append(f"{self.truncations} truncated pull(s), deferred")
         if self.clock_behind:
@@ -403,6 +418,7 @@ class TickRecorder:
                 rep.truncations += 1
             if res.idle_clock_behind:
                 rep.clock_behind += 1
+            rep.sides_filled += res.sides_filled
             if res.error:
                 rep.errors[sym] = res.error
             if res.ticks or res.segments:
@@ -584,6 +600,8 @@ class TickRecorder:
         last_written = 0
         try:
             for day, chunk in split_by_day(ticks):
+                chunk, filled = _carry_quote(chunk, row, day)
+                res.sides_filled += filled
                 rec = self.store.write_segment(sym, day, chunk, point, digits, cycle_id)
                 res.segments += 1
                 res.bytes += rec.bytes
@@ -908,6 +926,11 @@ class TickRecorder:
                 "symbols_idle_clock_behind": rep.clock_behind,
                 "days_compacted_this_cycle": rep.compacted,
                 "bytes_reclaimed_this_cycle": rep.bytes_reclaimed,
+                # Rows whose bid or ask was ABSENT from the payload and was filled from the
+                # session's last real quote. Zero on this feed (measured over 204M rows) and
+                # published anyway: a number that is always zero is how a reader learns what a
+                # nonzero one would mean.
+                "sides_filled_this_cycle": rep.sides_filled,
                 "budget_exhausted": rep.budget_exhausted,
                 # HOW FAR BEHIND THE FEED THE SLOWEST SYMBOL IS. The single number that says
                 # whether the recorder is keeping up: a heartbeat proves the process is alive,
@@ -955,10 +978,58 @@ class TickRecorder:
         return 0
 
 
+def _carry_quote(chunk: np.ndarray, row: dict[str, Any], day: str) -> tuple[np.ndarray, int]:
+    """Fill a side this payload is MISSING from the last one this symbol-day actually quoted.
+
+    A SIDE IS FILLED ONLY WHEN IT IS ABSENT -- `<= 0` -- NEVER MERELY BECAUSE `flags` SAY IT DID
+    NOT CHANGE, and that restraint is the whole safety property. A bid-only tick still carries an
+    ask, and it is the RIGHT ask: measured across this desk's 204,322,244 recorded rows on
+    2026-09-17, `ask == prev_ask` on 100.00% of bid-only ticks and `bid == prev_bid` on 100.00%
+    of ask-only ticks, on every instrument. The terminal already carries the untouched side. A
+    carry keyed on the flags would therefore overwrite a price the venue published with one this
+    recorder inferred -- which is how a tape stops being a record of what the broker said, and is
+    the single failure class this whole package exists to prevent.
+
+    So on the tape as it stands this function fills nothing, and that is the correct result
+    rather than a wasted call: it is the guard for the case the payload really is one-sided -- a
+    symbol whose first ticks arrive before the other side has ever quoted, or a build that
+    publishes a side as zero -- where the alternative is a mid of half the price and a spread the
+    width of the instrument.
+
+    THE CARRY IS PER BROKER DAY, never across one. Yesterday's close is not a fact about today's
+    open, and seeding across the boundary would manufacture a quote for the gap.
+    """
+    bid = np.asarray(chunk["bid"], dtype=np.float64)
+    ask = np.asarray(chunk["ask"], dtype=np.float64)
+    prev = dict(row.get("last_quote") or {})
+    same_day = str(prev.get("day") or "") == day
+    seed_bid = float(prev.get("bid") or 0.0) if same_day else 0.0
+    seed_ask = float(prev.get("ask") or 0.0) if same_day else 0.0
+    new_bid, new_ask, filled_bid, filled_ask = carry_sides(
+        bid, ask, seed_bid=seed_bid, seed_ask=seed_ask)
+    n = int(filled_bid.sum()) + int(filled_ask.sum())
+    if n:
+        # COPIED ONLY WHEN SOMETHING CHANGED. `split_by_day` yields views into the pulled array;
+        # writing through one would mutate ticks this cycle has already measured.
+        chunk = chunk.copy()
+        chunk["bid"] = new_bid
+        chunk["ask"] = new_ask
+    row["last_quote"] = {
+        "day": day,
+        "bid": float(new_bid[-1]) if new_bid.size and new_bid[-1] > 0 else seed_bid,
+        "ask": float(new_ask[-1]) if new_ask.size and new_ask[-1] > 0 else seed_ask,
+    }
+    return chunk, n
+
+
 @dataclass
 class _PullResult(SymbolResult):
     #: Tracked gap windows this pull actually put ticks into and therefore closed.
     resolved: int = 0
+    #: Rows whose absent bid or ask was filled from this symbol-day's last real quote. Nonzero
+    #: means the feed published a genuinely one-sided payload, which is a fact about the broker
+    #: worth seeing on the cycle it happens rather than inferring from a zero mid months later.
+    sides_filled: int = 0
     #: The query mark is AHEAD of the settled wall clock -- the system clock stepped backward.
     #: Not a gap; a stall, and one that would otherwise be invisible behind a healthy heartbeat.
     idle_clock_behind: bool = False

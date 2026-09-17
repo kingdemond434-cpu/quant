@@ -1062,6 +1062,7 @@ def _producer(name: str, script: str,
 #: must consume its backlog first so that truncation still makes progress. `shadow_forward` gets
 #: the budget to finish; the gauntlet already does the other (never-judged cells sort first).
 LEG_BUDGET_SEC: dict[str, int] = {
+    "probation": 1_800,   # a pass is 40 organs; at 720 s it was cut at ~12 min every hour
     "enrol_clocks": 2_700,
     # THE FOUR ACTIVATION LEGS ARE SEARCHES, NOT RENDERERS. `weak_signals` rebuilds member
     # signals for up to 24 members across 67 symbols and its own `run()` already self-limits at

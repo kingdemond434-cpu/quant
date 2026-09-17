@@ -45,6 +45,7 @@ from research.survivor_publication import (  # noqa: E402
 )
 
 from libs.data.pit import is_stamped  # noqa: E402
+from libs.research.hypothesis_graph import node_id_for_spec  # noqa: E402
 from libs.validation.cpcv import CPCV  # noqa: E402
 from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio  # noqa: E402
 from libs.validation.pbo import probability_backtest_overfitting  # noqa: E402
@@ -1246,7 +1247,28 @@ GATE_LEDGER = REPORTS.parent / "data" / "hypotheses" / "gate_verdict_ledger.json
 GATE_INDEX = REPORTS.parent / "data" / "hypotheses" / "gate_verdict_index.json"
 
 
-def _append_gate_ledger(verdicts: list) -> dict:
+def _graph_ids_for(specs: list | None) -> dict[str, str]:
+    """cell id -> `hypothesis_graph` node id, for the specs this sweep judged.
+
+    TWO NAMES FOR ONE CELL, AND NOTHING JOINED THEM. This ledger calls a cell
+    `EURAUD.overnight_gap_decay.p=<sha of params>`; the hypothesis graph calls the same rule
+    `f668ed18...` (`node_id` over symbol/family/params). So a trial could never be joined to the
+    candidate it tested, and `libs/moat/registry.sync_from_desk` recorded both as separate ids.
+    The spec is in hand HERE, where both names can be computed from it, so the join is written
+    down once rather than guessed at later.
+    """
+    out: dict[str, str] = {}
+    for s in specs or []:
+        if not isinstance(s, dict):
+            continue
+        try:
+            out[cell_id(s)] = node_id_for_spec(s)
+        except (KeyError, TypeError, ValueError):
+            continue          # a spec too malformed to name is UNMEASURED, never a wrong id
+    return out
+
+
+def _append_gate_ledger(verdicts: list, specs: list | None = None) -> dict:
     """Record each cell's terminal gate, once per change. Never raises -- this is bookkeeping."""
     try:
         idx = json.loads(GATE_INDEX.read_text("utf-8"))
@@ -1254,6 +1276,7 @@ def _append_gate_ledger(verdicts: list) -> dict:
             idx = {}
     except (OSError, ValueError):
         idx = {}
+    graph_ids = _graph_ids_for(specs)
     now = datetime.now(tz=UTC).isoformat(timespec="seconds")
     rows = []
     for v in verdicts:
@@ -1267,7 +1290,14 @@ def _append_gate_ledger(verdicts: list) -> dict:
         if idx.get(cell) == key:
             continue
         idx[cell] = key
-        rows.append({"at": now, "cell": cell, "sym": v.get("sym"), "family": v.get("family"),
+        # THE GRAPH'S NAME FOR THE SAME CELL, from the verdict's own params when it carries them
+        # and from the judged spec otherwise. Written as "" rather than omitted when neither can
+        # name it: a reader can then tell "this writer knew about graph_id and could not resolve
+        # this cell" from a row written before the field existed (L1.28a).
+        gid = (node_id_for_spec(v) if isinstance(v.get("params"), dict)
+               else graph_ids.get(cell, ""))
+        rows.append({"at": now, "cell": cell, "graph_id": gid, "sym": v.get("sym"),
+                     "family": v.get("family"),
                      "passed": bool(v.get("passed")), "terminal_gate": gate,
                      "downstream_status": v.get("downstream_status")})
     if not rows:
@@ -3028,7 +3058,8 @@ def main():
     #
     # Stamping AFTER means the worst case is a cell judged twice, which costs one rotation slot.
     # Stamping BEFORE meant the worst case was a cell lost forever. Those are not symmetric.
-    _gate_ledger_result = _safe(lambda: _append_gate_ledger(result.get("verdicts") or []),
+    _gate_ledger_result = _safe(lambda: _append_gate_ledger(result.get("verdicts") or [],
+                                                            cell_objs),
                                 "gate_ledger")
     _save_seen_cells(_seen, {str(v.get("cell") or "")
                              for v in (result.get("verdicts") or [])

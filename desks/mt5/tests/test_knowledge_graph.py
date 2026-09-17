@@ -144,6 +144,26 @@ def test_became_is_resolved_from_the_compilers_own_parent_hash(desk) -> None:
     assert report["cells"]["BECAME"] == 1
 
 
+def test_became_reads_seed_key_first_so_a_mutated_cell_keeps_its_lead(desk) -> None:
+    """A cell whose `parent` is now a real graph node id (the 2026-09-17 lineage split) must
+    still join its lead: the miner-row sha moved to `seed_key` and this join reads that first.
+
+    Before the split, `parent` held the seed alone; a cell that named a mutation ancestor would
+    have silently lost its BECAME edge the day the writer started recording one.
+    """
+    mutated = _cell("c3", "a-real-node-id-not-a-seed")
+    mutated["seed_key"] = _paper_cell_key()
+    mutated["operator"] = "descendant:chart"
+    _cells(desk, [mutated, _cell("c4", _paper_cell_key())])
+    store, _c, report = _build()
+    became = {e["dst"] for e in store["edges"].values() if e["type"] == kg.BECAME}
+    assert became == {"cell:c3", "cell:c4"}, "both cells name the same lead, by either field"
+    assert report["cells"]["BECAME"] == 2
+    assert ls.cell_seed_key(mutated) == _paper_cell_key()
+    assert ls.cell_seed_key({"parent": "legacy-seed"}) == "legacy-seed", "35,199 rows read this"
+    assert ls.cell_seed_key({}) == ""
+
+
 def test_a_cell_read_before_its_lead_still_gets_its_became_edge(desk, tmp_path) -> None:
     """The two organs run on different clocks; an unlucky order must not cost provenance."""
     empty = tmp_path / "empty"

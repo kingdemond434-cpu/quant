@@ -39,9 +39,11 @@ is `priority="low"` and stays in the intake with `structured_complete=False`, be
 measurement (L1.28a) and a queue that silently discards its own backlog cannot report one.
 
 WHAT JOINS A LEAD TO THE REST OF THE DESK. `libs/research/hypothesis_graph.record_candidates`
-stamps every compiled candidate with `parent = sha256({"s": source, "t": title, "u": url})[:16]`.
-That hash IS how a cell names the lead it came from, and `compiler_parent_key` reproduces it
-exactly, so `provenance["cell_key"]` on a Lead is the join key into `hypothesis_graph.jsonl`.
+stamps every compiled candidate with `seed_key = sha256({"s": source, "t": title, "u": url})[:16]`
+(and, when the candidate names no parent cell, into `parent` as well, which is where it lived
+alone until 2026-09-17). That hash IS how a cell names the lead it came from,
+and `compiler_parent_key` reproduces it exactly, so `provenance["cell_key"]` on a Lead is the
+join key into `hypothesis_graph.jsonl`; `cell_seed_key` reads it back off a graph row.
 Verified on the live ledger: `miner:reddit`/`miner:youtube`/`miner:forexfactory`/`miner:cot`
 parents resolve back to rows still sitting in `data/intelligence/`.
 
@@ -67,6 +69,7 @@ __all__ = [
     "SPEC_FIELDS",
     "Lead",
     "blank_spec",
+    "cell_seed_key",
     "claims_from_text",
     "compiler_parent_key",
     "dedupe_key",
@@ -334,6 +337,19 @@ def row_cell_key(row: Mapping[str, Any], seat: str = "") -> str:
     title = row.get("title") or row.get("description") or ""
     url = row.get("url") or row.get("link") or ""
     return compiler_parent_key(source, title, url)
+
+
+def cell_seed_key(row: Mapping[str, Any]) -> str:
+    """The other end of the same join, read off a HYPOTHESIS-GRAPH row: `seed_key`, then `parent`.
+
+    `row_cell_key` computes the key from the intake row; this reads the key a cell was stamped
+    with. Two fields because `hypothesis_graph` split them on 2026-09-17: `parent` now holds the
+    CELL a candidate was mutated from when the donor named one the graph holds, and `seed_key`
+    always holds the miner-row sha. Rows written before that date have no `seed_key` and carry
+    the seed in `parent`, which is why the fallback is not optional -- 35,199 of them are on this
+    box and every BECAME edge the desk has depends on it.
+    """
+    return str(row.get("seed_key") or row.get("parent") or "")
 
 
 def title_key(title: str) -> str:

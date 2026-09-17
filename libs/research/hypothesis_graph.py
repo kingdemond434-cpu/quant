@@ -9,6 +9,17 @@ only ever produces one family, a descendant that outlives its parent. `research_
 already carries a `geneology_id` on 47,150 rows; this is that field made universal and joined
 to outcomes.
 
+TWO ANCESTORS, TWO FIELDS (2026-09-17). `seed_key` is the MINER ROW the idea entered the desk
+on -- sha of (source, title, url), the join `lead_schema.compiler_parent_key` reproduces and
+`knowledge_graph` BECAME resolves against. `parent` is the CELL this one was mutated from, and
+until this date it held the seed too: measured on the live ledger, 0 of 35,199 `parent` values
+resolved to any of the 23,972 node ids, because the writer recorded the seed it was handed and
+threw the donor's explicit parent away. `descendants` had been writing `parent = root_id` (a
+real node id) and `operator = descendant:<axis>` into a field that was overwritten one function
+later, so `alpha_lineage_search.untried_mutations` found no mutation edge under any family and
+`Graph.lineage` could never walk past the first row. A row with no explicit parent still carries
+the seed in BOTH fields, so nothing that reads `parent` as a seed today changes.
+
 NEGATIVE KNOWLEDGE. Every cell the gauntlet judged and failed is indexed by (symbol, family,
 parameter region). Before a proposer or the compiler admits a candidate, it asks whether the desk
 has already buried that region, and how many times. `funnel_census` knows cross_asset_residual
@@ -40,7 +51,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Iterable
+from collections.abc import Container, Iterable, Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -82,6 +93,15 @@ class Node:
     at: str = ""
     #: Typed edges (`edges_for`). Absent on rows written before 2026-09-08, which read as [].
     edges: list[dict[str, Any]] = field(default_factory=list)
+    #: The MINER-ROW hash (`compiler_parent_key`): where the idea entered the desk. Separate
+    #: from `parent` since 2026-09-17 -- see `record_candidates`. Empty when there is no seed.
+    seed_key: str = ""
+    #: The transformation that produced this cell from its parent (`step_lookback_up`,
+    #: `descendant:chart`). Written only when the donor named one; never inferred.
+    operator: str = ""
+    #: The gate the JUDGE said stopped this cell, passed through from the verdict rather than
+    #: re-derived from `gates` -- which holds `canonical_report` and nothing else on most rows.
+    terminal_gate: str = ""
 
     @property
     def id(self) -> str:
@@ -96,7 +116,15 @@ class Node:
                "family": self.family, "params": self.params, "source": self.source,
                "parent": self.parent, "fate": self.fate, "why": self.why, "gates": self.gates,
                "at": self.at or datetime.now(tz=UTC).isoformat(),
-               "edges": [dict(e) for e in self.edges]}
+               "edges": [dict(e) for e in self.edges],
+               # THE SEED IS NEVER DROPPED. Every caller that set only `parent` was setting the
+               # seed, so an unset `seed_key` falls back to it and the BECAME join in
+               # `knowledge_graph` keeps resolving on rows written either way.
+               "seed_key": self.seed_key or self.parent}
+        if self.operator:
+            row["operator"] = self.operator
+        if self.terminal_gate:
+            row["terminal_gate"] = self.terminal_gate
         profile = death_profile(self.gates, self.fate)
         if profile:
             row["death"] = profile
@@ -216,6 +244,34 @@ def node_id(symbol: str, family: str, params: dict[str, Any]) -> str:
     payload = json.dumps({"s": str(symbol).upper(), "f": family, "p": params},
                          sort_keys=True, default=str)
     return hashlib.sha256(payload.encode()).hexdigest()[:16]
+
+
+def spec_identity(spec: Mapping[str, Any]) -> tuple[str, str, dict[str, Any]]:
+    """(symbol, family, params) off any spelling of a spec: a compiled candidate (`symbol`), a
+    gauntlet cell or a verdict row (`sym`). ONE reading, so the id a judge stamps on a verdict
+    and the id the graph wrote for the same cell cannot drift apart by a field name.
+
+    The chart and the session are NOT read here: both ride inside `params` on every producer
+    this desk runs (`descendants.spec_of`, `miner_candidate_compiler.expand_axes`), and folding
+    a row-level `timeframe` in would give a verdict an id the BORN row never had. A cell whose
+    chart rides on the ROW therefore shares a node with the H1 cell of the same parameters --
+    the pre-existing property of `node_id`, named here rather than silently inherited.
+    """
+    symbol = spec.get("symbol") or spec.get("sym") or ""
+    params = spec.get("params")
+    return (str(symbol), str(spec.get("family") or ""),
+            dict(params) if isinstance(params, Mapping) else {})
+
+
+def node_id_for_spec(spec: Mapping[str, Any]) -> str:
+    """The graph's node id for a spec -- the join key between a judged cell and its hypothesis.
+
+    `external_gauntlet` stamps this on every gate-verdict row as `graph_id`, because the verdict
+    ledger names cells as `EURAUD.overnight_gap_decay.p=<sha of params>` while the graph names
+    them by this hash: two ids for one cell, and no join between trials and candidates.
+    """
+    sym, family, params = spec_identity(spec)
+    return node_id(sym, family, params)
 
 
 def _bucket(name: str, value: Any) -> str:
@@ -384,41 +440,149 @@ class Graph:
         return out
 
 
+#: Where a donated candidate may name the PARENT CELL it was mutated from. Read in this order,
+#: on the candidate itself and on its `evidence` block, because six producers spell it six ways:
+#: `descendants` writes `parent` + `lineage.root`, the distiller writes `evidence.parent`, the
+#: recombiners write `parent_ids`, and `libs/moat/registry` reads `parent_ids` back out.
+PARENT_FIELDS: tuple[str, ...] = ("parent", "parent_id", "mutated_from")
+PARENT_LIST_FIELDS: tuple[str, ...] = ("parent_ids",)
+#: The same, inside a `lineage` block.
+LINEAGE_FIELDS: tuple[str, ...] = ("root", "parent")
+LINEAGE_LIST_FIELDS: tuple[str, ...] = ("parents",)
+
+
+def _as_parent_id(value: Any) -> str:
+    """One claimed parent as a node id: a string is taken as written, a SPEC dict is hashed.
+
+    A spec is canonical by construction -- it IS the node id of that rule -- so it needs no
+    lookup; a bare string is only a claim until something resolves it.
+    """
+    if isinstance(value, Mapping):
+        return node_id_for_spec(value) if (value.get("symbol") or value.get("sym")) else ""
+    return str(value or "").strip()
+
+
+def parent_claims(c: Mapping[str, Any]) -> list[str]:
+    """Every parent cell id this candidate names, in priority order, deduplicated.
+
+    Claims only. Nothing here is inferred from the mechanism, the family or the source: a row
+    that names no parent returns [], which is the honest lineage of a cell nobody stepped from.
+    """
+    _ev = c.get("evidence")
+    blocks: list[Mapping[str, Any]] = [c]
+    if isinstance(_ev, Mapping):
+        blocks.append(_ev)
+    out: list[str] = []
+
+    def _add(value: Any) -> None:
+        pid = _as_parent_id(value)
+        if pid and pid not in out:
+            out.append(pid)
+
+    for block in blocks:
+        for name in PARENT_FIELDS:
+            _add(block.get(name))
+        for name in PARENT_LIST_FIELDS:
+            for item in (block.get(name) or []) if isinstance(block.get(name), list) else []:
+                _add(item)
+        lin = block.get("lineage")
+        if isinstance(lin, Mapping):
+            for name in LINEAGE_FIELDS:
+                _add(lin.get(name))
+            for name in LINEAGE_LIST_FIELDS:
+                for item in (lin.get(name) or []) if isinstance(lin.get(name), list) else []:
+                    _add(item)
+    return out
+
+
+def resolve_parent(c: Mapping[str, Any], known: Container[str]) -> str:
+    """The first claimed parent that IS a node of this graph, or "" when none is.
+
+    RESOLUTION IS THE POINT. Measured 2026-09-17 on the live ledger: 0 of 35,199 `parent`
+    references resolved to any of the 23,972 node ids, because the writer recorded the SEED it
+    was handed rather than the cell that was mutated -- so `alpha_lineage_search.untried_mutations`
+    skipped every family, `descendants` wrote `parent = root_id` into a field that was then
+    overwritten, and `Graph.lineage` walked exactly one step. An unresolvable claim is NOT
+    written into `parent` (that is how the field filled with prose in the first place); it keeps
+    its `mutated_from` edge, where a claim is allowed to be a claim.
+    """
+    for pid in parent_claims(c):
+        if pid in known:
+            return pid
+    return ""
+
+
+def operator_of(c: Mapping[str, Any]) -> str:
+    """The transformation the donor named, from the row or its evidence. Never inferred."""
+    _ev = c.get("evidence")
+    ev: Mapping[str, Any] = _ev if isinstance(_ev, Mapping) else {}
+    return str(c.get("operator") or ev.get("operator") or "")
+
+
+def seed_key_of(c: Mapping[str, Any]) -> str:
+    """The miner row that produced this candidate: sha of (source, title, url), truncated.
+
+    Byte-identical to what `record_candidates` has always stamped into `parent`, and reproduced
+    by `lead_schema.compiler_parent_key` -- the ONLY deterministic join from a mined row to the
+    cells it became, which is why it is kept in its own field rather than overwritten.
+    """
+    return hashlib.sha256(json.dumps({"u": c.get("source_url"), "t": c.get("source_title"),
+                                      "s": c.get("source")}, sort_keys=True,
+                                     default=str).encode()).hexdigest()[:16]
+
+
 def _candidate_parent_key(c: dict[str, Any]) -> tuple[str, str]:
     """(certificate key the candidate was stepped from, operator) or ("", "").
 
     The distiller and the mutation proposers carry both on `evidence`; a candidate may also
-    carry `parent` at the top level. A parent that is only the miner-row hash (below) is NOT a
-    mutation and gets no `mutated_from` edge.
+    carry `parent`, `parent_ids` or a `lineage` block at the top level. A parent that is only
+    the miner-row hash (`seed_key_of`) is NOT a mutation and gets no `mutated_from` edge.
     """
-    _ev = c.get("evidence")
-    ev: dict[str, Any] = _ev if isinstance(_ev, dict) else {}
-    parent = c.get("parent") or ev.get("parent") or ""
-    op = c.get("operator") or ev.get("operator") or ""
-    return str(parent or ""), str(op or "")
+    claims = parent_claims(c)
+    return (claims[0] if claims else ""), operator_of(c)
 
 
 def record_candidates(cands: Iterable[dict[str, Any]], source: str,
                       graph: Graph | None = None) -> int:
-    """Register newly compiled candidates as BORN, with the miner row that produced each."""
+    """Register newly compiled candidates as BORN, with the miner row that produced each.
+
+    TWO DIFFERENT ANCESTORS, AND THEY USED TO SHARE ONE FIELD. `seed_key` is the miner row the
+    idea entered on; `parent` is the CELL this one was mutated from. A candidate that names a
+    parent the graph holds gets it -- that is the lineage `alpha_lineage_search`,
+    `trajectory_evolution`, `descendants` and `lineage_dag` were written to walk. A candidate
+    that names none keeps the seed in `parent` exactly as before, so every reader that treats
+    `parent` as a seed still reads one.
+    """
     g = graph or Graph()
+    # Read once: `append` invalidates the row cache, so asking per candidate would re-parse an
+    # 18 MB ledger per row. New nodes are added as they are written, so a batch can be its own
+    # ancestry -- a mutation donated beside its parent still resolves.
+    known: set[str] = set(g.current())
     n = 0
     for c in cands:
-        parent = hashlib.sha256(json.dumps({"u": c.get("source_url"), "t": c.get("source_title"),
-                                            "s": c.get("source")}, sort_keys=True,
-                                           default=str).encode()).hexdigest()[:16]
+        seed = seed_key_of(c)
         params = dict(c.get("params") or {})
-        mut_parent, op = _candidate_parent_key(c)
-        # THE CANDIDATE'S OWN SOURCE WINS. The compiler registers every candidate it admits, and
-        # stamping them all "miner_candidate_compiler" erased which proposer found each one --
-        # the bandit's per-arm evidence and the research P&L attribute by this field.
-        g.append(Node(symbol=str(c.get("symbol")), family=str(c.get("family")),
-                      params=params,
-                      source=str(c.get("source") or source), parent=parent,
-                      fate=BORN, why=str(c.get("mechanism_note") or "")[:200],
-                      edges=edges_for(str(c.get("symbol")), params, parent=mut_parent,
-                                      operator=op,
-                                      source_url=str(c.get("source_url") or ""))))
+        sym, family, _ = spec_identity(c)
+        claims = parent_claims(c)
+        op = operator_of(c)
+        resolved = next((p for p in claims if p in known), "")
+        # The EDGE carries the claim even when nothing resolves it -- an edge is allowed to be a
+        # claim, the scalar `parent` is not. The resolved id wins when there is one, so the edge
+        # and the field never name two different ancestors.
+        mut_parent = resolved or (claims[0] if claims else "")
+        node = Node(symbol=sym, family=family,
+                    params=params,
+                    # THE CANDIDATE'S OWN SOURCE WINS. The compiler registers every candidate it
+                    # admits, and stamping them all "miner_candidate_compiler" erased which
+                    # proposer found each one -- the bandit's per-arm evidence and the research
+                    # P&L attribute by this field.
+                    source=str(c.get("source") or source),
+                    parent=resolved or seed, seed_key=seed, operator=op,
+                    fate=BORN, why=str(c.get("mechanism_note") or "")[:200],
+                    edges=edges_for(sym, params, parent=mut_parent, operator=op,
+                                    source_url=str(c.get("source_url") or "")))
+        g.append(node)
+        known.add(node.id)
         n += 1
     return n
 
@@ -432,13 +596,17 @@ def record_verdicts(verdicts: Iterable[dict[str, Any]], graph: Graph | None = No
         passed_all = bool(gates) and all(isinstance(x, dict) and x.get("passed") is True
                                          for x in gates.values())
         failed = [k for k, x in gates.items() if isinstance(x, dict) and x.get("passed") is False]
-        sym = str(v.get("sym") or v.get("symbol"))
-        params = dict(v.get("params") or {})
-        g.append(Node(symbol=sym, family=str(v.get("family")),
+        sym, family, params = spec_identity(v)
+        g.append(Node(symbol=sym, family=family,
                       params=params, source=str(v.get("hunt") or "gauntlet"),
                       fate=CERTIFIED if passed_all else FAILED,
                       why=("passed all gates" if passed_all else
                            f"failed {', '.join(failed) or 'unmeasured'}"), gates=gates,
+                      # WHAT THE JUDGE SAID, not what this row's `gates` blob can be made to
+                      # say: 24,027 of 26,843 dead cells carry no terminal gate here because
+                      # `gates` holds `canonical_report` alone, while the judging code had the
+                      # answer in hand and dropped it on the way in.
+                      terminal_gate=str(v.get("terminal_gate") or ""),
                       edges=edges_for(sym, params)))
         n += 1
     return n
