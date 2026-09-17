@@ -83,6 +83,18 @@ TASK name="MT5-QQuantGatesCertify" trigger="every 1 hour, at :27" runs="desks/mt
 
 # Declared here because their installers are in the repo and were read to write these lines.
 TASK name="MT5-Hourly"             trigger="every 1 hour (keep-alive of the 24/7 discovery resident)" runs="desks/mt5/research/department_resident.py" installer="desks/mt5/scripts/MT5Hourly.cmd" lane="research"
+# THE MOAT SWARMS (M19, principal 2026-09-17): EXPLOIT / EXPLORE / RESURRECT run 100% concurrently
+# as 24/7 residents (moat_swarms.py --swarm <name>: singleton lock, engines as children under
+# budgets by measured generator yield with floors, discovery_compiler last). Unlimited limit,
+# IgnoreNew, SYSTEM; the trigger is a keep-alive.
+TASK name="MT5-Moat-Exploit" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/moat_swarms.py" installer="NONE" lane="research"
+TASK name="MT5-Moat-Explore" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/moat_swarms.py" installer="NONE" lane="research"
+TASK name="MT5-Moat-Resurrect" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/moat_swarms.py" installer="NONE" lane="research"
+# THE REGION DEPARTMENTS (principal 2026-09-17): Japan on its own hourly resident (HOURLY_PLAN=
+# dept:japan) and the global research OS over every country lab (dept:regions), both 24/7
+# residents of department_resident.py like the other nine.
+TASK name="MT5-Dept-Japan" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
+TASK name="MT5-Dept-Regions" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
 TASK name="MT5-Deepening"          trigger="every 1 hour"  runs="desks/mt5/research/deepening_worker.py"  installer="desks/mt5/scripts/install_deepening_task.ps1" lane="research"
 
 # ------------------------------------------------------------------------------- the data moat
@@ -120,6 +132,10 @@ TASK name="E8-Gold" trigger="every 5 minutes" runs="desks/mt5/prop/e8_gold.py" i
 TASK name="MT5-GatewayResident" trigger="every 10 minutes" runs="desks/mt5/research/gateway_resident.py" installer="NONE" lane="ops"
 TASK name="MT5-AdoptRelease" trigger="every 1 hour, at :12" runs="desks/mt5/scripts/Adopt-And-Seal.ps1" installer="desks/mt5/scripts/install_adopt_release_task.ps1" lane="ops"
 TASK name="MT5-IdentityHealer" trigger="every 30 minutes" runs="desks/mt5/scripts/heal_identity_broken_clocks.py" installer="NONE" lane="research"
+# THE CLOCK FIXER (principal 2026-09-17, permanent): every fifteen minutes every certificate and
+# every stopped clock gets a live clock and every dead resident is restarted; verification by
+# observation. SYSTEM, PT12M limit, IgnoreNew.
+TASK name="MT5-ClockFixer" trigger="every 15 minutes" runs="desks/mt5/research/clock_fixer.py" installer="NONE" lane="research"
 TASK name="MT5-Daily" trigger="daily 23:50" runs="desks/mt5/research/daily_cycle.py" installer="NONE" lane="research"
 TASK name="MT5-ForwardReconcile" trigger="daily 04:00" runs="desks/mt5/research/forward_reconcile.py" installer="NONE" lane="research"
 TASK name="MT5-CEODocket" trigger="every 1 hour, at :10" runs="ops/run_ceo_docket.cmd" installer="NONE" lane="research"
