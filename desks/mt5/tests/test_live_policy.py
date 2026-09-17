@@ -32,6 +32,17 @@ def test_forex_and_m15_gold_are_refused_and_gold_is_not() -> None:
     assert lp.refuse({"name": "nameless", "status": "LIVE"}, pol)   # no symbol is not permission
 
 
+def test_m15_is_banned_on_every_symbol_and_m5_survives() -> None:
+    """The principal, twice: "the bad m15 sleeve of gold is too", then "make sure the m15 scalps
+    r gone only m5 stays". A symbol-scoped ban would have re-opened on the next live symbol."""
+    pol = lp.Policy()
+    assert "*" in pol.banned_timeframes and "M15" in pol.banned_timeframes["*"]
+    for sym in ("XAUUSD", "EURUSD", "US500"):
+        assert lp.refuse({"name": "x", "symbol": sym, "timeframe": "M15"}, pol) is not None
+    assert lp.refuse({"name": "m5", "symbol": "XAUUSD", "timeframe": "M5"}, pol) is None
+    assert lp.refuse({"name": "m1", "symbol": "XAUUSD", "chart": "M15"}, pol) is not None
+
+
 def test_banned_family_never_takes_live_capital() -> None:
     row = {"name": "eurchf_discovered_asia", "symbol": "XAUUSD", "family": "discovered"}
     assert lp.refuse(row) and "discovered" in lp.refuse(row)

@@ -166,6 +166,15 @@ LEG_LAYER: dict[str, str] = {
     "artifact_chain": "meta", "residual_queue": "information", "unseen_frontier": "information",
     "source_registry": "information", "synthetic_regimes": "meta",
     "event_response_atlas": "information", "causal_lab": "information", "world_lab": "prediction",
+    # THE 2026-09-17 WORLD-MODEL TRIAD. `world_model` turns every PIT series into a conditional
+    # distribution over forward returns -- prediction, and the only one of the three that makes a
+    # claim about returns at all. `residual_hunt` asks what dataset, participant, region,
+    # representation, mechanism or interaction the model is MISSING, which is a question about
+    # what the desk knows before it predicts: information. `representation_forge` mints the
+    # features themselves from ingested series -- also information, and for the same reason
+    # `unused_information` is: it decides what inputs exist, not what they imply.
+    "world_model": "prediction", "residual_hunt": "information",
+    "representation_forge": "information",
     "news_event_stream": "information", "event_sleeves": "prediction",
     "registry_sync": "meta", "axis_proposer": "information", "program_alpha_lane": "prediction",
     "trajectory_evolution": "prediction", "research_os_archive": "meta", "regime_router": "sizing",
@@ -176,7 +185,17 @@ LEG_LAYER: dict[str, str] = {
     "graveyard_resurrection": "prediction", "shadow_discovery": "information",
     "forward_exploitation": "information", "alpha_recombination": "prediction",
     "unused_information": "information", "discovery_compiler": "prediction",
+    # WHICH SOURCES THE DESK MAY LAWFULLY CONSUME is a property of its INPUTS, decided before any
+    # signal is derived from them -- the same reading that puts `source_routes` and `data_scout`
+    # in information. The ROI reallocator is the machine spending on itself: meta.
+    "evidence_router": "information", "research_roi": "meta",
     "research_debt": "meta", "mining_objective": "meta", "research_gap_map": "meta",
+    # WHAT THE DESK KNOWS AND COULD KNOW ABOUT THE WORLD, per country x sector x information type
+    # x mechanism x representation x asset x session x regime x horizon x execution, plus the deep
+    # forest's own tensor. It decides WHICH INPUTS EXIST before any signal is derived from them --
+    # the same question `source_routes`, `value_of_data` and `unseen_frontier` are information for
+    # -- even though the frontier rows it writes become research work downstream. LAWS 5f.
+    "coverage_tensor": "information",
     "gauntlet_backpressure": "meta", "miner_specialisation": "meta",
     "moat_collectors": "information", "source_frontier": "information",
     "scout_swarm": "information", "actor_atlas": "information",
@@ -188,7 +207,23 @@ LEG_LAYER: dict[str, str] = {
     "paradigm_router": "meta", "meta_controller": "meta", "lead_replication": "information",
     "data_scout": "information", "japan_department": "information",
     "global_research_os": "information", "macro_department": "information",
+    # THE FOREST FEDERATION (2026-09-17). Seventeen research civilizations, each running eleven
+    # agent roles in parallel on its own resident. They are INFORMATION legs for the same reason
+    # `japan_department` is: what a forest produces is a registry of sources, claims, mechanisms
+    # and PIT-safe series -- what the desk KNOWS before it predicts anything. The candidate
+    # compiler inside each one donates through `proposer_common`, whose own legs are already
+    # billed to prediction, so counting a forest as prediction would bill the same trial twice.
+    "forest_korea": "information", "forest_china": "information",
+    "forest_russia_cis": "information", "forest_south_asia": "information",
+    "forest_asean": "information", "forest_oceania": "information",
+    "forest_europe": "information", "forest_north_america": "information",
+    "forest_latam": "information", "forest_mena": "information",
+    "forest_africa": "information",
+    "forest_global_web": "information", "forest_global_academic_code": "information",
+    "forest_global_physical_data": "information", "forest_global_market_data": "information",
     "external_federation": "information",
+    "source_civilizations": "information", "evidence_watchtower": "information",
+    "prediction_markets": "information",
     "archaeology": "information",
     "shadow_institutional": "information",
     "latent_actors": "information",

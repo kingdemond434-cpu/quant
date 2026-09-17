@@ -51,8 +51,13 @@ POLICY_FILE = BASE / "data" / "live_sleeve_policy.json"
 
 #: The live sleeve universe by the principal's order of 2026-09-17. XAUUSD only.
 DEFAULT_LIVE_SYMBOLS: frozenset[str] = frozenset({"XAUUSD"})
-#: Symbol -> timeframes that may never take capital on it ("the bad m15 sleeve of gold").
-DEFAULT_BANNED_TIMEFRAMES: dict[str, frozenset[str]] = {"XAUUSD": frozenset({"M15"})}
+#: Symbol -> timeframes that may never take capital on it, with "*" meaning EVERY symbol.
+#: The principal, 2026-09-17, twice: "the bad m15 sleeve of gold is too" and then "make sure the
+#: m15 scalps r gone only m5 stays". M15 is therefore banned desk-wide, not only on gold: the
+#: XAUUSD-only entry would have let an M15 sleeve on any future live symbol through, which is
+#: exactly the shape of hole the last two retirements left.
+DEFAULT_BANNED_TIMEFRAMES: dict[str, frozenset[str]] = {
+    "*": frozenset({"M15"}), "XAUUSD": frozenset({"M15"})}
 #: Families banned for live capital here as well as in research (see research/family_policy.py).
 DEFAULT_BANNED_FAMILIES: frozenset[str] = frozenset({"discovered"})
 ORDER = ("principal 2026-09-17: forex sleeves and the XAUUSD M15 sleeve are disabled in the "
@@ -115,7 +120,9 @@ def refuse(row: Mapping[str, Any], pol: Policy | None = None) -> str | None:
     if sym not in p.live_symbols:
         return (f"{sym} is outside the live sleeve universe {sorted(p.live_symbols)} -- {p.by}")
     tf = str(row.get("timeframe") or row.get("chart") or "").strip().upper()
-    if tf and tf in p.banned_timeframes.get(sym, frozenset()):
+    banned_tf = p.banned_timeframes.get(sym, frozenset()) | p.banned_timeframes.get(
+        "*", frozenset())
+    if tf and tf in banned_tf:
         return f"{sym} {tf} is disabled in the live account -- {p.by}"
     fam = str(row.get("family") or "").strip().lower()
     if fam and fam in p.banned_families:
