@@ -692,6 +692,39 @@ def separation_of_powers(organs: list[str] | None = None, *, research: Path | No
 
 # ----------------------------------------------------------------------------------- the leg --
 
+def trial_budget(out: Path | None = None) -> dict[str, Any]:
+    """THE DELAYED-CREDIT TRIAL BUDGET (LAWS 5f rule 10), read from `research_roi.py`.
+
+    The mining objective's whole argument is that candidate QUANTITY is worth nothing and that
+    novel, orthogonal, distinct mechanism cells are worth everything. A per-family ROI share is
+    the downstream half of that same claim -- which mechanisms actually paid -- so it is read
+    here and published beside the rewards, two-sided: a family above the equal share is a family
+    to mine MORE, and one below it keeps its floor and is never banned.
+
+    The path derives from `OUT` at call time, so the rig that repoints `OUT` into a tmp registry
+    never reads the live box's allocation.
+    """
+    base = (out or OUT).parent
+    p = (base.parent / "data" / "research_allocation.json") if base.name == "reports" \
+        else base / "data" / "research_allocation.json"
+    doc = _read_json(p)
+    block = doc.get("trial_budget_by_family") if isinstance(doc, dict) else None
+    if not isinstance(block, dict) or not isinstance(block.get("shares"), dict):
+        return {"status": "UNMEASURED", "source": str(p), "applied": False, "shares": {},
+                "why": "research_roi.py has not published a trial budget"}
+    shares = {str(k): float(v) for k, v in block["shares"].items()
+              if isinstance(v, (int, float))}
+    equal = 1.0 / (len(shares) or 1)
+    return {
+        "status": "MEASURED", "source": str(p), "applied": True, "n_families": len(shares),
+        "shares": dict(sorted(shares.items(), key=lambda kv: -kv[1])[:40]),
+        "mine_more": sorted(k for k, v in shares.items() if v > equal),
+        "floor_share": block.get("floor_share"),
+        "boundary": ("a share is a MINING PRIORITY: it raises where the desk looks, never lowers "
+                     "a bar, never bans a family, and never reduces the total generated"),
+    }
+
+
 def _registry_rows() -> tuple[list, list, list, list, str | None]:
     try:
         from libs.moat import registry as reg
@@ -790,6 +823,7 @@ def run(*, day: str | None = None, dry_run: bool = False) -> dict[str, Any]:
     report = {
         "at": now(), "day": d, "sovereign": sov, "moat_kpis": moat, "rewards": rew,
         "anti_gaming": anti_gaming(rew), "separation_of_powers": sep,
+        "trial_budget": trial_budget(),
         "corpus": corpus_counts, "n_candidates": len(cands), "n_discoveries": len(discs),
         "n_generators": len(rew), "lambda": LAMBDA, "gamma": GAMMA,
         "ready_states": list(READY_STATES), "unmeasured": unmeasured,

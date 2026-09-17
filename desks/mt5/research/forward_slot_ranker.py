@@ -566,6 +566,54 @@ def _publish(row: Row, p: tuple[float, str], rate: tuple[float | None, str],
     return out
 
 
+def roi_weights(out: Path | None = None) -> dict[str, Any]:
+    """THE DELAYED-CREDIT FORWARD-SLOT WEIGHTS (LAWS 5f rule 10), from `research_roi.py`.
+
+    A slot is the scarcest thing this desk owns, and until now its value was priced entirely on
+    the candidate's OWN forward statistics. The ROI weight adds the slower fact: has this
+    MECHANISM FAMILY ever paid, credited back along the provenance DAG from the survivors it
+    produced. It multiplies the published value two-sided and it removes nothing -- an unpriced
+    family reads exactly 1.0, and no weight can take a slot away, because this organ stops no
+    clock (REPLACEABLE stays a report, decided on `slot_value` alone).
+
+    Derived from `OUT` at call time so the desk fixture's tmp tree stays hermetic.
+    """
+    base = Path(out or OUT).parent
+    p = (base.parent / "data" / "research_allocation.json") if base.name == "reports" \
+        else base / "data" / "research_allocation.json"
+    doc = _read_json(p)
+    block = doc.get("forward_slot_weights") if isinstance(doc, dict) else None
+    if not isinstance(block, dict) or not isinstance(block.get("by_family"), dict):
+        return {"status": UNMEASURED, "source": str(p), "by_family": {},
+                "why": ("research_roi.py has not published slot weights: every family weighs 1.0 "
+                        "and the ranking is the slot value alone")}
+    return {"status": "MEASURED", "source": str(p),
+            "by_family": {str(k): float(v) for k, v in block["by_family"].items()
+                          if isinstance(v, (int, float))},
+            "clip": block.get("clip"), "unmeasured_reads": 1.0,
+            "boundary": ("the weight reorders the PUBLISHED priority; it never removes a "
+                         "candidate and never stops a running clock")}
+
+
+def _weigh(entries: list[dict[str, Any]], weights: dict[str, float], key: str
+           ) -> list[dict[str, Any]]:
+    """Stamp every row with its family's ROI weight and the weighted value, and return the
+    priority order that weight implies. `slot_value` itself is never overwritten: the two numbers
+    answer different questions and a reader must be able to see them disagree."""
+    for e in entries:
+        w = float(weights.get(str(e.get("family") or ""), 1.0))
+        e["roi_weight"] = round(w, 6)
+        v = e.get("slot_value")
+        e["roi_weighted_slot_value"] = (round(float(v) * w, 14) if isinstance(v, float)
+                                        else UNMEASURED)
+    ranked = sorted(
+        (e for e in entries if isinstance(e.get("roi_weighted_slot_value"), float)),
+        key=lambda e: -float(e["roi_weighted_slot_value"]))
+    return [{key: e[key], "roi_weight": e["roi_weight"],
+             "roi_weighted_slot_value": e["roi_weighted_slot_value"],
+             "slot_value": e["slot_value"]} for e in ranked[:25]]
+
+
 def _value(entry: dict[str, Any]) -> float:
     raw = entry.get("slot_value")
     return float(raw) if isinstance(raw, float) else -1.0
@@ -660,8 +708,13 @@ def run(write: bool = True, now: datetime | None = None) -> dict[str, Any]:
                          why=("dominated on value but P(certify) still above the bar" if dominated
                               else "slot value at or above every waiting candidate"))
 
+    roi = roi_weights()
+    weights = {str(k): float(v) for k, v in roi["by_family"].items()}
     payload = {
         "at": stamp.isoformat(), "rule": RULE,
+        "roi_weights": roi,
+        "roi_priority_running": _weigh(ranked_running, weights, "clock"),
+        "roi_priority_waiting": _weigh(ranked_waiting, weights, "cell"),
         "capacity": measure_capacity(states, stamp.date()), "thresholds": th,
         "kelly_fraction": {"f_eff": round(f_eff, 6), "basis": kelly_basis,
                            "growth_factor": round(f_eff * (2.0 - f_eff), 6)},
