@@ -114,6 +114,12 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("check_growth_governance.py", ()),
     # IMMUTABLE EVALUATOR: research organs may change the hypothesis, never the judge.
     ("check_immutable_evaluator.py", ()),
+    # THE OPEN-SOURCE RESEARCH FEDERATION (LAWS 5h, principal 2026-09-17). The PORTABLE half:
+    # the roster, the vocabularies, the sandbox policy, the packet contract that cannot carry
+    # a verdict, and the admission rule that collapses a fork storm into one lineage. The
+    # live half (dispositions, schedules, watermarks, stranded data) needs desk state and
+    # runs in _STATE_FENCES with --require-state.
+    ("check_external_federation.py", ()),
 )
 
 #: STATE FENCES -- box-only. They measure LIVE STATE (artifacts, ledgers, organ freshness) that
@@ -123,6 +129,7 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
 #: They run in the hourly box gate, where their verdict is real.
 _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("check_conversion.py", ()),               # L1.28b -- FLATLINE fails
+    ("check_external_federation.py", ("--require-state",)),   # LAWS 5h -- the live half
     ("check_exploration.py", ()),              # L1.32 -- no exploration organ gone dark
     ("check_calibration.py", ()),              # L1.29 -- no ungraded past-due forecast
     ("check_strategy_breadth.py", ()),         # L1.32 -- the breadth MEASUREMENT
@@ -136,6 +143,11 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("check_excitation.py", ()),               # L1.45 -- no absorbing set, no dead experiment
     ("check_clock_provenance.py", ()),         # L1.46 -- the tape declares which clock stamped it
     ("check_heat_floor_wiring.py", ()),        # growth governance -- the 20% floor is DEPLOYED
+    # LAWS 5c -- everything ingested is exploited; the exploitation floor ratchets UP, the
+    # DATA STRANDING count ratchets DOWN, and no qualified datum sits in storage without a
+    # defined downstream state. A STATE fence: on a clean checkout the ingestion artifact is
+    # absent and the verdict is UNMEASURED, which is a real answer and not a pass.
+    ("check_ingestion_exploitation.py", ()),
 )
 
 

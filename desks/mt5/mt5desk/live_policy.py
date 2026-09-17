@@ -25,6 +25,13 @@ XAUUSD book, it is not left idle. A future session may widen this ONLY on the pr
 (edit `data/live_sleeve_policy.json`, which is data with an author and a date) or on evidence the
 principal has accepted -- never because a reviewer thinks the book looks narrow.
 
+SCOPE IS THE LIVE ACCOUNT, NOT THE PROP ACCOUNT. The principal's words were "my current live
+account" (495044). The E8 prop book is deliberately BUILT on forex mechanisms -- session range
+breakout, overnight gap decay and carry are three of its four independent mechanisms
+(docs/PROP_FIRM_E8.md) -- so applying this policy there would break the plan he designed, on an
+account whose drawdown is E8's rule rather than his balance. E8 keeps its own family ban
+(prop/e8_book.py reads research/family_policy.py) and is not filtered here.
+
 FAIL-CLOSED. An absent or unreadable policy file reads as THESE DEFAULTS, not as "nothing
 banned". The opposite convention (family_policy.py, where a missing file bans nothing) is right
 for a research ban and wrong here: a truncated JSON file must not put forex back in a live

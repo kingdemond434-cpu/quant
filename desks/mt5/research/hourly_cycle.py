@@ -701,6 +701,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     "registry_sync",
     # THE CONVERSION AND RESEARCH DEBT LEDGERS (M7): cheap registry reads, every pass.
     "research_debt",
+    # THE INGESTION-EXPLOITATION GATE (LAWS 5c): an artifact read and two ratchets, every pass.
+    # The LEDGER it reads is heavy and stays in the data department; the gate is not.
+    "ingestion_exploitation",
 })
 
 
@@ -724,13 +727,15 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "asia_plane", "archive_tape", "reclaim_disk", "maintain_miners",
                      "spread_provenance", "microstructure_census", "fusion_cost",
                      "cost_construction", "swap_rejudge", "sge_premium", "moat_series",
-                     "unused_information"), "data"),
+                     "unused_information", "ingestion_ledger"), "data"),
     # intel: the global intelligence agency -- crawlers, forests, frontier scouts
     **dict.fromkeys(("world_crawler", "deep_forest", "moat_miner", "market_intel", "mine",
                      "exogenous_search", "standing_questions", "frontier", "frontier_report",
                      "frontier_implementer", "hunt12", "scout_roster", "analyst_pipeline",
                      "knowledge_graph", "moat_collectors", "actor_atlas", "scout_swarm",
-                     "source_frontier", "data_scout"), "intel"),
+                     "source_frontier", "data_scout", "external_federation",
+                     "understanding_seat", "archaeology", "shadow_institutional",
+                     "latent_actors"), "intel"),
     # discovery: the candidate pipeline, in order, plus the evolutionary generators
     **dict.fromkeys(("search", "sweep", "breadth_sweep", "compile_candidates", "merge_docket",
                      "deepen", "alpha_evolution", "alpha_rl", "ml_layer", "ensemble_optimizer",
@@ -749,10 +754,12 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "weak_signals", "edges_macro_fusion_sweep", "strategy_paths",
                      "counterfactual_world", "opportunity_forecast", "forecast_contract",
                      "exposure_decomposition", "event_response_atlas", "causal_lab",
-                     "world_lab", "macro_department"), "macro"),
+                     "world_lab", "macro_department", "news_event_stream",
+                     "event_sleeves", "macro_intelligence"), "macro"),
     # execution: the execution research command
     **dict.fromkeys(("execution_twin", "entry_timing", "cost_to_edge", "exit_study",
-                     "execution_resolver", "netting_report", "execution_alpha"), "execution"),
+                     "execution_resolver", "netting_report", "execution_alpha",
+                     "latency_lab"), "execution"),
     # forward: forward evidence, promotion and the allocator
     **dict.fromkeys(("enrol_clocks", "pf_allocator", "daily", "hunt12_forward", "regime_router",
                      "forward_slot_ranker", "forward_exploitation", "shadow_discovery"),
@@ -761,7 +768,8 @@ LEG_DEPARTMENT: dict[str, str] = {
     **dict.fromkeys(("issue_board", "publish_state", "model_league", "ml_layer_meta",
                      "research_os_archive", "registry_sync", "mining_objective",
                      "research_gap_map", "gauntlet_backpressure", "miner_specialisation",
-                     "research_debt", "paradigm_router", "meta_controller"), "meta"),
+                     "research_debt", "paradigm_router", "meta_controller",
+                     "ingestion_exploitation"), "meta"),
     # japan: the Japan research division (the principal's 47-section mandate, hourly)
     **dict.fromkeys(("japan_department",), "japan"),
     # regions: the global native-market research OS over every country lab
@@ -2535,6 +2543,17 @@ def main() -> None:
     era = _costed("event_response_atlas", lambda: _producer("event_response_atlas",
                                                              "research/event_response_atlas.py",
                                                              "--budget-s", "240"))
+    # NEWS AS A FIRST-CLASS EVENT STREAM: the fast lane classifies every new collected document,
+    # nudges data/world_state.json in logit space with its uncertainty, and lodges a re-solve
+    # REQUEST the allocator may read; the deep lane interprets what clears novelty x surprise.
+    # Nothing here sizes. `--once` is the hourly pass; the 60 s `--resident` loop is a box task
+    # that does not exist yet and is a NAMED gap on the ledger row, not a silent absence.
+    nes = _costed("news_event_stream", lambda: _producer(
+        "news_event_stream", "research/news_event_stream.py", "--once"))
+    # THE EVENT-CONDITIONED SLEEVES: eight family cards validated BEFORE an event, so a headline
+    # moves a posterior instead of inventing a strategy; hosted cards donated, unhostable ones
+    # written to program_candidates.jsonl with the gap named. Publishes p_alpha_positive_now.
+    evs = _costed("event_sleeves", lambda: _producer("event_sleeves", "research/event_sleeves.py"))
     # THE WORLD-MODEL LAB: do(shock) propagated over the admitted causal graph with measured
     # participant responses; hypotheses donated with authority ZERO (the gauntlet judges on
     # real history). Macro department.
@@ -2574,6 +2593,14 @@ def main() -> None:
     # active only where it beats the unrouted model out of sample. Forward department.
     rgr = _costed("regime_router", lambda: _producer("regime_router",
                                                       "research/regime_router.py"))
+    # MACRO INTELLIGENCE FUSION (LAWS 5c, the second half of the principal's order). Every
+    # macro-relevant ingested unit fused into regime posteriors, nowcasts, next-decision
+    # expectations, a ranked news lane and TWO-SIDED suggestions the allocator MAY read through
+    # the router's own `p_alpha_positive_now` convention. It writes its own file and never
+    # `sleeves.json`, never an allocator file, and it sizes nothing. Macro department.
+    mci = _costed("macro_intelligence", lambda: _producer("macro_intelligence",
+                                                           "research/macro_intelligence.py",
+                                                           "--budget-s", "240"))
     # THE MOAT SERIES REGISTRY + BUILDER (C20/W13): every proprietary series registered with its
     # depth, coverage, moat score and named gaps; derived tape series built per instrument-day.
     mos = _costed("moat_series", lambda: _producer("moat_series", "research/moat_series.py",
@@ -2635,6 +2662,20 @@ def main() -> None:
                                                            "--max-discoveries", "200"))
     rdb = _costed("research_debt", lambda: _producer("research_debt",
                                                       "research/research_debt.py"))
+    # THE INGESTION-EXPLOITATION CONTRACT (LAWS 5c, principal 2026-09-17). Every ingested unit --
+    # seat row, claim, axis series, tape day, bar file, sleeve ledger, normalised document --
+    # registered, disposed, and given EXACTLY ONE downstream state; a stranded unit becomes a
+    # discovery so `discovery_compiler` closes it rather than a report nobody reads. It runs
+    # AFTER the compiler on purpose: this hour's conversions are what it measures. Data dept.
+    igl = _costed("ingestion_ledger", lambda: _producer("ingestion_ledger",
+                                                        "research/ingestion_ledger.py",
+                                                        "--budget-s", "240",
+                                                        "--grace-hours", "24"))
+    # ITS GATE: the exploitation ratchet (up only), the DATA STRANDING ratchet (down only) and
+    # the twelve-question data-utilization audit per dataset. A cheap reader, so it is a CORE
+    # leg -- a gate that never ran is a claim the desk cannot cash (L1.49). Meta dept.
+    ige = _costed("ingestion_exploitation", lambda: _producer(
+        "ingestion_exploitation", "scripts/check_ingestion_exploitation.py"))
     # THE MINING OBJECTIVE (M17/M18): the five sovereign KPIs, the miner reward and the
     # separation-of-powers check, from the registry. Meta.
     mob = _costed("mining_objective", lambda: _producer("mining_objective",
@@ -2661,6 +2702,16 @@ def main() -> None:
     ssw = _costed("scout_swarm", lambda: _producer("scout_swarm", "research/scout_swarm.py",
                                                     "--once", "--budget-s", "600"))
     aat = _costed("actor_atlas", lambda: _producer("actor_atlas", "research/actor_atlas.py"))
+    # THE UNDERSTANDING SEAT (2026-09-17, principal's permanent order): nothing the desk
+    # collected is left unread. It runs AFTER the collectors and the scouts because it reads
+    # what they produced -- every normalised moat document, every registry claim and every
+    # intelligence row -- re-reads each natively through `libs/research/polyglot.py`, and asks
+    # the LLM seats about whatever is still not understood. It also publishes the two gap lists
+    # nothing else on this desk can produce: the languages with no terminology map, and the
+    # language/source-layer cells with no NATIVE QUERY vocabulary. Intel department resident.
+    usd = _costed("understanding_seat", lambda: _producer("understanding_seat",
+                                                          "research/understanding_seat.py",
+                                                          "--budget-s", "240"))
     # THE NETTING DIAGNOSTIC (R1/R2): sleeve intents netted per instrument, the currency-factor
     # exposure and effective rank of the gross book; publishes, sizes nothing. Execution.
     ntr = _costed("netting_report", lambda: _producer("netting_report",
@@ -2703,6 +2754,34 @@ def main() -> None:
     gro = _costed("global_research_os", lambda: _producer("global_research_os",
                                                            "research/global_research_os.py",
                                                            "--once", "--budget-s", "3000"))
+    # THE ARCHAEOLOGY CIVILIZATION: twenty families of public trading history a pass, every
+    # source paid by measured survivors (LAWS 5g). Nothing is fetched that the access
+    # classifier has not cleared; the population file is append-only forever.
+    arch = _costed("archaeology", lambda: _producer("archaeology",
+                                                     "research/archaeology/civilization.py",
+                                                     "--once", "--budget-s", "900"))
+    # THE FREE SHADOW-INSTITUTIONAL STACK: public proxies for the institutional capabilities
+    # the desk cannot buy, each latent fused from at least two sensors or named UNMEASURED.
+    shi = _costed("shadow_institutional", lambda: _producer("shadow_institutional",
+                                                             "research/shadow_institutional.py",
+                                                             "--once", "--budget-s", "900"))
+    # THE LATENT ACTORS: who else is in this tape, fitted from causal daily footprints, with
+    # the unknown components kept as unknowns rather than labelled.
+    lat = _costed("latent_actors", lambda: _producer("latent_actors",
+                                                      "research/latent_actors.py",
+                                                      "--once", "--budget-s", "600"))
+    # THE LATENCY LAB: what this desk can actually reach in time, measured end to end. It
+    # ROUTES research and never sizes capital (growth governance).
+    lab = _costed("latency_lab", lambda: _producer("latency_lab",
+                                                    "research/latency_lab.py",
+                                                    "--once", "--budget-s", "600"))
+    # THE OPEN-SOURCE RESEARCH FEDERATION (LAWS 5h): every public research system disposed,
+    # ledgered, delta-watched and budgeted, and every sandbox packet drained into the one
+    # canonical gauntlet. It never fetches or executes third-party code -- provisioning is
+    # its own explicit act -- so this leg is cheap and runs every hour.
+    xfd = _costed("external_federation", lambda: _producer("external_federation",
+                                                            "research/external_federation.py",
+                                                            "--once", "--budget-s", "600"))
     # THE MACRO RESEARCH DIVISION as a region instance (the Japan template for global macro):
     # nineteen miners over G10 banks, releases, positioning, rates, auctions, interventions,
     # propagation, fixings, commodity fundamentals, risk regimes; hourly on the macro resident.
@@ -3067,6 +3146,7 @@ def main() -> None:
                     "research_api_status": rap,
                     "artifact_chain": acv, "residual_queue": rsq, "unseen_frontier": usf,
                     "source_registry": srg, "event_response_atlas": era, "world_lab": wlb,
+                    "news_event_stream": nes, "event_sleeves": evs,
                     "causal_lab": clb, "registry_sync": rsy, "axis_proposer": axp,
                     "program_alpha_lane": pal, "trajectory_evolution": tev,
                     "research_os_archive": roa, "regime_router": rgr, "moat_series": mos,
@@ -3075,12 +3155,17 @@ def main() -> None:
                     "alpha_lineage": mal, "graveyard_resurrection": mgr, "shadow_discovery": msd,
                     "forward_exploitation": mfe, "alpha_recombination": mar,
                     "unused_information": mui, "discovery_compiler": dcp, "research_debt": rdb,
+                    "ingestion_ledger": igl, "ingestion_exploitation": ige,
+                    "macro_intelligence": mci,
                     "mining_objective": mob, "research_gap_map": rgm,
                     "gauntlet_backpressure": gbp, "miner_specialisation": msp,
                     "moat_collectors": mcl, "source_frontier": sfr, "scout_swarm": ssw,
-                    "actor_atlas": aat, "netting_report": ntr, "execution_alpha": exa,
+                    "actor_atlas": aat, "understanding_seat": usd,
+                    "netting_report": ntr, "execution_alpha": exa,
                     "paradigm_router": prr, "meta_controller": mtc, "lead_replication": lrp,
                     "data_scout": dsc2, "japan_department": jpd, "global_research_os": gro,
+                    "external_federation": xfd, "archaeology": arch,
+                    "shadow_institutional": shi, "latent_actors": lat, "latency_lab": lab,
                     "macro_department": mcd,
                     "probation": prb, "standing_questions": sqs, "exposure_decomposition": exd,
                     "auto_legs": auto,

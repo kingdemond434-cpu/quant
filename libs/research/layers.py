@@ -166,6 +166,7 @@ LEG_LAYER: dict[str, str] = {
     "artifact_chain": "meta", "residual_queue": "information", "unseen_frontier": "information",
     "source_registry": "information", "synthetic_regimes": "meta",
     "event_response_atlas": "information", "causal_lab": "information", "world_lab": "prediction",
+    "news_event_stream": "information", "event_sleeves": "prediction",
     "registry_sync": "meta", "axis_proposer": "information", "program_alpha_lane": "prediction",
     "trajectory_evolution": "prediction", "research_os_archive": "meta", "regime_router": "sizing",
     "moat_series": "information", "scout_roster": "information",
@@ -179,10 +180,25 @@ LEG_LAYER: dict[str, str] = {
     "gauntlet_backpressure": "meta", "miner_specialisation": "meta",
     "moat_collectors": "information", "source_frontier": "information",
     "scout_swarm": "information", "actor_atlas": "information",
+    # INFORMATION, not meta: the understanding seat turns bytes the desk collected but could not
+    # READ into claims it can. An hour spent there buys information the desk already paid to
+    # fetch and had been throwing away by reading it with the wrong language's rules.
+    "understanding_seat": "information",
     "netting_report": "execution", "execution_alpha": "execution",
     "paradigm_router": "meta", "meta_controller": "meta", "lead_replication": "information",
     "data_scout": "information", "japan_department": "information",
     "global_research_os": "information", "macro_department": "information",
+    "external_federation": "information",
+    "archaeology": "information",
+    "shadow_institutional": "information",
+    "latent_actors": "information",
+    "latency_lab": "execution",
+    # THE INGESTION-EXPLOITATION CONTRACT (LAWS 5c, 2026-09-17). The ledger inventories the
+    # desk's information estate and gives every ingested datum a downstream state: information.
+    # The fusion turns that estate into regime posteriors and nowcasts: prediction. The gate
+    # that ratchets both is meta, like every other fence.
+    "ingestion_ledger": "information", "macro_intelligence": "prediction",
+    "ingestion_exploitation": "meta",
     # sizing: how much
     "capacity": "sizing", "ensemble_optimizer": "sizing",
     # portfolio: how the book is composed

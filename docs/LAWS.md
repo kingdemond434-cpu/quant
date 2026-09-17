@@ -691,8 +691,13 @@ into the live account the same hour, with no waiting and no permission. A rule t
 loses that race forever. The policy is therefore an ADMISSION rule at both doors:
 `mt5desk/live_policy.py` is read by `decision_core.load_sleeves` (the gateway will not trade a
 refused row even if one is written) and by `promoter.save_sleeves` (the only writer will not write
-one), and by the E8 executor for the prop account. An absent or unreadable policy file falls back
-to the ban, never to permission.
+one). An absent or unreadable policy file falls back to the ban, never to permission.
+
+SCOPE IS THE LIVE ACCOUNT 495044, NOT THE E8 PROP ACCOUNT. The prop book is deliberately built on
+forex mechanisms -- session range breakout, overnight gap decay and carry are three of its four
+independent mechanisms (docs/PROP_FIRM_E8.md) -- so filtering them there would break the plan the
+principal designed, on an account whose risk is E8's rule rather than his balance. E8 keeps its
+own family ban (prop/e8_book.py reads research/family_policy.py) and is not filtered here.
 
 THIS IS NOT A REDUCTION OF AGGRESSIVENESS UNDER GROWTH GOVERNANCE (§2a, docs/GROWTH_GOVERNANCE.md).
 It is the principal's own instruction about which mechanisms may hold his capital, with the loss

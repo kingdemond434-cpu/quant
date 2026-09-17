@@ -318,18 +318,6 @@ def _last_closed(frame: Any) -> Any:
 #: the `discovered` EURCHF/AUDCAD/AUDNZD sleeves, 22% wins on MT5, were E8's entire order flow).
 MT5_SLEEVES = DESK / "data" / "sleeves.json"
 
-
-def _policy_admitted(rows: list[dict]) -> list[dict]:
-    """The desk's live sleeve policy applies to the prop account too (principal 2026-09-17):
-    a mechanism the principal has stopped on his own money does not get his prop drawdown."""
-    try:
-        from mt5desk.live_policy import admit
-    except ImportError:                                    # pragma: no cover - box path only
-        return rows
-    keep, refused = admit(rows)
-    for row, why in refused:
-        print(f"E8 live policy refused {row.get('name')}: {why}")
-    return keep
 MT5_LEDGER = DESK / "data" / "live_ledger.jsonl"
 TWIN_TRAIL_DAYS = 45
 TWIN_FADE_N = 5

@@ -5286,6 +5286,149 @@
    "landed": [
     "clock_fixer 2026-09-17"
    ]
+  },
+  {
+   "id": "U16",
+   "domain": "U",
+   "phase": "U",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "The open-source research federation: every lawfully usable public research system carries one disposition (DIRECT / WRAPPED / REBUILT / REJECTED_WITH_EVIDENCE / DUPLICATE), the bootstrap roster is a seed set and not a whitelist, admission is EV(new capability) - EV(duplication) - cost > 0 with at least one materially new axis, and an external engine is a researcher -- never a validator, never a capital authority",
+   "evidence": [
+    "libs/research/external_federation.py",
+    "desks/mt5/research/external_federation.py",
+    "scripts/check_external_federation.py",
+    "docs/LAWS.md"
+   ],
+   "scheduled_by": "hourly_cycle:external_federation (intel department resident)",
+   "artifact": "desks/mt5/reports/EXTERNAL_FEDERATION.json",
+   "consumer": "the miner candidate compiler (data/intelligence/external_federation/), the registry discoveries external_system and external_capability, the law gate",
+   "gap": "LANDED 2026-09-17: 51 seeds rostered, all UNDISPOSED until a provisioning run reads each LICENSE at its pinned commit -- which is the honest count of how much of the federation is still a plan. The sandbox runner that provisions and executes a DIRECT worker is the next build; until it exists no ExternalResearchPacket has been produced and every DIRECT row is a plan, which the report says on every pass.",
+   "next_step": "build the sandbox runner (libs/research/sandbox.py provisioning + a component spec), read the licences, and turn the first DIRECT rows into packets",
+   "landed": [
+    "external_federation 2026-09-17"
+   ]
+  },
+  {
+   "id": "U17",
+   "domain": "U",
+   "phase": "U",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "The federation fence and the capability ledger: undisposed systems, unscheduled workers, stalled watermarks, unconsumed output, untracked trials, stranded datasets, claimed survivor authority, credentials in third-party code, INTEGRATED with no output and stale delta scans all turn the desk red, on ratchets that may only fall",
+   "evidence": [
+    "scripts/check_external_federation.py",
+    "scripts/run_law_gate.py",
+    "libs/research/external_federation.py"
+   ],
+   "scheduled_by": "scripts/run_law_gate.py (portable half every gate; --require-state in the box's state fences)",
+   "artifact": "desks/mt5/reports/FEDERATION_FENCE.json",
+   "consumer": "the law gate, the control plane's invariant table",
+   "gap": "LANDED 2026-09-17: the portable half reads UNMEASURED on a clean checkout by design (a fence red on day one is a fence muted by Friday); the box half requires the organ's state and its hourly report.",
+   "next_step": "lower MAX_UNDISPOSED as licences are read; wire the fence into the control plane's twelve invariants when that lands",
+   "landed": [
+    "federation fence 2026-09-17"
+   ]
+  },
+  {
+   "id": "U18",
+   "domain": "U",
+   "phase": "U",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "MAXIMUM MULTILINGUAL UNDERSTANDING (principal, 2026-09-17, permanent): a 101-language / 41-script identifier with no model download and no network call, code-switch segmentation, romanisation detection, per-script normalisation, 437 finance-slang terms in 39 languages canonicalised onto the desk's own mechanism vocabulary, cross-locale numbers and calendars, and NATIVE SEMANTIC SEARCH -- native-script queries built from local terminology per language per source layer (official, institutional, academic, practitioner, retail_ecology, app_ecosystem, media, archive, physical_economy, source_graph), never one English phrase translated once. Nothing is dropped for being unreadable: what polyglot cannot read becomes a seat task, and what the seat answers is ingested BESIDE the verbatim original. A language or layer with no native vocabulary is named UNMEASURED rather than filled with a translation, and fringe/contradictory/low-confidence material is preserved as evidence (crowding and narrative are features), never filtered.",
+   "evidence": [
+    "libs/research/polyglot.py",
+    "desks/mt5/research/understanding_seat.py",
+    "tests/research/test_polyglot.py",
+    "desks/mt5/tests/test_understanding_seat.py"
+   ],
+   "scheduled_by": "desks/mt5/research/hourly_cycle.py leg `understanding_seat` (intel department, information layer)",
+   "artifact": "desks/mt5/reports/UNDERSTANDING.json",
+   "consumer": "the LLM seats via data/intelligence/understanding_seat/tasks_*.json; the registry claims table and research_memory kind=understanding; the source scouts via the two gap lists (languages_without_terminology, query_layers_unmeasured); understanding_coverage() for the dashboards",
+   "gap": "LANDED 2026-09-17 and MEASURED on the box the same day: 5,962 documents, 3,352 understood natively (56.2%), 2,610 pending of which 1,097 are labels too short to translate, 300 seat tasks written, gap list bg/cy/et/ga/ha/hr/mk/mt/sq. understood_via_seat is 0 until a seat answers -- the loop's second half is wired and has not yet been exercised by a real seat."
+  },
+  {
+   "id": "N2",
+   "domain": "N",
+   "phase": "N",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "News as a first-class event stream: a fast deterministic router (source ladder, classification, entities, novelty, surprise, affected markets) nudging a world-state vector with uncertainty and lodging an allocator re-solve REQUEST; a slower deep lane (transmission edges, analogues, cross-country, positioning, scenario tree) recorded as research_memory `event_deep` plus a discovery per implied mechanism",
+   "evidence": [
+    "libs/research/event_ontology.py:1087 - 17 event kinds with direction-agnostic transmission edges (asset class, horizon, the state variables that decide the SIGN), a strictly monotone 7-rung source-confidence ladder, an entity graph seeded from MetaTrader's own registry, and classify/novelty/surprise/affected/analogues; 121 (kind, language) vocabulary cells across 10 languages (MEASURED)",
+    "desks/mt5/research/news_event_stream.py:925 - the resident: precision-weighted logit update m += k*w/(tau+w), tau += w on a 6h relaxation half-life, so a follow-up headline moves the posterior AGAIN and by LESS (MEASURED in the test)",
+    "tests/research/test_event_ontology.py:43 tests green and desks/mt5/tests/test_news_event_stream.py:22 tests green (MEASURED)",
+    "libs/research/layers.py:169 - the leg is declared in the INFORMATION layer",
+    "desks/mt5/research/hourly_cycle.py:2545 - the hourly leg, run with --once"
+   ],
+   "scheduled_by": "hourly_cycle:news_event_stream",
+   "artifact": "desks/mt5/reports/NEWS_EVENT_STREAM.json, desks/mt5/data/world_state.json, desks/mt5/data/allocator_resolve_request.json, desks/mt5/data/events/events.jsonl",
+   "consumer": "desks/mt5/research/event_sleeves.py (world_state -> p_alpha_positive_now); the allocator MAY read the resolve request and the shock model",
+   "gap": "The 60 s --resident loop has NO box task row yet, so hourly --once is the only clock and intra-hour repricing is UNMEASURED. pf_allocator does not yet consume allocator_resolve_request.json: the request is lodged and nothing is obliged to read it. The moat collectors' normalised store does not exist on this box, so the fast lane reads news_captures.jsonl and the intelligence seats only."
+  },
+  {
+   "id": "N3",
+   "domain": "N",
+   "phase": "N",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "Event-conditioned sleeve families validated BEFORE the event: eight family cards, a hosting decision per card against the live family registry, discoveries recorded once, and p_alpha_positive_now published under the regime_router convention",
+   "evidence": [
+    "desks/mt5/research/event_sleeves.py:629 - eight cards (energy supply shock x oil, geopolitical risk x gold, risk liquidation x JPY/USD, exporter/importer FX dispersion, index shock continuation/reversal, volatility expansion, post-headline liquidity normalisation, second-wave macro transmission); MEASURED hosting: 5 HOSTED_EVENT_REACTION, 2 HOSTED_GENERIC, 1 GAP",
+    "desks/mt5/tests/test_event_sleeves.py:24 tests green, asserting hosting against the LIVE mt5desk.families_orthogonal signature rather than a copy of it (MEASURED)",
+    "desks/mt5/research/regime_router.py:633 - the p_alpha_positive_now convention these rows follow",
+    "libs/research/layers.py:169 - declared in the PREDICTION layer",
+    "desks/mt5/research/hourly_cycle.py:2550 - the hourly leg"
+   ],
+   "scheduled_by": "hourly_cycle:event_sleeves",
+   "artifact": "desks/mt5/data/event_sleeve_posteriors.json, desks/mt5/reports/EVENT_SLEEVES.json, desks/mt5/data/program_candidates.jsonl",
+   "consumer": "desks/mt5/research/pf_allocator.py and research/promoter.py read the router convention; miner_candidate_compiler reads the donated discoveries",
+   "gap": "family_event_reaction carries no `event_kind` argument and family_inputs.resolve hands it the WHOLE calendar for the symbol, so every hosted cell is the UNCONDITIONAL expression of its card (condition_expressible=false on each hosting row). Closing it needs an event_kind argument on the family and a kind-aware _event_index. The cross-sectional dispersion card has no registered family that ranks a universe, so it goes to program_candidates.jsonl with the gap named, never to the docket."
+  },
+  {
+   "id": "M25",
+   "domain": "M",
+   "phase": "M",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "The ingestion-exploitation contract: every ingested unit (seat row, claim, axis series, tape instrument-day, universe bar file, sleeve ledger, normalised document, moat series, country plane) registered with a disposition and EXACTLY ONE downstream state; three independent labels (access_label, credibility, predictive_state) that are never collapsed; a stranded unit handed to the discovery compiler rather than reported; and a gate carrying the exploitation ratchet (up only), the DATA STRANDING ratchet (down only) and the twelve-question data-utilization audit per dataset",
+   "evidence": [
+    "desks/mt5/research/ingestion_ledger.py:1",
+    "scripts/check_ingestion_exploitation.py:1",
+    "desks/mt5/tests/test_ingestion_ledger.py:1",
+    "tests/test_ingestion_exploitation.py:1",
+    "MEASURED 2026-09-17 on this tree: 1,571 units over 10 kinds, exploitation share 0.6680 over the known population, 35 stranded data re-ingested with no downstream consumer (the ratchet is set there, not at 0), 0 refused, 0 quarantined"
+   ],
+   "scheduled_by": "hourly_cycle:ingestion_ledger (data department) and hourly_cycle:ingestion_exploitation (core, meta department); the gate also runs in scripts/run_law_gate.py state fences",
+   "artifact": "desks/mt5/reports/INGESTION_EXPLOITATION.json, desks/mt5/data/ingestion_ledger.jsonl, desks/mt5/data/ingestion_floor.json, desks/mt5/reports/DATA_UTILIZATION_AUDIT.json",
+   "consumer": "desks/mt5/research/discovery_compiler.py (the handed-over discoveries), the law gate, and the desk's daily awareness through the floor history",
+   "gap": "The share is measured over a ROTATING window of each kind's listing, so the fenced number is the population's latest disposition over the ledger tail rather than this pass's slice; the per-pass number is published beside it. DATA STRANDING is UNMEASURED until the ledger has two passes.",
+   "next_step": "import libs/research/access_classifier when it lands (the three labels already carry its exact vocabulary); resolve the ACCESS_UNCLEAR quarantine queue; drive the stranded count below 35",
+   "landed": [
+    "ingestion-exploitation contract 2026-09-17"
+   ]
+  },
+  {
+   "id": "M26",
+   "domain": "M",
+   "phase": "M",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "Macro intelligence fusion, 24/7: every macro-relevant ingested unit fused into a stated-model regime posterior per axis (vol, usd, risk, rates, liquidity, growth, inflation), nowcasts and next central-bank decisions, a news lane ranked by concepts x instruments x recency with the response atlas's measured reactions attached, and TWO-SIDED decision suggestions the allocator MAY consume through the regime_router contract -- never written into sleeves.json or any allocator file",
+   "evidence": [
+    "desks/mt5/research/macro_intelligence.py:1",
+    "desks/mt5/tests/test_macro_intelligence.py:1",
+    "MEASURED 2026-09-17 on this box: 20 features, vol 0.651 / usd 0.664 / risk 0.679 / rates 0.821 measured, liquidity and inflation UNMEASURED at their priors, four central-bank decisions with their BIS policy rates and UNMEASURED market-implied expectations"
+   ],
+   "scheduled_by": "hourly_cycle:macro_intelligence (macro department)",
+   "artifact": "desks/mt5/reports/MACRO_INTELLIGENCE.json, desks/mt5/data/macro_intelligence.json",
+   "consumer": "desks/mt5/research/pf_allocator.py MAY read the suggestions; desks/mt5/research/ingestion_ledger.py joins `consumed_units` to award EXPLOITED_MACRO and WORLD_MODEL_INPUT",
+   "gap": "fred.json carries 0 series on this box (7 fetch failures), so the liquidity and inflation axes sit at their priors and say UNMEASURED; the claims table is empty, so the news lane is UNMEASURED rather than quiet; no series prices a central bank's next decision, so every market-implied expectation is UNMEASURED; no country plane (kr_*, jp_*) has landed.",
+   "next_step": "repair the FRED fetch so the liquidity/inflation axes measure; feed the collectors' claims so the news lane measures; add a short-rate series so the next-decision expectation stops being UNMEASURED",
+   "landed": [
+    "macro intelligence fusion 2026-09-17"
+   ]
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."
