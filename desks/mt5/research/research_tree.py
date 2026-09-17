@@ -112,6 +112,8 @@ MIN_TRIALS_TO_PRUNE = 12
 #: it is the rate at which reach is bought, and every unexpanded node is still on the frontier
 #: next pass with its information gain intact.
 BEAM = 12
+MCTS_ROOTS = 2            # frontier roots searched per pass (growth is bounded: ~100 nodes)
+MCTS_ITER = 12            # PUCT iterations per root; each rollout is one cheap score
 
 #: Prior strength on the desk base rate, in pseudo-observations. Two is deliberately weak: it
 #: stops a zero-trial node from claiming certainty without drowning real counts.
@@ -449,6 +451,41 @@ def build() -> dict[str, Any]:
                 tree["nodes"][k["id"]] = k
                 added += 1
 
+    # MONTE CARLO TREE SEARCH over the beam's best roots (Alpha Jungle / AI-Scientist-v2, ledger
+    # D7 and Q15): PUCT selection with a subtree penalty so one branch cannot monopolise the
+    # pass, expansion through the SAME `_children_for`, a cheap rollout that is the tree's own
+    # information gain per cell-equivalent (a fresh child has no trials, so a posterior-only
+    # screen would return UNMEASURED for every rollout and score nothing), and backpropagation
+    # of measured rewards into the node dicts, which the tree file persists unchanged. The beam
+    # keeps deciding what to spawn; the search learns where to spend the next pass.
+    mcts_doc: dict[str, Any] = {"status": "SKIPPED", "why": "no open frontier root"}
+    try:
+        from libs.research import mcts as _mcts
+
+        def _screen(n: dict[str, Any]) -> float | None:
+            sc = _score(n, tree, base)
+            return min(1.0, sc["info_gain"] / max(sc["cost"], 0.5) / 0.05)
+
+        def _spawn(n: dict[str, Any]) -> list[dict[str, Any]]:
+            kids = _children_for(n, symbols)
+            for k in kids:
+                k.setdefault("prior", _score(k, tree, base)["posterior_value"])
+            return kids
+
+        reports = []
+        for row in frontier[:MCTS_ROOTS]:
+            rep = _mcts.run(tree["nodes"], row["id"], _spawn, _screen, iterations=MCTS_ITER,
+                            seed=int(tree.get("passes") or 0) + 1)
+            reports.append(rep.to_dict())
+        if reports:
+            mcts_doc = {"status": "OK", "roots": [r["id"] for r in frontier[:MCTS_ROOTS]],
+                        "iterations_per_root": MCTS_ITER, "reports": reports,
+                        "rule": "PUCT with a subtree-visit penalty; attempts, not visits, in the "
+                                "denominator so an unscreenable branch cannot buy the budget; an "
+                                "UNMEASURED rollout updates nothing"}
+    except Exception as exc:  # the beam must not lose a pass to the search
+        mcts_doc = {"status": "FAILED", "why": f"{type(exc).__name__}: {exc}"}
+
     tree["passes"] = int(tree.get("passes") or 0) + 1
     tree["updated"] = now.isoformat(timespec="seconds")
 
@@ -469,6 +506,7 @@ def build() -> dict[str, Any]:
                  "deepest_kind_reached": KINDS[depth_reached]},
         "expanded_this_pass": expanded,
         "pruned_this_pass": pruned_now,
+        "mcts": mcts_doc,
         "frontier": frontier[:30],
         "_tree_state": tree,
         "allocation_rule": (

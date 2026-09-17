@@ -135,6 +135,20 @@ def wait_for_memory(dept: str, min_free_mb: float = MIN_FREE_MB, max_wait_s: int
         waited += 30
 
 
+def heartbeat(dept: str, passes: int, status: str = "running", done_inc: int = 0) -> None:
+    """The resident is a WORKER of the canonical registry (principal 2026-09-17)."""
+    try:
+        root = str(DESK.parents[1])
+        if root not in sys.path:
+            sys.path.insert(0, root)
+        from libs.moat import registry as reg
+        reg.worker_heartbeat(f"dept:{dept}", kind="department_resident", department=dept,
+                             status=status, pid=os.getpid(), current_campaign=f"pass {passes}",
+                             campaigns_done_inc=done_inc)
+    except Exception:
+        pass
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--dept", required=True)
@@ -148,13 +162,16 @@ def main(argv: list[str] | None = None) -> int:
     log(dept, f"resident started pid {os.getpid()}; pass timeout {PASS_TIMEOUT_S}s, "
               f"min cycle {MIN_CYCLE_S}s, recycle after {RECYCLE_PASSES} passes")
     passes = 0
+    heartbeat(dept, 0)
     try:
         while True:
             passes += 1
             wait_for_memory(dept)
             started = time.monotonic()
+            heartbeat(dept, passes)
             res = run_pass(dept)
             log(dept, f"pass {passes}: {res['status']} rc={res['rc']} in {res['seconds']}s")
+            heartbeat(dept, passes, done_inc=1)
             if a.once:
                 return 0 if res["status"] == "ok" else 1
             if passes >= RECYCLE_PASSES:
@@ -163,6 +180,7 @@ def main(argv: list[str] | None = None) -> int:
             elapsed = time.monotonic() - started
             time.sleep(max(PAUSE_S, MIN_CYCLE_S - elapsed))
     finally:
+        heartbeat(dept, passes, status="stopped")
         with contextlib.suppress(OSError):
             handle.close()
 

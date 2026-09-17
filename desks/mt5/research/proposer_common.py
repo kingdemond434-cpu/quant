@@ -458,7 +458,47 @@ def donate(source: str, candidates: list[dict], tests_run: int) -> Path | None:
                                          "here and counted, never written: absence of an "
                                          "available_time is not permission to use the row")},
                                indent=1, default=str), "utf-8")
+    _record_in_registry(source, candidates)
     return path
+
+
+def _record_in_registry(source: str, candidates: list[dict]) -> None:
+    """EVERY MINER WRITES THE CANONICAL REGISTRY (principal 2026-09-17). Each donated row is
+    one DiscoveryObject in state QUEUED (it is compiled and in the docket's intake) and one
+    candidate in research_candidates with the discovery -> cell provenance edge. The graph's
+    cell id joins later through the registry bridge as an alias of the same content hash.
+    Never blocks a donation: the intake file is the contract, the registry is the record."""
+    try:
+        import sys
+        root = str(Path(__file__).resolve().parents[3])
+        if root not in sys.path:
+            sys.path.insert(0, root)
+        from libs.moat import registry as reg
+        origin = reg.origin_of(source)
+        conn = reg.connect()
+        try:
+            for c in candidates:
+                symbol = str(c.get("symbol") or "")
+                family = str(c.get("family") or "")
+                params = c.get("params") if isinstance(c.get("params"), dict) else {}
+                mechanism = str(c.get("mechanism") or "")
+                did, _ = reg.record_discovery(
+                    source_id=source, source_type=origin.lower(), mechanism=mechanism,
+                    origin=origin, generator=source, assets=[symbol],
+                    exact_rule=json.dumps({"family": family, "params": params}, sort_keys=True,
+                                          default=str),
+                    economic_rationale=str(c.get("title") or "")[:300], conn=conn)
+                reg.set_discovery_state(did, "QUEUED", possible_cells=1, generated_cells=1,
+                                        compiled_cells=1, queued_cells=1, conn=conn)
+                reg.enqueue_candidate(
+                    family=family, symbol=symbol, params=params, origin=origin,
+                    mechanism=mechanism, status="donated", generator=source, source_id=source,
+                    discovery_id=did, transformation="compiled",
+                    chart=str(c.get("chart") or c.get("timeframe") or ""), conn=conn)
+        finally:
+            conn.close()
+    except Exception as exc:  # the registry never blocks the intake; the miss is visible
+        LAST_DONATION["registry_error"] = f"{type(exc).__name__}: {exc}"
 
 
 def identity(symbol: str, family: str, params: dict) -> str:

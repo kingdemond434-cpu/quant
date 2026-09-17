@@ -697,6 +697,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     "model_role_benchmark", "research_departments", "qd_frontier", "value_of_data",
     "research_api_status", "artifact_chain", "residual_queue", "unseen_frontier",
     "source_registry",
+    # THE CANONICAL REGISTRY BRIDGE (2026-09-17): every pass pours the desk's record in.
+    "registry_sync",
 })
 
 
@@ -718,17 +720,19 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "source_routes", "source_fixer", "asia_collector", "asia_parser",
                      "asia_plane", "archive_tape", "reclaim_disk", "maintain_miners",
                      "spread_provenance", "microstructure_census", "fusion_cost",
-                     "cost_construction", "swap_rejudge", "sge_premium"), "data"),
+                     "cost_construction", "swap_rejudge", "sge_premium", "moat_series"), "data"),
     # intel: the global intelligence agency -- crawlers, forests, frontier scouts
     **dict.fromkeys(("world_crawler", "deep_forest", "moat_miner", "market_intel", "mine",
                      "exogenous_search", "standing_questions", "frontier", "frontier_report",
-                     "frontier_implementer", "hunt12"), "intel"),
+                     "frontier_implementer", "hunt12", "scout_roster", "analyst_pipeline",
+                     "knowledge_graph"), "intel"),
     # discovery: the candidate pipeline, in order, plus the evolutionary generators
     **dict.fromkeys(("search", "sweep", "breadth_sweep", "compile_candidates", "merge_docket",
                      "deepen", "alpha_evolution", "alpha_rl", "ml_layer", "ensemble_optimizer",
                      "requeue_unrunnable", "queue_cycle", "queue_compact", "miner_conversion",
                      "recertify_canon", "session_chart_expansion", "experiment_design",
-                     "experiment_cache", "probation"), "discovery"),
+                     "experiment_cache", "probation", "axis_proposer", "program_alpha_lane",
+                     "trajectory_evolution", "descendants"), "discovery"),
     # validate: the adversarial evidence lab
     **dict.fromkeys(("external_gauntlet", "backtest", "falsifier_run", "adversaries",
                      "stop_reverse", "orthogonality", "blind_reviewer", "synthetic_regimes",
@@ -743,9 +747,11 @@ LEG_DEPARTMENT: dict[str, str] = {
     **dict.fromkeys(("execution_twin", "entry_timing", "cost_to_edge", "exit_study",
                      "execution_resolver"), "execution"),
     # forward: forward evidence, promotion and the allocator
-    **dict.fromkeys(("enrol_clocks", "pf_allocator", "daily", "hunt12_forward"), "forward"),
+    **dict.fromkeys(("enrol_clocks", "pf_allocator", "daily", "hunt12_forward", "regime_router",
+                     "forward_slot_ranker"), "forward"),
     # meta: the machine that runs the machine (the heavy part of it)
-    **dict.fromkeys(("issue_board", "publish_state", "model_league", "ml_layer_meta"), "meta"),
+    **dict.fromkeys(("issue_board", "publish_state", "model_league", "ml_layer_meta",
+                     "research_os_archive", "registry_sync"), "meta"),
 }
 
 
@@ -2522,6 +2528,63 @@ def main() -> None:
     # THE CAUSAL DISCOVERY LAB: PCMCI-style lagged discovery with FDR, a NOTEARS-lite DAG,
     # economic restrictions and edge classes on the PIT panel; an LLM never invents an edge.
     clb = _costed("causal_lab", lambda: _producer("causal_lab", "research/causal_lab.py"))
+    # THE CANONICAL RESEARCH REGISTRY (principal 2026-09-17: one registry, its research chain
+    # populated by the organs that do the work): the bridge leg lands the desk's record --
+    # candidates, trials, runs, cards+events, memories, workers -- and publishes the counts,
+    # the conversion debt and the trial-chain verification. Core: runs every pass.
+    rsy = _costed("registry_sync", lambda: _producer("registry_sync",
+                                                      "research/registry_sync.py"))
+    # THE EVOLVABLE ONTOLOGY (Q10): new axes proposed, tested OOS against unexplained residual,
+    # registered only after two consecutive passes. Discovery department.
+    axp = _costed("axis_proposer", lambda: _producer("axis_proposer",
+                                                      "research/axis_proposer.py",
+                                                      "--budget-s", "240"))
+    # THE PROGRAM-ALPHA LANE (D4): restricted executable programs in an auditable IR, slots
+    # tuned by TPE on a cheap screen, winners to program_candidates.jsonl. Discovery.
+    pal = _costed("program_alpha_lane", lambda: _producer("program_alpha_lane",
+                                                           "research/program_alpha_lane.py",
+                                                           "--budget-s", "240",
+                                                           "--max-programs", "20"))
+    # TRAJECTORY EVOLUTION (D2): whole research trajectories mutate at the step that failed and
+    # cross only under causal compatibility; children donated as structured hypotheses.
+    tev = _costed("trajectory_evolution", lambda: _producer("trajectory_evolution",
+                                                             "research/trajectory_evolution.py",
+                                                             "--budget-s", "240",
+                                                             "--max-children", "30"))
+    # THE RESEARCH-OS ARCHIVE (Q1/W12): a population of research policies competing on measured
+    # productivity behind the immutable wall; the active policy's factors feed the budget. Meta.
+    roa = _costed("research_os_archive", lambda: _producer("research_os_archive",
+                                                            "research/research_os_archive.py"))
+    # THE REGIME ROUTER (D8/Q16): P(alpha>0 | state) per sleeve and a per-sample router that is
+    # active only where it beats the unrouted model out of sample. Forward department.
+    rgr = _costed("regime_router", lambda: _producer("regime_router",
+                                                      "research/regime_router.py"))
+    # THE MOAT SERIES REGISTRY + BUILDER (C20/W13): every proprietary series registered with its
+    # depth, coverage, moat score and named gaps; derived tape series built per instrument-day.
+    mos = _costed("moat_series", lambda: _producer("moat_series", "research/moat_series.py",
+                                                    "--budget-s", "240", "--max-days", "3"))
+    # THE SCOUT ROSTER (W4): every intelligence organ as a scout with a beat, a clock, a measured
+    # yield and a cost; open beats named. Intel department.
+    scr = _costed("scout_roster", lambda: _producer("scout_roster", "research/scout_roster.py"))
+    # DESCENDANTS (W16): every survivor is the root of a family; each child moves along ONE axis
+    # (instrument, session, horizon, exit, state, cross-market); coverage of the axes measured.
+    dsc = _costed("descendants", lambda: _producer("descendants", "research/descendants.py",
+                                                    "--max-per-root", "4", "--budget-s", "240"))
+    # THE FORWARD SLOT RANKER (C15/W10): slots ranked by P(certify) x dElogW x diversification
+    # / time to maturity; REPLACEABLE clocks reported with their missed-growth line, never acted.
+    fsr = _costed("forward_slot_ranker", lambda: _producer("forward_slot_ranker",
+                                                            "research/forward_slot_ranker.py"))
+    # THE ANALYST PIPELINE (W5): leads -> triage -> structuring -> pre-screen -> donation ->
+    # follow-up, every rejection coded and counted, conversion per lead kind. Intel department.
+    anp = _costed("analyst_pipeline", lambda: _producer("analyst_pipeline",
+                                                         "research/analyst_pipeline.py",
+                                                         "--max-leads", "200",
+                                                         "--budget-s", "240"))
+    # THE KNOWLEDGE GRAPH (W2/M3): one lead schema; claims collapsed by dedupe key with
+    # PRODUCED/BECAME/JUDGED/DUPLICATES/CONTRADICTS/DERIVES_FROM edges; unconverted leads named.
+    kng = _costed("knowledge_graph", lambda: _producer("knowledge_graph",
+                                                        "research/knowledge_graph.py",
+                                                        "--max-rows", "5000"))
     # EVERY BUILD ON A CLOCK: the auto-clocked organs of this plan (data/auto_legs.json).
     auto = run_auto_legs()
     sw = _costed("sweep", sweep)
@@ -2879,7 +2942,11 @@ def main() -> None:
                     "research_api_status": rap,
                     "artifact_chain": acv, "residual_queue": rsq, "unseen_frontier": usf,
                     "source_registry": srg, "event_response_atlas": era, "world_lab": wlb,
-                    "causal_lab": clb,
+                    "causal_lab": clb, "registry_sync": rsy, "axis_proposer": axp,
+                    "program_alpha_lane": pal, "trajectory_evolution": tev,
+                    "research_os_archive": roa, "regime_router": rgr, "moat_series": mos,
+                    "scout_roster": scr, "descendants": dsc, "forward_slot_ranker": fsr,
+                    "analyst_pipeline": anp, "knowledge_graph": kng,
                     "probation": prb, "standing_questions": sqs, "exposure_decomposition": exd,
                     "auto_legs": auto,
                     "sweep": sw, "compile": cc,

@@ -172,7 +172,29 @@ def close_run(run: Run, *, outcome: str = "ok", inputs: list[Path] | None = None
         **run.meta, **result,
     }
     _append(row)
+    _record_run_in_registry(row, inputs, outputs)
     return row
+
+
+def _record_run_in_registry(row: dict[str, Any], inputs: list[Path] | None,
+                            outputs: list[Path] | None) -> None:
+    """research_runs in the canonical registry (principal 2026-09-17): every closed run, keyed
+    the way the registry bridge keys the compute ledger, so the two never double-count."""
+    try:
+        from libs.moat import registry as reg
+        reg.record_run(f"{row['kind']}:{row['run']}:{row['at']}", name=str(row["run"]),
+                       status=str(row["outcome"]), organ=str(row["kind"]),
+                       started_at=str(row.get("started_at") or ""),
+                       finished_at=str(row.get("finished_at") or ""),
+                       compute_s=float(row.get("wall_s") or 0.0),
+                       git_commit=str(row.get("commit_sha") or ""),
+                       config_hash=str(row.get("config_hash") or ""), outcome=str(row["outcome"]),
+                       metrics={k: row.get(k) for k in ("cpu_s", "wall_s", "input_hash",
+                                                        "output_hash")},
+                       inputs=[str(p) for p in (inputs or [])],
+                       outputs=[str(p) for p in (outputs or [])])
+    except Exception:  # never let the record fail the run
+        pass
 
 
 @contextmanager
