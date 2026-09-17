@@ -166,6 +166,11 @@ LEG_LAYER: dict[str, str] = {
     "artifact_chain": "meta", "residual_queue": "information", "unseen_frontier": "information",
     "source_registry": "information", "synthetic_regimes": "meta",
     "event_response_atlas": "information", "causal_lab": "information", "world_lab": "prediction",
+    "registry_sync": "meta", "axis_proposer": "information", "program_alpha_lane": "prediction",
+    "trajectory_evolution": "prediction", "research_os_archive": "meta", "regime_router": "sizing",
+    "moat_series": "information", "scout_roster": "information",
+    "descendants": "prediction", "forward_slot_ranker": "portfolio",
+    "analyst_pipeline": "information", "knowledge_graph": "information",
     # sizing: how much
     "capacity": "sizing", "ensemble_optimizer": "sizing",
     # portfolio: how the book is composed

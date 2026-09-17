@@ -59,6 +59,17 @@ def _department_factor(leg: str) -> float:
         return 1.0
 
 
+def _archive_factor(leg: str) -> float:
+    """The active ResearchOS variant's leg factor (research_os_archive.active_policy); 1.0 when
+    the archive is absent or refuses its own policy -- the incumbent is every factor at 1.0."""
+    try:
+        import research_os_archive
+        f = float(research_os_archive.leg_factor(leg))
+        return f if 0.0 < f < 10.0 else 1.0
+    except Exception:
+        return 1.0
+
+
 def budget_s(leg: str, base: float) -> tuple[int, dict[str, Any]]:
     """(seconds, record) for `leg`: base x (share of its arms / equal-share baseline), clipped."""
     bandit = _read(BANDIT)
@@ -75,10 +86,13 @@ def budget_s(leg: str, base: float) -> tuple[int, dict[str, Any]]:
     baseline = len(arms) / max(1, len(shares))
     ladder = _ladder_factor(leg)
     dept = _department_factor(leg)
-    factor = max(FLOOR, min(CEIL, (share / baseline if baseline > 0 else 1.0) * ladder * dept))
+    archive = _archive_factor(leg)
+    factor = max(FLOOR, min(CEIL, (share / baseline if baseline > 0 else 1.0) * ladder * dept
+                            * archive))
     applied = round(base * factor)
     rec.update({"share": round(share, 4), "baseline": round(baseline, 4),
                 "ladder_factor": round(ladder, 3), "department_factor": round(dept, 3),
+                "archive_factor": round(archive, 3),
                 "factor": round(factor, 3), "applied_s": applied, "applied": True,
                 "why": f"share {share:.3f} of arms {list(arms)} vs equal-share baseline "
                        f"{baseline:.3f} -> x{factor:.2f}, clipped to [{FLOOR}, {CEIL}]"})
