@@ -11,11 +11,18 @@ import pytest
 
 from libs.moat import registry as R
 
+REAL_BACKUP = Path(__file__).resolve().parents[2] / "backups" / "moat" / "alpha_registry"
 
-@pytest.fixture
-def reg(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+
+@pytest.fixture(params=["real_schema", "fresh"])
+def reg(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest) -> Path:
+    """Every test runs twice: once restored from the REAL replicated file (its NOT NULL and CHECK
+    constraints are what broke the first live writes on 2026-09-17), once on a fresh file."""
     p = tmp_path / "alpha_registry.sqlite"
-    monkeypatch.setattr(R, "BACKUP", tmp_path / "no_backup")
+    if request.param == "real_schema" and REAL_BACKUP.exists():
+        monkeypatch.setattr(R, "BACKUP", REAL_BACKUP)
+    else:
+        monkeypatch.setattr(R, "BACKUP", tmp_path / "no_backup")
     R.set_path(p)
     yield p
     R.set_path(None)
@@ -73,7 +80,29 @@ def test_fresh_file_has_every_canonical_and_moat_table(reg):
     n = R.counts()
     for t in list(R.CANON) + list(R.MOAT_TABLES):
         assert t in n, t
-    assert all(v == 0 for k, v in n.items() if k != "schema_migrations")
+    research = ("research_candidates", "research_memory", "research_runs", "trials_ledger",
+                "workers", "campaigns", "candidate_returns", "metric_points", "discoveries")
+    assert all(n[t] == 0 for t in research)
+
+
+def test_the_crypto_era_check_vocabularies_are_lifted(reg):
+    """The replicated file constrains status/result/kind to the old daemon's words; the moat
+    writes the desk's own. After connect() no CANON table carries a CHECK, the rows survived,
+    and the migration is recorded."""
+    conn = R.connect()
+    for table in R.CANON:
+        sql = conn.execute("SELECT sql FROM sqlite_master WHERE name=?", (table,)).fetchone()[0]
+        assert not R._CHECK_RE.search(sql), table
+    R.enqueue_candidate(family="f", symbol="XAUUSD", params={}, origin="MOAT", status="queued")
+    R.record_run("r1", name="x", status="ok")
+    R.remember("lesson", "s")
+    R.record_candidate_returns("c", "epsilon", "2026-09-17", [0.5, 1.5], "H1")
+    R.upsert_card("card1", name="n", market="XAUUSD", category="sleeve", status="live")
+    conn.close()
+    if R.counts()["alpha_cards"] > 1:   # the real backup: its eight cards are still there
+        mig = R.connect().execute("SELECT name FROM schema_migrations WHERE version=?",
+                                  (R.MIGRATION_VERSION,)).fetchone()
+        assert mig is not None and mig[0] == R.MIGRATION_NAME
 
 
 def test_constitution_triggers_refuse_edits_to_immutable_tables(reg):

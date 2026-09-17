@@ -60,7 +60,10 @@ def test_the_real_step_order_is_shadow_then_promoter_then_markout():
     for required in ("shadow", "promoter", "markout"):
         assert required in names, f"the {required} step vanished from the daily cycle"
     assert names.index("shadow") < names.index("promoter") < names.index("markout")
-    assert "export_aurum" in names and names[-1] == "export_aurum"
+    # 2026-09-17: the day now CLOSES with the research OS release train (M20); the export step
+    # stays, immediately before it.
+    assert "export_aurum" in names and names[-1] == "daily_research_os"
+    assert names[-2] == "export_aurum" and names[0] == "research_gap_map"
 
 
 def test_it_runs_once_per_utc_day(cyc, monkeypatch):

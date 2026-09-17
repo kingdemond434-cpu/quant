@@ -318,6 +318,32 @@ changes a computation; check units against the account; implausible abundance is
 every module ends in a decision; live reality outranks history; no hand-arming; write the test
 that would have caught it in the same commit as the fix.
 
+## 5b. THE MINING LAW (principal's standing order, 2026-09-17)
+
+The intelligence, moat, exploration, exploitation, transfer, residual, literature,
+program-search and meta-research systems exist for one purpose: to continuously maximise the
+quantity and diversity of falsifiable, implementation-ready, economically distinct candidate
+edges delivered to the canonical gauntlet. They never lower validation standards, never promote
+capital and never optimise raw candidate count. Their success is measured by frontier coverage,
+orthogonality, independent survivor yield and marginal contribution to effective breadth.
+
+- **Candidate quantity has zero intrinsic value.** Ten candidates in ten new economic mechanisms
+  outrank a hundred thousand parameter mutations of one mechanism; the miner's reward is
+  NovelMechanism x ExpectedOrthogonality x EconomicPlausibility x GauntletReadiness, updated by
+  the survivor outcome and the change in effective breadth once the gauntlet has spoken.
+- **No discovery dies silently.** Every miner row, finding, failure, lead, moat artifact,
+  residual and mechanism carries a disposition: UNPROCESSED -> INTERPRETED -> EXPANDED ->
+  COMPILED -> QUEUED -> TESTED, or BLOCKED with a reason. Unexplained conversion debt is driven
+  to zero; not every cell is tested today, but every cell is owed a disposition.
+- **Four jobs, kept apart.** Mining maximises the opportunity set; the gauntlet maximises truth;
+  forward evidence validates reality; the allocator maximises growth. No mining organ writes the
+  book, the promoter's inputs or a certificate (`mining_objective.separation_of_powers`,
+  `tests/test_mining_law.py`).
+- **Above the gauntlet nothing has promotion authority**, and below the miners nothing is a
+  knob: source provenance, PIT rules, complete trial accounting, sealed holdouts, forward clocks,
+  actual costs and fills, gauntlet standards and capital authority are immutable
+  (`libs/moat/registry.py` triggers; `research_os_archive.assert_constitution`).
+
 ## 6. OPERATING LAWS (every session, human or machine)
 
 - **Gates before any push:** `./ops/gates.sh` (ruff, pytest --co, mypy); `--full` adds suite +

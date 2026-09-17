@@ -171,6 +171,15 @@ LEG_LAYER: dict[str, str] = {
     "moat_series": "information", "scout_roster": "information",
     "descendants": "prediction", "forward_slot_ranker": "portfolio",
     "analyst_pipeline": "information", "knowledge_graph": "information",
+    "card_explosion": "prediction", "alpha_lineage": "prediction",
+    "graveyard_resurrection": "prediction", "shadow_discovery": "information",
+    "forward_exploitation": "information", "alpha_recombination": "prediction",
+    "unused_information": "information", "discovery_compiler": "prediction",
+    "research_debt": "meta", "mining_objective": "meta", "research_gap_map": "meta",
+    "gauntlet_backpressure": "meta", "miner_specialisation": "meta",
+    "moat_collectors": "information", "source_frontier": "information",
+    "scout_swarm": "information", "actor_atlas": "information",
+    "netting_report": "execution",
     # sizing: how much
     "capacity": "sizing", "ensemble_optimizer": "sizing",
     # portfolio: how the book is composed
