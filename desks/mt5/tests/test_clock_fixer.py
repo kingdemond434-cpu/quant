@@ -73,3 +73,46 @@ def test_budget_exhaustion_skips_steps_by_name(monkeypatch, tmp_path: Path):
     doc = __import__("json").loads((tmp_path / "CLOCK_FIXER.json").read_text())
     assert doc["steps"][0]["status"] == "skipped" and doc["steps"][-1]["status"] == "skipped"
     assert (tmp_path / "clock_fixer.jsonl").exists()
+
+def test_an_unreadable_lock_is_a_HELD_lock_not_a_dead_resident(monkeypatch, tmp_path):
+    """MEASURED 2026-09-17: twenty-two healthy residents were reported DEAD and restarted every
+    fifteen minutes because their lock files could not be READ -- and they could not be read
+    precisely because each resident holds a Windows byte-range lock on byte 0 for the life of the
+    process. "I cannot read it" and "nobody holds it" are opposite facts."""
+    locks = tmp_path / "locks"
+    logs = tmp_path / "logs"
+    locks.mkdir()
+    logs.mkdir()
+    monkeypatch.setattr(cf, "LOCKS", locks)
+    monkeypatch.setattr(cf, "LOGS", logs)
+    monkeypatch.setattr(cf, "RESIDENTS", {"dept_held": ("MT5-Held", "held.log", 3600)})
+    (locks / "dept_held.lock").write_text("123 now")
+    (logs / "held.log").write_text("x")
+    real_read = Path.read_text
+
+    def refuse(self, *a, **k):
+        if self.name == "dept_held.lock":
+            raise PermissionError(13, "the resident holds this byte")
+        return real_read(self, *a, **k)
+
+    monkeypatch.setattr(Path, "read_text", refuse)
+    started: list[str] = []
+    monkeypatch.setattr(cf, "_task_exists", lambda task: True)
+    monkeypatch.setattr(cf, "_run_task", lambda task: started.append(task) or "started")
+    rows = {r["resident"]: r for r in cf.check_residents(apply=True)}
+    assert rows["dept_held"]["state"] == "ALIVE" and rows["dept_held"]["lock"] == cf.LOCK_HELD
+    assert started == [], "a live resident must never be restarted"
+
+
+def test_a_lock_with_no_pid_and_no_process_is_dead(monkeypatch, tmp_path):
+    locks = tmp_path / "locks"
+    locks.mkdir()
+    (tmp_path / "logs").mkdir()
+    monkeypatch.setattr(cf, "LOCKS", locks)
+    monkeypatch.setattr(cf, "LOGS", tmp_path / "logs")
+    monkeypatch.setattr(cf, "RESIDENTS", {"dept_stale": ("MT5-Stale", "s.log", 3600)})
+    (locks / "dept_stale.lock").write_text("")
+    monkeypatch.setattr(cf, "_task_exists", lambda task: True)
+    monkeypatch.setattr(cf, "_run_task", lambda task: "started")
+    rows = {r["resident"]: r for r in cf.check_residents(apply=True)}
+    assert rows["dept_stale"]["state"] == "DEAD" and rows["dept_stale"]["lock"] == cf.LOCK_STALE
