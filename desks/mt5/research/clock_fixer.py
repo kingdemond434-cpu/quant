@@ -104,15 +104,38 @@ def _pid_alive(pid: int) -> bool:
     return True
 
 
-def _lock_holder(stem: str) -> int | None:
+#: What the lock file says about its owner. The states are the point: "I cannot read it" and
+#: "nobody holds it" are OPPOSITE facts and this organ read them as the same one until
+#: 2026-09-17, when every one of twenty-two healthy residents was reported DEAD and "restarted"
+#: every fifteen minutes. The residents hold a WINDOWS BYTE-RANGE LOCK on byte 0 of their own
+#: lock file (`department_resident.claim_singleton` -> `msvcrt.locking`), so reading that byte
+#: raises PermissionError WHILE THE PROCESS IS ALIVE. An unreadable lock is therefore the
+#: strongest evidence of life this organ has, not evidence of death.
+LOCK_HELD = "HELD"          # a live process holds the byte-range lock (read refused)
+LOCK_PID = "PID"            # readable, carries a pid to check
+LOCK_STALE = "STALE"        # readable and carries no pid: the writer died before writing
+LOCK_FREE = "FREE"          # no lock file at all
+
+
+def _lock_state(stem: str) -> tuple[str, int | None]:
+    """(state, pid). See LOCK_HELD above -- an unreadable lock is a held lock."""
     p = LOCKS / f"{stem}.lock"
     if not p.exists():
-        return None
+        return LOCK_FREE, None
     try:
         first = p.read_text(encoding="utf-8", errors="replace").split()
-        return int(first[0]) if first and first[0].isdigit() else None
+    except PermissionError:
+        return LOCK_HELD, None
     except OSError:
-        return None
+        return LOCK_HELD, None
+    if first and first[0].isdigit():
+        return LOCK_PID, int(first[0])
+    return LOCK_STALE, None
+
+
+def _lock_holder(stem: str) -> int | None:
+    """The pid in the lock file when it is readable; None otherwise (see `_lock_state`)."""
+    return _lock_state(stem)[1]
 
 
 def _log_age_s(name: str) -> float | None:
@@ -137,18 +160,20 @@ def _run_task(task: str) -> str:
 
 
 def check_residents(apply: bool) -> list[dict]:
-    """A resident is ALIVE when its lock holder is a live process; SILENT when alive but its log
-    has not moved inside its cycle; DEAD otherwise. Dead and silent ones are restarted through
+    """A resident is ALIVE when it HOLDS its singleton lock -- proven either by the lock file
+    refusing to be read (the byte-range lock is held, which only a live process can do) or by a
+    readable pid that is a live process. SILENT when alive but its log has not moved inside its
+    cycle; DEAD otherwise. Dead and silent ones are restarted through
     the keep-alive task (a running singleton makes the start a no-op)."""
     rows: list[dict] = []
     for stem, (task, log, max_silence) in RESIDENTS.items():
-        pid = _lock_holder(stem)
-        alive = bool(pid and _pid_alive(pid))
+        lock_state, pid = _lock_state(stem)
+        alive = lock_state == LOCK_HELD or bool(pid and _pid_alive(pid))
         age = _log_age_s(log)
         silent = alive and age is not None and age > max_silence
         state = "ALIVE" if alive and not silent else ("SILENT" if silent else "DEAD")
         row = {"resident": stem, "task": task, "pid": pid, "state": state,
-               "log_age_s": None if age is None else round(age)}
+               "lock": lock_state, "log_age_s": None if age is None else round(age)}
         if state != "ALIVE":
             if not _task_exists(task):
                 row["action"] = "task_missing"
