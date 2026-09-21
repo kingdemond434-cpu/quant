@@ -238,7 +238,8 @@ def main() -> int:
     from mt5desk.universe_registry import cost_fields_from_symbol_info
 
     now = datetime.now(tz=UTC)
-    if not mt5.initialize():
+    from mt5_session import attach_or_initialize
+    if not attach_or_initialize(mt5):
         print(f"MT5 initialize failed: {_explain(mt5.last_error())}")
         return 1
 

@@ -1239,7 +1239,8 @@ def account_margin() -> tuple[float | None, float | None, str]:
                 path = terminal_path()
             except Exception:
                 path = ""
-            opened = bool(mt5.initialize(path=path) if path else mt5.initialize())
+            from mt5_session import attach_or_initialize
+            opened = attach_or_initialize(mt5, path=path)
             if not opened:
                 return None, None, f"terminal unreachable ({mt5.last_error()})"
         acc = mt5.account_info()

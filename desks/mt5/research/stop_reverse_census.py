@@ -44,6 +44,8 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from mt5_session import attach_or_initialize
+
 BASE = Path(__file__).resolve().parents[1]
 OUT = BASE / "reports" / "STOP_REVERSE_CENSUS.json"
 
@@ -95,8 +97,8 @@ def census(mt5: Any = None) -> dict[str, Any]:
         except ImportError:
             out["why"] = "MetaTrader5 unavailable on this host"
             return out
-    if mt5.terminal_info() is None and not mt5.initialize():
-        out["why"] = "terminal not initialised"
+    if not attach_or_initialize(mt5, allow_autostart=False):
+        out["why"] = "no terminal attached in research session; autostart prohibited"
         return out
     try:
         import pandas as pd

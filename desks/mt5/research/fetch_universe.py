@@ -258,7 +258,8 @@ def _refresh_order(candidates: list[str]) -> list[str]:
 
 def main() -> None:
     if mt5.terminal_info() is None:
-        if not mt5.initialize(path=TERMINAL):
+        from mt5_session import attach_or_initialize
+        if not attach_or_initialize(mt5, path=TERMINAL):
             print(f"initialize failed: {mt5.last_error()}")
             return
     print(f"terminal: {mt5.terminal_info().name} | account {mt5.account_info().login}")

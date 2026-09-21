@@ -81,7 +81,8 @@ def _refresh_scalp_bars() -> None:
     for terminal in h1_source._terminal_candidates():
         if not Path(terminal).exists():
             continue
-        if not mt5.initialize(path=terminal, timeout=15_000):
+        from mt5_session import attach_or_initialize
+        if not attach_or_initialize(mt5, path=terminal, timeout=15_000):
             failures.append(f"{terminal}: initialize failed: {mt5.last_error()}")
             continue
         try:

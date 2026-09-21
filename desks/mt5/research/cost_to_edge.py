@@ -41,6 +41,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from mt5_session import attach_or_initialize
+
 BASE = Path(__file__).resolve().parents[1]
 SLEEVES = BASE / "data" / "sleeves.json"
 OUT = BASE / "reports" / "COST_TO_EDGE.json"
@@ -84,8 +86,14 @@ def symbol_cost_r(sym: str, family: str = "", mt5: Any = None) -> dict[str, Any]
         except ImportError:
             out["why"] = "MetaTrader5 unavailable on this host"
             return out
-    if mt5.terminal_info() is None and not mt5.initialize():
-        out["why"] = "terminal not initialised"
+    # Research residents run as SYSTEM in Windows Session 0.  Calling initialize() here
+    # launches a second terminal in that isolated session.  That terminal then takes MT5's
+    # local MCP port from the authenticated, interactive execution terminal and silently
+    # disables both the live gateway and E8 Gold.  Cost telemetry is optional input; it must
+    # never create or own execution infrastructure.  Use an already-attached terminal when
+    # one exists in this worker's session, otherwise leave the observation UNMEASURED.
+    if not attach_or_initialize(mt5, allow_autostart=False):
+        out["why"] = "no terminal attached in research session; autostart prohibited"
         return out
     info = mt5.symbol_info(sym)
     tick = mt5.symbol_info_tick(sym)
