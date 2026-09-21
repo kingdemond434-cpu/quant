@@ -25,8 +25,9 @@ reports/DONE_qquant_gates (the hunt12/16 REAL3 path) before starting so the
 critical 182 gauntlet finishes first. Run under the quant-platform venv python.
 
 Usage: python research/universal_gate.py
-Output: reports/universal_gates_<hunt>.json + reports/UNIVERSAL_SURVIVORS.json
-        + DONE markers reports/DONE_universal_<hunt>.
+Output: reports/universal_gates_<hunt>.json + reports/UNIVERSAL_GATE_CANDIDATES.json
+        + DONE markers reports/DONE_universal_<hunt>. The external gauntlet remains the sole
+        certificate authority; this legacy lane reports passes but cannot mint.
 """
 
 from __future__ import annotations
@@ -441,8 +442,8 @@ def main() -> int:
             time.sleep(60)
         print("qquant gates done, starting universal gauntlet", flush=True)
     meta = json.loads((UNI / "universe.json").read_text("utf-8"))
-    survivor_path = REPORTS / "UNIVERSAL_SURVIVORS.json"
-    survivors_all: dict[str, dict] = retained_exact_survivors(survivor_path)
+    survivor_path = REPORTS / "UNIVERSAL_GATE_CANDIDATES.json"
+    survivors_all: dict[str, dict] = {}
     for hunt in HUNTS:
         marker = REPORTS / f"DONE_universal_{hunt}"
         if marker.exists():
@@ -519,11 +520,10 @@ def main() -> int:
         (REPORTS / f"DONE_universal_{rp.stem}").write_text(
             datetime.now(UTC).isoformat(), encoding="utf-8")
 
-    # Re-read immediately before publication. Another certified producer (notably QQUANT) may
-    # have published while this expensive sweep was running; never erase that result.
-    latest = retained_exact_survivors(survivor_path)
-    latest.update(survivors_all)
-    survivors_all = latest
+    # REPORT, NEVER MINT. This module used to write the same authority file as the external
+    # gauntlet. A zero-pass legacy run then erased the live certificate library and its policy
+    # attestation. The per-hunt findings remain useful inputs; only the authority side effect is
+    # removed. The canonical external gauntlet is the one certificate pen.
     survivor_path.write_text(
         json.dumps({"n": len(survivors_all), "survivors": survivors_all,
                     "gate_policy": GATE_POLICY,
@@ -531,20 +531,8 @@ def main() -> int:
                             "apply before portfolio entry.",
                     "swept_at": datetime.now(UTC).isoformat()},
                    indent=2, default=str), encoding="utf-8")
-    ledger_path = REPORTS / "SURVIVORS_LEDGER.json"
-    ledger: dict = {}
-    if ledger_path.exists():
-        try:
-            ledger = json.loads(ledger_path.read_text("utf-8")).get("claims", {})
-        except Exception:
-            ledger = {}
-    for k, v in survivors_all.items():
-        ledger[k] = {**v, "status": "UNIVERSAL",
-                     "updated_at": datetime.now(UTC).isoformat()}
-    ledger_path.write_text(
-        json.dumps({"n": len(ledger), "claims": ledger}, indent=2, default=str),
-        encoding="utf-8")
-    print(f"\nUNIVERSAL SURVIVORS: {len(survivors_all)}", flush=True)
+    print(f"\nLEGACY GATE CANDIDATES: {len(survivors_all)} (no certificate authority)",
+          flush=True)
     return 0
 
 

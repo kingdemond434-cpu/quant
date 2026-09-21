@@ -431,7 +431,8 @@ def step_certify(gauntlet_result):
     print("\n" + "=" * 60)
     print("STEP 5: CERTIFY + SHADOW ADMISSION")
     print("=" * 60)
-    surv_path = REPORTS / "UNIVERSAL_SURVIVORS.json"
+    # Legacy diagnostic only. The external gauntlet is the sole certificate authority.
+    surv_path = REPORTS / "LEGACY_FULL_PIPELINE_CANDIDATES.json"
     survivors = {}
     if surv_path.exists():
         try:

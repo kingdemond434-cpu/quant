@@ -230,6 +230,18 @@ def min_bars(timeframe: str) -> int:
     return min_bars_for(timeframe, h1_floor=MIN_BARS)
 
 
+def _explain(err: object) -> str:
+    """Explain an MT5 attach failure without allowing diagnostics to mask it."""
+    try:
+        from research.h1_source import explain_init_failure
+    except ImportError:
+        try:
+            from h1_source import explain_init_failure  # type: ignore[no-redef]
+        except ImportError:
+            return f"{err}"
+    return explain_init_failure(err)
+
+
 
 
 def main() -> int:
@@ -413,19 +425,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-
-def _explain(err: object) -> str:
-    """Route the raw MT5 error through the shared explanation -- see h1_source.
-
-    Imported lazily and falling back to the bare error: a diagnostic helper must never be the
-    reason a producer cannot start.
-    """
-    try:
-        from research.h1_source import explain_init_failure
-    except ImportError:
-        try:
-            from h1_source import explain_init_failure  # type: ignore[no-redef]
-        except ImportError:
-            return f"{err}"
-    return explain_init_failure(err)

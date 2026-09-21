@@ -334,10 +334,10 @@ $tasks = @(
 #                     logon; ops/box-repair.ps1 documents the fix (schtasks /Change /RU <user>
 #                     /IT, elevated). Registering it from this table would create a task that
 #                     reports success and never produces a terminal, which is worse than absent.
-#   MT5-Universe      names no script in this checkout. Registering a guess would satisfy the
-#                     reboot drill's name check while running nothing -- the exact "capability
-#                     that is code, not a capability" failure the desk keeps paying for.
-# Both are reported by the drill as MISSING, which is the honest state until each is resolved.
+#   MT5-Universe      is registered in a dedicated block below because it is a cmd wrapper and
+#                     must share the INTERACTIVE terminal session. Running it as SYSTEM makes
+#                     MetaTrader initialization fail even while the live terminal is healthy.
+# TerminalBoot remains reported by the drill until its interactive registration is resolved.
 
 # TWO ROOTS, EXACTLY AS `hourly_cycle._producer` RESOLVES THEM. The research organs live under
 # `desks/mt5/...`, but the publication and maintenance scripts live at the REPOSITORY root --
@@ -419,6 +419,40 @@ foreach ($t in $tasks) {
         Write-Host ("  [OK  ] {0,-14} registered -> {1}" -f $t.Name, $log)
     } catch {
         Write-Host ("  [FAIL] {0,-14} {1}" -f $t.Name, $_.Exception.Message)
+    }
+}
+
+# Full broker-derived M1/M5/M15/M30/H1/H4/D1 collection. The wrapper expands from
+# mt5.symbols_get(), records unavailable/thin charts and repairs the registry. MetaTrader IPC is
+# session-scoped, so this task must run in the logged-in user's interactive session, never SYSTEM.
+$universeCmd = Join-Path $RepoRoot "ops\run_universe.cmd"
+if (Test-Path $universeCmd) {
+    if ($WhatIfOnly) {
+        Write-Host "  [DRY ] MT5-Universe interactive full-timeframe collector"
+    } else {
+        try {
+            $universeAction = New-ScheduledTaskAction -Execute "cmd.exe" `
+                -Argument ("/d /s /c `"`"{0}`"`"" -f $universeCmd) `
+                -WorkingDirectory $RepoRoot
+            $universeTrigger = New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
+                -RepetitionInterval (New-TimeSpan -Hours 1) `
+                -RepetitionDuration (New-TimeSpan -Days 3650)
+            $universeSettings = New-ScheduledTaskSettingsSet `
+                -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable `
+                -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1) `
+                -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Minutes 55)
+            $universePrincipal = New-ScheduledTaskPrincipal -UserId $env:USERNAME `
+                -LogonType Interactive -RunLevel Limited
+            Unregister-ScheduledTask -TaskName "MT5-Universe" -Confirm:$false `
+                -ErrorAction SilentlyContinue
+            Register-ScheduledTask -TaskName "MT5-Universe" -Action $universeAction `
+                -Trigger $universeTrigger -Settings $universeSettings `
+                -Description "Refresh the complete Fusion timeframe ladder and registry hourly." `
+                -Principal $universePrincipal | Out-Null
+            Write-Host "  [OK  ] MT5-Universe registered in the interactive MT5 session"
+        } catch {
+            Write-Host ("  [FAIL] MT5-Universe {0}" -f $_.Exception.Message)
+        }
     }
 }
 

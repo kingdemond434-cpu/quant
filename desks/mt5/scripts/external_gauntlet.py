@@ -3367,6 +3367,27 @@ def main():
     # A missing host cache must not erase every certificate on the Windows box. Require explicit
     # venue restriction below; native data and promotion guards still govern execution.
     retired = dict(old_doc.get("retired_certificates") or {})
+    # A legacy certifier could replace the live authority file and drop its retirement archive.
+    # The durable canon preserves that archive. Recover only rows that still carry an exact
+    # ten-gate verdict; the normal obstruction check below then decides whether each row stays
+    # retired or returns. This restores evidence, never invents or weakens it.
+    canon_path = DATA / "UNIVERSAL_SURVIVORS.canon.json"
+    try:
+        canon_doc = json.loads(canon_path.read_text("utf-8"))
+        canon_retired = canon_doc.get("retired_certificates") or {}
+        if isinstance(canon_retired, dict):
+            recovered = 0
+            for key, row in canon_retired.items():
+                if (key not in retired and key not in survivors_all
+                        and isinstance(row, dict) and all_ten_pass(row.get("gates"))):
+                    retired[key] = row
+                    recovered += 1
+            if recovered:
+                print(f"recovered {recovered} archived certificate row(s) from durable canon "
+                      "for current obstruction re-check")
+    except (OSError, ValueError, TypeError) as exc:
+        print(f"durable certificate archive unavailable ({type(exc).__name__}); "
+              "continuing without guessing")
     if meta:
         stamp = datetime.now(UTC).isoformat()
         for key in list(survivors_all):
