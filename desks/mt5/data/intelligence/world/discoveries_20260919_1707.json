@@ -1,0 +1,867 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "La strat&amp;eacute;gie fiduciaire de l&amp;rsquo;Eurosyst&amp;egrave;me",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/html/index.fr.html",
+  "published": "2026-09-19T17:06:11+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.fr.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "6acd0f56a79ee01ff14c",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Strait&amp;eacute;is airgid thirim an Euroch&amp;oacute;rais",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/html/index.ga.html",
+  "published": "2026-09-19T17:06:12+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "ga",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.ga.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ea559a8ea579e94effc6",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Gotovinska strategija Eurosustava",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/html/index.hr.html",
+  "published": "2026-09-19T17:06:14+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "hr",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.hr.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "d78200e138111f4b4c5b",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Az eurorendszer k\u00e9szp\u00e9nzstrat\u00e9gi\u00e1ja",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/html/index.hu.html",
+  "published": "2026-09-19T17:06:16+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "hu",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.hu.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "88f6b1849fe06a01596e",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Strategia dell&amp;rsquo;Eurosistema per il contante",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/html/index.it.html",
+  "published": "2026-09-19T17:06:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "it",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.it.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c71a7da696c65fa0c861",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Eurosistemos gryn\u0173j\u0173 pinig\u0173 strategija",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/html/index.lt.html",
+  "published": "2026-09-19T17:06:20+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "lt",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.lt.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5efdc7a20dfffe433ca3",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Eurosist\u0113mas skaidr\u0101s naudas strat\u0113\u0123ija",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/html/index.lv.html",
+  "published": "2026-09-19T17:06:22+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "lv",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.lv.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "681de7fbaf1ab93d0140",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "L-istrate\u0121ija tal-Eurosistema dwar il-flus kontanti",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/html/index.mt.html",
+  "published": "2026-09-19T17:06:24+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "mt",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.mt.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "4f15cd641b99ca7e332b",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "De contantgeldstrategie van het Eurosysteem",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/html/index.nl.html",
+  "published": "2026-09-19T17:06:26+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "nl",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.nl.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "3ea8028607d71e08d15f",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Strategia Eurosystemu w&amp;nbsp;sprawie got&amp;oacute;wki",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/html/index.pl.html",
+  "published": "2026-09-19T17:06:28+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "pl",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.pl.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c1d124d0b09c14788a8c",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Estrat\u00e9gia de numer\u00e1rio do Eurosistema",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/html/index.pt.html",
+  "published": "2026-09-19T17:06:30+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "momentum",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "pt",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.pt.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "8f21ca087876aef87c2a",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Strategia privind numerarul a Eurosistemului",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/html/index.ro.html",
+  "published": "2026-09-19T17:06:32+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "ro",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.ro.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "e5548cf0600eea473518",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Hotovostn&amp;aacute; strat&amp;eacute;gia Eurosyst&amp;eacute;mu",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/html/index.sk.html",
+  "published": "2026-09-19T17:06:34+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "sk",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.sk.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "fc30218c95c49213713e",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Strategija Eurosistema o gotovini",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/html/index.sl.html",
+  "published": "2026-09-19T17:06:36+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "sl",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.sl.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "6c26256874ded2667784",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Eurosystemets kontantstrategi",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/html/index.sv.html",
+  "published": "2026-09-19T17:06:38+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "inventory",
+   "mean_reversion",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "sv",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.sv.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "e32770dcbc14860cbea6",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0420\u043e\u043b\u044f\u0442\u0430 \u043d\u0430 \u043f\u0430\u0440\u0438\u0442\u0435 \u0432 \u0431\u0440\u043e\u0439",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/cash_role/html/index.bg.html",
+  "published": "2026-09-19T17:06:40+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "bg",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.bg.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f267be4ea74a4189a254",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u00daloha hotovosti",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/cash_role/html/index.cs.html",
+  "published": "2026-09-19T17:06:42+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "cs",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.cs.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "9f6a239529f06feea86c",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "The role of cash",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/cash_role/html/index.da.html",
+  "published": "2026-09-19T17:06:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "da",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.da.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "91700aa6636edd540e9f",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "US Dollar vs Japanese Yen (USDJPY) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/USDJPY/",
+  "published": "2026-09-19T17:06:45+00:00",
+  "symbols": [
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "66145654c45841d1ffb4",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "001 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:05 - 23:55 Term currency JPY 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 9.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "yen"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "fb3bd21d7eea"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Silver vs US Dollar (Spot) (XAGUSD) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/XAGUSD/",
+  "published": "2026-09-19T17:06:46+00:00",
+  "symbols": [
+   "XAGUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "1fada0d1ed45d1453f8d",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "001 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 01:05 - 23:55 Term currency USD 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 44.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAGUSD"
+     ],
+     "mentioned": [
+      "silver"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "cd214266bd51"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Gold vs US Dollar (Spot) (XAUUSD) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/XAUUSD/",
+  "published": "2026-09-19T17:06:48+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "487ec9eaee5d46cf6c78",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "01 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 01:05 - 23:55 Term currency USD 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 10.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a821ec6e1f5a"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Gold vs Euro (Spot) (XAUEUR) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/XAUEUR/",
+  "published": "2026-09-19T17:06:51+00:00",
+  "symbols": [
+   "XAUEUR",
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "a6fbdd377a03768f6e18",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "01 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 01:05 - 23:55 Term currency EUR 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 11.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "ef3aaf94635a"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "BitCoin vs US Dollar (BTCUSD) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/BTCUSD/",
+  "published": "2026-09-19T17:06:52+00:00",
+  "symbols": [
+   "BTCUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "bdd5b20280cbddbcf323",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Ethereum vs US Dollar (ETHUSD) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/ETHUSD/",
+  "published": "2026-09-19T17:06:55+00:00",
+  "symbols": [
+   "ETHUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "a4d8d5de1cec02d293f3",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Ripple vs US Dollar (XRPUSD) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/XRPUSD/",
+  "published": "2026-09-19T17:06:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "a261e082a563ec6294fb",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Solana vs US Dollar (SOLUSD) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/SOLUSD/",
+  "published": "2026-09-19T17:06:58+00:00",
+  "symbols": [
+   "SOLUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "29d2340fff4627e1f320",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Cardano vs US Dollar (ADAUSD) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/ADAUSD/",
+  "published": "2026-09-19T17:07:00+00:00",
+  "symbols": [
+   "ADAUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "74719b60dd5523a59e93",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Dogecoin vs US Dollar (DOGEUSD) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/DOGEUSD/",
+  "published": "2026-09-19T17:07:02+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "ac23996afacb5407caaa",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Australian Dollar vs Canadian Dollar (AUDCAD.p) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/AUDCAD.p/",
+  "published": "2026-09-19T17:07:05+00:00",
+  "symbols": [
+   "AUDCAD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "129d5819b49d812d76ad",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Australian Dollar vs Swiss Franc (AUDCHF.p) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/AUDCHF.p/",
+  "published": "2026-09-19T17:07:06+00:00",
+  "symbols": [
+   "AUDCHF"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "832e0928525a7ac2328a",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]

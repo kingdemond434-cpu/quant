@@ -1,0 +1,27 @@
+[
+ {
+  "source": "deep_forest",
+  "kind": "dataset",
+  "title": "Radware Page",
+  "url": "https://www.boi.org.il/en/economic-roles/statistics/",
+  "published": "2026-09-19T12:32:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9cdea2a4cb93e9685f6f",
+  "host": "www.boi.org.il",
+  "ground": "Bank of Israel statistics",
+  "region": "il",
+  "cluster": "mena",
+  "dataset_class": "central_bank_data",
+  "available_time": "2026-09-19T12:32:54+00:00",
+  "ingested_time": "2026-09-19T12:32:54+00:00",
+  "source_hash": "9cdea2a4cb93e9685f6f",
+  "claims": [],
+  "n_claims": 0
+ }
+]

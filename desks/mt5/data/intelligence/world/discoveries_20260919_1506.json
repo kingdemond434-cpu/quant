@@ -1,0 +1,1432 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Two per cent inflation target",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/pricestab/html/index.el.html",
+  "published": "2026-09-19T15:05:09+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "el",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.el.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "a82b621cdf3d5e33646f",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Two per cent inflation target",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/pricestab/html/index.es.html",
+  "published": "2026-09-19T15:05:12+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "es",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.es.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f8760852348a284c5e53",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Two per cent inflation target",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/pricestab/html/index.et.html",
+  "published": "2026-09-19T15:05:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "et",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.et.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "602c9aa5a043f893650f",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "kes"
+     ],
+     "transfer_only": [
+      "kes->fx (KES not quoted)"
+     ],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Two per cent inflation target",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/pricestab/html/index.fi.html",
+  "published": "2026-09-19T15:05:14+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "fi",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.fi.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "e043e576e09f1827e3eb",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "tase"
+     ],
+     "transfer_only": [
+      "tase->indices (TASE)"
+     ],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Two per cent inflation target",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/pricestab/html/index.fr.html",
+  "published": "2026-09-19T15:05:17+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.fr.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "67e4dfe90111e3d4ec7b",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Two per cent inflation target",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/pricestab/html/index.ga.html",
+  "published": "2026-09-19T15:05:18+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "ga",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.ga.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "127526e8d750629a02be",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Two per cent inflation target",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/pricestab/html/index.hr.html",
+  "published": "2026-09-19T15:05:23+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "hr",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.hr.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "1ac7d949288940981ce0",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Two per cent inflation target",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/pricestab/html/index.hu.html",
+  "published": "2026-09-19T15:05:23+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "hu",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.hu.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "7ffe8ab0c8acbf5408ac",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Two per cent inflation target",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/pricestab/html/index.it.html",
+  "published": "2026-09-19T15:05:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "it",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.it.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "e64a6c4c3305ae05aa70",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Two per cent inflation target",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/pricestab/html/index.lt.html",
+  "published": "2026-09-19T15:05:27+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "lt",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.lt.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "adc9752390a1260ce751",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Two per cent inflation target",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/pricestab/html/index.lv.html",
+  "published": "2026-09-19T15:05:30+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "lv",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.lv.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "af3e1517a0978339af24",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Two per cent inflation target",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/pricestab/html/index.mt.html",
+  "published": "2026-09-19T15:05:32+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "mt",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.mt.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "6f38d5f0630f8fc0408f",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Two per cent inflation target",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/pricestab/html/index.nl.html",
+  "published": "2026-09-19T15:05:33+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "nl",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.nl.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5b654fc0e178debc70aa",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Two per cent inflation target",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/pricestab/html/index.pl.html",
+  "published": "2026-09-19T15:05:36+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "pl",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.pl.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "807f807fd7321321117b",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Two per cent inflation target",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/pricestab/html/index.pt.html",
+  "published": "2026-09-19T15:05:37+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "inventory",
+   "momentum",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "pt",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.pt.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "e2ca7da3bd7507c6aadd",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Two per cent inflation target",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/pricestab/html/index.ro.html",
+  "published": "2026-09-19T15:05:40+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "ro",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.ro.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "4db4f08782d8d41e26e7",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Two per cent inflation target",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/pricestab/html/index.sk.html",
+  "published": "2026-09-19T15:05:42+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "sk",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.sk.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "13f333f5e77d57b38b8b",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Two per cent inflation target",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/pricestab/html/index.sl.html",
+  "published": "2026-09-19T15:05:48+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "sl",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.sl.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "fa8e0a131ed5f09284c4",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Australian Dollar vs Swiss Franc (AUDCHF) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/AUDCHF/",
+  "published": "2026-09-19T15:05:49+00:00",
+  "symbols": [
+   "AUDCHF"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "4598108767840de91ad0",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Australian Dollar vs Japanese Yen (AUDJPY) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/AUDJPY/",
+  "published": "2026-09-19T15:05:50+00:00",
+  "symbols": [
+   "AUDJPY",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "e15a96a0cd4acfc12ddd",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "001 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:05 - 23:55 Term currency JPY 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 9.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY",
+      "AUDJPY"
+     ],
+     "mentioned": [
+      "yen",
+      "audjpy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "fb3bd21d7eea"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Australian Dollar vs New Zealand Dollar (AUDNZD) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/AUDNZD/",
+  "published": "2026-09-19T15:05:53+00:00",
+  "symbols": [
+   "AUDNZD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "6b7697eebd9a892d4429",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Australian Dollar vs US Dollar (AUDUSD) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/AUDUSD/",
+  "published": "2026-09-19T15:05:55+00:00",
+  "symbols": [
+   "AUDUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "b81e137d3dfcfe4fdb35",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "00001 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:05 - 23:55 Term currency USD 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 12.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "AUDUSD"
+     ],
+     "mentioned": [
+      "audusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "2a2e47313267"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Canadian Dollar vs Swiss Franc (CADCHF) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/CADCHF/",
+  "published": "2026-09-19T15:05:56+00:00",
+  "symbols": [
+   "CADCHF"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "9806a757462aa5e7b42d",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Canadian Dollar vs Japanese Yen (CADJPY) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/CADJPY/",
+  "published": "2026-09-19T15:05:59+00:00",
+  "symbols": [
+   "CADJPY",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "7f12e6e31bb001560830",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "001 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:05 - 23:55 Term currency JPY 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 17.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "yen"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8b57badf1110"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Swiss Franc vs Japanese Yen (CHFJPY) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/CHFJPY/",
+  "published": "2026-09-19T15:06:01+00:00",
+  "symbols": [
+   "CHFJPY",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "4195d87e3196c7a34d68",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "001 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:05 - 23:55 Term currency JPY 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 12.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "yen"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "d7892a45c056"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs Australian Dollar (GBPAUD) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/GBPAUD/",
+  "published": "2026-09-19T15:06:02+00:00",
+  "symbols": [
+   "GBPAUD",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "9fd15f72dc5a5e3d11a9",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "00001 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:05 - 23:55 Term currency AUD 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 11.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "pound"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "79854908231e"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs Canadian Dollar (GBPCAD) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/GBPCAD/",
+  "published": "2026-09-19T15:06:05+00:00",
+  "symbols": [
+   "GBPCAD",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "1b1dcc5db540afe149c6",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "00001 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:05 - 23:55 Term currency CAD 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 13.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "pound"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "dac1ae27fdc2"
+   }
+  ],
+  "n_claims": 1
+ }
+]

@@ -1,0 +1,1750 @@
+{
+ "source": "fund_playbook",
+ "generated_at": "2026-09-21T07:57:58.995885+00:00",
+ "discoveries": [
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "Renaissance",
+   "evidence_grade": "A",
+   "title": "Renaissance [A]: stock book approximately balanced long/short, buying recent losers and selling recent winn",
+   "text": "stock book approximately balanced long/short, buying recent losers and selling recent winners (Simons, 2008 testimony)",
+   "url": "",
+   "mechanism": "market-neutral residual reversion in single names: the residual to the index is the idiosyncratic return, and its mean reversion is the stated mechanism",
+   "found_at": "2026-09-21T07:57:58.572031+00:00",
+   "symbol": "Apple",
+   "symbols": [
+    "Apple"
+   ],
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "US500"
+    ],
+    "lookback": 120,
+    "beta_win": 120,
+    "entry_z": 2.0,
+    "ttl_bars": 48,
+    "side_mode": "revert"
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572031+00:00",
+   "ingested_time": "2026-09-21T07:57:58.988119+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "bf18f364a8a07bbfcdc003fb"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "Renaissance",
+   "evidence_grade": "A",
+   "title": "Renaissance [A]: stock book approximately balanced long/short, buying recent losers and selling recent winn",
+   "text": "stock book approximately balanced long/short, buying recent losers and selling recent winners (Simons, 2008 testimony)",
+   "url": "",
+   "mechanism": "market-neutral residual reversion in single names: the residual to the index is the idiosyncratic return, and its mean reversion is the stated mechanism",
+   "found_at": "2026-09-21T07:57:58.572031+00:00",
+   "symbol": "Microsoft",
+   "symbols": [
+    "Microsoft"
+   ],
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "US500"
+    ],
+    "lookback": 120,
+    "beta_win": 120,
+    "entry_z": 2.0,
+    "ttl_bars": 48,
+    "side_mode": "revert"
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572031+00:00",
+   "ingested_time": "2026-09-21T07:57:58.993634+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "11d50974d0a4f443ea5b7986"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "Renaissance",
+   "evidence_grade": "A",
+   "title": "Renaissance [A]: stock book approximately balanced long/short, buying recent losers and selling recent winn",
+   "text": "stock book approximately balanced long/short, buying recent losers and selling recent winners (Simons, 2008 testimony)",
+   "url": "",
+   "mechanism": "market-neutral residual reversion in single names: the residual to the index is the idiosyncratic return, and its mean reversion is the stated mechanism",
+   "found_at": "2026-09-21T07:57:58.572031+00:00",
+   "symbol": "Amazon",
+   "symbols": [
+    "Amazon"
+   ],
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "US500"
+    ],
+    "lookback": 120,
+    "beta_win": 120,
+    "entry_z": 2.0,
+    "ttl_bars": 48,
+    "side_mode": "revert"
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572031+00:00",
+   "ingested_time": "2026-09-21T07:57:58.993786+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "5b2ae823754cca514a727e78"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "Renaissance",
+   "evidence_grade": "A",
+   "title": "Renaissance [A]: stock book approximately balanced long/short, buying recent losers and selling recent winn",
+   "text": "stock book approximately balanced long/short, buying recent losers and selling recent winners (Simons, 2008 testimony)",
+   "url": "",
+   "mechanism": "market-neutral residual reversion in single names: the residual to the index is the idiosyncratic return, and its mean reversion is the stated mechanism",
+   "found_at": "2026-09-21T07:57:58.572031+00:00",
+   "symbol": "Nvidia",
+   "symbols": [
+    "Nvidia"
+   ],
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "US500"
+    ],
+    "lookback": 120,
+    "beta_win": 120,
+    "entry_z": 2.0,
+    "ttl_bars": 48,
+    "side_mode": "revert"
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572031+00:00",
+   "ingested_time": "2026-09-21T07:57:58.993832+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "965f03198e1b086c7d14849f"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "Renaissance",
+   "evidence_grade": "A",
+   "title": "Renaissance [A]: stock book approximately balanced long/short, buying recent losers and selling recent winn",
+   "text": "stock book approximately balanced long/short, buying recent losers and selling recent winners (Simons, 2008 testimony)",
+   "url": "",
+   "mechanism": "market-neutral residual reversion in single names: the residual to the index is the idiosyncratic return, and its mean reversion is the stated mechanism",
+   "found_at": "2026-09-21T07:57:58.572031+00:00",
+   "symbol": "Alphabet-A",
+   "symbols": [
+    "Alphabet-A"
+   ],
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "US500"
+    ],
+    "lookback": 120,
+    "beta_win": 120,
+    "entry_z": 2.0,
+    "ttl_bars": 48,
+    "side_mode": "revert"
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572031+00:00",
+   "ingested_time": "2026-09-21T07:57:58.993873+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "da4bc7078aca417af884c04f"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "Renaissance",
+   "evidence_grade": "A",
+   "title": "Renaissance [A]: stock book approximately balanced long/short, buying recent losers and selling recent winn",
+   "text": "stock book approximately balanced long/short, buying recent losers and selling recent winners (Simons, 2008 testimony)",
+   "url": "",
+   "mechanism": "market-neutral residual reversion in single names: the residual to the index is the idiosyncratic return, and its mean reversion is the stated mechanism",
+   "found_at": "2026-09-21T07:57:58.572031+00:00",
+   "symbol": "Meta",
+   "symbols": [
+    "Meta"
+   ],
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "US500"
+    ],
+    "lookback": 120,
+    "beta_win": 120,
+    "entry_z": 2.0,
+    "ttl_bars": 48,
+    "side_mode": "revert"
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572031+00:00",
+   "ingested_time": "2026-09-21T07:57:58.993919+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "bafbec1ee4abbcd0163cdecf"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "Renaissance",
+   "evidence_grade": "A",
+   "title": "Renaissance [A]: stock book approximately balanced long/short, buying recent losers and selling recent winn",
+   "text": "stock book approximately balanced long/short, buying recent losers and selling recent winners (Simons, 2008 testimony)",
+   "url": "",
+   "mechanism": "market-neutral residual reversion in single names: the residual to the index is the idiosyncratic return, and its mean reversion is the stated mechanism",
+   "found_at": "2026-09-21T07:57:58.572031+00:00",
+   "symbol": "Tesla",
+   "symbols": [
+    "Tesla"
+   ],
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "US500"
+    ],
+    "lookback": 120,
+    "beta_win": 120,
+    "entry_z": 2.0,
+    "ttl_bars": 48,
+    "side_mode": "revert"
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572031+00:00",
+   "ingested_time": "2026-09-21T07:57:58.993963+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "1f695685ffdbb5b873570b49"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "Renaissance",
+   "evidence_grade": "A",
+   "title": "Renaissance [A]: stock book approximately balanced long/short, buying recent losers and selling recent winn",
+   "text": "stock book approximately balanced long/short, buying recent losers and selling recent winners (Simons, 2008 testimony)",
+   "url": "",
+   "mechanism": "market-neutral residual reversion in single names: the residual to the index is the idiosyncratic return, and its mean reversion is the stated mechanism",
+   "found_at": "2026-09-21T07:57:58.572031+00:00",
+   "symbol": "JPMorganChase",
+   "symbols": [
+    "JPMorganChase"
+   ],
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "US500"
+    ],
+    "lookback": 120,
+    "beta_win": 120,
+    "entry_z": 2.0,
+    "ttl_bars": 48,
+    "side_mode": "revert"
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572031+00:00",
+   "ingested_time": "2026-09-21T07:57:58.993993+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "a7eee818e303c4a0aed85338"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "Renaissance",
+   "evidence_grade": "A",
+   "title": "Renaissance [A]: stock book approximately balanced long/short, buying recent losers and selling recent winn",
+   "text": "stock book approximately balanced long/short, buying recent losers and selling recent winners (Simons, 2008 testimony)",
+   "url": "",
+   "mechanism": "market-neutral residual reversion in single names: the residual to the index is the idiosyncratic return, and its mean reversion is the stated mechanism",
+   "found_at": "2026-09-21T07:57:58.572031+00:00",
+   "symbol": "ExxonMobil",
+   "symbols": [
+    "ExxonMobil"
+   ],
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "US500"
+    ],
+    "lookback": 120,
+    "beta_win": 120,
+    "entry_z": 2.0,
+    "ttl_bars": 48,
+    "side_mode": "revert"
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572031+00:00",
+   "ingested_time": "2026-09-21T07:57:58.994023+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "7e60a7ddc28df6ab3b17e044"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "Renaissance",
+   "evidence_grade": "A",
+   "title": "Renaissance [A]: stock book approximately balanced long/short, buying recent losers and selling recent winn",
+   "text": "stock book approximately balanced long/short, buying recent losers and selling recent winners (Simons, 2008 testimony)",
+   "url": "",
+   "mechanism": "market-neutral residual reversion in single names: the residual to the index is the idiosyncratic return, and its mean reversion is the stated mechanism",
+   "found_at": "2026-09-21T07:57:58.572031+00:00",
+   "symbol": "Berkshire",
+   "symbols": [
+    "Berkshire"
+   ],
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "US500"
+    ],
+    "lookback": 120,
+    "beta_win": 120,
+    "entry_z": 2.0,
+    "ttl_bars": 48,
+    "side_mode": "revert"
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572031+00:00",
+   "ingested_time": "2026-09-21T07:57:58.994047+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "b131f7e9b43f4b724eb4727e"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "Bridgewater",
+   "evidence_grade": "A",
+   "title": "Bridgewater [A]: cross-country divergence in policy and conditions creates relative-value FX/rates trades",
+   "text": "cross-country divergence in policy and conditions creates relative-value FX/rates trades",
+   "url": "",
+   "mechanism": "strip the dollar; the residual of a cross is the two countries' relative state",
+   "found_at": "2026-09-21T07:57:58.572117+00:00",
+   "symbol": "EURGBP",
+   "symbols": [
+    "EURGBP"
+   ],
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "USDX"
+    ],
+    "lookback": 240,
+    "beta_win": 240,
+    "entry_z": 2.0,
+    "ttl_bars": 72,
+    "side_mode": "revert"
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572117+00:00",
+   "ingested_time": "2026-09-21T07:57:58.994159+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "abc10eb33dd55839d20621fc"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "Bridgewater",
+   "evidence_grade": "A",
+   "title": "Bridgewater [A]: cross-country divergence in policy and conditions creates relative-value FX/rates trades",
+   "text": "cross-country divergence in policy and conditions creates relative-value FX/rates trades",
+   "url": "",
+   "mechanism": "strip the dollar; the residual of a cross is the two countries' relative state",
+   "found_at": "2026-09-21T07:57:58.572117+00:00",
+   "symbol": "EURJPY",
+   "symbols": [
+    "EURJPY"
+   ],
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "USDX"
+    ],
+    "lookback": 240,
+    "beta_win": 240,
+    "entry_z": 2.0,
+    "ttl_bars": 72,
+    "side_mode": "revert"
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572117+00:00",
+   "ingested_time": "2026-09-21T07:57:58.994209+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "c26a6e86593d497d84fffc0b"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "Bridgewater",
+   "evidence_grade": "A",
+   "title": "Bridgewater [A]: cross-country divergence in policy and conditions creates relative-value FX/rates trades",
+   "text": "cross-country divergence in policy and conditions creates relative-value FX/rates trades",
+   "url": "",
+   "mechanism": "strip the dollar; the residual of a cross is the two countries' relative state",
+   "found_at": "2026-09-21T07:57:58.572117+00:00",
+   "symbol": "GBPJPY",
+   "symbols": [
+    "GBPJPY"
+   ],
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "USDX"
+    ],
+    "lookback": 240,
+    "beta_win": 240,
+    "entry_z": 2.0,
+    "ttl_bars": 72,
+    "side_mode": "revert"
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572117+00:00",
+   "ingested_time": "2026-09-21T07:57:58.994239+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "2daa377296b9cbfa676dc09a"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "Bridgewater",
+   "evidence_grade": "A",
+   "title": "Bridgewater [A]: cross-country divergence in policy and conditions creates relative-value FX/rates trades",
+   "text": "cross-country divergence in policy and conditions creates relative-value FX/rates trades",
+   "url": "",
+   "mechanism": "strip the dollar; the residual of a cross is the two countries' relative state",
+   "found_at": "2026-09-21T07:57:58.572117+00:00",
+   "symbol": "AUDNZD",
+   "symbols": [
+    "AUDNZD"
+   ],
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "USDX"
+    ],
+    "lookback": 240,
+    "beta_win": 240,
+    "entry_z": 2.0,
+    "ttl_bars": 72,
+    "side_mode": "revert"
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572117+00:00",
+   "ingested_time": "2026-09-21T07:57:58.994269+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "2402f3bb655ae6bc31fb2bb9"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "Bridgewater",
+   "evidence_grade": "A",
+   "title": "Bridgewater [A]: cross-country divergence in policy and conditions creates relative-value FX/rates trades",
+   "text": "cross-country divergence in policy and conditions creates relative-value FX/rates trades",
+   "url": "",
+   "mechanism": "strip the dollar; the residual of a cross is the two countries' relative state",
+   "found_at": "2026-09-21T07:57:58.572117+00:00",
+   "symbol": "EURCHF",
+   "symbols": [
+    "EURCHF"
+   ],
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "USDX"
+    ],
+    "lookback": 240,
+    "beta_win": 240,
+    "entry_z": 2.0,
+    "ttl_bars": 72,
+    "side_mode": "revert"
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572117+00:00",
+   "ingested_time": "2026-09-21T07:57:58.994290+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "d68618be8cd93a8a4a25db33"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "Bridgewater",
+   "evidence_grade": "A",
+   "title": "Bridgewater [A]: cross-country divergence in policy and conditions creates relative-value FX/rates trades",
+   "text": "cross-country divergence in policy and conditions creates relative-value FX/rates trades",
+   "url": "",
+   "mechanism": "strip the dollar; the residual of a cross is the two countries' relative state",
+   "found_at": "2026-09-21T07:57:58.572117+00:00",
+   "symbol": "AUDCAD",
+   "symbols": [
+    "AUDCAD"
+   ],
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "USDX"
+    ],
+    "lookback": 240,
+    "beta_win": 240,
+    "entry_z": 2.0,
+    "ttl_bars": 72,
+    "side_mode": "revert"
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572117+00:00",
+   "ingested_time": "2026-09-21T07:57:58.994315+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "77bf8ba9a86ef0470b577aad"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "Bridgewater",
+   "evidence_grade": "A",
+   "title": "Bridgewater [A]: cross-country divergence in policy and conditions creates relative-value FX/rates trades",
+   "text": "cross-country divergence in policy and conditions creates relative-value FX/rates trades",
+   "url": "",
+   "mechanism": "strip the dollar; the residual of a cross is the two countries' relative state",
+   "found_at": "2026-09-21T07:57:58.572117+00:00",
+   "symbol": "NZDCAD",
+   "symbols": [
+    "NZDCAD"
+   ],
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "USDX"
+    ],
+    "lookback": 240,
+    "beta_win": 240,
+    "entry_z": 2.0,
+    "ttl_bars": 72,
+    "side_mode": "revert"
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572117+00:00",
+   "ingested_time": "2026-09-21T07:57:58.994374+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "94fba7965635c08c8492b0db"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "Bridgewater",
+   "evidence_grade": "A",
+   "title": "Bridgewater [A]: cross-country divergence in policy and conditions creates relative-value FX/rates trades",
+   "text": "cross-country divergence in policy and conditions creates relative-value FX/rates trades",
+   "url": "",
+   "mechanism": "strip the dollar; the residual of a cross is the two countries' relative state",
+   "found_at": "2026-09-21T07:57:58.572117+00:00",
+   "symbol": "EURAUD",
+   "symbols": [
+    "EURAUD"
+   ],
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "USDX"
+    ],
+    "lookback": 240,
+    "beta_win": 240,
+    "entry_z": 2.0,
+    "ttl_bars": 72,
+    "side_mode": "revert"
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572117+00:00",
+   "ingested_time": "2026-09-21T07:57:58.994401+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "f7d9fde1ebe6fe57e06cad99"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "Bridgewater",
+   "evidence_grade": "A",
+   "title": "Bridgewater [A]: cross-country divergence in policy and conditions creates relative-value FX/rates trades",
+   "text": "cross-country divergence in policy and conditions creates relative-value FX/rates trades",
+   "url": "",
+   "mechanism": "strip the dollar; the residual of a cross is the two countries' relative state",
+   "found_at": "2026-09-21T07:57:58.572117+00:00",
+   "symbol": "GBPAUD",
+   "symbols": [
+    "GBPAUD"
+   ],
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "USDX"
+    ],
+    "lookback": 240,
+    "beta_win": 240,
+    "entry_z": 2.0,
+    "ttl_bars": 72,
+    "side_mode": "revert"
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572117+00:00",
+   "ingested_time": "2026-09-21T07:57:58.994442+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "6e9fcf106d577b09ed491400"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "Bridgewater",
+   "evidence_grade": "A",
+   "title": "Bridgewater [A]: real-yield / gold relationship; asset-yield vs cash-rate equilibrium gap",
+   "text": "real-yield / gold relationship; asset-yield vs cash-rate equilibrium gap",
+   "url": "",
+   "mechanism": "gold as a zero-coupon real asset priced off the real rate it forgoes",
+   "found_at": "2026-09-21T07:57:58.572143+00:00",
+   "symbol": "XAUUSD",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "USDX",
+     "UST10Y"
+    ],
+    "lookback": 240,
+    "beta_win": 240,
+    "entry_z": 2.0,
+    "ttl_bars": 72,
+    "side_mode": "revert"
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572143+00:00",
+   "ingested_time": "2026-09-21T07:57:58.994479+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "5a1b30c4be5ae51831df7d7b"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "Bridgewater",
+   "evidence_grade": "A",
+   "title": "Bridgewater [A]: real-yield / gold relationship; asset-yield vs cash-rate equilibrium gap",
+   "text": "real-yield / gold relationship; asset-yield vs cash-rate equilibrium gap",
+   "url": "",
+   "mechanism": "gold as a zero-coupon real asset priced off the real rate it forgoes",
+   "found_at": "2026-09-21T07:57:58.572143+00:00",
+   "symbol": "XAGUSD",
+   "symbols": [
+    "XAGUSD"
+   ],
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "USDX",
+     "UST10Y"
+    ],
+    "lookback": 240,
+    "beta_win": 240,
+    "entry_z": 2.0,
+    "ttl_bars": 72,
+    "side_mode": "revert"
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572143+00:00",
+   "ingested_time": "2026-09-21T07:57:58.994505+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "65d7b2680db94139f1898903"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "Bridgewater",
+   "evidence_grade": "B",
+   "title": "Bridgewater [B]: policy -> liquidity/credit -> spending -> inflation/growth -> rates -> FX transmission cha",
+   "text": "policy -> liquidity/credit -> spending -> inflation/growth -> rates -> FX transmission chain",
+   "url": "",
+   "mechanism": "condition FX direction on the macro impulse's percentile rank, lagged for publication",
+   "found_at": "2026-09-21T07:57:58.572161+00:00",
+   "symbol": "EURUSD",
+   "symbols": [
+    "EURUSD"
+   ],
+   "family": "macro_conditional",
+   "params": {
+    "input_source": "fred:macro",
+    "transform": "trailing_pct_rank",
+    "publication_lag_d": 45
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572161+00:00",
+   "ingested_time": "2026-09-21T07:57:58.994545+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "0d9c0e25a286f410d26a87ff"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "Bridgewater",
+   "evidence_grade": "B",
+   "title": "Bridgewater [B]: policy -> liquidity/credit -> spending -> inflation/growth -> rates -> FX transmission cha",
+   "text": "policy -> liquidity/credit -> spending -> inflation/growth -> rates -> FX transmission chain",
+   "url": "",
+   "mechanism": "condition FX direction on the macro impulse's percentile rank, lagged for publication",
+   "found_at": "2026-09-21T07:57:58.572161+00:00",
+   "symbol": "USDJPY",
+   "symbols": [
+    "USDJPY"
+   ],
+   "family": "macro_conditional",
+   "params": {
+    "input_source": "fred:macro",
+    "transform": "trailing_pct_rank",
+    "publication_lag_d": 45
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572161+00:00",
+   "ingested_time": "2026-09-21T07:57:58.994583+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "a51b0a890e0dfff281201dee"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "Bridgewater",
+   "evidence_grade": "B",
+   "title": "Bridgewater [B]: policy -> liquidity/credit -> spending -> inflation/growth -> rates -> FX transmission cha",
+   "text": "policy -> liquidity/credit -> spending -> inflation/growth -> rates -> FX transmission chain",
+   "url": "",
+   "mechanism": "condition FX direction on the macro impulse's percentile rank, lagged for publication",
+   "found_at": "2026-09-21T07:57:58.572161+00:00",
+   "symbol": "GBPUSD",
+   "symbols": [
+    "GBPUSD"
+   ],
+   "family": "macro_conditional",
+   "params": {
+    "input_source": "fred:macro",
+    "transform": "trailing_pct_rank",
+    "publication_lag_d": 45
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572161+00:00",
+   "ingested_time": "2026-09-21T07:57:58.994609+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "cd1dc9d1ac9d5be7a2b8570e"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "Bridgewater",
+   "evidence_grade": "B",
+   "title": "Bridgewater [B]: policy -> liquidity/credit -> spending -> inflation/growth -> rates -> FX transmission cha",
+   "text": "policy -> liquidity/credit -> spending -> inflation/growth -> rates -> FX transmission chain",
+   "url": "",
+   "mechanism": "condition FX direction on the macro impulse's percentile rank, lagged for publication",
+   "found_at": "2026-09-21T07:57:58.572161+00:00",
+   "symbol": "AUDUSD",
+   "symbols": [
+    "AUDUSD"
+   ],
+   "family": "macro_conditional",
+   "params": {
+    "input_source": "fred:macro",
+    "transform": "trailing_pct_rank",
+    "publication_lag_d": 45
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572161+00:00",
+   "ingested_time": "2026-09-21T07:57:58.994662+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "3a50c80c60858dc61e14500c"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "AQR",
+   "evidence_grade": "A",
+   "title": "AQR [A]: time-series momentum across asset classes (Moskowitz-Ooi-Pedersen)",
+   "text": "time-series momentum across asset classes (Moskowitz-Ooi-Pedersen)",
+   "url": "",
+   "mechanism": "sign of trailing return, vol-scaled, ensemble of speeds",
+   "found_at": "2026-09-21T07:57:58.572188+00:00",
+   "symbol": "XAUUSD",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "family": "multi_speed_trend",
+   "params": {
+    "speeds": [
+     10,
+     21,
+     63,
+     126,
+     252
+    ],
+    "hold_days": 5,
+    "min_agreement": 0.6
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572188+00:00",
+   "ingested_time": "2026-09-21T07:57:58.994699+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "9b807f85c84999e2dfeecfb1"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "AQR",
+   "evidence_grade": "A",
+   "title": "AQR [A]: time-series momentum across asset classes (Moskowitz-Ooi-Pedersen)",
+   "text": "time-series momentum across asset classes (Moskowitz-Ooi-Pedersen)",
+   "url": "",
+   "mechanism": "sign of trailing return, vol-scaled, ensemble of speeds",
+   "found_at": "2026-09-21T07:57:58.572188+00:00",
+   "symbol": "EURUSD",
+   "symbols": [
+    "EURUSD"
+   ],
+   "family": "multi_speed_trend",
+   "params": {
+    "speeds": [
+     10,
+     21,
+     63,
+     126,
+     252
+    ],
+    "hold_days": 5,
+    "min_agreement": 0.6
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572188+00:00",
+   "ingested_time": "2026-09-21T07:57:58.994754+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "857b760c38e96004fb4a3f57"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "AQR",
+   "evidence_grade": "A",
+   "title": "AQR [A]: time-series momentum across asset classes (Moskowitz-Ooi-Pedersen)",
+   "text": "time-series momentum across asset classes (Moskowitz-Ooi-Pedersen)",
+   "url": "",
+   "mechanism": "sign of trailing return, vol-scaled, ensemble of speeds",
+   "found_at": "2026-09-21T07:57:58.572188+00:00",
+   "symbol": "USDJPY",
+   "symbols": [
+    "USDJPY"
+   ],
+   "family": "multi_speed_trend",
+   "params": {
+    "speeds": [
+     10,
+     21,
+     63,
+     126,
+     252
+    ],
+    "hold_days": 5,
+    "min_agreement": 0.6
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572188+00:00",
+   "ingested_time": "2026-09-21T07:57:58.994795+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "7d6181493e33ce433c615335"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "AQR",
+   "evidence_grade": "A",
+   "title": "AQR [A]: time-series momentum across asset classes (Moskowitz-Ooi-Pedersen)",
+   "text": "time-series momentum across asset classes (Moskowitz-Ooi-Pedersen)",
+   "url": "",
+   "mechanism": "sign of trailing return, vol-scaled, ensemble of speeds",
+   "found_at": "2026-09-21T07:57:58.572188+00:00",
+   "symbol": "GBPUSD",
+   "symbols": [
+    "GBPUSD"
+   ],
+   "family": "multi_speed_trend",
+   "params": {
+    "speeds": [
+     10,
+     21,
+     63,
+     126,
+     252
+    ],
+    "hold_days": 5,
+    "min_agreement": 0.6
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572188+00:00",
+   "ingested_time": "2026-09-21T07:57:58.994828+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "497aaf796ef6d37c6463f276"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "AQR",
+   "evidence_grade": "A",
+   "title": "AQR [A]: time-series momentum across asset classes (Moskowitz-Ooi-Pedersen)",
+   "text": "time-series momentum across asset classes (Moskowitz-Ooi-Pedersen)",
+   "url": "",
+   "mechanism": "sign of trailing return, vol-scaled, ensemble of speeds",
+   "found_at": "2026-09-21T07:57:58.572188+00:00",
+   "symbol": "US500",
+   "symbols": [
+    "US500"
+   ],
+   "family": "multi_speed_trend",
+   "params": {
+    "speeds": [
+     10,
+     21,
+     63,
+     126,
+     252
+    ],
+    "hold_days": 5,
+    "min_agreement": 0.6
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572188+00:00",
+   "ingested_time": "2026-09-21T07:57:58.994859+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "5d42e86556e5d46398779499"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "AQR",
+   "evidence_grade": "A",
+   "title": "AQR [A]: time-series momentum across asset classes (Moskowitz-Ooi-Pedersen)",
+   "text": "time-series momentum across asset classes (Moskowitz-Ooi-Pedersen)",
+   "url": "",
+   "mechanism": "sign of trailing return, vol-scaled, ensemble of speeds",
+   "found_at": "2026-09-21T07:57:58.572188+00:00",
+   "symbol": "NAS100",
+   "symbols": [
+    "NAS100"
+   ],
+   "family": "multi_speed_trend",
+   "params": {
+    "speeds": [
+     10,
+     21,
+     63,
+     126,
+     252
+    ],
+    "hold_days": 5,
+    "min_agreement": 0.6
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572188+00:00",
+   "ingested_time": "2026-09-21T07:57:58.994881+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "0593cc7d15cef8c17d916ff8"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "AQR",
+   "evidence_grade": "A",
+   "title": "AQR [A]: time-series momentum across asset classes (Moskowitz-Ooi-Pedersen)",
+   "text": "time-series momentum across asset classes (Moskowitz-Ooi-Pedersen)",
+   "url": "",
+   "mechanism": "sign of trailing return, vol-scaled, ensemble of speeds",
+   "found_at": "2026-09-21T07:57:58.572188+00:00",
+   "symbol": "XBRUSD",
+   "symbols": [
+    "XBRUSD"
+   ],
+   "family": "multi_speed_trend",
+   "params": {
+    "speeds": [
+     10,
+     21,
+     63,
+     126,
+     252
+    ],
+    "hold_days": 5,
+    "min_agreement": 0.6
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572188+00:00",
+   "ingested_time": "2026-09-21T07:57:58.994909+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "030935fc53c2974050f3fa40"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "AQR",
+   "evidence_grade": "A",
+   "title": "AQR [A]: time-series momentum across asset classes (Moskowitz-Ooi-Pedersen)",
+   "text": "time-series momentum across asset classes (Moskowitz-Ooi-Pedersen)",
+   "url": "",
+   "mechanism": "sign of trailing return, vol-scaled, ensemble of speeds",
+   "found_at": "2026-09-21T07:57:58.572188+00:00",
+   "symbol": "AUDUSD",
+   "symbols": [
+    "AUDUSD"
+   ],
+   "family": "multi_speed_trend",
+   "params": {
+    "speeds": [
+     10,
+     21,
+     63,
+     126,
+     252
+    ],
+    "hold_days": 5,
+    "min_agreement": 0.6
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572188+00:00",
+   "ingested_time": "2026-09-21T07:57:58.994951+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "e6ccd786e5e4f99b8aa16966"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "AQR",
+   "evidence_grade": "A",
+   "title": "AQR [A]: carry across asset classes",
+   "text": "carry across asset classes",
+   "url": "",
+   "mechanism": "broker swap differential is a directly measured carry premium",
+   "found_at": "2026-09-21T07:57:58.572207+00:00",
+   "symbol": "AUDJPY",
+   "symbols": [
+    "AUDJPY"
+   ],
+   "family": "carry",
+   "params": {
+    "input_symbol": "AUDJPY"
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572207+00:00",
+   "ingested_time": "2026-09-21T07:57:58.994976+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "0a5f8e59bbcaa1ab475049db"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "AQR",
+   "evidence_grade": "A",
+   "title": "AQR [A]: carry across asset classes",
+   "text": "carry across asset classes",
+   "url": "",
+   "mechanism": "broker swap differential is a directly measured carry premium",
+   "found_at": "2026-09-21T07:57:58.572207+00:00",
+   "symbol": "NZDJPY",
+   "symbols": [
+    "NZDJPY"
+   ],
+   "family": "carry",
+   "params": {
+    "input_symbol": "NZDJPY"
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572207+00:00",
+   "ingested_time": "2026-09-21T07:57:58.994997+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "c957ba1f4f575856bfe0d1e5"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "AQR",
+   "evidence_grade": "A",
+   "title": "AQR [A]: carry across asset classes",
+   "text": "carry across asset classes",
+   "url": "",
+   "mechanism": "broker swap differential is a directly measured carry premium",
+   "found_at": "2026-09-21T07:57:58.572207+00:00",
+   "symbol": "USDTRY",
+   "symbols": [
+    "USDTRY"
+   ],
+   "family": "carry",
+   "params": {
+    "input_symbol": "USDTRY"
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572207+00:00",
+   "ingested_time": "2026-09-21T07:57:58.995016+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "466622d099bc6ca8ef14cffd"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "AQR",
+   "evidence_grade": "A",
+   "title": "AQR [A]: carry across asset classes",
+   "text": "carry across asset classes",
+   "url": "",
+   "mechanism": "broker swap differential is a directly measured carry premium",
+   "found_at": "2026-09-21T07:57:58.572207+00:00",
+   "symbol": "USDZAR",
+   "symbols": [
+    "USDZAR"
+   ],
+   "family": "carry",
+   "params": {
+    "input_symbol": "USDZAR"
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572207+00:00",
+   "ingested_time": "2026-09-21T07:57:58.995038+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "5595dfe34b080f6a43362d8f"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "AQR",
+   "evidence_grade": "A",
+   "title": "AQR [A]: carry across asset classes",
+   "text": "carry across asset classes",
+   "url": "",
+   "mechanism": "broker swap differential is a directly measured carry premium",
+   "found_at": "2026-09-21T07:57:58.572207+00:00",
+   "symbol": "USDMXN",
+   "symbols": [
+    "USDMXN"
+   ],
+   "family": "carry",
+   "params": {
+    "input_symbol": "USDMXN"
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572207+00:00",
+   "ingested_time": "2026-09-21T07:57:58.995056+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "6e724ac16bcbd01f59fba8fe"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "AQR",
+   "evidence_grade": "A",
+   "title": "AQR [A]: carry across asset classes",
+   "text": "carry across asset classes",
+   "url": "",
+   "mechanism": "broker swap differential is a directly measured carry premium",
+   "found_at": "2026-09-21T07:57:58.572207+00:00",
+   "symbol": "EURTRY",
+   "symbols": [
+    "EURTRY"
+   ],
+   "family": "carry",
+   "params": {
+    "input_symbol": "EURTRY"
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572207+00:00",
+   "ingested_time": "2026-09-21T07:57:58.995099+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "b8c821b863e5a8bed7154d2a"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "AQR",
+   "evidence_grade": "A",
+   "title": "AQR [A]: carry across asset classes",
+   "text": "carry across asset classes",
+   "url": "",
+   "mechanism": "broker swap differential is a directly measured carry premium",
+   "found_at": "2026-09-21T07:57:58.572207+00:00",
+   "symbol": "GBPJPY",
+   "symbols": [
+    "GBPJPY"
+   ],
+   "family": "carry",
+   "params": {
+    "input_symbol": "GBPJPY"
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572207+00:00",
+   "ingested_time": "2026-09-21T07:57:58.995121+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "6eefff37f713a8605525f638"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "AQR",
+   "evidence_grade": "A",
+   "title": "AQR [A]: betting-against-beta / defensive: low-beta names outperform per unit of risk",
+   "text": "betting-against-beta / defensive: low-beta names outperform per unit of risk",
+   "url": "",
+   "mechanism": "residual continuation in low-beta names: the defensive premium as a residual drift",
+   "found_at": "2026-09-21T07:57:58.572231+00:00",
+   "symbol": "JohnsonJohnson",
+   "symbols": [
+    "JohnsonJohnson"
+   ],
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "US500"
+    ],
+    "lookback": 240,
+    "beta_win": 240,
+    "entry_z": 1.5,
+    "ttl_bars": 120,
+    "side_mode": "continue"
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572231+00:00",
+   "ingested_time": "2026-09-21T07:57:58.995147+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "f6031e4896c7b72832da22cb"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "AQR",
+   "evidence_grade": "A",
+   "title": "AQR [A]: betting-against-beta / defensive: low-beta names outperform per unit of risk",
+   "text": "betting-against-beta / defensive: low-beta names outperform per unit of risk",
+   "url": "",
+   "mechanism": "residual continuation in low-beta names: the defensive premium as a residual drift",
+   "found_at": "2026-09-21T07:57:58.572231+00:00",
+   "symbol": "ProcterGamble",
+   "symbols": [
+    "ProcterGamble"
+   ],
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "US500"
+    ],
+    "lookback": 240,
+    "beta_win": 240,
+    "entry_z": 1.5,
+    "ttl_bars": 120,
+    "side_mode": "continue"
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572231+00:00",
+   "ingested_time": "2026-09-21T07:57:58.995186+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "eca0851a9536b5b6326a9fe3"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "AQR",
+   "evidence_grade": "A",
+   "title": "AQR [A]: betting-against-beta / defensive: low-beta names outperform per unit of risk",
+   "text": "betting-against-beta / defensive: low-beta names outperform per unit of risk",
+   "url": "",
+   "mechanism": "residual continuation in low-beta names: the defensive premium as a residual drift",
+   "found_at": "2026-09-21T07:57:58.572231+00:00",
+   "symbol": "CocaCola",
+   "symbols": [
+    "CocaCola"
+   ],
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "US500"
+    ],
+    "lookback": 240,
+    "beta_win": 240,
+    "entry_z": 1.5,
+    "ttl_bars": 120,
+    "side_mode": "continue"
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572231+00:00",
+   "ingested_time": "2026-09-21T07:57:58.995218+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "8b20ed0f46dc1d1a3fdab0c6"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "AQR",
+   "evidence_grade": "A",
+   "title": "AQR [A]: betting-against-beta / defensive: low-beta names outperform per unit of risk",
+   "text": "betting-against-beta / defensive: low-beta names outperform per unit of risk",
+   "url": "",
+   "mechanism": "residual continuation in low-beta names: the defensive premium as a residual drift",
+   "found_at": "2026-09-21T07:57:58.572231+00:00",
+   "symbol": "Walmart",
+   "symbols": [
+    "Walmart"
+   ],
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "US500"
+    ],
+    "lookback": 240,
+    "beta_win": 240,
+    "entry_z": 1.5,
+    "ttl_bars": 120,
+    "side_mode": "continue"
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572231+00:00",
+   "ingested_time": "2026-09-21T07:57:58.995245+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "727b856842f52154f0499f4f"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "AQR",
+   "evidence_grade": "A",
+   "title": "AQR [A]: betting-against-beta / defensive: low-beta names outperform per unit of risk",
+   "text": "betting-against-beta / defensive: low-beta names outperform per unit of risk",
+   "url": "",
+   "mechanism": "residual continuation in low-beta names: the defensive premium as a residual drift",
+   "found_at": "2026-09-21T07:57:58.572231+00:00",
+   "symbol": "PepsiCo",
+   "symbols": [
+    "PepsiCo"
+   ],
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "US500"
+    ],
+    "lookback": 240,
+    "beta_win": 240,
+    "entry_z": 1.5,
+    "ttl_bars": 120,
+    "side_mode": "continue"
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572231+00:00",
+   "ingested_time": "2026-09-21T07:57:58.995272+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "456d93699f3ebec89dd5c5d7"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "Man AHL",
+   "evidence_grade": "A",
+   "title": "Man AHL [A]: multi-speed trend; fastest speeds carry the crisis alpha",
+   "text": "multi-speed trend; fastest speeds carry the crisis alpha",
+   "url": "",
+   "mechanism": "enter only at the turn where the fast speed disagrees with the slow: crisis alpha",
+   "found_at": "2026-09-21T07:57:58.572243+00:00",
+   "symbol": "US500",
+   "symbols": [
+    "US500"
+   ],
+   "family": "multi_speed_trend",
+   "params": {
+    "speeds": [
+     5,
+     10,
+     21,
+     63
+    ],
+    "hold_days": 3,
+    "min_agreement": 0.5,
+    "crisis_only": true
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572243+00:00",
+   "ingested_time": "2026-09-21T07:57:58.995294+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "51d9a97da95e90d8bfe230b1"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "Man AHL",
+   "evidence_grade": "A",
+   "title": "Man AHL [A]: multi-speed trend; fastest speeds carry the crisis alpha",
+   "text": "multi-speed trend; fastest speeds carry the crisis alpha",
+   "url": "",
+   "mechanism": "enter only at the turn where the fast speed disagrees with the slow: crisis alpha",
+   "found_at": "2026-09-21T07:57:58.572243+00:00",
+   "symbol": "NAS100",
+   "symbols": [
+    "NAS100"
+   ],
+   "family": "multi_speed_trend",
+   "params": {
+    "speeds": [
+     5,
+     10,
+     21,
+     63
+    ],
+    "hold_days": 3,
+    "min_agreement": 0.5,
+    "crisis_only": true
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572243+00:00",
+   "ingested_time": "2026-09-21T07:57:58.995325+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "d82b4b2203a23e3d5c12aff0"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "Man AHL",
+   "evidence_grade": "A",
+   "title": "Man AHL [A]: multi-speed trend; fastest speeds carry the crisis alpha",
+   "text": "multi-speed trend; fastest speeds carry the crisis alpha",
+   "url": "",
+   "mechanism": "enter only at the turn where the fast speed disagrees with the slow: crisis alpha",
+   "found_at": "2026-09-21T07:57:58.572243+00:00",
+   "symbol": "GER40",
+   "symbols": [
+    "GER40"
+   ],
+   "family": "multi_speed_trend",
+   "params": {
+    "speeds": [
+     5,
+     10,
+     21,
+     63
+    ],
+    "hold_days": 3,
+    "min_agreement": 0.5,
+    "crisis_only": true
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572243+00:00",
+   "ingested_time": "2026-09-21T07:57:58.995347+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "3cc202cb55ba32e8edcd7780"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "Man AHL",
+   "evidence_grade": "A",
+   "title": "Man AHL [A]: multi-speed trend; fastest speeds carry the crisis alpha",
+   "text": "multi-speed trend; fastest speeds carry the crisis alpha",
+   "url": "",
+   "mechanism": "enter only at the turn where the fast speed disagrees with the slow: crisis alpha",
+   "found_at": "2026-09-21T07:57:58.572243+00:00",
+   "symbol": "JPN225",
+   "symbols": [
+    "JPN225"
+   ],
+   "family": "multi_speed_trend",
+   "params": {
+    "speeds": [
+     5,
+     10,
+     21,
+     63
+    ],
+    "hold_days": 3,
+    "min_agreement": 0.5,
+    "crisis_only": true
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572243+00:00",
+   "ingested_time": "2026-09-21T07:57:58.995370+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "0ddf0712050c2f99647e36c3"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "Man AHL",
+   "evidence_grade": "A",
+   "title": "Man AHL [A]: multi-speed trend; fastest speeds carry the crisis alpha",
+   "text": "multi-speed trend; fastest speeds carry the crisis alpha",
+   "url": "",
+   "mechanism": "enter only at the turn where the fast speed disagrees with the slow: crisis alpha",
+   "found_at": "2026-09-21T07:57:58.572243+00:00",
+   "symbol": "XAUUSD",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "family": "multi_speed_trend",
+   "params": {
+    "speeds": [
+     5,
+     10,
+     21,
+     63
+    ],
+    "hold_days": 3,
+    "min_agreement": 0.5,
+    "crisis_only": true
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572243+00:00",
+   "ingested_time": "2026-09-21T07:57:58.995391+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "393ec34a0a821e960952c507"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "Man AHL",
+   "evidence_grade": "A",
+   "title": "Man AHL [A]: multi-speed trend; fastest speeds carry the crisis alpha",
+   "text": "multi-speed trend; fastest speeds carry the crisis alpha",
+   "url": "",
+   "mechanism": "enter only at the turn where the fast speed disagrees with the slow: crisis alpha",
+   "found_at": "2026-09-21T07:57:58.572243+00:00",
+   "symbol": "USDJPY",
+   "symbols": [
+    "USDJPY"
+   ],
+   "family": "multi_speed_trend",
+   "params": {
+    "speeds": [
+     5,
+     10,
+     21,
+     63
+    ],
+    "hold_days": 3,
+    "min_agreement": 0.5,
+    "crisis_only": true
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572243+00:00",
+   "ingested_time": "2026-09-21T07:57:58.995411+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "37c064c42b7546a2e74fbb42"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "Cubist",
+   "evidence_grade": "A",
+   "title": "Cubist [A]: mid-frequency anomalies from price-volume + order-book + alternative data, feature-combine",
+   "text": "mid-frequency anomalies from price-volume + order-book + alternative data, feature-combined",
+   "url": "",
+   "mechanism": "tick-derived flow imbalance as the price-volume anomaly the desk can measure",
+   "found_at": "2026-09-21T07:57:58.572267+00:00",
+   "symbol": "XAUUSD",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "family": "orderflow_imbalance",
+   "params": {
+    "input_source": "fusion_tick_tape"
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572267+00:00",
+   "ingested_time": "2026-09-21T07:57:58.995437+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "0be2207641318a7b92b1b976"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "Cubist",
+   "evidence_grade": "A",
+   "title": "Cubist [A]: mid-frequency anomalies from price-volume + order-book + alternative data, feature-combine",
+   "text": "mid-frequency anomalies from price-volume + order-book + alternative data, feature-combined",
+   "url": "",
+   "mechanism": "tick-derived flow imbalance as the price-volume anomaly the desk can measure",
+   "found_at": "2026-09-21T07:57:58.572267+00:00",
+   "symbol": "EURUSD",
+   "symbols": [
+    "EURUSD"
+   ],
+   "family": "orderflow_imbalance",
+   "params": {
+    "input_source": "fusion_tick_tape"
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572267+00:00",
+   "ingested_time": "2026-09-21T07:57:58.995462+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "2f918fdc945d673ee7933a97"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "Cubist",
+   "evidence_grade": "A",
+   "title": "Cubist [A]: mid-frequency anomalies from price-volume + order-book + alternative data, feature-combine",
+   "text": "mid-frequency anomalies from price-volume + order-book + alternative data, feature-combined",
+   "url": "",
+   "mechanism": "tick-derived flow imbalance as the price-volume anomaly the desk can measure",
+   "found_at": "2026-09-21T07:57:58.572267+00:00",
+   "symbol": "USDJPY",
+   "symbols": [
+    "USDJPY"
+   ],
+   "family": "orderflow_imbalance",
+   "params": {
+    "input_source": "fusion_tick_tape"
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572267+00:00",
+   "ingested_time": "2026-09-21T07:57:58.995494+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "7d484ef4286ae312ed7f926d"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "social",
+   "evidence_grade": "C",
+   "title": "social [C]: Medallion uses hidden Markov models / regime switching as the core",
+   "text": "Medallion uses hidden Markov models / regime switching as the core",
+   "url": "",
+   "mechanism": "if the claim has any content, it is that regime ENDINGS are tradeable",
+   "found_at": "2026-09-21T07:57:58.572282+00:00",
+   "symbol": "XAUUSD",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "family": "regime_transition",
+   "params": {
+    "window": 750,
+    "refit_days": 250,
+    "horizon_days": 1,
+    "entry_p_leave": 0.25,
+    "min_age": 5,
+    "side_mode": "exhaustion"
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572282+00:00",
+   "ingested_time": "2026-09-21T07:57:58.995529+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "c42b5682adb26bf0564b0ee3"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "social",
+   "evidence_grade": "C",
+   "title": "social [C]: Medallion uses hidden Markov models / regime switching as the core",
+   "text": "Medallion uses hidden Markov models / regime switching as the core",
+   "url": "",
+   "mechanism": "if the claim has any content, it is that regime ENDINGS are tradeable",
+   "found_at": "2026-09-21T07:57:58.572282+00:00",
+   "symbol": "EURUSD",
+   "symbols": [
+    "EURUSD"
+   ],
+   "family": "regime_transition",
+   "params": {
+    "window": 750,
+    "refit_days": 250,
+    "horizon_days": 1,
+    "entry_p_leave": 0.25,
+    "min_age": 5,
+    "side_mode": "exhaustion"
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572282+00:00",
+   "ingested_time": "2026-09-21T07:57:58.995566+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "f5115a99e728f5795558581e"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "social",
+   "evidence_grade": "C",
+   "title": "social [C]: Medallion uses hidden Markov models / regime switching as the core",
+   "text": "Medallion uses hidden Markov models / regime switching as the core",
+   "url": "",
+   "mechanism": "if the claim has any content, it is that regime ENDINGS are tradeable",
+   "found_at": "2026-09-21T07:57:58.572282+00:00",
+   "symbol": "USDJPY",
+   "symbols": [
+    "USDJPY"
+   ],
+   "family": "regime_transition",
+   "params": {
+    "window": 750,
+    "refit_days": 250,
+    "horizon_days": 1,
+    "entry_p_leave": 0.25,
+    "min_age": 5,
+    "side_mode": "exhaustion"
+   },
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572282+00:00",
+   "ingested_time": "2026-09-21T07:57:58.995597+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "c6bbe6481301146ee1cb946b"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "Renaissance",
+   "evidence_grade": "B",
+   "title": "Renaissance [B]: an early effect came from the 15-minute gap between S&P options and futures closing times ",
+   "text": "an early effect came from the 15-minute gap between S&P options and futures closing times (Zuckerman)",
+   "url": "",
+   "mechanism": "venue-timing mismatch around the cash close; plumbing_miner resolves the stamp hour",
+   "found_at": "2026-09-21T07:57:58.572059+00:00",
+   "family": "clock_transition",
+   "symbols": [
+    "US500"
+   ],
+   "params": {
+    "label": "cash_equity_close",
+    "stamp_hour": null,
+    "mode": "fade",
+    "side": 1,
+    "lead_bars": 1,
+    "hold_bars": 2
+   },
+   "blocked_on": "stamp hour resolved by plumbing_miner, not by a card",
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572059+00:00",
+   "ingested_time": "2026-09-21T07:57:58.995638+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "c740c55dff17487130a56a05"
+  },
+  {
+   "source": "fund_playbook",
+   "kind": "fund_claim",
+   "fund": "Bridgewater",
+   "evidence_grade": "A",
+   "title": "Bridgewater [A]: trade growth/inflation SURPRISES relative to what is discounted, not levels",
+   "text": "trade growth/inflation SURPRISES relative to what is discounted, not levels",
+   "url": "",
+   "mechanism": "the desk's calendar carries forecast and previous but no actual",
+   "found_at": "2026-09-21T07:57:58.572109+00:00",
+   "family": "event_reaction",
+   "symbols": [
+    "EURUSD",
+    "GBPUSD",
+    "USDJPY",
+    "XAUUSD",
+    "US500"
+   ],
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "blocked_on": "calendar ACTUAL prints (surprise = actual - forecast is uncomputable)",
+   "event_time": null,
+   "available_time": "2026-09-21T07:57:58.572109+00:00",
+   "ingested_time": "2026-09-21T07:57:58.995680+00:00",
+   "source_version": "130f9bc3b",
+   "payload_hash": "1c3a759b0ec57c4480c0aa96"
+  }
+ ]
+}

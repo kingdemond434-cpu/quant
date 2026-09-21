@@ -1,0 +1,494 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Ekspor Sawit Indonesia Melonjak 64% pada Juni 2026, Produksi dan Konsumsi Ikut Naik - Gabungan Pengusaha Kelapa Sawit Indonesia (GAPKI)",
+  "url": "https://gapki.id/news/2026/08/26/ekspor-sawit-indonesia-melonjak-64-pada-juni-2026-produksi-dan-konsumsi-ikut-naik/",
+  "published": "2026-09-21T14:40:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "692ff7ea57e8aebafdd2",
+  "host": "gapki.id",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Kinerja Industri Sawit 2025 Tumbuh Lebih Cepat, GAPKI Soroti Tantangan dan Arah Strategis - Gabungan Pengusaha Kelapa Sawit Indonesia (GAPKI)",
+  "url": "https://gapki.id/news/2025/11/14/kinerja-industri-sawit-2025-tumbuh-lebih-cepat-gapki-soroti-tantangan-dan-arah-strategis/",
+  "published": "2026-09-21T14:40:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow",
+   "gap",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "877f72c27617e6219594",
+  "host": "gapki.id",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "In the Age of AI, A Quant\u2019s Edge is Human",
+  "url": "https://www.aqr.com/Insights/Research/Trade-Publication/In-the-Age-of-AI-A-Quants-Edge-is-Human",
+  "published": "2026-09-21T14:40:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "carry"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.aqr.com/Insights/Datasets"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "bc69eed4a5046812ea38",
+  "host": "www.aqr.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "PayPal Holdings, Inc. stocks CFD (PYPL) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/PYPL/",
+  "published": "2026-09-21T14:40:31+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "c1039e2b8bb9e383de28",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "The Goldman Sachs Group, Inc. stocks CFD (GS) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/GS/",
+  "published": "2026-09-21T14:40:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "4b8792ac312adbb4ca05",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Walmart Inc. stocks CFD (WMT) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/WMT/",
+  "published": "2026-09-21T14:40:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "8da683a9b625ec0be0ea",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Visa Inc. stocks CFD (V) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/V/",
+  "published": "2026-09-21T14:40:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "5adbd268e6fe5905a408",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Delta Air Lines, Inc. stocks CFD (DAL) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/DAL/",
+  "published": "2026-09-21T14:40:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "a2f650404ef33ffd5e6a",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Wells Fargo &amp; Company stocks CFD (WFC) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/WFC/",
+  "published": "2026-09-21T14:40:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "9451fd30e1c4f8fac2c1",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Citigroup Inc. stocks CFD (C) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/C/",
+  "published": "2026-09-21T14:40:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "06a42b1cdb9c2fa807c2",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Exxon Mobil Corporation stocks CFD (XOM) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/XOM/",
+  "published": "2026-09-21T14:40:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "e4e004499b6cb756317b",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Chevron Corporation stocks CFD (CVX) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/CVX/",
+  "published": "2026-09-21T14:40:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "0beec1c9942584d43f72",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Newmont Mining Corporation stocks CFD (NEM) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/NEM/",
+  "published": "2026-09-21T14:40:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "5e040715244e86df569b",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "JPMorgan Chase &amp; Co. stocks CFD (JPM) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/JPM/",
+  "published": "2026-09-21T14:40:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "f055c0f67551740a3698",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Bank of America Corporation stocks CFD (BAC) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/BAC/",
+  "published": "2026-09-21T14:40:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "de838417a3772b77126c",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "eBay Inc. stocks CFD (EBAY) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/EBAY/",
+  "published": "2026-09-21T14:40:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "1bb059ba19256e1ab757",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Meta Platforms Inc stocks CFD (META) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/META/",
+  "published": "2026-09-21T14:40:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "9254e8da95a9dd69a3b1",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "RoboForex Introduces the Upgraded Copy Trading Service - RoboForex",
+  "url": "https://roboforex.com/about/company/news/show/upgraded-copy-trading-service/",
+  "published": "2026-09-21T14:40:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "d0e5ccf5bd610bba21dc",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Copy Trading: Traders | RoboForex Help Center",
+  "url": "https://roboforex.com/help/copy-trading-traders/",
+  "published": "2026-09-21T14:41:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1743511020"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "1eb8e626585d9d741987",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "RoboForex: Access Financial Markets &amp; Start Trading Now - RoboForex",
+  "url": "https://roboforex.com",
+  "published": "2026-09-21T14:41:03+00:00",
+  "symbols": [
+   "EURUSD",
+   "GBPUSD",
+   "US500",
+   "USDJPY",
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://roboforex.com/forex-trading/terminals/download/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "f50c06327d9e631bd5c7",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "FAQ Archives | RoboForex Help Center",
+  "url": "https://roboforex.com/help/faq/",
+  "published": "2026-09-21T14:41:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1743511020"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "15c3078ab49052426393",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8d22\u52a1\u5206\u6790\uff08\u8d44\u672c\u7ed3\u6784\uff09\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_financial_capital",
+  "published": "2026-09-21T14:41:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "259c4f42a566ce8f9639",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8d22\u52a1\u5206\u6790\uff08\u507f\u503a\u80fd\u529b\uff09\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_financial_debt_repay",
+  "published": "2026-09-21T14:41:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "72f4f53c93359e1d3a52",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]

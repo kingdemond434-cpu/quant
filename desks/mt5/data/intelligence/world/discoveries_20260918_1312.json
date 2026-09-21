@@ -1,0 +1,224 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "DSE Analyst \u2014 Dhaka Stock Exchange analysis, charts &amp; signals",
+  "url": "https://dseanalyst.com/",
+  "published": "2026-09-18T13:10:57+00:00",
+  "symbols": [
+   "USDKRW"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e922a0fe25dc533b4283",
+  "host": "dseanalyst.com",
+  "claims": [
+   {
+    "claim": "DSE Analyst \u2014 Dhaka Stock Exchange analysis, charts & signals DSE Analyst Explore Ranked Undervalued Heatmap Setups Bounce-watch Earnings Dividends Track record Integrity News Learn Glossary data: Sep 17, 2026 Android app Text A A A EOD Last session \u00b7 Sep 17, 2026 ORIONINFU \u09f3213.",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "bounce"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDKRW"
+     ],
+     "mentioned": [
+      "dsex",
+      "won"
+     ],
+     "transfer_only": [
+      "dsex->indices (South Asian exchanges)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8428a3aa4105"
+   },
+   {
+    "claim": "2 accumulation 78 30-day up-rate 52% \u00b7 Miscellaneous Why this horizon The engine's own selection study rates the 30- and 60-session horizons positive and the 10-day horizon negative.",
+    "lang": "en",
+    "quantities": [
+     "rate",
+     "session"
+    ],
+    "direction": [
+     "positive",
+     "negative"
+    ],
+    "horizon": [
+     "day",
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDKRW"
+     ],
+     "mentioned": [
+      "dsex",
+      "won"
+     ],
+     "transfer_only": [
+      "dsex->indices (South Asian exchanges)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "cac14b6dd138"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u300c\u5916\u56fd\u70ba\u66ff\u53ca\u3073\u5916\u56fd\u8cbf\u6613\u6cd5\u306e\u4e00\u90e8\u3092\u6539\u6b63\u3059\u308b\u6cd5\u5f8b\u306e\u65bd\u884c\u306b\u4f34\u3046\u95a2\u4fc2\u653f\u4ee4\u306e\u6574\u5099\u7b49\u306b\u95a2\u3059\u308b\u653f\u4ee4\u300d\u7b49\u306b\u3064\u3044\u3066 : \u8ca1\u52d9\u7701",
+  "url": "https://www.mof.go.jp/policy/international_policy/gaitame_kawase/press_release/20260908204517.html",
+  "published": "2026-09-18T13:10:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9e6e1062f19d24ed6cb8",
+  "host": "www.mof.go.jp",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Retail traders lose money in options globally as institutions dominate short-term trading",
+  "url": "https://www.moneycontrol.com/news/business/markets/retail-traders-lose-money-in-options-globally-as-institutions-dominate-short-term-trading-13862145.html",
+  "published": "2026-09-18T13:11:02+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "momentum",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.moneycontrol.com/manifest.json?v=2"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "7e57094a713f5670419e",
+  "host": "www.moneycontrol.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "GenAI is democratising algo trading, but experts warn on quality and regulation risks",
+  "url": "https://www.moneycontrol.com/news/business/markets/genai-is-democratising-algo-trading-but-experts-warn-on-quality-and-regulation-risks-13573045.html/amp",
+  "published": "2026-09-18T13:11:05+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "momentum",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.moneycontrol.com/manifest.json?v=2"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "55d0206f65276a0e5f85",
+  "host": "www.moneycontrol.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Blackjack Strategy Charts - Generate Charts for 1-8 Decks",
+  "url": "http://www.blackjackinfo.com/bjbse.php///",
+  "published": "2026-09-18T13:11:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "cedc6f0cae1b4b20c476",
+  "host": "www.blackjackinfo.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithm - Encyclopedia of Mathematics",
+  "url": "https://www.encyclopediaofmath.org/index.php?title=Algorithm",
+  "published": "2026-09-18T13:11:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f3d19dd320144beb14c4",
+  "host": "www.encyclopediaofmath.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Das B\u00f6rsenhackerbuch: Finanziell unabh\u00e4ngig durch algorithmische Handelssysteme : Lotter, Johann Christian: Amazon.de: B\u00fccher",
+  "url": "http://www.amazon.de/Das-B%C3%B6rsenhackerbuch-Finanziell-algorithmische-Handelssysteme/dp/1530310784",
+  "published": "2026-09-18T13:11:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "de-de",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e3ecacd42714a74bebed",
+  "host": "www.amazon.de",
+  "claims": [],
+  "n_claims": 0
+ }
+]

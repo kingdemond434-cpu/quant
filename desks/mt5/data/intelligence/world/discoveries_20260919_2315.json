@@ -1,0 +1,1481 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u0417\u043e\u043b\u043e\u0442\u043e\u0432\u0430\u043b\u044e\u0442\u043d\u044b\u0435 \u0440\u0435\u0437\u0435\u0440\u0432\u044b \u0423\u043a\u0440\u0430\u0438\u043d\u044b [2026] \u1408 \u041c\u0438\u043d\u0444\u0438\u043d",
+  "url": "https://index.minfin.com.ua/finance/assets/",
+  "published": "2026-09-19T23:13:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "ru",
+  "endpoints": [
+   "https://minfin.com.ua/manifest.json",
+   "https://minfin.com.ua/developers/api/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "52eed6105d1f81955dbf",
+  "host": "index.minfin.com.ua",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Dost\u0119pno\u015b\u0107 i&amp;nbsp;akceptacja got&amp;oacute;wki",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/acceptance-cash/html/index.pl.html",
+  "published": "2026-09-19T23:13:35+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "pl",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.pl.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "2cf65b1be48168d4fc67",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Access to and acceptance of cash",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/acceptance-cash/html/index.pt.html",
+  "published": "2026-09-19T23:13:37+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "momentum",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "pt",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.pt.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "a13575e4c1787a412fc8",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Access to and acceptance of cash",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/acceptance-cash/html/index.ro.html",
+  "published": "2026-09-19T23:13:39+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "ro",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.ro.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "1451101c9d5f0133f3dc",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Access to and acceptance of cash",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/acceptance-cash/html/index.sk.html",
+  "published": "2026-09-19T23:13:42+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "sk",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.sk.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "69f119f914dbabf69847",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Access to and acceptance of cash",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/acceptance-cash/html/index.sl.html",
+  "published": "2026-09-19T23:13:43+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "sl",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.sl.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "91b8606708114081f900",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Tillg\u00e5ng till och godtagande av kontanter",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/acceptance-cash/html/index.sv.html",
+  "published": "2026-09-19T23:13:45+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "inventory",
+   "mean_reversion",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "sv",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.sv.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f25e163796a218df604a",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0427\u0435\u0441\u0442\u043e \u0437\u0430\u0434\u0430\u0432\u0430\u043d\u0438 \u0432\u044a\u043f\u0440\u043e\u0441\u0438 \u0437\u0430 \u043f\u0430\u0440\u0438\u0442\u0435",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/faqs/html/index.bg.html",
+  "published": "2026-09-19T23:13:47+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "bg",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.bg.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "2ebc2dbdb267610b4aaf",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Euro vs Swiss Franc (EURCHF) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/EURCHF/",
+  "published": "2026-09-19T23:13:49+00:00",
+  "symbols": [
+   "EURCHF"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "55fb8825d01acee6b64d",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Euro vs Great Britain Pound (EURGBP) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/EURGBP/",
+  "published": "2026-09-19T23:13:50+00:00",
+  "symbols": [
+   "EURGBP",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "9757a038ed170dec3e03",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "00001 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:05 - 23:55 Term currency GBP 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 10.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD",
+      "EURGBP"
+     ],
+     "mentioned": [
+      "pound",
+      "eurgbp"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "369e3a48a962"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Euro vs Japanese Yen (EURJPY) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/EURJPY/",
+  "published": "2026-09-19T23:13:52+00:00",
+  "symbols": [
+   "EURJPY",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "1ce45b8af20b72ab898a",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "001 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:05 - 23:55 Term currency JPY 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 7.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY",
+      "EURJPY"
+     ],
+     "mentioned": [
+      "yen",
+      "eurjpy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "7098435490c5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Euro vs New Zealand Dollar (EURNZD) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/EURNZD/",
+  "published": "2026-09-19T23:13:54+00:00",
+  "symbols": [
+   "EURNZD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "c186d56a851b5c31c97a",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Euro vs US Dollar (EURUSD) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/EURUSD/",
+  "published": "2026-09-19T23:13:56+00:00",
+  "symbols": [
+   "EURUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "6a93c79d55ccb264052d",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "00001 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:05 - 23:55 Term currency USD 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 10.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "eurusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "42b6bb052e56"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "New Zealand Dollar vs Canadian Dollar (NZDCAD) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/NZDCAD/",
+  "published": "2026-09-19T23:13:58+00:00",
+  "symbols": [
+   "NZDCAD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "abdc634d7c40a139748b",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "New Zealand Dollar vs Swiss Franc (NZDCHF) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/NZDCHF/",
+  "published": "2026-09-19T23:14:00+00:00",
+  "symbols": [
+   "NZDCHF"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "31a596f1630f757bdeec",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Cheapest Prop Firm Challenges [2026] | FTO",
+  "url": "https://forextester.com/blog/cheapest-prop-firm-challenge/",
+  "published": "2026-09-19T23:14:04+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XCUUSD",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "gap",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [
+   "https://desktop.forextester.com/download?utm_source=Blog_FT_site&amp;utm_medium=referral&amp;utm_campaign=Blog_FooterDownloadEN&amp;gc=Blog_FooterDownloadEN"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "7fa821d99b789668ca99",
+  "host": "forextester.com",
+  "claims": [
+   {
+    "claim": "Spreads widen, fills worsen, and equity can breach daily limits in seconds during initial volatility.",
+    "lang": "en",
+    "quantities": [
+     "volatility"
+    ],
+    "direction": [
+     "widen"
+    ],
+    "horizon": [
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XCUUSD",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "xauusd",
+      "copper",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b5c327adf6dd"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Tester Blog - Page 2 of 29 - Your Guide to Mastering Market Simulations",
+  "url": "https://forextester.com/blog/page/2/",
+  "published": "2026-09-19T23:14:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://desktop.forextester.com/download?utm_source=Blog_FT_site&amp;utm_medium=referral&amp;utm_campaign=Blog_FooterDownloadEN&amp;gc=Blog_FooterDownloadEN"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f068657b60224dbbe4e1",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Tester Blog - Page 3 of 29 - Your Guide to Mastering Market Simulations",
+  "url": "https://forextester.com/blog/page/3/",
+  "published": "2026-09-19T23:14:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://desktop.forextester.com/download?utm_source=Blog_FT_site&amp;utm_medium=referral&amp;utm_campaign=Blog_FooterDownloadEN&amp;gc=Blog_FooterDownloadEN"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "46e8a0e9366ffe6e9621",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Tester Blog - Page 4 of 29 - Your Guide to Mastering Market Simulations",
+  "url": "https://forextester.com/blog/page/4/",
+  "published": "2026-09-19T23:14:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "flow"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://forextester.com/blog/export-trade-history-from-tradingview/",
+   "https://forextester.com/blog/export-trade-history-from-ninjatrader/",
+   "https://forextester.com/blog/export-trading-history-from-mt5/",
+   "https://desktop.forextester.com/download?utm_source=Blog_FT_site&amp;utm_medium=referral&amp;utm_campaign=Blog_FooterDownloadEN&amp;gc=Blog_FooterDownloadEN"
+  ],
+  "n_endpoints": 4,
+  "vault_sha": "eef27cba2804840a68af",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Tester Blog - Page 5 of 29 - Your Guide to Mastering Market Simulations",
+  "url": "https://forextester.com/blog/page/5/",
+  "published": "2026-09-19T23:14:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "gap",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://forextester.com/blog/export-trading-history-from-mt4/",
+   "https://forextester.com/blog/export-trade-history-from-forex-tester/",
+   "https://desktop.forextester.com/download?utm_source=Blog_FT_site&amp;utm_medium=referral&amp;utm_campaign=Blog_FooterDownloadEN&amp;gc=Blog_FooterDownloadEN"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "0588f65e12726bcdbf19",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Tester Blog - Page 29 of 29 - Your Guide to Mastering Market Simulations",
+  "url": "https://forextester.com/blog/page/29/",
+  "published": "2026-09-19T23:14:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://desktop.forextester.com/download?utm_source=Blog_FT_site&amp;utm_medium=referral&amp;utm_campaign=Blog_FooterDownloadEN&amp;gc=Blog_FooterDownloadEN"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "af43b60f577d384307bd",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Tester Software Inc. - About Us",
+  "url": "https://forextester.com/about/?utm_source=Blog_FT_site&utm_medium=referral&utm_campaign=Blog_FT_site_AboutUsFooterEN&gc=Blog_FT_site_AboutUSFooterEN",
+  "published": "2026-09-19T23:14:15+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c1cf857f1c5c600127a6",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Regulaci\u00f3n RoboForex - RoboForex",
+  "url": "https://roboforex.com/es/about/company/regulation/",
+  "published": "2026-09-19T23:14:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "mean_reversion",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "fc6a04fab39b8af5fe78",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Documentos - RoboForex",
+  "url": "https://roboforex.com/es/about/company/documents/",
+  "published": "2026-09-19T23:14:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "b8302d8fda6488dc7d56",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Abre una cuenta Cent (micro) - micro lotes para pruebas y EAs - RoboForex",
+  "url": "https://roboforex.com/es/forex-trading/trading/cent-account/",
+  "published": "2026-09-19T23:14:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "mean_reversion",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "2991b1191486978cc060",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Plataformas de trading RoboForex - descarga para PC, web y m\u00f3vil - RoboForex",
+  "url": "https://roboforex.com/es/forex-trading/terminals/download/",
+  "published": "2026-09-19T23:14:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://roboforex.com/es/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/ru-kk/forex-trading/terminals/download/",
+   "https://roboforex.com/forex-trading/terminals/download/",
+   "https://th.roboforex.com/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/vn/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/uz/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/kk/forex-trading/terminals/download/",
+   "https://roboforex.com/ph/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/ru-uz/forex-trading/terminals/download/",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 11,
+  "vault_sha": "99f010e76d2076e8f616",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Invierta en Metales: Oro, Plata, Empezar a Operar - RoboForex",
+  "url": "https://roboforex.com/es/forex-trading/assets/metals/",
+  "published": "2026-09-19T23:14:24+00:00",
+  "symbols": [
+   "XAGUSD",
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "de978a5aa20421405b53",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Invierta en Divisas, Opere en divisas en el mercado financiero global - RoboForex",
+  "url": "https://roboforex.com/es/forex-trading/assets/forex/",
+  "published": "2026-09-19T23:14:26+00:00",
+  "symbols": [
+   "AUDCAD",
+   "AUDJPY",
+   "AUDNZD",
+   "AUDUSD",
+   "EURGBP",
+   "EURJPY",
+   "EURUSD",
+   "GBPJPY",
+   "GBPUSD",
+   "NZDUSD",
+   "USDCHF",
+   "USDJPY",
+   "USDMXN",
+   "USDRUB"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "a4860f302c8973297a42",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Opere CFDs de Cripto: Bitcoin, Ethereum y m\u00e1s - RoboForex",
+  "url": "https://roboforex.com/es/forex-trading/assets/crypto/",
+  "published": "2026-09-19T23:14:29+00:00",
+  "symbols": [
+   "ADAUSD",
+   "BTCUSD",
+   "ETHUSD",
+   "SOLUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "37f46ac2d944c018caf1",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Labor force, total | Data",
+  "url": "https://data.worldbank.org/indicator/SL.TLF.TOTL.IN",
+  "published": "2026-09-19T23:14:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/en/indicator/SL.TLF.TOTL.IN?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "55c5b2e8df48998bbf33",
+  "host": "data.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Literacy rate, adult female (% of females ages 15 and above) | Data",
+  "url": "https://data.worldbank.org/indicator/SE.ADT.LITR.FE.ZS",
+  "published": "2026-09-19T23:14:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.uis.unesco.org/api/public/documentation/",
+   "https://api.worldbank.org/v2/en/indicator/SE.ADT.LITR.FE.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "11f8dbf5b2aa3bcb1cf4",
+  "host": "data.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Literacy rate, adult male (% of males ages 15 and above) | Data",
+  "url": "https://data.worldbank.org/indicator/SE.ADT.LITR.MA.ZS",
+  "published": "2026-09-19T23:14:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.uis.unesco.org/api/public/documentation/",
+   "https://api.worldbank.org/v2/en/indicator/SE.ADT.LITR.MA.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "2be8bf427c0c13870646",
+  "host": "data.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Literacy rate, youth female (% of females ages 15-24) | Data",
+  "url": "https://data.worldbank.org/indicator/SE.ADT.1524.LT.FE.ZS",
+  "published": "2026-09-19T23:14:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.uis.unesco.org/api/public/documentation/",
+   "https://api.worldbank.org/v2/en/indicator/SE.ADT.1524.LT.FE.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "25445c150da122b7c2f6",
+  "host": "data.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Literacy rate, youth total (% of people ages 15-24) | Data",
+  "url": "https://data.worldbank.org/indicator/SE.ADT.1524.LT.ZS",
+  "published": "2026-09-19T23:15:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.uis.unesco.org/api/public/documentation/",
+   "https://api.worldbank.org/v2/en/indicator/SE.ADT.1524.LT.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "7e0312b63f38f232dcb1",
+  "host": "data.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/EURTRY",
+  "published": "2026-09-19T23:15:03+00:00",
+  "symbols": [
+   "EURTRY"
+  ],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/eurtry/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/eurtry/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/eurtry/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/eurtry/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/eurtry/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/eurtry/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/eurtry/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/eurtry/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/eurtry/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/eurtry/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/eurtry/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/eurtry/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/eurtry/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/eurtry/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/eurtry/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/eurtry/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/eurtry/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/eurtry/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/eurtry/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/eurtry/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/eurtry/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/eurtry/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/eurtry/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/eurtry/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/eurtry/2010"
+  ],
+  "n_endpoints": 29,
+  "vault_sha": "481374e90dda454eb308",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/GBPCAD",
+  "published": "2026-09-19T23:15:06+00:00",
+  "symbols": [
+   "GBPCAD"
+  ],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/gbpcad/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/gbpcad/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/gbpcad/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/gbpcad/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/gbpcad/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/gbpcad/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/gbpcad/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/gbpcad/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/gbpcad/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/gbpcad/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/gbpcad/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/gbpcad/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/gbpcad/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/gbpcad/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/gbpcad/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/gbpcad/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/gbpcad/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/gbpcad/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/gbpcad/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/gbpcad/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/gbpcad/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/gbpcad/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/gbpcad/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/gbpcad/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/gbpcad/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/gbpcad/2009",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/gbpcad/2008",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/gbpcad/2007"
+  ],
+  "n_endpoints": 32,
+  "vault_sha": "b34ef28bd244350e3b26",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/NSXUSD",
+  "published": "2026-09-19T23:15:07+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/nsxusd/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/nsxusd/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/nsxusd/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/nsxusd/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/nsxusd/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/nsxusd/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/nsxusd/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/nsxusd/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/nsxusd/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/nsxusd/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/nsxusd/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/nsxusd/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/nsxusd/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/nsxusd/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/nsxusd/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/nsxusd/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/nsxusd/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/nsxusd/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/nsxusd/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/nsxusd/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/nsxusd/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/nsxusd/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/nsxusd/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/nsxusd/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/nsxusd/2010"
+  ],
+  "n_endpoints": 29,
+  "vault_sha": "eb28739318e11edb13d5",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/UKXGBP",
+  "published": "2026-09-19T23:15:09+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/ukxgbp/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/ukxgbp/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/ukxgbp/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/ukxgbp/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/ukxgbp/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/ukxgbp/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/ukxgbp/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/ukxgbp/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/ukxgbp/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/ukxgbp/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/ukxgbp/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/ukxgbp/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/ukxgbp/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/ukxgbp/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/ukxgbp/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/ukxgbp/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/ukxgbp/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/ukxgbp/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/ukxgbp/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/ukxgbp/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/ukxgbp/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/ukxgbp/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/ukxgbp/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/ukxgbp/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/ukxgbp/2010"
+  ],
+  "n_endpoints": 29,
+  "vault_sha": "98fb9f0ddd3cc4c9d362",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/USDDKK",
+  "published": "2026-09-19T23:15:12+00:00",
+  "symbols": [
+   "USDDKK"
+  ],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usddkk/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usddkk/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usddkk/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usddkk/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usddkk/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usddkk/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usddkk/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usddkk/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usddkk/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usddkk/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usddkk/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usddkk/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usddkk/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usddkk/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usddkk/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usddkk/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usddkk/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usddkk/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usddkk/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usddkk/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usddkk/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usddkk/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usddkk/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usddkk/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usddkk/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usddkk/2009",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usddkk/2008"
+  ],
+  "n_endpoints": 31,
+  "vault_sha": "7b526e99c329411d4cee",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/USDSGD",
+  "published": "2026-09-19T23:15:13+00:00",
+  "symbols": [
+   "USDSGD"
+  ],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usdsgd/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usdsgd/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usdsgd/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usdsgd/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usdsgd/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usdsgd/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usdsgd/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usdsgd/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usdsgd/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usdsgd/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usdsgd/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usdsgd/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usdsgd/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usdsgd/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usdsgd/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usdsgd/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usdsgd/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usdsgd/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usdsgd/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usdsgd/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usdsgd/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usdsgd/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usdsgd/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usdsgd/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usdsgd/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usdsgd/2009",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/usdsgd/2008"
+  ],
+  "n_endpoints": 31,
+  "vault_sha": "efbbcd05ad9292396cc4",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/XAGUSD",
+  "published": "2026-09-19T23:15:17+00:00",
+  "symbols": [
+   "XAGUSD"
+  ],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/xagusd/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/xagusd/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/xagusd/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/xagusd/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/xagusd/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/xagusd/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/xagusd/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/xagusd/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/xagusd/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/xagusd/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/xagusd/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/xagusd/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/xagusd/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/xagusd/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/xagusd/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/xagusd/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/xagusd/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/xagusd/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/xagusd/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/xagusd/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/xagusd/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/xagusd/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/xagusd/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/xagusd/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/xagusd/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/xagusd/2009"
+  ],
+  "n_endpoints": 30,
+  "vault_sha": "bb2ba9677e2e9b038178",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Why is my account equity displayed in C$ when my trading accounts are in US$?",
+  "url": "https://cysecsupport.axi.com/en-US/axicysec--axicorp-prod/article/gv0igAlO-why-is-my-account-equity-displayed-in-c-when-my-trading-accounts-are-in-us",
+  "published": "2026-09-19T23:15:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "706fe86741574f33cc3f",
+  "host": "cysecsupport.axi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Can I add funds using the Axi Trading Platform web platform?",
+  "url": "https://cysecsupport.axi.com/en-US/axicysec--axicorp-prod/article/rdZ0ryFm-can-i-add-funds-using-the-axi-trading-platform-web-platform",
+  "published": "2026-09-19T23:15:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "51ea250fb7c9507a0bce",
+  "host": "cysecsupport.axi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Can I partially close a trade on the Axi Trading Platform?",
+  "url": "https://cysecsupport.axi.com/en-US/axicysec--axicorp-prod/article/kaiyYItc-can-i-partially-close-a-trade-on-the-axi-trading-platform",
+  "published": "2026-09-19T23:15:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ac0973fc30a2152e9b53",
+  "host": "cysecsupport.axi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "How do I view my open positions on the Axi Trading Platform web version?",
+  "url": "https://cysecsupport.axi.com/en-US/axicysec--axicorp-prod/article/Cf-ipplV-how-do-i-view-my-open-positions-on-the-axi-trading-platform-web-version",
+  "published": "2026-09-19T23:15:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1a2bf572918c99797ba8",
+  "host": "cysecsupport.axi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "How do I place a pending order on the Axi Trading Platform on the web?",
+  "url": "https://cysecsupport.axi.com/en-US/axicysec--axicorp-prod/article/or0W-VE0-how-do-i-place-a-pending-order-on-the-axi-trading-platform-on-the-web",
+  "published": "2026-09-19T23:15:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "76d775c801c566db9b91",
+  "host": "cysecsupport.axi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "How do I close or cancel a trade on the Axi Trading Platform on the web?",
+  "url": "https://cysecsupport.axi.com/en-US/axicysec--axicorp-prod/article/O2Z-IILB-how-do-i-close-or-cancel-a-trade-on-the-axi-trading-platform-on-the-web",
+  "published": "2026-09-19T23:15:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a21cad8e2a854b23be93",
+  "host": "cysecsupport.axi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Where can I see my closed trades on the Axi Trading Platform web version?",
+  "url": "https://cysecsupport.axi.com/en-US/axicysec--axicorp-prod/article/Ym76WD1n-where-can-i-see-my-closed-trades-on-the-axi-trading-platform-web-version",
+  "published": "2026-09-19T23:15:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6d029bc6b31e4d991e72",
+  "host": "cysecsupport.axi.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]

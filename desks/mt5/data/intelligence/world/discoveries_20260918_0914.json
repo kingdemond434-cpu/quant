@@ -1,0 +1,870 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "DSE Analyst \u2014 Dhaka Stock Exchange analysis, charts &amp; signals",
+  "url": "https://dseanalyst.com/",
+  "published": "2026-09-18T09:12:51+00:00",
+  "symbols": [
+   "USDKRW"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b3070da3c955c54542ea",
+  "host": "dseanalyst.com",
+  "claims": [
+   {
+    "claim": "DSE Analyst \u2014 Dhaka Stock Exchange analysis, charts & signals DSE Analyst Explore Ranked Undervalued Heatmap Setups Bounce-watch Earnings Dividends Track record Integrity News Learn Glossary data: Sep 17, 2026 Android app Text A A A EOD Last session \u00b7 Sep 17, 2026 ORIONINFU \u09f3213.",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "bounce"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDKRW"
+     ],
+     "mentioned": [
+      "dsex",
+      "won"
+     ],
+     "transfer_only": [
+      "dsex->indices (South Asian exchanges)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8428a3aa4105"
+   },
+   {
+    "claim": "2 accumulation 78 30-day up-rate 52% \u00b7 Miscellaneous Why this horizon The engine's own selection study rates the 30- and 60-session horizons positive and the 10-day horizon negative.",
+    "lang": "en",
+    "quantities": [
+     "rate",
+     "session"
+    ],
+    "direction": [
+     "positive",
+     "negative"
+    ],
+    "horizon": [
+     "day",
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDKRW"
+     ],
+     "mentioned": [
+      "dsex",
+      "won"
+     ],
+     "transfer_only": [
+      "dsex->indices (South Asian exchanges)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "cac14b6dd138"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\uc77c\uc77c\uacbd\uc81c\uc9c0\ud45c(&#039;26.9.18) | \uc77c\uc77c\uacbd\uc81c\uc9c0\ud45c | \uc7ac\uc815\uacbd\uc81c\ubd80",
+  "url": "https://www.moef.go.kr/st/ecnmyidx/detailTbEconomyIndicatorView.do?bbsId=MOSFBBS_000000000045&searchNttId1=MOSF_000000000079396&menuNo=6010200",
+  "published": "2026-09-18T09:12:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "ko",
+  "endpoints": [
+   "https://www.export119.go.kr"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "b98d88de505e7fead9c2",
+  "host": "www.moef.go.kr",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\uc77c\uc77c\uacbd\uc81c\uc9c0\ud45c(&#039;26.9.17) | \uc77c\uc77c\uacbd\uc81c\uc9c0\ud45c | \uc7ac\uc815\uacbd\uc81c\ubd80",
+  "url": "https://www.moef.go.kr/st/ecnmyidx/detailTbEconomyIndicatorView.do?bbsId=MOSFBBS_000000000045&searchNttId1=MOSF_000000000079380&menuNo=6010200",
+  "published": "2026-09-18T09:12:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "ko",
+  "endpoints": [
+   "https://www.export119.go.kr"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "734ba0be3f010341afd8",
+  "host": "www.moef.go.kr",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\uc77c\uc77c\uacbd\uc81c\uc9c0\ud45c(&#039;26.9.16) | \uc77c\uc77c\uacbd\uc81c\uc9c0\ud45c | \uc7ac\uc815\uacbd\uc81c\ubd80",
+  "url": "https://www.moef.go.kr/st/ecnmyidx/detailTbEconomyIndicatorView.do?bbsId=MOSFBBS_000000000045&searchNttId1=MOSF_000000000079363&menuNo=6010200",
+  "published": "2026-09-18T09:13:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "ko",
+  "endpoints": [
+   "https://www.export119.go.kr"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "1a91494c4e96ac97faee",
+  "host": "www.moef.go.kr",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u300c\u5916\u56fd\u70ba\u66ff\u53ca\u3073\u5916\u56fd\u8cbf\u6613\u6cd5\u306e\u4e00\u90e8\u3092\u6539\u6b63\u3059\u308b\u6cd5\u5f8b\u306e\u65bd\u884c\u306b\u4f34\u3046\u95a2\u4fc2\u653f\u4ee4\u306e\u6574\u5099\u7b49\u306b\u95a2\u3059\u308b\u653f\u4ee4\u300d\u7b49\u306b\u3064\u3044\u3066 : \u8ca1\u52d9\u7701",
+  "url": "https://www.mof.go.jp/policy/international_policy/gaitame_kawase/press_release/20260908204517.html",
+  "published": "2026-09-18T09:13:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3b75fad01183b82ff7d7",
+  "host": "www.mof.go.jp",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Blackjack Strategy Charts - Generate Charts for 1-8 Decks",
+  "url": "http://www.blackjackinfo.com/bjbse.php///",
+  "published": "2026-09-18T09:13:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4494a0069c06010281d7",
+  "host": "www.blackjackinfo.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "R-Forge: TradeAnalytics: SCM Repository",
+  "url": "https://r-forge.r-project.org/scm/viewvc.php/pkg/quantstrat/?root=blotter",
+  "published": "2026-09-18T09:13:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://r-forge.r-project.org/export/rss_sfnews.php",
+   "https://r-forge.r-project.org/export/rss20_news.php",
+   "https://r-forge.r-project.org/export/rss_sfprojects.php",
+   "https://r-forge.r-project.org/export/rss20_activity.php?group_id=316",
+   "https://r-forge.r-project.org/export/search_plugin.php"
+  ],
+  "n_endpoints": 5,
+  "vault_sha": "18e0ab1832ee7934f917",
+  "host": "r-forge.r-project.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Your Key To Investing on The JSE Securities Exchange - South Africa",
+  "url": "https://www4.sharenet.co.za/der/index.php",
+  "published": "2026-09-18T09:13:22+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5ce154e1523324291dbe",
+  "host": "www4.sharenet.co.za",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Hush&#xE5;llens konsumtion &#xF6;kade i augusti 2026",
+  "url": "https://www.scb.se/hitta-statistik/statistik-efter-amne/hushallens-ekonomi/hushallens-utgifter/hushallens-konsumtion/pong/statistiknyhet/hushallens-konsumtionsindikator-juli-och-augusti-2026-veckoindikator-till-och-med-vecka-36-2026/",
+  "published": "2026-09-18T09:13:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "seasonality"
+  ],
+  "confidence": 0.35,
+  "lang": "sv",
+  "endpoints": [
+   "https://www.scb.se/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "26e4ab4f546716881856",
+  "host": "www.scb.se",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\uc77c\uc77c\uacbd\uc81c\uc9c0\ud45c | \uc7ac\uc815\uacbd\uc81c\ubd80",
+  "url": "https://www.moef.go.kr/st/ecnmyidx/TbEconomyIndicatorList.do;jsessionid=7JfrwwU7qvd2y2EUyPQ6CcFAcuFYtBzpk_Cyq7PB.node20?bbsId=MOSFBBS_000000000045&menuNo=6010200",
+  "published": "2026-09-18T09:13:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "ko",
+  "endpoints": [
+   "https://www.export119.go.kr"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "668c95aeb9ac7c6872ca",
+  "host": "www.moef.go.kr",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\u5348\u5e74\u76f8\u5834\u3001\u682a\u4fa1\u306e\u52d5\u304d\u3092\u30a2\u30ce\u30de\u30ea\u30fc\u304b\u3089\u63a2\u308b - \u65e5\u672c\u7d4c\u6e08\u65b0\u805e",
+  "url": "https://www.nikkei.com/article/DGXZQOUB053PX0V00C26A1000000/",
+  "published": "2026-09-18T09:13:38+00:00",
+  "symbols": [
+   "XAUUSD",
+   "JPN225",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "ja",
+  "endpoints": [
+   "https://www.nikkei.com/api/svg/v1/k-search.rev-adf84c.svg?fill=%23333"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5be4d1164ade6523d189",
+  "host": "www.nikkei.com",
+  "claims": [
+   {
+    "claim": "\u30b3\u30e9\u30e0 Podcast \u3053\u3061\u3089\u3082\u304a\u3059\u3059\u3081\uff08\u81ea\u52d5\u691c\u7d22\uff09 \u9700\u7d66\u903c\u8feb\u3067\u6025\u9a30\u3059\u308bMLCC\u95a2\u9023\u682a\u3001\u6ce8\u76ee\u306e\u304d\u3063\u304b\u3051\u306f 6\u670815\u65e5 \u30d1\u30c3\u30af\u30f3\u3068\u52d5\u753b\u3067\u5b66\u3076 \u300c\u30aa\u30eb\u30ab\u30f3\u3060\u3051\u3067\u5927\u4e08\u592b\uff1f",
+    "lang": "ja",
+    "quantities": [
+     "\u9700\u7d66"
+    ],
+    "direction": [
+     "\u6025\u9a30"
+    ],
+    "horizon": [
+     "\u65e5",
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "JPN225",
+      "USDJPY"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1",
+      "\u65e5\u7d4c",
+      "\u30c9\u30eb\u5186"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [
+      "\u65e5\u9280: policy: BoJ / MoF intervention -> JPY",
+      "\u6295\u4fe1: flow: Japanese outbound investment -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "ecae4afe9b31"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "QUANTITATIVE RESEARCH AND TRADING - The latest theories, models and investment strategies in quantitative research and trading",
+  "url": "http://www.jonathankinlay.com/",
+  "published": "2026-09-18T09:14:05+00:00",
+  "symbols": [
+   "NVIDIA",
+   "XAUUSD",
+   "XAGUSD",
+   "XPTUSD",
+   "XTIUSD",
+   "XNGUSD",
+   "NAS100",
+   "US500",
+   "US2000",
+   "USDKRW",
+   "USDTRY",
+   "BTCUSD",
+   "UST10Y",
+   "Tesla"
+  ],
+  "timeframes": [
+   "1M",
+   "5M",
+   "D1",
+   "DAILY",
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "auction",
+   "basis",
+   "carry",
+   "correlation",
+   "gap",
+   "inventory",
+   "mean_reversion",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "policy",
+   "positioning",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "892021dadd385a7566f8",
+  "host": "www.jonathankinlay.com",
+  "claims": [
+   {
+    "claim": "Each signal becomes a dollar-neutral, rank-weighted long/short book with a one-day implementation lag.",
+    "lang": "en",
+    "quantities": [
+     "lag"
+    ],
+    "direction": [
+     "long",
+     "short"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XPTUSD",
+      "XTIUSD",
+      "XNGUSD",
+      "NAS100",
+      "US500",
+      "US2000",
+      "USDKRW",
+      "USDTRY",
+      "BTCUSD",
+      "UST10Y",
+      "Tesla",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "platinum",
+      "crude",
+      "natural gas",
+      "nasdaq",
+      "spy",
+      "russell",
+      "won",
+      "try",
+      "php",
+      "bitcoin",
+      "treasuries",
+      "tesla",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "01bf5374dc9d"
+   },
+   {
+    "claim": "Each signal becomes a dollar-neutral, rank-weighted long/short portfolio, traded with a one-day implementation lag.",
+    "lang": "en",
+    "quantities": [
+     "lag"
+    ],
+    "direction": [
+     "long",
+     "short"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XPTUSD",
+      "XTIUSD",
+      "XNGUSD",
+      "NAS100",
+      "US500",
+      "US2000",
+      "USDKRW",
+      "USDTRY",
+      "BTCUSD",
+      "UST10Y",
+      "Tesla",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "platinum",
+      "crude",
+      "natural gas",
+      "nasdaq",
+      "spy",
+      "russell",
+      "won",
+      "try",
+      "php",
+      "bitcoin",
+      "treasuries",
+      "tesla",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "9765eb0fb604"
+   },
+   {
+    "claim": "Mapping each proposal to its nearest canonical anomaly: Concept Runs proposing it (of 8) One-month reversal 8 One-week reversal 8 Betting-against-beta 8 Idiosyncratic-skewness effect 8 Low volatility (60d) 7 Low volatility (20d) 7 12-1 momentum 6 52-week high 6 Momentum acceleration 4 Intermediate momentum 2 Long-horizon trend 2 Path smoothness 1 Four concepts appear in every single run.",
+    "lang": "en",
+    "quantities": [
+     "reversal",
+     "volatility",
+     "momentum",
+     "trend"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "month",
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XPTUSD",
+      "XTIUSD",
+      "XNGUSD",
+      "NAS100",
+      "US500",
+      "US2000",
+      "USDKRW",
+      "USDTRY",
+      "BTCUSD",
+      "UST10Y",
+      "Tesla",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "platinum",
+      "crude",
+      "natural gas",
+      "nasdaq",
+      "spy",
+      "russell",
+      "won",
+      "try",
+      "php",
+      "bitcoin",
+      "treasuries",
+      "tesla",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "9bd32f8eff00"
+   },
+   {
+    "claim": "MVO \u2014 Momentum Rank: A classical baseline where the return forecast is simply the 20-day cross-sectional momentum.",
+    "lang": "en",
+    "quantities": [
+     "momentum"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XPTUSD",
+      "XTIUSD",
+      "XNGUSD",
+      "NAS100",
+      "US500",
+      "US2000",
+      "USDKRW",
+      "USDTRY",
+      "BTCUSD",
+      "UST10Y",
+      "Tesla",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "platinum",
+      "crude",
+      "natural gas",
+      "nasdaq",
+      "spy",
+      "russell",
+      "won",
+      "try",
+      "php",
+      "bitcoin",
+      "treasuries",
+      "tesla",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "41e51c89e08d"
+   },
+   {
+    "claim": "2%}\" ) \u200b fold += 1 train_days += step_days # expand the training window \u200b return results Output: Walk-Forward Summary (5 folds): Sharpe Range: -1.",
+    "lang": "en",
+    "quantities": [
+     "range"
+    ],
+    "direction": [
+     "expand"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XPTUSD",
+      "XTIUSD",
+      "XNGUSD",
+      "NAS100",
+      "US500",
+      "US2000",
+      "USDKRW",
+      "USDTRY",
+      "BTCUSD",
+      "UST10Y",
+      "Tesla",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "platinum",
+      "crude",
+      "natural gas",
+      "nasdaq",
+      "spy",
+      "russell",
+      "won",
+      "try",
+      "php",
+      "bitcoin",
+      "treasuries",
+      "tesla",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {
+     "sharpe": -1.0
+    },
+    "claim_hash": "89e350023ee2"
+   },
+   {
+    "claim": "Chart 4: Risk Decomposition and Transaction Costs Three panels: (A) the daily return distribution shows the RL agent has a narrower distribution with less left-tail mass than either benchmark \u2014 consistent with its lower volatility and drawdown;",
+    "lang": "en",
+    "quantities": [
+     "volatility",
+     "drawdown"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XPTUSD",
+      "XTIUSD",
+      "XNGUSD",
+      "NAS100",
+      "US500",
+      "US2000",
+      "USDKRW",
+      "USDTRY",
+      "BTCUSD",
+      "UST10Y",
+      "Tesla",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "platinum",
+      "crude",
+      "natural gas",
+      "nasdaq",
+      "spy",
+      "russell",
+      "won",
+      "try",
+      "php",
+      "bitcoin",
+      "treasuries",
+      "tesla",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a5d563d0b00d"
+   },
+   {
+    "claim": "My current thinking \u2014 formed through both literature review and hands-on experimentation \u2014 breaks down as follows: SSMs (Mamba-style) for efficient session-long state maintenance : When you need to model how market state evolves over hours or days of continuous trading, SSMs offer a compelling efficiency-accuracy tradeoff.",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "session",
+     "hours"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XPTUSD",
+      "XTIUSD",
+      "XNGUSD",
+      "NAS100",
+      "US500",
+      "US2000",
+      "USDKRW",
+      "USDTRY",
+      "BTCUSD",
+      "UST10Y",
+      "Tesla",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "platinum",
+      "crude",
+      "natural gas",
+      "nasdaq",
+      "spy",
+      "russell",
+      "won",
+      "try",
+      "php",
+      "bitcoin",
+      "treasuries",
+      "tesla",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "56b37490cb93"
+   },
+   {
+    "claim": "Financial markets exhibit long-range dependencies \u2014 a policy announcement in Washington can ripple through global markets for days or weeks.",
+    "lang": "en",
+    "quantities": [
+     "range"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XPTUSD",
+      "XTIUSD",
+      "XNGUSD",
+      "NAS100",
+      "US500",
+      "US2000",
+      "USDKRW",
+      "USDTRY",
+      "BTCUSD",
+      "UST10Y",
+      "Tesla",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "platinum",
+      "crude",
+      "natural gas",
+      "nasdaq",
+      "spy",
+      "russell",
+      "won",
+      "try",
+      "php",
+      "bitcoin",
+      "treasuries",
+      "tesla",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "554fa5605504"
+   }
+  ],
+  "n_claims": 9
+ }
+]

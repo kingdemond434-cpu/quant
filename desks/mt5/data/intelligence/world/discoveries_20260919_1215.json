@@ -1,0 +1,2754 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Evaluating our strategy",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/strategy-review/html/index.nl.html",
+  "published": "2026-09-19T12:13:46+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "nl",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.nl.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "a1d9fbe267375f00c3b2",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Evaluating our strategy",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/strategy-review/html/index.pl.html",
+  "published": "2026-09-19T12:13:47+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "pl",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.pl.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "b251736b8796fe4f62d6",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Evaluating our strategy",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/strategy-review/html/index.pt.html",
+  "published": "2026-09-19T12:13:49+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "momentum",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "pt",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.pt.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "4082a4a04c94f037cf06",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Evaluating our strategy",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/strategy-review/html/index.ro.html",
+  "published": "2026-09-19T12:13:51+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "ro",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.ro.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "1a24aa2e41ebe903cb13",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Evaluating our strategy",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/strategy-review/html/index.sk.html",
+  "published": "2026-09-19T12:13:53+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "sk",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.sk.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "e1036380420c5d578531",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Evaluating our strategy",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/strategy-review/html/index.sl.html",
+  "published": "2026-09-19T12:13:55+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "sl",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.sl.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "fcf08b6e3bc25aaf632e",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Evaluating our strategy",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/strategy-review/html/index.sv.html",
+  "published": "2026-09-19T12:13:57+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "inventory",
+   "mean_reversion",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "sv",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.sv.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "447299941c1051132341",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e27\u0e31\u0e19\u0e2b\u0e22\u0e38\u0e14\u0e15\u0e25\u0e32\u0e14\u0e01\u0e32\u0e23\u0e40\u0e07\u0e34\u0e19 2026 - \u0e15\u0e32\u0e23\u0e32\u0e07\u0e27\u0e31\u0e19\u0e2b\u0e22\u0e38\u0e14\u0e41\u0e25\u0e30\u0e27\u0e31\u0e19\u0e2b\u0e22\u0e38\u0e14\u0e18\u0e19\u0e32\u0e04\u0e32\u0e23 - RoboForex",
+  "url": "https://th.roboforex.com/beginners/info/national-holidays/",
+  "published": "2026-09-19T12:13:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "0aeef1063490e6931cff",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e40\u0e27\u0e25\u0e32\u0e17\u0e33\u0e01\u0e32\u0e23\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22\u0e02\u0e2d\u0e07\u0e15\u0e25\u0e32\u0e14 2026 - \u0e40\u0e27\u0e25\u0e32\u0e40\u0e1b\u0e34\u0e14\u0e1b\u0e34\u0e14\u0e15\u0e32\u0e21\u0e20\u0e39\u0e21\u0e34\u0e20\u0e32\u0e04 - RoboForex",
+  "url": "https://th.roboforex.com/beginners/info/forex-trading-hours/",
+  "published": "2026-09-19T12:14:00+00:00",
+  "symbols": [
+   "AUDUSD",
+   "EURJPY",
+   "EURUSD",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "364d9adef1cc2af9bbbc",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e1b\u0e0f\u0e34\u0e17\u0e34\u0e19\u0e40\u0e28\u0e23\u0e29\u0e10\u0e01\u0e34\u0e08 2026: \u0e02\u0e48\u0e32\u0e27\u0e41\u0e25\u0e30\u0e40\u0e2b\u0e15\u0e38\u0e01\u0e32\u0e23\u0e13\u0e4c\u0e17\u0e32\u0e07\u0e01\u0e32\u0e23\u0e40\u0e07\u0e34\u0e19 - RoboForex",
+  "url": "https://th.roboforex.com/beginners/analytics/economic-calendar/",
+  "published": "2026-09-19T12:14:02+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "75584a45b2b3fe1bf5d0",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e04\u0e33\u0e16\u0e32\u0e21\u0e17\u0e35\u0e48\u0e1e\u0e1a\u0e1a\u0e48\u0e2d\u0e22 | RoboForex Help Center",
+  "url": "https://th.roboforex.com/help/",
+  "published": "2026-09-19T12:14:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1743511020"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "2150c18db14e8111b1fe",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e42\u0e1b\u0e23\u0e41\u0e01\u0e23\u0e21\u0e1e\u0e31\u0e19\u0e18\u0e21\u0e34\u0e15\u0e23\u0e17\u0e32\u0e07\u0e01\u0e32\u0e23\u0e40\u0e07\u0e34\u0e19 Infinity - RoboForex",
+  "url": "https://th.roboforex.com/partner-program/",
+  "published": "2026-09-19T12:14:06+00:00",
+  "symbols": [
+   "BTCUSD",
+   "EURUSD",
+   "GBPUSD",
+   "US30",
+   "US500",
+   "USDJPY",
+   "XAGUSD",
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "f0255c016bc361cce872",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e1e\u0e32\u0e23\u0e4c\u0e17\u0e40\u0e19\u0e2d\u0e23\u0e4c\u0e23\u0e2d\u0e22\u0e31\u0e25\u0e15\u0e35\u0e49 - RoboForex",
+  "url": "https://th.roboforex.com/promo/loyalty-program/",
+  "published": "2026-09-19T12:14:08+00:00",
+  "symbols": [
+   "BTCUSD",
+   "EURUSD",
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "386e120ee871b824f5c9",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e42\u0e1b\u0e23\u0e41\u0e01\u0e23\u0e21\u0e1e\u0e32\u0e23\u0e4c\u0e17\u0e40\u0e19\u0e2d\u0e23\u0e4c CopyFX - \u0e23\u0e31\u0e1a\u0e04\u0e48\u0e32\u0e15\u0e2d\u0e1a\u0e41\u0e17\u0e19\u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a\u0e19\u0e31\u0e01\u0e25\u0e07\u0e17\u0e38\u0e19\u0e17\u0e35\u0e48\u0e04\u0e38\u0e13\u0e0a\u0e27\u0e19 - RoboForex",
+  "url": "https://th.roboforex.com/partner-program/copy-trading-partner-program/",
+  "published": "2026-09-19T12:14:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "66810a53b38626e9cfc3",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Trading - Profit and Loss Calculator - RoboForex",
+  "url": "https://roboforex.com/beginners/start/profit-and-loss-calculator/",
+  "published": "2026-09-19T12:14:11+00:00",
+  "symbols": [
+   "AUDCAD",
+   "AUDCHF",
+   "AUDJPY",
+   "AUDNZD",
+   "AUDUSD",
+   "CADCHF",
+   "CADJPY",
+   "CHFJPY",
+   "EURAUD",
+   "EURCAD",
+   "EURCHF",
+   "EURGBP",
+   "EURJPY",
+   "EURNZD",
+   "EURUSD",
+   "GBPAUD",
+   "GBPCAD",
+   "GBPCHF",
+   "GBPJPY",
+   "GBPNZD",
+   "GBPUSD",
+   "NZDCAD",
+   "NZDCHF",
+   "NZDJPY"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "night_session",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "4131e974a817c800c0a4",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "Always select the correct symbol to ensure the applicable contract size, tick value, and commission rate are used in the calculation.",
+    "lang": "en",
+    "quantities": [
+     "rate"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "tick"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDCHF",
+      "NZDUSD",
+      "EURJPY",
+      "GBPJPY",
+      "AUDJPY",
+      "EURGBP",
+      "USDMXN",
+      "Tesla",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "xauusd",
+      "xagusd",
+      "wti",
+      "eurusd",
+      "gbpusd",
+      "usdjpy",
+      "audusd",
+      "usdcad",
+      "usdchf",
+      "nzdusd",
+      "eurjpy",
+      "gbpjpy",
+      "audjpy",
+      "eurgbp",
+      "usdmxn",
+      "tsla",
+      "nvda"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5bbc9abc2497"
+   },
+   {
+    "claim": "If you are modelling a position held beyond the daily rollover, refer to the swap rate for your instrument on the Contract Specifications page.",
+    "lang": "en",
+    "quantities": [
+     "rollover",
+     "swap",
+     "rate"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDCHF",
+      "NZDUSD",
+      "EURJPY",
+      "GBPJPY",
+      "AUDJPY",
+      "EURGBP",
+      "USDMXN",
+      "Tesla",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "xauusd",
+      "xagusd",
+      "wti",
+      "eurusd",
+      "gbpusd",
+      "usdjpy",
+      "audusd",
+      "usdcad",
+      "usdchf",
+      "nzdusd",
+      "eurjpy",
+      "gbpjpy",
+      "audjpy",
+      "eurgbp",
+      "usdmxn",
+      "tsla",
+      "nvda"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b9b373c22764"
+   },
+   {
+    "claim": "The required amount is: Margin = (Lots \u00d7 Contract Size \u00d7 Entry Price) \u00f7 Leverage If your equity falls below the required margin level, open positions may be subject to a margin call or automatic close-out.",
+    "lang": "en",
+    "quantities": [
+     "open",
+     "close"
+    ],
+    "direction": [
+     "contract",
+     "falls"
+    ],
+    "horizon": [
+     "open",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDCHF",
+      "NZDUSD",
+      "EURJPY",
+      "GBPJPY",
+      "AUDJPY",
+      "EURGBP",
+      "USDMXN",
+      "Tesla",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "xauusd",
+      "xagusd",
+      "wti",
+      "eurusd",
+      "gbpusd",
+      "usdjpy",
+      "audusd",
+      "usdcad",
+      "usdchf",
+      "nzdusd",
+      "eurjpy",
+      "gbpjpy",
+      "audjpy",
+      "eurgbp",
+      "usdmxn",
+      "tsla",
+      "nvda"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "485b45534980"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Trading Calculator: spread, pips, margin, leverage, profit - RoboForex",
+  "url": "https://roboforex.com/beginners/start/forex-calculator/",
+  "published": "2026-09-19T12:14:12+00:00",
+  "symbols": [
+   "ADAUSD",
+   "AUDCAD",
+   "AUDCHF",
+   "AUDJPY",
+   "AUDNZD",
+   "AUDUSD",
+   "BTCUSD",
+   "CADCHF",
+   "CADJPY",
+   "CHFJPY",
+   "ETHUSD",
+   "EURAUD",
+   "EURCAD",
+   "EURCHF",
+   "EURGBP",
+   "EURJPY",
+   "EURNZD",
+   "EURUSD",
+   "GBPAUD",
+   "GBPCAD",
+   "GBPCHF",
+   "GBPJPY",
+   "GBPNZD",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "7286555392b9ff0adcd7",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex forecasts 2026: market analysis &amp; fx predictions for today - RoboForex",
+  "url": "https://roboforex.com/beginners/analytics/forex-forecast/",
+  "published": "2026-09-19T12:14:14+00:00",
+  "symbols": [
+   "AUDUSD",
+   "BTCUSD",
+   "EURUSD",
+   "GBPUSD",
+   "SOLUSD",
+   "USDCAD",
+   "USDJPY",
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "3c1e179acf125aebdac0",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "XAUUSD maintains bullish momentum after the Federal Reserve meeting XAUUSD is rising for a second consecutive trading session after rebounding from strong support.",
+    "lang": "en",
+    "quantities": [
+     "momentum",
+     "session"
+    ],
+    "direction": [
+     "bullish"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "xauusd"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "6740b54b8cc6"
+   },
+   {
+    "claim": "SOLUSD buyers prepare for a breakout above the upper boundary of the Wedge pattern SOLUSD is rising for a second consecutive trading session, offsetting the negative impact of the Federal Reserve's rate hike.",
+    "lang": "en",
+    "quantities": [
+     "breakout",
+     "session",
+     "rate",
+     "hike"
+    ],
+    "direction": [
+     "negative"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "cfcc198a778f"
+   },
+   {
+    "claim": "JP 225 could rise on a weaker yen and lower oil prices The JP 225 index is struggling to recover for a second consecutive session following the yen's decline and lower oil prices.",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "rise",
+     "lower"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "yen"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "59f10b6bad53"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Financial Market Holidays 2026 - Holiday Schedule and Bank Holidays - RoboForex",
+  "url": "https://roboforex.com/beginners/info/national-holidays/",
+  "published": "2026-09-19T12:14:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "8d0ce161b4a5853113b7",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Market Trading Hours 2026 - session times by region - RoboForex",
+  "url": "https://roboforex.com/beginners/info/forex-trading-hours/",
+  "published": "2026-09-19T12:14:18+00:00",
+  "symbols": [
+   "AUDUSD",
+   "EURJPY",
+   "EURUSD",
+   "USDJPY",
+   "BTCUSD",
+   "ETHUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "night_session",
+   "policy",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "ba599f7a9de132c7e639",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "The most aggressive trading session out of all is American, which can either significantly drop or, conversely, strengthen, its very own dollar.",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "drop",
+     "strengthen"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "USDJPY",
+      "AUDUSD",
+      "EURJPY",
+      "BTCUSD",
+      "ETHUSD"
+     ],
+     "mentioned": [
+      "eurusd",
+      "yen",
+      "audusd",
+      "eurjpy",
+      "bitcoin",
+      "ethereum"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "bb5673d40493"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Economic calendar 2026: financial news and events - RoboForex",
+  "url": "https://roboforex.com/beginners/analytics/economic-calendar/",
+  "published": "2026-09-19T12:14:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "674b44957146433bf320",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "FAQ Archives | RoboForex Help Center",
+  "url": "https://roboforex.com/help/",
+  "published": "2026-09-19T12:14:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1743511020"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5a2e49a7148e4b4a4e1f",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Polygon - QuantConnect.com",
+  "url": "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/polygon",
+  "published": "2026-09-19T12:14:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://cdn.quantconnect.com/2024-quantconnect-brand-kit.zip",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/polygon",
+   "https://www.quantconnect.com/datasets/",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/navigating-the-market",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/categories",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/data-issues",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/misconceptions",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/licensing",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/vendors",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-equities",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-equity-options",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/crypto",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/crypto-futures",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/forex",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/futures",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-indices",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-index-options",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/cfd",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/alternative-data",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/auxiliary-data",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/interactive-brokers",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/tradestation",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/tastytrade",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/alpaca",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/charles-schwab",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/databento",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/tradier",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/bloomberg-bpipe",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/ssc-eze",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/trading-technologies",
+   "https://www.quantconnect.com/docs/v2/lean-cli/datasets/polygon",
+   "https://www.quantconnect.com/datasets/quantconnect-us-equity-security-master",
+   "https://www.quantconnect.com/docs/v2/lean-cli/datasets/quantconnect/equity-options#02-Prerequisites",
+   "https://www.quantconnect.com/docs/v2/lean-cli/datasets/quantconnect/index-options#02-Prerequisites",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/polygon#09-Live-Trading"
+  ],
+  "n_endpoints": 37,
+  "vault_sha": "afe74069ad8df5d1564c",
+  "host": "www.quantconnect.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Key Concepts - QuantConnect.com",
+  "url": "https://www.quantconnect.com/docs/v2/lean-engine/contributions/datasets/key-concepts",
+  "published": "2026-09-19T12:14:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://cdn.quantconnect.com/2024-quantconnect-brand-kit.zip",
+   "https://www.quantconnect.com/docs/v2/lean-engine/contributions/datasets/key-concepts",
+   "https://www.quantconnect.com/datasets/",
+   "https://www.quantconnect.com/docs/v2/lean-engine/contributions/datasets",
+   "https://www.quantconnect.com/docs/v2/lean-engine/contributions/datasets/defining-data-models",
+   "https://www.quantconnect.com/docs/v2/lean-engine/contributions/datasets/rendering-data/rendering-data-with-python",
+   "https://www.quantconnect.com/docs/v2/lean-engine/contributions/datasets/rendering-data/rendering-data-with-csharp",
+   "https://www.quantconnect.com/docs/v2/lean-engine/contributions/datasets/rendering-data/rendering-data-with-notebooks",
+   "https://www.quantconnect.com/docs/v2/lean-engine/contributions/datasets/testing-data-models",
+   "https://www.quantconnect.com/docs/v2/lean-engine/contributions/datasets/data-documentation",
+   "https://www.quantconnect.com/docs/v2/lean-engine/contributions/brokerages/downloading-data"
+  ],
+  "n_endpoints": 11,
+  "vault_sha": "70b4ca2877286f47b744",
+  "host": "www.quantconnect.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Algorithmic Trading Platform - QuantConnect.com",
+  "url": "https://www.quantconnect.com/data/issues/create",
+  "published": "2026-09-19T12:14:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.quantconnect.com/datasets"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "d2adf12e551ae0ab6ebc",
+  "host": "www.quantconnect.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Downloading Data - QuantConnect.com",
+  "url": "https://www.quantconnect.com/docs/v2/local-platform/datasets/downloading-data",
+  "published": "2026-09-19T12:14:31+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://cdn.quantconnect.com/2024-quantconnect-brand-kit.zip",
+   "https://www.quantconnect.com/docs/v2/local-platform/datasets/downloading-data",
+   "https://www.quantconnect.com/datasets/",
+   "https://www.quantconnect.com/docs/v2/local-platform/datasets/getting-started",
+   "https://www.quantconnect.com/docs/v2/local-platform/datasets/alpha-vantage",
+   "https://www.quantconnect.com/docs/v2/local-platform/datasets/polygon",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/overview"
+  ],
+  "n_endpoints": 7,
+  "vault_sha": "af46f00dee6400a47432",
+  "host": "www.quantconnect.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "History Requests - QuantConnect.com",
+  "url": "https://www.quantconnect.com/docs/v2/writing-algorithms/historical-data/history-requests",
+  "published": "2026-09-19T12:14:34+00:00",
+  "symbols": [
+   "NAS100",
+   "US500",
+   "USDKRW",
+   "USDTRY",
+   "BTCUSD"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "correlation",
+   "flow",
+   "gap",
+   "momentum",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://cdn.quantconnect.com/2024-quantconnect-brand-kit.zip",
+   "https://www.quantconnect.com/datasets/",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/overview",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/binance-crypto-future-margin-rate-data",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/binance-crypto-future-price-data",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/binance-crypto-price-data",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/binance-us-crypto-price-data",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/bitfinex-crypto-price-data",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/bybit-crypto-future-margin-rate-data",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/bybit-crypto-future-price-data",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/bybit-crypto-price-data",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/cfd-data",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/cash-indices",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/coinbase-crypto-price-data",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/forex-data",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/fama-french",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/fear-and-greed",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/international-future-universe",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/kraken-crypto-price-data",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/spectral-tick-flow-signal",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/us-etf-constituents",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/us-equities-short-availability",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/us-equity-coarse-universe",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/us-equity-option-universe",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/us-equity-security-master",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/us-future-option-universe",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/us-future-universe",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/us-futures-security-master",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/us-index-option-universe",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/algoseek",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/algoseek/us-equities",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/algoseek/us-equity-options",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/algoseek/us-future-options",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/algoseek/us-futures",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/algoseek/us-index-options",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/morningstar",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/morningstar/us-fundamental-data",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/tickdata",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/tickdata/international-futures",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/benzinga",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/benzinga/benzinga-news-feed",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/blockchain",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/blockchain/bitcoin-metadata",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/brain",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/brain/brain-language-metrics-on-company-filings",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/brain/brain-ml-stock-ranking",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/brain/brain-sentiment-indicator",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/brain/brain-wikipedia-page-views",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/bureau-of-labor-statistics",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/bureau-of-labor-statistics/us-bureau-of-labor-statistics-(bls)",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/coingecko",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/coingecko/crypto-market-cap",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/commodity-futures-trading-commission",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/commodity-futures-trading-commission/commitments-of-traders",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/eod-historical-data",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/eod-historical-data/economic-events",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/eod-historical-data/macroeconomics-indicators",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/eod-historical-data/upcoming-dividends",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/eod-historical-data/upcoming-earnings",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/eod-historical-data/upcoming-ipos",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/eod-historical-data/upcoming-splits",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/energy-information-administration",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/energy-information-administration/us-electricity",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/energy-information-administration/us-energy-information-administration-(eia)",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/european-central-bank",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/european-central-bank/euro-yield-curve",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/european-central-bank/policy-rates",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/european-central-bank/systemic-stress",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/eurostat",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/eurostat/macro-indicators",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/eurostat/surveys",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/extractalpha",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/extractalpha/cross-asset-model",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/extractalpha/estimize",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/extractalpha/tactical",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/extractalpha/true-beats",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/fred",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/fred/us-federal-reserve-(fred)",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/federal-reserve-bank-of-st-louis",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/federal-reserve-bank-of-st-louis/us-interest-rate",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/financial-industry-regulatory-authority",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/financial-industry-regulatory-authority/otc-transparency",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/financial-industry-regulatory-authority/regulation-sho",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/kavout",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/kavout/composite-factor-bundle",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/nasdaq",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/nasdaq/data-link",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quiver-quantitative",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quiver-quantitative/cnbc-trading",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quiver-quantitative/corporate-lobbying",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quiver-quantitative/insider-trading",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quiver-quantitative/us-congress-trading",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quiver-quantitative/us-government-contracts",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/regalytics",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/regalytics/us-regulatory-alerts---financial-sector",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/securities-and-exchange-commission",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/securities-and-exchange-commission/us-sec-filings",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/smart-insider",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/smart-insider/corporate-buybacks",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/tiingo",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/tiingo/tiingo-news-feed",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/treasury-department",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/treasury-department/us-treasury-yield-curve",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/us-bureau-of-economic-analysis",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/us-bureau-of-economic-analysis/gdp-by-industry",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/us-department-of-agriculture",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/us-department-of-agriculture/usda-fruit-and-vegetables",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/united-states-patent-and-trademark-office",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/united-states-patent-and-trademark-office/patent-maintenance",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/vix-central",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/vix-central/vix-central-contango",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/live-trading/signal-exports",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/live-trading/signal-exports/key-concepts",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/live-trading/signal-exports/collective2",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/live-trading/signal-exports/numerai",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/live-trading/signal-exports/vbase"
+  ],
+  "n_endpoints": 117,
+  "vault_sha": "856454698ee341d829c3",
+  "host": "www.quantconnect.com",
+  "claims": [
+   {
+    "claim": "int/NoneType The desired offset from the current front month for continuous Futures contracts .",
+    "lang": "en",
+    "quantities": [
+     "futures"
+    ],
+    "direction": [
+     "contracts"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "USDKRW",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "spy",
+      "won",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "EURUSD",
+      "XAUUSD",
+      "USDJPY"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities",
+      "european central bank: policy: ECB -> EUR",
+      "commitments of traders: positioning: CFTC -> FX and gold"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "3edb3cad4c32"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Warm Up Periods - QuantConnect.com",
+  "url": "https://www.quantconnect.com/docs/v2/writing-algorithms/historical-data/warm-up-periods",
+  "published": "2026-09-19T12:14:36+00:00",
+  "symbols": [
+   "BTCUSD"
+  ],
+  "timeframes": [
+   "1M",
+   "5M",
+   "DAILY",
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "correlation",
+   "flow",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://cdn.quantconnect.com/2024-quantconnect-brand-kit.zip",
+   "https://www.quantconnect.com/datasets/",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/overview",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/binance-crypto-future-margin-rate-data",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/binance-crypto-future-price-data",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/binance-crypto-price-data",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/binance-us-crypto-price-data",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/bitfinex-crypto-price-data",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/bybit-crypto-future-margin-rate-data",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/bybit-crypto-future-price-data",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/bybit-crypto-price-data",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/cfd-data",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/cash-indices",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/coinbase-crypto-price-data",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/forex-data",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/fama-french",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/fear-and-greed",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/international-future-universe",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/kraken-crypto-price-data",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/spectral-tick-flow-signal",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/us-etf-constituents",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/us-equities-short-availability",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/us-equity-coarse-universe",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/us-equity-option-universe",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/us-equity-security-master",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/us-future-option-universe",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/us-future-universe",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/us-futures-security-master",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/us-index-option-universe",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/algoseek",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/algoseek/us-equities",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/algoseek/us-equity-options",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/algoseek/us-future-options",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/algoseek/us-futures",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/algoseek/us-index-options",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/morningstar",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/morningstar/us-fundamental-data",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/tickdata",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/tickdata/international-futures",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/benzinga",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/benzinga/benzinga-news-feed",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/blockchain",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/blockchain/bitcoin-metadata",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/brain",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/brain/brain-language-metrics-on-company-filings",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/brain/brain-ml-stock-ranking",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/brain/brain-sentiment-indicator",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/brain/brain-wikipedia-page-views",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/bureau-of-labor-statistics",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/bureau-of-labor-statistics/us-bureau-of-labor-statistics-(bls)",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/coingecko",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/coingecko/crypto-market-cap",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/commodity-futures-trading-commission",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/commodity-futures-trading-commission/commitments-of-traders",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/eod-historical-data",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/eod-historical-data/economic-events",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/eod-historical-data/macroeconomics-indicators",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/eod-historical-data/upcoming-dividends",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/eod-historical-data/upcoming-earnings",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/eod-historical-data/upcoming-ipos",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/eod-historical-data/upcoming-splits",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/energy-information-administration",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/energy-information-administration/us-electricity",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/energy-information-administration/us-energy-information-administration-(eia)",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/european-central-bank",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/european-central-bank/euro-yield-curve",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/european-central-bank/policy-rates",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/european-central-bank/systemic-stress",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/eurostat",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/eurostat/macro-indicators",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/eurostat/surveys",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/extractalpha",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/extractalpha/cross-asset-model",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/extractalpha/estimize",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/extractalpha/tactical",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/extractalpha/true-beats",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/fred",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/fred/us-federal-reserve-(fred)",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/federal-reserve-bank-of-st-louis",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/federal-reserve-bank-of-st-louis/us-interest-rate",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/financial-industry-regulatory-authority",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/financial-industry-regulatory-authority/otc-transparency",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/financial-industry-regulatory-authority/regulation-sho",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/kavout",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/kavout/composite-factor-bundle",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/nasdaq",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/nasdaq/data-link",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quiver-quantitative",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quiver-quantitative/cnbc-trading",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quiver-quantitative/corporate-lobbying",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quiver-quantitative/insider-trading",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quiver-quantitative/us-congress-trading",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quiver-quantitative/us-government-contracts",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/regalytics",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/regalytics/us-regulatory-alerts---financial-sector",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/securities-and-exchange-commission",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/securities-and-exchange-commission/us-sec-filings",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/smart-insider",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/smart-insider/corporate-buybacks",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/tiingo",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/tiingo/tiingo-news-feed",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/treasury-department",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/treasury-department/us-treasury-yield-curve",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/us-bureau-of-economic-analysis",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/us-bureau-of-economic-analysis/gdp-by-industry",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/us-department-of-agriculture",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/us-department-of-agriculture/usda-fruit-and-vegetables",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/united-states-patent-and-trademark-office",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/united-states-patent-and-trademark-office/patent-maintenance",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/vix-central",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/vix-central/vix-central-contango",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/live-trading/signal-exports",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/live-trading/signal-exports/key-concepts",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/live-trading/signal-exports/collective2",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/live-trading/signal-exports/numerai",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/live-trading/signal-exports/vbase",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/data-issues#04-Report-New-Issues",
+   "https://www.quantconnect.com/datasets/issues",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/interactive-brokers",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets",
+   "https://www.quantconnect.com/docs/v2/local-platform/datasets/getting-started"
+  ],
+  "n_endpoints": 122,
+  "vault_sha": "614e773a637ea942a425",
+  "host": "www.quantconnect.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Algorithmic Trading Platform - QuantConnect.com",
+  "url": "https://www.quantconnect.com/datasets/tiingo-news-feed",
+  "published": "2026-09-19T12:14:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.quantconnect.com/datasets"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "fd6adfb41b99e46f616a",
+  "host": "www.quantconnect.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Incidence of tuberculosis (per 100,000 people) | Data",
+  "url": "https://data.worldbank.org/indicator/SH.TBS.INCD",
+  "published": "2026-09-19T12:14:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/en/indicator/SH.TBS.INCD?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "efb56ca1e70bd69c0e06",
+  "host": "data.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Income share held by lowest 20% | Data",
+  "url": "https://data.worldbank.org/indicator/SI.DST.FRST.20",
+  "published": "2026-09-19T12:14:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/en/indicator/SI.DST.FRST.20?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ebc95388c297c1994edc",
+  "host": "data.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Maternal mortality ratio (modeled estimate, per 100,000 live births) | Data",
+  "url": "https://data.worldbank.org/indicator/SH.STA.MMRT",
+  "published": "2026-09-19T12:14:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/en/indicator/SH.STA.MMRT?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "d6715ca6673a03a7a090",
+  "host": "data.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Mortality rate, under-5 (per 1,000 live births) | Data",
+  "url": "https://data.worldbank.org/indicator/SH.DYN.MORT",
+  "published": "2026-09-19T12:14:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/en/indicator/SH.DYN.MORT?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "20688de39b4a33cef589",
+  "host": "data.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Net ODA received (% of GNI) | Data",
+  "url": "https://data.worldbank.org/indicator/DT.ODA.ODAT.GN.ZS",
+  "published": "2026-09-19T12:14:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/en/indicator/DT.ODA.ODAT.GN.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "43250bebaf35b5078ca8",
+  "host": "data.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Net ODA received (% of central government expense) | Data",
+  "url": "https://data.worldbank.org/indicator/DT.ODA.ODAT.XP.ZS",
+  "published": "2026-09-19T12:14:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/en/indicator/DT.ODA.ODAT.XP.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "0a9ba8d55623227289f4",
+  "host": "data.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Net ODA received (% of gross capital formation) | Data",
+  "url": "https://data.worldbank.org/indicator/DT.ODA.ODAT.GI.ZS",
+  "published": "2026-09-19T12:14:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/en/indicator/DT.ODA.ODAT.GI.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "08a7fbbb9764e3aa7215",
+  "host": "data.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5916\u6c47\u5bfc\u8bfb _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://forex.eastmoney.com/a/cwhdd.html",
+  "published": "2026-09-19T12:14:55+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1ee165a4cdef2c8ab9f6",
+  "host": "forex.eastmoney.com",
+  "claims": [
+   {
+    "claim": "\u8bc1\u5238\u65e5\u62a5\uff1a\u4e0a\u5e02\u516c\u53f8\u8981\u4e3b\u52a8\u5411\u6982\u5ff5\u7092\u4f5c\u201c\u6cfc\u51b7\u6c34\u201d \u56fd\u6cf0\u6d77\u901a\uff1a\u5730\u65b9\u65b0\u589e\u4e13\u9879\u503a\u53d1\u884c\u8282\u594f\u504f\u6162 \u9884\u8ba1\u56db\u5b63\u5ea6\u4e13\u9879\u503a\u7528\u9014\u66f4\u7075\u6d3b \u4e2d\u91d1\u516c\u53f8\uff1a\u591a\u79cd\u56e0\u7d20\u50ac\u5316\u5168\u7403\u519c\u4ea7\u54c1\u4ef7\u683c\u8d70\u5f3a \u8d44\u8baf\u7cbe\u534e \u66f4\u591a \u5546\u52a1\u90e8\u65b0\u95fb\u53d1\u8a00\u4eba\u5c31\u4e2d\u7f8e\u7ecf\u8d38\u78cb\u5546\u6709\u5173\u95ee\u9898\u7b54\u8bb0\u8005\u95ee \u201c\u53f2\u4e0a\u6700\u5927IPO\u201d\u65f6\u95f4\u8868\u53c8\u751f\u53d8 Anthropic\u5e74\u5316\u6536\u5165\u9884\u8ba1\u5c06\u7a81\u78341000\u4ebf\u7f8e\u5143 \u5168\u7403\u5e02\u573a\uff1a\u7f8e\u80a1\u4e09\u5927\u6307\u6570\u6da8\u8dcc\u4e0d\u4e00 \u534a\u5bfc\u4f53\u677f\u5757\u8d70\u5f3a \u52a0\u5bc6\u8d27\u5e01\u6982\u5ff5\u5927\u6da8 \u5546\u52a1\u90e8\u65b0\u95fb\u53d1\u8a00\u4eba\u5c31\u7f8e\u65b9\u5c06\u300a2026\u5e74\u683c\u96f7\u5384\u59c6\u5236\u88c1\u4fc4\u7f57\u65af\u548c\u4f0a\u6717\u6cd5\u6848\u300b\u7b7e\u7f72\u6210\u6cd5\u7b54\u8bb0\u8005\u95ee \u7279\u6717\u666e\uff1a\u7f8e\u56fd\u5c06\u83b7\u5f97\u5bf9\u683c\u9675\u5170\u5c9b\u5b89\u5168\u201c\u6c38\u4e45\u63a7\u5236\u6743\u201d \u90d1\u91cd\u58f0\u660e\uff1a\u4e1c\u65b9\u8d22\u5bcc\u7f51\u53d1\u5e03\u6b64\u4fe1\u606f\u7684\u76ee\u7684\u5728\u4e8e\u4f20\u64ad\u66f4\u591a\u4fe1\u606f\uff0c\u4e0e\u672c\u7ad9\u7acb\u573a\u65e0\u5173\u3002",
+    "lang": "zh",
+    "quantities": [
+     "\u7a81\u7834",
+     "\u7f8e\u5143"
+    ],
+    "direction": [
+     "\u8d70\u5f3a",
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u5b63\u5ea6"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "\u7f8e\u80a1"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "5fda846929cf"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5916\u6c47\u5bfc\u8bfb _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://forex.eastmoney.com/a/cwhdd.html",
+  "published": "2026-09-19T12:14:57+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "376e279fe125ce52537b",
+  "host": "forex.eastmoney.com",
+  "claims": [
+   {
+    "claim": "\u8bc1\u5238\u65e5\u62a5\uff1a\u4e0a\u5e02\u516c\u53f8\u8981\u4e3b\u52a8\u5411\u6982\u5ff5\u7092\u4f5c\u201c\u6cfc\u51b7\u6c34\u201d \u56fd\u6cf0\u6d77\u901a\uff1a\u5730\u65b9\u65b0\u589e\u4e13\u9879\u503a\u53d1\u884c\u8282\u594f\u504f\u6162 \u9884\u8ba1\u56db\u5b63\u5ea6\u4e13\u9879\u503a\u7528\u9014\u66f4\u7075\u6d3b \u4e2d\u91d1\u516c\u53f8\uff1a\u591a\u79cd\u56e0\u7d20\u50ac\u5316\u5168\u7403\u519c\u4ea7\u54c1\u4ef7\u683c\u8d70\u5f3a \u8d44\u8baf\u7cbe\u534e \u66f4\u591a \u5546\u52a1\u90e8\u65b0\u95fb\u53d1\u8a00\u4eba\u5c31\u4e2d\u7f8e\u7ecf\u8d38\u78cb\u5546\u6709\u5173\u95ee\u9898\u7b54\u8bb0\u8005\u95ee \u201c\u53f2\u4e0a\u6700\u5927IPO\u201d\u65f6\u95f4\u8868\u53c8\u751f\u53d8 Anthropic\u5e74\u5316\u6536\u5165\u9884\u8ba1\u5c06\u7a81\u78341000\u4ebf\u7f8e\u5143 \u5168\u7403\u5e02\u573a\uff1a\u7f8e\u80a1\u4e09\u5927\u6307\u6570\u6da8\u8dcc\u4e0d\u4e00 \u534a\u5bfc\u4f53\u677f\u5757\u8d70\u5f3a \u52a0\u5bc6\u8d27\u5e01\u6982\u5ff5\u5927\u6da8 \u5546\u52a1\u90e8\u65b0\u95fb\u53d1\u8a00\u4eba\u5c31\u7f8e\u65b9\u5c06\u300a2026\u5e74\u683c\u96f7\u5384\u59c6\u5236\u88c1\u4fc4\u7f57\u65af\u548c\u4f0a\u6717\u6cd5\u6848\u300b\u7b7e\u7f72\u6210\u6cd5\u7b54\u8bb0\u8005\u95ee \u7279\u6717\u666e\uff1a\u7f8e\u56fd\u5c06\u83b7\u5f97\u5bf9\u683c\u9675\u5170\u5c9b\u5b89\u5168\u201c\u6c38\u4e45\u63a7\u5236\u6743\u201d \u90d1\u91cd\u58f0\u660e\uff1a\u4e1c\u65b9\u8d22\u5bcc\u7f51\u53d1\u5e03\u6b64\u4fe1\u606f\u7684\u76ee\u7684\u5728\u4e8e\u4f20\u64ad\u66f4\u591a\u4fe1\u606f\uff0c\u4e0e\u672c\u7ad9\u7acb\u573a\u65e0\u5173\u3002",
+    "lang": "zh",
+    "quantities": [
+     "\u7a81\u7834",
+     "\u7f8e\u5143"
+    ],
+    "direction": [
+     "\u8d70\u5f3a",
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u5b63\u5ea6"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "\u7f8e\u80a1"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "5fda846929cf"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e1c\u65b9\u8d22\u5bcc\u7f51,\u5916\u6c47\u9891\u9053,\u5916\u6c47",
+  "url": "https://forex.eastmoney.com/USD.html",
+  "published": "2026-09-19T12:14:59+00:00",
+  "symbols": [
+   "USDJPY",
+   "BTCUSD",
+   "EURUSD",
+   "USDCNH"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "85895d74a5285ba8f7cc",
+  "host": "forex.eastmoney.com",
+  "claims": [
+   {
+    "claim": "69 \u7f8e\u5143\u5151\u65e5\u5143\u65e5\u5185\u8dcc1.",
+    "lang": "zh",
+    "quantities": [
+     "\u65e5\u5185",
+     "\u7f8e\u5143",
+     "\u65e5\u5143"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u65e5\u5185"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "\u65e5\u5143"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e0b649503b13"
+   },
+   {
+    "claim": "7852\uff0c\u4e0b\u8c0311\u70b9 \u6bd4\u7279\u5e01\u7a81\u783475000\u7f8e\u5143\uff0c\u65e5\u5185\u6da8\u8d853%\uff0c\u521b5\u670828\u65e5\u4ee5\u6765.",
+    "lang": "zh",
+    "quantities": [
+     "\u7a81\u7834",
+     "\u65e5\u5185",
+     "\u7f8e\u5143"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u65e5\u5185",
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "\u6bd4\u7279\u5e01"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "fc26fd35e196"
+   },
+   {
+    "claim": "3% \u4eba\u6c11\u5e01\u5151\u7f8e\u5143\u4e2d\u95f4\u4ef7\u8c03\u53475\u4e2a\u57fa\u70b9 \u6b27\u5143\u5151\u7f8e\u5143\u65e5\u5185\u6da8\u5e45\u8fbe0.",
+    "lang": "zh",
+    "quantities": [
+     "\u65e5\u5185",
+     "\u7f8e\u5143",
+     "\u6b27\u5143"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u65e5\u5185"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "USDCNH"
+     ],
+     "mentioned": [
+      "\u6b27\u5143",
+      "\u4eba\u6c11\u5e01"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [
+      "\u4e2d\u95f4\u4ef7: policy: PBoC fixing -> CNH"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "b3fd710f96cf"
+   },
+   {
+    "claim": "\u5728\u5cb8\u4eba\u6c11\u5e01\u5151\u7f8e\u5143\u6536\u76d8 \u8f83\u4e0a\u4e00\u4ea4\u6613\u65e5\u8dcc15\u70b9 \u4eba\u6c11\u5e01\u5bf9\u7f8e\u5143\u6c47\u7387\u521b\u4e09\u5e74\u534a\u65b0\u9ad8 \u63a5\u4e0b\u6765\u600e\u4e48\u8d70\uff1f",
+    "lang": "zh",
+    "quantities": [
+     "\u6536\u76d8",
+     "\u7f8e\u5143",
+     "\u6c47\u7387"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u4ea4\u6613\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDCNH"
+     ],
+     "mentioned": [
+      "\u4eba\u6c11\u5e01"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "cd5d9ceb50d1"
+   }
+  ],
+  "n_claims": 4
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e1c\u65b9\u8d22\u5bcc\u7f51,\u5916\u6c47\u9891\u9053,\u5916\u6c47",
+  "url": "https://forex.eastmoney.com/CNY.html",
+  "published": "2026-09-19T12:15:00+00:00",
+  "symbols": [
+   "USDCNH"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "904bdd1b689cad8e5946",
+  "host": "forex.eastmoney.com",
+  "claims": [
+   {
+    "claim": "7817\uff0c\u4e0b\u8c039\u70b9 \u4eba\u6c11\u5e01\u5151\u7f8e\u5143\u4e2d\u95f4\u4ef7\u8c03\u53475\u4e2a\u57fa\u70b9 \u5728\u5cb8\u4eba\u6c11\u5e01\u5151\u7f8e\u5143\u6536\u76d8 \u8f83\u4e0a\u4e00\u4ea4\u6613\u65e5\u8dcc15\u70b9 \u4eba\u6c11\u5e01\u5bf9\u7f8e\u5143\u6c47\u7387\u521b\u4e09\u5e74\u534a\u65b0\u9ad8 \u63a5\u4e0b\u6765\u600e\u4e48\u8d70\uff1f",
+    "lang": "zh",
+    "quantities": [
+     "\u6536\u76d8",
+     "\u7f8e\u5143",
+     "\u6c47\u7387"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u4ea4\u6613\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDCNH"
+     ],
+     "mentioned": [
+      "\u4eba\u6c11\u5e01"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [
+      "\u4e2d\u95f4\u4ef7: policy: PBoC fixing -> CNH"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "689d485a9162"
+   },
+   {
+    "claim": "\u79bb\u5cb8\u4eba\u6c11\u5e01\u8f83\u5468\u56db\u7ebd\u7ea6\u5c3e\u76d8\u6da847\u70b9 \u4eba\u6c11\u5e01\u5151\u7f8e\u5143\u4e2d\u95f4\u4ef7\u62a56.",
+    "lang": "zh",
+    "quantities": [
+     "\u7f8e\u5143"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u5c3e\u76d8",
+     "\u5468"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDCNH"
+     ],
+     "mentioned": [
+      "\u79bb\u5cb8\u4eba\u6c11\u5e01"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [
+      "\u4e2d\u95f4\u4ef7: policy: PBoC fixing -> CNH"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "240b6e0e083c"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e1c\u65b9\u8d22\u5bcc\u7f51,\u5916\u6c47\u9891\u9053,\u5916\u6c47",
+  "url": "https://forex.eastmoney.com/EUR.html",
+  "published": "2026-09-19T12:15:03+00:00",
+  "symbols": [
+   "HK50",
+   "US500",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "AUDUSD",
+   "USDCAD",
+   "USDCHF",
+   "NZDUSD",
+   "USDCNH",
+   "EURJPY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4cf5089d68a78f5f0dd8",
+  "host": "forex.eastmoney.com",
+  "claims": [
+   {
+    "claim": "\ufeff \u4e1c\u65b9\u8d22\u5bcc\u7f51,\u5916\u6c47\u9891\u9053,\u5916\u6c47 \u8d22\u7ecf \u7126\u70b9 \u80a1\u7968 \u65b0\u80a1 \u671f\u6307 \u671f\u6743 \u884c\u60c5 \u6570\u636e \u5168\u7403 \u7f8e\u80a1 \u6e2f\u80a1 \u671f\u8d27 \u5916\u6c47 \u94f6\u884c \u57fa\u91d1 \u7406\u8d22 \u503a\u5238 \u76f4\u64ad \u80a1\u5427 \u57fa\u91d1\u5427 \u535a\u5ba2 \u8d22\u5bcc\u53f7 \u641c\u7d22 \u884c\u60c5\u4e2d\u5fc3 \u6570\u636e\u4e2d\u5fc3 \u624b\u673a\u7ad9 \u5ba2\u6237\u7aef \u5916\u6c47\u9891\u9053 \u5916\u6c47\u8981\u95fb \u5916\u6c47\u8bc4\u8bba \u592e\u884c\u52a8\u6001 \u5916\u6c47\u884c\u60c5 \u4eba\u6c11\u5e01\u4e2d\u95f4\u4ef7 \u5916\u6c47\u5427 \u5e01\u79cd \u7f8e\u5143 \u4eba\u6c11\u5e01 \u6b27\u5143 \u82f1\u9551 \u65e5\u5143 \u6fb3\u5143 \u52a0\u5143 \u745e\u90ce \u7ebd\u5143 \u6570\u636e \u4e3b\u8981\u56fd\u5bb6\u5229\u7387 \u5168\u7403\u7ecf\u6d4e\u6570\u636e \u5168\u7403\u7ecf\u6d4e\u65e5\u5386 \u5168\u7403\u65f6\u95f4\uff1a \u5317\u4eac 08\u670814\u65e5 09:48:35 \u4f26\u6566 08\u670814\u65e5 02:48:35 \u7ebd\u7ea6 08\u670813\u65e5 21:48:35 \u6089\u5c3c 08\u670814\u65e5 11:48:35 \u4e1c\u65b9\u8d22\u5bcc\u7f51 > \u5916\u6c47\u9891\u9053 > \u6b27\u5143\u4e13\u533a \u6b27\u5143\u8d44\u8baf \u66f4\u591a \u6b27\u5143\u5151\u7f8e\u5143\u65e5\u5185\u6da8\u5e45\u8fbe0.",
+    "lang": "zh",
+    "quantities": [
+     "\u5229\u7387",
+     "\u65e5\u5185",
+     "\u5916\u6c47",
+     "\u7f8e\u5143"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u65e5\u5185",
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "HK50",
+      "US500",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDCHF",
+      "NZDUSD",
+      "USDCNH"
+     ],
+     "mentioned": [
+      "\u6e2f\u80a1",
+      "\u7f8e\u80a1",
+      "\u6b27\u5143",
+      "\u82f1\u9551",
+      "\u65e5\u5143",
+      "\u6fb3\u5143",
+      "\u52a0\u5143",
+      "\u745e\u90ce",
+      "\u7ebd\u5143",
+      "\u4eba\u6c11\u5e01"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [
+      "\u4e2d\u95f4\u4ef7: policy: PBoC fixing -> CNH"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "b1a8f1d99a6e"
+   },
+   {
+    "claim": "\u7f8e\u5143\u5151\u591a\u6570G10\u8d27\u5e01\u8d70\u5f3a\uff0c\u6b27\u5143\u8dcc\u81f3\u4e00\u4e2a\u6708\u4f4e\u70b9 \u6b27\u76df\u5b98\u5458\u8b66\u544a\u6b27\u76df\u7ecf\u6d4e\u6216\u5c06\u9762\u4e34\u201c\u6ede\u80c0\u201d \u6b27\u5143\u5151\u7f8e\u5143\u8dcc\u81f31.",
+    "lang": "zh",
+    "quantities": [
+     "\u7f8e\u5143",
+     "\u6b27\u5143"
+    ],
+    "direction": [
+     "\u8d70\u5f3a",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u4e00\u4e2a\u6708",
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "\u6b27\u5143"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "160eb2fa281a"
+   },
+   {
+    "claim": "1500 \u5237\u65b08\u6708\u521d\u4ee5\u6765\u65b0\u4f4e \u6b27\u5143\u5151\u7f8e\u5143\u65e5\u5185\u6da8\u5e45\u6269\u5927\u81f30.",
+    "lang": "zh",
+    "quantities": [
+     "\u65e5\u5185",
+     "\u7f8e\u5143",
+     "\u6b27\u5143"
+    ],
+    "direction": [
+     "\u6269\u5927",
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u65e5\u5185",
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "\u6b27\u5143"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "b7d32d77a381"
+   },
+   {
+    "claim": "18 \u4e3a7\u6708\u521d\u4ee5\u6765\u9996\u6b21 \u6b27\u5143\u5151\u65e5\u5143EUR/JPY\u6da8\u81f3173.",
+    "lang": "zh",
+    "quantities": [
+     "\u6b27\u5143",
+     "\u65e5\u5143"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "USDJPY",
+      "EURJPY"
+     ],
+     "mentioned": [
+      "\u6b27\u5143",
+      "\u65e5\u5143",
+      "eur/jpy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "18d9efd2bd74"
+   },
+   {
+    "claim": "9 \u521b\u4e0b\u903e\u4e00\u5e74\u65b0\u9ad8 \u6b27\u5143\u5151\u7f8e\u5143\u65e5\u5185\u8dcc\u5e45\u8fbe0.",
+    "lang": "zh",
+    "quantities": [
+     "\u65e5\u5185",
+     "\u7f8e\u5143",
+     "\u6b27\u5143"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u65e5\u5185"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "\u6b27\u5143"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "d9d5558e22cf"
+   },
+   {
+    "claim": "1653 \u6b27\u5143\u5151\u7f8e\u5143\u521b\u4e00\u5468\u591a\u4ee5\u6765\u6700\u5927\u8dcc\u5e45 \u7f8e\u5143\u5f3a\u52bf\u62b5\u6d88\u4e86.",
+    "lang": "zh",
+    "quantities": [
+     "\u7f8e\u5143",
+     "\u6b27\u5143"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u4e00\u5468",
+     "\u5468"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "\u6b27\u5143"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "9a15a634bded"
+   },
+   {
+    "claim": "24 \u6b27\u5143\u5151\u7f8e\u5143\u65e5\u5185\u6da8\u8d850.",
+    "lang": "zh",
+    "quantities": [
+     "\u65e5\u5185",
+     "\u7f8e\u5143",
+     "\u6b27\u5143"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u65e5\u5185"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "\u6b27\u5143"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "a6635f2959d8"
+   }
+  ],
+  "n_claims": 7
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e1c\u65b9\u8d22\u5bcc\u7f51,\u5916\u6c47\u9891\u9053,\u5916\u6c47",
+  "url": "https://forex.eastmoney.com/GBP.html",
+  "published": "2026-09-19T12:15:05+00:00",
+  "symbols": [
+   "GBPUSD",
+   "EURUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fc48a3361d4439550818",
+  "host": "forex.eastmoney.com",
+  "claims": [
+   {
+    "claim": "\u82f1\u9551\u5151\u7f8e\u5143\u5728\u82f1\u56fd\u592e\u884c\u516c\u5e03\u51b3\u5b9a\u540e\u7ef4\u6301\u6da8\u52bf \u3010\u73af\u7403\u8d22\u7ecf\u3011\u82f1\u56fd3\u6708\u5e73\u5747\u623f\u4ef7\u73af\u6bd4\u4e0b\u8dcc0.",
+    "lang": "zh",
+    "quantities": [
+     "\u7f8e\u5143",
+     "\u82f1\u9551",
+     "\u592e\u884c"
+    ],
+    "direction": [
+     "\u4e0b\u8dcc",
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "\u82f1\u9551"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [
+      "\u82f1\u56fd\u592e\u884c: policy: BoE -> GBP"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "1207d8dd8ea3"
+   },
+   {
+    "claim": "3394 \u82f1\u9551/\u7f8e\u5143\u521b\u4e0b4\u6708\u4efd\u4ee5\u6765\u6700\u5927\u8dcc\u5e45 \u8dcc1.",
+    "lang": "zh",
+    "quantities": [
+     "\u7f8e\u5143",
+     "\u82f1\u9551"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "\u82f1\u9551"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "4059dba080ed"
+   },
+   {
+    "claim": "\u82f1\u9551\u5151\u7f8e\u5143\u65e5\u5185\u8dcc\u8d851% \u82f1\u9551\u5151\u7f8e\u5143GBP/USD\u7ad9\u4e0a1.",
+    "lang": "zh",
+    "quantities": [
+     "\u65e5\u5185",
+     "\u7f8e\u5143",
+     "\u82f1\u9551"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u65e5\u5185"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "\u82f1\u9551"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "683a9f635600"
+   },
+   {
+    "claim": "36 \u4e3a2022\u5e742\u6708\u4ee5\u6765\u9996\u6b21 \u6b27\u5143\u5151\u82f1\u9551\u8dcc\u81f34\u67083\u65e5\u4ee5\u6765\u6700\u4f4e \u82f1\u9551\u5151\u7f8e\u5143\u4e0a\u6da80.",
+    "lang": "zh",
+    "quantities": [
+     "\u7f8e\u5143",
+     "\u6b27\u5143",
+     "\u82f1\u9551"
+    ],
+    "direction": [
+     "\u4e0a\u6da8",
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "\u6b27\u5143",
+      "\u82f1\u9551"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e6155240a3f4"
+   },
+   {
+    "claim": "54% \u6b27\u5143\u5151\u7f8e\u5143\u65e5\u5185\u8dcc1.",
+    "lang": "zh",
+    "quantities": [
+     "\u65e5\u5185",
+     "\u7f8e\u5143",
+     "\u6b27\u5143"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u65e5\u5185"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "\u6b27\u5143"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "0634f28279db"
+   }
+  ],
+  "n_claims": 5
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e1c\u65b9\u8d22\u5bcc\u7f51,\u5916\u6c47\u9891\u9053,\u5916\u6c47",
+  "url": "https://forex.eastmoney.com/JPY.html",
+  "published": "2026-09-19T12:15:07+00:00",
+  "symbols": [
+   "HK50",
+   "US500",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "AUDUSD",
+   "USDCAD",
+   "USDCHF",
+   "NZDUSD",
+   "USDCNH"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e1b1461a8679736fbc79",
+  "host": "forex.eastmoney.com",
+  "claims": [
+   {
+    "claim": "\ufeff \u4e1c\u65b9\u8d22\u5bcc\u7f51,\u5916\u6c47\u9891\u9053,\u5916\u6c47 \u8d22\u7ecf \u7126\u70b9 \u80a1\u7968 \u65b0\u80a1 \u671f\u6307 \u671f\u6743 \u884c\u60c5 \u6570\u636e \u5168\u7403 \u7f8e\u80a1 \u6e2f\u80a1 \u671f\u8d27 \u5916\u6c47 \u94f6\u884c \u57fa\u91d1 \u7406\u8d22 \u503a\u5238 \u76f4\u64ad \u80a1\u5427 \u57fa\u91d1\u5427 \u535a\u5ba2 \u8d22\u5bcc\u53f7 \u641c\u7d22 \u884c\u60c5\u4e2d\u5fc3 \u6570\u636e\u4e2d\u5fc3 \u624b\u673a\u7ad9 \u5ba2\u6237\u7aef \u5916\u6c47\u9891\u9053 \u5916\u6c47\u8981\u95fb \u5916\u6c47\u8bc4\u8bba \u592e\u884c\u52a8\u6001 \u5916\u6c47\u884c\u60c5 \u4eba\u6c11\u5e01\u4e2d\u95f4\u4ef7 \u5916\u6c47\u5427 \u5e01\u79cd \u7f8e\u5143 \u4eba\u6c11\u5e01 \u6b27\u5143 \u82f1\u9551 \u65e5\u5143 \u6fb3\u5143 \u52a0\u5143 \u745e\u90ce \u7ebd\u5143 \u6570\u636e \u4e3b\u8981\u56fd\u5bb6\u5229\u7387 \u5168\u7403\u7ecf\u6d4e\u6570\u636e \u5168\u7403\u7ecf\u6d4e\u65e5\u5386 \u5168\u7403\u65f6\u95f4\uff1a \u5317\u4eac 08\u670814\u65e5 09:48:35 \u4f26\u6566 08\u670814\u65e5 02:48:35 \u7ebd\u7ea6 08\u670813\u65e5 21:48:35 \u6089\u5c3c 08\u670814\u65e5 11:48:35 \u4e1c\u65b9\u8d22\u5bcc\u7f51 > \u5916\u6c47\u9891\u9053 > \u65e5\u5143\u4e13\u533a \u65e5\u5143\u8d44\u8baf \u66f4\u591a \u7f8e\u5143/\u65e5\u5143\u4e0a\u6da81% \u5df4\u514b\u83b1\uff1a\u65e5\u672c\u592e\u884c\u9700\u91ca\u653e\u989d\u5916\u9e70\u6d3e\u4fe1\u53f7\u624d\u80fd\u6258\u4f4f\u65e5\u5143.",
+    "lang": "zh",
+    "quantities": [
+     "\u5229\u7387",
+     "\u5916\u6c47",
+     "\u7f8e\u5143",
+     "\u6b27\u5143"
+    ],
+    "direction": [
+     "\u4e0a\u6da8",
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "HK50",
+      "US500",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDCHF",
+      "NZDUSD",
+      "USDCNH"
+     ],
+     "mentioned": [
+      "\u6e2f\u80a1",
+      "\u7f8e\u80a1",
+      "\u6b27\u5143",
+      "\u82f1\u9551",
+      "\u65e5\u5143",
+      "\u6fb3\u5143",
+      "\u52a0\u5143",
+      "\u745e\u90ce",
+      "\u7ebd\u5143",
+      "\u4eba\u6c11\u5e01"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [
+      "\u65e5\u672c\u592e\u884c: policy: BoJ / MoF intervention -> JPY",
+      "\u4e2d\u95f4\u4ef7: policy: PBoC fixing -> CNH"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "9062b187d94a"
+   },
+   {
+    "claim": "69 \u7f8e\u5143\u5151\u65e5\u5143\u65e5\u5185\u8dcc1.",
+    "lang": "zh",
+    "quantities": [
+     "\u65e5\u5185",
+     "\u7f8e\u5143",
+     "\u65e5\u5143"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u65e5\u5185"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "\u65e5\u5143"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e0b649503b13"
+   },
+   {
+    "claim": "70%\u4e0b\u7834156\u5927\u5173 \u7f8e\u5143/\u65e5\u5143\u8fde\u7eed\u7b2c\u4e09\u4e2a\u4ea4\u6613\u65e5\u7a81\u7834160\u5173\u53e3 \u65e5\u5143\u8d70\u5f3a \u65e5\u672c\u653f\u5e9c\u636e\u6089\u652f\u6301\u65e5\u672c\u592e\u884c\u52a0\u5feb\u5347\u606f\u6b65\u4f10 \u7f8e\u5143\u5151\u65e5\u5143\u5931\u5b88157 \u7f8e\u5143\u5151\u65e5\u5143\u53cd\u5f39\uff0c\u76ee\u524d\u62a5159.",
+    "lang": "zh",
+    "quantities": [
+     "\u7a81\u7834",
+     "\u53cd\u5f39",
+     "\u7f8e\u5143",
+     "\u65e5\u5143"
+    ],
+    "direction": [
+     "\u8d70\u5f3a",
+     "\u53cd\u5f39"
+    ],
+    "horizon": [
+     "\u4ea4\u6613\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "\u65e5\u5143"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [
+      "\u65e5\u672c\u592e\u884c: policy: BoJ / MoF intervention -> JPY"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "453d5e93838e"
+   },
+   {
+    "claim": "31% \u7f8e\u5143\u5151\u65e5\u5143\u65e5\u5185\u8dcc\u5e45\u6269\u5927\u81f32% \u7f8e\u5143\u5151\u65e5\u5143\u77ed\u7ebf\u8df3\u6c34 \u65e5\u5185\u8dcc\u5e45\u8fbe1.",
+    "lang": "zh",
+    "quantities": [
+     "\u65e5\u5185",
+     "\u7f8e\u5143",
+     "\u65e5\u5143"
+    ],
+    "direction": [
+     "\u6269\u5927",
+     "\u8df3\u6c34"
+    ],
+    "horizon": [
+     "\u65e5\u5185"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "\u65e5\u5143"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "f7d5e2bc4399"
+   },
+   {
+    "claim": "29% \u65e5\u5143\u5151\u7f8e\u5143\u518d\u5ea6\u8dcc\u81f31986\u5e74\u4ee5\u6765\u6700\u4f4e\u6c34\u5e73 \u7f8e\u5143\u5151\u65e5\u5143\u7ad9\u4e0a162 \u65e5\u5185\u6da80.",
+    "lang": "zh",
+    "quantities": [
+     "\u65e5\u5185",
+     "\u7f8e\u5143",
+     "\u65e5\u5143"
+    ],
+    "direction": [
+     "\u6da8",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u65e5\u5185"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "\u65e5\u5143"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "195d5e1452bd"
+   }
+  ],
+  "n_claims": 5
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Open a R StocksTrader Account - RoboForex Ltd",
+  "url": "https://my.roboforex.com/th/register/rtrader",
+  "published": "2026-09-19T12:15:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9b98e40ccf44e26e74eb",
+  "host": "my.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Open a new demo account - RoboForex Ltd",
+  "url": "https://my.roboforex.com/th/register-demo/rtrader",
+  "published": "2026-09-19T12:15:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b3c7d0f911f3610def36",
+  "host": "my.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "RoboForex",
+  "url": "https://my.roboforex.com/th/trading-account/open-trading-rtrader-account/",
+  "published": "2026-09-19T12:15:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "877aa29586d2daf14286",
+  "host": "my.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "RoboForex",
+  "url": "https://my.roboforex.com/th/trading-account/open-demo-rtrader-account/",
+  "published": "2026-09-19T12:15:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "46a71ae82dfc7ae74d38",
+  "host": "my.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "RoboForex",
+  "url": "https://my.roboforex.com/th/copyfx/my/strategies/",
+  "published": "2026-09-19T12:15:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d354760540fae9e32790",
+  "host": "my.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Open a Trading Account - RoboForex Ltd",
+  "url": "https://my.roboforex.com/th/register/pro-cent/",
+  "published": "2026-09-19T12:15:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "689c5bc852adb7d436dd",
+  "host": "my.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "RoboForex",
+  "url": "https://my.roboforex.com/th/trading-account/change-leverage/",
+  "published": "2026-09-19T12:15:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b3907cd1d42d266cc181",
+  "host": "my.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8fd0\u884c\u65f6\u914d\u7f6e\u6307\u5357 - AKQuant",
+  "url": "https://akquant.akfamily.xyz/advanced/runtime_config/",
+  "published": "2026-09-19T12:15:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "zh",
+  "endpoints": [
+   "https://akquant.akfamily.xyz/reference/api/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "483cd713d66275aa8e46",
+  "host": "akquant.akfamily.xyz",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u70ed\u542f\u52a8\u6307\u5357 - AKQuant",
+  "url": "https://akquant.akfamily.xyz/advanced/warm_start/",
+  "published": "2026-09-19T12:15:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.55,
+  "lang": "zh",
+  "endpoints": [
+   "https://akquant.akfamily.xyz/reference/api/",
+   "https://akquant.akfamily.xyz/reference/api/#akquantrun_from_checkpoint"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "e14caacdccafdcaf2594",
+  "host": "akquant.akfamily.xyz",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u6a2a\u622a\u9762\u7b56\u7565\u6e05\u5355 - AKQuant",
+  "url": "https://akquant.akfamily.xyz/guide/cross_section_checklist/",
+  "published": "2026-09-19T12:15:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh",
+  "endpoints": [
+   "https://akquant.akfamily.xyz/reference/api/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "1f295d44974331eb1ab4",
+  "host": "akquant.akfamily.xyz",
+  "claims": [],
+  "n_claims": 0
+ }
+]

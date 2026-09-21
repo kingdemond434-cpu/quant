@@ -1,0 +1,29 @@
+[
+ {
+  "source": "deep_forest",
+  "kind": "dataset",
+  "title": "National Summary Data Page for Malaysia - Bank Negara Malaysia",
+  "url": "https://www.bnm.gov.my/statistics",
+  "published": "2026-09-21T03:24:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.4,
+  "lang": "en",
+  "endpoints": [
+   "https://www.bnm.gov.my/download-forms"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "754ff99282603390133f",
+  "host": "www.bnm.gov.my",
+  "ground": "Bank Negara statistics",
+  "region": "my",
+  "cluster": "sea",
+  "dataset_class": "central_bank_data",
+  "available_time": "2026-09-21T03:24:52+00:00",
+  "ingested_time": "2026-09-21T03:24:52+00:00",
+  "source_hash": "754ff99282603390133f",
+  "claims": [],
+  "n_claims": 0
+ }
+]

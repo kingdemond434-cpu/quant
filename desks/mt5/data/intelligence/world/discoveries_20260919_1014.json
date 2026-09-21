@@ -1,0 +1,199 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "trading_ProductsIntroduce_details",
+  "url": "http://en.sge.com.cn/eng_trading_ProductsIntroduce_Physicaldetails?pro_id=943339767112409088",
+  "published": "2026-09-19T10:13:48+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dded9e64eb7b4706bc67",
+  "host": "en.sge.com.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "trading_ProductsIntroduce_details",
+  "url": "http://en.sge.com.cn/eng_trading_ProductsIntroduce_Physicaldetails?pro_id=137988393068257280",
+  "published": "2026-09-19T10:13:54+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5119f1e6126df6fa8662",
+  "host": "en.sge.com.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "trading_ProductsIntroduce_details",
+  "url": "http://en.sge.com.cn/eng_trading_ProductsIntroduce_Margindetails?pro_id=943346687737339904",
+  "published": "2026-09-19T10:13:58+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "55229bdf8afaba2e2e36",
+  "host": "en.sge.com.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "trading_ProductsIntroduce_details",
+  "url": "http://en.sge.com.cn/eng_trading_ProductsIntroduce_Margindetails?pro_id=943347856956338176",
+  "published": "2026-09-19T10:14:01+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "82305b2c0286fbc6341f",
+  "host": "en.sge.com.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "trading_ProductsIntroduce_details",
+  "url": "http://en.sge.com.cn/eng_trading_ProductsIntroduce_Margindetails?pro_id=943348581253472256",
+  "published": "2026-09-19T10:14:05+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "27c5e106d6adbff8f8eb",
+  "host": "en.sge.com.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "trading_ProductsIntroduce_details",
+  "url": "http://en.sge.com.cn/eng_trading_ProductsIntroduce_Margindetails?pro_id=943349389830234112",
+  "published": "2026-09-19T10:14:07+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8a98e4aad40ae4c29266",
+  "host": "en.sge.com.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "trading_ProductsIntroduce_details",
+  "url": "http://en.sge.com.cn/eng_trading_ProductsIntroduce_Margindetails?pro_id=943350053095288832",
+  "published": "2026-09-19T10:14:10+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "53994e11e69b732fae4b",
+  "host": "en.sge.com.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Sistema de Informaci&oacute;n Econ&oacute;mica (SIE, Banco de M&eacute;xico)",
+  "url": "https://www.banxico.org.mx/SieInternet/",
+  "published": "2026-09-19T10:14:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "63b83a3ce9593dc4e794",
+  "host": "www.banxico.org.mx",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u0646\u0638\u0627\u0645 \u0627\u0644\u062a\u062f\u0627\u0648\u0644 \u0627\u0644\u0628\u062f\u064a\u0644 - \u0648\u064a\u0643\u064a\u0628\u064a\u062f\u064a\u0627",
+  "url": "https://ar.wikipedia.org/wiki/%D9%86%D8%B8%D8%A7%D9%85_%D8%A7%D9%84%D8%AA%D8%AF%D8%A7%D9%88%D9%84_%D8%A7%D9%84%D8%A8%D8%AF%D9%8A%D9%84",
+  "published": "2026-09-19T10:14:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "ar",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2a21c17853a6fbc0202c",
+  "host": "ar.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ }
+]

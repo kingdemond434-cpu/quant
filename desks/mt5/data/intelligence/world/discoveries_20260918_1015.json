@@ -1,0 +1,392 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "A Andrianto (Andrian1567) on Stockbit | Stockbit - Investasi Saham Bersama Komunitas Saham Terbesar di Indonesia",
+  "url": "https://stockbit.com/post/30876561",
+  "published": "2026-09-18T10:13:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "ID",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "da2796b447cd2b567f09",
+  "host": "stockbit.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Arief Hidayat (ariefhidayatst) on Stockbit | Stockbit - Investasi Saham Bersama Komunitas Saham Terbesar di Indonesia",
+  "url": "https://stockbit.com/post/21045188",
+  "published": "2026-09-18T10:13:53+00:00",
+  "symbols": [],
+  "timeframes": [
+   "HARIAN"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "ID",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "eeeecaf1eecf7228f6aa",
+  "host": "stockbit.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Ini 5 Kriteria Saham yang Cocok untuk Scalping, Traders Simak! &mdash; Stockbit Snips | Berita Saham",
+  "url": "https://snips.stockbit.com/investasi/ini-dia-5-kriteria-saham-yang-cocok-untuk-scalping",
+  "published": "2026-09-18T10:13:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://linkto.stockbit.com/L9u5/DownloadStockbit"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c70d54f095473f6712d4",
+  "host": "snips.stockbit.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Screener : Bagaimana Cara Menggunakan dan Apa Fungsinya? | Stockbit",
+  "url": "https://help.stockbit.com/id/article/screener-bagaimana-cara-menggunakan-dan-apa-fungsinya-24j2qc/",
+  "published": "2026-09-18T10:13:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.35,
+  "lang": "id",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bd9ff5bd473a895ce172",
+  "host": "help.stockbit.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "StockBot Academy (agumdarmawan2402) on Stockbit | Stockbit - Investasi Saham Bersama Komunitas Saham Terbesar di Indonesia",
+  "url": "https://stockbit.com/post/20803868",
+  "published": "2026-09-18T10:13:56+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1H",
+   "4H",
+   "DAILY",
+   "HARIAN",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "ID",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8e1bc9a2c1adab110d47",
+  "host": "stockbit.com",
+  "claims": [
+   {
+    "claim": "SINYAL \ud83d\ude80 Sinyal \u201cBullish pennant 4H\u201d & \u201cRebound MA20 daily\u201d \u2705 Cocok Untuk Scalping & Swing: \u2013 Scalping: entry di retest support MA20 intraday, profit cepat ke 78.",
+    "lang": "id",
+    "quantities": [
+     "support"
+    ],
+    "direction": [
+     "bullish",
+     "rebound"
+    ],
+    "horizon": [
+     "scalping",
+     "swing"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDIDR"
+     ],
+     "channels": [
+      "bi rate: policy: BI -> IDR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5970cfb45b9e"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "DSE Analyst \u2014 Dhaka Stock Exchange analysis, charts &amp; signals",
+  "url": "https://dseanalyst.com/",
+  "published": "2026-09-18T10:13:59+00:00",
+  "symbols": [
+   "USDKRW"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5fb863bf6121f72be799",
+  "host": "dseanalyst.com",
+  "claims": [
+   {
+    "claim": "DSE Analyst \u2014 Dhaka Stock Exchange analysis, charts & signals DSE Analyst Explore Ranked Undervalued Heatmap Setups Bounce-watch Earnings Dividends Track record Integrity News Learn Glossary data: Sep 17, 2026 Android app Text A A A EOD Last session \u00b7 Sep 17, 2026 ORIONINFU \u09f3213.",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "bounce"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDKRW"
+     ],
+     "mentioned": [
+      "dsex",
+      "won"
+     ],
+     "transfer_only": [
+      "dsex->indices (South Asian exchanges)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8428a3aa4105"
+   },
+   {
+    "claim": "2 accumulation 78 30-day up-rate 52% \u00b7 Miscellaneous Why this horizon The engine's own selection study rates the 30- and 60-session horizons positive and the 10-day horizon negative.",
+    "lang": "en",
+    "quantities": [
+     "rate",
+     "session"
+    ],
+    "direction": [
+     "positive",
+     "negative"
+    ],
+    "horizon": [
+     "day",
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDKRW"
+     ],
+     "mentioned": [
+      "dsex",
+      "won"
+     ],
+     "transfer_only": [
+      "dsex->indices (South Asian exchanges)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "cac14b6dd138"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u300c\u5916\u56fd\u70ba\u66ff\u53ca\u3073\u5916\u56fd\u8cbf\u6613\u6cd5\u306e\u4e00\u90e8\u3092\u6539\u6b63\u3059\u308b\u6cd5\u5f8b\u306e\u65bd\u884c\u306b\u4f34\u3046\u95a2\u4fc2\u653f\u4ee4\u306e\u6574\u5099\u7b49\u306b\u95a2\u3059\u308b\u653f\u4ee4\u300d\u7b49\u306b\u3064\u3044\u3066 : \u8ca1\u52d9\u7701",
+  "url": "https://www.mof.go.jp/policy/international_policy/gaitame_kawase/press_release/20260908204517.html",
+  "published": "2026-09-18T10:14:00+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "85d1a3a00d48a12a7740",
+  "host": "www.mof.go.jp",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Blackjack Strategy Charts - Generate Charts for 1-8 Decks",
+  "url": "http://www.blackjackinfo.com/bjbse.php///",
+  "published": "2026-09-18T10:14:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "80520270eadfd19ce0e1",
+  "host": "www.blackjackinfo.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Hush&#xE5;llens konsumtion &#xF6;kade i augusti 2026",
+  "url": "https://www.scb.se/hitta-statistik/statistik-efter-amne/hushallens-ekonomi/hushallens-utgifter/hushallens-konsumtion/pong/statistiknyhet/hushallens-konsumtionsindikator-juli-och-augusti-2026-veckoindikator-till-och-med-vecka-36-2026/",
+  "published": "2026-09-18T10:14:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "seasonality"
+  ],
+  "confidence": 0.35,
+  "lang": "sv",
+  "endpoints": [
+   "https://www.scb.se/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "d8ecfe4d4575ef0d4568",
+  "host": "www.scb.se",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\u5348\u5e74\u76f8\u5834\u3001\u682a\u4fa1\u306e\u52d5\u304d\u3092\u30a2\u30ce\u30de\u30ea\u30fc\u304b\u3089\u63a2\u308b - \u65e5\u672c\u7d4c\u6e08\u65b0\u805e",
+  "url": "https://www.nikkei.com/article/DGXZQOUB053PX0V00C26A1000000/",
+  "published": "2026-09-18T10:14:12+00:00",
+  "symbols": [
+   "XAUUSD",
+   "JPN225",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "ja",
+  "endpoints": [
+   "https://www.nikkei.com/api/svg/v1/k-search.rev-adf84c.svg?fill=%23333"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "3e1e84c929cfb9f31bb6",
+  "host": "www.nikkei.com",
+  "claims": [
+   {
+    "claim": "\u30b3\u30e9\u30e0 Podcast \u3053\u3061\u3089\u3082\u304a\u3059\u3059\u3081\uff08\u81ea\u52d5\u691c\u7d22\uff09 \u9700\u7d66\u903c\u8feb\u3067\u6025\u9a30\u3059\u308bMLCC\u95a2\u9023\u682a\u3001\u6ce8\u76ee\u306e\u304d\u3063\u304b\u3051\u306f 6\u670815\u65e5 \u30d1\u30c3\u30af\u30f3\u3068\u52d5\u753b\u3067\u5b66\u3076 \u300c\u30aa\u30eb\u30ab\u30f3\u3060\u3051\u3067\u5927\u4e08\u592b\uff1f",
+    "lang": "ja",
+    "quantities": [
+     "\u9700\u7d66"
+    ],
+    "direction": [
+     "\u6025\u9a30"
+    ],
+    "horizon": [
+     "\u65e5",
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "JPN225",
+      "USDJPY"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1",
+      "\u65e5\u7d4c",
+      "\u30c9\u30eb\u5186"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [
+      "\u65e5\u9280: policy: BoJ / MoF intervention -> JPY",
+      "\u6295\u4fe1: flow: Japanese outbound investment -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "ecae4afe9b31"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\ufffd\ufffd\u0476\ufffd\ufffd\ufffd-\u05e8\u04b5\u0376\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\u057e",
+  "url": "http://forex.hexun.com/",
+  "published": "2026-09-18T10:14:45+00:00",
+  "symbols": [
+   "USDCAD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "http://3g.hexun.com/download_forex/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "d0a30182748e21b17eaf",
+  "host": "forex.hexun.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]

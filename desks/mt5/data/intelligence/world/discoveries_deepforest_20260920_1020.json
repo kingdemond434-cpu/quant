@@ -1,0 +1,29 @@
+[
+ {
+  "source": "deep_forest",
+  "kind": "dataset",
+  "title": "صندوق يقين للذهب - معلومات مباشر السعودية",
+  "url": "https://www.mubasher.info/countries/SA/funds/5707",
+  "published": "2026-09-20T10:20:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.4,
+  "lang": "ar",
+  "endpoints": [
+   "https://www.mubasher.info/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "154eea3764ba44288623",
+  "host": "www.mubasher.info",
+  "ground": "Mubasher",
+  "region": "sa",
+  "cluster": "mena",
+  "dataset_class": null,
+  "available_time": "2026-09-20T10:20:24+00:00",
+  "ingested_time": "2026-09-20T10:20:24+00:00",
+  "source_hash": "154eea3764ba44288623",
+  "claims": [],
+  "n_claims": 0
+ }
+]

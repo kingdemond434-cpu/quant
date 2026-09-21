@@ -1,0 +1,93 @@
+[
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "The Weight Is Over - Interactive Diffusion on Consumer GPUs",
+    "summary": "On-device inference is booming, but the momentum is almost all in language models. Diffusion pipelines are memory hungry, latency-sensitive, and require orchestrating an embedder, a transformer, a dec",
+    "url": "https://arxiv.org/abs/2609.21849v1",
+    "published": "2026-09-18T14:42:55Z",
+    "trading_terms": [
+      "momentum"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  },
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "TrialAtlas: Multi-Agent Research Organization for Clinical Trial Design and Optimization",
+    "summary": "Nearly 90% of drugs entering clinical development ultimately fail, despite billions of dollars in investment. Pharmaceutical companies therefore rely on clinical development planning (CDP) and probabi",
+    "url": "https://arxiv.org/abs/2609.21859v1",
+    "published": "2026-09-18T14:53:34Z",
+    "trading_terms": [
+      "risk"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  },
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "TrialAtlas: Multi-Agent Research Organization for Clinical Trial Design and Optimization",
+    "summary": "Nearly 90% of drugs entering clinical development ultimately fail, despite billions of dollars in investment. Pharmaceutical companies therefore rely on clinical development planning (CDP) and probabi",
+    "url": "https://arxiv.org/abs/2609.21859v1",
+    "published": "2026-09-18T14:53:34Z",
+    "trading_terms": [
+      "risk"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  },
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "The Weight Is Over - Interactive Diffusion on Consumer GPUs",
+    "summary": "On-device inference is booming, but the momentum is almost all in language models. Diffusion pipelines are memory hungry, latency-sensitive, and require orchestrating an embedder, a transformer, a dec",
+    "url": "https://arxiv.org/abs/2609.21849v1",
+    "published": "2026-09-18T14:42:55Z",
+    "trading_terms": [
+      "momentum"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  },
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "The Weight Is Over - Interactive Diffusion on Consumer GPUs",
+    "summary": "On-device inference is booming, but the momentum is almost all in language models. Diffusion pipelines are memory hungry, latency-sensitive, and require orchestrating an embedder, a transformer, a dec",
+    "url": "https://arxiv.org/abs/2609.21849v1",
+    "published": "2026-09-18T14:42:55Z",
+    "trading_terms": [
+      "momentum"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  },
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "ALP Distributions from Hadron Structure",
+    "summary": "We investigate how hadron structure and quark-flavor couplings shape axion-like particle (ALP) radiation in hadron collisions. For the elastic pole, the virtuality integral is ultraviolet finite at fi",
+    "url": "https://arxiv.org/abs/2609.21847v1",
+    "published": "2026-09-18T14:42:29Z",
+    "trading_terms": [
+      "momentum"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  },
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "The Weight Is Over - Interactive Diffusion on Consumer GPUs",
+    "summary": "On-device inference is booming, but the momentum is almost all in language models. Diffusion pipelines are memory hungry, latency-sensitive, and require orchestrating an embedder, a transformer, a dec",
+    "url": "https://arxiv.org/abs/2609.21849v1",
+    "published": "2026-09-18T14:42:55Z",
+    "trading_terms": [
+      "momentum"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  }
+]

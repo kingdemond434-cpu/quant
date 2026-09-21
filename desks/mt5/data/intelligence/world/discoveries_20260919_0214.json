@@ -1,0 +1,44 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Backtest Portfolio Asset Allocation",
+  "url": "https://www.portfoliovisualizer.com/backtest-portfolio",
+  "published": "2026-09-19T02:13:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "31ce3d1678f1aa12b4e7",
+  "host": "www.portfoliovisualizer.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Here's the Role High-Frequency-Trading (HFT) Played in the Crash - Business Insider",
+  "url": "http://www.businessinsider.com/heres-the-role-high-frequency-trading-hft-played-in-todays-crash-2010-5?utm_source=feedburner&utm_medium=feed&utm_campaign=Feed%3A+clusterstock+%28ClusterStock%29&utm_content=Google+Reader",
+  "published": "2026-09-19T02:13:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6a6b9a4f8030ca96a580",
+  "host": "www.businessinsider.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]

@@ -1,0 +1,18 @@
+[
+  {
+    "source": "central_bank",
+    "bank": "BoE",
+    "currency": "GBP",
+    "feed": "https://www.bankofengland.co.uk/rss/news",
+    "published_utc": "2026-09-18T11:00:00+00:00",
+    "title": "Minutes of the Transaction and Post-trade Reporting Harmonisation Taskforce - July 2026",
+    "link": "https://www.bankofengland.co.uk/minutes/2026/july/minutes-of-the-transaction-and-post-trade-reporting-harmonisation-taskforce-july-2026",
+    "policy_signals": [],
+    "instruments": [
+      "GBPUSD",
+      "GBPJPY",
+      "EURGBP",
+      "GBPAUD"
+    ]
+  }
+]

@@ -1,0 +1,720 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "BNM governor says ringgit on right track, but risks remain amid trade war fears",
+  "url": "https://theedgemalaysia.com/node/744706",
+  "published": "2026-09-21T15:28:50+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "flow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2bd880551d747ecb50c9",
+  "host": "theedgemalaysia.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Malaysia to step up efforts boosting currency inflows, says BNM\u2019s Financial Markets Committee",
+  "url": "https://theedgemalaysia.com/node/808027",
+  "published": "2026-09-21T15:28:52+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "79d9f1e4444c20188e01",
+  "host": "theedgemalaysia.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "BNM \u2018steps up engagements\u2019 with SOEs, investors to boost inflows as ringgit hovers near 26-year low",
+  "url": "https://theedgemalaysia.com/node/702494",
+  "published": "2026-09-21T15:28:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "aa763e47e4d7205cb60e",
+  "host": "theedgemalaysia.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Ekspor Sawit Indonesia Melonjak 64% pada Juni 2026, Produksi dan Konsumsi Ikut Naik - Gabungan Pengusaha Kelapa Sawit Indonesia (GAPKI)",
+  "url": "https://gapki.id/news/2026/08/26/ekspor-sawit-indonesia-melonjak-64-pada-juni-2026-produksi-dan-konsumsi-ikut-naik/",
+  "published": "2026-09-21T15:28:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b593bc4f9edc6e28e5eb",
+  "host": "gapki.id",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Kinerja Industri Sawit 2025 Tumbuh Lebih Cepat, GAPKI Soroti Tantangan dan Arah Strategis - Gabungan Pengusaha Kelapa Sawit Indonesia (GAPKI)",
+  "url": "https://gapki.id/news/2025/11/14/kinerja-industri-sawit-2025-tumbuh-lebih-cepat-gapki-soroti-tantangan-dan-arah-strategis/",
+  "published": "2026-09-21T15:29:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow",
+   "gap",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e7489aea5397d16feac6",
+  "host": "gapki.id",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "In the Age of AI, A Quant\u2019s Edge is Human",
+  "url": "https://www.aqr.com/Insights/Research/Trade-Publication/In-the-Age-of-AI-A-Quants-Edge-is-Human",
+  "published": "2026-09-21T15:29:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "carry"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.aqr.com/Insights/Datasets"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "158622c660e1f6f1dc6a",
+  "host": "www.aqr.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "What is R StocksTrader? | RoboForex Help Center",
+  "url": "https://roboforex.com/help/faq/copy-trading-general/what-is-r-stockstrader/",
+  "published": "2026-09-21T15:29:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1743511020"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "2c4175ef86389753195f",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "How do I deposit and withdraw funds? | RoboForex Help Center",
+  "url": "https://roboforex.com/help/faq/copy-trading-general/how-do-i-deposit-and-withdraw-funds/",
+  "published": "2026-09-21T15:29:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1743511020"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "a4b487c0c68519290233",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Why choose Copy Trading Service? | RoboForex Help Center",
+  "url": "https://roboforex.com/help/faq/copy-trading-general/why-choose-copy-trading-service/",
+  "published": "2026-09-21T15:29:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1743511020"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c571d1605076a9f9753a",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Copy Trading Service Glossary | RoboForex Help Center",
+  "url": "https://roboforex.com/help/faq/copy-trading-general/copy-trading-service-glossary/",
+  "published": "2026-09-21T15:29:14+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1743511020"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "a0ed2e77b58dd2d8ef16",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Welcome Bonus 30 USD - The program conditions - RoboForex",
+  "url": "https://roboforex.com/clients/promotions/welcome-program/rules/",
+  "published": "2026-09-21T15:29:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "6e27429c8032b434a31c",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Leverage up to 1:2000 with the broker - The program conditions - RoboForex",
+  "url": "https://roboforex.com/clients/services/2000-up-leverage/rules/",
+  "published": "2026-09-21T15:29:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "9a28a47150673737ee12",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e04\u0e33\u0e16\u0e32\u0e21\u0e17\u0e35\u0e48\u0e1e\u0e1a\u0e1a\u0e48\u0e2d\u0e22 | RoboForex Help Center",
+  "url": "https://roboforex.com/th/help/",
+  "published": "2026-09-21T15:29:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1743511020"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "0fe985fdb1ced2bdf534",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Market Analysis and Forecasts: Forex and Stocks markets | R Blog - RoboForex",
+  "url": "https://roboforex.com/blog/analysis/",
+  "published": "2026-09-21T15:29:26+00:00",
+  "symbols": [
+   "NVIDIA",
+   "XAUUSD",
+   "US2000",
+   "USDJPY",
+   "USDTRY",
+   "Tesla"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "gap",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ae964d54cff3ae4d46c2",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "2026 Analysis 16 min Market Week Ahead (September 7 \u2013 11): US CPI Forecast Lands After the ECB Decision The first week of September settled nothing.",
+    "lang": "en",
+    "quantities": [
+     "cpi"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "8dede90a48a2"
+   },
+   {
+    "claim": "2026 Analysis 16 min Market Week Ahead (August 31 \u2013 September 4): Non-Farm Payrolls Forecast Decides the Dollar's Course August closed on a firm note for US stocks, carried by the first corporate reports of the season.",
+    "lang": "en",
+    "quantities": [
+     "stocks"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "US2000",
+      "USDJPY",
+      "USDTRY",
+      "Tesla",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "gold",
+      "russell",
+      "yen",
+      "try",
+      "tesla",
+      "nvidia"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "EURUSD",
+      "GBPUSD",
+      "AUDUSD",
+      "XTIUSD",
+      "XBRUSD",
+      "USDCAD",
+      "USDNOK"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "bank of england: policy: BoE -> GBP",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY",
+      "rba: policy: RBA -> AUD",
+      "strait of hormuz: energy flow: OPEC / inventories / chokepoints -> oil, CAD, NOK"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "adb662934c31"
+   },
+   {
+    "claim": "2026 Analysis 23 min Gold Fed Rate Hike Bets: XAUUSD Forecast and a 4,772 USD Target Gold Fed rate hike bets have been the single biggest weight on the metal all year, and over one week in August that weight came off.",
+    "lang": "en",
+    "quantities": [
+     "rate",
+     "hike"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "0f6faf8e9a8f"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex educational articles. All about the financial markets, how to trade on forex, fundamental and technical analyses | R Blog - RoboForex",
+  "url": "https://roboforex.com/blog/education/",
+  "published": "2026-09-21T15:29:27+00:00",
+  "symbols": [
+   "US500",
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "724e67393baa046960da",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "All articles with the tag: ipo analysis - RoboForex Blog",
+  "url": "https://roboforex.com/blog/tag/ipo-analysis/",
+  "published": "2026-09-21T15:29:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5567266d01b57ce1a650",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "All articles with the tag: ipo 2021 - RoboForex Blog",
+  "url": "https://roboforex.com/blog/tag/ipo-2021/",
+  "published": "2026-09-21T15:29:31+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "38d187bbaf21d95d9359",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "All articles with the tag: financial reports - RoboForex Blog",
+  "url": "https://roboforex.com/blog/tag/financial-reports/",
+  "published": "2026-09-21T15:29:33+00:00",
+  "symbols": [
+   "NVIDIA"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6243decda1d1feefc1e9",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "All articles with the tag: forex trading - RoboForex Blog",
+  "url": "https://roboforex.com/blog/tag/forex-trading/",
+  "published": "2026-09-21T15:29:35+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fed2c5a84e1c3162ac2e",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "All articles with the tag: medium-term trading strategy - RoboForex Blog",
+  "url": "https://roboforex.com/blog/tag/medium-term-trading-strategy/",
+  "published": "2026-09-21T15:29:37+00:00",
+  "symbols": [],
+  "timeframes": [
+   "H1"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5dc2516ca40b967f5340",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "All articles with the tag: tesla inc - RoboForex Blog",
+  "url": "https://roboforex.com/blog/tag/tesla-inc/",
+  "published": "2026-09-21T15:29:39+00:00",
+  "symbols": [
+   "Tesla"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d16bdf4ea821ae2ad076",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "Tesla stocks are extremely good at attracting attention: since a week ago, the quotations first dropped by 21.",
+    "lang": "en",
+    "quantities": [
+     "stocks"
+    ],
+    "direction": [
+     "dropped"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "Tesla"
+     ],
+     "mentioned": [
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "fd688d247ef5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Blog RoboForex for Traders: Trading News, Analysis, Forecasts - forex and stocks | R-Blog",
+  "url": "https://roboforex.com/blog/",
+  "published": "2026-09-21T15:29:42+00:00",
+  "symbols": [
+   "XAUUSD",
+   "USDJPY",
+   "USDTRY",
+   "Tesla"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "gap",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6c20a647b72280ee77da",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "2026 Analysis 16 min Market Week Ahead (September 7 \u2013 11): US CPI Forecast Lands After the ECB Decision The first week of September settled nothing.",
+    "lang": "en",
+    "quantities": [
+     "cpi"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "8dede90a48a2"
+   },
+   {
+    "claim": "2026 Analysis 16 min Market Week Ahead (August 31 \u2013 September 4): Non-Farm Payrolls Forecast Decides the Dollar's Course August closed on a firm note for US stocks, carried by the first corporate reports of the season.",
+    "lang": "en",
+    "quantities": [
+     "stocks"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "USDJPY",
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "gold",
+      "yen",
+      "try",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "EURUSD",
+      "GBPUSD",
+      "AUDUSD"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "bank of england: policy: BoE -> GBP",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY",
+      "rba: policy: RBA -> AUD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "adb662934c31"
+   },
+   {
+    "claim": "2026 Analysis 23 min Gold Fed Rate Hike Bets: XAUUSD Forecast and a 4,772 USD Target Gold Fed rate hike bets have been the single biggest weight on the metal all year, and over one week in August that weight came off.",
+    "lang": "en",
+    "quantities": [
+     "rate",
+     "hike"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "0f6faf8e9a8f"
+   }
+  ],
+  "n_claims": 3
+ }
+]

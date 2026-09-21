@@ -1,0 +1,29 @@
+[
+ {
+  "source": "deep_forest",
+  "kind": "dataset",
+  "title": "Index derivatives - Australian Securities Exchange",
+  "url": "https://www.asx.com.au/markets/trade-our-derivatives-market/overview/equity-derivatives/index-derivatives",
+  "published": "2026-09-20T05:31:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.4,
+  "lang": "en",
+  "endpoints": [
+   "https://www2.asx.com.au/data/data/ASXCLDerivativesMasterList.csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "aa61a8cebd360381d952",
+  "host": "www.asx.com.au",
+  "ground": "ASX research",
+  "region": "au",
+  "cluster": "anz",
+  "dataset_class": null,
+  "available_time": "2026-09-20T05:31:46+00:00",
+  "ingested_time": "2026-09-20T05:31:46+00:00",
+  "source_hash": "aa61a8cebd360381d952",
+  "claims": [],
+  "n_claims": 0
+ }
+]

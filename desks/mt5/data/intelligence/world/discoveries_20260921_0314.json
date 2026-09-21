@@ -1,0 +1,2278 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Drewry - Service Expertise - Carrier Strategy Workshops",
+  "url": "https://www.drewry.co.uk/supply-chain-advisors/supply-chain-expertise/carrier-strategy-workshops",
+  "published": "2026-09-21T03:12:46+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "flow",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "En",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3b43ac388af15e430163",
+  "host": "www.drewry.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "ADX 2025: Year in Review",
+  "url": "https://www.adx.ae/about-adx/knowledge-center/adx-blogs/adx-2025-a-pivotal-year-in-market-evolution-and-global-integration",
+  "published": "2026-09-21T03:12:53+00:00",
+  "symbols": [],
+  "timeframes": [
+   "H1"
+  ],
+  "patterns": [
+   "momentum",
+   "orderflow",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://apigateway.adx.ae/adx/cdn/1.0/content/download/4269241",
+   "https://apigateway.adx.ae/adx/cdn/1.0/content/download/4630534",
+   "https://apigateway.adx.ae/adx/cdn/1.0/content/download/4532947",
+   "https://apigateway.adx.ae/adx/cdn/1.0/content/download/4616222",
+   "https://apigateway.adx.ae/adx/cdn/1.0/content/download/4543813",
+   "https://apigateway.adx.ae/adx/cdn/1.0/content/download/4574641"
+  ],
+  "n_endpoints": 6,
+  "vault_sha": "daca74b2c11f8cee2507",
+  "host": "www.adx.ae",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "ADX 2025 Results: Transformative Growth &amp; Market Leadership",
+  "url": "https://www.adx.ae/about-adx/media/adx-news/adx-market-leadership-2025-growth",
+  "published": "2026-09-21T03:12:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "momentum",
+   "orderflow",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "50dccab0d704cfdae965",
+  "host": "www.adx.ae",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/USDCZK",
+  "published": "2026-09-21T03:13:02+00:00",
+  "symbols": [
+   "USDCZK"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/usdczk/2026",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/usdczk/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/usdczk/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/usdczk/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/usdczk/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/usdczk/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/usdczk/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/usdczk/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/usdczk/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/usdczk/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/usdczk/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/usdczk/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/usdczk/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/usdczk/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/usdczk/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/usdczk/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/usdczk/2010"
+  ],
+  "n_endpoints": 21,
+  "vault_sha": "67e0d1f34df0b60c4c10",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/USDSEK",
+  "published": "2026-09-21T03:13:04+00:00",
+  "symbols": [
+   "USDSEK"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/usdsek/2026",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/usdsek/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/usdsek/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/usdsek/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/usdsek/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/usdsek/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/usdsek/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/usdsek/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/usdsek/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/usdsek/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/usdsek/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/usdsek/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/usdsek/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/usdsek/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/usdsek/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/usdsek/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/usdsek/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/usdsek/2009",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/usdsek/2008"
+  ],
+  "n_endpoints": 23,
+  "vault_sha": "06e55522fa56d3774684",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/WTIUSD",
+  "published": "2026-09-21T03:13:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/wtiusd/2026",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/wtiusd/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/wtiusd/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/wtiusd/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/wtiusd/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/wtiusd/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/wtiusd/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/wtiusd/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/wtiusd/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/wtiusd/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/wtiusd/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/wtiusd/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/wtiusd/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/wtiusd/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/wtiusd/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/wtiusd/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/wtiusd/2010"
+  ],
+  "n_endpoints": 21,
+  "vault_sha": "b10522cb62a74d3d1c59",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/XAUEUR",
+  "published": "2026-09-21T03:13:08+00:00",
+  "symbols": [
+   "XAUEUR"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/xaueur/2026",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/xaueur/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/xaueur/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/xaueur/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/xaueur/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/xaueur/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/xaueur/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/xaueur/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/xaueur/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/xaueur/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/xaueur/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/xaueur/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/xaueur/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/xaueur/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/xaueur/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/xaueur/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/xaueur/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/xaueur/2009"
+  ],
+  "n_endpoints": 22,
+  "vault_sha": "2169688e1e7320c4386f",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/AUDNZD",
+  "published": "2026-09-21T03:13:10+00:00",
+  "symbols": [
+   "AUDNZD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/audnzd/2026",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/audnzd/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/audnzd/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/audnzd/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/audnzd/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/audnzd/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/audnzd/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/audnzd/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/audnzd/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/audnzd/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/audnzd/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/audnzd/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/audnzd/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/audnzd/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/audnzd/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/audnzd/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/audnzd/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/audnzd/2009",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/audnzd/2008",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/audnzd/2007"
+  ],
+  "n_endpoints": 24,
+  "vault_sha": "b6c006145b25b4ada6ac",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/CADCHF",
+  "published": "2026-09-21T03:13:12+00:00",
+  "symbols": [
+   "CADCHF"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/cadchf/2026",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/cadchf/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/cadchf/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/cadchf/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/cadchf/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/cadchf/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/cadchf/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/cadchf/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/cadchf/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/cadchf/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/cadchf/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/cadchf/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/cadchf/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/cadchf/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/cadchf/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/cadchf/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/cadchf/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/cadchf/2009",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/cadchf/2008"
+  ],
+  "n_endpoints": 23,
+  "vault_sha": "ab364b06b0f49294a550",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/EURDKK",
+  "published": "2026-09-21T03:13:14+00:00",
+  "symbols": [
+   "EURDKK"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/eurdkk/2026",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/eurdkk/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/eurdkk/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/eurdkk/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/eurdkk/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/eurdkk/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/eurdkk/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/eurdkk/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/eurdkk/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/eurdkk/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/eurdkk/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/eurdkk/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/eurdkk/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/eurdkk/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/eurdkk/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/eurdkk/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/eurdkk/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/eurdkk/2009",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-bid-quotes/eurdkk/2008"
+  ],
+  "n_endpoints": 23,
+  "vault_sha": "01637e40d083c5fe107e",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Visa Inc. stocks CFD (V) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/V/",
+  "published": "2026-09-21T03:13:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "dd39e06e8f5896d69bfe",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Delta Air Lines, Inc. stocks CFD (DAL) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/DAL/",
+  "published": "2026-09-21T03:13:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "e35b8ad3174c48825636",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Wells Fargo &amp; Company stocks CFD (WFC) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/WFC/",
+  "published": "2026-09-21T03:13:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "3c0927cae0a21edeba3b",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Citigroup Inc. stocks CFD (C) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/C/",
+  "published": "2026-09-21T03:13:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "ea5c73747fe98f0c8f41",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Exxon Mobil Corporation stocks CFD (XOM) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/XOM/",
+  "published": "2026-09-21T03:13:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "2deb0f6107eb0ecc393e",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Chevron Corporation stocks CFD (CVX) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/CVX/",
+  "published": "2026-09-21T03:13:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "7e6d96a65125d07eb8de",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Newmont Mining Corporation stocks CFD (NEM) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/NEM/",
+  "published": "2026-09-21T03:13:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "0a96eb29e2253c2c5d02",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/a123",
+  "published": "2026-09-21T03:13:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ee2ae5aa5497cd1af8d2",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5168\u5e74\u4ea4\u6613\u65e5\u5386\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/all_trading_days",
+  "published": "2026-09-21T03:13:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "df81cd5e4918fd90b114",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4ea4\u6613\u65e5\u5386\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/trading_days",
+  "published": "2026-09-21T03:13:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "703151e45bbf534ba08d",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u6a21\u62df\u4ea4\u6613\u524d\u7f6e\u4efb\u52a1\u65e5\u5386\u8868\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/papertrading_trading_days",
+  "published": "2026-09-21T03:13:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0096281667ba04db4a21",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8282\u5047\u65e5\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/holidays",
+  "published": "2026-09-21T03:13:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6682903a9114d544a86e",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e2d\u56fd\u80a1\u7968\u4ee3\u7801\u5217\u8868\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_instruments",
+  "published": "2026-09-21T03:13:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6f7568270e62d6cd0e49",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e2d\u56fd\u671f\u8d27\u4ee3\u7801\u5217\u8868\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_future_instruments",
+  "published": "2026-09-21T03:13:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "gap",
+   "momentum",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "815a06d83d6f6b9c858a",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "ICT service exports (% of service exports, BoP) | Data",
+  "url": "https://data.worldbank.org/indicator/BX.GSR.CCIS.ZS",
+  "published": "2026-09-21T03:13:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/en/indicator/BX.GSR.CCIS.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ac692c9501fd55f5497f",
+  "host": "data.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Communications, computer, etc. (% of service exports, BoP) | Data",
+  "url": "https://data.worldbank.org/indicator/BX.GSR.CMCP.ZS",
+  "published": "2026-09-21T03:13:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/en/indicator/BX.GSR.CMCP.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "14808088616975f691f2",
+  "host": "data.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Primary income receipts (BoP, current US$) | Data",
+  "url": "https://data.worldbank.org/indicator/BX.GSR.FCTY.CD",
+  "published": "2026-09-21T03:13:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/en/indicator/BX.GSR.FCTY.CD?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "e1fdea75873374432d1b",
+  "host": "data.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Exports of goods and services (BoP, current US$) | Data",
+  "url": "https://data.worldbank.org/indicator/BX.GSR.GNFS.CD",
+  "published": "2026-09-21T03:13:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/en/indicator/BX.GSR.GNFS.CD?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "b4c424308e7e0d14134f",
+  "host": "data.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Goods exports (BoP, current US$) | Data",
+  "url": "https://data.worldbank.org/indicator/BX.GSR.MRCH.CD",
+  "published": "2026-09-21T03:14:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/en/indicator/BX.GSR.MRCH.CD?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "48cb425b8e56d7741c28",
+  "host": "data.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Indicators | Data",
+  "url": "http://data.worldbank.org/indicator",
+  "published": "2026-09-21T03:14:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "gap",
+   "inventory",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2f5ba9db8942e931875e",
+  "host": "data.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Can I Become a Millionaire Trading Forex - What Is Forex Trading Earning Potential? | Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/marketwatch/articles/can-forex-make-a-millionaire/",
+  "published": "2026-09-21T03:14:06+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XTIUSD",
+   "US30",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "USDCAD",
+   "USDTRY",
+   "BTCUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "breakout",
+   "carry",
+   "correlation",
+   "flow",
+   "gap",
+   "inventory",
+   "momentum",
+   "night_session",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 9,
+  "vault_sha": "a7dd9449cf0bc1f5c1e3",
+  "host": "www.dukascopy.com",
+  "claims": [
+   {
+    "claim": "Learn more JP EU Open accounts Articles Data tools for webmasters Online news Online news for webmasters Articles Smart Money Concept ICT Trading Long Position vs.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "527617f59160"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "What is Swap in Forex Trading? Calculation with Examples | Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/marketwatch/articles/what-is-swap-in-forex-trading/",
+  "published": "2026-09-21T03:14:08+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XTIUSD",
+   "US30",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "USDCAD",
+   "AUDJPY",
+   "EURGBP",
+   "USDTRY",
+   "BTCUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "carry",
+   "correlation",
+   "flow",
+   "night_session",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 9,
+  "vault_sha": "3a6f1b6b1f66595472fd",
+  "host": "www.dukascopy.com",
+  "claims": [
+   {
+    "claim": "Learn more JP EU Open accounts Articles Data tools for webmasters Online news Online news for webmasters Articles Smart Money Concept ICT Trading Long Position vs.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "AUDJPY",
+      "EURGBP",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "aud/jpy",
+      "eur/gbp",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "USDTHB"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities",
+      "european central bank: policy: ECB -> EUR",
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "527617f59160"
+   },
+   {
+    "claim": "Whether you pay or receive depends on which currency has the higher interest rate and your position direction - making swap awareness is essential for any trader holding positions beyond the daily rollover time.",
+    "lang": "en",
+    "quantities": [
+     "rate",
+     "swap",
+     "rollover"
+    ],
+    "direction": [
+     "higher"
+    ],
+    "horizon": [
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "AUDJPY",
+      "EURGBP",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "aud/jpy",
+      "eur/gbp",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "USDTHB"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities",
+      "european central bank: policy: ECB -> EUR",
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "da7480524a8c"
+   },
+   {
+    "claim": "While individual swap payments might seem negligible at just a few dollars per night, they compound dramatically for long-term positions and can either enhance your profits substantially or quietly erode them, especially when you factor in triple swap days that occur on weekends.",
+    "lang": "en",
+    "quantities": [
+     "swap",
+     "factor"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "AUDJPY",
+      "EURGBP",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "aud/jpy",
+      "eur/gbp",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "USDTHB"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities",
+      "european central bank: policy: ECB -> EUR",
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "9f57f9b88856"
+   },
+   {
+    "claim": "Recognizing negative swap scenarios helps you make informed decisions about when to close positions or adjust your trading approach.",
+    "lang": "en",
+    "quantities": [
+     "swap",
+     "close"
+    ],
+    "direction": [
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "AUDJPY",
+      "EURGBP",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "aud/jpy",
+      "eur/gbp",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "USDTHB"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities",
+      "european central bank: policy: ECB -> EUR",
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "67847f24756a"
+   },
+   {
+    "claim": "Unlike spot next swaps that are automatically applied to overnight positions, forward swaps are arranged as separate contracts.",
+    "lang": "en",
+    "quantities": [
+     "spot"
+    ],
+    "direction": [
+     "contracts"
+    ],
+    "horizon": [
+     "overnight"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "AUDJPY",
+      "EURGBP",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "aud/jpy",
+      "eur/gbp",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "USDTHB"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities",
+      "european central bank: policy: ECB -> EUR",
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "3c4b8180d120"
+   },
+   {
+    "claim": "Some traders increase their position sizes well beyond their risk tolerance, lured by the siren song of daily swap payments.",
+    "lang": "en",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "increase"
+    ],
+    "horizon": [
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "AUDJPY",
+      "EURGBP",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "aud/jpy",
+      "eur/gbp",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "USDTHB"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities",
+      "european central bank: policy: ECB -> EUR",
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "286da8e81243"
+   },
+   {
+    "claim": "Closing your positions before the daily rollover period (usually 5 PM EST) and reopening them later is the simplest method to lower swap costs;",
+    "lang": "en",
+    "quantities": [
+     "rollover",
+     "swap"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "AUDJPY",
+      "EURGBP",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "aud/jpy",
+      "eur/gbp",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "USDTHB"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities",
+      "european central bank: policy: ECB -> EUR",
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "af06dfb49cfe"
+   }
+  ],
+  "n_claims": 7
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Moving Average Indicator: What is it and How to Use it in Forex Trading? | Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/marketwatch/articles/moving-average/",
+  "published": "2026-09-21T03:14:09+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XTIUSD",
+   "US30",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "USDCAD",
+   "USDKRW",
+   "USDTRY",
+   "BTCUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "breakout",
+   "carry",
+   "correlation",
+   "flow",
+   "momentum",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 9,
+  "vault_sha": "bbed2d846978b894dde1",
+  "host": "www.dukascopy.com",
+  "claims": [
+   {
+    "claim": "Learn more JP EU Open accounts Articles Data tools for webmasters Online news Online news for webmasters Articles Smart Money Concept ICT Trading Long Position vs.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "USDKRW",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "won",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "527617f59160"
+   },
+   {
+    "claim": "That upward movement tells you the recent trend is bullish, even though individual days had some ups and downs.",
+    "lang": "en",
+    "quantities": [
+     "trend"
+    ],
+    "direction": [
+     "bullish"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "USDKRW",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "won",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "2d6062f279c5"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "How to Become a Forex Trader and How Long Does it Take? | Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/marketwatch/articles/how-to-become-forex-trader/",
+  "published": "2026-09-21T03:14:12+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XTIUSD",
+   "US30",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "USDCAD",
+   "GBPJPY",
+   "USDKRW",
+   "USDTRY",
+   "BTCUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "carry",
+   "correlation",
+   "flow",
+   "night_session",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 9,
+  "vault_sha": "82f938e1b4c9cecb7d55",
+  "host": "www.dukascopy.com",
+  "claims": [
+   {
+    "claim": "Learn more JP EU Open accounts Articles Data tools for webmasters Online news Online news for webmasters Articles Smart Money Concept ICT Trading Long Position vs.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "GBPJPY",
+      "USDKRW",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "gbp/jpy",
+      "won",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "USDTHB"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities",
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "527617f59160"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Trading Plan: How to Create a Successful Forex Trading Plan? | Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/marketwatch/articles/trading-plan/",
+  "published": "2026-09-21T03:14:14+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XTIUSD",
+   "US30",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "USDCAD",
+   "USDKRW",
+   "USDTRY",
+   "BTCUSD"
+  ],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "carry",
+   "correlation",
+   "flow",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 9,
+  "vault_sha": "0e5e34db1a48981b63cf",
+  "host": "www.dukascopy.com",
+  "claims": [
+   {
+    "claim": "Learn more JP EU Open accounts Articles Data tools for webmasters Online news Online news for webmasters Articles Smart Money Concept ICT Trading Long Position vs.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "USDKRW",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "won",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "527617f59160"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Trading Sessions | Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/marketwatch/articles/forex-trading-sessions/",
+  "published": "2026-09-21T03:14:15+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XTIUSD",
+   "US30",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "AUDUSD",
+   "USDCAD",
+   "EURJPY",
+   "GBPJPY",
+   "AUDJPY",
+   "EURGBP",
+   "USDTRY",
+   "BTCUSD",
+   "COFARA"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "auction",
+   "breakout",
+   "carry",
+   "correlation",
+   "flow",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "policy",
+   "positioning",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 9,
+  "vault_sha": "3b747b0baa89081d0073",
+  "host": "www.dukascopy.com",
+  "claims": [
+   {
+    "claim": "Learn more JP EU Open accounts Articles Data tools for webmasters Online news Online news for webmasters Articles Smart Money Concept ICT Trading Long Position vs.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "EURJPY",
+      "GBPJPY",
+      "AUDJPY",
+      "EURGBP",
+      "USDTRY",
+      "BTCUSD",
+      "COFARA"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "aud/usd",
+      "usd/cad",
+      "eur/jpy",
+      "gbp/jpy",
+      "aud/jpy",
+      "eur/gbp",
+      "try",
+      "bitcoin",
+      "coffee"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "USDTHB"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities",
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "527617f59160"
+   },
+   {
+    "claim": "This session tends to be the quietest of the four, with lower volatility and wider spreads.",
+    "lang": "en",
+    "quantities": [
+     "session",
+     "volatility"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "EURJPY",
+      "GBPJPY",
+      "AUDJPY",
+      "EURGBP",
+      "USDTRY",
+      "BTCUSD",
+      "COFARA"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "aud/usd",
+      "usd/cad",
+      "eur/jpy",
+      "gbp/jpy",
+      "aud/jpy",
+      "eur/gbp",
+      "try",
+      "bitcoin",
+      "coffee"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "USDTHB"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities",
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "114549217594"
+   },
+   {
+    "claim": "New York Session (The Grand Finale) 1:00 PM - 10:00 PM GMT And for the grand finale, we have New York - the session that either validates or completely reverses everything that happened earlier in the day.",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "reverses"
+    ],
+    "horizon": [
+     "session",
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "EURJPY",
+      "GBPJPY",
+      "AUDJPY",
+      "EURGBP",
+      "USDTRY",
+      "BTCUSD",
+      "COFARA"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "aud/usd",
+      "usd/cad",
+      "eur/jpy",
+      "gbp/jpy",
+      "aud/jpy",
+      "eur/gbp",
+      "try",
+      "bitcoin",
+      "coffee"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "USDTHB"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities",
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "64004dfb0518"
+   },
+   {
+    "claim": "Tokyo-London Overlap 8:00 AM - 9:00 AM GMT (1 hour of strategic positioning) This brief but crucial 1-hour window is like the changing of the guard ceremony - short, but absolutely critical for understanding where the market is headed.",
+    "lang": "en",
+    "quantities": [
+     "positioning"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "hour"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "EURJPY",
+      "GBPJPY",
+      "AUDJPY",
+      "EURGBP",
+      "USDTRY",
+      "BTCUSD",
+      "COFARA"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "aud/usd",
+      "usd/cad",
+      "eur/jpy",
+      "gbp/jpy",
+      "aud/jpy",
+      "eur/gbp",
+      "try",
+      "bitcoin",
+      "coffee"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "USDTHB"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities",
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "6623139deec8"
+   }
+  ],
+  "n_claims": 4
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "AI in Forex Trading: How it Changes the Market and How to Use it",
+  "url": "https://www.dukascopy.com/swiss/english/marketwatch/articles/ai-in-forex-trading/",
+  "published": "2026-09-21T03:14:17+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XTIUSD",
+   "US30",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "USDCAD",
+   "EURJPY",
+   "USDKRW",
+   "USDTRY",
+   "BTCUSD",
+   "COFARA"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "carry",
+   "correlation",
+   "flow",
+   "night_session",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 9,
+  "vault_sha": "f0edce5cff43baa5addb",
+  "host": "www.dukascopy.com",
+  "claims": [
+   {
+    "claim": "Learn more JP EU Open accounts Articles Data tools for webmasters Online news Online news for webmasters Articles Smart Money Concept ICT Trading Long Position vs.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "EURJPY",
+      "USDKRW",
+      "USDTRY",
+      "BTCUSD",
+      "COFARA"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "eur/jpy",
+      "won",
+      "try",
+      "bitcoin",
+      "coffee",
+      "iron ore"
+     ],
+     "transfer_only": [
+      "iron ore->metals/energy"
+     ],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bank of japan: policy: BoJ / MoF intervention -> JPY",
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "527617f59160"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u91d1\u5229\u6307\u6a19\u6539\u9769\uff08LIBOR\u306e\u6052\u4e45\u7684\u306a\u516c\u8868\u505c\u6b62\u306b\u5099\u3048\u305f\u5bfe\u5fdc\uff09 : \u65e5\u672c\u9280\u884c Bank of Japan",
+  "url": "https://www.boj.or.jp/finsys/libor/index.htm",
+  "published": "2026-09-21T03:14:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "404ab02c7f6a80464fef",
+  "host": "www.boj.or.jp",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u300c\u91d1\u5229\u6307\u6a19\u30d5\u30a9\u30fc\u30e9\u30e0\u300d\u306e\u8a2d\u7acb\u306b\u3064\u3044\u3066 : \u65e5\u672c\u9280\u884c Bank of Japan",
+  "url": "https://www.boj.or.jp/about/release_2022/rel220302b.htm",
+  "published": "2026-09-21T03:14:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "79966de96576af9013b9",
+  "host": "www.boj.or.jp",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u91d1\u5229\u6307\u6a19\u30d5\u30a9\u30fc\u30e9\u30e0\u7b2c6\u56de\u4f1a\u5408 : \u65e5\u672c\u9280\u884c Bank of Japan",
+  "url": "https://www.boj.or.jp/paym/market/i_forum/ifo231205a.htm",
+  "published": "2026-09-21T03:14:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4c49997ae4d571a0965b",
+  "host": "www.boj.or.jp",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u91d1\u5229\u6307\u6a19\u30d5\u30a9\u30fc\u30e9\u30e0\u7b2c5\u56de\u4f1a\u5408 : \u65e5\u672c\u9280\u884c Bank of Japan",
+  "url": "https://www.boj.or.jp/paym/market/i_forum/ifo230607a.htm",
+  "published": "2026-09-21T03:14:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5c45450f6fa7eac7a178",
+  "host": "www.boj.or.jp",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Sponsorizzazione Trading: Invita i tuoi amici | Swissquote",
+  "url": "https://en.swissquote.com/it-ch/refer-friend/trading",
+  "published": "2026-09-21T03:14:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "it",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2de271fe7ee2a8c36161",
+  "host": "en.swissquote.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex-Anwerbung: Freunde werben | Swissquote",
+  "url": "https://en.swissquote.com/de-ch/refer-friend/forex",
+  "published": "2026-09-21T03:14:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "de",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "71007f473899c1493f37",
+  "host": "en.swissquote.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]

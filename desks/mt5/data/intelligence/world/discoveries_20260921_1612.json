@@ -1,0 +1,2279 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "BNM governor says ringgit on right track, but risks remain amid trade war fears",
+  "url": "https://theedgemalaysia.com/node/744706",
+  "published": "2026-09-21T16:11:23+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "flow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "80b08f8ce14be399b9d0",
+  "host": "theedgemalaysia.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Malaysia to step up efforts boosting currency inflows, says BNM\u2019s Financial Markets Committee",
+  "url": "https://theedgemalaysia.com/node/808027",
+  "published": "2026-09-21T16:11:24+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f1c59c72dcdc29cedde1",
+  "host": "theedgemalaysia.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "BNM \u2018steps up engagements\u2019 with SOEs, investors to boost inflows as ringgit hovers near 26-year low",
+  "url": "https://theedgemalaysia.com/node/702494",
+  "published": "2026-09-21T16:11:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d34f3409fcb39b778279",
+  "host": "theedgemalaysia.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Ekspor Sawit Indonesia Melonjak 64% pada Juni 2026, Produksi dan Konsumsi Ikut Naik - Gabungan Pengusaha Kelapa Sawit Indonesia (GAPKI)",
+  "url": "https://gapki.id/news/2026/08/26/ekspor-sawit-indonesia-melonjak-64-pada-juni-2026-produksi-dan-konsumsi-ikut-naik/",
+  "published": "2026-09-21T16:11:31+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "50ecf9846887371b79e7",
+  "host": "gapki.id",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Kinerja Industri Sawit 2025 Tumbuh Lebih Cepat, GAPKI Soroti Tantangan dan Arah Strategis - Gabungan Pengusaha Kelapa Sawit Indonesia (GAPKI)",
+  "url": "https://gapki.id/news/2025/11/14/kinerja-industri-sawit-2025-tumbuh-lebih-cepat-gapki-soroti-tantangan-dan-arah-strategis/",
+  "published": "2026-09-21T16:11:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow",
+   "gap",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c6f0cf17b771ff8b865b",
+  "host": "gapki.id",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "In the Age of AI, A Quant\u2019s Edge is Human",
+  "url": "https://www.aqr.com/Insights/Research/Trade-Publication/In-the-Age-of-AI-A-Quants-Edge-is-Human",
+  "published": "2026-09-21T16:11:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "carry"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.aqr.com/Insights/Datasets"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f2bce83296e3568f7a79",
+  "host": "www.aqr.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "7 Effective Trading Strategies for Beginners and Advanced",
+  "url": "https://roboforex.com/blog/education/7-trading-strategies-for-beginners-and-advanced/",
+  "published": "2026-09-21T16:11:38+00:00",
+  "symbols": [
+   "USDTRY",
+   "Tesla"
+  ],
+  "timeframes": [
+   "D1",
+   "H1"
+  ],
+  "patterns": [
+   "breakout",
+   "policy",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "16ea58fa1c89a598a851",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "Then, we may open new positions by the current trend until it reverses.",
+    "lang": "en",
+    "quantities": [
+     "open",
+     "trend"
+    ],
+    "direction": [
+     "reverses"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "try",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "bank of england: policy: BoE -> GBP",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "bd807a984abd"
+   },
+   {
+    "claim": "Open Trading Account experienced trader long-term trading strategy medium-term trading strategy short-term trading strategy Further reading Education 21 min MT5 Download and Setup: How to Install MetaTrader 5 and Connect Your Account The official MT5 download is available on the MetaQuotes website and on the RoboForex MetaTrader 5 page, and the mobile app is in Google Play and the App Store.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long",
+     "short"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "try",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "bank of england: policy: BoE -> GBP",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "1abf57322b56"
+   },
+   {
+    "claim": "2026 Analysis 16 min Market Week Ahead (September 7 \u2013 11): US CPI Forecast Lands After the ECB Decision The first week of September settled nothing.",
+    "lang": "en",
+    "quantities": [
+     "cpi"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "8dede90a48a2"
+   },
+   {
+    "claim": "2026 Analysis 16 min Market Week Ahead (August 31 \u2013 September 4): Non-Farm Payrolls Forecast Decides the Dollar's Course August closed on a firm note for US stocks, carried by the first corporate reports of the season.",
+    "lang": "en",
+    "quantities": [
+     "stocks"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "try",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "bank of england: policy: BoE -> GBP",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "adb662934c31"
+   }
+  ],
+  "n_claims": 4
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Netting vs. Hedging: What is the Difference?",
+  "url": "https://roboforex.com/blog/education/netting-vs-hedging-what-is-the-difference/",
+  "published": "2026-09-21T16:11:39+00:00",
+  "symbols": [
+   "EURUSD",
+   "USDTRY",
+   "Tesla"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2ffc1d69476190fc228a",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "The Netting account system With the Netting system, a position in the opposite direction will close the first one if they are the same volume: 1 lot buy will be closed by 1 lot sale.",
+    "lang": "en",
+    "quantities": [
+     "close",
+     "volume"
+    ],
+    "direction": [
+     "buy"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "eur/usd",
+      "try",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "GBPUSD",
+      "USDJPY"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "bank of england: policy: BoE -> GBP",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "1bbb125072dc"
+   },
+   {
+    "claim": "2026 Analysis 16 min Market Week Ahead (September 7 \u2013 11): US CPI Forecast Lands After the ECB Decision The first week of September settled nothing.",
+    "lang": "en",
+    "quantities": [
+     "cpi"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "8dede90a48a2"
+   },
+   {
+    "claim": "2026 Analysis 16 min Market Week Ahead (August 31 \u2013 September 4): Non-Farm Payrolls Forecast Decides the Dollar's Course August closed on a firm note for US stocks, carried by the first corporate reports of the season.",
+    "lang": "en",
+    "quantities": [
+     "stocks"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "eur/usd",
+      "try",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "GBPUSD",
+      "USDJPY"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "bank of england: policy: BoE -> GBP",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "adb662934c31"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "All articles with the tag: copy trading in forex - RoboForex Blog",
+  "url": "https://roboforex.com/blog/tag/copy-trading-in-forex/",
+  "published": "2026-09-21T16:11:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0ccf04ed5e30f160b2ea",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "All articles with the tag: copyfx investment platform - RoboForex Blog",
+  "url": "https://roboforex.com/blog/tag/copyfx-investment-platform/",
+  "published": "2026-09-21T16:11:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "04f3057966a1dd605ff2",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "All articles with the tag: r stockstrader trading platform - RoboForex Blog",
+  "url": "https://roboforex.com/blog/tag/r-stockstrader-trading-platform/",
+  "published": "2026-09-21T16:11:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0252c4d395c082cfe90f",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Your First MQL5 Expert Advisor: Ready-Made Code | RoboForex Blog",
+  "url": "https://roboforex.com/blog/education/first-mql5-expert-advisor/",
+  "published": "2026-09-21T16:11:48+00:00",
+  "symbols": [
+   "EURUSD",
+   "GBPUSD",
+   "XAUUSD",
+   "USDTRY",
+   "Tesla"
+  ],
+  "timeframes": [
+   "H1"
+  ],
+  "patterns": [
+   "basis",
+   "breakout",
+   "carry",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a7c7fa177db889f54e3d",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "2026 Analysis 16 min Market Week Ahead (September 7 \u2013 11): US CPI Forecast Lands After the ECB Decision The first week of September settled nothing.",
+    "lang": "en",
+    "quantities": [
+     "cpi"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "8dede90a48a2"
+   },
+   {
+    "claim": "2026 Analysis 16 min Market Week Ahead (August 31 \u2013 September 4): Non-Farm Payrolls Forecast Decides the Dollar's Course August closed on a firm note for US stocks, carried by the first corporate reports of the season.",
+    "lang": "en",
+    "quantities": [
+     "stocks"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "EURUSD",
+      "GBPUSD",
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "emas",
+      "eurusd",
+      "gbpusd",
+      "try",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "USDJPY"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "bank of england: policy: BoE -> GBP",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "adb662934c31"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Market Week Ahead: US CPI Forecast After the ECB Decision",
+  "url": "https://roboforex.com/blog/analysis/market-week-ahead-september-7-11-us-cpi-forecast/",
+  "published": "2026-09-21T16:11:49+00:00",
+  "symbols": [
+   "XCUUSD",
+   "GER40",
+   "UK100",
+   "EURUSD",
+   "GBPUSD",
+   "AUDUSD",
+   "USDTRY",
+   "UST10Y",
+   "UKGILT",
+   "Tesla"
+  ],
+  "timeframes": [
+   "H4"
+  ],
+  "patterns": [
+   "basis",
+   "breakout",
+   "flow",
+   "gap",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9f5a94b1819c4f5b6f7d",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "This week hands the market two answers instead: the ECB decides on Thursday, and the US CPI forecast arrives on Friday as the last major number before the Fed meets in September.",
+    "lang": "en",
+    "quantities": [
+     "cpi"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "EURUSD"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "659a43f9c4ee"
+   },
+   {
+    "claim": "A 25 basis point rise on both the deposit rate and the key rate is close to fully priced, which moves the whole question onto the comments from Christine Lagarde and the updated staff assessments of the Eurozone economy.",
+    "lang": "en",
+    "quantities": [
+     "basis",
+     "rate",
+     "close"
+    ],
+    "direction": [
+     "rise"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "lagarde: policy: ECB -> EUR"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "ef0b3cd5344d"
+   },
+   {
+    "claim": "It arrives in the same session as US inflation, so volatility on the currency market could rise noticeably.",
+    "lang": "en",
+    "quantities": [
+     "session",
+     "volatility"
+    ],
+    "direction": [
+     "rise"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "XCUUSD",
+      "GER40",
+      "UK100",
+      "EURUSD",
+      "GBPUSD",
+      "AUDUSD",
+      "USDTRY",
+      "UST10Y",
+      "UKGILT",
+      "Tesla"
+     ],
+     "mentioned": [
+      "copper",
+      "dax",
+      "ftse 100",
+      "eur/usd",
+      "pound",
+      "aud/usd",
+      "try",
+      "treasuries",
+      "gilts",
+      "tesla",
+      "iron ore"
+     ],
+     "transfer_only": [
+      "iron ore->metals/energy"
+     ],
+     "indirect": [
+      "USDX",
+      "US500",
+      "USDJPY"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "bank of england: policy: BoE -> GBP",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b461974ee50d"
+   },
+   {
+    "claim": "2026 Analysis 16 min Market Week Ahead (September 7 \u2013 11): US CPI Forecast Lands After the ECB Decision The first week of September settled nothing.",
+    "lang": "en",
+    "quantities": [
+     "cpi"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "8dede90a48a2"
+   },
+   {
+    "claim": "2026 Analysis 16 min Market Week Ahead (August 31 \u2013 September 4): Non-Farm Payrolls Forecast Decides the Dollar's Course August closed on a firm note for US stocks, carried by the first corporate reports of the season.",
+    "lang": "en",
+    "quantities": [
+     "stocks"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "XCUUSD",
+      "GER40",
+      "UK100",
+      "EURUSD",
+      "GBPUSD",
+      "AUDUSD",
+      "USDTRY",
+      "UST10Y",
+      "UKGILT",
+      "Tesla"
+     ],
+     "mentioned": [
+      "copper",
+      "dax",
+      "ftse 100",
+      "eur/usd",
+      "pound",
+      "aud/usd",
+      "try",
+      "treasuries",
+      "gilts",
+      "tesla",
+      "iron ore"
+     ],
+     "transfer_only": [
+      "iron ore->metals/energy"
+     ],
+     "indirect": [
+      "USDX",
+      "US500",
+      "USDJPY"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "bank of england: policy: BoE -> GBP",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "adb662934c31"
+   }
+  ],
+  "n_claims": 5
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Market Week Ahead: Non-Farm Payrolls Forecast Tests the Fed",
+  "url": "https://roboforex.com/blog/analysis/market-week-ahead-august-31-september-4-non-farm-payrolls-forecast/",
+  "published": "2026-09-21T16:11:51+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XTIUSD",
+   "US500",
+   "USDX",
+   "EURUSD",
+   "AUDUSD",
+   "USDCAD",
+   "USDTRY",
+   "UST10Y",
+   "Tesla"
+  ],
+  "timeframes": [
+   "H4"
+  ],
+  "patterns": [
+   "basis",
+   "breakout",
+   "carry",
+   "gap",
+   "momentum",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "83e6e720cca81511acdf",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "After the weak Non-Farm Payrolls print of the previous month, any further sign of cooling would strengthen expectations of a near-term Fed rate cut.",
+    "lang": "en",
+    "quantities": [
+     "rate",
+     "cut"
+    ],
+    "direction": [
+     "strengthen"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "US500",
+      "USDX",
+      "EURUSD",
+      "AUDUSD",
+      "USDCAD",
+      "USDTRY",
+      "UST10Y",
+      "Tesla"
+     ],
+     "mentioned": [
+      "gold",
+      "brent",
+      "s&p 500",
+      "dollar index",
+      "eur/usd",
+      "aud/usd",
+      "usd/cad",
+      "try",
+      "treasuries",
+      "tesla",
+      "iron ore"
+     ],
+     "transfer_only": [
+      "iron ore->metals/energy"
+     ],
+     "indirect": [
+      "GBPUSD",
+      "USDJPY"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "bank of england: policy: BoE -> GBP",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY",
+      "rba: policy: RBA -> AUD",
+      "bank of canada: policy: BoC -> CAD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b71361421d97"
+   },
+   {
+    "claim": "Price holds below the middle Bollinger band, MACD is gradually recovering while staying close to neutral, and the stochastic turns down after an attempt higher.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "higher"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "US500",
+      "USDX",
+      "EURUSD",
+      "AUDUSD",
+      "USDCAD",
+      "USDTRY",
+      "UST10Y",
+      "Tesla"
+     ],
+     "mentioned": [
+      "gold",
+      "brent",
+      "s&p 500",
+      "dollar index",
+      "eur/usd",
+      "aud/usd",
+      "usd/cad",
+      "try",
+      "treasuries",
+      "tesla",
+      "iron ore"
+     ],
+     "transfer_only": [
+      "iron ore->metals/energy"
+     ],
+     "indirect": [
+      "GBPUSD",
+      "USDJPY"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "bank of england: policy: BoE -> GBP",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY",
+      "rba: policy: RBA -> AUD",
+      "bank of canada: policy: BoC -> CAD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b88411002202"
+   },
+   {
+    "claim": "2026 Analysis 16 min Market Week Ahead (September 7 \u2013 11): US CPI Forecast Lands After the ECB Decision The first week of September settled nothing.",
+    "lang": "en",
+    "quantities": [
+     "cpi"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "8dede90a48a2"
+   },
+   {
+    "claim": "2026 Analysis 16 min Market Week Ahead (August 31 \u2013 September 4): Non-Farm Payrolls Forecast Decides the Dollar's Course August closed on a firm note for US stocks, carried by the first corporate reports of the season.",
+    "lang": "en",
+    "quantities": [
+     "stocks"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "US500",
+      "USDX",
+      "EURUSD",
+      "AUDUSD",
+      "USDCAD",
+      "USDTRY",
+      "UST10Y",
+      "Tesla"
+     ],
+     "mentioned": [
+      "gold",
+      "brent",
+      "s&p 500",
+      "dollar index",
+      "eur/usd",
+      "aud/usd",
+      "usd/cad",
+      "try",
+      "treasuries",
+      "tesla",
+      "iron ore"
+     ],
+     "transfer_only": [
+      "iron ore->metals/energy"
+     ],
+     "indirect": [
+      "GBPUSD",
+      "USDJPY"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "bank of england: policy: BoE -> GBP",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY",
+      "rba: policy: RBA -> AUD",
+      "bank of canada: policy: BoC -> CAD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "adb662934c31"
+   }
+  ],
+  "n_claims": 4
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "LLY Stock Forecast After Eli Lilly Launches Foundayo in the UK",
+  "url": "https://roboforex.com/blog/analysis/lly-stock-forecast-foundayo-uk-launch/",
+  "published": "2026-09-21T16:11:54+00:00",
+  "symbols": [
+   "USDTRY",
+   "Tesla"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "breakout",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dc609efad8b7d675ceaf",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "At the same time the Stochastic indicator sits close to overbought territory, so further gains are likely to come with local pullbacks along the way.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "gains"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "try",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "bank of england: policy: BoE -> GBP",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "0bcb20b55367"
+   },
+   {
+    "claim": "2026 Analysis 16 min Market Week Ahead (September 7 \u2013 11): US CPI Forecast Lands After the ECB Decision The first week of September settled nothing.",
+    "lang": "en",
+    "quantities": [
+     "cpi"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "8dede90a48a2"
+   },
+   {
+    "claim": "2026 Analysis 16 min Market Week Ahead (August 31 \u2013 September 4): Non-Farm Payrolls Forecast Decides the Dollar's Course August closed on a firm note for US stocks, carried by the first corporate reports of the season.",
+    "lang": "en",
+    "quantities": [
+     "stocks"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "try",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "bank of england: policy: BoE -> GBP",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "adb662934c31"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Market Week Ahead: Core PCE Tests Fed Rate Bets",
+  "url": "https://roboforex.com/blog/analysis/market-week-ahead-august-24-28-core-pce/",
+  "published": "2026-09-21T16:11:55+00:00",
+  "symbols": [
+   "USDCAD",
+   "US500",
+   "CA60",
+   "AUS200",
+   "EURUSD",
+   "USDJPY",
+   "AUDUSD",
+   "USDTRY",
+   "UST10Y",
+   "Tesla"
+  ],
+  "timeframes": [
+   "H4"
+  ],
+  "patterns": [
+   "basis",
+   "breakout",
+   "gap",
+   "momentum",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "23999c2cf45356b7f66a",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "Market Reaction GDP above forecast would support the Canadian dollar and open the way for USD/CAD to extend its decline.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDCAD"
+     ],
+     "mentioned": [
+      "usd/cad"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "26badabd6ec0"
+   },
+   {
+    "claim": "A large downward NFP revision on the same day would add its own dollar-negative pressure across the board.",
+    "lang": "en",
+    "quantities": [
+     "nfp"
+    ],
+    "direction": [
+     "negative"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "CA60",
+      "AUS200",
+      "EURUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDTRY",
+      "UST10Y",
+      "Tesla"
+     ],
+     "mentioned": [
+      "s&p 500",
+      "tsx",
+      "asx 200",
+      "eur/usd",
+      "usd/jpy",
+      "aud/usd",
+      "usd/cad",
+      "try",
+      "treasuries",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "GBPUSD"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "bank of england: policy: BoE -> GBP",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY",
+      "rba: policy: RBA -> AUD",
+      "bank of canada: policy: BoC -> CAD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a288c14dd2b6"
+   },
+   {
+    "claim": "2026 Analysis 16 min Market Week Ahead (September 7 \u2013 11): US CPI Forecast Lands After the ECB Decision The first week of September settled nothing.",
+    "lang": "en",
+    "quantities": [
+     "cpi"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "8dede90a48a2"
+   },
+   {
+    "claim": "2026 Analysis 16 min Market Week Ahead (August 31 \u2013 September 4): Non-Farm Payrolls Forecast Decides the Dollar's Course August closed on a firm note for US stocks, carried by the first corporate reports of the season.",
+    "lang": "en",
+    "quantities": [
+     "stocks"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "CA60",
+      "AUS200",
+      "EURUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDTRY",
+      "UST10Y",
+      "Tesla"
+     ],
+     "mentioned": [
+      "s&p 500",
+      "tsx",
+      "asx 200",
+      "eur/usd",
+      "usd/jpy",
+      "aud/usd",
+      "usd/cad",
+      "try",
+      "treasuries",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "GBPUSD"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "bank of england: policy: BoE -> GBP",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY",
+      "rba: policy: RBA -> AUD",
+      "bank of canada: policy: BoC -> CAD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "adb662934c31"
+   }
+  ],
+  "n_claims": 4
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Meta Lawsuit Stock Forecast: META Trade Idea Toward 440 USD",
+  "url": "https://roboforex.com/blog/analysis/meta-lawsuit-stock-forecast-trade-idea/",
+  "published": "2026-09-21T16:11:58+00:00",
+  "symbols": [
+   "NAS100",
+   "USDTRY",
+   "Tesla"
+  ],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5696f4c3e6634490206c",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "Bayer shares dropped 14% in one session, and the company's market value shrank by more than 14 billion USD.",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "dropped"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "try",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "bank of england: policy: BoE -> GBP",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "6b0358f10fcd"
+   },
+   {
+    "claim": "Open Account Analyst Ratings for META Stock As of August 2026, Barchart analyst ratings for Meta Platforms Inc show a consensus in favour of active buying: 47 out of 55 tracked analysts rate META as a Buy and 8 as a Hold.",
+    "lang": "en",
+    "quantities": [
+     "open",
+     "rate"
+    ],
+    "direction": [
+     "buy"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "try",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "bank of england: policy: BoE -> GBP",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "158596f22635"
+   },
+   {
+    "claim": "Traders who want to act on this setup can open a short position in META at market around 560 USD with a Stop Loss at 602 USD, risking no more than 3% of the account.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "try",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "bank of england: policy: BoE -> GBP",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "dfba2f017e51"
+   },
+   {
+    "claim": "2026 Analysis 16 min Market Week Ahead (September 7 \u2013 11): US CPI Forecast Lands After the ECB Decision The first week of September settled nothing.",
+    "lang": "en",
+    "quantities": [
+     "cpi"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "8dede90a48a2"
+   },
+   {
+    "claim": "2026 Analysis 16 min Market Week Ahead (August 31 \u2013 September 4): Non-Farm Payrolls Forecast Decides the Dollar's Course August closed on a firm note for US stocks, carried by the first corporate reports of the season.",
+    "lang": "en",
+    "quantities": [
+     "stocks"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "try",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "bank of england: policy: BoE -> GBP",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "adb662934c31"
+   }
+  ],
+  "n_claims": 5
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "FOMC Meeting Minutes and UK CPI: Week Ahead Aug 17-21",
+  "url": "https://roboforex.com/blog/analysis/fomc-meeting-minutes-uk-cpi-market-week-ahead-august-2026/",
+  "published": "2026-09-21T16:12:00+00:00",
+  "symbols": [
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "AUDUSD",
+   "USDTRY",
+   "Tesla"
+  ],
+  "timeframes": [
+   "H4"
+  ],
+  "patterns": [
+   "basis",
+   "breakout",
+   "flow",
+   "gap",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b46dc83b5db7fa4808d7",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "MACD has turned higher again, while Stochastic has moved close to overbought territory, which makes resistance at 1.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "higher"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "eur/usd",
+      "pound",
+      "yen",
+      "aud/usd",
+      "try",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "bank of england: policy: BoE -> GBP",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "4ab34b11ac4c"
+   },
+   {
+    "claim": "GDP, trade figures and CPI arrive across the week and together determine whether the yen can hold its post-intervention gains on macro data alone.",
+    "lang": "en",
+    "quantities": [
+     "cpi",
+     "intervention"
+    ],
+    "direction": [
+     "gains"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "yen"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e6b16f033f22"
+   },
+   {
+    "claim": "2026 Analysis 16 min Market Week Ahead (September 7 \u2013 11): US CPI Forecast Lands After the ECB Decision The first week of September settled nothing.",
+    "lang": "en",
+    "quantities": [
+     "cpi"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "8dede90a48a2"
+   },
+   {
+    "claim": "2026 Analysis 16 min Market Week Ahead (August 31 \u2013 September 4): Non-Farm Payrolls Forecast Decides the Dollar's Course August closed on a firm note for US stocks, carried by the first corporate reports of the season.",
+    "lang": "en",
+    "quantities": [
+     "stocks"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "eur/usd",
+      "pound",
+      "yen",
+      "aud/usd",
+      "try",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "bank of england: policy: BoE -> GBP",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "adb662934c31"
+   }
+  ],
+  "n_claims": 4
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Gold Fed Rate Hike Bets: XAUUSD Forecast and a 4,772 USD Target",
+  "url": "https://roboforex.com/blog/analysis/gold-fed-rate-hike-bets-xauusd-forecast/",
+  "published": "2026-09-21T16:12:02+00:00",
+  "symbols": [
+   "XAUUSD",
+   "USDTRY",
+   "Tesla",
+   "USDX",
+   "UST10Y"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "breakout",
+   "carry",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c77625acd9570c7b897a",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "Gold Fed Rate Hike Bets: XAUUSD Forecast and a 4,772 USD Target Analysis Education ipo analysis ipo 2021 financial reports forex trading medium-term trading strategy tesla inc Try Free Demo Main \u00b7 Analysis \u00b7 Gold Fed Rate Hike Bets: XAUUSD Forecast and a 4,772 USD Target Gold Fed Rate Hike Bets: XAUUSD Forecast and a 4,772 USD Target 23 minutes for reading Published: 13.",
+    "lang": "en",
+    "quantities": [
+     "rate",
+     "hike"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "minutes"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "gold",
+      "try",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "3736cc33eada"
+   },
+   {
+    "claim": "The implied odds of a September rate increase have dropped to around 40%, from roughly two thirds at the start of the month.",
+    "lang": "en",
+    "quantities": [
+     "rate"
+    ],
+    "direction": [
+     "increase",
+     "dropped"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "USDX",
+      "USDTRY",
+      "UST10Y",
+      "Tesla"
+     ],
+     "mentioned": [
+      "gold",
+      "dollar index",
+      "try",
+      "10-year treasury",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "US500",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "XTIUSD",
+      "XBRUSD",
+      "USDCAD",
+      "USDNOK"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "bank of england: policy: BoE -> GBP",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY",
+      "strait of hormuz: energy flow: OPEC / inventories / chokepoints -> oil, CAD, NOK"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5ccf038c527a"
+   },
+   {
+    "claim": "6 points of rate increase priced out of the September meeting inside one week More than 430 USD recovered by the gold price from its June low over the same stretch Fed funds futures and the CME FedWatch tool, 7 to 12 August 2026.",
+    "lang": "en",
+    "quantities": [
+     "rate",
+     "futures"
+    ],
+    "direction": [
+     "increase"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "fed funds: policy: Fed -> dollar and US equities"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "17cfe4e99705"
+   },
+   {
+    "claim": "Roughly fifteen points of rate increase came out of the September meeting across the two releases, the dollar index fell to a two-week low, and the yield on the 10-year Treasury note came off.",
+    "lang": "en",
+    "quantities": [
+     "rate",
+     "yield"
+    ],
+    "direction": [
+     "increase",
+     "fell"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDX",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "dollar index",
+      "10-year treasury"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "9e9b5db89c9f"
+   },
+   {
+    "claim": "The entry is 4,300 USD , the top of the two-day range gold held right after the breakout, because the rally is stretched.",
+    "lang": "en",
+    "quantities": [
+     "range",
+     "breakout"
+    ],
+    "direction": [
+     "rally"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "74b6ab829a45"
+   },
+   {
+    "claim": "2026 Analysis 16 min Market Week Ahead (September 7 \u2013 11): US CPI Forecast Lands After the ECB Decision The first week of September settled nothing.",
+    "lang": "en",
+    "quantities": [
+     "cpi"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "8dede90a48a2"
+   },
+   {
+    "claim": "2026 Analysis 16 min Market Week Ahead (August 31 \u2013 September 4): Non-Farm Payrolls Forecast Decides the Dollar's Course August closed on a firm note for US stocks, carried by the first corporate reports of the season.",
+    "lang": "en",
+    "quantities": [
+     "stocks"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "USDX",
+      "USDTRY",
+      "UST10Y",
+      "Tesla"
+     ],
+     "mentioned": [
+      "gold",
+      "dollar index",
+      "try",
+      "10-year treasury",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "US500",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "XTIUSD",
+      "XBRUSD",
+      "USDCAD",
+      "USDNOK"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "bank of england: policy: BoE -> GBP",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY",
+      "strait of hormuz: energy flow: OPEC / inventories / chokepoints -> oil, CAD, NOK"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "adb662934c31"
+   }
+  ],
+  "n_claims": 7
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Contacts - RoboForex Blog",
+  "url": "https://roboforex.com/blog/contacts/",
+  "published": "2026-09-21T16:12:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "536fe8605087c8be1107",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Verification | RoboForex Help Center",
+  "url": "https://roboforex.com/help/verification/",
+  "published": "2026-09-21T16:12:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1743511020"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "6ceeda9325bf044928b2",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Members Area | RoboForex Help Center",
+  "url": "https://roboforex.com/help/members-area/",
+  "published": "2026-09-21T16:12:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1743511020"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "b77083ea36ac0403f9b3",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Account Opening | RoboForex Help Center",
+  "url": "https://roboforex.com/help/account-opening/",
+  "published": "2026-09-21T16:12:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1743511020"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "64ba9977404fa874e621",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Payments | RoboForex Help Center",
+  "url": "https://roboforex.com/help/payments/",
+  "published": "2026-09-21T16:12:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1743511020"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ef05c7339f818941da9c",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u6982\u5ff5\u6307\u6570\u6210\u5206\u80a1\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_index_concept_component",
+  "published": "2026-09-21T16:12:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c56ad3ec95e9ab08b185",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u80a1\u7968\u6307\u6570\u6743\u91cd\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_index_weight",
+  "published": "2026-09-21T16:12:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "76377af268748fe825c2",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u80a1\u7968\u6307\u6570\u8fdb\u51fa\u8bb0\u5f55\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_index_change",
+  "published": "2026-09-21T16:12:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "131875f7985808fb91bb",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u6307\u6570\u9759\u6001\u4fe1\u606f\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_index_static_data",
+  "published": "2026-09-21T16:12:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "51ceb5d3345869ff53b0",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]

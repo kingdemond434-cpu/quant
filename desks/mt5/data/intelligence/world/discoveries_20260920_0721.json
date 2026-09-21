@@ -1,0 +1,1567 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "XAUUSD-Chart \u2014 Der Spot-Preis f\u00fcr Gold heute \u2014 Indikatoren und Strategien \u2014 TradingView",
+  "url": "https://de.tradingview.com/scripts/xauusd/page-5/",
+  "published": "2026-09-20T07:21:05+00:00",
+  "symbols": [
+   "AUDUSD",
+   "BTCUSD",
+   "EURUSD",
+   "GBPUSD",
+   "NZDUSD",
+   "USDCAD",
+   "USDCHF",
+   "USDJPY",
+   "XAUUSD",
+   "USDX",
+   "ETHUSD"
+  ],
+  "timeframes": [
+   "15M",
+   "1M",
+   "5M",
+   "D1",
+   "DAILY",
+   "H1",
+   "H4",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "basis",
+   "breakout",
+   "correlation",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "policy",
+   "positioning",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "de",
+  "endpoints": [
+   "https://s3.tradingview.com/conversions_de.json",
+   "https://scanner-backend.tradingview.com/enum/ordered?id=metrics_full_name,metrics&lang=de&label-product=ytm-metrics-plan.json",
+   "https://static.tradingview.com/static/images/favicon/manifest.json"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "692e75a343d4d92d8081",
+  "host": "de.tradingview.com",
+  "claims": [
+   {
+    "claim": "Optional bar coloring tints price bars with the active trend color during confirmed bullish and bearish periods, providing instant overhead visual confirmation of trend state without requiring direct reference to the oscillator panel below.",
+    "lang": "en",
+    "quantities": [
+     "trend"
+    ],
+    "direction": [
+     "bullish",
+     "bearish"
+    ],
+    "horizon": [
+     "bar",
+     "bars"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "USDX",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDCHF",
+      "NZDUSD",
+      "BTCUSD",
+      "ETHUSD"
+     ],
+     "mentioned": [
+      "xauusd",
+      "dxy",
+      "eurusd",
+      "gbpusd",
+      "usdjpy",
+      "audusd",
+      "usdcad",
+      "usdchf",
+      "nzdusd",
+      "btcusd",
+      "ethereum"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "bb079e4607fe"
+   },
+   {
+    "claim": "else if close < lower_band",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "USDX",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDCHF",
+      "NZDUSD",
+      "BTCUSD",
+      "ETHUSD"
+     ],
+     "mentioned": [
+      "xauusd",
+      "dxy",
+      "eurusd",
+      "gbpusd",
+      "usdjpy",
+      "audusd",
+      "usdcad",
+      "usdchf",
+      "nzdusd",
+      "btcusd",
+      "ethereum"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "64940afb60d0"
+   },
+   {
+    "claim": "- Particularly effective around session highs and lows Indikator von sto_svc Aktualisiert 2 1 8 Gold Breakout Trader \u2699\ufe0f Gold short-term entries off M1 timeframe every 2 hours every day with SL/TP targets.",
+    "lang": "en",
+    "quantities": [
+     "session",
+     "breakout"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "session",
+     "hours"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "5831b77cd723"
+   },
+   {
+    "claim": "\ud83d\udc40 Wait for the M1 Close: For a Long Buy Trade, wait for an M1 candle to close above the Buy Stop line.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "long",
+     "buy"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "USDX",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDCHF",
+      "NZDUSD",
+      "BTCUSD",
+      "ETHUSD"
+     ],
+     "mentioned": [
+      "xauusd",
+      "dxy",
+      "eurusd",
+      "gbpusd",
+      "usdjpy",
+      "audusd",
+      "usdcad",
+      "usdchf",
+      "nzdusd",
+      "btcusd",
+      "ethereum"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b652805fcbde"
+   },
+   {
+    "claim": "The strategy performs best during the London session due to higher liquidity and cleaner price action, particularly on instruments such as XAUUSD.",
+    "lang": "en",
+    "quantities": [
+     "session",
+     "liquidity"
+    ],
+    "direction": [
+     "higher"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "xauusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "8cc9569486d0"
+   },
+   {
+    "claim": "\"Smooth Trend\" focuses on conservative configuration for position trading and long-term trend following on daily to weekly charts with extended ZLEMA period for smoother trend identification, longer ATR period for stable volatility measurement, wide multiplier to filter minor corrections, and aggressive noise filtering to ensure only strong sustained trends trigger signals.",
+    "lang": "en",
+    "quantities": [
+     "trend",
+     "volatility"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "daily",
+     "weekly"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "USDX",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDCHF",
+      "NZDUSD",
+      "BTCUSD",
+      "ETHUSD"
+     ],
+     "mentioned": [
+      "xauusd",
+      "dxy",
+      "eurusd",
+      "gbpusd",
+      "usdjpy",
+      "audusd",
+      "usdcad",
+      "usdchf",
+      "nzdusd",
+      "btcusd",
+      "ethereum"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "54c6b59e9516"
+   },
+   {
+    "claim": "When a bar closes higher than it opens (bullish candle), the entire volume is counted as positive delta representing buying pressure.",
+    "lang": "en",
+    "quantities": [
+     "volume"
+    ],
+    "direction": [
+     "higher",
+     "bullish"
+    ],
+    "horizon": [
+     "bar"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "USDX",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDCHF",
+      "NZDUSD",
+      "BTCUSD",
+      "ETHUSD"
+     ],
+     "mentioned": [
+      "xauusd",
+      "dxy",
+      "eurusd",
+      "gbpusd",
+      "usdjpy",
+      "audusd",
+      "usdcad",
+      "usdchf",
+      "nzdusd",
+      "btcusd",
+      "ethereum"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "451527c42d4e"
+   },
+   {
+    "claim": "This aggregation process sums all the individual delta values from the lower timeframe bars that comprise each chart bar, capturing the complete volume flow activity within that period.",
+    "lang": "en",
+    "quantities": [
+     "volume",
+     "flow"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "bars",
+     "bar"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "USDX",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDCHF",
+      "NZDUSD",
+      "BTCUSD",
+      "ETHUSD"
+     ],
+     "mentioned": [
+      "xauusd",
+      "dxy",
+      "eurusd",
+      "gbpusd",
+      "usdjpy",
+      "audusd",
+      "usdcad",
+      "usdchf",
+      "nzdusd",
+      "btcusd",
+      "ethereum"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "4d1b20df78ae"
+   }
+  ],
+  "n_claims": 9
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\u7531TradingView\u793e\u7fa4\u5efa\u69cb\u7684\u4ea4\u6613\u7b56\u7565\u548c\u6307\u6a19",
+  "url": "https://tw.tradingview.com/scripts/",
+  "published": "2026-09-20T07:21:14+00:00",
+  "symbols": [
+   "EURUSD",
+   "GBPUSD",
+   "XAUUSD",
+   "XTIUSD",
+   "XAGUSD",
+   "US500",
+   "GER40",
+   "USDKRW",
+   "BTCUSD"
+  ],
+  "timeframes": [
+   "1H",
+   "DAILY",
+   "H4",
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "breakout",
+   "carry",
+   "correlation",
+   "gap",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "zh-Hant",
+  "endpoints": [
+   "https://s3.tradingview.com/conversions_zh-Hant.json",
+   "https://scanner-backend.tradingview.com/enum/ordered?id=metrics_full_name,metrics&lang=zh-Hant&label-product=ytm-metrics-plan.json",
+   "https://static.tradingview.com/static/images/favicon/manifest.json"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "385393b4f1f27495a136",
+  "host": "tw.tradingview.com",
+  "claims": [
+   {
+    "claim": "A short simple moving average (DMA Length) is calculated, and the internal trend comparison uses that average's value from DMA Displace bars earlier, effectively lagging the filter by that many bars.",
+    "lang": "en",
+    "quantities": [
+     "trend"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "bars"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "US500",
+      "GER40",
+      "EURUSD",
+      "GBPUSD",
+      "USDKRW",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "spy",
+      "dax",
+      "eurusd",
+      "gbpusd",
+      "won",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "498203a7a2db"
+   },
+   {
+    "claim": "Configure the Alerts group's action strings to match the JSON keys your webhook or automation platform expects, then use TradingView's \"Any alert() function call\" option to route long, short, close, objective-hit, and stop-hit events.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "long",
+     "short"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "US500",
+      "GER40",
+      "EURUSD",
+      "GBPUSD",
+      "USDKRW",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "spy",
+      "dax",
+      "eurusd",
+      "gbpusd",
+      "won",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "9a129ca741b2"
+   },
+   {
+    "claim": "\u2696\ufe0f The cleanest version: a heavy long-pressure pool (big bubble, 8/10, already carrying a defended sweep) gets raided \u2014 price spears below it and stops out the longs \u2014 then snaps back and closes above it within a couple of bars on a volume surge, RSI stretched oversold.",
+    "lang": "en",
+    "quantities": [
+     "sweep",
+     "volume"
+    ],
+    "direction": [
+     "long",
+     "surge"
+    ],
+    "horizon": [
+     "bars"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "US500",
+      "GER40",
+      "EURUSD",
+      "GBPUSD",
+      "USDKRW",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "spy",
+      "dax",
+      "eurusd",
+      "gbpusd",
+      "won",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "14b39bc7459d"
+   },
+   {
+    "claim": "Enter a Sell position at or near the close of that candle.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "sell"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "US500",
+      "GER40",
+      "EURUSD",
+      "GBPUSD",
+      "USDKRW",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "spy",
+      "dax",
+      "eurusd",
+      "gbpusd",
+      "won",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "3ede0aaced71"
+   },
+   {
+    "claim": "\ud83d\udd38 The panel reads the most recent bar, not the part of the chart you have scrolled to: who is in control and for how long, net flow over the last three bars, and the last event.",
+    "lang": "en",
+    "quantities": [
+     "flow"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "bar",
+     "bars"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "US500",
+      "GER40",
+      "EURUSD",
+      "GBPUSD",
+      "USDKRW",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "spy",
+      "dax",
+      "eurusd",
+      "gbpusd",
+      "won",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b9960476d78c"
+   },
+   {
+    "claim": "Quantum Probability Matrix: At its core, the quantum trend analyse engine parses up to 4,096 historical data vectors per tick, synthesizing multidimensional bullish and bearish momentum probabilities.",
+    "lang": "en",
+    "quantities": [
+     "trend",
+     "momentum"
+    ],
+    "direction": [
+     "bullish",
+     "bearish"
+    ],
+    "horizon": [
+     "tick"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "US500",
+      "GER40",
+      "EURUSD",
+      "GBPUSD",
+      "USDKRW",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "spy",
+      "dax",
+      "eurusd",
+      "gbpusd",
+      "won",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "96f4e882dbf0"
+   },
+   {
+    "claim": "Range Sensitivity Set 25 Number of bars used to calculate the Upper and Lower Range.",
+    "lang": "en",
+    "quantities": [
+     "range"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "bars"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "US500",
+      "GER40",
+      "EURUSD",
+      "GBPUSD",
+      "USDKRW",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "spy",
+      "dax",
+      "eurusd",
+      "gbpusd",
+      "won",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "75ed12ecc984"
+   },
+   {
+    "claim": "A two-column panel reporting swing trend, internal trend, higher-timeframe bias, the last structure event, the current session, RSI value with overbought/oversold tags, MACD direction, whether price sits above or below each of the three EMAs, VWAP side, overnight gap status, opening range, live order block and fair value gap counts, and a confluence count.",
+    "lang": "en",
+    "quantities": [
+     "trend",
+     "session",
+     "vwap",
+     "gap"
+    ],
+    "direction": [
+     "higher"
+    ],
+    "horizon": [
+     "session",
+     "overnight"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "emas"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "eb5397297bfd"
+   }
+  ],
+  "n_claims": 12
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Backtest \u2014 G\u00f6stergeler ve Stratejiler \u2014 TradingView",
+  "url": "https://tr.tradingview.com/scripts/backtest/",
+  "published": "2026-09-20T07:21:21+00:00",
+  "symbols": [
+   "BTCUSD",
+   "EURUSD",
+   "TARGET",
+   "XAGUSD",
+   "XAUUSD",
+   "US500",
+   "USDJPY",
+   "USDKRW"
+  ],
+  "timeframes": [
+   "15M",
+   "1H",
+   "30M",
+   "4H",
+   "5M",
+   "DAILY",
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "breakout",
+   "carry",
+   "gap",
+   "inventory",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "tr",
+  "endpoints": [
+   "https://s3.tradingview.com/conversions_tr.json",
+   "https://scanner-backend.tradingview.com/enum/ordered?id=metrics_full_name,metrics&lang=tr&label-product=ytm-metrics-plan.json",
+   "https://static.tradingview.com/static/images/favicon/manifest.json"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "2ff8b4619fb7e170544c",
+  "host": "tr.tradingview.com",
+  "claims": [
+   {
+    "claim": "\u2022 Trades and win rate as a bar, profit factor, net and max drawdown, all heat-coloured, in a table kept narrow so the chart stays visible",
+    "lang": "en",
+    "quantities": [
+     "rate",
+     "factor",
+     "drawdown"
+    ],
+    "direction": [
+     "narrow"
+    ],
+    "horizon": [
+     "bar"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "US500",
+      "EURUSD",
+      "USDJPY",
+      "USDKRW",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "xagusd",
+      "spy",
+      "eurusd",
+      "yen",
+      "won",
+      "btcusd"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "23a4b512cda6"
+   },
+   {
+    "claim": "24 entries, each with a long and a mirrored short version: EMA 9/21 and 20/50 crosses \u00b7 close crossing SMA 20 and SMA 50 \u00b7 RSI(2) beyond 10/90 and 5/95 \u00b7 RSI(14) leaving 30/70 and crossing 50 \u00b7 close beyond the 2\u03c3 and 2.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "long",
+     "short"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "US500",
+      "EURUSD",
+      "USDJPY",
+      "USDKRW",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "xagusd",
+      "spy",
+      "eurusd",
+      "yen",
+      "won",
+      "btcusd"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "be35f7b08726"
+   },
+   {
+    "claim": "A zone that price has not yet returned to is drawn solid and continues extending to the right while it remains open.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "continues"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "US500",
+      "EURUSD",
+      "USDJPY",
+      "USDKRW",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "xagusd",
+      "spy",
+      "eurusd",
+      "yen",
+      "won",
+      "btcusd"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "3f039cda0dee"
+   },
+   {
+    "claim": "a short trigger is a close crossing below the lower rail.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "short",
+     "lower"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "US500",
+      "EURUSD",
+      "USDJPY",
+      "USDKRW",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "xagusd",
+      "spy",
+      "eurusd",
+      "yen",
+      "won",
+      "btcusd"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "686e314730ae"
+   },
+   {
+    "claim": "On that symbol's chart set the \u201cBreakout Long/Short\u201d alert, also Once Per Bar",
+    "lang": "en",
+    "quantities": [
+     "breakout"
+    ],
+    "direction": [
+     "long",
+     "short"
+    ],
+    "horizon": [
+     "bar"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "US500",
+      "EURUSD",
+      "USDJPY",
+      "USDKRW",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "xagusd",
+      "spy",
+      "eurusd",
+      "yen",
+      "won",
+      "btcusd"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "d198908003ce"
+   },
+   {
+    "claim": "All strategies are compared against a Buy & Hold baseline that starts at the close of the first in-range bar.",
+    "lang": "en",
+    "quantities": [
+     "close",
+     "range"
+    ],
+    "direction": [
+     "buy"
+    ],
+    "horizon": [
+     "close",
+     "bar"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "US500",
+      "EURUSD",
+      "USDJPY",
+      "USDKRW",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "xagusd",
+      "spy",
+      "eurusd",
+      "yen",
+      "won",
+      "btcusd"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "6ec27212f085"
+   }
+  ],
+  "n_claims": 6
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Pine-script \u2014 Indicateurs et Strat\u00e9gies \u2014 TradingView",
+  "url": "https://fr.tradingview.com/scripts/pine-script/",
+  "published": "2026-09-20T07:21:26+00:00",
+  "symbols": [],
+  "timeframes": [
+   "4H",
+   "DAILY",
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "flow",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "fr",
+  "endpoints": [
+   "https://s3.tradingview.com/conversions_fr.json",
+   "https://scanner-backend.tradingview.com/enum/ordered?id=metrics_full_name,metrics&lang=fr&label-product=ytm-metrics-plan.json",
+   "https://static.tradingview.com/static/images/favicon/manifest.json"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "b8943ca919f0fe440fab",
+  "host": "fr.tradingview.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "ECB wage tracker at 2.7% in H1 2027, pointing to a modest uptick in negotiated wage growth",
+  "url": "https://www.ecb.europa.eu//press/pr/date/2026/html/ecb.pr260916~7bc58ebef4.en.html",
+  "published": "2026-09-20T07:21:27+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [
+   "H1",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.en.html",
+   "https://data.ecb.europa.eu/data/datasets/EWT/EWT.Q.U2.N.WT.INWS._T.4F0.GY?chart_props=W3sibm9kZUlkIjoiMzg5ODMwMyIsInByb3BlcnRpZXMiOlt7ImNvbG9ySGV4IjoiIiwiY29sb3JUeXBlIjoiIiwiY2hhcnRUeXBlIjoibGluZWNoYXJ0IiwibGluZVN0eWxlIjoiU29saWQiLCJsaW5lV2lkdGgiOiIxLjUiLCJheGlzUG9zaXRpb24iOiJsZWZ0Iiwib2JzZXJ2YXRpb25WYWx1ZSI6ZmFsc2UsImRhdGVzIjpbXSwiaXNUZGF0YSI6ZmFsc2UsIm1vZGlmaWVkVW5pdFR5cGUiOiIiLCJ5ZWFyIjoib25lIiwic3RhcnREYXRlIjoiMjAyNS0xMi0zMSIsImVuZERhdGUiOiIyMDI2LTEyLTMxIiwic2V0RGF0ZSI6dHJ1ZSwic2hvd1RhYmxlRGF0YSI6ZmFsc2UsImNoYW5nZU1vZGUiOmZhbHNlLCJzaG93TWVudVN0eWxlQ2hhcnQiOmZhbHNlLCJkaXNwbGF5TW9iaWxlQ2hhcnQiOnRydWUsInNjcmVlblNpemUiOiJtYXgiLCJzY3JlZW5XaWR0aCI6MjQzOSwic2hvd1RkYXRhIjpmYWxzZSwidHJhbnNmb3JtZWRGcmVxdWVuY3kiOiJub25lIiwidHJhbnNmb3JtZWRVbml0Ijoibm9uZSIsImZyZXF1ZW5jeSI6Im5vbmUiLCJ1bml0Ijoibm9uZSIsIm1vZGlmaWVkIjoiZmFsc2UiLCJzZXJpZXNLZXkiOiJxdWFydGVybHkiLCJzaG93dGFibGVTdGF0ZUJlZm9yZU1heFNjcmVlbiI6ZmFsc2UsImlzZGF0YWNvbXBhcmlzb24iOmZhbHNlLCJzZXJpZXNGcmVxdWVuY3kiOiJxdWFydGVybHkiLCJpbnRpYWxTZXJpZXNGcmVxdWVuY3kiOiJxdWFydGVybHkiLCJtZXRhZGF0YURlY2ltYWwiOiIiLCJpc1RhYmxlU29ydGVkIjpmYWxzZSwiaXNZZWFybHlUZGF0YSI6ZmFsc2UsInJlc3BvbnNlRGF0YUVuZERhdGUiOiIyMDI2LTEyLTMxIiwiaXNpbml0aWFsQ2hhcnREYXRhIjp0cnVlLCJpc0RhdGVzRnJvbURhdGVQaWNrZXIiOnRydWUsImRhdGVQaWNrZXJFbmREYXRlIjoiIiwiaXNEYXRlUGlja2VyRW5kRGF0ZSI6ZmFsc2UsInNlcmllc2tleVNldCI6IiIsImRhdGFzZXRJZCI6IjQxMyIsImlzQ2FsbGJhY2siOmZhbHNlLCJpc1NsaWRlclRkYXRhIjp0cnVlLCJpc1NsaWRlckRhdGEiOnRydWUsImlzSW5pdGlhbENoYXJ0RGF0YUZyb21HcmFwaCI6dHJ1ZSwiY2hhcnRTZXJpZXNLZXkiOiJFV1QuUS5VMi5OLldULklOV1MuX1QuNEYwLkdZIiwidHlwZU9mIjoiIn1dfV0%3D",
+   "https://data.ecb.europa.eu/data/datasets/EWT/EWT.A.U2.N.WT.COVR._T.4F0._Z",
+   "https://data.ecb.europa.eu/data/datasets/EWT/EWT.Q.U2.N.WT.INWS._T.4F0.GY",
+   "https://data.ecb.europa.eu/data/datasets/EWT/EWT.Q.U2.N.WT.INWR._T.4F0.GY",
+   "https://data.ecb.europa.eu/data/datasets/EWT/EWT.A.U2.N.WT.INWR._T.4F0.GY",
+   "https://data.ecb.europa.eu/data/datasets/EWT/EWT.Q.U2.N.WT.INWX._T.4F0.GY",
+   "https://data.ecb.europa.eu/data/datasets/EWT/EWT.A.U2.N.WT.INWX._T.4F0.GY",
+   "https://data.ecb.europa.eu/data/datasets/EWT/EWT.Q.U2.N.WT.COVR._T.4F0._Z",
+   "https://data.ecb.europa.eu/data/datasets/EWT",
+   "https://data.ecb.europa.eu/data/datasets/EWT/EWT.M.U2.N.WT.COVR._T.4F0._Z",
+   "https://data.ecb.europa.eu/data/datasets/EWT/EWT.M.U2.N.WT.INWS._T.4F0.GY",
+   "https://data.ecb.europa.eu/data/datasets/EWT/EWT.M.U2.N.WT.INWR._T.4F0.GY",
+   "https://data.ecb.europa.eu/data/datasets/EWT/EWT.M.U2.N.WT.INWX._T.4F0.GY"
+  ],
+  "n_endpoints": 14,
+  "vault_sha": "ae07da81cd605ce7351f",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "Fixed-term employee Short-term employee Trainee Cost-free secondee FAQs Search Menu ANYTIME PAST MONTH PAST YEAR Search Options Image Preview Sort by ANYTIME PAST MONTH PAST YEAR Suggestions Home Media Explainers Research & Publications Statistics Monetary Policy The \u20acuro Payments & Markets Careers Suggestions Sort by Relevance Date PRESS RELEASE ECB wage tracker at 2.",
+    "lang": "en",
+    "quantities": [
+     "options"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "87f1f43c8872"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "A new age of capital: growth, sovereignty and AI",
+  "url": "https://www.ecb.europa.eu//press/key/date/2026/html/ecb.sp260914_2~a3f0efbee4.en.html",
+  "published": "2026-09-20T07:21:29+00:00",
+  "symbols": [
+   "TARGET",
+   "XNIUSD",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "carry",
+   "flow",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.en.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "05e9fcd07a8d4b40f719",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "The big US hyperscalers issued more than USD 100 billion in bonds last year, most of it long-dated, [ 11 ] and they now account for close to a tenth of new euro bond issuance by non-financial companies.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XNIUSD",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "nickel",
+      "try",
+      "pp"
+     ],
+     "transfer_only": [
+      "pp->energy"
+     ],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "4f357a09f8c7"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "The future of euro cash: trusted today, designed for tomorrow",
+  "url": "https://www.ecb.europa.eu//press/key/date/2026/html/ecb.sp260914_1~91d3436449.en.html",
+  "published": "2026-09-20T07:21:31+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "carry",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.en.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "6c1b277ec82a699fe42a",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Interview with Ouest-France",
+  "url": "https://www.ecb.europa.eu//press/inter/date/2026/html/ecb.in260912~3cc706f4d6.en.html",
+  "published": "2026-09-20T07:21:35+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.en.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "277ee3c4e895aaf4f832",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "General Motors Company stocks CFD (GM) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/GM/",
+  "published": "2026-09-20T07:21:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "56a0acc82f5c811c8d56",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "The Walt Disney Company stocks CFD (DIS) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/DIS/",
+  "published": "2026-09-20T07:21:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "2ff63412074d6f1adc4f",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Philip Morris International Inc. stocks CFD (PM) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/PM/",
+  "published": "2026-09-20T07:21:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "e302b140905d29e45d41",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "The Procter &amp; Gamble Company stocks CFD (PG) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/PG/",
+  "published": "2026-09-20T07:21:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "5ef1730f44cb1bc75271",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "PepsiCo, Inc. stocks CFD (PEP) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/PEP/",
+  "published": "2026-09-20T07:21:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "8dccf72fb59d96b298f1",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Twenty-First Century Fox, Inc. stocks CFD (FOXA) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/FOXA/",
+  "published": "2026-09-20T07:21:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "ec16c8184c6140d4e37d",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "The Coca-Cola Company stocks CFD (KO) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/KO/",
+  "published": "2026-09-20T07:21:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "7c56ad727354674c5909",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Apple Inc. stocks CFD (AAPL) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/AAPL/",
+  "published": "2026-09-20T07:21:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "18d15928a3d1c76ea26c",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Amazon.com, Inc. stocks CFD (AMZN) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/AMZN/",
+  "published": "2026-09-20T07:21:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "b097592f68153a74cb0a",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "United Parcel Service, Inc. stocks CFD (UPS) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/UPS/",
+  "published": "2026-09-20T07:21:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "fbb0c92e9c3e366ab800",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Netflix, Inc. stocks CFD (NFLX) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/NFLX/",
+  "published": "2026-09-20T07:21:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "7afc2533b1e4db409aed",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]

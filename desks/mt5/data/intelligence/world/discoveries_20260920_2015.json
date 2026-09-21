@@ -1,0 +1,1624 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Metso sijoituskohteena | P\u00f6rssisijoittajan viikko 11.9.2026 - Inderes",
+  "url": "https://www.inderes.fi/videos/metso-sijoituskohteena-or-porssisijoittajan-viikko-1192026",
+  "published": "2026-09-20T20:13:55+00:00",
+  "symbols": [],
+  "timeframes": [
+   "H1"
+  ],
+  "patterns": [
+   "auction",
+   "inventory",
+   "momentum",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "fi",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ce25e4d1ac55b7f9017d",
+  "host": "www.inderes.fi",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Videot - Inderes",
+  "url": "https://www.inderes.fi/videos",
+  "published": "2026-09-20T20:13:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "seasonality"
+  ],
+  "confidence": 0.35,
+  "lang": "fi",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2547994b6eb2db38c258",
+  "host": "www.inderes.fi",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Endomines laaja raportti: Mahdollisuuksien mukana roimasti riski\u00e4 - Inderes",
+  "url": "https://www.inderes.fi/research/endomines-laaja-raportti-mahdollisuuksien-mukana-roimasti-riskia",
+  "published": "2026-09-20T20:13:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "mean_reversion",
+   "seasonality"
+  ],
+  "confidence": 0.35,
+  "lang": "fi",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2177b251c430042c6748",
+  "host": "www.inderes.fi",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Inderes",
+  "url": "https://www.inderes.fi/",
+  "published": "2026-09-20T20:14:00+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "fi",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c1f872c245cc2c64f78c",
+  "host": "www.inderes.fi",
+  "claims": [
+   {
+    "claim": "FREE-tili P\u00f6rssin suosituin aamukatsaus Analyytikon kommentit ja suositukset Osakevertailu PREMIUM-tili Kaikki yhti\u00f6raportit ja syv\u00e4analyysit Premium-ty\u00f6kalut: mallisalkku, screeneri, sis\u00e4piirin kaupat Premium-kolumnit: Vieraskyn\u00e4, asiantuntijoiden n\u00e4kemykset Inderes MCP - Inderes-data suoraan AI-ty\u00f6kaluihisi Kirjaudu sis\u00e4\u00e4n Luo ilmainen tunnus Analyysi 17.",
+    "lang": "fi",
+    "quantities": [
+     "osake",
+     "premium"
+    ],
+    "direction": [
+     "sis\u00e4\u00e4n"
+    ],
+    "horizon": [
+     "aamu"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "omxh25"
+     ],
+     "transfer_only": [
+      "omxh25->indices (Nordic exchanges)"
+     ],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "99f4ee50f18f"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Thomas Westerholm - Inderes",
+  "url": "https://www.inderes.fi/people/thomas-westerholm",
+  "published": "2026-09-20T20:14:01+00:00",
+  "symbols": [],
+  "timeframes": [
+   "H1"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "fi",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c9f9c05267aa47730787",
+  "host": "www.inderes.fi",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Endomines H1\u201924: Lapio osui kultaan - Inderes",
+  "url": "https://www.inderes.fi/videos/endomines-h124-lapio-osui-kultaan",
+  "published": "2026-09-20T20:14:04+00:00",
+  "symbols": [],
+  "timeframes": [
+   "H1"
+  ],
+  "patterns": [
+   "auction",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "fi",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5f15c86bacd64d8a17b6",
+  "host": "www.inderes.fi",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/USDHKD",
+  "published": "2026-09-20T20:14:04+00:00",
+  "symbols": [
+   "USDHKD"
+  ],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdhkd/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdhkd/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdhkd/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdhkd/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdhkd/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdhkd/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdhkd/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdhkd/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdhkd/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdhkd/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdhkd/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdhkd/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdhkd/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdhkd/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdhkd/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdhkd/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdhkd/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdhkd/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdhkd/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdhkd/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdhkd/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdhkd/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdhkd/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdhkd/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdhkd/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdhkd/2009",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdhkd/2008"
+  ],
+  "n_endpoints": 31,
+  "vault_sha": "0d0bbeaa5cba570d6feb",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/USDNOK",
+  "published": "2026-09-20T20:14:06+00:00",
+  "symbols": [
+   "USDNOK"
+  ],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdnok/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdnok/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdnok/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdnok/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdnok/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdnok/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdnok/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdnok/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdnok/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdnok/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdnok/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdnok/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdnok/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdnok/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdnok/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdnok/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdnok/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdnok/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdnok/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdnok/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdnok/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdnok/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdnok/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdnok/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdnok/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdnok/2009",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdnok/2008"
+  ],
+  "n_endpoints": 31,
+  "vault_sha": "9f837ec50f0fcc6d05c5",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/USDTRY",
+  "published": "2026-09-20T20:14:08+00:00",
+  "symbols": [
+   "USDTRY"
+  ],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdtry/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdtry/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdtry/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdtry/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdtry/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdtry/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdtry/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdtry/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdtry/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdtry/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdtry/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdtry/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdtry/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdtry/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdtry/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdtry/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdtry/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdtry/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdtry/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdtry/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdtry/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdtry/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdtry/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdtry/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdtry/2010"
+  ],
+  "n_endpoints": 29,
+  "vault_sha": "0a231c812d996f4332f7",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/XAUAUD",
+  "published": "2026-09-20T20:14:10+00:00",
+  "symbols": [
+   "XAUAUD"
+  ],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xauaud/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xauaud/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xauaud/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xauaud/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xauaud/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xauaud/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xauaud/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xauaud/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xauaud/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xauaud/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xauaud/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xauaud/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xauaud/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xauaud/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xauaud/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xauaud/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xauaud/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xauaud/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xauaud/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xauaud/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xauaud/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xauaud/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xauaud/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xauaud/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xauaud/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xauaud/2009"
+  ],
+  "n_endpoints": 30,
+  "vault_sha": "0820d728c8ae493d1fb4",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/AUDCHF",
+  "published": "2026-09-20T20:14:12+00:00",
+  "symbols": [
+   "AUDCHF"
+  ],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/audchf/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/audchf/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/audchf/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/audchf/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/audchf/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/audchf/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/audchf/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/audchf/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/audchf/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/audchf/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/audchf/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/audchf/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/audchf/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/audchf/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/audchf/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/audchf/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/audchf/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/audchf/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/audchf/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/audchf/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/audchf/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/audchf/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/audchf/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/audchf/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/audchf/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/audchf/2009",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/audchf/2008"
+  ],
+  "n_endpoints": 31,
+  "vault_sha": "5a702c1b4750ab3fe049",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/AUXAUD",
+  "published": "2026-09-20T20:14:14+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/auxaud/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/auxaud/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/auxaud/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/auxaud/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/auxaud/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/auxaud/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/auxaud/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/auxaud/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/auxaud/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/auxaud/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/auxaud/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/auxaud/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/auxaud/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/auxaud/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/auxaud/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/auxaud/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/auxaud/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/auxaud/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/auxaud/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/auxaud/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/auxaud/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/auxaud/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/auxaud/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/auxaud/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/auxaud/2010"
+  ],
+  "n_endpoints": 29,
+  "vault_sha": "d13e0656e915178979bf",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/EURHUF",
+  "published": "2026-09-20T20:14:16+00:00",
+  "symbols": [
+   "EURHUF"
+  ],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurhuf/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurhuf/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurhuf/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurhuf/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurhuf/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurhuf/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurhuf/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurhuf/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurhuf/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurhuf/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurhuf/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurhuf/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurhuf/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurhuf/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurhuf/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurhuf/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurhuf/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurhuf/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurhuf/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurhuf/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurhuf/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurhuf/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurhuf/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurhuf/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurhuf/2010"
+  ],
+  "n_endpoints": 29,
+  "vault_sha": "b8c9998e42d7b68c6fd6",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs US Dollar (GBPUSD.p) | ProCent | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-cent/GBPUSD.p/",
+  "published": "2026-09-20T20:14:17+00:00",
+  "symbols": [
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "aa409c3cd4e369c88874",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "00 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "pound"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8f7ddbff917b"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "New Zealand Dollar vs Canadian Dollar (NZDCAD.p) | ProCent | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-cent/NZDCAD.p/",
+  "published": "2026-09-20T20:14:19+00:00",
+  "symbols": [
+   "NZDCAD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "c2836ac0a943f045cdd3",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "New Zealand Dollar vs Swiss Franc (NZDCHF.p) | ProCent | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-cent/NZDCHF.p/",
+  "published": "2026-09-20T20:14:21+00:00",
+  "symbols": [
+   "NZDCHF"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "f1a186c35313a1106ba9",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "New Zealand Dollar vs Japanese Yen (NZDJPY.p) | ProCent | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-cent/NZDJPY.p/",
+  "published": "2026-09-20T20:14:23+00:00",
+  "symbols": [
+   "NZDJPY",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "6a41e26dd159c019faa6",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "00 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "yen"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8f7ddbff917b"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "New Zealand Dollar vs US Dollar (NZDUSD.p) | ProCent | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-cent/NZDUSD.p/",
+  "published": "2026-09-20T20:14:24+00:00",
+  "symbols": [
+   "NZDUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "df4cce07ccbc0dca6979",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "00 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "NZDUSD"
+     ],
+     "mentioned": [
+      "nzdusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8f7ddbff917b"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "US Dollar vs Canadian Dollar (USDCAD.p) | ProCent | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-cent/USDCAD.p/",
+  "published": "2026-09-20T20:14:27+00:00",
+  "symbols": [
+   "USDCAD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "88552e3dc94cac6edb83",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "00 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDCAD"
+     ],
+     "mentioned": [
+      "usdcad"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8f7ddbff917b"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "US Dollar vs Swiss Franc (USDCHF.p) | ProCent | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-cent/USDCHF.p/",
+  "published": "2026-09-20T20:14:28+00:00",
+  "symbols": [
+   "USDCHF"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "275bda3b10dcc05acd81",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "00 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDCHF"
+     ],
+     "mentioned": [
+      "usdchf"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8f7ddbff917b"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations?Status=Vacated&dir=ASC&col=Remarks",
+  "published": "2026-09-20T20:14:30+00:00",
+  "symbols": [],
+  "timeframes": [
+   "MN",
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dab91d1ef999d4e41db4",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations?Status=Vacated&dir=ASC&col=AssociatedDocuments",
+  "published": "2026-09-20T20:14:32+00:00",
+  "symbols": [],
+  "timeframes": [
+   "MN",
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1504a8657fc033e1d15d",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/67",
+  "published": "2026-09-20T20:14:33+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a20f8be963343bc8516a",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/83",
+  "published": "2026-09-20T20:14:36+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "97836ab35208b896d868",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/34531",
+  "published": "2026-09-20T20:14:37+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4e95723dd51dde20e2fe",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/34524",
+  "published": "2026-09-20T20:14:39+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "58898145f392dd936192",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/71",
+  "published": "2026-09-20T20:14:41+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4e523fbc59615f70e40b",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Cause of death, by injury (% of total) | Data",
+  "url": "https://data.worldbank.org/indicator/SH.DTH.INJR.ZS",
+  "published": "2026-09-20T20:14:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/en/indicator/SH.DTH.INJR.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "2a0ad101377cfec5ccbc",
+  "host": "data.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Cause of death, by non-communicable diseases (% of total) | Data",
+  "url": "https://data.worldbank.org/indicator/SH.DTH.NCOM.ZS",
+  "published": "2026-09-20T20:14:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/en/indicator/SH.DTH.NCOM.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "57ee108bb2a68f75c7dd",
+  "host": "data.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Completeness of birth registration (%) | Data",
+  "url": "https://data.worldbank.org/indicator/SP.REG.BRTH.ZS",
+  "published": "2026-09-20T20:14:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/en/indicator/SP.REG.BRTH.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "17d017555590b72d162a",
+  "host": "data.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Completeness of death registration with cause-of-death information (%) | Data",
+  "url": "https://data.worldbank.org/indicator/SP.REG.DTHS.ZS",
+  "published": "2026-09-20T20:14:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/en/indicator/SP.REG.DTHS.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "6920753b3fde4d7e0c83",
+  "host": "data.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Death rate, crude (per 1,000 people) | Data",
+  "url": "https://data.worldbank.org/indicator/SP.DYN.CDRT.IN",
+  "published": "2026-09-20T20:14:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/en/indicator/SP.DYN.CDRT.IN?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "b201a0113a22a7a9ad84",
+  "host": "data.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Diabetes prevalence (% of population ages 20 to 79) | Data",
+  "url": "https://data.worldbank.org/indicator/SH.STA.DIAB.ZS",
+  "published": "2026-09-20T20:14:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/en/indicator/SH.STA.DIAB.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "3d09f4c8655ea805370e",
+  "host": "data.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Hospital beds (per 1,000 people) | Data",
+  "url": "https://data.worldbank.org/indicator/SH.MED.BEDS.ZS",
+  "published": "2026-09-20T20:14:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/en/indicator/SH.MED.BEDS.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "7fa13e3d1d9a8ec05666",
+  "host": "data.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u91cf\u5316\u56e0\u5b50-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u91cf\u5316\u56e0\u5b50",
+  "published": "2026-09-20T20:14:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1fccac6b3545b0a80852",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u91cf\u5316\u56e0\u5b50-\u80a1\u7968\u56e0\u5b50-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u91cf\u5316\u56e0\u5b50-\u80a1\u7968\u56e0\u5b50",
+  "published": "2026-09-20T20:14:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9d93f3d811b7dd9f7366",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u91cf\u5316\u56e0\u5b50-\u7814\u62a5\u56e0\u5b50-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u91cf\u5316\u56e0\u5b50-\u7814\u62a5\u56e0\u5b50",
+  "published": "2026-09-20T20:15:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "de18f36521fd73ed2fad",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u91cf\u5316\u56e0\u5b50-\u671f\u8d27\u56e0\u5b50-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u91cf\u5316\u56e0\u5b50-\u671f\u8d27\u56e0\u5b50",
+  "published": "2026-09-20T20:15:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5e3769046027758c3a3e",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u53e6\u7c7b\u6570\u636e-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u53e6\u7c7b\u6570\u636e",
+  "published": "2026-09-20T20:15:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "56d13b1265332098d7c4",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u53e6\u7c7b\u6570\u636e-\u65b0\u95fb\u8206\u60c5-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u53e6\u7c7b\u6570\u636e-\u65b0\u95fb\u8206\u60c5",
+  "published": "2026-09-20T20:15:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "833fee2a65f03865922a",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u53e6\u7c7b\u6570\u636e-\u4e13\u5229\u6570\u636e-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u53e6\u7c7b\u6570\u636e-\u4e13\u5229\u6570\u636e",
+  "published": "2026-09-20T20:15:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4a02344a78fad0012bba",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u65e5\u672c\u8a3c\u5238\u30af\u30ea\u30a2\u30ea\u30f3\u30b0\u6a5f\u69cb\u3068\u306e\u5f53\u5ea7\u9810\u91d1\u53d6\u5f15\u7b49\u306b\u95a2\u3059\u308b\u4ef6 : \u65e5\u672c\u9280\u884c Bank of Japan",
+  "url": "https://www.boj.or.jp/paym/torihiki/giji02135.htm",
+  "published": "2026-09-20T20:15:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "10c767c582cdbd7d49bd",
+  "host": "www.boj.or.jp",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "CLS Bank International\u3068\u306e\u5f53\u5ea7\u9810\u91d1\u53d6\u5f15\u306b\u95a2\u3059\u308b\u4ef6 : \u65e5\u672c\u9280\u884c Bank of Japan",
+  "url": "https://www.boj.or.jp/paym/torihiki/giji02058.htm",
+  "published": "2026-09-20T20:15:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ea57d3888831cccf2a87",
+  "host": "www.boj.or.jp",
+  "claims": [
+   {
+    "claim": "\u540c\u884c\u306f\u3001\u7c73\u56fd\u306e\u6cd5\u4ee4\u306b\u6e96\u62e0\u3059\u308b\u5916\u56fd\u9280\u884c\uff08\u672c\u5e97\u30cb\u30e5\u30fc\u30e8\u30fc\u30af\uff09\u3067\u3042\u308a\u3001\u308f\u304c\u56fd\u306b\u652f\u5e97\u3092\u8a2d\u3051\u3066\u9280\u884c\u696d\u3092\u55b6\u3080\u3082\u306e\u3067\u306f\u306a\u3044\u305f\u3081\u3001\u300c\u65e5\u672c\u9280\u884c\u306e\u5f53\u5ea7\u9810\u91d1\u53d6\u5f15\u307e\u305f\u306f\u8cb8\u51fa\u53d6\u5f15\u306e\u76f8\u624b\u65b9\u306b\u95a2\u3059\u308b\u9078\u5b9a\u57fa\u6e96\u300d\uff08\u5e73\u6210\uff11\uff10\u5e74\uff16\u6708\uff12\uff13\u65e5\u6c7a\u5b9a\uff09 \uff08\u6ce8\uff09 \u306b\u5b9a\u3081\u308b\u672c\u884c\u306e\u5f53\u5ea7\u9810\u91d1\u53d6\u5f15\u306e\u76f8\u624b\u65b9\u3067\u306f\u306a\u3044\u304c\u3001\u540c\u884c\u304c\u3001\u4e16\u754c\uff11\uff17\u30ab\u56fd\u3001\uff16\uff15\u5148\u306e\u5927\u624b\u91d1\u878d\u6a5f\u95a2\u304c\u5916\u70ba\u6c7a\u6e08\u30ea\u30b9\u30af\uff08\u30d8\u30eb\u30b7\u30e5\u30bf\u30c3\u30c8\u30fb\u30ea\u30b9\u30af\uff09\u524a\u6e1b\u3092\u76ee\u7684\u306b\u69cb\u7bc9\u3092\u9032\u3081\u3066\u3044\u308b\u30af\u30ed\u30b9\u30dc\u30fc\u30c0\u30fc\u306e\u591a\u901a\u8ca8\u6c7a\u6e08\u30e1\u30ab\u30cb\u30ba\u30e0\u3067\u3042\u308bCLS\uff08 Continuous Linked Settlement \uff09\u30b7\u30b9\u30c6\u30e0\u3092\u904b\u55b6\u3059\u308b\u6c7a\u6e08\u5c02\u696d\u9280\u884c\u3068\u3057\u3066\u8a2d\u7acb\u3055\u308c\u305f\u3053\u3068\u7b49\u306b\u9451\u307f\u3001\u672c\u59d4\u54e1\u4f1a\u306f\u3001\u5e73\u6210\uff11\uff14\u5e74\uff15\u6708\uff11\uff10\u65e5\u3001\u540c\u884c\u3092\u5f53\u5ea7\u9810\u91d1\u53d6\u5f15\u306e\u76f8\u624b\u65b9\u3068\u3059\u308b\u3053\u3068\u3092\u6c7a\u5b9a\u3057\u305f\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u91d1",
+     "\u30cb\u30e5\u30fc\u30e8\u30fc\u30af",
+     "\u9280"
+    ],
+    "direction": [
+     "\u6c7a\u6e08"
+    ],
+    "horizon": [
+     "\u65e5",
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDJPY"
+     ],
+     "channels": [
+      "\u65e5\u672c\u9280\u884c: policy: BoJ / MoF intervention -> JPY"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "2b99fb8637ab"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u65e5\u672c\u627f\u7d99\u9280\u884c\u3068\u306e\u5f53\u5ea7\u9810\u91d1\u53d6\u5f15\u7b49\u306b\u95a2\u3059\u308b\u4ef6 : \u65e5\u672c\u9280\u884c Bank of Japan",
+  "url": "https://www.boj.or.jp/paym/torihiki/giji02049.htm",
+  "published": "2026-09-20T20:15:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b1aafb8a95563dc6e904",
+  "host": "www.boj.or.jp",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4f1a\u54e1\u5236\u6cd5\u4eba\u6771\u4eac\u91d1\u878d\u5148\u7269\u53d6\u5f15\u6240\u3092\u5f53\u5ea7\u9810\u91d1\u53d6\u5f15\u306e\u76f8\u624b\u65b9\u3068\u3059\u308b\u4ef6 : \u65e5\u672c\u9280\u884c Bank of Japan",
+  "url": "https://www.boj.or.jp/paym/torihiki/giji00122.htm",
+  "published": "2026-09-20T20:15:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2ac45a63d7f1b898e0fe",
+  "host": "www.boj.or.jp",
+  "claims": [
+   {
+    "claim": "\u540c\u53d6\u5f15\u6240\u306f\u3001\u300c\u65e5\u672c\u9280\u884c\u306e\u5f53\u5ea7\u9810\u91d1\u53d6\u5f15\u3001\u5f53\u5ea7\u8cb8\u8d8a\u53d6\u5f15\u3001\u624b\u5f62\u8cb8\u4ed8\u53d6\u5f15\u307e\u305f\u306f\u624b\u5f62\u5272\u5f15\u53d6\u5f15\u306e\u76f8\u624b\u65b9\u306b\u95a2\u3059\u308b\u9078\u5b9a\u57fa\u6e96\u300d \uff08\u6ce8\uff09 \u306b\u63b2\u3052\u308b\u5f53\u5ea7\u9810\u91d1\u53d6\u5f15\u306e\u76f8\u624b\u65b9\u3067\u306f\u306a\u3044\u304c\u3001(1)\u540c\u53d6\u5f15\u6240\u306b\u304a\u3051\u308b\u5186\u8cc7\u91d1\u6c7a\u6e08\u3092\u540c\u53d6\u5f15\u6240\u304c\u672c\u884c\u306b\u958b\u8a2d\u3059\u308b\u5f53\u5ea7\u9810\u91d1\u53e3\u5ea7\u3092\u4ecb\u3057\u3066\u884c\u3046\u3053\u3068\u306f\u3001\u65e5\u672c\u9280\u884c\u6cd5\u7b2c1\u6761\u306b\u5b9a\u3081\u308b\u672c\u884c\u306e\u76ee\u7684\u306e\u9054\u6210\u306b\u8cc7\u3059\u308b\u3068\u8a8d\u3081\u3089\u308c\u308b\u3053\u3068\u3001(2)\u540c\u53d6\u5f15\u6240\u306e\u7d4c\u55b6\u306e\u5185\u5bb9\u7b49\u306b\u3064\u3044\u3066\u3001\u5f53\u5ea7\u9810\u91d1\u53d6\u5f15\u306e\u76f8\u624b\u65b9\u3068\u3057\u3066\u7279\u306b\u554f\u984c\u306f\u306a\u3044\u3068\u8a8d\u3081\u3089\u308c\u308b\u3053\u3068\u304b\u3089\u3001\u540c\u53d6\u5f15\u6240\u3092\u672c\u884c\u306e\u5f53\u5ea7\u9810\u91d1\u53d6\u5f15\u306e\u76f8\u624b\u65b9\u3068\u3059\u308b\u3053\u3068\u3092\u9069\u5f53\u3068\u8a8d\u3081\u3001\u3053\u308c\u3092\u6c7a\u5b9a\u3057\u305f\u3082\u306e\u3067\u3042\u308b\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u91d1",
+     "\u9280"
+    ],
+    "direction": [
+     "\u6c7a\u6e08"
+    ],
+    "horizon": [
+     "\u65e5"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDJPY"
+     ],
+     "channels": [
+      "\u65e5\u672c\u9280\u884c: policy: BoJ / MoF intervention -> JPY"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "1b0f5b5a72e2"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u56fd\u969b\u5354\u529b\u9280\u884c\u7b49\u3092\u5f53\u5ea7\u9810\u91d1\u53d6\u5f15\u306e\u76f8\u624b\u65b9\u3068\u3059\u308b\u4ef6 : \u65e5\u672c\u9280\u884c Bank of Japan",
+  "url": "https://www.boj.or.jp/paym/torihiki/giji99086.htm",
+  "published": "2026-09-20T20:15:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "84076825816c47fde8f3",
+  "host": "www.boj.or.jp",
+  "claims": [
+   {
+    "claim": "\u4e21\u884c\u306f\u3001\u300c\u65e5\u672c\u9280\u884c\u306e\u5f53\u5ea7\u9810\u91d1\u53d6\u5f15\u3001\u624b\u5f62\u8cb8\u4ed8\u53d6\u5f15\u307e\u305f\u306f\u624b\u5f62\u5272\u5f15\u53d6\u5f15\u306e\u76f8\u624b\u65b9\u306b\u95a2\u3059\u308b\u9078\u5b9a\u57fa\u6e96\u7b49\u306e\u4ef6\u300d\uff08\u65e5\u672c\u9280\u884c\u653f\u7b56\u59d4\u54e1\u4f1a\u6708\u5831\u5e73\u6210\uff11\uff10\u5e74\uff16\u6708\u53f7\u53c2\u7167\uff09\u306b\u63b2\u3052\u308b\u5f53\u5ea7\u9810\u91d1\u53d6\u5f15\u306e\u76f8\u624b\u65b9\u3067\u306f\u306a\u3044\u304c\u3001\uff081\uff09\u65e5\u672c\u8f38\u51fa\u5165\u9280\u884c\u3001\u6d77\u5916\u7d4c\u6e08\u5354\u529b\u57fa\u91d1\u304a\u3088\u3073\u65e5\u672c\u958b\u767a\u9280\u884c\u306f\u3001\u3044\u305a\u308c\u3082\u8a2d\u7acb\u4ee5\u6765\u672c\u884c\u3068\u5f53\u5ea7\u9810\u91d1\u53d6\u5f15\u3092\u7d99\u7d9a\u3057\u3066\u304d\u3066\u304a\u308a\u3001\u3053\u308c\u3089\u306e\u696d\u52d9\u3092\u627f\u7d99\u3059\u308b\u4e21\u884c\u306b\u304a\u3044\u3066\u3082\u3001\u696d\u52d9\u4e0a\u5fc5\u8981\u3068\u3059\u308b\u8cc7\u91d1\u6c7a\u6e08\u3092\u672c\u884c\u306e\u5f53\u5ea7\u9810\u91d1\u53e3\u5ea7\u3092\u901a\u3058\u3066\u8fc5\u901f\u3001\u78ba\u5b9f\u306b\u884c\u306a\u3046\u3053\u3068\u306f\u3001\u65e5\u672c\u9280\u884c\u6cd5\u7b2c\uff11\u6761\u306b\u5b9a\u3081\u308b\u672c\u884c\u306e\u76ee\u7684\u306e\u9054\u6210\u306b\u8cc7\u3059\u308b\u3068\u8a8d\u3081\u3089\u308c\u308b\u3053\u3068\u3001\uff082\uff09\u4e21\u884c\u306e\u696d\u52d9\u306e\u5185\u5bb9\u3001\u7d4c\u55b6\u306e\u5185\u5bb9\u3001\u4e8b\u52d9\u51e6\u7406\u4f53\u5236\u306b\u3064\u3044\u3066\u3082\u3001\u5f53\u5ea7\u9810\u91d1\u53d6\u5f15\u306e\u76f8\u624b\u65b9\u3068\u3057\u3066\u7279\u306b\u554f\u984c\u306f\u306a\u3044\u3068\u8a8d\u3081\u3089\u308c\u308b\u3053\u3068\u304b\u3089\u3001\u4e21\u884c\u3092\u672c\u884c\u306e\u5f53\u5ea7\u9810\u91d1\u53d6\u5f15\u306e\u76f8\u624b\u65b9\u3068\u3059\u308b\u3053\u3068\u3092\u9069\u5f53\u3068\u8a8d\u3081\u3001\u3053\u308c\u3092\u6c7a\u5b9a\u3057\u305f\u3082\u306e\u3067\u3042\u308b\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u91d1",
+     "\u9280"
+    ],
+    "direction": [
+     "\u6c7a\u6e08"
+    ],
+    "horizon": [
+     "\u65e5",
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDJPY"
+     ],
+     "channels": [
+      "\u65e5\u672c\u9280\u884c: policy: BoJ / MoF intervention -> JPY"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "92aaef16feca"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u6574\u7406\u56de\u53ce\u6a5f\u69cb\u3092\u672c\u884c\u306e\u5f53\u5ea7\u9810\u91d1\u53d6\u5f15\u7b49\u306e\u76f8\u624b\u65b9\u3068\u3059\u308b\u4ef6 : \u65e5\u672c\u9280\u884c Bank of Japan",
+  "url": "https://www.boj.or.jp/paym/torihiki/giji99022.htm",
+  "published": "2026-09-20T20:15:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "866c39c4f976b0823545",
+  "host": "www.boj.or.jp",
+  "claims": [
+   {
+    "claim": "\u5373\u3061\u3001\u65e5\u672c\u9280\u884c\u3068\u3057\u3066\u306f\u3001\u6574\u7406\u56de\u53ce\u6a5f\u69cb\u304c\u9810\u91d1\u4fdd\u967a\u6a5f\u69cb\u306e\u5354\u5b9a\u9280\u884c\u7b49\u3068\u3057\u3066\u4fe1\u7528\u79e9\u5e8f\u7dad\u6301\u306e\u4e00\u7ffc\u3092\u62c5\u3063\u3066\u3044\u308b\u3053\u3068\u306b\u9451\u307f\u308c\u3070\u3001\u305d\u306e\u696d\u52d9\u306e\u9042\u884c\u4e0a\u5fc5\u8981\u3068\u3059\u308b\u8cc7\u91d1\u6c7a\u6e08\u3092\u65e5\u672c\u9280\u884c\u306e\u5f53\u5ea7\u9810\u91d1\u3092\u901a\u3058\u3066\u8fc5\u901f\u3001\u78ba\u5b9f\u306b\u884c\u3046\u3053\u3068\u306f\u3001\u300c\u91d1\u878d\u6a5f\u95a2\u306e\u9593\u3067\u884c\u308f\u308c\u308b\u8cc7\u91d1\u6c7a\u6e08\u306e\u5186\u6ed1\u306e\u78ba\u4fdd\u3092\u56f3\u308a\u3001\u3082\u3063\u3066\u4fe1\u7528\u79e9\u5e8f\u306e\u7dad\u6301\u306b\u8cc7\u3059\u308b\u300d\u3068\u306e\u65e5\u672c\u9280\u884c\u306e\u76ee\u7684\u9054\u6210\u306b\u8cc7\u3059\u308b\u3068\u8a8d\u3081\u3089\u308c\u308b\u3053\u3068\u306a\u3069\u304b\u3089\u3001\u540c\u6a5f\u69cb\u3092\u5f53\u5ea7\u9810\u91d1\u53d6\u5f15\u306e\u76f8\u624b\u65b9\u3068\u3059\u308b\u3053\u3068\u3068\u3057\u305f\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u91d1",
+     "\u4fe1\u7528",
+     "\u9280"
+    ],
+    "direction": [
+     "\u6c7a\u6e08"
+    ],
+    "horizon": [
+     "\u65e5"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDJPY"
+     ],
+     "channels": [
+      "\u65e5\u672c\u9280\u884c: policy: BoJ / MoF intervention -> JPY"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "73aa4b68a55b"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u65e5\u672c\u9280\u884c\u306e\u5f53\u5ea7\u9810\u91d1\u53d6\u5f15\u306e\u76f8\u624b\u65b9\u306b\u95a2\u3059\u308b\u9078\u5b9a\u57fa\u6e96\uff08\u53d6\u5f15\u306e\u62e0\u70b9\u306b\u304b\u304b\u308b\u57fa\u6e96\uff09 : \u65e5\u672c\u9280\u884c Bank of Japan",
+  "url": "https://www.boj.or.jp/paym/torihiki/touyo09.htm",
+  "published": "2026-09-20T20:15:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9dac394979ad254dbb32",
+  "host": "www.boj.or.jp",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Reset Password | LinkedIn",
+  "url": "https://www.linkedin.com/checkpoint/rp/request-password-reset?session_redirect=https%3A%2F%2Fwww%2Elinkedin%2Ecom%2FshareArticle%3Fmini%3Dtrue%26url%3Dhttps%253A%2F%2Ffxmacrodata%2Ecom%2Far%2Findicators%2Fexports%26title%3DExports%2520%257C%2520FXMacroData%26summary%3DCompare%2520macroeconomic%2520indicators%2520across%2520countries%2520and%2520currencies%2520with%2520FXMacroData%2520reference%2520tables%2520and%2520documentation%2E",
+  "published": "2026-09-20T20:15:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.linkedin.com/checkpoint/lg/login?session_redirect=https%3A%2F%2Fwww%2Elinkedin%2Ecom%2FshareArticle%3Fmini%3Dtrue%26url%3Dhttps%253A%2F%2Ffxmacrodata%2Ecom%2Far%2Findicators%2Fexports%26title%3DExports%2520%257C%2520FXMacroData%26summary%3DCompare%2520macroeconomic%2520indicators%2520across%2520countries%2520and%2520currencies%2520with%2520FXMacroData%2520reference%2520tables%2520and%2520documentation%2E&amp;fromSignIn=true&amp;trk=hb_signin",
+   "https://www.linkedin.com/signup/cold-join?session_redirect=https%3A%2F%2Fwww.linkedin.com%2FshareArticle%3Fmini%3Dtrue%26url%3Dhttps%253A%2F%2Ffxmacrodata.com%2Far%2Findicators%2Fexports%26title%3DExports%2520%257C%2520FXMacroData%26summary%3DCompare%2520macroeconomic%2520indicators%2520across%2520countries%2520and%2520currencies%2520with%2520FXMacroData%2520reference%2520tables%2520and%2520documentation.",
+   "https://www.linkedin.com/checkpoint/lg/login?session_redirect=https%3A%2F%2Fwww%2Elinkedin%2Ecom%2FshareArticle%3Fmini%3Dtrue%26url%3Dhttps%253A%2F%2Ffxmacrodata%2Ecom%2Far%2Findicators%2Fexports%26title%3DExports%2520%257C%2520FXMacroData%26summary%3DCompare%2520macroeconomic%2520indicators%2520across%2520countries%2520and%2520currencies%2520with%2520FXMacroData%2520reference%2520tables%2520and%2520documentation%2E&amp;fromSignIn=true&amp;trk=reset_password"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "290663ff0eb015eec11c",
+  "host": "www.linkedin.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Reset Password | LinkedIn",
+  "url": "https://www.linkedin.com/passwordReset/?session_redirect=https%3A%2F%2Fwww.linkedin.com%2FshareArticle%3Fmini%3Dtrue%26url%3Dhttps%253A%2F%2Ffxmacrodata.com%2Fhi%2Findicators%2Fexports%26title%3DExports%2520%257C%2520FXMacroData%26summary%3DCompare%2520macroeconomic%2520indicators%2520across%2520countries%2520and%2520currencies%2520with%2520FXMacroData%2520reference%2520tables%2520and%2520documentation.",
+  "published": "2026-09-20T20:15:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.linkedin.com/checkpoint/lg/login?session_redirect=https%3A%2F%2Fwww%2Elinkedin%2Ecom%2FshareArticle%3Fmini%3Dtrue%26url%3Dhttps%253A%2F%2Ffxmacrodata%2Ecom%2Fhi%2Findicators%2Fexports%26title%3DExports%2520%257C%2520FXMacroData%26summary%3DCompare%2520macroeconomic%2520indicators%2520across%2520countries%2520and%2520currencies%2520with%2520FXMacroData%2520reference%2520tables%2520and%2520documentation%2E&amp;fromSignIn=true&amp;trk=hb_signin",
+   "https://www.linkedin.com/signup/cold-join?session_redirect=https%3A%2F%2Fwww.linkedin.com%2FshareArticle%3Fmini%3Dtrue%26url%3Dhttps%253A%2F%2Ffxmacrodata.com%2Fhi%2Findicators%2Fexports%26title%3DExports%2520%257C%2520FXMacroData%26summary%3DCompare%2520macroeconomic%2520indicators%2520across%2520countries%2520and%2520currencies%2520with%2520FXMacroData%2520reference%2520tables%2520and%2520documentation.",
+   "https://www.linkedin.com/checkpoint/lg/login?session_redirect=https%3A%2F%2Fwww%2Elinkedin%2Ecom%2FshareArticle%3Fmini%3Dtrue%26url%3Dhttps%253A%2F%2Ffxmacrodata%2Ecom%2Fhi%2Findicators%2Fexports%26title%3DExports%2520%257C%2520FXMacroData%26summary%3DCompare%2520macroeconomic%2520indicators%2520across%2520countries%2520and%2520currencies%2520with%2520FXMacroData%2520reference%2520tables%2520and%2520documentation%2E&amp;fromSignIn=true&amp;trk=reset_password"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "e110159a2a0a71089462",
+  "host": "www.linkedin.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Reset Password | LinkedIn",
+  "url": "https://www.linkedin.com/passwordReset/?session_redirect=https%3A%2F%2Fwww.linkedin.com%2FshareArticle%3Fmini%3Dtrue%26url%3Dhttps%253A%2F%2Ffxmacrodata.com%2Fzh%2Findicators%2Fexports%26title%3DExports%2520%257C%2520FXMacroData%26summary%3DCompare%2520macroeconomic%2520indicators%2520across%2520countries%2520and%2520currencies%2520with%2520FXMacroData%2520reference%2520tables%2520and%2520documentation.",
+  "published": "2026-09-20T20:15:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.linkedin.com/checkpoint/lg/login?session_redirect=https%3A%2F%2Fwww%2Elinkedin%2Ecom%2FshareArticle%3Fmini%3Dtrue%26url%3Dhttps%253A%2F%2Ffxmacrodata%2Ecom%2Fzh%2Findicators%2Fexports%26title%3DExports%2520%257C%2520FXMacroData%26summary%3DCompare%2520macroeconomic%2520indicators%2520across%2520countries%2520and%2520currencies%2520with%2520FXMacroData%2520reference%2520tables%2520and%2520documentation%2E&amp;fromSignIn=true&amp;trk=hb_signin",
+   "https://www.linkedin.com/signup/cold-join?session_redirect=https%3A%2F%2Fwww.linkedin.com%2FshareArticle%3Fmini%3Dtrue%26url%3Dhttps%253A%2F%2Ffxmacrodata.com%2Fzh%2Findicators%2Fexports%26title%3DExports%2520%257C%2520FXMacroData%26summary%3DCompare%2520macroeconomic%2520indicators%2520across%2520countries%2520and%2520currencies%2520with%2520FXMacroData%2520reference%2520tables%2520and%2520documentation.",
+   "https://www.linkedin.com/checkpoint/lg/login?session_redirect=https%3A%2F%2Fwww%2Elinkedin%2Ecom%2FshareArticle%3Fmini%3Dtrue%26url%3Dhttps%253A%2F%2Ffxmacrodata%2Ecom%2Fzh%2Findicators%2Fexports%26title%3DExports%2520%257C%2520FXMacroData%26summary%3DCompare%2520macroeconomic%2520indicators%2520across%2520countries%2520and%2520currencies%2520with%2520FXMacroData%2520reference%2520tables%2520and%2520documentation%2E&amp;fromSignIn=true&amp;trk=reset_password"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "20136353ec30ad088dc0",
+  "host": "www.linkedin.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Reset Password | LinkedIn",
+  "url": "https://www.linkedin.com/passwordReset/?session_redirect=https%3A%2F%2Fwww.linkedin.com%2FshareArticle%3Fmini%3Dtrue%26url%3Dhttps%253A%2F%2Ffxmacrodata.com%2Fja%2Findicators%2Fexports%26title%3DExports%2520%257C%2520FXMacroData%26summary%3DCompare%2520macroeconomic%2520indicators%2520across%2520countries%2520and%2520currencies%2520with%2520FXMacroData%2520reference%2520tables%2520and%2520documentation.",
+  "published": "2026-09-20T20:15:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.linkedin.com/checkpoint/lg/login?session_redirect=https%3A%2F%2Fwww%2Elinkedin%2Ecom%2FshareArticle%3Fmini%3Dtrue%26url%3Dhttps%253A%2F%2Ffxmacrodata%2Ecom%2Fja%2Findicators%2Fexports%26title%3DExports%2520%257C%2520FXMacroData%26summary%3DCompare%2520macroeconomic%2520indicators%2520across%2520countries%2520and%2520currencies%2520with%2520FXMacroData%2520reference%2520tables%2520and%2520documentation%2E&amp;fromSignIn=true&amp;trk=hb_signin",
+   "https://www.linkedin.com/signup/cold-join?session_redirect=https%3A%2F%2Fwww.linkedin.com%2FshareArticle%3Fmini%3Dtrue%26url%3Dhttps%253A%2F%2Ffxmacrodata.com%2Fja%2Findicators%2Fexports%26title%3DExports%2520%257C%2520FXMacroData%26summary%3DCompare%2520macroeconomic%2520indicators%2520across%2520countries%2520and%2520currencies%2520with%2520FXMacroData%2520reference%2520tables%2520and%2520documentation.",
+   "https://www.linkedin.com/checkpoint/lg/login?session_redirect=https%3A%2F%2Fwww%2Elinkedin%2Ecom%2FshareArticle%3Fmini%3Dtrue%26url%3Dhttps%253A%2F%2Ffxmacrodata%2Ecom%2Fja%2Findicators%2Fexports%26title%3DExports%2520%257C%2520FXMacroData%26summary%3DCompare%2520macroeconomic%2520indicators%2520across%2520countries%2520and%2520currencies%2520with%2520FXMacroData%2520reference%2520tables%2520and%2520documentation%2E&amp;fromSignIn=true&amp;trk=reset_password"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "d7f27f3dd20943bc90b0",
+  "host": "www.linkedin.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]

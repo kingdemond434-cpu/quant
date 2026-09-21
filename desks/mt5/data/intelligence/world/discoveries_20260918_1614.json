@@ -1,0 +1,232 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "DSE Analyst \u2014 Dhaka Stock Exchange analysis, charts &amp; signals",
+  "url": "https://dseanalyst.com/",
+  "published": "2026-09-18T16:12:51+00:00",
+  "symbols": [
+   "USDKRW"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0f28b2cbb97788d5ab2c",
+  "host": "dseanalyst.com",
+  "claims": [
+   {
+    "claim": "DSE Analyst \u2014 Dhaka Stock Exchange analysis, charts & signals DSE Analyst Explore Ranked Undervalued Heatmap Setups Bounce-watch Earnings Dividends Track record Integrity News Learn Glossary data: Sep 17, 2026 Android app Text A A A EOD Last session \u00b7 Sep 17, 2026 ORIONINFU \u09f3213.",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "bounce"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDKRW"
+     ],
+     "mentioned": [
+      "dsex",
+      "won"
+     ],
+     "transfer_only": [
+      "dsex->indices (South Asian exchanges)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8428a3aa4105"
+   },
+   {
+    "claim": "2 accumulation 78 30-day up-rate 52% \u00b7 Miscellaneous Why this horizon The engine's own selection study rates the 30- and 60-session horizons positive and the 10-day horizon negative.",
+    "lang": "en",
+    "quantities": [
+     "rate",
+     "session"
+    ],
+    "direction": [
+     "positive",
+     "negative"
+    ],
+    "horizon": [
+     "day",
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDKRW"
+     ],
+     "mentioned": [
+      "dsex",
+      "won"
+     ],
+     "transfer_only": [
+      "dsex->indices (South Asian exchanges)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "cac14b6dd138"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The SPY-TLT Universal Investment Strategy | Seeking Alpha",
+  "url": "https://seekingalpha.com/article/2714185-the-spy-tlt-universal-investment-strategy",
+  "published": "2026-09-18T16:12:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://seekingalpha.com/samw/manifest.21e1a41eec7430f48197357dbb41445d.json",
+   "https://seekingalpha.com/api/v3/breaking_news",
+   "https://seekingalpha.com/api/v3/market_open",
+   "https://seekingalpha.com/api/v3/visitor_tag_for_url_params",
+   "https://seekingalpha.com/api/v3/ab_tests"
+  ],
+  "n_endpoints": 5,
+  "vault_sha": "6e5de34e6bd4bed1ede3",
+  "host": "seekingalpha.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Gamma Scalping 102 - The Undisclosed Risks | Seeking Alpha",
+  "url": "https://seekingalpha.com/article/4264097-gamma-scalping-102-undisclosed-risks",
+  "published": "2026-09-18T16:12:55+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://seekingalpha.com/samw/manifest.21e1a41eec7430f48197357dbb41445d.json",
+   "https://seekingalpha.com/api/v3/breaking_news",
+   "https://seekingalpha.com/api/v3/market_open",
+   "https://seekingalpha.com/api/v3/visitor_tag_for_url_params",
+   "https://seekingalpha.com/api/v3/ab_tests"
+  ],
+  "n_endpoints": 5,
+  "vault_sha": "d9c4985b74061d3b1437",
+  "host": "seekingalpha.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Latest Forex Investment Analysis Articles | Seeking Alpha",
+  "url": "http://seekingalpha.com/article/183525-cftc-reform-and-the-death-of-retail-forex",
+  "published": "2026-09-18T16:12:57+00:00",
+  "symbols": [
+   "US500",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "carry",
+   "momentum",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "http://seekingalpha.com/samw/manifest.21e1a41eec7430f48197357dbb41445d.json",
+   "http://seekingalpha.com/api/v3/breaking_news",
+   "http://seekingalpha.com/api/v3/market_open",
+   "http://seekingalpha.com/api/v3/visitor_tag_for_url_params",
+   "http://seekingalpha.com/api/v3/ab_tests"
+  ],
+  "n_endpoints": 5,
+  "vault_sha": "c890a246a0218cc9d2dd",
+  "host": "seekingalpha.com",
+  "claims": [
+   {
+    "claim": "To Reveal Bond Buyback Plans Wed, Sep 9 SPX Marc Chandler Save Share Yen Short Squeeze Runs Into Middle East War Escalation Tue, Sep 8 SPX Marc Chandler Save Share Global Forex Shifts: Yen Carry Trade Unwinds Amid Policy Divergence Mon, Sep 7 USD:JPY MarketPulse by OANDA Group 1 Comments Save Share Week Ahead: Yen In Play, ECB Hikes, And U.",
+    "lang": "en",
+    "quantities": [
+     "carry"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "USDJPY"
+     ],
+     "mentioned": [
+      "spx",
+      "yen"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "a97dd39a3da2"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithm - Encyclopedia of Mathematics",
+  "url": "https://www.encyclopediaofmath.org/index.php?title=Algorithm",
+  "published": "2026-09-18T16:12:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0871a64544a069a62e90",
+  "host": "www.encyclopediaofmath.org",
+  "claims": [],
+  "n_claims": 0
+ }
+]

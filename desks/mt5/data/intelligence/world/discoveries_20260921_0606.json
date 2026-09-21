@@ -1,0 +1,1143 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "KAP",
+  "url": "https://www.kap.org.tr/tr/Bildirim/1662137",
+  "published": "2026-09-21T06:05:23+00:00",
+  "symbols": [],
+  "timeframes": [
+   "G\u00dcNL\u00dcK"
+  ],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.55,
+  "lang": "tr",
+  "endpoints": [
+   "https://www.kap.org.tr/tr/api/BildirimPdf/1662137",
+   "https://www.kap.org.tr/tr/api/notification/export/word/1662137",
+   "https://www.kap.org.tr/tr/api/notification/export/excel/1662137"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "ca463af7447cbec4d485",
+  "host": "www.kap.org.tr",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "PDP",
+  "url": "https://www.kap.org.tr/Bildirim/1372123",
+  "published": "2026-09-21T06:05:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www.kap.org.tr/en/api/BildirimPdf/1372123",
+   "https://www.kap.org.tr/en/api/notification/export/word/1372123",
+   "https://www.kap.org.tr/en/api/notification/export/excel/1372123"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "ddf10c8e7195a6523712",
+  "host": "www.kap.org.tr",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "KAP",
+  "url": "https://www.kap.org.tr/tr/Bildirim/1653009",
+  "published": "2026-09-21T06:05:27+00:00",
+  "symbols": [
+   "XTIUSD"
+  ],
+  "timeframes": [
+   "G\u00dcNL\u00dcK"
+  ],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.95,
+  "lang": "tr",
+  "endpoints": [
+   "https://www.kap.org.tr/tr/api/BildirimPdf/1653009",
+   "https://www.kap.org.tr/tr/api/notification/export/word/1653009",
+   "https://www.kap.org.tr/tr/api/notification/export/excel/1653009"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "904d7544ed038fa63aeb",
+  "host": "www.kap.org.tr",
+  "claims": [
+   {
+    "claim": "KAP T\u00fcm Kategoriler T\u00fcm Kategoriler \u00d6zel Durum A\u00e7\u0131klamas\u0131 Finansal Rapor Di\u011fer Bildirimler Fon Bildirimleri (*) A\u015fa\u011f\u0131daki \u00f6neriler, sadece endeks/pazar/d\u00f6nem bilgisi girildi\u011finde ilgili y\u0131l\u0131n son 14 g\u00fcn\u00fc, di\u011fer durumlarda ge\u00e7mi\u015fe d\u00f6n\u00fck 30 g\u00fcnl\u00fck d\u00f6nem esas al\u0131narak listelenmektedir.",
+    "lang": "tr",
+    "quantities": [
+     "endeks"
+    ],
+    "direction": [
+     "a\u015fa\u011f\u0131",
+     "d\u00f6n"
+    ],
+    "horizon": [
+     "g\u00fcn",
+     "g\u00fcnl\u00fck"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD"
+     ],
+     "mentioned": [
+      "petrol"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "2f694ba6cda7"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "KAP",
+  "url": "https://www.kap.org.tr/tr/Bildirim/1562957",
+  "published": "2026-09-21T06:05:29+00:00",
+  "symbols": [
+   "US2000"
+  ],
+  "timeframes": [
+   "G\u00dcNL\u00dcK"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "tr",
+  "endpoints": [
+   "https://www.kap.org.tr/tr/api/file/download/4028328d9c81f589019c9fb74266280e",
+   "https://www.kap.org.tr/tr/api/BildirimPdf/1562957",
+   "https://www.kap.org.tr/tr/api/notification/export/word/1562957",
+   "https://www.kap.org.tr/tr/api/notification/export/excel/1562957"
+  ],
+  "n_endpoints": 4,
+  "vault_sha": "9c27e9380eb7de3c2eed",
+  "host": "www.kap.org.tr",
+  "claims": [
+   {
+    "claim": "KAP T\u00fcm Kategoriler T\u00fcm Kategoriler \u00d6zel Durum A\u00e7\u0131klamas\u0131 Finansal Rapor Di\u011fer Bildirimler Fon Bildirimleri (*) A\u015fa\u011f\u0131daki \u00f6neriler, sadece endeks/pazar/d\u00f6nem bilgisi girildi\u011finde ilgili y\u0131l\u0131n son 14 g\u00fcn\u00fc, di\u011fer durumlarda ge\u00e7mi\u015fe d\u00f6n\u00fck 30 g\u00fcnl\u00fck d\u00f6nem esas al\u0131narak listelenmektedir.",
+    "lang": "tr",
+    "quantities": [
+     "endeks"
+    ],
+    "direction": [
+     "a\u015fa\u011f\u0131",
+     "d\u00f6n"
+    ],
+    "horizon": [
+     "g\u00fcn",
+     "g\u00fcnl\u00fck"
+    ],
+    "instruments": {
+     "analogues": [
+      "US2000"
+     ],
+     "mentioned": [
+      "russell"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "2f694ba6cda7"
+   },
+   {
+    "claim": "1 No'lu \"Sermaye Piyasas\u0131nda Finansal Raporlamaya \u0130li\u015fkin Esaslar Tebli\u011fi\" g\u00f6re y\u0131ll\u0131k faaliyet raporuyla ilgili olarak a\u015fa\u011f\u0131dakilerden sorumludur: a) Y\u0131ll\u0131k faaliyet raporunu bilan\u00e7o g\u00fcn\u00fcn\u00fc izleyen ilk \u00fc\u00e7 ay i\u00e7inde haz\u0131rlar ve genel kurula sunar.",
+    "lang": "tr",
+    "quantities": [
+     "kur"
+    ],
+    "direction": [
+     "a\u015fa\u011f\u0131"
+    ],
+    "horizon": [
+     "g\u00fcn",
+     "ay"
+    ],
+    "instruments": {
+     "analogues": [
+      "US2000"
+     ],
+     "mentioned": [
+      "russell"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "be7150f2694f"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "KAP",
+  "url": "https://www.kap.org.tr/tr/sirket-finansal-bilgileri/1383-fenerbahce-futbol-a-s",
+  "published": "2026-09-21T06:05:31+00:00",
+  "symbols": [],
+  "timeframes": [
+   "G\u00dcNL\u00dcK"
+  ],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.55,
+  "lang": "tr",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3e659fd08f09bb501a53",
+  "host": "www.kap.org.tr",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Drewry - Service Expertise - Carrier Strategy Workshops",
+  "url": "https://www.drewry.co.uk/supply-chain-advisors/supply-chain-expertise/carrier-strategy-workshops",
+  "published": "2026-09-21T06:05:32+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "flow",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "En",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4bbb40f8537de5339b82",
+  "host": "www.drewry.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u0646\u0638\u0627\u0645 \u0627\u0644\u062a\u062f\u0627\u0648\u0644 \u0627\u0644\u0628\u062f\u064a\u0644 - \u0648\u064a\u0643\u064a\u0628\u064a\u062f\u064a\u0627",
+  "url": "https://ar.wikipedia.org/wiki/%D9%86%D8%B8%D8%A7%D9%85_%D8%A7%D9%84%D8%AA%D8%AF%D8%A7%D9%88%D9%84_%D8%A7%D9%84%D8%A8%D8%AF%D9%8A%D9%84",
+  "published": "2026-09-21T06:05:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "ar",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d75b0f50a04c5b63a4da",
+  "host": "ar.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/HKXHKD",
+  "published": "2026-09-21T06:05:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/hkxhkd/2026",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/hkxhkd/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/hkxhkd/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/hkxhkd/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/hkxhkd/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/hkxhkd/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/hkxhkd/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/hkxhkd/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/hkxhkd/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/hkxhkd/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/hkxhkd/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/hkxhkd/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/hkxhkd/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/hkxhkd/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/hkxhkd/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/hkxhkd/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/hkxhkd/2010"
+  ],
+  "n_endpoints": 21,
+  "vault_sha": "b16ce4e98d8cc8a078e7",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/NZDCHF",
+  "published": "2026-09-21T06:05:38+00:00",
+  "symbols": [
+   "NZDCHF"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/nzdchf/2026",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/nzdchf/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/nzdchf/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/nzdchf/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/nzdchf/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/nzdchf/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/nzdchf/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/nzdchf/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/nzdchf/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/nzdchf/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/nzdchf/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/nzdchf/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/nzdchf/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/nzdchf/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/nzdchf/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/nzdchf/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/nzdchf/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/nzdchf/2009",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/nzdchf/2008"
+  ],
+  "n_endpoints": 23,
+  "vault_sha": "6a525d951882787e9e35",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/SPXUSD",
+  "published": "2026-09-21T06:05:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/spxusd/2026",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/spxusd/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/spxusd/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/spxusd/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/spxusd/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/spxusd/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/spxusd/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/spxusd/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/spxusd/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/spxusd/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/spxusd/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/spxusd/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/spxusd/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/spxusd/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/spxusd/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/spxusd/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/spxusd/2010"
+  ],
+  "n_endpoints": 21,
+  "vault_sha": "ff816c2bfa8a7515c6a5",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/USDHUF",
+  "published": "2026-09-21T06:05:42+00:00",
+  "symbols": [
+   "USDHUF"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdhuf/2026",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdhuf/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdhuf/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdhuf/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdhuf/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdhuf/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdhuf/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdhuf/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdhuf/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdhuf/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdhuf/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdhuf/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdhuf/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdhuf/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdhuf/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdhuf/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdhuf/2010"
+  ],
+  "n_endpoints": 21,
+  "vault_sha": "ca4bba04d2ecd284b783",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/USDPLN",
+  "published": "2026-09-21T06:05:44+00:00",
+  "symbols": [
+   "USDPLN"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdpln/2026",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdpln/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdpln/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdpln/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdpln/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdpln/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdpln/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdpln/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdpln/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdpln/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdpln/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdpln/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdpln/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdpln/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdpln/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdpln/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdpln/2010"
+  ],
+  "n_endpoints": 21,
+  "vault_sha": "a534fb1b3c43cac78c0f",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/USDZAR",
+  "published": "2026-09-21T06:05:46+00:00",
+  "symbols": [
+   "USDZAR"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdzar/2026",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdzar/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdzar/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdzar/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdzar/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdzar/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdzar/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdzar/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdzar/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdzar/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdzar/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdzar/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdzar/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdzar/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdzar/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdzar/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdzar/2010"
+  ],
+  "n_endpoints": 21,
+  "vault_sha": "d1e23c33fad3817dc3fd",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/XAUCHF",
+  "published": "2026-09-21T06:05:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/xauchf/2026",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/xauchf/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/xauchf/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/xauchf/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/xauchf/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/xauchf/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/xauchf/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/xauchf/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/xauchf/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/xauchf/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/xauchf/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/xauchf/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/xauchf/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/xauchf/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/xauchf/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/xauchf/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/xauchf/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/xauchf/2009"
+  ],
+  "n_endpoints": 22,
+  "vault_sha": "103ae0a7b1af82ad6e35",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/ZARJPY",
+  "published": "2026-09-21T06:05:50+00:00",
+  "symbols": [
+   "ZARJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/zarjpy/2026",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/zarjpy/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/zarjpy/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/zarjpy/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/zarjpy/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/zarjpy/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/zarjpy/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/zarjpy/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/zarjpy/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/zarjpy/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/zarjpy/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/zarjpy/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/zarjpy/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/zarjpy/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/zarjpy/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/zarjpy/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/zarjpy/2010"
+  ],
+  "n_endpoints": 21,
+  "vault_sha": "8ada39bbdc3cbc31887d",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/BCOUSD",
+  "published": "2026-09-21T06:05:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/bcousd/2026",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/bcousd/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/bcousd/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/bcousd/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/bcousd/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/bcousd/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/bcousd/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/bcousd/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/bcousd/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/bcousd/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/bcousd/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/bcousd/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/bcousd/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/bcousd/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/bcousd/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/bcousd/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/bcousd/2010"
+  ],
+  "n_endpoints": 21,
+  "vault_sha": "7eec6e8856bc31902964",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/ETXEUR",
+  "published": "2026-09-21T06:05:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/etxeur/2026",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/etxeur/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/etxeur/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/etxeur/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/etxeur/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/etxeur/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/etxeur/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/etxeur/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/etxeur/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/etxeur/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/etxeur/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/etxeur/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/etxeur/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/etxeur/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/etxeur/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/etxeur/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/etxeur/2010"
+  ],
+  "n_endpoints": 21,
+  "vault_sha": "7f29a0228f76a8d3f045",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/EURCZK",
+  "published": "2026-09-21T06:05:56+00:00",
+  "symbols": [
+   "EURCZK"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/eurczk/2026",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/eurczk/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/eurczk/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/eurczk/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/eurczk/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/eurczk/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/eurczk/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/eurczk/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/eurczk/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/eurczk/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/eurczk/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/eurczk/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/eurczk/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/eurczk/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/eurczk/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/eurczk/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/eurczk/2010"
+  ],
+  "n_endpoints": 21,
+  "vault_sha": "3262522f24945ffdf9c5",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/EURSEK",
+  "published": "2026-09-21T06:05:58+00:00",
+  "symbols": [
+   "EURSEK"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/eursek/2026",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/eursek/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/eursek/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/eursek/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/eursek/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/eursek/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/eursek/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/eursek/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/eursek/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/eursek/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/eursek/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/eursek/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/eursek/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/eursek/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/eursek/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/eursek/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/eursek/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/eursek/2009",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/eursek/2008"
+  ],
+  "n_endpoints": 23,
+  "vault_sha": "fade68528f2a87bbcf2b",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/GBPAUD",
+  "published": "2026-09-21T06:06:00+00:00",
+  "symbols": [
+   "GBPAUD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/gbpaud/2026",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/gbpaud/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/gbpaud/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/gbpaud/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/gbpaud/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/gbpaud/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/gbpaud/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/gbpaud/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/gbpaud/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/gbpaud/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/gbpaud/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/gbpaud/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/gbpaud/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/gbpaud/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/gbpaud/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/gbpaud/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/gbpaud/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/gbpaud/2009",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/gbpaud/2008",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/gbpaud/2007"
+  ],
+  "n_endpoints": 24,
+  "vault_sha": "75926ffa3d9f899269cd",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/GBPNZD",
+  "published": "2026-09-21T06:06:02+00:00",
+  "symbols": [
+   "GBPNZD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/gbpnzd/2026",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/gbpnzd/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/gbpnzd/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/gbpnzd/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/gbpnzd/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/gbpnzd/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/gbpnzd/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/gbpnzd/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/gbpnzd/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/gbpnzd/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/gbpnzd/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/gbpnzd/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/gbpnzd/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/gbpnzd/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/gbpnzd/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/gbpnzd/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/gbpnzd/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/gbpnzd/2009",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/gbpnzd/2008"
+  ],
+  "n_endpoints": 23,
+  "vault_sha": "9b5c823a232a090ba53d",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/JPXJPY",
+  "published": "2026-09-21T06:06:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/jpxjpy/2026",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/jpxjpy/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/jpxjpy/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/jpxjpy/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/jpxjpy/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/jpxjpy/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/jpxjpy/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/jpxjpy/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/jpxjpy/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/jpxjpy/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/jpxjpy/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/jpxjpy/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/jpxjpy/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/jpxjpy/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/jpxjpy/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/jpxjpy/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/jpxjpy/2010"
+  ],
+  "n_endpoints": 21,
+  "vault_sha": "bb31c7df93039a96ef0d",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/UDXUSD",
+  "published": "2026-09-21T06:06:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/udxusd/2026",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/udxusd/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/udxusd/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/udxusd/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/udxusd/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/udxusd/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/udxusd/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/udxusd/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/udxusd/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/udxusd/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/udxusd/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/udxusd/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/udxusd/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/udxusd/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/udxusd/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/udxusd/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/udxusd/2010"
+  ],
+  "n_endpoints": 21,
+  "vault_sha": "119e6ef2be3aa6729f72",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/USDCZK",
+  "published": "2026-09-21T06:06:08+00:00",
+  "symbols": [
+   "USDCZK"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdczk/2026",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdczk/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdczk/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdczk/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdczk/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdczk/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdczk/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdczk/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdczk/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdczk/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdczk/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdczk/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdczk/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdczk/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdczk/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdczk/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdczk/2010"
+  ],
+  "n_endpoints": 21,
+  "vault_sha": "d19e0f1f21f187252abb",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/USDSEK",
+  "published": "2026-09-21T06:06:10+00:00",
+  "symbols": [
+   "USDSEK"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdsek/2026",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdsek/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdsek/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdsek/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdsek/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdsek/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdsek/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdsek/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdsek/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdsek/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdsek/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdsek/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdsek/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdsek/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdsek/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdsek/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdsek/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdsek/2009",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-ask-quotes/usdsek/2008"
+  ],
+  "n_endpoints": 23,
+  "vault_sha": "50240c8dc09bd9bbfc48",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Euro vs New Zealand Dollar (EURNZD.p) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/EURNZD.p/",
+  "published": "2026-09-21T06:06:11+00:00",
+  "symbols": [
+   "EURNZD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "9a3be7ff06a52c1d42dd",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Euro vs US Dollar (EURUSD.p) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/EURUSD.p/",
+  "published": "2026-09-21T06:06:12+00:00",
+  "symbols": [
+   "EURUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "ba2471c3d939facd7898",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "00 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "eurusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8f7ddbff917b"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs Australian Dollar (GBPAUD.p) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/GBPAUD.p/",
+  "published": "2026-09-21T06:06:14+00:00",
+  "symbols": [
+   "GBPAUD",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "4398f2a0fac54a605832",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "00 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "pound"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8f7ddbff917b"
+   }
+  ],
+  "n_claims": 1
+ }
+]

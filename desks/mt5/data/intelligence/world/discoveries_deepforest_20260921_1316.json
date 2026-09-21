@@ -1,0 +1,56 @@
+[
+ {
+  "source": "deep_forest",
+  "kind": "dataset",
+  "title": "Research",
+  "url": "https://www.aqr.com/Insights/Research",
+  "published": "2026-09-21T13:16:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.4,
+  "lang": "en",
+  "endpoints": [
+   "https://www.aqr.com/Insights/Datasets"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "bedce3cd15276d2231c5",
+  "host": "www.aqr.com",
+  "ground": "AQR insights",
+  "region": "us",
+  "cluster": "west",
+  "dataset_class": null,
+  "available_time": "2026-09-21T13:16:04+00:00",
+  "ingested_time": "2026-09-21T13:16:04+00:00",
+  "source_hash": "bedce3cd15276d2231c5",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "deep_forest",
+  "kind": "dataset",
+  "title": "In the Age of AI, A Quant’s Edge is Human",
+  "url": "https://www.aqr.com/Insights/Research/Trade-Publication/In-the-Age-of-AI-A-Quants-Edge-is-Human",
+  "published": "2026-09-21T13:16:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.4,
+  "lang": "en",
+  "endpoints": [
+   "https://www.aqr.com/Insights/Datasets"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "8e8b85190ef3e955cc96",
+  "host": "www.aqr.com",
+  "ground": "AQR insights",
+  "region": "us",
+  "cluster": "west",
+  "dataset_class": null,
+  "available_time": "2026-09-21T13:16:06+00:00",
+  "ingested_time": "2026-09-21T13:16:06+00:00",
+  "source_hash": "8e8b85190ef3e955cc96",
+  "claims": [],
+  "n_claims": 0
+ }
+]

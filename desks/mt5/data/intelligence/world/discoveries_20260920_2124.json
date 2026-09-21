@@ -1,0 +1,1465 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/EURNOK",
+  "published": "2026-09-20T21:23:34+00:00",
+  "symbols": [
+   "EURNOK"
+  ],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurnok/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurnok/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurnok/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurnok/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurnok/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurnok/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurnok/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurnok/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurnok/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurnok/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurnok/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurnok/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurnok/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurnok/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurnok/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurnok/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurnok/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurnok/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurnok/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurnok/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurnok/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurnok/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurnok/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurnok/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurnok/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurnok/2009",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurnok/2008"
+  ],
+  "n_endpoints": 31,
+  "vault_sha": "3736c910ef6bf6a356a5",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/EURTRY",
+  "published": "2026-09-20T21:23:36+00:00",
+  "symbols": [
+   "EURTRY"
+  ],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurtry/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurtry/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurtry/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurtry/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurtry/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurtry/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurtry/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurtry/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurtry/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurtry/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurtry/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurtry/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurtry/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurtry/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurtry/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurtry/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurtry/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurtry/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurtry/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurtry/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurtry/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurtry/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurtry/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurtry/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/eurtry/2010"
+  ],
+  "n_endpoints": 29,
+  "vault_sha": "cede8d7da2ef18b08b21",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/GBPCAD",
+  "published": "2026-09-20T21:23:38+00:00",
+  "symbols": [
+   "GBPCAD"
+  ],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/gbpcad/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/gbpcad/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/gbpcad/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/gbpcad/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/gbpcad/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/gbpcad/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/gbpcad/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/gbpcad/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/gbpcad/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/gbpcad/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/gbpcad/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/gbpcad/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/gbpcad/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/gbpcad/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/gbpcad/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/gbpcad/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/gbpcad/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/gbpcad/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/gbpcad/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/gbpcad/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/gbpcad/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/gbpcad/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/gbpcad/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/gbpcad/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/gbpcad/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/gbpcad/2009",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/gbpcad/2008",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/gbpcad/2007"
+  ],
+  "n_endpoints": 32,
+  "vault_sha": "f58193c4f931c922d7da",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/NSXUSD",
+  "published": "2026-09-20T21:23:40+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/nsxusd/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/nsxusd/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/nsxusd/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/nsxusd/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/nsxusd/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/nsxusd/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/nsxusd/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/nsxusd/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/nsxusd/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/nsxusd/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/nsxusd/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/nsxusd/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/nsxusd/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/nsxusd/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/nsxusd/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/nsxusd/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/nsxusd/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/nsxusd/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/nsxusd/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/nsxusd/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/nsxusd/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/nsxusd/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/nsxusd/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/nsxusd/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/nsxusd/2010"
+  ],
+  "n_endpoints": 29,
+  "vault_sha": "b7eae15abc21767e13f1",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/UKXGBP",
+  "published": "2026-09-20T21:23:42+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/ukxgbp/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/ukxgbp/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/ukxgbp/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/ukxgbp/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/ukxgbp/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/ukxgbp/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/ukxgbp/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/ukxgbp/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/ukxgbp/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/ukxgbp/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/ukxgbp/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/ukxgbp/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/ukxgbp/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/ukxgbp/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/ukxgbp/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/ukxgbp/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/ukxgbp/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/ukxgbp/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/ukxgbp/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/ukxgbp/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/ukxgbp/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/ukxgbp/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/ukxgbp/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/ukxgbp/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/ukxgbp/2010"
+  ],
+  "n_endpoints": 29,
+  "vault_sha": "aff8ff892bbedbff90de",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/USDDKK",
+  "published": "2026-09-20T21:23:44+00:00",
+  "symbols": [
+   "USDDKK"
+  ],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usddkk/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usddkk/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usddkk/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usddkk/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usddkk/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usddkk/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usddkk/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usddkk/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usddkk/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usddkk/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usddkk/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usddkk/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usddkk/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usddkk/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usddkk/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usddkk/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usddkk/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usddkk/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usddkk/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usddkk/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usddkk/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usddkk/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usddkk/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usddkk/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usddkk/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usddkk/2009",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usddkk/2008"
+  ],
+  "n_endpoints": 31,
+  "vault_sha": "04731d753539005bbe55",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/USDSGD",
+  "published": "2026-09-20T21:23:46+00:00",
+  "symbols": [
+   "USDSGD"
+  ],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdsgd/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdsgd/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdsgd/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdsgd/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdsgd/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdsgd/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdsgd/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdsgd/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdsgd/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdsgd/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdsgd/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdsgd/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdsgd/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdsgd/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdsgd/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdsgd/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdsgd/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdsgd/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdsgd/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdsgd/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdsgd/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdsgd/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdsgd/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdsgd/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdsgd/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdsgd/2009",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/usdsgd/2008"
+  ],
+  "n_endpoints": 31,
+  "vault_sha": "1c14f6a2121d0d65ae11",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/XAGUSD",
+  "published": "2026-09-20T21:23:48+00:00",
+  "symbols": [
+   "XAGUSD"
+  ],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xagusd/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xagusd/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xagusd/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xagusd/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xagusd/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xagusd/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xagusd/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xagusd/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xagusd/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xagusd/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xagusd/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xagusd/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xagusd/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xagusd/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xagusd/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xagusd/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xagusd/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xagusd/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xagusd/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xagusd/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xagusd/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xagusd/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xagusd/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xagusd/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xagusd/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xagusd/2009"
+  ],
+  "n_endpoints": 30,
+  "vault_sha": "751a0e55f97785ff7504",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/XAUGBP",
+  "published": "2026-09-20T21:23:50+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xaugbp/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xaugbp/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xaugbp/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xaugbp/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xaugbp/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xaugbp/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xaugbp/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xaugbp/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xaugbp/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xaugbp/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xaugbp/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xaugbp/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xaugbp/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xaugbp/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xaugbp/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xaugbp/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xaugbp/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xaugbp/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xaugbp/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xaugbp/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xaugbp/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xaugbp/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xaugbp/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xaugbp/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xaugbp/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/1-minute-bar-quotes/xaugbp/2009"
+  ],
+  "n_endpoints": 30,
+  "vault_sha": "dbaed277b913d0203229",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/EURUSD",
+  "published": "2026-09-20T21:23:52+00:00",
+  "symbols": [
+   "EURUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurusd/2026",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurusd/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurusd/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurusd/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurusd/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurusd/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurusd/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurusd/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurusd/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurusd/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurusd/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurusd/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurusd/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurusd/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurusd/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurusd/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurusd/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurusd/2009",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurusd/2008",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurusd/2007",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurusd/2006",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurusd/2005",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurusd/2004",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurusd/2003",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurusd/2002",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurusd/2001",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurusd/2000"
+  ],
+  "n_endpoints": 31,
+  "vault_sha": "011dc69cbe7e8ba5dd45",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/EURCHF",
+  "published": "2026-09-20T21:23:54+00:00",
+  "symbols": [
+   "EURCHF"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurchf/2026",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurchf/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurchf/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurchf/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurchf/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurchf/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurchf/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurchf/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurchf/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurchf/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurchf/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurchf/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurchf/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurchf/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurchf/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurchf/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurchf/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurchf/2009",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurchf/2008",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurchf/2007",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurchf/2006",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurchf/2005",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurchf/2004",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurchf/2003",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurchf/2002"
+  ],
+  "n_endpoints": 29,
+  "vault_sha": "5f73056f592ed7329a60",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/EURGBP",
+  "published": "2026-09-20T21:23:56+00:00",
+  "symbols": [
+   "EURGBP"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurgbp/2026",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurgbp/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurgbp/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurgbp/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurgbp/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurgbp/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurgbp/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurgbp/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurgbp/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurgbp/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurgbp/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurgbp/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurgbp/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurgbp/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurgbp/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurgbp/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurgbp/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurgbp/2009",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurgbp/2008",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurgbp/2007",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurgbp/2006",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurgbp/2005",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurgbp/2004",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurgbp/2003",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurgbp/2002"
+  ],
+  "n_endpoints": 29,
+  "vault_sha": "fb1a48d3e5334a0677ff",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/EURJPY",
+  "published": "2026-09-20T21:23:58+00:00",
+  "symbols": [
+   "EURJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurjpy/2026",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurjpy/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurjpy/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurjpy/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurjpy/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurjpy/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurjpy/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurjpy/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurjpy/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurjpy/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurjpy/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurjpy/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurjpy/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurjpy/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurjpy/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurjpy/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurjpy/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurjpy/2009",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurjpy/2008",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurjpy/2007",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurjpy/2006",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurjpy/2005",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurjpy/2004",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurjpy/2003",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/eurjpy/2002"
+  ],
+  "n_endpoints": 29,
+  "vault_sha": "86f1f3d924f107aae2b1",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/EURAUD",
+  "published": "2026-09-20T21:24:00+00:00",
+  "symbols": [
+   "EURAUD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/euraud/2026",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/euraud/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/euraud/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/euraud/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/euraud/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/euraud/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/euraud/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/euraud/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/euraud/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/euraud/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/euraud/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/euraud/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/euraud/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/euraud/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/euraud/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/euraud/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/euraud/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/euraud/2009",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/euraud/2008",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/euraud/2007",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/euraud/2006",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/euraud/2005",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/euraud/2004",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/euraud/2003",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/euraud/2002"
+  ],
+  "n_endpoints": 29,
+  "vault_sha": "25055e770272082fbb3d",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/USDCAD",
+  "published": "2026-09-20T21:24:02+00:00",
+  "symbols": [
+   "USDCAD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdcad/2026",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdcad/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdcad/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdcad/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdcad/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdcad/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdcad/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdcad/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdcad/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdcad/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdcad/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdcad/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdcad/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdcad/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdcad/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdcad/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdcad/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdcad/2009",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdcad/2008",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdcad/2007",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdcad/2006",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdcad/2005",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdcad/2004",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdcad/2003",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdcad/2002",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdcad/2001",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdcad/2000"
+  ],
+  "n_endpoints": 31,
+  "vault_sha": "90d1416a3cb77782f046",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/USDCHF",
+  "published": "2026-09-20T21:24:04+00:00",
+  "symbols": [
+   "USDCHF"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdchf/2026",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdchf/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdchf/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdchf/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdchf/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdchf/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdchf/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdchf/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdchf/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdchf/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdchf/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdchf/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdchf/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdchf/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdchf/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdchf/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdchf/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdchf/2009",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdchf/2008",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdchf/2007",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdchf/2006",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdchf/2005",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdchf/2004",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdchf/2003",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdchf/2002",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdchf/2001",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdchf/2000"
+  ],
+  "n_endpoints": 31,
+  "vault_sha": "ead615af988c829b420a",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/USDJPY",
+  "published": "2026-09-20T21:24:06+00:00",
+  "symbols": [
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdjpy/2026",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdjpy/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdjpy/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdjpy/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdjpy/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdjpy/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdjpy/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdjpy/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdjpy/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdjpy/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdjpy/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdjpy/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdjpy/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdjpy/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdjpy/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdjpy/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdjpy/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdjpy/2009",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdjpy/2008",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdjpy/2007",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdjpy/2006",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdjpy/2005",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdjpy/2004",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdjpy/2003",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdjpy/2002",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdjpy/2001",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdjpy/2000"
+  ],
+  "n_endpoints": 31,
+  "vault_sha": "dc74966a5209321bc9bc",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/USDMXN",
+  "published": "2026-09-20T21:24:08+00:00",
+  "symbols": [
+   "USDMXN"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdmxn/2026",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdmxn/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdmxn/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdmxn/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdmxn/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdmxn/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdmxn/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdmxn/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdmxn/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdmxn/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdmxn/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdmxn/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdmxn/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdmxn/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdmxn/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdmxn/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ninjatrader/tick-last-quotes/usdmxn/2010"
+  ],
+  "n_endpoints": 21,
+  "vault_sha": "8276f254dfbd0fa9c033",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Australian Dollar vs US Dollar (AUDUSD) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/AUDUSD/",
+  "published": "2026-09-20T21:24:09+00:00",
+  "symbols": [
+   "AUDUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "c03d073de2d3bf18b151",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "10 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "AUDUSD"
+     ],
+     "mentioned": [
+      "audusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "540871e6143f"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Canadian Dollar vs Swiss Franc (CADCHF) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/CADCHF/",
+  "published": "2026-09-20T21:24:11+00:00",
+  "symbols": [
+   "CADCHF"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "66789ae4b1469b4addc7",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Canadian Dollar vs Japanese Yen (CADJPY) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/CADJPY/",
+  "published": "2026-09-20T21:24:12+00:00",
+  "symbols": [
+   "CADJPY",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "6c512668ada551819237",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "10 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "yen"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "540871e6143f"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Swiss Franc vs Japanese Yen (CHFJPY) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/CHFJPY/",
+  "published": "2026-09-20T21:24:14+00:00",
+  "symbols": [
+   "CHFJPY",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "d6b061f361a5bebe2830",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "10 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "yen"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "540871e6143f"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs Australian Dollar (GBPAUD) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/GBPAUD/",
+  "published": "2026-09-20T21:24:17+00:00",
+  "symbols": [
+   "GBPAUD",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "68421b10125cb61d1812",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "00 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "pound"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8f7ddbff917b"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs Canadian Dollar (GBPCAD) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/GBPCAD/",
+  "published": "2026-09-20T21:24:18+00:00",
+  "symbols": [
+   "GBPCAD",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "084c149555d502b22175",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "20 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "pound"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "7ffead9246f1"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs Swiss Franc (GBPCHF) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/GBPCHF/",
+  "published": "2026-09-20T21:24:20+00:00",
+  "symbols": [
+   "GBPCHF",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "fabe1abffeb1f37e3264",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "70 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "pound"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "cf1d7fb95463"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs Japanese Yen (GBPJPY) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/GBPJPY/",
+  "published": "2026-09-20T21:24:22+00:00",
+  "symbols": [
+   "GBPJPY",
+   "GBPUSD",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "7d6ec02649da40510bb5",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "40 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD",
+      "USDJPY",
+      "GBPJPY"
+     ],
+     "mentioned": [
+      "pound",
+      "yen",
+      "gbpjpy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "851739d13eed"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs New Zealand Dollar (GBPNZD) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/GBPNZD/",
+  "published": "2026-09-20T21:24:25+00:00",
+  "symbols": [
+   "GBPNZD",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "ec3f9a5b1a0e39104d50",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "80 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "pound"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "204ea0441382"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs US Dollar (GBPUSD) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/GBPUSD/",
+  "published": "2026-09-20T21:24:27+00:00",
+  "symbols": [
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "b853799c520e74f6784d",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "30 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "pound"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "485ba5bac7ba"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Euro vs Australian Dollar (EURAUD) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/EURAUD/",
+  "published": "2026-09-20T21:24:29+00:00",
+  "symbols": [
+   "EURAUD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "410206c7cefc4c10f2b8",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Euro vs Canadian Dollar (EURCAD) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/EURCAD/",
+  "published": "2026-09-20T21:24:30+00:00",
+  "symbols": [
+   "EURCAD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "9ea4ef93ae8dc8d5f10d",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]

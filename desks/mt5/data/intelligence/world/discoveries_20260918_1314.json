@@ -1,0 +1,446 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "DSE Analyst \u2014 Dhaka Stock Exchange analysis, charts &amp; signals",
+  "url": "https://dseanalyst.com/",
+  "published": "2026-09-18T13:12:34+00:00",
+  "symbols": [
+   "USDKRW"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "baf37bd0ffd87bbd0f0c",
+  "host": "dseanalyst.com",
+  "claims": [
+   {
+    "claim": "DSE Analyst \u2014 Dhaka Stock Exchange analysis, charts & signals DSE Analyst Explore Ranked Undervalued Heatmap Setups Bounce-watch Earnings Dividends Track record Integrity News Learn Glossary data: Sep 17, 2026 Android app Text A A A EOD Last session \u00b7 Sep 17, 2026 ORIONINFU \u09f3213.",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "bounce"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDKRW"
+     ],
+     "mentioned": [
+      "dsex",
+      "won"
+     ],
+     "transfer_only": [
+      "dsex->indices (South Asian exchanges)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8428a3aa4105"
+   },
+   {
+    "claim": "2 accumulation 78 30-day up-rate 52% \u00b7 Miscellaneous Why this horizon The engine's own selection study rates the 30- and 60-session horizons positive and the 10-day horizon negative.",
+    "lang": "en",
+    "quantities": [
+     "rate",
+     "session"
+    ],
+    "direction": [
+     "positive",
+     "negative"
+    ],
+    "horizon": [
+     "day",
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDKRW"
+     ],
+     "mentioned": [
+      "dsex",
+      "won"
+     ],
+     "transfer_only": [
+      "dsex->indices (South Asian exchanges)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "cac14b6dd138"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u300c\u5916\u56fd\u70ba\u66ff\u53ca\u3073\u5916\u56fd\u8cbf\u6613\u6cd5\u306e\u4e00\u90e8\u3092\u6539\u6b63\u3059\u308b\u6cd5\u5f8b\u306e\u65bd\u884c\u306b\u4f34\u3046\u95a2\u4fc2\u653f\u4ee4\u306e\u6574\u5099\u7b49\u306b\u95a2\u3059\u308b\u653f\u4ee4\u300d\u7b49\u306b\u3064\u3044\u3066 : \u8ca1\u52d9\u7701",
+  "url": "https://www.mof.go.jp/policy/international_policy/gaitame_kawase/press_release/20260908204517.html",
+  "published": "2026-09-18T13:12:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "241b47d8f384775400db",
+  "host": "www.mof.go.jp",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Retail traders lose money in options globally as institutions dominate short-term trading",
+  "url": "https://www.moneycontrol.com/news/business/markets/retail-traders-lose-money-in-options-globally-as-institutions-dominate-short-term-trading-13862145.html",
+  "published": "2026-09-18T13:12:37+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "momentum",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.moneycontrol.com/manifest.json?v=2"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "46ec860817e73f03b9fe",
+  "host": "www.moneycontrol.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "GenAI is democratising algo trading, but experts warn on quality and regulation risks",
+  "url": "https://www.moneycontrol.com/news/business/markets/genai-is-democratising-algo-trading-but-experts-warn-on-quality-and-regulation-risks-13573045.html/amp",
+  "published": "2026-09-18T13:12:39+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "momentum",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.moneycontrol.com/manifest.json?v=2"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "cf4418735d87c9419f82",
+  "host": "www.moneycontrol.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithm - Encyclopedia of Mathematics",
+  "url": "https://www.encyclopediaofmath.org/index.php?title=Algorithm",
+  "published": "2026-09-18T13:12:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3b6b36a2721ecde3db8b",
+  "host": "www.encyclopediaofmath.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Das B\u00f6rsenhackerbuch: Finanziell unabh\u00e4ngig durch algorithmische Handelssysteme : Lotter, Johann Christian: Amazon.de: B\u00fccher",
+  "url": "http://www.amazon.de/Das-B%C3%B6rsenhackerbuch-Finanziell-algorithmische-Handelssysteme/dp/1530310784",
+  "published": "2026-09-18T13:12:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "de-de",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "523eaf828f8bc6d5b734",
+  "host": "www.amazon.de",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "http://autoupdate.strategyquant.com/historydata/SQ_data_equities.txt",
+  "url": "http://autoupdate.strategyquant.com/historydata/SQ_data_equities.txt",
+  "published": "2026-09-18T13:13:27+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XCUUSD",
+   "XALUSD",
+   "XTIUSD",
+   "XNGUSD",
+   "NAS100",
+   "US500",
+   "US30",
+   "US2000",
+   "JPN225",
+   "UK100",
+   "EUSTX50",
+   "GBPUSD",
+   "USDJPY",
+   "USDIDR",
+   "USDILS",
+   "BTCUSD",
+   "ETHUSD",
+   "CORN",
+   "SUGAR",
+   "COTTON",
+   "COFARA",
+   "AlibabaGroup"
+  ],
+  "timeframes": [
+   "DAILY",
+   "MN",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "breakout",
+   "carry",
+   "flow",
+   "inventory",
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2de98c5664cb9a00eebf",
+  "host": "autoupdate.strategyquant.com",
+  "claims": [
+   {
+    "claim": "AMEX FIXX Themes ETF Trust - Leverage Shares 2X Long FIX Daily ETF",
+    "lang": "en",
+    "quantities": [
+     "fix"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XCUUSD",
+      "XALUSD",
+      "XTIUSD",
+      "XNGUSD",
+      "NAS100",
+      "US500",
+      "US30",
+      "US2000",
+      "JPN225",
+      "UK100",
+      "EUSTX50",
+      "GBPUSD",
+      "USDJPY",
+      "USDIDR",
+      "USDILS",
+      "BTCUSD",
+      "ETHUSD",
+      "CORN",
+      "SUGAR",
+      "COTTON",
+      "COFARA",
+      "AlibabaGroup",
+      "Tesla",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "copper",
+      "aluminum",
+      "wti",
+      "natural gas",
+      "nasdaq",
+      "s&p 500",
+      "dow",
+      "russell",
+      "nikkei",
+      "ftse",
+      "euro stoxx",
+      "china a50",
+      "nifty",
+      "msci singapore",
+      "sterling",
+      "yen",
+      "idr",
+      "ils",
+      "bitcoin",
+      "ethereum",
+      "corn",
+      "sugar",
+      "cotton",
+      "coffee",
+      "baba",
+      "tsla",
+      "nvda",
+      "lithium",
+      "fbx"
+     ],
+     "transfer_only": [
+      "china a50->indices (China A-share)",
+      "nifty->indices (NSE/BSE)",
+      "msci singapore->indices (SGX)",
+      "lithium->metals",
+      "fbx->shipping/freight -> commodity currencies"
+     ],
+     "indirect": [
+      "USDX",
+      "AUDUSD"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "rba: policy: RBA -> AUD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "95204373a089"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "QuantifiedStrategies.com",
+  "url": "http://www.quantifiedstrategies.com/feed/atom/",
+  "published": "2026-09-18T13:13:28+00:00",
+  "symbols": [
+   "XAUUSD",
+   "NAS100",
+   "US500",
+   "EUSTX50",
+   "ETHUSD"
+  ],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "breakout",
+   "inventory",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e4c7f08c0ad2b09dd6ee",
+  "host": "www.quantifiedstrategies.com",
+  "claims": [
+   {
+    "claim": "[CDATA[Short The Close, Cover At The Next Open (Strategy)]]> https://www.",
+    "lang": "en",
+    "quantities": [
+     "close",
+     "open"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "close",
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "NAS100",
+      "US500",
+      "EUSTX50",
+      "ETHUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "nasdaq",
+      "s&p 500",
+      "euro stoxx",
+      "ethereum"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "36761ad83b67"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u4e2d\u56fd\u671f\u8d27\u4e1a\u534f\u4f1a",
+  "url": "https://www.cfachina.org/",
+  "published": "2026-09-18T13:13:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "eaa825b8a5bfe8efa578",
+  "host": "www.cfachina.org",
+  "claims": [],
+  "n_claims": 0
+ }
+]

@@ -1,0 +1,1685 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "LFSI | ECB Data Portal",
+  "url": "https://data.ecb.europa.eu/data/datasets/LFSI",
+  "published": "2026-09-21T08:32:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://data.ecb.europa.eu/data/datasets/LFSI",
+   "https://data.ecb.europa.eu/data/datasets",
+   "https://data.ecb.europa.eu/help/api/overview",
+   "https://data.ecb.europa.eu/data/datasets/LFSI?dataset%5B0%5D=Labour%20Force%20Survey%20Indicators%20%28LFSI%29&amp;advFilterDataset%5B0%5D=Labour%20Force%20Survey%20Indicators%20%28LFSI%29&amp;layerType=AL&amp;showDatasetModal=false",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/data-information?dataset%5B0%5D=Labour%20Force%20Survey%20Indicators%20%28LFSI%29&amp;advFilterDataset%5B0%5D=Labour%20Force%20Survey%20Indicators%20%28LFSI%29&amp;layerType=AL&amp;showDatasetModal=false",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/structure?dataset%5B0%5D=Labour%20Force%20Survey%20Indicators%20%28LFSI%29&amp;advFilterDataset%5B0%5D=Labour%20Force%20Survey%20Indicators%20%28LFSI%29&amp;layerType=AL&amp;showDatasetModal=false",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/publications?dataset%5B0%5D=Labour%20Force%20Survey%20Indicators%20%28LFSI%29&amp;advFilterDataset%5B0%5D=Labour%20Force%20Survey%20Indicators%20%28LFSI%29&amp;layerType=AL&amp;showDatasetModal=false",
+   "https://data.ecb.europa.eu/data/datasets/LFSI?dataset%5B0%5D=Labour%20Force%20Survey%20Indicators%20%28LFSI%29&amp;advFilterDataset%5B0%5D=Labour%20Force%20Survey%20Indicators%20%28LFSI%29&amp;layerType=KL&amp;showDatasetModal=false",
+   "https://data.ecb.europa.eu/data/datasets/LFSI?dataset%5B0%5D=Labour%20Force%20Survey%20Indicators%20%28LFSI%29&amp;advFilterDataset%5B0%5D=Labour%20Force%20Survey%20Indicators%20%28LFSI%29&amp;layerType=DL&amp;showDatasetModal=false",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.I10.S.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.AT.S.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.BE.S.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.BG.S.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.HR.S.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.CY.S.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.CZ.S.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.DK.S.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.B6.S.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.B5.S.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.EE.S.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.U2.S.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.I9.S.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.FI.S.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.FR.S.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.DE.S.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.GR.S.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.HU.S.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.IE.S.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.IT.S.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.JP.S.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.LV.S.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.LT.S.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.LU.S.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.MT.S.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.NL.S.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.PL.S.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.PT.S.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.RO.S.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.SK.S.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.SI.S.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.ES.S.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.SE.S.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.US.S.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.I10.S.UNEMPL.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.AT.S.UNEMPL.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.BE.S.UNEMPL.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.BG.S.UNEMPL.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.HR.S.UNEMPL.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.CY.S.UNEMPL.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.CZ.S.UNEMPL.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.DK.S.UNEMPL.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.B6.S.UNEMPL.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.B5.S.UNEMPL.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.EE.S.UNEMPL.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.U2.S.UNEMPL.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.I9.S.UNEMPL.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.FI.S.UNEMPL.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.FR.S.UNEMPL.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.DE.S.UNEMPL.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.GR.S.UNEMPL.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.HU.S.UNEMPL.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.IE.S.UNEMPL.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.IT.S.UNEMPL.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.JP.S.UNEMPL.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.LV.S.UNEMPL.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.LT.S.UNEMPL.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.LU.S.UNEMPL.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.MT.S.UNEMPL.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.NL.S.UNEMPL.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.PL.S.UNEMPL.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.PT.S.UNEMPL.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.RO.S.UNEMPL.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.SK.S.UNEMPL.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.SI.S.UNEMPL.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.ES.S.UNEMPL.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.SE.S.UNEMPL.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.US.S.UNEMPL.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.I10.S.UNEHRT.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.AT.S.UNEHRT.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.BE.S.UNEHRT.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.BG.S.UNEHRT.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.HR.S.UNEHRT.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.CY.S.UNEHRT.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.CZ.S.UNEHRT.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.DK.S.UNEHRT.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.B6.S.UNEHRT.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.B5.S.UNEHRT.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.EE.S.UNEHRT.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.U2.S.UNEHRT.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.I9.S.UNEHRT.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.FI.S.UNEHRT.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.FR.S.UNEHRT.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.DE.S.UNEHRT.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.GR.S.UNEHRT.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.HU.S.UNEHRT.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.IE.S.UNEHRT.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.IT.S.UNEHRT.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.LV.S.UNEHRT.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.LT.S.UNEHRT.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.LU.S.UNEHRT.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.MT.S.UNEHRT.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.NL.S.UNEHRT.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.PL.S.UNEHRT.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.PT.S.UNEHRT.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.RO.S.UNEHRT.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.SK.S.UNEHRT.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.SI.S.UNEHRT.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.ES.S.UNEHRT.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.SE.S.UNEHRT.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.US.S.UNEHRT.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.I10.S.UNEMPL.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.AT.S.UNEMPL.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.BE.S.UNEMPL.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.BG.S.UNEMPL.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.HR.S.UNEMPL.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.CY.S.UNEMPL.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.CZ.S.UNEMPL.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.DK.S.UNEMPL.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.B6.S.UNEMPL.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.B5.S.UNEMPL.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.EE.S.UNEMPL.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.U2.S.UNEMPL.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.I9.S.UNEMPL.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.FI.S.UNEMPL.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.FR.S.UNEMPL.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.DE.S.UNEMPL.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.GR.S.UNEMPL.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.HU.S.UNEMPL.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.IE.S.UNEMPL.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.IT.S.UNEMPL.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.LV.S.UNEMPL.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.LT.S.UNEMPL.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.LU.S.UNEMPL.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.MT.S.UNEMPL.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.NL.S.UNEMPL.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.PL.S.UNEMPL.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.PT.S.UNEMPL.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.RO.S.UNEMPL.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.SK.S.UNEMPL.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.SI.S.UNEMPL.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.ES.S.UNEMPL.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.SE.S.UNEMPL.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.US.S.UNEMPL.TOTAL0.15_24.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.I10.S.UNEHRT.TOTAL0.25_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.AT.S.UNEHRT.TOTAL0.25_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.BE.S.UNEHRT.TOTAL0.25_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.BG.S.UNEHRT.TOTAL0.25_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.HR.S.UNEHRT.TOTAL0.25_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.CY.S.UNEHRT.TOTAL0.25_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.CZ.S.UNEHRT.TOTAL0.25_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.DK.S.UNEHRT.TOTAL0.25_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.B6.S.UNEHRT.TOTAL0.25_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.B5.S.UNEHRT.TOTAL0.25_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.EE.S.UNEHRT.TOTAL0.25_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.U2.S.UNEHRT.TOTAL0.25_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.I9.S.UNEHRT.TOTAL0.25_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.FI.S.UNEHRT.TOTAL0.25_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.FR.S.UNEHRT.TOTAL0.25_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.DE.S.UNEHRT.TOTAL0.25_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.GR.S.UNEHRT.TOTAL0.25_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.HU.S.UNEHRT.TOTAL0.25_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.IE.S.UNEHRT.TOTAL0.25_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.IT.S.UNEHRT.TOTAL0.25_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.LV.S.UNEHRT.TOTAL0.25_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.LT.S.UNEHRT.TOTAL0.25_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.LU.S.UNEHRT.TOTAL0.25_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.MT.S.UNEHRT.TOTAL0.25_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.NL.S.UNEHRT.TOTAL0.25_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.PL.S.UNEHRT.TOTAL0.25_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.PT.S.UNEHRT.TOTAL0.25_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.RO.S.UNEHRT.TOTAL0.25_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.SK.S.UNEHRT.TOTAL0.25_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.SI.S.UNEHRT.TOTAL0.25_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.ES.S.UNEHRT.TOTAL0.25_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.SE.S.UNEHRT.TOTAL0.25_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.US.S.UNEHRT.TOTAL0.25_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.U2.N.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.AT.N.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.BE.N.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.BG.N.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.HR.N.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.CY.N.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.CZ.N.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.DK.N.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.B6.N.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.B5.N.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.EE.N.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.I9.N.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.I10.N.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.FI.N.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.FR.N.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.DE.N.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.GR.N.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.HU.N.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.IE.N.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.IT.N.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.JP.N.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.LV.N.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.LT.N.UNEHRT.TOTAL0.15_74.T",
+   "https://data.ecb.europa.eu/data/datasets/LFSI/LFSI.M.LU.N.UNEHRT.TOTAL0.15_74.T"
+  ],
+  "n_endpoints": 200,
+  "vault_sha": "2e4851bef8edc5f4d95b",
+  "host": "data.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Drewry - Service Expertise - Carrier Strategy Workshops",
+  "url": "https://www.drewry.co.uk/supply-chain-advisors/supply-chain-expertise/carrier-strategy-workshops",
+  "published": "2026-09-21T08:32:27+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "flow",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "En",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "23cd209bc229cc0c01c2",
+  "host": "www.drewry.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/ETXEUR",
+  "published": "2026-09-21T08:32:28+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/etxeur/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/etxeur/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/etxeur/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/etxeur/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/etxeur/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/etxeur/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/etxeur/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/etxeur/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/etxeur/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/etxeur/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/etxeur/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/etxeur/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/etxeur/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/etxeur/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/etxeur/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/etxeur/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/etxeur/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/etxeur/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/etxeur/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/etxeur/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/etxeur/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/etxeur/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/etxeur/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/etxeur/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/etxeur/2010"
+  ],
+  "n_endpoints": 29,
+  "vault_sha": "ebeb319913c7eacd5a9c",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/EURCZK",
+  "published": "2026-09-21T08:32:30+00:00",
+  "symbols": [
+   "EURCZK"
+  ],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurczk/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurczk/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurczk/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurczk/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurczk/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurczk/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurczk/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurczk/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurczk/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurczk/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurczk/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurczk/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurczk/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurczk/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurczk/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurczk/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurczk/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurczk/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurczk/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurczk/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurczk/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurczk/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurczk/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurczk/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurczk/2010"
+  ],
+  "n_endpoints": 29,
+  "vault_sha": "723df15d3532c357754d",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/EURSEK",
+  "published": "2026-09-21T08:32:32+00:00",
+  "symbols": [
+   "EURSEK"
+  ],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eursek/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eursek/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eursek/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eursek/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eursek/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eursek/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eursek/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eursek/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eursek/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eursek/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eursek/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eursek/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eursek/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eursek/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eursek/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eursek/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eursek/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eursek/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eursek/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eursek/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eursek/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eursek/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eursek/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eursek/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eursek/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eursek/2009",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eursek/2008"
+  ],
+  "n_endpoints": 31,
+  "vault_sha": "8249fa465be8ccc0c187",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/GBPAUD",
+  "published": "2026-09-21T08:32:34+00:00",
+  "symbols": [
+   "GBPAUD"
+  ],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpaud/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpaud/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpaud/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpaud/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpaud/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpaud/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpaud/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpaud/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpaud/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpaud/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpaud/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpaud/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpaud/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpaud/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpaud/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpaud/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpaud/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpaud/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpaud/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpaud/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpaud/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpaud/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpaud/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpaud/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpaud/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpaud/2009",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpaud/2008",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpaud/2007"
+  ],
+  "n_endpoints": 32,
+  "vault_sha": "a08adca1dbc47ba6b2fd",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/GBPNZD",
+  "published": "2026-09-21T08:32:36+00:00",
+  "symbols": [
+   "GBPNZD"
+  ],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpnzd/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpnzd/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpnzd/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpnzd/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpnzd/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpnzd/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpnzd/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpnzd/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpnzd/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpnzd/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpnzd/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpnzd/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpnzd/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpnzd/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpnzd/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpnzd/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpnzd/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpnzd/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpnzd/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpnzd/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpnzd/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpnzd/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpnzd/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpnzd/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpnzd/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpnzd/2009",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpnzd/2008"
+  ],
+  "n_endpoints": 31,
+  "vault_sha": "f08b2490d8dd64a6175a",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/JPXJPY",
+  "published": "2026-09-21T08:32:38+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/jpxjpy/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/jpxjpy/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/jpxjpy/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/jpxjpy/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/jpxjpy/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/jpxjpy/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/jpxjpy/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/jpxjpy/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/jpxjpy/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/jpxjpy/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/jpxjpy/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/jpxjpy/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/jpxjpy/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/jpxjpy/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/jpxjpy/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/jpxjpy/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/jpxjpy/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/jpxjpy/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/jpxjpy/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/jpxjpy/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/jpxjpy/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/jpxjpy/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/jpxjpy/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/jpxjpy/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/jpxjpy/2010"
+  ],
+  "n_endpoints": 29,
+  "vault_sha": "1216b8d2846980b85ebf",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/UDXUSD",
+  "published": "2026-09-21T08:32:40+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/udxusd/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/udxusd/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/udxusd/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/udxusd/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/udxusd/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/udxusd/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/udxusd/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/udxusd/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/udxusd/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/udxusd/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/udxusd/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/udxusd/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/udxusd/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/udxusd/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/udxusd/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/udxusd/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/udxusd/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/udxusd/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/udxusd/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/udxusd/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/udxusd/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/udxusd/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/udxusd/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/udxusd/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/udxusd/2010"
+  ],
+  "n_endpoints": 29,
+  "vault_sha": "b1fb52d00baa914fcd40",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/USDCZK",
+  "published": "2026-09-21T08:32:42+00:00",
+  "symbols": [
+   "USDCZK"
+  ],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdczk/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdczk/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdczk/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdczk/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdczk/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdczk/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdczk/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdczk/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdczk/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdczk/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdczk/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdczk/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdczk/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdczk/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdczk/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdczk/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdczk/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdczk/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdczk/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdczk/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdczk/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdczk/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdczk/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdczk/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdczk/2010"
+  ],
+  "n_endpoints": 29,
+  "vault_sha": "c01dc947450a234ad3fd",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/USDSEK",
+  "published": "2026-09-21T08:32:44+00:00",
+  "symbols": [
+   "USDSEK"
+  ],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdsek/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdsek/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdsek/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdsek/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdsek/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdsek/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdsek/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdsek/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdsek/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdsek/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdsek/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdsek/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdsek/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdsek/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdsek/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdsek/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdsek/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdsek/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdsek/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdsek/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdsek/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdsek/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdsek/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdsek/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdsek/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdsek/2009",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/usdsek/2008"
+  ],
+  "n_endpoints": 31,
+  "vault_sha": "51763268546a0589c76d",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/WTIUSD",
+  "published": "2026-09-21T08:32:46+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/wtiusd/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/wtiusd/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/wtiusd/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/wtiusd/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/wtiusd/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/wtiusd/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/wtiusd/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/wtiusd/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/wtiusd/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/wtiusd/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/wtiusd/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/wtiusd/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/wtiusd/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/wtiusd/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/wtiusd/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/wtiusd/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/wtiusd/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/wtiusd/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/wtiusd/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/wtiusd/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/wtiusd/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/wtiusd/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/wtiusd/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/wtiusd/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/wtiusd/2010"
+  ],
+  "n_endpoints": 29,
+  "vault_sha": "5db12092e86962d1683a",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/XAUEUR",
+  "published": "2026-09-21T08:32:48+00:00",
+  "symbols": [
+   "XAUEUR"
+  ],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/xaueur/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/xaueur/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/xaueur/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/xaueur/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/xaueur/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/xaueur/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/xaueur/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/xaueur/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/xaueur/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/xaueur/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/xaueur/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/xaueur/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/xaueur/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/xaueur/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/xaueur/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/xaueur/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/xaueur/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/xaueur/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/xaueur/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/xaueur/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/xaueur/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/xaueur/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/xaueur/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/xaueur/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/xaueur/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/xaueur/2009"
+  ],
+  "n_endpoints": 30,
+  "vault_sha": "fa121ba031de9823a487",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/AUDNZD",
+  "published": "2026-09-21T08:32:50+00:00",
+  "symbols": [
+   "AUDNZD"
+  ],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/audnzd/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/audnzd/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/audnzd/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/audnzd/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/audnzd/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/audnzd/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/audnzd/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/audnzd/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/audnzd/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/audnzd/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/audnzd/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/audnzd/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/audnzd/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/audnzd/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/audnzd/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/audnzd/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/audnzd/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/audnzd/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/audnzd/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/audnzd/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/audnzd/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/audnzd/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/audnzd/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/audnzd/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/audnzd/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/audnzd/2009",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/audnzd/2008",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/audnzd/2007"
+  ],
+  "n_endpoints": 32,
+  "vault_sha": "f166fa3627fd7756dc2c",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/CADCHF",
+  "published": "2026-09-21T08:32:52+00:00",
+  "symbols": [
+   "CADCHF"
+  ],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/cadchf/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/cadchf/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/cadchf/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/cadchf/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/cadchf/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/cadchf/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/cadchf/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/cadchf/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/cadchf/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/cadchf/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/cadchf/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/cadchf/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/cadchf/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/cadchf/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/cadchf/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/cadchf/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/cadchf/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/cadchf/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/cadchf/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/cadchf/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/cadchf/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/cadchf/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/cadchf/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/cadchf/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/cadchf/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/cadchf/2009",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/cadchf/2008"
+  ],
+  "n_endpoints": 31,
+  "vault_sha": "163d23c2b235057964bb",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/EURDKK",
+  "published": "2026-09-21T08:32:54+00:00",
+  "symbols": [
+   "EURDKK"
+  ],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurdkk/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurdkk/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurdkk/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurdkk/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurdkk/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurdkk/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurdkk/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurdkk/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurdkk/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurdkk/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurdkk/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurdkk/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurdkk/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurdkk/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurdkk/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurdkk/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurdkk/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurdkk/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurdkk/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurdkk/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurdkk/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurdkk/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurdkk/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurdkk/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurdkk/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurdkk/2009",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurdkk/2008"
+  ],
+  "n_endpoints": 31,
+  "vault_sha": "c4d2f2da642ed1b5065e",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/EURNOK",
+  "published": "2026-09-21T08:32:56+00:00",
+  "symbols": [
+   "EURNOK"
+  ],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurnok/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurnok/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurnok/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurnok/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurnok/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurnok/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurnok/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurnok/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurnok/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurnok/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurnok/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurnok/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurnok/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurnok/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurnok/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurnok/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurnok/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurnok/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurnok/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurnok/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurnok/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurnok/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurnok/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurnok/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurnok/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurnok/2009",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurnok/2008"
+  ],
+  "n_endpoints": 31,
+  "vault_sha": "301fcd74e9b07e8b7bfe",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/EURTRY",
+  "published": "2026-09-21T08:32:58+00:00",
+  "symbols": [
+   "EURTRY"
+  ],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurtry/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurtry/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurtry/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurtry/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurtry/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurtry/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurtry/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurtry/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurtry/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurtry/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurtry/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurtry/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurtry/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurtry/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurtry/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurtry/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurtry/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurtry/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurtry/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurtry/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurtry/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurtry/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurtry/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurtry/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/eurtry/2010"
+  ],
+  "n_endpoints": 29,
+  "vault_sha": "9ffd06f317b2a49d7dc6",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/GBPCAD",
+  "published": "2026-09-21T08:33:00+00:00",
+  "symbols": [
+   "GBPCAD"
+  ],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpcad/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpcad/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpcad/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpcad/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpcad/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpcad/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpcad/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpcad/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpcad/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpcad/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpcad/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpcad/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpcad/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpcad/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpcad/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpcad/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpcad/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpcad/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpcad/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpcad/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpcad/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpcad/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpcad/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpcad/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpcad/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpcad/2009",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpcad/2008",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/gbpcad/2007"
+  ],
+  "n_endpoints": 32,
+  "vault_sha": "84dd5cef528035099913",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/NSXUSD",
+  "published": "2026-09-21T08:33:02+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/nsxusd/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/nsxusd/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/nsxusd/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/nsxusd/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/nsxusd/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/nsxusd/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/nsxusd/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/nsxusd/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/nsxusd/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/nsxusd/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/nsxusd/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/nsxusd/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/nsxusd/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/nsxusd/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/nsxusd/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/nsxusd/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/nsxusd/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/nsxusd/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/nsxusd/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/nsxusd/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/nsxusd/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/nsxusd/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/nsxusd/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/nsxusd/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/metastock/1-minute-bar-quotes/nsxusd/2010"
+  ],
+  "n_endpoints": 29,
+  "vault_sha": "35f967841c837c125fa3",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Canadian Dollar vs Japanese Yen (CADJPY) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/CADJPY/",
+  "published": "2026-09-21T08:33:03+00:00",
+  "symbols": [
+   "CADJPY",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "407a66638b660abf3801",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "001 The time of trading session 00:05 - 23:55 Term currency JPY 3-days swap Wednesday Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "session",
+     "swap",
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "session",
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "yen"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "7beeccf822a6"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Swiss Franc vs Japanese Yen (CHFJPY) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/CHFJPY/",
+  "published": "2026-09-21T08:33:04+00:00",
+  "symbols": [
+   "CHFJPY",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "65930ca265192b60ca9b",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "001 The time of trading session 00:05 - 23:55 Term currency JPY 3-days swap Wednesday Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "session",
+     "swap",
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "session",
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "yen"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "7beeccf822a6"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs Australian Dollar (GBPAUD) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/GBPAUD/",
+  "published": "2026-09-21T08:33:06+00:00",
+  "symbols": [
+   "GBPAUD",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "cdd7a8fd10333a73696b",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "00001 The time of trading session 00:05 - 23:55 Term currency AUD 3-days swap Wednesday Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "session",
+     "swap",
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "session",
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "pound"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "f7a068ba02ca"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs Canadian Dollar (GBPCAD) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/GBPCAD/",
+  "published": "2026-09-21T08:33:08+00:00",
+  "symbols": [
+   "GBPCAD",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "cff42e2603a865688237",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "00001 The time of trading session 00:05 - 23:55 Term currency CAD 3-days swap Wednesday Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "session",
+     "swap",
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "session",
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "pound"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "fac251f19497"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs Swiss Franc (GBPCHF) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/GBPCHF/",
+  "published": "2026-09-21T08:33:10+00:00",
+  "symbols": [
+   "GBPCHF",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "35d992900443fe64ff13",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "00001 The time of trading session 00:05 - 23:55 Term currency CHF 3-days swap Wednesday Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "session",
+     "swap",
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "session",
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "pound"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "2a0d66b70e12"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs Japanese Yen (GBPJPY) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/GBPJPY/",
+  "published": "2026-09-21T08:33:12+00:00",
+  "symbols": [
+   "GBPJPY",
+   "GBPUSD",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "f3a79e9200e5f0a3c3ba",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "001 The time of trading session 00:05 - 23:55 Term currency JPY 3-days swap Wednesday Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "session",
+     "swap",
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "session",
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD",
+      "USDJPY",
+      "GBPJPY"
+     ],
+     "mentioned": [
+      "pound",
+      "yen",
+      "gbpjpy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "7beeccf822a6"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs New Zealand Dollar (GBPNZD) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/GBPNZD/",
+  "published": "2026-09-21T08:33:14+00:00",
+  "symbols": [
+   "GBPNZD",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "128f65da06e0d21eccaa",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "00001 The time of trading session 00:05 - 23:55 Term currency NZD 3-days swap Wednesday Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "session",
+     "swap",
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "session",
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "pound"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "9f7eace35416"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs US Dollar (GBPUSD) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/GBPUSD/",
+  "published": "2026-09-21T08:33:16+00:00",
+  "symbols": [
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "bb8c48042edbbb8eb844",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "00001 The time of trading session 00:05 - 23:55 Term currency USD 3-days swap Wednesday Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "session",
+     "swap",
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "session",
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "pound"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "d3e901be63e1"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Euro vs Australian Dollar (EURAUD) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/EURAUD/",
+  "published": "2026-09-21T08:33:18+00:00",
+  "symbols": [
+   "EURAUD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "dcdcb06fc10da1f5a869",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Euro vs Canadian Dollar (EURCAD) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/EURCAD/",
+  "published": "2026-09-21T08:33:20+00:00",
+  "symbols": [
+   "EURCAD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "8b754552906c71b70519",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]

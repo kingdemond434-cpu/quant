@@ -1,0 +1,1785 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/GBPCAD",
+  "published": "2026-09-20T18:13:21+00:00",
+  "symbols": [
+   "GBPCAD"
+  ],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/gbpcad/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/gbpcad/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/gbpcad/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/gbpcad/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/gbpcad/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/gbpcad/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/gbpcad/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/gbpcad/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/gbpcad/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/gbpcad/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/gbpcad/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/gbpcad/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/gbpcad/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/gbpcad/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/gbpcad/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/gbpcad/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/gbpcad/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/gbpcad/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/gbpcad/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/gbpcad/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/gbpcad/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/gbpcad/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/gbpcad/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/gbpcad/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/gbpcad/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/gbpcad/2009",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/gbpcad/2008",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/gbpcad/2007"
+  ],
+  "n_endpoints": 32,
+  "vault_sha": "3998334103ca815cf50a",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/NSXUSD",
+  "published": "2026-09-20T18:13:22+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/nsxusd/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/nsxusd/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/nsxusd/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/nsxusd/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/nsxusd/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/nsxusd/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/nsxusd/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/nsxusd/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/nsxusd/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/nsxusd/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/nsxusd/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/nsxusd/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/nsxusd/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/nsxusd/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/nsxusd/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/nsxusd/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/nsxusd/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/nsxusd/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/nsxusd/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/nsxusd/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/nsxusd/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/nsxusd/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/nsxusd/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/nsxusd/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/nsxusd/2010"
+  ],
+  "n_endpoints": 29,
+  "vault_sha": "91afcdfd76668b0ece36",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/UKXGBP",
+  "published": "2026-09-20T18:13:24+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/ukxgbp/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/ukxgbp/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/ukxgbp/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/ukxgbp/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/ukxgbp/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/ukxgbp/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/ukxgbp/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/ukxgbp/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/ukxgbp/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/ukxgbp/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/ukxgbp/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/ukxgbp/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/ukxgbp/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/ukxgbp/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/ukxgbp/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/ukxgbp/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/ukxgbp/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/ukxgbp/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/ukxgbp/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/ukxgbp/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/ukxgbp/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/ukxgbp/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/ukxgbp/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/ukxgbp/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/ukxgbp/2010"
+  ],
+  "n_endpoints": 29,
+  "vault_sha": "1d7add70fb30d2153383",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/USDDKK",
+  "published": "2026-09-20T18:13:26+00:00",
+  "symbols": [
+   "USDDKK"
+  ],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usddkk/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usddkk/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usddkk/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usddkk/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usddkk/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usddkk/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usddkk/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usddkk/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usddkk/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usddkk/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usddkk/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usddkk/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usddkk/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usddkk/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usddkk/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usddkk/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usddkk/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usddkk/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usddkk/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usddkk/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usddkk/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usddkk/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usddkk/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usddkk/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usddkk/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usddkk/2009",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usddkk/2008"
+  ],
+  "n_endpoints": 31,
+  "vault_sha": "cb6c16c86f15634b5b3a",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/USDSGD",
+  "published": "2026-09-20T18:13:28+00:00",
+  "symbols": [
+   "USDSGD"
+  ],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usdsgd/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usdsgd/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usdsgd/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usdsgd/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usdsgd/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usdsgd/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usdsgd/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usdsgd/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usdsgd/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usdsgd/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usdsgd/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usdsgd/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usdsgd/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usdsgd/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usdsgd/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usdsgd/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usdsgd/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usdsgd/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usdsgd/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usdsgd/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usdsgd/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usdsgd/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usdsgd/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usdsgd/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usdsgd/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usdsgd/2009",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/usdsgd/2008"
+  ],
+  "n_endpoints": 31,
+  "vault_sha": "fe3b737e8ec1e94bac34",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/XAGUSD",
+  "published": "2026-09-20T18:13:30+00:00",
+  "symbols": [
+   "XAGUSD"
+  ],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xagusd/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xagusd/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xagusd/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xagusd/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xagusd/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xagusd/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xagusd/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xagusd/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xagusd/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xagusd/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xagusd/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xagusd/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xagusd/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xagusd/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xagusd/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xagusd/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xagusd/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xagusd/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xagusd/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xagusd/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xagusd/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xagusd/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xagusd/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xagusd/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xagusd/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xagusd/2009"
+  ],
+  "n_endpoints": 30,
+  "vault_sha": "8f0cc879666f5ddbc98e",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/XAUGBP",
+  "published": "2026-09-20T18:13:32+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xaugbp/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xaugbp/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xaugbp/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xaugbp/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xaugbp/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xaugbp/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xaugbp/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xaugbp/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xaugbp/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xaugbp/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xaugbp/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xaugbp/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xaugbp/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xaugbp/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xaugbp/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xaugbp/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xaugbp/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xaugbp/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xaugbp/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xaugbp/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xaugbp/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xaugbp/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xaugbp/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xaugbp/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xaugbp/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/xaugbp/2009"
+  ],
+  "n_endpoints": 30,
+  "vault_sha": "993381845895876377ea",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "BitCoin vs US Dollar (BTCUSD) | ProCent | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-cent/BTCUSD/",
+  "published": "2026-09-20T18:13:33+00:00",
+  "symbols": [
+   "BTCUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "fe476350091232b982c3",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Ethereum vs US Dollar (ETHUSD) | ProCent | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-cent/ETHUSD/",
+  "published": "2026-09-20T18:13:35+00:00",
+  "symbols": [
+   "ETHUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "21929201f95deb7789ef",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Ripple vs US Dollar (XRPUSD) | ProCent | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-cent/XRPUSD/",
+  "published": "2026-09-20T18:13:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "6b429a6a66d7f72d2728",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Solana vs US Dollar (SOLUSD) | ProCent | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-cent/SOLUSD/",
+  "published": "2026-09-20T18:13:39+00:00",
+  "symbols": [
+   "SOLUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "5df9b3748e64f053a0c8",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Cardano vs US Dollar (ADAUSD) | ProCent | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-cent/ADAUSD/",
+  "published": "2026-09-20T18:13:41+00:00",
+  "symbols": [
+   "ADAUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "af17560f16e0cc1d331e",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Dogecoin vs US Dollar (DOGEUSD) | ProCent | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-cent/DOGEUSD/",
+  "published": "2026-09-20T18:13:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "3fb91c494191b2884f9e",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Australian Dollar vs Canadian Dollar (AUDCAD.p) | ProCent | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-cent/AUDCAD.p/",
+  "published": "2026-09-20T18:13:45+00:00",
+  "symbols": [
+   "AUDCAD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "2e4a79c12f10a98f3748",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations?Status=Dormant&dir=ASC&col=Date",
+  "published": "2026-09-20T18:13:46+00:00",
+  "symbols": [
+   "GBPUSD",
+   "SUGAR",
+   "COTTON",
+   "COFARA",
+   "USCOCOA"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "277fde2ef7fec6f9a1aa",
+  "host": "www.cftc.gov",
+  "claims": [
+   {
+    "claim": "Effective as of February 28, 2012 there is no remaining open interest in contracts at CCFE and all contracts have been delisted.",
+    "lang": "en",
+    "quantities": [
+     "open interest"
+    ],
+    "direction": [
+     "contracts"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD",
+      "SUGAR",
+      "COTTON",
+      "COFARA",
+      "USCOCOA"
+     ],
+     "mentioned": [
+      "pound",
+      "sugar",
+      "cotton",
+      "coffee",
+      "cocoa"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "XAUUSD",
+      "EURUSD",
+      "USDJPY"
+     ],
+     "channels": [
+      "commitments of traders: positioning: CFTC -> FX and gold"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "be01c96d67b4"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations?Status=Dormant&dir=ASC&col=Remarks",
+  "published": "2026-09-20T18:13:48+00:00",
+  "symbols": [
+   "GBPUSD",
+   "SUGAR",
+   "COTTON",
+   "COFARA",
+   "USCOCOA"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f0d12d3d43eaba5aaff2",
+  "host": "www.cftc.gov",
+  "claims": [
+   {
+    "claim": "Effective as of February 28, 2012 there is no remaining open interest in contracts at CCFE and all contracts have been delisted.",
+    "lang": "en",
+    "quantities": [
+     "open interest"
+    ],
+    "direction": [
+     "contracts"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD",
+      "SUGAR",
+      "COTTON",
+      "COFARA",
+      "USCOCOA"
+     ],
+     "mentioned": [
+      "pound",
+      "sugar",
+      "cotton",
+      "coffee",
+      "cocoa"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "XAUUSD",
+      "EURUSD",
+      "USDJPY"
+     ],
+     "channels": [
+      "commitments of traders: positioning: CFTC -> FX and gold"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "be01c96d67b4"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations?Status=Dormant&dir=ASC&col=AssociatedDocuments",
+  "published": "2026-09-20T18:13:50+00:00",
+  "symbols": [
+   "GBPUSD",
+   "SUGAR",
+   "COTTON",
+   "COFARA",
+   "USCOCOA"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "44d7e2e228f840f8d82e",
+  "host": "www.cftc.gov",
+  "claims": [
+   {
+    "claim": "Effective as of February 28, 2012 there is no remaining open interest in contracts at CCFE and all contracts have been delisted.",
+    "lang": "en",
+    "quantities": [
+     "open interest"
+    ],
+    "direction": [
+     "contracts"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD",
+      "SUGAR",
+      "COTTON",
+      "COFARA",
+      "USCOCOA"
+     ],
+     "mentioned": [
+      "pound",
+      "sugar",
+      "cotton",
+      "coffee",
+      "cocoa"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "XAUUSD",
+      "EURUSD",
+      "USDJPY"
+     ],
+     "channels": [
+      "commitments of traders: positioning: CFTC -> FX and gold"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "be01c96d67b4"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/34534",
+  "published": "2026-09-20T18:13:51+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f8101f695cc41637ab78",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/54",
+  "published": "2026-09-20T18:13:53+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "27d09380972c1498423f",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/34533",
+  "published": "2026-09-20T18:13:55+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3d9a5514f08ada0f7d90",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/72",
+  "published": "2026-09-20T18:13:57+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e55c5685cb72dbd80b46",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Proportion of seats held by women in national parliaments (%) | Data",
+  "url": "https://data.worldbank.org/indicator/SG.GEN.PARL.ZS",
+  "published": "2026-09-20T18:13:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/en/indicator/SG.GEN.PARL.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "aeb0a27e1f45bc233345",
+  "host": "data.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Proportion of time spent on unpaid domestic and care work, female (% of 24 hour day) | Data",
+  "url": "https://data.worldbank.org/indicator/SG.TIM.UWRK.FE",
+  "published": "2026-09-20T18:14:02+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/en/indicator/SG.TIM.UWRK.FE?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "fc67ba1c275343338e0d",
+  "host": "data.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Proportion of time spent on unpaid domestic and care work, male (% of 24 hour day) | Data",
+  "url": "https://data.worldbank.org/indicator/SG.TIM.UWRK.MA",
+  "published": "2026-09-20T18:14:02+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/en/indicator/SG.TIM.UWRK.MA?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "564919684a66680484d4",
+  "host": "data.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Teenage mothers (% of women ages 15-19 who have had children or are currently pregnant) | Data",
+  "url": "https://data.worldbank.org/indicator/SP.MTR.1519.ZS",
+  "published": "2026-09-20T18:14:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/en/indicator/SP.MTR.1519.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "950ac4f4b77c665d9e5e",
+  "host": "data.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Unemployment, youth female (% of female labor force ages 15-24) (modeled ILO estimate) | Data",
+  "url": "https://data.worldbank.org/indicator/SL.UEM.1524.FE.ZS",
+  "published": "2026-09-20T18:14:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/en/indicator/SL.UEM.1524.FE.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "28fba51f62c9a58d84b2",
+  "host": "data.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Unemployment, youth male (% of male labor force ages 15-24) (modeled ILO estimate) | Data",
+  "url": "https://data.worldbank.org/indicator/SL.UEM.1524.MA.ZS",
+  "published": "2026-09-20T18:14:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/en/indicator/SL.UEM.1524.MA.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "010e7e68bf49e540f222",
+  "host": "data.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Vulnerable employment, female (% of female employment) (modeled ILO estimate) | Data",
+  "url": "https://data.worldbank.org/indicator/SL.EMP.VULN.FE.ZS",
+  "published": "2026-09-20T18:14:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/en/indicator/SL.EMP.VULN.FE.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "2fb6fd5b4f9d9f6f3d6d",
+  "host": "data.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Government budget credibility and the impact of COVID-19",
+  "url": "http://datatopics.worldbank.org/world-development-indicators/stories/government-budget-credibility-and-the-impact-of-covid-19.html",
+  "published": "2026-09-20T18:14:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "http://databank.worldbank.org/data/download/WDI_excel.zip",
+   "http://databank.worldbank.org/data/download/WDI_csv.zip"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "d6e7fd2e128af2a58df2",
+  "host": "datatopics.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "WDI - Middle-income countries taking greater share of global economy",
+  "url": "http://datatopics.worldbank.org/world-development-indicators/stories/statistical-performance-indicators.html",
+  "published": "2026-09-20T18:14:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "http://databank.worldbank.org/data/download/WDI_excel.zip",
+   "http://databank.worldbank.org/data/download/WDI_csv.zip"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "a48ceb6f1c2981145ce0",
+  "host": "datatopics.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "WDI - Global Links",
+  "url": "http://datatopics.worldbank.org/world-development-indicators//themes/global-links.html",
+  "published": "2026-09-20T18:14:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "cc427edca33ea932fc71",
+  "host": "datatopics.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Purchasing Power Parities \u2013 putting a global public good to work in socioeconomic analyses",
+  "url": "http://datatopics.worldbank.org/world-development-indicators/stories/purchasing-power-parities-putting-global-public-good-socioeconomic-analyses.html",
+  "published": "2026-09-20T18:14:20+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "http://databank.worldbank.org/data/download/WDI_excel.zip",
+   "http://databank.worldbank.org/data/download/WDI_csv.zip"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "37182715a56a9947c63f",
+  "host": "datatopics.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "WDI - World Immunization Week: Lessons from the fight to contain measles",
+  "url": "http://datatopics.worldbank.org/world-development-indicators/stories/world-immunization-week-lessons-from-the-fight-to-contain-measles.html",
+  "published": "2026-09-20T18:14:22+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "http://databank.worldbank.org/data/download/WDI_excel.zip",
+   "http://databank.worldbank.org/data/download/WDI_csv.zip"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "bc5c01a22acb5d731298",
+  "host": "datatopics.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "WDI - Female Genital Mutilation is still practiced around the world",
+  "url": "http://datatopics.worldbank.org/world-development-indicators/stories/fgm-still-practiced-around-the-world.html",
+  "published": "2026-09-20T18:14:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "http://databank.worldbank.org/data/download/WDI_excel.zip",
+   "http://databank.worldbank.org/data/download/WDI_csv.zip"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "1800556c77fb10b9add9",
+  "host": "datatopics.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "WDI - The global distribution of air pollution",
+  "url": "http://datatopics.worldbank.org/world-development-indicators/stories/the-global-distribution-of-air-pollution.html",
+  "published": "2026-09-20T18:14:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "http://databank.worldbank.org/data/download/WDI_excel.zip",
+   "http://databank.worldbank.org/data/download/WDI_csv.zip"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "4adf0465e30c3ca69c2a",
+  "host": "datatopics.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u503a\u5238\u6570\u636e-\u503a\u5238\u884c\u60c5-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u503a\u5238\u6570\u636e-\u503a\u5238\u884c\u60c5",
+  "published": "2026-09-20T18:14:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b551cd8c97eb640ae50f",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5b8f\u89c2\u884c\u4e1a-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u5b8f\u89c2\u884c\u4e1a",
+  "published": "2026-09-20T18:14:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "inventory",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-CN",
+  "endpoints": [
+   "https://bigquant.com/data/datasources/cn_macro_export_value_sitc_yearly"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5b0e145747f267d6b099",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5b8f\u89c2\u884c\u4e1a-\u751f\u732a-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u5b8f\u89c2\u884c\u4e1a-\u751f\u732a",
+  "published": "2026-09-20T18:14:31+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "43f7648b275bc1b0cf65",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5b8f\u89c2\u884c\u4e1a-\u7efc\u5408-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u5b8f\u89c2\u884c\u4e1a-\u7efc\u5408",
+  "published": "2026-09-20T18:14:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "42315c74ee910ba84887",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5b8f\u89c2\u884c\u4e1a-\u4eba\u53e3\u7edf\u8ba1-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u5b8f\u89c2\u884c\u4e1a-\u4eba\u53e3\u7edf\u8ba1",
+  "published": "2026-09-20T18:14:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "823393c98583272d8967",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5b8f\u89c2\u884c\u4e1a-\u5c31\u4e1a\u7edf\u8ba1-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u5b8f\u89c2\u884c\u4e1a-\u5c31\u4e1a\u7edf\u8ba1",
+  "published": "2026-09-20T18:14:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1f8eff8542e0bb73dafb",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5b8f\u89c2\u884c\u4e1a-\u5bf9\u5916\u7ecf\u8d38-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u5b8f\u89c2\u884c\u4e1a-\u5bf9\u5916\u7ecf\u8d38",
+  "published": "2026-09-20T18:14:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-CN",
+  "endpoints": [
+   "https://bigquant.com/data/datasources/cn_macro_export_value_sitc_yearly"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "d310e8b865e3d77d1708",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Easy steps how to adjust charts for the smooth backtesting [Video]",
+  "url": "https://desktop.forextester.com/views",
+  "published": "2026-09-20T18:14:41+00:00",
+  "symbols": [
+   "USDTRY"
+  ],
+  "timeframes": [
+   "H1",
+   "M5"
+  ],
+  "patterns": [],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://desktop.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "cdeccf9c613bb85fc06c",
+  "host": "desktop.forextester.com",
+  "claims": [
+   {
+    "claim": "Show bid level \u2014 displays at which price the sell order will be filled if you open a sell market order.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "sell"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8b8cb8e832f9"
+   },
+   {
+    "claim": "Show ask level \u2014 shows at which price the buy order will be filled if you open a buy market order.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "buy"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "ce58dd922d91"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Top 23 Exclusive Benefits of the Forex Trading Simulator [Screenshots]",
+  "url": "https://desktop.forextester.com/screens?screen=detailedstatistics",
+  "published": "2026-09-20T18:14:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://desktop.forextester.com/templates/pic/screens/export-to-excel.png",
+   "https://desktop.forextester.com/templates/pic/screens/download-new-data.png",
+   "https://desktop.forextester.com/download"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "d5135989c38859056512",
+  "host": "desktop.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Confused with Forex historical data? A simple way to manage it [Video]",
+  "url": "https://desktop.forextester.com/DataCenter",
+  "published": "2026-09-20T18:14:45+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1",
+   "M30"
+  ],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://desktop.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "16ceb70e0821aa35a7ec",
+  "host": "desktop.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "How to predict market moves easily in Forex Tester",
+  "url": "https://desktop.forextester.com/historical-forex-news",
+  "published": "2026-09-20T18:14:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://desktop.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "079007c677e9da291d58",
+  "host": "desktop.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Value your time? Save projects while using the best trading simulator",
+  "url": "https://desktop.forextester.com/projects",
+  "published": "2026-09-20T18:14:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://desktop.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "be452043703186b1ee69",
+  "host": "desktop.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Searching for the best settings of the Moving Averages? [Check here]",
+  "url": "https://desktop.forextester.com/optimizer",
+  "published": "2026-09-20T18:14:51+00:00",
+  "symbols": [],
+  "timeframes": [
+   "H1",
+   "INTRADAY",
+   "M1",
+   "M15",
+   "M30",
+   "M5"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://desktop.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "15494872523a3dd5b27f",
+  "host": "desktop.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "The Ceiling on the Number of Full-Time Employees of the Bank of Japan for Fiscal 2020 : \u65e5\u672c\u9280\u884c Bank of Japan",
+  "url": "https://www.boj.or.jp/en/about/activities/strategy/yosan/teiin2020.htm",
+  "published": "2026-09-20T18:14:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9df8a9ab8a45fcbb7312",
+  "host": "www.boj.or.jp",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "The Bank of Japan's Budget for Expenses for Fiscal 2020 : \u65e5\u672c\u9280\u884c Bank of Japan",
+  "url": "https://www.boj.or.jp/en/about/activities/strategy/yosan/yosan2020.htm",
+  "published": "2026-09-20T18:14:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "58c406cc720a0b1768f7",
+  "host": "www.boj.or.jp",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "The Ceiling on the Number of Full-Time Employees of the Bank of Japan for Fiscal 2019 : \u65e5\u672c\u9280\u884c Bank of Japan",
+  "url": "https://www.boj.or.jp/en/about/activities/strategy/yosan/teiin2019.htm",
+  "published": "2026-09-20T18:14:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2edb962a08bb7ec61968",
+  "host": "www.boj.or.jp",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u65e5\u672c\u9280\u884c\u306e\u5f53\u5ea7\u9810\u91d1\u53d6\u5f15\u307e\u305f\u306f\u8cb8\u51fa\u53d6\u5f15\u306e\u76f8\u624b\u65b9\u306b\u95a2\u3059\u308b\u9078\u5b9a\u57fa\u6e96 : \u65e5\u672c\u9280\u884c Bank of Japan",
+  "url": "https://www.boj.or.jp/paym/torihiki/touyo01.htm",
+  "published": "2026-09-20T18:14:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0158983b94a65073b356",
+  "host": "www.boj.or.jp",
+  "claims": [
+   {
+    "claim": "\u305f\u3060\u3057\u3001\u7533\u51fa\u8005\u306e\u6bcd\u56fd\u306e\u70ba\u66ff\u7ba1\u7406\u5236\u5ea6\u305d\u306e\u4ed6\u306e\u5236\u7d04\u304b\u3089\u3001\u7533\u51fa\u8005\u3068\u6bcd\u56fd\u3068\u306e\u9593\u306e\u652f\u6255\u6c7a\u6e08\u306b\u652f\u969c\u304c\u3042\u308b\u3001\u307e\u305f\u306f\u652f\u969c\u304c\u751f\u3058\u308b\u304a\u305d\u308c\u304c\u3042\u308b\u5834\u5408\u305d\u306e\u4ed6\u7279\u6bb5\u306e\u4e8b\u60c5\u306b\u3088\u308a\u7533\u51fa\u8005\u3068\u5f53\u5ea7\u9810\u91d1\u53d6\u5f15\u3092\u958b\u59cb\u3059\u308b\u3053\u3068\u304c\u9069\u5f53\u3067\u306a\u3044\u3068\u65e5\u672c\u9280\u884c\u304c\u5224\u65ad\u3059\u308b\u5834\u5408\u306b\u306f\u5f53\u5ea7\u9810\u91d1\u53d6\u5f15\u3092\u884c\u308f\u306a\u3044\u3082\u306e\u3068\u3059\u308b\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u91d1",
+     "\u9280"
+    ],
+    "direction": [
+     "\u6c7a\u6e08"
+    ],
+    "horizon": [
+     "\u65e5"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDJPY"
+     ],
+     "channels": [
+      "\u65e5\u672c\u9280\u884c: policy: BoJ / MoF intervention -> JPY"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "1cbf5f21e967"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5f53\u5ea7\u9810\u91d1\u53d6\u5f15\u306e\u958b\u59cb\u3092\u5e0c\u671b\u3059\u308b\u969b\u306e\u7533\u51fa\u306b\u95a2\u3059\u308b\u624b\u7d9a\u304d : \u65e5\u672c\u9280\u884c Bank of Japan",
+  "url": "https://www.boj.or.jp/paym/torihiki/touyo07.htm",
+  "published": "2026-09-20T18:15:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "ja",
+  "endpoints": [
+   "https://www.boj.or.jp/paym/torihiki/data/tou07h1.zip",
+   "https://www.boj.or.jp/paym/torihiki/data/tou07h2.zip"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "10fb7af448f103462eb8",
+  "host": "www.boj.or.jp",
+  "claims": [
+   {
+    "claim": "\uff081\uff09\u7533\u51fa\u8005\u3068\u306e\u5f53\u5ea7\u9810\u91d1\u53d6\u5f15\u306e\u958b\u59cb\u304c\u3001\u65e5\u672c\u9280\u884c\u6cd5\u7b2c1\u6761\u306b\u5b9a\u3081\u308b\u65e5\u672c\u9280\u884c\u306e\u76ee\u7684\u306e\u9054\u6210\u306b\u8cc7\u3059\u308b\u3053\u3068\uff08\u3059\u306a\u308f\u3061\u3001\u9280\u884c\u305d\u306e\u4ed6\u306e\u91d1\u878d\u6a5f\u95a2\u306e\u9593\u3067\u884c\u308f\u308c\u308b\u8cc7\u91d1\u6c7a\u6e08\u306e\u5186\u6ed1\u306e\u78ba\u4fdd\u3092\u56f3\u308a\u3001\u3082\u3063\u3066\u4fe1\u7528\u79e9\u5e8f\u306e\u7dad\u6301\u306b\u8cc7\u3059\u308b\u3068\u3044\u3046\u76ee\u7684\u306e\u9054\u6210\u306b\u8cc7\u3059\u308b\u3053\u3068\uff09 \uff082\uff09\u7533\u51fa\u8005\u306e\u696d\u52d9\u304a\u3088\u3073\u7d4c\u55b6\u306e\u5185\u5bb9\u306a\u3089\u3073\u306b\u4e8b\u52d9\u51e6\u7406\u4f53\u5236\u306b\u554f\u984c\u304c\u306a\u3044\u3053\u3068 \uff083\uff09\u7533\u51fa\u8005\u304c\u65e5\u672c\u9280\u884c\u6cd5\u7b2c37\u6761\u306b\u5b9a\u3081\u308b\u91d1\u878d\u6a5f\u95a2\u7b49\u3067\u3042\u308b\u5834\u5408\u306b\u306f\u3001\u540c\u6cd5\u7b2c44\u6761\u306b\u5b9a\u3081\u308b\u8003\u67fb\u306b\u95a2\u3059\u308b\u5951\u7d04\u306e\u7de0\u7d50\u306b\u5fdc\u3058\u308b\u3053\u3068\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u91d1",
+     "\u4fe1\u7528",
+     "\u9280"
+    ],
+    "direction": [
+     "\u6c7a\u6e08"
+    ],
+    "horizon": [
+     "\u65e5"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDJPY"
+     ],
+     "channels": [
+      "\u65e5\u672c\u9280\u884c: policy: BoJ / MoF intervention -> JPY"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "dd3915894b55"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u30ef\u30a4\u30ba\u30fb\u30da\u30a4\u30e1\u30f3\u30c4\u30fb\u30b8\u30e3\u30d1\u30f3\u682a\u5f0f\u4f1a\u793e\u3068\u306e\u5f53\u5ea7\u9810\u91d1\u53d6\u5f15\u306b\u95a2\u3059\u308b\u4ef6 : \u65e5\u672c\u9280\u884c Bank of Japan",
+  "url": "https://www.boj.or.jp/paym/torihiki/tori251021a.htm",
+  "published": "2026-09-20T18:15:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bf4a66a3773b3380b46d",
+  "host": "www.boj.or.jp",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "The Fed - Q&amp;As",
+  "url": "https://federalreserve.gov/monetarypolicy/review-of-monetary-policy-strategy-tools-and-communications-qas-2025.htm",
+  "published": "2026-09-20T18:15:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "875c2f9e8e8b11431043",
+  "host": "federalreserve.gov",
+  "claims": [
+   {
+    "claim": "and around the world running close to their effective lower bound.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "168ad70fb2fd"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "The Fed - Related Speeches",
+  "url": "https://federalreserve.gov/monetarypolicy/review-of-monetary-policy-strategy-tools-and-communications-related-speeches-2025.htm",
+  "published": "2026-09-20T18:15:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2c7c988953af5da9e97b",
+  "host": "federalreserve.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "The Fed - Historical Statements on Longer-Run Goals and Monetary Policy Strategy",
+  "url": "https://federalreserve.gov/monetarypolicy/historical-statements-on-longer-run-goals-and-monetary-policy-strategy.htm",
+  "published": "2026-09-20T18:15:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0ac103b93ce790c10fb5",
+  "host": "federalreserve.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "The Fed - Alternative Strategies: How Do They Work? How Might They Help?",
+  "url": "https://federalreserve.gov/econres/feds/alternative-strategies-how-do-they-work-how-might-they-help.htm",
+  "published": "2026-09-20T18:15:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://federalreserve.gov/econres/feds/files/feds2020068.zip"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "e757f01c577b51c9baee",
+  "host": "federalreserve.gov",
+  "claims": [
+   {
+    "claim": "economy\u2014including lower neutral interest rates and a flatter Phillips curve\u2014have challenged the ability of the current monetary policy framework to deliver on the Federal Open Market Committee\u2019s (FOMC) dual-mandate goals.",
+    "lang": "en",
+    "quantities": [
+     "curve",
+     "open"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "aac18b225687"
+   }
+  ],
+  "n_claims": 1
+ }
+]

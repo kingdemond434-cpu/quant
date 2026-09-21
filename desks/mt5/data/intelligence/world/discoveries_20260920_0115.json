@@ -1,0 +1,613 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "EdgeLabTrading | XAUUSD Mean-Reversion (Automation Ready) \u2014 Strategy by TomTrades86 \u2014 TradingView India",
+  "url": "https://in.tradingview.com/script/DtevgoMR/",
+  "published": "2026-09-20T01:14:30+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "INTRADAY",
+   "M15",
+   "M5"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://s3.tradingview.com/conversions_en.json",
+   "https://scanner-backend.tradingview.com/enum/ordered?id=metrics_full_name,metrics&lang=en&label-product=ytm-metrics-plan.json",
+   "https://static.tradingview.com/static/images/favicon/manifest.json"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "031c8d755b19f78ed72d",
+  "host": "in.tradingview.com",
+  "claims": [
+   {
+    "claim": "The Thesis: When Gold shows sustained intraday exhaustion at specific liquidity windows, the probability of a corrective bounce (Mean-Reversion) increases significantly.",
+    "lang": "en",
+    "quantities": [
+     "liquidity"
+    ],
+    "direction": [
+     "bounce"
+    ],
+    "horizon": [
+     "intraday"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "76e57f29d5a6"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\u7531TradingView\u793e\u533a\u6784\u5efa\u7684\u4ea4\u6613\u7b56\u7565\u548c\u6307\u6807",
+  "url": "https://cn.tradingview.com/scripts/",
+  "published": "2026-09-20T01:15:04+00:00",
+  "symbols": [
+   "EURUSD",
+   "GBPUSD",
+   "TARGET",
+   "XAUUSD",
+   "XTIUSD",
+   "XAGUSD",
+   "NAS100",
+   "US500",
+   "GER40",
+   "USDKRW",
+   "BTCUSD"
+  ],
+  "timeframes": [
+   "15M",
+   "5M",
+   "DAILY",
+   "H4",
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "breakout",
+   "carry",
+   "correlation",
+   "gap",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "zh-Hans",
+  "endpoints": [
+   "https://s3.tradingview.com/conversions_zh-Hans.json",
+   "https://scanner-backend.tradingview.com/enum/ordered?id=metrics_full_name,metrics&lang=zh-Hans&label-product=ytm-metrics-plan.json",
+   "https://static.tradingview.com/static/images/favicon/manifest.json"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "f4684492727552c2d43f",
+  "host": "cn.tradingview.com",
+  "claims": [
+   {
+    "claim": "A short simple moving average (DMA Length) is calculated, and the internal trend comparison uses that average's value from DMA Displace bars earlier, effectively lagging the filter by that many bars.",
+    "lang": "en",
+    "quantities": [
+     "trend"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "bars"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "NAS100",
+      "US500",
+      "GER40",
+      "EURUSD",
+      "GBPUSD",
+      "USDKRW",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "emas",
+      "silver",
+      "nasdaq",
+      "spy",
+      "dax",
+      "eurusd",
+      "gbpusd",
+      "won",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "498203a7a2db"
+   },
+   {
+    "claim": "Configure the Alerts group's action strings to match the JSON keys your webhook or automation platform expects, then use TradingView's \"Any alert() function call\" option to route long, short, close, objective-hit, and stop-hit events.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "long",
+     "short"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "NAS100",
+      "US500",
+      "GER40",
+      "EURUSD",
+      "GBPUSD",
+      "USDKRW",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "emas",
+      "silver",
+      "nasdaq",
+      "spy",
+      "dax",
+      "eurusd",
+      "gbpusd",
+      "won",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "9a129ca741b2"
+   },
+   {
+    "claim": "Enter a Sell position at or near the close of that candle.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "sell"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "NAS100",
+      "US500",
+      "GER40",
+      "EURUSD",
+      "GBPUSD",
+      "USDKRW",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "emas",
+      "silver",
+      "nasdaq",
+      "spy",
+      "dax",
+      "eurusd",
+      "gbpusd",
+      "won",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "3ede0aaced71"
+   },
+   {
+    "claim": "\u2696\ufe0f The cleanest version: a heavy long-pressure pool (big bubble, 8/10, already carrying a defended sweep) gets raided \u2014 price spears below it and stops out the longs \u2014 then snaps back and closes above it within a couple of bars on a volume surge, RSI stretched oversold.",
+    "lang": "en",
+    "quantities": [
+     "sweep",
+     "volume"
+    ],
+    "direction": [
+     "long",
+     "surge"
+    ],
+    "horizon": [
+     "bars"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "NAS100",
+      "US500",
+      "GER40",
+      "EURUSD",
+      "GBPUSD",
+      "USDKRW",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "emas",
+      "silver",
+      "nasdaq",
+      "spy",
+      "dax",
+      "eurusd",
+      "gbpusd",
+      "won",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "14b39bc7459d"
+   },
+   {
+    "claim": "Its lifecycle each bar is FEATURE \u25b8 STANDARDISE \u25b8 FORWARD \u25b8 APPLY: the network predicts the next bar's range, its up/down split and its direction, and those outputs feed straight back into the projection \u2014 the range forecast sharpens \u03b8 (and therefore the spacing of all eight levels and the expected-range box), the split skews the up-vs-down odds, and the direction feeds the secondary tilt.",
+    "lang": "en",
+    "quantities": [
+     "range"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "bar"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "NAS100",
+      "US500",
+      "GER40",
+      "EURUSD",
+      "GBPUSD",
+      "USDKRW",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "emas",
+      "silver",
+      "nasdaq",
+      "spy",
+      "dax",
+      "eurusd",
+      "gbpusd",
+      "won",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a7e3a29e9c1c"
+   },
+   {
+    "claim": "The fingerprint is ten causal, percentage-based ingredients read only from completed bars: 5-bar momentum, stochastic range position (14), RSI(14), 5-bar average range %, 5-bar average body %, a short-vs-medium momentum acceleration, ATR %, the ATR(14)/ATR(50) volatility-regime ratio, distance from the EMA(20) expressed in ATR units, and a volume ratio.",
+    "lang": "en",
+    "quantities": [
+     "momentum",
+     "range",
+     "volatility",
+     "volume"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "bars",
+     "bar"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "NAS100",
+      "US500",
+      "GER40",
+      "EURUSD",
+      "GBPUSD",
+      "USDKRW",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "emas",
+      "silver",
+      "nasdaq",
+      "spy",
+      "dax",
+      "eurusd",
+      "gbpusd",
+      "won",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "edf36be5dbb5"
+   },
+   {
+    "claim": "Use the expected-range box and projected High/Low as context for where the bar may reach \u2014 a reference for targets, fades and stop placement \u2014 not as an automatic entry.",
+    "lang": "en",
+    "quantities": [
+     "range"
+    ],
+    "direction": [
+     "fades"
+    ],
+    "horizon": [
+     "bar"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "NAS100",
+      "US500",
+      "GER40",
+      "EURUSD",
+      "GBPUSD",
+      "USDKRW",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "emas",
+      "silver",
+      "nasdaq",
+      "spy",
+      "dax",
+      "eurusd",
+      "gbpusd",
+      "won",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "f87d92ca9f1c"
+   },
+   {
+    "claim": "Glance at the network map and the Neural Forecast block to see whether the model reads the coming bar as expansion or contraction, and whether volatility is being sharpened up or down.",
+    "lang": "en",
+    "quantities": [
+     "volatility"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "bar"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "NAS100",
+      "US500",
+      "GER40",
+      "EURUSD",
+      "GBPUSD",
+      "USDKRW",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "emas",
+      "silver",
+      "nasdaq",
+      "spy",
+      "dax",
+      "eurusd",
+      "gbpusd",
+      "won",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "c3daa9665f2a"
+   }
+  ],
+  "n_claims": 12
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Gold Pullback Strategy [Backtest + Alerts] \u7531HaiUs30 \u63d0\u4f9b \u2014 TradingView",
+  "url": "https://cn.tradingview.com/script/gofnAfR7/",
+  "published": "2026-09-20T01:15:05+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "M15",
+   "M5"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "zh-Hans",
+  "endpoints": [
+   "https://s3.tradingview.com/conversions_zh-Hans.json",
+   "https://scanner-backend.tradingview.com/enum/ordered?id=metrics_full_name,metrics&lang=zh-Hans&label-product=ytm-metrics-plan.json",
+   "https://static.tradingview.com/static/images/favicon/manifest.json"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "9d0fac131b457c4e96f6",
+  "host": "cn.tradingview.com",
+  "claims": [
+   {
+    "claim": "Gold Pullback Strategy [Backtest + Alerts] \u7531HaiUs30 \u63d0\u4f9b \u2014 TradingView \u641c\u7d22 \u4ea7\u54c1 \u793e\u533a \u5e02\u573a \u7ecf\u7eaa\u5546 \u66f4\u591a CN \u5f00\u59cb OPEN-SOURCE SCRIPT 2025\u5e748\u67084\u65e5 Gold Pullback Strategy [Backtest + Alerts] \u56fe\u8868 \u7b56\u7565\u62a5\u544a \u539f\u59cb\u7801 \u66f4\u591a \u6dfb\u52a0\u5230\u6536\u85cf \u6dfb\u52a0\u5230\u6536\u85cf \u5728\u56fe\u8868\u4e0a\u4f7f\u7528 5 0 1 849 XAU USD M5 M15 TP1-1 BUY Pull black EMA 21 Storsi oversold \u5f00\u6e90\u811a\u672c \u79c9\u627fTradingView\u7684\u7cbe\u795e\uff0c\u8be5\u811a\u672c\u7684\u4f5c\u8005\u5c06\u5176\u5f00\u6e90\uff0c\u4ee5\u4fbf\u4ea4\u6613\u8005\u53ef\u4ee5\u67e5\u770b\u548c\u9a8c\u8bc1\u5176\u529f\u80fd\u3002",
+    "lang": "zh",
+    "quantities": [
+     "rsi",
+     "pullback",
+     "open"
+    ],
+    "direction": [
+     "buy"
+    ],
+    "horizon": [
+     "\u6708",
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "b0a4e0fffc0d"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "XAUUSD Mean Reversion . \u2014 Strategi oleh max3869 \u2014 TradingView",
+  "url": "https://id.tradingview.com/script/p1lreZG7/",
+  "published": "2026-09-20T01:15:14+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "basis",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "id",
+  "endpoints": [
+   "https://s3.tradingview.com/conversions_id.json",
+   "https://scanner-backend.tradingview.com/enum/ordered?id=metrics_full_name,metrics&lang=id&label-product=ytm-metrics-plan.json",
+   "https://static.tradingview.com/static/images/favicon/manifest.json"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "b4be0617791436ba7a28",
+  "host": "id.tradingview.com",
+  "claims": [
+   {
+    "claim": "Chart Laporan strategi Kode sumber Lebih lanjut Tambah ke daftar favorit Tambah ke daftar favorit Gunakan pada chart 2 3 711 12 Jun XAUUSD Mean Reversion Light is an intraday mean reversion strategy built for traders who want to identify controlled reversal setups after short-term price overextension.",
+    "lang": "en",
+    "quantities": [
+     "mean reversion",
+     "reversal"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "intraday"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "xauusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "a6150d2257c0"
+   },
+   {
+    "claim": "Core logicThis script combines several layers of analysis:Session VWAP and deviation bands to measure short-term extension away from equilibrium.",
+    "lang": "en",
+    "quantities": [
+     "session",
+     "vwap"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "xauusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "02fd2baa1ec5"
+   }
+  ],
+  "n_claims": 2
+ }
+]
