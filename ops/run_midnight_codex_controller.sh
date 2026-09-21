@@ -67,7 +67,11 @@ if ! command -v codex >/dev/null 2>&1; then
     echo "midnight-codex: CLI unavailable; deterministic machinery remains active" | tee -a "$LOG"
     exit 3
 fi
-if ! codex login status >>"$LOG" 2>&1; then
+# The CLI has hung indefinitely here in production (7h observed on 2026-09-21), preventing both
+# controller work and the service's bounded retry policy. Authentication probing is diagnostic,
+# not the work itself, so bound it and fail visibly instead of occupying the nightly lease.
+if ! timeout --signal=TERM --kill-after=5 "${CODEX_LOGIN_STATUS_TIMEOUT_SECONDS:-30}" \
+    codex login status >>"$LOG" 2>&1; then
     write_status "AUTH_REQUIRED" "Run codex login --device-auth once on the VPS; no repository state reset" 126
     echo "midnight-codex: authentication unavailable; deterministic machinery remains active" | tee -a "$LOG"
     exit 3
@@ -171,7 +175,7 @@ HEARTBEAT_PID=$!
 # exports, then the pinned default. The pre-merge form read ONLY _OVERRIDE, which
 # silently discarded the Environment= lines in quant-midnight-frontier.service --
 # the unit's model pin had no effect on the process the unit itself started.
-CODEX_NIGHTLY_MODEL="${CODEX_NIGHTLY_MODEL_OVERRIDE:-${CODEX_NIGHTLY_MODEL:-gpt-6-astra}}"
+CODEX_NIGHTLY_MODEL="${CODEX_NIGHTLY_MODEL_OVERRIDE:-${CODEX_NIGHTLY_MODEL:-gpt-5.6-sol}}"
 CODEX_NIGHTLY_REASONING_EFFORT="${CODEX_NIGHTLY_REASONING_EFFORT_OVERRIDE:-${CODEX_NIGHTLY_REASONING_EFFORT:-medium}}"
 # The unattended controller is explicitly authorized to edit the complete checkout.
 # workspace-write is not viable on this VPS: bubblewrap can start but denies every
