@@ -1,6 +1,6 @@
 @echo off
 rem ===================================================================================
-rem MT5-Universe: expand the universe, then repair the registry.
+rem MT5-Universe: fill every missing broker chart, then repair the registry.
 rem
 rem WHY THIS IS A FILE AND NOT AN INLINE TASK ARGUMENT. The task used to carry the whole
 rem pipeline as one quoted cmd.exe argument, and it had been dying on every run with
@@ -24,9 +24,13 @@ set "LOG=C:\opt\quant\desks\mt5\logs\MT5-Universe.log"
 echo(>>"%LOG%"
 echo ==== run_universe %DATE% %TIME% ====>>"%LOG%"
 
-py -3 -W ignore "C:\opt\quant\desks\mt5\research\expand_universe.py" >>"%LOG%" 2>&1
+rem download_all_symbols is missing-series incremental: after the first fill it requests only
+rem new symbols/timeframes. expand_universe re-downloaded every existing series before reaching
+rem H4, so an hourly execution limit could leave H4 permanently at zero while repeatedly paying
+rem for M1..H1. Existing files are refreshed by refresh_tail in the hourly research cycle.
+py -3 -W ignore "C:\opt\quant\desks\mt5\scripts\download_all_symbols.py" >>"%LOG%" 2>&1
 set RC1=%ERRORLEVEL%
-echo expand_universe rc=%RC1%>>"%LOG%"
+echo download_all_symbols rc=%RC1%>>"%LOG%"
 
 rem THE REGISTRY REPAIR RUNS WHETHER OR NOT THE EXPANDER SUCCEEDED. It is the step that
 rem reconciles the registry with what is actually on disk, so a partial expansion is exactly

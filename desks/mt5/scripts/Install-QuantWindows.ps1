@@ -422,8 +422,9 @@ foreach ($t in $tasks) {
     }
 }
 
-# Full broker-derived M1/M5/M15/M30/H1/H4/D1 collection. The wrapper expands from
-# mt5.symbols_get(), records unavailable/thin charts and repairs the registry. MetaTrader IPC is
+# Full broker-derived M1/M5/M15/M30/H1/H4/D1 collection. The wrapper fills missing series from
+# mt5.symbols_get(), records unavailable charts and repairs the registry; refresh_tail maintains
+# existing files. MetaTrader IPC is
 # session-scoped, so this task must run in the logged-in user's interactive session, never SYSTEM.
 $universeCmd = Join-Path $RepoRoot "ops\run_universe.cmd"
 if (Test-Path $universeCmd) {

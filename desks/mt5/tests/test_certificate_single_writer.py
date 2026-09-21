@@ -30,3 +30,15 @@ def test_external_gauntlet_recovers_only_exact_gate_archive_rows() -> None:
     source = _text("scripts/external_gauntlet.py")
     assert 'DATA / "UNIVERSAL_SURVIVORS.canon.json"' in source
     assert "all_ten_pass(row.get(\"gates\"))" in source
+
+
+def test_universe_job_fills_missing_ladder_instead_of_rewalking_it() -> None:
+    wrapper = (DESK.parents[1] / "ops" / "run_universe.cmd").read_text("utf-8")
+    assert "scripts\\download_all_symbols.py" in wrapper
+    assert "research\\expand_universe.py" not in wrapper
+    downloader = _text("scripts/download_all_symbols.py")
+    assert '"M1": 200_000' in downloader
+    assert '"M5": 120_000' in downloader
+    assert '"M15": 80_000' in downloader
+    assert '"M30": 60_000' in downloader
+    assert '"H4": 30_000' in downloader
