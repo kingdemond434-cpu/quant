@@ -1,0 +1,12 @@
+[
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "fetch_error",
+  "title": "('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))",
+  "url": "",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-21T20:42:17+00:00",
+  "needs_selector_work": true
+ }
+]
