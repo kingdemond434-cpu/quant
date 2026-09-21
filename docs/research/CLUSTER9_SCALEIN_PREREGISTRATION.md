@@ -131,3 +131,98 @@ A pass would say only: *on one instrument, one window containing one tail event,
 without swap, a bounded scale-in was net positive and did not liquidate.* It would NOT establish
 that the mechanism survives 2008 or 2014–15, that it works on any other instrument, or that it is
 deployable at any size. Those are separate measurements and each requires its own preregistration.
+
+---
+
+# RESULT — 2026-09-21. VERDICT: **KILLED.** Three of five criteria failed.
+
+Run executed against the frozen spec above, preregistration commit `69da74895`.
+Data: `desks/mt5/universe/EURUSD_H1.parquet`, 53,660 bars, 2018-01-02 → 2026-08-14.
+Cost charged from the per-bar `spread` column plus $3.00/lot/side commission.
+
+## Scorecard
+
+| # | Criterion | Measured | Verdict |
+|---|---|---|---|
+| **K1** | random-entry net expectancy > 0, t > 2.0 | mean **−$1.37**/basket, **t = −0.68** | **FAIL** |
+| **K2** | zero liquidations, $500 @ 0.01 lot | **1 liquidation, 2018-08-10** | **FAIL** |
+| **K3** | beats the hard-120-stop null | grid **−$1,084.87** vs null **−$296.71** | **FAIL** |
+| **K4** | sign identical under both fill conventions | identical to the cent | PASS |
+| **K5** | sign survives 2× cost stress | −$1,084.87 → −$1,227.02, sign stable | n/a (already negative) |
+
+## The finding, in one table
+
+The $5,000 configuration, 792 baskets:
+
+```
+wins        788   (99.49%)      gross won   $ 2,100.97     mean win   $  2.67
+losses        4   ( 0.51%)      gross lost  $-3,185.84     mean loss  $-796.46
+                                NET         $-1,084.87
+the four losses: -$879.56, -$776.74, -$766.67, -$762.87
+```
+
+**A 99.49% win rate and a net loss.** The mean loss is **298× the mean win** — close to the 375:1
+predicted from the stop geometry before the run. Four baskets out of 792 consumed every gain from
+the other 788. This is the payoff transformation stated numerically: the mechanism does not create
+return, it relocates it into a tail that arrives four times in eight years.
+
+## K3 is the criterion that matters most
+
+The null — same random entries, hard 120-pip stop, no scale-in — lost **$296.71 over 1,316
+baskets** (−$0.23 each). The scale-in lost **$1,084.87 over 792 baskets** (−$1.37 each), **6×
+worse per basket**. Simply taking the stop beat recovering from it, on the same entries, over the
+same window.
+
+Note also the basket counts: 792 vs 1,316. The grid tied up capital so long that it took **40%
+fewer trades** in the same period. The opportunity cost of holding losers is not theoretical; it
+is 524 foregone baskets.
+
+## K4: the preregistered H1 concern did not bind
+
+Pessimistic and optimistic intra-bar conventions produced **identical results to the cent**. The
+reason is structural rather than lucky: the basket target sits at VWAP+20 while the next grid rung
+is 120–40 pips further adverse, so the two levels are never nearer than ~100 pips and no single
+EURUSD H1 bar spans both. The resolution limit declared in §3.2 turned out not to matter **for
+this parameter set**, and the escalation to "acquire EURUSD M5" is therefore **not** triggered by
+this study. A tighter grid step would reopen it.
+
+## Calibration score for the desk's own prediction
+
+§5 recorded, before the run: *"K2 fails. Payoff transformation — frequent small wins, rare large
+loss — expectancy near zero before costs and negative after, with liquidation of the $500 account
+during the 2021–22 decline."*
+
+- K2 fails — **correct**
+- payoff transformation, negative after costs — **correct** (99.49% win rate, −$1,084.87)
+- liquidation during 2021–22 — **WRONG, and wrong optimistically**
+
+The account died on **2018-08-10**, three years earlier than forecast, in a **1,255 pip** EURUSD
+decline (1.25554 → 1.13006, Feb–Aug 2018). That is an ordinary trending year, not a crisis. The
+analysis that produced this preregistration built its case on the 2,814-pip 2021–22 move and the
+3,700-pip 2008 move; it did not need either. **The mechanism is killed by a routine trend less
+than half the size of the events the argument was built around** — and the account never survived
+to meet the tail it was warned about.
+
+Recorded as a miss in the direction of over-optimism. The lesson generalises: when a ruin argument
+is built on named crisis events, check the ordinary years first, because ruin arrives there sooner
+and the crisis case is a distraction that makes the risk look rarer than it is.
+
+## Disposition
+
+**KILLED. Does not enter the gauntlet.** Per §5, a pass on all five criteria would have *qualified*
+the candidate to enter CPCV/PBO/DSR/SPA/lockbox. It failed three. Running the gauntlet on a
+candidate that failed its own preregistered screen would be absence read as permission — the habit
+behind seven of the nine defects in `UNIVERSAL_PROMOTION_PROTOCOL.md`.
+
+Cluster #9 remains occupied by one sleeve (`xau_m15_anti_breakout`). This attempt to add a second
+is a measured negative, filed as a real result rather than a silence.
+
+## What this does NOT establish
+
+The window contains one tail event and not 2008 or 2014–15; the instrument is one of 251; swap is
+unmodelled, which makes the measured result **optimistic** and the true expectancy worse than
+−$1.37/basket. None of that rescues the candidate — the failures are decisive at this resolution —
+but it does mean the study says nothing about bounded scale-in as a general cluster-9 mechanism.
+A properly regime-conditioned scale-in, with a stop set from the tail and a *measured* reversion
+half-life rather than an assumed 40-pip step, remains untested and would need its own
+preregistration.
