@@ -433,7 +433,7 @@ if (Test-Path $universeCmd) {
     } else {
         try {
             $universeAction = New-ScheduledTaskAction -Execute "cmd.exe" `
-                -Argument ("/d /s /c `"`"{0}`"`"" -f $universeCmd) `
+                -Argument ("/d /c `"{0}`"" -f $universeCmd) `
                 -WorkingDirectory $RepoRoot
             $universeTrigger = New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
                 -RepetitionInterval (New-TimeSpan -Hours 1) `

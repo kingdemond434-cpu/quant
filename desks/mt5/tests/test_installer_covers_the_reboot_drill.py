@@ -123,6 +123,7 @@ def test_universe_collector_uses_the_interactive_terminal_session() -> None:
     text = _installer_text()
     assert 'Register-ScheduledTask -TaskName "MT5-Universe"' in text
     assert 'Join-Path $RepoRoot "ops\\run_universe.cmd"' in text
+    assert '-Argument ("/d /c `"{0}`"" -f $universeCmd)' in text
     assert '-LogonType Interactive' in text
     assert '-MultipleInstances IgnoreNew' in text
     assert 'New-TimeSpan -Hours 1' in text
