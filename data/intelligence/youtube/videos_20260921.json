@@ -160,5 +160,25 @@
   "start_verified": false,
   "end_verified": false,
   "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UCBc1EqknL4xzwJsUP9w7asg",
+  "channel": "Unbiased Trading",
+  "video_id": "5JVtWH7gwZI",
+  "published": "2026-09-21T18:19:45Z",
+  "title": "A PowerPoint About Pok\u00e9mon Go and Hedge Fund Math",
+  "description": "Build Your First Live Algo In 2026: https://www.cryptomomentumgroup.com/\n\nTry Scalar Field - describe a strategy in plain English and get a real systematic backtest: https://scalarfield.io/\n\nNew to systematic trading? Download this free cheat sheet to build rock-solid strategies: https://backtestingcheatsheet.com/\n\nTwitter: https://x.com/GoshawkTrades\n\nWatch this video next: https://www.youtube.com/watch?v=4FJs4nd2uDA&t=57s\n\n0:00 Pok\u00e9mon Go Players Are Running Hedge Fund Math\n1:40 What the Kalman Filter Actually Is\n4:07 The Google Maps Blue Circle\n4:53 The Trust Dial\n6:45 How It Got Apollo to the Moon\n9:17 Use Case 1\n10:49 Use Case 2\n13:36 The Backtest Trap That Fools Everyone\n14:39 The Verdict\n\nA part of this video is sponsored by Scalar Field. Scalar Field is an AI research platform for backtesting trading strategies. It does not provide financial or investment advice. Trading involves substantial risk of loss. Backtesting is a tool for evaluating historical performance and does not guarantee future results.\n\nIf you liked the video, hit the thumbs up and share it with fellow traders or aspiring traders. I will be posting once a week and hope to provide as much content as possible.\n\nDISCLAIMER: I am not a financial adviser nor a CPA. These videos are for educational and entertainment purposes only. Investing of any kind involves risk. While it is possible to minimize risk, your investments are solely your responsibility. It is imperative that you conduct your own research. I am just sharing my opinion with no guarantee of gains or losses on investments.\n\nNote: that's 9 chapters, one over your max of 8. If you want to trim, merge 4:07 into 4:53 as one chapter called \"The Trust Dial (Kalman Gain)\" since the blue circle is really the setup for the gain. The strongest scrub-stopping labels are 6:45 (Apollo) and 13:36 (the trap), so keep those wherever you cut.",
+  "links": [
+   "https://www.cryptomomentumgroup.com/",
+   "https://scalarfield.io/",
+   "https://backtestingcheatsheet.com/",
+   "https://x.com/GoshawkTrades",
+   "https://www.youtube.com/watch?v=4FJs4nd2uDA&t=57s"
+  ],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
  }
 ]
