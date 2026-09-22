@@ -578,3 +578,122 @@ single highest-EV improvement to compounding available right now. The desk finds
 the principal never has to; the recursion rule turns every new probe angle that finds a gap into
 a permanent automated check. Fewer, sharper, evidence-backed pushes beat a long list — and the
 push never stops.
+
+## 10. THE OPEN-SOURCE RESEARCH FEDERATION (principal 2026-09-17, permanent — governing text in
+`docs/LAWS.md` §5e-§5i; this section is the research-side operating detail)
+
+External strategy engines are workers, never validators — and **worker now explicitly includes
+sandboxed parallel EXECUTION when that has positive research ROI, not only textual mechanism
+extraction**. The former "mine it as TEXT" prohibition is superseded (LAWS §2, §5h).
+
+**The two channels, both mandatory.** MINE THE SYSTEM: README and docs -> source tree -> tests ->
+configs -> examples -> notebooks -> data loaders -> model definitions -> evaluation code ->
+scheduler and search code -> execution code -> issues -> discussions -> PRs -> commit history ->
+releases -> contributors -> forks -> contributors' repositories -> cited papers -> datasets ->
+dependencies -> package ecosystem -> archived earlier versions. Disagreements between
+documentation and implementation are research objects in their own right: a README claiming
+out-of-sample testing over leaking code, a benchmark with a hidden favourable assumption, a
+mechanism deleted in an old commit, an issue naming the regime where it failed, a dependency that
+exposes a whole dataset family, tests that reveal invariants the paper never states, a fork with a
+better variation. USE THE SYSTEM: DIRECT, WRAPPED or REBUILT per LAWS §5h, in a sandbox with no
+credentials and no authority.
+
+**Twelve parallel roles per source civilization**: SOURCE SCOUT, REPOSITORY ARCHAEOLOGIST,
+PAPER/CITATION MINER, DATA-AXIS MINER, REPRESENTATION MINER, SEARCH-ALGORITHM MINER, MECHANISM
+DECOMPILER, FAILURE MINER, REPLICATION SCIENTIST, DESCENDANT SCIENTIST, ADVERSARIAL SCIENTIST,
+SOURCE-ROI ACCOUNTANT. They run simultaneously, never one general worker in sequence.
+
+**Extract capabilities, not brands.** RD-Agent(Q): joint factor/model optimisation, experiment
+memory, scheduler/bandit allocation, automated factor feedback. AgonAlpha: artifact-level search,
+MCTS, fresh-context independent verifier, pending-aware scheduling, re-execution and provenance.
+QuantaAlpha: research-trajectory evolution, mutation and crossover of reasoning procedures.
+AlphaAgent: AST/structural novelty, semantic consistency, complexity regularisation. AlphaCrafter:
+constrained harness, miner -> regime screen -> trader closure. Hubble: DSL-constrained expression
+search, deterministic evaluation, positive/negative retrieval memory. LEAN and NautilusTrader:
+research/live parity, deterministic replay, order-state engineering. Hummingbot:
+execution/microstructure architecture transferable to Fusion. FinRL-X: modular model ->
+allocation -> timing -> risk -> execution. TradingAgents-KR/CN and the Asian data systems: local
+filings, macro, news and data axes — and these are ONE lineage with regional branches, never a
+dozen independent discoveries.
+
+**Cross-system synthesis is mandatory**: trajectory evolution proposes a research procedure, MCTS
+decides which branch earns experiments, a DSL/program synthesiser writes the candidate, joint
+factor/model optimisation evaluates its interaction with the predictor, structural novelty
+prevents clone inflation, and fresh-context reviewers reproduce the experiment independently.
+
+**Every repository and paper is also a data-discovery surface**: dataset names, API endpoints,
+field names, economic variables, transformations, feature definitions, alternative-data providers,
+free substitutes, sample and benchmark datasets, dependencies, market metadata, entity lists and
+event taxonomies. Each qualified axis routes discover -> PIT archive -> semantics -> entity
+mapping -> representation forge -> World Model, candidates and interactions, and each ends in one
+of WORLD_MODEL_INPUT, CANDIDATE_INPUT, INTERACTION_INPUT, EXECUTION_INPUT, PORTFOLIO_INPUT,
+NEGATIVE_KNOWLEDGE, AWAITING_EXPERIMENT, RETIRED_WITH_EVIDENCE. Repeated ingestion with no
+consumer is a DATA STRANDING defect (§5c).
+
+**Research-process descendants count.** A reviewer that reduces false survivors, a trajectory
+evolution that raises forward-survivor yield, a scheduler that halves compute per survivor — each
+is a positive dG on the research process and competes in Meta-R&D exactly like a price signal.
+
+**Technique transfer is automatic.** A method discovered in one ecosystem (a new way to estimate
+retail crowding, say) is extracted as a general mechanism and handed to every other forest to hunt
+its local equivalent, while the global layer searches the cross-country synthesis. The desk
+therefore learns two things at once: market knowledge, and how to research better.
+
+## 11. THE ORTHOGONAL ALPHA SWARM, OPERATING DETAIL (principal 2026-09-19; governing text in
+`docs/LAWS.md` 5k-5n)
+
+**Swarm roles**, each a separate population so one model never invents, tunes and approves its own
+idea: source scouts, mechanism decompilers, representation inventors, transfer agents, parameter
+researchers, cross-region synthesisers, negative-knowledge miners, falsifier agents, execution
+scientists, independent reviewers. Fingerprint before any expensive test: AST/program structure,
+mechanism ontology, data lineage, source overlap, factor exposure, horizon, geography, session,
+regime dependence, return signature, tail profile, execution dependency.
+
+**The funnel** (illustrative, never a promised yield): 10,000,000 cells -> 500,000 (Tier 0) ->
+40,000 (Tier 1) -> 2,000 (Tier 2) -> 50 (Tier 3, the gauntlet) -> a handful of serious forward
+candidates. Forward capacity is a priced scarce resource: a near-duplicate generated into a
+saturated forward queue is worth almost nothing; a genuinely orthogonal mechanism still receives
+priority.
+
+**SARES -- Strategy Archaeology and Reverse-Engineering.** Given everything publicly observable
+about a trader or system, what family of mechanisms could plausibly have produced the observed
+behaviour? Ten agents: Performance Archaeologist, Trade-Path Reverse Engineer, Latent-Mechanism
+Inferencer, Rule Reconstruction Engine, Strategy Decomposer, Mutation Factory (with genealogy),
+Cross-Market Translator, Global Strategy Archaeologist Swarm (native-language), Fraud/Illusion
+Investigator (martingale, grid, hidden leverage, survivorship, resets, deposit manipulation, demo
+accounts, rebates, short volatility, competition gaming, luck), Counterfactual Reverse Engineer.
+Evidence grades: A exact public rules + verified history; B detailed public rules, weaker
+performance evidence; C public trades allow behavioural inference; D performance statistics only;
+E interview/anecdotal mechanism; F rumour or wild claim. History is mined as well as leaderboards:
+what once worked, when it decayed, what killed it, which subcomponent survives, which market is
+earlier in that lifecycle.
+
+**Probability and Fair-Value Dislocation.** Several independent probability engines -- P1
+macro/statistical, P2 options-implied, P3 prediction market, P4 cross-asset, P5 LLM/news, P6
+physical/fundamental -- each with a reliability curve by regime (when it says 80%, how often did
+it happen?); measure consensus, dispersion, who leads, who is calibrated, who is anomalous; trade
+an MT5 instrument only when the calibrated ensemble materially disagrees with the market-implied
+state, net of costs, model uncertainty and a regime buffer. Cell families: macro surprise,
+cross-asset disagreement, options-vs-spot, rates-vs-FX, commodity fundamentals-vs-CFD,
+event-probability-vs-gold, weather-vs-energy/agriculture, prediction-market-vs-index/FX,
+news-ensemble-vs-reaction, consensus dispersion, under- and over-reaction after a probability
+shock.
+
+**The expression factory's DSL** (5l): rank, delay, delta, decay, rolling moments, group and
+cross-sectional transforms, interactions, residuals, state filters, cross-asset constructs, and
+every operator the AI mathematicians and the representation forge register; typed fields from
+the data lake; parent genomes from the 101 public alphas; descendants across asset x timeframe x
+session x regime x direction x representation x information source x horizon x execution x
+portfolio context, scheduled by V(a), never enumerated.
+
+**The UniversalCell** carries, beside its lineage and its trial family: venue rule states and
+rule versions, source/exchange/local/vendor event times with a feed-health score and timing
+uncertainty, simulator family and posterior-world robustness, physical observations with sensor
+lineage and observation latency, path-signature specification, borrow availability and recall
+hazard where an instrument can be shorted, settlement cash flows and margin/collateral
+requirements, the sequential-test family and statistical wealth spent, compute/data/wall-clock
+cost, and the missed-trade parent that prompted it. Every dataset carries a DatasetContract
+(source, owner, acquisition method, public or licensed, licence version, permitted uses,
+redistribution rights, personal-data status, MNPI review status, jurisdiction, PIT timestamp,
+revision policy, retention policy, compliance owner); legality is a hard gate on the acquisition
+scientist, never a term traded against profitability.
