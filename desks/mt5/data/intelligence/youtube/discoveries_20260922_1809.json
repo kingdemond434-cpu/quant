@@ -1,0 +1,433 @@
+[
+  {
+    "source": "youtube",
+    "title": "\ud83d\udd34 \u062a\u062f\u0627\u0648\u0644 \u0627\u0644\u0630\u0647\u0628 \u0639\u0644\u0649 \u0627\u0644\u0645\u0628\u0627\u0634\u0631 | LIVE TRADING GOLD | September 22, 2026\ud83d\udd34",
+    "channel": "Reda - iSmashProfit",
+    "url": "https://youtube.com/watch?v=NikEtIhOgJg",
+    "published": "2026-09-22T16:40:20Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "\ud83d\udd34Live Trading \u2013 XAUUSD &amp; FOREX with ROWAN 22/9/2026 -Gold Setup Before FOMC #forex #livetrading #fed",
+    "channel": "Rowan's Gold Trading",
+    "url": "https://youtube.com/watch?v=1vgKnnB9DEA",
+    "published": "2026-09-22T15:25:02Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "GOLD BREAKOUT NEXT? \ud83d\ude80 XAUUSD 15M \ud83e\uddd0\ud83e\uddd0\ud83e\uddd0",
+    "channel": "Trade with Redhat",
+    "url": "https://youtube.com/watch?v=dAcMhn8F1G8",
+    "published": "2026-09-22T17:57:22Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [
+      [
+        "15",
+        "M"
+      ]
+    ],
+    "patterns": [
+      "breakout",
+      "resistance",
+      "zone"
+    ],
+    "confidence": 0.7499999999999999
+  },
+  {
+    "source": "youtube",
+    "title": "\ud83d\udd34 LIVE GOLD XAUUSD Trading | M15 Scalping Strategy | Buy &amp; Sell Signals",
+    "channel": "XAUUSD Beast Trader",
+    "url": "https://youtube.com/watch?v=Mfy_IFg3_MU",
+    "published": "2026-09-22T17:13:16Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [
+      "M15"
+    ],
+    "patterns": [],
+    "confidence": 0.30000000000000004
+  },
+  {
+    "source": "youtube",
+    "title": "\ud83d\udd25 $6333 Booked! Gold Sell \u2014 200+ Pips Caught \ud83c\udfaf #xauusd",
+    "channel": "Nano Alpha Tradings",
+    "url": "https://youtube.com/watch?v=ZyxSxopnBVs",
+    "published": "2026-09-22T16:59:53Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "Live Trading Forex, Gold &amp; NQ (XAUUSD Take PROFIT Tuesday!)",
+    "channel": "Trade with Pat",
+    "url": "https://youtube.com/watch?v=a-fFhYA1dBM",
+    "published": "2026-09-22T16:22:28Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "\ud83d\udd34Live Day Trading | Price Action | EPISODE 3 (gold xauusd)",
+    "channel": "Don Vo",
+    "url": "https://youtube.com/watch?v=m1arL0GiI94",
+    "published": "2026-09-22T16:13:16Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "\ud83d\udd34 LIVE CRYPTO TRADING \ud83d\ude80 | XAUUSD GOLD + BITCOIN BREAKOUT SETUPS | BTC Analysis #cryptotradinglive",
+    "channel": "TRADING MENTOR",
+    "url": "https://youtube.com/watch?v=qVMQlf1KaJA",
+    "published": "2026-09-22T15:22:51Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [
+      "breakout",
+      "breakdown"
+    ],
+    "confidence": 0.5
+  },
+  {
+    "source": "youtube",
+    "title": "Gold silver analysis today | #xauusd #xauusdanalysis #mcxgold#mcxsilverlatestnews#viralshorts",
+    "channel": "INVESTORS & WEALTH CREATION",
+    "url": "https://youtube.com/watch?v=pBSfwDP_cO0",
+    "published": "2026-09-22T15:16:34Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "GOLD \ud83e\ude99 Apollo taking control \ud83d\ude80 #gold #xauusd #forex #trading #signals #moneymindset",
+    "channel": "APOLLO \ud83d\ude80",
+    "url": "https://youtube.com/watch?v=0AkPsC1mJlE",
+    "published": "2026-09-22T15:16:36Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "LIVE XAUUSD TRADING | GOLD Live Trading | CRYPTO Live | Bitcoin Live Trading #xauusd #forextrading",
+    "channel": "FX WOLF",
+    "url": "https://youtube.com/watch?v=A54bieQEbEU",
+    "published": "2026-09-22T15:15:32Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "\u201cGold ne diya 1:4 RR setup \ud83d\udd25\ud83d\udcc8 | XAUUSD 1-Min Scalping #discopline\u201d",
+    "channel": "Sweep Trader FX",
+    "url": "https://youtube.com/watch?v=_wgtlgm8HDA",
+    "published": "2026-09-22T14:57:00Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "Trading GBP/JPY: Watchlist Alert for Short-Term Gains! #shorts",
+    "channel": "The Elysium Brief ",
+    "url": "https://youtube.com/watch?v=Ie3D_dOGhwY",
+    "published": "2026-09-22T14:00:49Z",
+    "symbols": [
+      "GBPJPY"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "Best Analysis of Gold Xauusd",
+    "channel": "Talib Blogs ",
+    "url": "https://youtube.com/watch?v=Zhbb5cOtZI8",
+    "published": "2026-09-21T23:09:03Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "XAUUSD (GOLD) Live Trading Session Today | Breakout Levels &amp; Scalping Strategy \ud83d\udcc8",
+    "channel": "Talib Blogs ",
+    "url": "https://youtube.com/watch?v=SzWhdkPp8lg",
+    "published": "2026-09-21T06:00:20Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [
+      "breakout"
+    ],
+    "confidence": 0.35
+  },
+  {
+    "source": "youtube",
+    "title": "Live XAUUSD Forex Trading | btc gold live London session  New york session #fyp\u30b7\u309aviral #fyp #foryou",
+    "channel": "tradermoneymarket",
+    "url": "https://youtube.com/watch?v=_j27XqJRDv4",
+    "published": "2026-09-17T02:44:08Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [
+      "breakout"
+    ],
+    "confidence": 0.35
+  },
+  {
+    "source": "youtube",
+    "title": "LIVE FOREX TRADING | LONDON SESSION | GOLD &amp; BITCOIN | SEP 14",
+    "channel": "trade with baniya ",
+    "url": "https://youtube.com/watch?v=ueSvonKQZAk",
+    "published": "2026-09-16T19:39:32Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "\ud83d\udd34 XAUUSD Live Trading Today | Gold &amp; Crypto Live | Forex | NYC Session | 16-09-2026",
+    "channel": "CrazyTrades247",
+    "url": "https://youtube.com/watch?v=HeXHZOs-x7A",
+    "published": "2026-09-16T14:27:01Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "My Algorithm Trade For XAUUSD Trades \ud83d\udcaa #trading #xauusd #goldtrading",
+    "channel": "FX SUMIT",
+    "url": "https://youtube.com/watch?v=aDBOtarx2EM",
+    "published": "2026-09-22T15:40:02Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "XAUUSD 21 Sept Analysis | Momentum Trade | 130 Pips &amp; 1:4 R:R \ud83c\udfaf #goldtrading #xauusdanalysis",
+    "channel": "Power of Market Legend",
+    "url": "https://youtube.com/watch?v=WtN_QKhOxwc",
+    "published": "2026-09-22T02:02:02Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "Live Gold (XAUUSD) Trading &amp; Technical Analysis - My Gold Trading Strategy",
+    "channel": "Live Forex Trading",
+    "url": "https://youtube.com/watch?v=5ajF6ht_mOk",
+    "published": "2026-09-21T16:44:03Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "Bull vs. Bear Gold Outlook (Sept 21\u201325, 2026): Probabilistic Scenarios and Strategic Level Breakdown",
+    "channel": "Bulls Eye Trade",
+    "url": "https://youtube.com/watch?v=Q1Lkt75abfI",
+    "published": "2026-09-20T15:45:07Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [
+      "breakdown"
+    ],
+    "confidence": 0.35
+  },
+  {
+    "source": "youtube",
+    "title": "XAUUSD Live Trading \ud83d\udd34 Part 6  | 22 Sep 2026 | FOMC ,NFP, CPI | Forex |  #ZohaibAmirDigital",
+    "channel": "The Candle Reader",
+    "url": "https://youtube.com/watch?v=jkPE49ucIMw",
+    "published": "2026-09-22T17:25:15Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "EA Robot Trading XAUUSD \ud83d\udd34Live 22.09.2026 \u202c #xauusd #goldtrading #livetrading #nfp #forex #cpi",
+    "channel": "Sarathi Manikandan",
+    "url": "https://youtube.com/watch?v=_G2Q57VwEKU",
+    "published": "2026-09-22T16:12:22Z",
+    "symbols": [
+      "XAUUSD",
+      "BTCUSD",
+      "NAS100"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.6000000000000001
+  },
+  {
+    "source": "youtube",
+    "title": "XAUUSD \ud83d\udd34Live 22.09.2026 \u202a@Sarathi-Manikandan\u202c #xauusd #goldtrading #livetrading #nfp #forex #cpi",
+    "channel": "Sarathi Manikandan",
+    "url": "https://youtube.com/watch?v=BctmWyFtyBE",
+    "published": "2026-09-22T15:27:25Z",
+    "symbols": [
+      "XAUUSD",
+      "BTCUSD",
+      "NAS100"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.6000000000000001
+  },
+  {
+    "source": "youtube",
+    "title": "Watch this! Before trading Gold ( XAUUSD )",
+    "channel": "Train For Trades",
+    "url": "https://youtube.com/watch?v=hI9a8yqjvZI",
+    "published": "2026-09-22T09:32:20Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "\ud83d\udd34 BTC Live trading 376 / 22.09.2026 #bitcoin  #nfp  #forex #gold #gbpjpytrading  #crypto",
+    "channel": "UpDown FX",
+    "url": "https://youtube.com/watch?v=QzdgsCUd0BU",
+    "published": "2026-09-22T06:15:47Z",
+    "symbols": [
+      "GBPJPY"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "\ud83d\udd34 XAU/USD Live trading 693 / 22.09.2026 #xauusd #fomc  #updownfx #nfp #forex #gold #cpi",
+    "channel": "UpDown FX",
+    "url": "https://youtube.com/watch?v=9cmPjhFTtgI",
+    "published": "2026-09-22T01:52:41Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "XAUUSD \ud83d\udd34Live 21.09.2026 \u202a@Sarathi-Manikandan\u202c #xauusd #goldtrading #livetrading #nfp #forex #cpi",
+    "channel": "Sarathi Manikandan",
+    "url": "https://youtube.com/watch?v=kPaCmk8g8VI",
+    "published": "2026-09-21T23:29:55Z",
+    "symbols": [
+      "XAUUSD",
+      "BTCUSD",
+      "NAS100"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.6000000000000001
+  },
+  {
+    "source": "youtube",
+    "title": "XAUUSD \ud83d\udd34Live 21.09.2026 \u202a@Sarathi-Manikandan\u202c #xauusd #goldtrading #livetrading #nfp #forex #cpi",
+    "channel": "Sarathi Manikandan",
+    "url": "https://youtube.com/watch?v=ywVqijMGyoI",
+    "published": "2026-09-21T18:20:36Z",
+    "symbols": [
+      "XAUUSD",
+      "BTCUSD",
+      "NAS100"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.6000000000000001
+  },
+  {
+    "source": "youtube",
+    "title": "\ud83d\udd34 LIVE Gold Xauusd &amp; Bitcoin Trading From Dubai | Live Trap Trading | Young Trader Viraj \ud83c\udf89",
+    "channel": "Young Trader Viraj",
+    "url": "https://youtube.com/watch?v=zUX0Q0WzK5Y",
+    "published": "2026-09-21T18:13:22Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  }
+]

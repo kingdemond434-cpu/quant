@@ -1,0 +1,84 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u57ce\u9547\u4eba\u53e3\uff08\u5360\u603b\u4eba\u53e3\u6bd4\u4f8b\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/SP.URB.TOTL.IN.ZS",
+  "published": "2026-09-22T18:04:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/SP.URB.TOTL.IN.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ffc5110a956510b77702",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Fixed broadband subscriptions (per 100 people) | Data",
+  "url": "https://data.worldbank.org.cn/indicator/IT.NET.BBND.P2",
+  "published": "2026-09-22T18:04:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/IT.NET.BBND.P2?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "305e22447f9f5e8519db",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Mobile cellular subscriptions (per 100 people) | Data",
+  "url": "https://data.worldbank.org.cn/indicator/IT.CEL.SETS.P2",
+  "published": "2026-09-22T18:05:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/IT.CEL.SETS.P2?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5dcda518673dd5dafe2c",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4eba\u5747\u53ef\u518d\u751f\u5185\u9646\u6de1\u6c34\u8d44\u6e90\uff08\u7acb\u65b9\u7c73\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/ER.H2O.INTR.PC",
+  "published": "2026-09-22T18:05:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/ER.H2O.INTR.PC?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "157b2f224a38c206f78e",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ }
+]

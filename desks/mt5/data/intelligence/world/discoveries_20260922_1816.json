@@ -1,0 +1,2927 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5b89\u5168\u4e92\u8054\u7f51\u670d\u52a1\u5668\uff08\u6bcf\u767e\u4e07\u4eba\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/IT.NET.SECR.P6",
+  "published": "2026-09-22T18:13:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/IT.NET.SECR.P6?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "01be657b1f5e776813cf",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5e74\u5ea6\u6de1\u6c34\u62bd\u53d6\u91cf\uff0c\u603b\u91cf\uff0810\u4ebf\u7acb\u65b9\u7c73\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/ER.H2O.FWTL.K3",
+  "published": "2026-09-22T18:13:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/ER.H2O.FWTL.K3?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ef5e697723b42c90bb58",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u79c1\u8425\u90e8\u95e8\u53c2\u4e0e\u7684\u4f9b\u6c34\u53ca\u536b\u751f\u6295\u8d44\uff08\u73b0\u4ef7\u7f8e\u5143\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/IE.PPI.WATR.CD",
+  "published": "2026-09-22T18:14:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/IE.PPI.WATR.CD?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "23d57c98f5682f6b4198",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Euro vs New Zealand Dollar (EURNZD.p) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/EURNZD.p/",
+  "published": "2026-09-22T18:14:28+00:00",
+  "symbols": [
+   "EURNZD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790076865",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "07031bf073c3c6c842ec",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Euro vs US Dollar (EURUSD.p) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/EURUSD.p/",
+  "published": "2026-09-22T18:14:30+00:00",
+  "symbols": [
+   "EURUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790076865",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "ffe8c3feaee9c107bab3",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "00001 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:05 - 23:55 Term currency USD 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 19.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "eurusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "15ad27297d9f"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs Australian Dollar (GBPAUD.p) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/GBPAUD.p/",
+  "published": "2026-09-22T18:14:32+00:00",
+  "symbols": [
+   "GBPAUD",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790076865",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "e2789ccbad71cf8d1fb0",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "00001 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:05 - 23:55 Term currency AUD 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 19.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "pound"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "da2264b3e80d"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs Canadian Dollar (GBPCAD.p) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/GBPCAD.p/",
+  "published": "2026-09-22T18:14:34+00:00",
+  "symbols": [
+   "GBPCAD",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790076865",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "0d1598336dd54fc976d8",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "00001 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:05 - 23:55 Term currency CAD 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 21.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "pound"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "caabcd798034"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs Swiss Franc (GBPCHF.p) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/GBPCHF.p/",
+  "published": "2026-09-22T18:14:36+00:00",
+  "symbols": [
+   "GBPCHF",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790076865",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "3e41316fd42ad968d280",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "00001 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:05 - 23:55 Term currency CHF 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 23.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "pound"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "619f46ca05d3"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs Japanese Yen (GBPJPY.p) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/GBPJPY.p/",
+  "published": "2026-09-22T18:14:38+00:00",
+  "symbols": [
+   "GBPJPY",
+   "GBPUSD",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790076865",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "0404b2287fac229cec94",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "001 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:05 - 23:55 Term currency JPY 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 18.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD",
+      "USDJPY",
+      "GBPJPY"
+     ],
+     "mentioned": [
+      "pound",
+      "yen",
+      "gbpjpy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5d001ad57ebe"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs New Zealand Dollar (GBPNZD.p) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/GBPNZD.p/",
+  "published": "2026-09-22T18:14:40+00:00",
+  "symbols": [
+   "GBPNZD",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790076865",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "8ebd7e1548c0b47f903d",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "00001 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:05 - 23:55 Term currency NZD 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 25.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "pound"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "233dddf40f7d"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8d22\u52a1\u884d\u751f\uff08\u6700\u65b0\u5e74\u62a5\uff09\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_financial_ly_shift",
+  "published": "2026-09-22T18:14:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8c67857bd1e39fc76eca",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8d22\u52a1\u884d\u751f\uff08\u5355\u5b63\u5ea6\uff09\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_financial_mrq_shift",
+  "published": "2026-09-22T18:14:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3d02e08a5a83a84be1e5",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8d22\u52a1\u884d\u751f\uff08\u6eda\u52a8\u5341\u4e8c\u671f\uff09\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_financial_ttm_shift",
+  "published": "2026-09-22T18:14:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3a2776fe1a24b0ac8bc2",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8d22\u52a1\u884d\u751f\uff08\u8d22\u52a1\u9644\u6ce8\uff09\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_financial_notes_shift",
+  "published": "2026-09-22T18:14:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ae05405386bf039d427c",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8d22\u52a1\u5206\u6790\uff08\u884d\u751f\u79d1\u76ee\uff09\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_financial_derivative",
+  "published": "2026-09-22T18:14:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "81fbcd7051dbed1bb103",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8d22\u52a1\u5206\u6790\uff08\u6bcf\u80a1\u6307\u6807\uff09\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_financial_xps",
+  "published": "2026-09-22T18:15:00+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7c783d052ff569f01721",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8d22\u52a1\u5206\u6790\uff08\u76c8\u5229\u80fd\u529b\uff09\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_financial_profitability",
+  "published": "2026-09-22T18:15:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b08e6b38ab4230ca31c7",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs New Zealand Dollar (GBPNZD.p) | ProCent | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-cent/GBPNZD.p/",
+  "published": "2026-09-22T18:15:06+00:00",
+  "symbols": [
+   "GBPNZD",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790076865",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "b2a41086c4d08f4e0c01",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "00 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "pound"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8f7ddbff917b"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs US Dollar (GBPUSD.p) | ProCent | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-cent/GBPUSD.p/",
+  "published": "2026-09-22T18:15:08+00:00",
+  "symbols": [
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790076865",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "aacd4506123d367fce33",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "00 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "pound"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8f7ddbff917b"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "New Zealand Dollar vs Canadian Dollar (NZDCAD.p) | ProCent | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-cent/NZDCAD.p/",
+  "published": "2026-09-22T18:15:10+00:00",
+  "symbols": [
+   "NZDCAD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790076865",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "9ba19b005175289e9b68",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "New Zealand Dollar vs Swiss Franc (NZDCHF.p) | ProCent | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-cent/NZDCHF.p/",
+  "published": "2026-09-22T18:15:12+00:00",
+  "symbols": [
+   "NZDCHF"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790076865",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "9eeaccf4cf180c95da4b",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "New Zealand Dollar vs Japanese Yen (NZDJPY.p) | ProCent | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-cent/NZDJPY.p/",
+  "published": "2026-09-22T18:15:14+00:00",
+  "symbols": [
+   "NZDJPY",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790076865",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "b599e2ba90a59a7b2722",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "00 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "yen"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8f7ddbff917b"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "New Zealand Dollar vs US Dollar (NZDUSD.p) | ProCent | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-cent/NZDUSD.p/",
+  "published": "2026-09-22T18:15:16+00:00",
+  "symbols": [
+   "NZDUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790076865",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "59372b858f9629d91a66",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "00 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "NZDUSD"
+     ],
+     "mentioned": [
+      "nzdusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8f7ddbff917b"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "US Dollar vs Canadian Dollar (USDCAD.p) | ProCent | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-cent/USDCAD.p/",
+  "published": "2026-09-22T18:15:18+00:00",
+  "symbols": [
+   "USDCAD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790076865",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "a1a3533164936800d23b",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "00 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDCAD"
+     ],
+     "mentioned": [
+      "usdcad"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8f7ddbff917b"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Trading Ideas: XAU/USD | Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/marketwatch/market-news/Trading-Ideas/XAU-USD/",
+  "published": "2026-09-22T18:15:19+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XTIUSD",
+   "US30",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "USDCAD",
+   "USDTRY",
+   "BTCUSD"
+  ],
+  "timeframes": [
+   "1H",
+   "DAILY",
+   "H1",
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "auction",
+   "basis",
+   "breakout",
+   "carry",
+   "correlation",
+   "flow",
+   "momentum",
+   "night_session",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 9,
+  "vault_sha": "c3773350e40bbfe5da25",
+  "host": "www.dukascopy.com",
+  "claims": [
+   {
+    "claim": "Learn more JP EU Open accounts Trading ideas Data tools for webmasters Online news Online news for webmasters Articles Smart Money Concept ICT Trading Long Position vs.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "xau",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "try",
+      "bitcoin",
+      "jgb"
+     ],
+     "transfer_only": [
+      "jgb->rates->fx carry"
+     ],
+     "indirect": [
+      "USDX",
+      "US500",
+      "USDTHB"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities",
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "27c9db926b2e"
+   },
+   {
+    "claim": "XAU/USD Hourly chartXAU/USD 1-hour chart displays a strong bullish momentum following a clear breakout above its long-term descending trendline near 4080.",
+    "lang": "en",
+    "quantities": [
+     "momentum",
+     "breakout"
+    ],
+    "direction": [
+     "bullish",
+     "long"
+    ],
+    "horizon": [
+     "hourly",
+     "hour"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "xau"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "74774bbaebad"
+   },
+   {
+    "claim": "increase in net-long positioning among market participants on a week-over-week",
+    "lang": "en",
+    "quantities": [
+     "positioning"
+    ],
+    "direction": [
+     "increase",
+     "long"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "xau",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "try",
+      "bitcoin",
+      "jgb"
+     ],
+     "transfer_only": [
+      "jgb->rates->fx carry"
+     ],
+     "indirect": [
+      "USDX",
+      "US500",
+      "USDTHB"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities",
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "cbdf457db76b"
+   },
+   {
+    "claim": "basis, the prospect of Mon, 01 Jun 2026 09:05:07 GMT Gold Price Outlook: June 2026 Technical Review and Market Outlook Overall decrease in volatility in Gold has stabilized overall price, closing close to 4550.",
+    "lang": "en",
+    "quantities": [
+     "basis",
+     "volatility",
+     "close"
+    ],
+    "direction": [
+     "decrease"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "11043518a1a7"
+   },
+   {
+    "claim": "The short-term price action indicates a bearish trend as the asset consistently forms lower highs while remaining trapped beneath a downward-sloping resistance trendline and the 48-period Mon, 18 May 2026 09:23:49 GMT Gold Outlook Amid the rise in dollar strength and rising JGB yields during Friday's trading session, gold experienced elevated volatility and closed below 4550.",
+    "lang": "en",
+    "quantities": [
+     "trend",
+     "session",
+     "volatility"
+    ],
+    "direction": [
+     "short",
+     "bearish"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "jgb"
+     ],
+     "transfer_only": [
+      "jgb->rates->fx carry"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "651ea219c848"
+   },
+   {
+    "claim": "Lower levels of volatility may be considered as a primary scenario, if no significant geopolitical events occur this week.",
+    "lang": "en",
+    "quantities": [
+     "volatility"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "xau",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "try",
+      "bitcoin",
+      "jgb"
+     ],
+     "transfer_only": [
+      "jgb->rates->fx carry"
+     ],
+     "indirect": [
+      "USDX",
+      "US500",
+      "USDTHB"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities",
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "3192c440ec21"
+   },
+   {
+    "claim": "The current technical outlook for XAU/USD is cautiously bearish as the price continues to trade below the long-term SMA 180, following a clear trend reversal initiated by a bearish moving average crossover earlier in Mon, 20 Apr 2026 11:44:20 GMT Gold Outlook Gold continued move to the upside, closing close to 4835.",
+    "lang": "en",
+    "quantities": [
+     "trend",
+     "reversal",
+     "close"
+    ],
+    "direction": [
+     "bearish",
+     "continues"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "xau"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "15ca454f56c5"
+   },
+   {
+    "claim": "72 and reflects a neutral-to-slightly bullish recovery phase following a sharp Mon, 30 Mar 2026 10:32:10 GMT XAU/USD Outlook Gold experienced elevated levels of volatility, before closing close to previous weeks closing price at 4500.",
+    "lang": "en",
+    "quantities": [
+     "volatility",
+     "close"
+    ],
+    "direction": [
+     "bullish"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "xau"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "d2700f4fda97"
+   }
+  ],
+  "n_claims": 12
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Trading Ideas: DUK+ | Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/marketwatch/market-news/Trading-Ideas/DUK+/",
+  "published": "2026-09-22T18:15:21+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XTIUSD",
+   "US30",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "USDCAD",
+   "USDTRY",
+   "BTCUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "carry",
+   "correlation",
+   "flow",
+   "night_session",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 9,
+  "vault_sha": "4a90ec56b80878798a04",
+  "host": "www.dukascopy.com",
+  "claims": [
+   {
+    "claim": "Learn more JP EU Open accounts Trading ideas Data tools for webmasters Online news Online news for webmasters Articles Smart Money Concept ICT Trading Long Position vs.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "27c9db926b2e"
+   },
+   {
+    "claim": "In the meantime, the pair had close by sell orders at 1.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "sell"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b390a6506264"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex/CFD Profit Calculator | Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/marketwatch/forexcalc/forex-calculator/",
+  "published": "2026-09-22T18:15:23+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XTIUSD",
+   "US30",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "USDCAD",
+   "USDTRY",
+   "BTCUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "carry",
+   "correlation",
+   "flow",
+   "night_session",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 9,
+  "vault_sha": "24c4ab4fcb276be11df3",
+  "host": "www.dukascopy.com",
+  "claims": [
+   {
+    "claim": "Learn more JP EU Open accounts Forex calculators Data tools for webmasters Online news Online news for webmasters Articles Smart Money Concept ICT Trading Long Position vs.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "e82023c56894"
+   },
+   {
+    "claim": "The rollover rate is the interest gained or paid for keeping the investment overnight.",
+    "lang": "en",
+    "quantities": [
+     "rollover",
+     "rate"
+    ],
+    "direction": [
+     "gained"
+    ],
+    "horizon": [
+     "overnight"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "327b6757d45e"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Margin Calculator - Forex/CFD Margin Calculation | Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/marketwatch/forexcalc/margin/",
+  "published": "2026-09-22T18:15:25+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XTIUSD",
+   "US30",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "USDCAD",
+   "USDTRY",
+   "BTCUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "carry",
+   "correlation",
+   "flow",
+   "night_session",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 9,
+  "vault_sha": "3ad2807fcd279bc91670",
+  "host": "www.dukascopy.com",
+  "claims": [
+   {
+    "claim": "Learn more JP EU Open accounts Forex calculators Data tools for webmasters Online news Online news for webmasters Articles Smart Money Concept ICT Trading Long Position vs.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "e82023c56894"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Cost of carry calculator :: Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/marketwatch/forexcalc/overnight-calculator/",
+  "published": "2026-09-22T18:15:26+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XTIUSD",
+   "US30",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "USDCAD",
+   "USDTRY",
+   "BTCUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "carry",
+   "correlation",
+   "flow",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 9,
+  "vault_sha": "474c3fe1885da323ce6c",
+  "host": "www.dukascopy.com",
+  "claims": [
+   {
+    "claim": "Learn more JP EU Open accounts Forex calculators Data tools for webmasters Online news Online news for webmasters Articles Smart Money Concept ICT Trading Long Position vs.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "e82023c56894"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Pip Value Calculator | Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/marketwatch/forexcalc/pip/",
+  "published": "2026-09-22T18:15:29+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XCUUSD",
+   "XTIUSD",
+   "US30",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "USDCAD",
+   "USDTRY",
+   "BTCUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "carry",
+   "correlation",
+   "flow",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 9,
+  "vault_sha": "02f6ba510e2bdc373196",
+  "host": "www.dukascopy.com",
+  "claims": [
+   {
+    "claim": "Learn more JP EU Open accounts Forex calculators Data tools for webmasters Online news Online news for webmasters Articles Smart Money Concept ICT Trading Long Position vs.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XCUUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "copper",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "e82023c56894"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Currency Converter - Live Foreign Exchange Rates | Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/marketwatch/forexcalc/forex-currency-converter/",
+  "published": "2026-09-22T18:15:31+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XTIUSD",
+   "US30",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "USDCAD",
+   "USDTRY",
+   "BTCUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "carry",
+   "correlation",
+   "flow",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 9,
+  "vault_sha": "aa0aaf5b8d8c2106d323",
+  "host": "www.dukascopy.com",
+  "claims": [
+   {
+    "claim": "Learn more JP EU Open accounts Forex calculators Data tools for webmasters Online news Online news for webmasters Articles Smart Money Concept ICT Trading Long Position vs.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "e82023c56894"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/XAUAUD",
+  "published": "2026-09-22T18:15:31+00:00",
+  "symbols": [
+   "XAUAUD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/xauaud/2026",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/xauaud/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/xauaud/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/xauaud/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/xauaud/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/xauaud/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/xauaud/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/xauaud/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/xauaud/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/xauaud/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/xauaud/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/xauaud/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/xauaud/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/xauaud/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/xauaud/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/xauaud/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/xauaud/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/xauaud/2009"
+  ],
+  "n_endpoints": 22,
+  "vault_sha": "04ff4d5d6b3ec99b8472",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/AUDCHF",
+  "published": "2026-09-22T18:15:33+00:00",
+  "symbols": [
+   "AUDCHF"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/audchf/2026",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/audchf/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/audchf/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/audchf/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/audchf/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/audchf/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/audchf/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/audchf/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/audchf/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/audchf/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/audchf/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/audchf/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/audchf/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/audchf/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/audchf/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/audchf/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/audchf/2010",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/audchf/2009",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/audchf/2008"
+  ],
+  "n_endpoints": 23,
+  "vault_sha": "14dda5e1b6d19e3c1bfc",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/AUXAUD",
+  "published": "2026-09-22T18:15:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/auxaud/2026",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/auxaud/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/auxaud/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/auxaud/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/auxaud/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/auxaud/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/auxaud/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/auxaud/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/auxaud/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/auxaud/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/auxaud/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/auxaud/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/auxaud/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/auxaud/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/auxaud/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/auxaud/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/auxaud/2010"
+  ],
+  "n_endpoints": 21,
+  "vault_sha": "93875928c61e4db6456e",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/EURHUF",
+  "published": "2026-09-22T18:15:37+00:00",
+  "symbols": [
+   "EURHUF"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/eurhuf/2026",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/eurhuf/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/eurhuf/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/eurhuf/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/eurhuf/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/eurhuf/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/eurhuf/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/eurhuf/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/eurhuf/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/eurhuf/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/eurhuf/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/eurhuf/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/eurhuf/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/eurhuf/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/eurhuf/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/eurhuf/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/eurhuf/2010"
+  ],
+  "n_endpoints": 21,
+  "vault_sha": "1df8174d6268a0a59e64",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/EURPLN",
+  "published": "2026-09-22T18:15:39+00:00",
+  "symbols": [
+   "EURPLN"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/eurpln/2026",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/eurpln/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/eurpln/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/eurpln/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/eurpln/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/eurpln/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/eurpln/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/eurpln/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/eurpln/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/eurpln/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/eurpln/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/eurpln/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/eurpln/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/eurpln/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/eurpln/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/eurpln/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/eurpln/2010"
+  ],
+  "n_endpoints": 21,
+  "vault_sha": "f6c933eab85a36b20c19",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/FRXEUR",
+  "published": "2026-09-22T18:15:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/frxeur/2026",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/frxeur/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/frxeur/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/frxeur/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/frxeur/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/frxeur/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/frxeur/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/frxeur/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/frxeur/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/frxeur/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/frxeur/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/frxeur/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/frxeur/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/frxeur/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/frxeur/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/frxeur/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/frxeur/2010"
+  ],
+  "n_endpoints": 21,
+  "vault_sha": "593990df7b55408f739c",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/HKXHKD",
+  "published": "2026-09-22T18:15:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/hkxhkd/2026",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/hkxhkd/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/hkxhkd/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/hkxhkd/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/hkxhkd/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/hkxhkd/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/hkxhkd/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/hkxhkd/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/hkxhkd/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/hkxhkd/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/hkxhkd/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/hkxhkd/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/hkxhkd/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/hkxhkd/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/hkxhkd/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/hkxhkd/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/ascii/tick-data-quotes/hkxhkd/2010"
+  ],
+  "n_endpoints": 21,
+  "vault_sha": "28ce608b9893a9261d0a",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Crypto Futures - QuantConnect.com",
+  "url": "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/crypto-futures",
+  "published": "2026-09-22T18:15:45+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://cdn.quantconnect.com/2024-quantconnect-brand-kit.zip",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/crypto-futures",
+   "https://www.quantconnect.com/datasets/",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/navigating-the-market",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/categories",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/data-issues",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/misconceptions",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/licensing",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/vendors",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-equities",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-equity-options",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/crypto",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/forex",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/futures",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-indices",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-index-options",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/cfd",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/alternative-data",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/auxiliary-data",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/interactive-brokers",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/tradestation",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/tastytrade",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/alpaca",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/charles-schwab",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/databento",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/tradier",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/bloomberg-bpipe",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/ssc-eze",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/trading-technologies",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/polygon"
+  ],
+  "n_endpoints": 32,
+  "vault_sha": "ba8a3dc3c32c9d617143",
+  "host": "www.quantconnect.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex - QuantConnect.com",
+  "url": "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/forex",
+  "published": "2026-09-22T18:15:47+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://cdn.quantconnect.com/2024-quantconnect-brand-kit.zip",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/forex",
+   "https://www.quantconnect.com/datasets/",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/navigating-the-market",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/categories",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/data-issues",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/misconceptions",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/licensing",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/vendors",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-equities",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-equity-options",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/crypto",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/crypto-futures",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/futures",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-indices",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-index-options",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/cfd",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/alternative-data",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/auxiliary-data",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/interactive-brokers",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/tradestation",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/tastytrade",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/alpaca",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/charles-schwab",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/databento",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/tradier",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/bloomberg-bpipe",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/ssc-eze",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/trading-technologies",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/polygon"
+  ],
+  "n_endpoints": 32,
+  "vault_sha": "ff42da5e93534ea34011",
+  "host": "www.quantconnect.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Futures - QuantConnect.com",
+  "url": "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/futures",
+  "published": "2026-09-22T18:15:49+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://cdn.quantconnect.com/2024-quantconnect-brand-kit.zip",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/futures",
+   "https://www.quantconnect.com/datasets/",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/navigating-the-market",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/categories",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/data-issues",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/misconceptions",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/licensing",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/vendors",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-equities",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-equity-options",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/crypto",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/crypto-futures",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/forex",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-indices",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-index-options",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/cfd",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/alternative-data",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/auxiliary-data",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/interactive-brokers",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/tradestation",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/tastytrade",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/alpaca",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/charles-schwab",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/databento",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/tradier",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/bloomberg-bpipe",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/ssc-eze",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/trading-technologies",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/polygon",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/interactive-brokers#06-Hybrid-Data-Provider"
+  ],
+  "n_endpoints": 33,
+  "vault_sha": "16b120b09f58f97cf759",
+  "host": "www.quantconnect.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "US Index Options - QuantConnect.com",
+  "url": "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-index-options",
+  "published": "2026-09-22T18:15:51+00:00",
+  "symbols": [
+   "NAS100",
+   "US500"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://cdn.quantconnect.com/2024-quantconnect-brand-kit.zip",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-index-options",
+   "https://www.quantconnect.com/datasets/",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/navigating-the-market",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/categories",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/data-issues",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/misconceptions",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/licensing",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/vendors",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-equities",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-equity-options",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/crypto",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/crypto-futures",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/forex",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/futures",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-indices",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/cfd",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/alternative-data",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/auxiliary-data",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/interactive-brokers",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/tradestation",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/tastytrade",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/alpaca",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/charles-schwab",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/databento",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/tradier",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/bloomberg-bpipe",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/ssc-eze",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/trading-technologies",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/polygon",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/auxiliary-data#05-US-Index-Option-Universe"
+  ],
+  "n_endpoints": 33,
+  "vault_sha": "282bc8bce991aafd952e",
+  "host": "www.quantconnect.com",
+  "claims": [
+   {
+    "claim": "The QuantConnect data provider also provides the US Index Option Universe dataset, which lists the available contracts with their daily Greeks and implied volatility values.",
+    "lang": "en",
+    "quantities": [
+     "volatility"
+    ],
+    "direction": [
+     "contracts"
+    ],
+    "horizon": [
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "spx"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "ef73aa95cd54"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "CFD - QuantConnect.com",
+  "url": "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/cfd",
+  "published": "2026-09-22T18:15:53+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://cdn.quantconnect.com/2024-quantconnect-brand-kit.zip",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/cfd",
+   "https://www.quantconnect.com/datasets/",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/navigating-the-market",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/categories",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/data-issues",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/misconceptions",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/licensing",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/vendors",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-equities",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-equity-options",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/crypto",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/crypto-futures",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/forex",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/futures",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-indices",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-index-options",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/alternative-data",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/auxiliary-data",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/interactive-brokers",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/tradestation",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/tastytrade",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/alpaca",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/charles-schwab",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/databento",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/tradier",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/bloomberg-bpipe",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/ssc-eze",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/trading-technologies",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/polygon"
+  ],
+  "n_endpoints": 32,
+  "vault_sha": "7a112b4842c4458d75f1",
+  "host": "www.quantconnect.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Alternative Data - QuantConnect.com",
+  "url": "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/alternative-data",
+  "published": "2026-09-22T18:15:56+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://cdn.quantconnect.com/2024-quantconnect-brand-kit.zip",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/alternative-data",
+   "https://www.quantconnect.com/datasets/",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/navigating-the-market",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/categories",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/data-issues",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/misconceptions",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/licensing",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/vendors",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-equities",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-equity-options",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/crypto",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/crypto-futures",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/forex",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/futures",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-indices",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-index-options",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/cfd",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/auxiliary-data",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/interactive-brokers",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/tradestation",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/tastytrade",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/alpaca",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/charles-schwab",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/databento",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/tradier",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/bloomberg-bpipe",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/ssc-eze",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/trading-technologies",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/polygon",
+   "https://www.quantconnect.com/datasets",
+   "https://www.quantconnect.com/datasets/tiingo-news-feed",
+   "https://www.quantconnect.com/datasets/benzinga-news-feed"
+  ],
+  "n_endpoints": 35,
+  "vault_sha": "20eef8fdaaed87ce7c1b",
+  "host": "www.quantconnect.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Auxiliary Data - QuantConnect.com",
+  "url": "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/auxiliary-data",
+  "published": "2026-09-22T18:15:58+00:00",
+  "symbols": [
+   "NAS100",
+   "US500"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://cdn.quantconnect.com/2024-quantconnect-brand-kit.zip",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/auxiliary-data",
+   "https://www.quantconnect.com/datasets/",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/navigating-the-market",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/categories",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/data-issues",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/misconceptions",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/licensing",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/vendors",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-equities",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-equity-options",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/crypto",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/crypto-futures",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/forex",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/futures",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-indices",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-index-options",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/cfd",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/alternative-data",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/interactive-brokers",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/tradestation",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/tastytrade",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/alpaca",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/charles-schwab",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/databento",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/tradier",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/bloomberg-bpipe",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/ssc-eze",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/trading-technologies",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/polygon",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/us-equity-security-master",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/us-futures-security-master",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/us-equity-option-universe",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/us-index-option-universe",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/us-future-universe",
+   "https://www.quantconnect.com/docs/v2/writing-algorithms/datasets/quantconnect/us-future-option-universe",
+   "https://www.quantconnect.com/datasets",
+   "https://www.quantconnect.com/datasets/tiingo-news-feed",
+   "https://www.quantconnect.com/datasets/benzinga-news-feed"
+  ],
+  "n_endpoints": 41,
+  "vault_sha": "185fa8fa12afcead94f7",
+  "host": "www.quantconnect.com",
+  "claims": [
+   {
+    "claim": "US Future Universe The US Future Universe dataset by QuantConnect lists the available US Future contracts, their daily trading volume, and Open Interest.",
+    "lang": "en",
+    "quantities": [
+     "volume",
+     "open interest"
+    ],
+    "direction": [
+     "contracts"
+    ],
+    "horizon": [
+     "daily",
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500"
+     ],
+     "mentioned": [
+      "ndx",
+      "spx"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "ec04347199aa"
+   },
+   {
+    "claim": "US Future Option Universe The US Future Option Universe dataset by QuantConnect lists the available US Future Options contracts and the current open interest.",
+    "lang": "en",
+    "quantities": [
+     "options",
+     "open interest"
+    ],
+    "direction": [
+     "contracts"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500"
+     ],
+     "mentioned": [
+      "ndx",
+      "spx"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "aa938fb10aa2"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "What is STP, ECN and OTC trading?",
+  "url": "https://cysecsupport.axi.com/en-US/axicysec--axicorp-prod/article/CcbKl1VU-what-is-stp-ecn-and-otc-trading",
+  "published": "2026-09-22T18:15:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3e3eb60ea90872d292e9",
+  "host": "cysecsupport.axi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "How do I upload identification documents to verify my Axi Trading account?",
+  "url": "https://cysecsupport.axi.com/en-US/axicysec--axicorp-prod/article/5VDGccyu-how-do-i-upload-identification-documents-to-verify-my-axi-trading-account",
+  "published": "2026-09-22T18:16:02+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c27526b1ed063ec09551",
+  "host": "cysecsupport.axi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Swap Free / Islamic Trading Account",
+  "url": "https://cysecsupport.axi.com/en-US/axicysec--axicorp-prod/directories/LOQu0jhK",
+  "published": "2026-09-22T18:16:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4039abcf5ab256178624",
+  "host": "cysecsupport.axi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "What is the difference between Standard and Pro trading accounts?",
+  "url": "https://cysecsupport.axi.com/en-US/axicysec--axicorp-prod/article/lYwfLl5q-what-is-the-difference-between-standard-and-pro-trading-accounts",
+  "published": "2026-09-22T18:16:05+00:00",
+  "symbols": [
+   "BTCUSD",
+   "ETHUSD",
+   "EURUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ef5df11f4c6246149e66",
+  "host": "cysecsupport.axi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "What type of trading account should I choose?",
+  "url": "https://cysecsupport.axi.com/en-US/axicysec--axicorp-prod/article/SKXUCDeV-what-type-of-trading-account-should-i-choose",
+  "published": "2026-09-22T18:16:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ac94ef2fcd093bc238be",
+  "host": "cysecsupport.axi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "How to open an MT4/MT5 Demo trading account in the Client Portal?",
+  "url": "https://cysecsupport.axi.com/en-US/axicysec--axicorp-prod/article/Rv_wIyt0-how-to-open-an-mt4mt5-demo-trading-account-in-the-client-portal",
+  "published": "2026-09-22T18:16:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "82f1a8602b03148ebcb7",
+  "host": "cysecsupport.axi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "What is the difference between a Demo and Live trading account?",
+  "url": "https://cysecsupport.axi.com/en-US/axicysec--axicorp-prod/article/lux9Bh8H-what-is-the-difference-between-a-demo-and-live-trading-account",
+  "published": "2026-09-22T18:16:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7811aa1753f751fdf0ac",
+  "host": "cysecsupport.axi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Federal Reserve Board - Review of Monetary Policy Strategy, Tools, and Communications",
+  "url": "https://federalreserve.gov/monetarypolicy/review-of-monetary-policy-strategy-tools-and-communications.htm",
+  "published": "2026-09-22T18:16:12+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4086db773c0c80dd1b97",
+  "host": "federalreserve.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Tushare\u6570\u636e",
+  "url": "https://tushare.pro/document/2",
+  "published": "2026-09-22T18:16:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "flow",
+   "inventory",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "73876a0cd68fc2df57cd",
+  "host": "tushare.pro",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Tushare\u6570\u636e",
+  "url": "https://tushare.pro/document/2?doc_id=26",
+  "published": "2026-09-22T18:16:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "inventory",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "87082124d1c2e2f875dd",
+  "host": "tushare.pro",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Tushare\u6570\u636e",
+  "url": "https://tushare.pro/document/2?doc_id=32",
+  "published": "2026-09-22T18:16:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "inventory",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f220a76e80c7771ef084",
+  "host": "tushare.pro",
+  "claims": [],
+  "n_claims": 0
+ }
+]
