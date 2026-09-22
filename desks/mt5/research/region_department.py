@@ -224,7 +224,16 @@ class Ctx:
         sid = str(source_id or self.miner or "unattributed")
         if not sid.lower().startswith(tag):
             sid = f"{tag}{sid}"
-        generator = f"{tag}{self.miner or 'unnamed'}"
+        # A MINER MAY NAME ITS OWN GENERATOR, and four Japan miners do ("japan:mine_gotobi").
+        # This wrapper used to build the generator and then forward **fields, so any miner that
+        # supplied one raised `got multiple values for keyword argument 'generator'` -- measured
+        # 2026-09-17, where it silently cost four calendar miners every discovery they made,
+        # every pass, while the department reported UNMEASURED TypeError and carried on. The
+        # miner's own name wins; the region tag is still enforced on it.
+        generator = str(fields.pop("generator", "") or "").strip() or (
+            f"{tag}{self.miner or 'unnamed'}")
+        if not generator.lower().startswith(tag):
+            generator = f"{tag}{generator}"
         payload = dict(fields.pop("payload", None) or {})
         payload.setdefault("region", self.mandate.region)
         payload.setdefault("miner", self.miner)
@@ -706,7 +715,44 @@ def _compile_cells(p: Pass, budget_s: float) -> dict[str, Any]:
             "why": "" if ok else f"discovery_compiler: {said}"}
 
 
-def _candidate_view(row: Mapping[str, Any]) -> dict[str, Any]:
+def _parent_payload(row: Mapping[str, Any], conn: Any,
+                    cache: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    """The payload of the discovery this candidate came from, or {}.
+
+    THE REQUIREMENTS LIVE THERE AND NOWHERE ELSE. `discoveries` has no column for counterparty,
+    exact entry, exact exit, expected costs, capacity, negative control or falsifier, so every
+    region miner writes them into its payload -- and the candidate the compiler builds from that
+    discovery carries none of them. Measured 2026-09-17 on the Japan department: 539 of 539
+    candidates ranked, 539 held upstream, all ten fields missing on every one. The miners were
+    doing the work; the fields were being dropped in transit.
+    """
+    if conn is None:
+        return {}
+    did = str(row.get("discovery_id") or "")
+    if not did:
+        for edge in R.provenance_of("cell", str(row.get("id") or ""), depth=3, conn=conn):
+            if str(edge.get("parent_kind")) == "discovery":
+                did = str(edge.get("parent_id") or "")
+                break
+    if not did:
+        return {}
+    if did in cache:
+        return cache[did]
+    payload: dict[str, Any] = {}
+    try:
+        got = conn.execute("SELECT payload_json FROM discoveries WHERE id=?", (did,)).fetchone()
+        raw = got["payload_json"] if got is not None else ""
+        parsed = json.loads(raw) if isinstance(raw, str) and raw.strip() else {}
+        if isinstance(parsed, dict):
+            payload = parsed
+    except Exception:                       # a payload nobody can read is not a crash
+        payload = {}
+    cache[did] = payload
+    return payload
+
+
+def _candidate_view(row: Mapping[str, Any], conn: Any = None,
+                    cache: dict[str, dict[str, Any]] | None = None) -> dict[str, Any]:
     """A candidate row plus the fields the registry has no COLUMN for.
 
     Three of section 33's twenty-five -- original_language, counterparty, negative_control --
@@ -722,6 +768,13 @@ def _candidate_view(row: Mapping[str, Any]) -> dict[str, Any]:
             continue
         for k, v in parsed.items():
             if view.get(k) in (None, "", [], {}):
+                view[k] = v
+    payload = _parent_payload(row, conn, cache if cache is not None else {})
+    for source in (payload.get("requirements"), payload):
+        if not isinstance(source, Mapping):
+            continue
+        for k, v in source.items():
+            if view.get(k) in (None, "", [], {}) and v not in (None, "", [], {}):
                 view[k] = v
     return view
 
@@ -767,6 +820,7 @@ def _score_orthogonality(p: Pass, budget_s: float) -> dict[str, Any]:
     for r in rows:
         key = RM.cell_key(RM.axes_of_candidate(r))
         sibs[key] = sibs.get(key, 0) + 1
+    payload_cache: dict[str, dict[str, Any]] = {}
     scored: list[dict[str, Any]] = []
     for r in rows:
         cell = str(r.get("grid_cell") or "")
@@ -780,7 +834,8 @@ def _score_orthogonality(p: Pass, budget_s: float) -> dict[str, Any]:
                        "cell": key, "grid_cell": cell, "base_score": round(base, 8),
                        "siblings": n_sibs, "orthogonality": round(ortho, 6),
                        "score": round(base * ortho, 8), "cell_empty": empty,
-                       "missing": RM.candidate_complete(_candidate_view(r)), "row": r})
+                       "missing": RM.candidate_complete(
+                           _candidate_view(r, p.conn, payload_cache)), "row": r})
     p.ranked = scored
     return {"outcome": OK, "scored": len(scored),
             "alone_in_cell": sum(1 for s in scored if s["siblings"] == 1),
