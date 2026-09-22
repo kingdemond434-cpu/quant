@@ -712,6 +712,21 @@ Research is NOT closed by this: forex mechanisms keep being mined, tested in the
 on forward clocks, and their evidence keeps accruing. What they may not do is take live capital
 until the principal says otherwise.
 
+- **ONE CERTIFICATE TRUTH (principal 2026-09-22: "one unified canon ... one permanent lane truth
+  always"; certificate discovery banned; discovery clocks removed).** There is ONE writer of
+  certificates, `desks/mt5/scripts/external_gauntlet.py`, ONE authority file,
+  `reports/UNIVERSAL_SURVIVORS.json` under the exact ten-gate attestation, and ONE consumer for
+  capital, `desks/mt5/research/promoter.py`. The survivors ledger, the sleeve registry, the shadow
+  and lane states, `sleeves.json` and `forward_reconcile.json` are DERIVED: a row in any of them
+  that the lane (or its power-cure candidates) does not back is a divergence, never a second truth.
+  No `discovered`-family certificate, cure candidate, claim, clock or live sleeve may stand.
+  `research/certificate_truth.py` audits every store hourly (leg `certificate_truth`, artifact
+  `reports/CERTIFICATE_TRUTH.json`); its one-time `--apply` moves the discovered residue to
+  `data/certificate_history.jsonl` (status RETIRED, reason named) and retires every unbacked clock
+  with the lane's reason, never touching the live book's symbols or a row it cannot parse;
+  `scripts/check_certificate_truth.py` fails the law gate on any residue. Measured 2026-09-22: the
+  canon said n=0 while the registry held ~693 clocks, 124 of the banned family.
+
 ## 5k. THE 24/7 GLOBAL ORTHOGONAL ALPHA SWARM LAW (principal 2026-09-19, permanent)
 
 The research organism never idles. It continuously discovers new information sources,
@@ -962,6 +977,13 @@ packs name has no resident, no discovery in its trailing window, or no candidate
 
 ## 7. ENFORCEMENT WIRING (what makes this file operative rather than decorative)
 
+- **EVERY BUDGETED CHILD DIES AS A TREE (2026-09-22, lesson L0368).** A leg stopped by its budget
+  is killed with every worker it opened (`libs/ops/proctree.run` in the hourly cycle and the
+  residents), and the `reap_orphans` actuator runs first in every reconciler pass. Measured: 72
+  orphaned pool workers with dead parents held 147 GB of the 251 GB commit limit while 67 GB of
+  RAM was free, and every new leg died of STATUS_COMMITMENT_LIMIT. When legs die with RAM free,
+  measure COMMIT, never RAM.
+
 - `ops/brain_env.sh` injects `ops/principal_doctrine.txt` (sealed core + universe mandate) AND
   this file into every organ's appended system prompt; research organs additionally open
   `docs/RESEARCH.md` (their prompt's first standing order).
@@ -969,5 +991,9 @@ packs name has no resident, no discovery in its trailing window, or no candidate
   protected clauses; every dig runs it via the law gate before starting.
 - `scripts/check_doctrine_diff.py` treats every doctrine edit as a principal order to surface.
 - `scripts/run_law_gate.py` is the entry gate for every claude-invoking organ.
+- `scripts/check_certificate_truth.py` (law half; `--require-state` in the box gate) keeps ONE
+  CERTIFICATE TRUTH (§5j): every store that claims a certificate or a clock is audited against the
+  one lane by `desks/mt5/research/certificate_truth.py` (hourly leg `certificate_truth`, artifact
+  `reports/CERTIFICATE_TRUTH.json`), and any banned-family residue or unbacked clock fails the gate.
 - The vault index (`scripts/vault_search.py`) covers this file, RESEARCH.md and all annexes; an
   empty result means these tokens are absent, never that the question was unsettled.

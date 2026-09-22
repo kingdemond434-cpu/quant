@@ -129,6 +129,25 @@ $tasks = @(
                      -RepetitionInterval (New-TimeSpan -Minutes 1) `
                      -RepetitionDuration (New-TimeSpan -Days 3650) }
        Desc = "One gateway pass per minute; file-locked against overlap." },
+    # THE RESIDENT GATEWAY, AND WHY IT EXISTS BESIDE THE PER-MINUTE TASK.
+    #
+    # `MT5-Gateway` runs as Administrator with LogonType=Interactive, because the MT5 Python API
+    # reaches terminal64 over local IPC and the terminal lives in the interactive session -- a
+    # task under SYSTEM sits in Session 0, cannot see it, and would fail to initialise. But an
+    # Interactive task only executes while that user holds a desktop session: without one it
+    # returns ERROR_NO_SUCH_LOGON_SESSION (2147946720) and no pass happens at all. Measured
+    # 2026-09-15, that was the task's last result while E8-Executor (SYSTEM) returned 0 every
+    # time.
+    #
+    # A loop ALREADY RUNNING needs no logon session to be created for it. AtLogOn starts it once
+    # inside the session, which is the pattern this box already runs successfully -- macro_intel,
+    # meta_desk and crowding_miner have been up since 2026-09-08. The two cannot double-trade:
+    # `run_gateway_loop` holds a PID-aware lock, so whichever starts a pass owns it.
+    @{ Name = "MT5-GatewayResident"
+       Script = "research\\gateway_resident.py"
+       Trigger = { New-ScheduledTaskTrigger -AtLogOn }
+       TimeLimit = ([TimeSpan]::Zero)
+       Desc = "Resident gateway loop: passes continue when the Interactive task cannot start." },
     @{ Name = "MT5-Hourly"
        Script = "research\hourly_cycle.py"
        Trigger = { New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
@@ -334,10 +353,10 @@ $tasks = @(
 #                     logon; ops/box-repair.ps1 documents the fix (schtasks /Change /RU <user>
 #                     /IT, elevated). Registering it from this table would create a task that
 #                     reports success and never produces a terminal, which is worse than absent.
-#   MT5-Universe      is registered in a dedicated block below because it is a cmd wrapper and
-#                     must share the INTERACTIVE terminal session. Running it as SYSTEM makes
-#                     MetaTrader initialization fail even while the live terminal is healthy.
-# TerminalBoot remains reported by the drill until its interactive registration is resolved.
+#   MT5-Universe      names no script in this checkout. Registering a guess would satisfy the
+#                     reboot drill's name check while running nothing -- the exact "capability
+#                     that is code, not a capability" failure the desk keeps paying for.
+# Both are reported by the drill as MISSING, which is the honest state until each is resolved.
 
 # TWO ROOTS, EXACTLY AS `hourly_cycle._producer` RESOLVES THEM. The research organs live under
 # `desks/mt5/...`, but the publication and maintenance scripts live at the REPOSITORY root --
@@ -422,41 +441,6 @@ foreach ($t in $tasks) {
     }
 }
 
-# Full broker-derived M1/M5/M15/M30/H1/H4/D1 collection. The wrapper fills missing series from
-# mt5.symbols_get(), records unavailable charts and repairs the registry; refresh_tail maintains
-# existing files. MetaTrader IPC is
-# session-scoped, so this task must run in the logged-in user's interactive session, never SYSTEM.
-$universeCmd = Join-Path $RepoRoot "ops\run_universe.cmd"
-if (Test-Path $universeCmd) {
-    if ($WhatIfOnly) {
-        Write-Host "  [DRY ] MT5-Universe interactive full-timeframe collector"
-    } else {
-        try {
-            $universeAction = New-ScheduledTaskAction -Execute "cmd.exe" `
-                -Argument ("/d /c {0}" -f $universeCmd) `
-                -WorkingDirectory $RepoRoot
-            $universeTrigger = New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
-                -RepetitionInterval (New-TimeSpan -Hours 1) `
-                -RepetitionDuration (New-TimeSpan -Days 3650)
-            $universeSettings = New-ScheduledTaskSettingsSet `
-                -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable `
-                -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1) `
-                -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Minutes 55)
-            $universePrincipal = New-ScheduledTaskPrincipal -UserId $env:USERNAME `
-                -LogonType Interactive -RunLevel Limited
-            Unregister-ScheduledTask -TaskName "MT5-Universe" -Confirm:$false `
-                -ErrorAction SilentlyContinue
-            Register-ScheduledTask -TaskName "MT5-Universe" -Action $universeAction `
-                -Trigger $universeTrigger -Settings $universeSettings `
-                -Description "Refresh the complete Fusion timeframe ladder and registry hourly." `
-                -Principal $universePrincipal | Out-Null
-            Write-Host "  [OK  ] MT5-Universe registered in the interactive MT5 session"
-        } catch {
-            Write-Host ("  [FAIL] MT5-Universe {0}" -f $_.Exception.Message)
-        }
-    }
-}
-
 # The research supervisor is a persistent queue/experiment worker, not a one-shot task. A short
 # recurring trigger supplies crash recovery; IgnoreNew keeps exactly one live owner.
 $supervisor = Join-Path $DeskRoot "research\research_supervisor.py"
@@ -537,15 +521,21 @@ if ((Test-Path $adoptSeal) -and -not $WhatIfOnly) {
     try {
         $adoptAction = New-ScheduledTaskAction -Execute "powershell.exe" -Argument `
             ("-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"{0}`"" -f $adoptSeal)
-        $adoptTrigger = New-ScheduledTaskTrigger -Once -At ((Get-Date).Date.AddMinutes(12)) `
+        # DAILY at :12 repeating hourly for one day -- never -Once with a long duration: the
+        # scheduler folded that into P9DT2H40M on the trading box and the repetition EXPIRED on
+        # 2026-09-21, after which nothing shipped was adopted (install_adopt_release_task.ps1).
+        $adoptTrigger = New-ScheduledTaskTrigger -Daily -At ((Get-Date).Date.AddMinutes(12))
+        $adoptTrigger.Repetition = (New-ScheduledTaskTrigger -Once -At ((Get-Date).Date.AddMinutes(12)) `
             -RepetitionInterval (New-TimeSpan -Hours 1) `
-            -RepetitionDuration (New-TimeSpan -Days 3650)
+            -RepetitionDuration (New-TimeSpan -Days 1)).Repetition
         $adoptSettings = New-ScheduledTaskSettingsSet `
             -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable `
             -RestartCount 2 -RestartInterval (New-TimeSpan -Minutes 2) `
             -ExecutionTimeLimit (New-TimeSpan -Minutes 20) -MultipleInstances IgnoreNew
-        $adoptPrincipal = New-ScheduledTaskPrincipal -UserId $env:USERNAME `
-            -LogonType Interactive -RunLevel Limited
+        # SYSTEM, ServiceAccount: the box's tasks run as SYSTEM (an Interactive principal only
+        # fires while that user holds a desktop session, and the adoption then dies with it).
+        $adoptPrincipal = New-ScheduledTaskPrincipal -UserId "SYSTEM" `
+            -LogonType ServiceAccount -RunLevel Highest
         Unregister-ScheduledTask -TaskName "MT5-AdoptRelease" `
             -Confirm:$false -ErrorAction SilentlyContinue
         Register-ScheduledTask -TaskName "MT5-AdoptRelease" -Action $adoptAction `
