@@ -1540,6 +1540,47 @@ def collapse_opposing_gold_positions(st: dict) -> int:
     return paired
 
 
+def cancel_filled_gold_siblings(st: dict) -> int:
+    """Cancel the unfilled half of every filled gold bracket (broker-confirmed OCO).
+
+    MT5 pending orders are not OCO by themselves. Once one stop in a ``DWgold_*`` bracket
+    fills, its opposite sibling otherwise remains live and can later manufacture the exact
+    buy/sell hedge this gateway is meant to prevent. A live position and pending order sharing
+    this gateway's MAGIC, symbol and comment is an unambiguous filled-bracket sibling; no
+    strategy inference or local state is required. Manual, scalp and family orders are outside
+    the deliberately narrow predicate.
+    """
+    positions = [p for p in (mt5.positions_get(symbol=GOLD_SYMBOL) or [])
+                 if int(getattr(p, "magic", 0) or 0) == MAGIC
+                 and str(getattr(p, "comment", "") or "").startswith("DWgold_")]
+    open_tags = {str(getattr(p, "comment", "") or "") for p in positions}
+    if not open_tags:
+        return 0
+    siblings = [o for o in (mt5.orders_get(symbol=GOLD_SYMBOL) or [])
+                if int(getattr(o, "magic", 0) or 0) == MAGIC
+                and str(getattr(o, "comment", "") or "") in open_tags]
+    removed = 0
+    for order in siblings:
+        if not st.get("armed"):
+            log(f"SHADOW would cancel filled gold bracket sibling {order.ticket} "
+                f"({order.comment})")
+            removed += 1
+            continue
+        res = mt5.order_send({
+            "action": mt5.TRADE_ACTION_REMOVE,
+            "order": int(order.ticket),
+            "magic": MAGIC,
+            "comment": order_comment("oco_sibling"),
+        })
+        rc = getattr(res, "retcode", None) if res is not None else None
+        log(f"OCO cancel filled gold bracket sibling {order.ticket} ({order.comment}) "
+            f"-> retcode={rc} "
+            f"{diagnose(rc, getattr(res, 'comment', '') if res is not None else '')}")
+        if rc == getattr(mt5, "TRADE_RETCODE_DONE", 10009):
+            removed += 1
+    return removed
+
+
 def reconcile(st: dict) -> dict:
     pos = []
     pend = []
@@ -3470,6 +3511,10 @@ def main() -> None:
     # bracket book's redundant pair via CLOSE_BY; every other lane and manual position is out of
     # scope.  The placement fence below prevents the state from recurring on later windows.
     try:
+        # MT5 has no native OCO bracket primitive. Cancel a filled bracket's still-pending
+        # sibling before repairing any legacy opposing pair, otherwise that sibling can simply
+        # recreate the hedge on a later price swing.
+        cancel_filled_gold_siblings(st)
         collapse_opposing_gold_positions(st)
     except Exception as exc:
         log(f"GOLD HEDGE COLLAPSE FAILED (positions left untouched): {type(exc).__name__}: {exc}")

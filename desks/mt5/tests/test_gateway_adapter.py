@@ -868,6 +868,50 @@ def test_gold_bracket_hedges_are_collapsed_by_close_by_and_nothing_else() -> Non
                      "comment": "DWportfolio_net"}]
 
 
+def test_filled_gold_bracket_cancels_only_its_own_pending_sibling() -> None:
+    sent: list[dict] = []
+    positions = [
+        SimpleNamespace(ticket=1, symbol="XAUUSD", magic=341953,
+                        comment="DWgold_london_am"),
+        SimpleNamespace(ticket=2, symbol="XAUUSD", magic=341953,
+                        comment="DWxau_m5_other"),
+    ]
+    orders = [
+        SimpleNamespace(ticket=11, symbol="XAUUSD", magic=341953,
+                        comment="DWgold_london_am"),
+        SimpleNamespace(ticket=12, symbol="XAUUSD", magic=341953,
+                        comment="DWgold_asia"),
+        SimpleNamespace(ticket=13, symbol="XAUUSD", magic=341953,
+                        comment="DWxau_m5_other"),
+        SimpleNamespace(ticket=14, symbol="XAUUSD", magic=999, comment="DWgold_london_am"),
+    ]
+    mt5 = SimpleNamespace(
+        positions_get=lambda symbol=None: list(positions),
+        orders_get=lambda symbol=None: list(orders),
+        TRADE_ACTION_REMOVE=12, TRADE_RETCODE_DONE=10009,
+        order_send=lambda req: (sent.append(req) or SimpleNamespace(retcode=10009, comment="")))
+    ns = _exec(("cancel_filled_gold_siblings", "order_comment"),
+               {"mt5": mt5, "log": lambda *_: None, "diagnose": lambda *a: "",
+                "MAGIC": 341953})
+    assert ns["cancel_filled_gold_siblings"]({"armed": True}) == 1
+    assert sent == [{"action": 12, "order": 11, "magic": 341953,
+                     "comment": "DWoco_sibling"}]
+
+
+def test_filled_gold_sibling_cancel_is_shadow_only_when_disarmed() -> None:
+    sent: list[dict] = []
+    mt5 = SimpleNamespace(
+        positions_get=lambda symbol=None: [SimpleNamespace(magic=341953,
+                                                            comment="DWgold_asia")],
+        orders_get=lambda symbol=None: [SimpleNamespace(ticket=11, magic=341953,
+                                                         comment="DWgold_asia")],
+        order_send=lambda req: sent.append(req))
+    ns = _exec(("cancel_filled_gold_siblings",),
+               {"mt5": mt5, "log": lambda *_: None, "MAGIC": 341953})
+    assert ns["cancel_filled_gold_siblings"]({"armed": False}) == 1
+    assert sent == []
+
+
 def test_close_by_deals_are_closing_fills_not_lost_attribution() -> None:
     deals = [SimpleNamespace(entry=3, volume=0.02, price=4317.5)]
     mt5 = SimpleNamespace(DEAL_ENTRY_OUT=1, DEAL_ENTRY_OUT_BY=3,
