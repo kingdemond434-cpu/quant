@@ -31,9 +31,9 @@ WORKER_MARKERS: tuple[str, ...] = (
 )
 
 try:  # psutil is optional: the desk falls back to the OS tools without it
-    import psutil
+    import psutil  # type: ignore[import-untyped,unused-ignore]
 except ImportError:  # pragma: no cover - exercised only where psutil is absent
-    psutil = None  # type: ignore[assignment]
+    psutil = None  # type: ignore[assignment,unused-ignore]
 
 
 def kill_tree(pid: int, *, include_parent: bool = True) -> dict[str, Any]:
