@@ -138,6 +138,11 @@ EXTENSIONS: dict[str, tuple[tuple[str, str], ...]] = {
         # contract -- a falsifier and competing explanations declared -- as 0/1.
         ("causal_verdict", "TEXT"), ("causal_failing_test", "TEXT"), ("causal_effect", "REAL"),
         ("causal_judged_at", "TEXT"), ("causal_eligible", "INTEGER"),
+        # THE UNIVERSALCELL'S SIMULATOR FIELDS (LAWS 5m / RESEARCH.md): the simulator family
+        # and the posterior-world robustness `research/digital_twin.py` writes -- the share
+        # of calibrated posterior worlds in which the candidate's rule stays positive, NULL
+        # (UNMEASURED) when the twin failed its predictive checks. ADD COLUMN, never a rewrite.
+        ("simulator_family", "TEXT"), ("posterior_world_robustness", "REAL"),
         # THE INDEPENDENT REPLICATION CIVILIZATION'S VERDICT (replication_civilization):
         # REPLICATED / MISMATCH / UNMEASURED and, on a mismatch, the divergence it quarantined on.
         ("replication_verdict", "TEXT"), ("replication_mismatch_json", "TEXT"),

@@ -45,7 +45,7 @@ EPS = 1e-12
 LAG_RING = 8
 #: Robust sigmas (median/MAD of the predictive draws) beyond which an observed statistic is
 #: outside the world. See `ppc` for why a per-statistic tail count cannot be the cut.
-PPC_Z = 3.5
+PPC_Z = 5.0
 #: Minimum triggered events before a mechanism's effect in one world is a measurement.
 MIN_EVENTS = 20
 
@@ -789,11 +789,14 @@ def ppc(posterior: Posterior, observed: np.ndarray, *, tod: np.ndarray,
     """Simulate `n_draws` posterior worlds and ask, statistic by statistic, whether the observed
     value sits inside the posterior predictive distribution.
 
-    The discrepancy is ROBUST (median and MAD of the predictive draws) and the cut is `z_crit`
+    The discrepancy is ROBUST (the larger of the MAD and the standard deviation of the
+    predictive draws, floored at the statistic's own resolution) and the cut is `z_crit`
     rather than a per-statistic tail count: thirty-seven statistics at a 5% tail each would
     fail the TRUE world five times out of six, and a check that cannot pass its own generator
-    is not a check. At 3.5 robust sigmas the true world passes all groups ~98% of the time and
-    a twenty-fold spread or a different cancellation regime fails by tens of sigmas.
+    is not a check. MEASURED over eight seeds at 48 draws: 3.5 sigmas still failed the true
+    world one time in four (bounded and correlation-type statistics have heavier sampling
+    tails than 48 draws resolve); at 5 sigmas it passes, while a twenty-fold spread or a
+    different cancellation regime fails by tens of sigmas.
     """
     obs = np.asarray(observed, dtype=float).reshape(-1)
     theta = sample_worlds(posterior, n_draws, rng)
@@ -817,7 +820,7 @@ def ppc(posterior: Posterior, observed: np.ndarray, *, tod: np.ndarray,
         # steps of one event, and one event's difference is not a different world
         gaps = np.diff(np.unique(sims))
         resolution = float(gaps.min()) if gaps.size else 0.0
-        scale = max(1.4826 * float(np.median(np.abs(sims - med))), 0.5 * float(np.std(sims)),
+        scale = max(1.4826 * float(np.median(np.abs(sims - med))), float(np.std(sims)),
                     1e-6 + 0.01 * abs(med), resolution)
         z = (obs[k] - med) / scale
         zs[name] = round(float(z), 3)
@@ -883,15 +886,25 @@ def _position_outcome(pos: np.ndarray, world: WorldBars, cost_mult: float) -> fl
     return gross - cost
 
 
+def simulate_posterior(posterior: Posterior, n_worlds: int, *, tod: np.ndarray,
+                       rng: np.random.Generator) -> SimBars:
+    """`n_worlds` worlds drawn from the posterior and run: the paired ground every comparison
+    across cost levels or rules must share, so a difference is the rule's and not the draw's."""
+    theta = sample_worlds(posterior, n_worlds, rng)
+    return simulate(theta, posterior.n_bars, posterior.steps_per_bar, tod, rng)
+
+
 def robustness(strategy_rule: StrategyRule, posterior: Posterior, n_worlds: int, *,
                tod: np.ndarray, rng: np.random.Generator, cost_mult: float = 1.0,
-               deadline: Callable[[], bool] | None = None) -> Robustness:
+               deadline: Callable[[], bool] | None = None,
+               bars: SimBars | None = None) -> Robustness:
     """Run `strategy_rule` in `n_worlds` posterior worlds. A rule returns either a position array
     in [-1, 1] per bar (costed at half the world's spread per unit traded) or, when it has its own
     replay, the outcome itself as a float. Worlds where the rule raises or returns NaN are
-    dropped and counted; an empty outcome set is UNMEASURED."""
-    theta = sample_worlds(posterior, n_worlds, rng)
-    bars = simulate(theta, posterior.n_bars, posterior.steps_per_bar, tod, rng)
+    dropped and counted; an empty outcome set is UNMEASURED. `bars` reuses worlds already
+    simulated (see `simulate_posterior`) instead of drawing fresh ones."""
+    if bars is None:
+        bars = simulate_posterior(posterior, n_worlds, tod=tod, rng=rng)
     outs: list[float] = []
     for i in range(bars.n_worlds):
         if deadline is not None and deadline():
@@ -983,10 +996,12 @@ class Plausibility:
     n_measured: int
     n_worlds: int
     mean_effect: float
+    events: np.ndarray = field(default_factory=lambda: np.zeros(0))
 
     def to_dict(self) -> dict[str, Any]:
         return {"verdict": self.verdict, "p_exists": self.p_exists, "n_measured": self.n_measured,
-                "n_worlds": self.n_worlds, "mean_effect": self.mean_effect}
+                "n_worlds": self.n_worlds, "mean_effect": self.mean_effect,
+                "events_per_window": float(np.mean(self.events)) if self.events.size else None}
 
 
 def mechanism_plausibility(mechanism: Mechanism, posterior: Posterior, n_worlds: int, *,
@@ -1002,6 +1017,7 @@ def mechanism_plausibility(mechanism: Mechanism, posterior: Posterior, n_worlds:
     h = max(1, int(mechanism.horizon))
     effects: list[float] = []
     exists: list[bool] = []
+    events: list[int] = []
     for i in range(bars.n_worlds):
         if deadline is not None and deadline():
             break
@@ -1021,15 +1037,17 @@ def mechanism_plausibility(mechanism: Mechanism, posterior: Posterior, n_worlds:
         m = float(e.mean())
         se = float(e.std(ddof=1)) / math.sqrt(e.size) if e.size > 1 else float("inf")
         effects.append(m)
+        events.append(int(hit.sum()))
         exists.append(m > 0 and se > 0 and m / se > 1.64)
     n_meas = len(effects)
     if n_meas < max(1, n_worlds // 2):
         return Plausibility("UNMEASURED", float("nan"), np.asarray(effects), n_meas, n_worlds,
-                            float(np.mean(effects)) if effects else float("nan"))
+                            float(np.mean(effects)) if effects else float("nan"),
+                            np.asarray(events))
     p = float(np.mean(exists))
     verdict = "CAN_EXIST" if p >= 0.5 else ("MARGINAL" if p >= 0.2 else "CANNOT_EXIST")
     return Plausibility(verdict, round(p, 4), np.asarray(effects), n_meas, n_worlds,
-                        float(np.mean(effects)))
+                        float(np.mean(effects)), np.asarray(events))
 
 
 def _scaled_move(r: np.ndarray, lookback: int) -> np.ndarray:
@@ -1076,6 +1094,168 @@ def liquidation_cascade_mechanism(drawdown_sigma: float = 3.0, window: int = 24,
                 out[t] = 1.0
         return out
     return Mechanism(f"liquidation_cascade_{drawdown_sigma:g}", trigger, horizon)
+
+
+# ------------------------------------------------------------------------- execution cost
+
+@dataclass(frozen=True)
+class ExecutionCost:
+    """Counterfactual execution cost under the posterior: the same rule on the same worlds at
+    zero, actual and doubled spread. `cost_share` is the median share of the gross outcome the
+    spread takes; `p_positive_at` is the posterior share of worlds that stay positive per level."""
+    gross_mean: float
+    net_mean: float
+    cost_mean: float
+    cost_share: float
+    p_positive_at: dict[str, float]
+    verdict: str
+    n_worlds: int
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"gross_mean": self.gross_mean, "net_mean": self.net_mean,
+                "cost_mean": self.cost_mean, "cost_share": self.cost_share,
+                "p_positive_at": self.p_positive_at, "verdict": self.verdict,
+                "n_worlds": self.n_worlds}
+
+
+COST_LEVELS: tuple[float, ...] = (0.0, 1.0, 2.0)
+
+
+def execution_cost(rule_at: Callable[[float], StrategyRule], posterior: Posterior, n_worlds: int,
+                   *, tod: np.ndarray, rng: np.random.Generator,
+                   deadline: Callable[[], bool] | None = None,
+                   bars: SimBars | None = None) -> ExecutionCost:
+    """`rule_at(cost_mult)` is the strategy with its costs scaled -- a position rule ignores the
+    argument (the spread is charged here), a rule with its own replay bakes it in. Every level
+    runs on the SAME worlds, so the difference between levels is cost and nothing else."""
+    if bars is None:
+        bars = simulate_posterior(posterior, n_worlds, tod=tod, rng=rng)
+    per_level: dict[float, Robustness] = {}
+    for m in COST_LEVELS:
+        per_level[m] = robustness(rule_at(m), posterior, n_worlds, tod=tod, rng=rng, cost_mult=m,
+                                  deadline=deadline, bars=bars)
+    g, n1 = per_level[0.0], per_level[1.0]
+    if g.n_worlds == 0 or n1.n_worlds == 0 or g.n_worlds != n1.n_worlds:
+        return ExecutionCost(float("nan"), float("nan"), float("nan"), float("nan"), {},
+                             "UNMEASURED", 0)
+    cost = g.outcomes - n1.outcomes
+    with np.errstate(invalid="ignore", divide="ignore"):
+        share = np.where(np.abs(g.outcomes) > EPS, cost / np.abs(g.outcomes), np.nan)
+    share_med = float(np.nanmedian(share)) if np.isfinite(share).any() else float("nan")
+    p_at = {f"{m:g}x": per_level[m].p_positive for m in COST_LEVELS}
+    if p_at["2x"] >= 0.6:
+        verdict = "COST_ROBUST"
+    elif p_at["1x"] >= 0.5:
+        verdict = "COST_FRAGILE"
+    elif p_at["0x"] >= 0.5:
+        verdict = "COST_KILLED"
+    else:
+        verdict = "NO_EDGE_BEFORE_COST"
+    return ExecutionCost(float(g.outcomes.mean()), float(n1.outcomes.mean()), float(cost.mean()),
+                         share_med, p_at, verdict, int(g.n_worlds))
+
+
+# ------------------------------------------------------------------------- calibration score
+
+@dataclass(frozen=True)
+class CalibrationScore:
+    """Twin versus reality in one published number: the share of measurable statistics the
+    posterior reproduces within `z_crit` robust sigmas, beside the mean and worst discrepancy
+    and what could not be measured. 1.0 is a twin the tape cannot tell from itself; a twin with
+    nothing measurable scores None, never 1.0."""
+    score: float | None
+    mean_abs_z: float | None
+    max_abs_z: float | None
+    worst_statistic: str | None
+    n_measured: int
+    n_unmeasured: int
+    groups_passed: int
+    groups_total: int
+    unmeasured_groups: list[str]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"score": self.score, "mean_abs_z": self.mean_abs_z, "max_abs_z": self.max_abs_z,
+                "worst_statistic": self.worst_statistic, "n_measured": self.n_measured,
+                "n_unmeasured": self.n_unmeasured, "groups_passed": self.groups_passed,
+                "groups_total": self.groups_total, "unmeasured_groups": self.unmeasured_groups}
+
+
+def calibration_score(check: PPCResult, z_crit: float = PPC_Z) -> CalibrationScore:
+    zs = {k: v for k, v in check.z_scores.items() if v is not None}
+    n_un = sum(1 for v in check.z_scores.values() if v is None)
+    passed = sum(1 for g, v in check.groups.items() if v == "PASS")
+    if not zs:
+        return CalibrationScore(None, None, None, None, 0, n_un, passed, len(check.groups),
+                                list(check.unmeasured_groups))
+    absz = {k: abs(float(v)) for k, v in zs.items()}
+    worst = max(absz, key=lambda k: absz[k])
+    inside = sum(1 for v in absz.values() if v <= z_crit)
+    return CalibrationScore(round(inside / len(absz), 4), round(float(np.mean(list(absz.values()))),
+                                                              3),
+                            round(absz[worst], 3), worst, len(absz), n_un, passed,
+                            len(check.groups), list(check.unmeasured_groups))
+
+
+# ------------------------------------------------------------------------- preregistration
+
+@dataclass(frozen=True)
+class Preregistration:
+    """What a test of `mechanism` should EXPECT before it runs, from the posterior alone: the
+    effect size per event in vol units (median and 90% band across worlds), the events one
+    window yields, and the events a one-sided test needs at `power` -- so the gauntlet's cell
+    is registered with its expected effect and its required sample rather than fitted after."""
+    mechanism: str
+    p_exists: float
+    expected_effect: float | None
+    effect_ci90: tuple[float, float] | None
+    events_per_window: float | None
+    n_events_for_power: int | None
+    windows_for_power: float | None
+    power: float
+    alpha: float
+    verdict: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"mechanism": self.mechanism, "p_exists": self.p_exists,
+                "expected_effect": self.expected_effect, "effect_ci90": self.effect_ci90,
+                "events_per_window": self.events_per_window,
+                "n_events_for_power": self.n_events_for_power,
+                "windows_for_power": self.windows_for_power, "power": self.power,
+                "alpha": self.alpha, "verdict": self.verdict}
+
+
+def _z_upper(p: float) -> float:
+    """The standard normal quantile, by bisection on the error function (no scipy needed)."""
+    lo, hi = -10.0, 10.0
+    for _ in range(80):
+        mid = 0.5 * (lo + hi)
+        if 0.5 * (1.0 + math.erf(mid / math.sqrt(2.0))) < p:
+            lo = mid
+        else:
+            hi = mid
+    return 0.5 * (lo + hi)
+
+
+def preregister(mechanism: Mechanism, posterior: Posterior, n_worlds: int, *, tod: np.ndarray,
+                rng: np.random.Generator, power: float = 0.8, alpha: float = 0.05,
+                deadline: Callable[[], bool] | None = None) -> Preregistration:
+    pl = mechanism_plausibility(mechanism, posterior, n_worlds, tod=tod, rng=rng,
+                                deadline=deadline)
+    if pl.verdict == "UNMEASURED" or pl.effects.size == 0:
+        return Preregistration(mechanism.name, pl.p_exists, None, None, None, None, None, power,
+                               alpha, "UNMEASURED")
+    w = np.full(pl.effects.size, 1.0 / pl.effects.size)
+    q05, med, q95 = _wquantile(pl.effects, w, np.array([0.05, 0.5, 0.95]))
+    per_window = float(np.mean(pl.events)) if pl.events.size else None
+    n_needed: int | None = None
+    windows: float | None = None
+    if med > 0:
+        # per-event effects are in vol units, so the per-event noise is ~1 by construction
+        n_needed = math.ceil(((_z_upper(1.0 - alpha) + _z_upper(power)) / float(med)) ** 2)
+        windows = round(n_needed / per_window, 2) if per_window else None
+    return Preregistration(mechanism.name, pl.p_exists, round(float(med), 4),
+                           (round(float(q05), 4), round(float(q95), 4)), per_window, n_needed,
+                           windows, power, alpha, pl.verdict)
 
 
 # ------------------------------------------------------------------------- memory bounds

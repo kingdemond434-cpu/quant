@@ -27,8 +27,25 @@ formula family cannot execute (a panel node, a state filter, an external termina
 BLOCKED with the missing executor capability named, never quietly dropped.
 
 EVERY EVALUATION IS A TRIAL, charged to its FAMILY (the canonical skeleton with the windows
-blanked): EMA(19,57) and EMA(20,58) are one family. The counter here is the minimal one the
-law demands until `libs/research/trial_ledger.py` lands; the debt is named in the report.
+blanked): EMA(19,57) and EMA(20,58) are one family. The raw count per family is kept here and
+the pass's N_effective is priced by `libs/research/trial_ledger.py` (participation ratio over
+descriptors and parameters, declared width per family); both ride the report.
+
+THE CHEAP LAYER, THE NULL FACTORY, THE LOCKBOX, THE CAMPAIGN (2026-09-22). Before any tier a
+cost-ordered cheap layer runs -- finite, non-constant, turnover bound, minimal IC, orthogonality
+against the symbol's archive -- and a cell that fails it costs nothing more. Tier 1's null is a
+FACTORY of three per candidate (circularly shifted entries, block-shuffled forward returns, a
+synthetic random walk with the world's own volatility) and the worst of the three is the p the
+gate reads. Every world's last LOCKBOX_FRAC of bars is sealed in `libs.validation.lockbox`'s
+`LockedHoldout` and never read here. Every cell is a CAMPAIGN row: PROPOSED -> SCREENED ->
+QUEUED (a registry candidate through `enqueue_candidate`, with its parent genome, mutation
+chain and operator credits as provenance) -> TESTING -> FORWARD | FAILED, persisted under
+data/expression_factory/ and advanced from the registry's own verdicts on the next pass. The
+mutation engine draws its moves by MEASURED CREDIT (what screened, what survived), every move
+dimension-preserving through `alpha_dsl.mutate`; the failure scientist records which operators
+never survive on which asset classes. The QD archive is keyed (mechanism, horizon, asset class,
+representation) with one ISLAND per asset class and elites migrating between them, transferred
+unchanged before anything is tuned.
 
 MEMORY-SAFE ON 8 GB: every cap (symbols loaded, subtree-cache cells, cells per pass, twins kept)
 is derived from the free physical memory measured at the start of the pass, floored so an
@@ -44,9 +61,10 @@ import argparse
 import json
 import math
 import os
+import re
 import sys
 import time
-from collections.abc import Iterable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -63,6 +81,12 @@ for _p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
 
 from libs.research import alpha_dsl as dsl  # noqa: E402
 from libs.research import alpha_grammar as ag  # noqa: E402
+from libs.research import trial_ledger as tl  # noqa: E402
+
+try:
+    from libs.validation.lockbox import LockedHoldout
+except Exception:                                         # pragma: no cover - import guard
+    LockedHoldout = None  # type: ignore[assignment, misc]
 
 Expr = Any
 SOURCE = "expression_factory"
@@ -89,6 +113,32 @@ TWIN_RHO = 0.95
 EXHAUST_N, EXHAUST_TAIL = 400, 200
 MAX_HARVEST = 40
 MAX_PARKED_PER_PASS = 24
+#: THE LOCKBOX: the universal gate's sealed share of every world's bars (`universal_gate.
+#: LOCKBOX_FRAC`). The factory reads the RESEARCH slice only; the tail is held by `LockedHoldout`
+#: and no method here opens it.
+LOCKBOX_FRAC = 0.20
+LOCKBOX_MIN_BARS = 3 * NORM
+#: THE CHEAP LAYER, cost-ordered: finite -> non-constant -> turnover -> minimal IC -> orthogonality.
+CHEAP: dict[str, float] = {"finite_frac": 0.3, "min_unique": 20.0, "turnover_max": 0.5,
+                           "ic_min": 0.002}
+CHEAP_ORDER: tuple[str, ...] = ("finite", "non_constant", "turnover", "ic", "orthogonality")
+#: THE NULL FACTORY: nulls per candidate -- circularly shifted entries (permutation), block-
+#: shuffled forward returns (shuffle), a synthetic random walk with the world's own volatility.
+NULLS: dict[str, int] = {"perm": PERM_K, "shuffle": 24, "synth": 8}
+#: THE MOVES the mutation engine draws by measured credit: the DSL's six dimension-preserving
+#: moves plus the factory's own three (a basket-rank swap, a horizon change, an external bind).
+MOVES: tuple[str, ...] = (*dsl.MUTATIONS, "basket_swap", "horizon", "external_bind")
+ISLAND_ELITES, MIGRANTS_PER_PASS = 24, 6
+#: Negative knowledge: an operator tried this often on an asset class with no survivor is
+#: recorded as never surviving there; its draw weight falls and nothing is vetoed.
+NEG_KNOWLEDGE_N = 40
+CAMPAIGN_STATES: tuple[str, ...] = ("PROPOSED", "SCREENED", "QUEUED", "TESTING", "FORWARD",
+                                    "FAILED")
+TRANSITIONS: dict[str, frozenset[str]] = {
+    "PROPOSED": frozenset({"SCREENED", "FAILED"}), "SCREENED": frozenset({"QUEUED", "FAILED"}),
+    "QUEUED": frozenset({"TESTING", "FORWARD", "FAILED"}),
+    "TESTING": frozenset({"FORWARD", "FAILED"}), "FORWARD": frozenset(), "FAILED": frozenset(),
+}
 
 
 class TransferBeforeTuning(RuntimeError):
@@ -140,6 +190,13 @@ def now_iso() -> str:
     return datetime.now(tz=UTC).isoformat(timespec="seconds")
 
 
+def _count_by(items: Iterable[str]) -> dict[str, int]:
+    out: dict[str, int] = {}
+    for k in items:
+        out[k] = out.get(k, 0) + 1
+    return dict(sorted(out.items()))
+
+
 def atomic_json(path: Path, doc: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(path.suffix + f".tmp{os.getpid()}")
@@ -173,7 +230,8 @@ def free_phys_mb() -> float | None:
                             ("ullAvailExtendedVirtual", ctypes.c_ulonglong)]
             ms = _MS()
             ms.dwLength = ctypes.sizeof(_MS)
-            if not ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(ms)):  # type: ignore[attr-defined]
+            windll = getattr(ctypes, "windll", None)
+            if windll is None or not windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(ms)):
                 return None
             return float(ms.ullAvailPhys) / (1024 * 1024)
         except Exception:
@@ -213,7 +271,8 @@ def derive_caps(free_mb: float | None) -> Caps:
     if free_mb < MIN_FREE_MB:
         return Caps(free_mb, 0, 0, 0, 0, True,
                     f"free {free_mb:.0f} MB < {MIN_FREE_MB:.0f} MB: stood down")
-    clamp = lambda v, lo, hi: int(max(lo, min(hi, v)))  # noqa: E731
+    def clamp(v: float, lo: int, hi: int) -> int:
+        return int(max(lo, min(hi, v)))
     return Caps(free_mb, clamp(free_mb * 0.25 / 40.0, 3, 12),
                 clamp(free_mb * 0.10 * 1e6 / 8, 500_000, 20_000_000),
                 clamp(free_mb * 20, 200, 20_000), clamp(free_mb / 40.0, 4, 24), False,
@@ -222,13 +281,21 @@ def derive_caps(free_mb: float | None) -> Caps:
 
 # ============================================================================ trial families
 class FamilyTrials:
-    """The minimal family counter the law demands: every evaluated cell charged to its family.
+    """Every evaluated cell charged to its FAMILY, and the pass priced by the effective-trial
+    ledger.
 
-    DEBT, NAMED: `libs/research/trial_ledger.py` (another builder's) is imported lazily and
-    mirrored when it exposes `charge(family, n)`; until it lands this file is the ledger.
-    N_effective = sum over families of (1 + ln n_f): related trials in one family count
-    logarithmically, families count fully. It is a stated rule, not a measured correlation.
+    The family is the canonical skeleton with its windows blanked (LAWS 5k). Two counts are
+    kept and both are reported: the RAW count per family in `trial_families.json`, and
+    N_effective from `libs.research.trial_ledger.census` over the pass's Trial rows
+    (descriptors: symbol, horizon, state, asset class, mechanism; parameters: the windows),
+    where parameter-neighbours collapse to their participation ratio and every family is
+    charged its declared width. The census runs once at the end of the pass on at most
+    `LEDGER_SAMPLE` members per family, each declaring the family's raw width, so the ratio
+    transfers to the whole family exactly as the ledger's own docstring says it does. The old
+    stated rule, N = sum_f (1 + ln n_f), is kept beside it for continuity of the reports.
     """
+
+    LEDGER_SAMPLE = 300
 
     def __init__(self, path: Path) -> None:
         self.path = path
@@ -236,14 +303,10 @@ class FamilyTrials:
         self.families: dict[str, dict[str, Any]] = (doc.get("families") or {}) \
             if isinstance(doc, dict) else {}
         self.pass_charges: dict[str, int] = {}
-        self._ledger: Any = None
-        try:
-            from libs.research import trial_ledger as _tl  # type: ignore[attr-defined]
-            self._ledger = _tl if callable(getattr(_tl, "charge", None)) else None
-        except Exception:
-            self._ledger = None
+        self.trials: dict[str, list[tl.Trial]] = {}
+        self._census: tl.LedgerCensus | None = None
 
-    def charge(self, expr: Expr, n: int = 1) -> int:
+    def charge(self, expr: Expr, n: int = 1, descriptors: dict[str, str] | None = None) -> int:
         fam = dsl.family_key(expr)
         row = self.families.setdefault(fam, {"n": 0, "first": now_iso(),
                                              "skeleton": ag.to_str(dsl.skeleton(expr)),
@@ -251,12 +314,24 @@ class FamilyTrials:
         row["n"] = int(row["n"]) + n
         row["last"] = now_iso()
         self.pass_charges[fam] = self.pass_charges.get(fam, 0) + n
-        if self._ledger is not None:
-            try:
-                self._ledger.charge(fam, n)
-            except Exception:
-                pass
+        members = self.trials.setdefault(fam, [])
+        if len(members) < self.LEDGER_SAMPLE:
+            params = {f"w{i}": w for i, w in enumerate(dsl.windows_in(expr))}
+            members.append(tl.Trial(f"{fam[:24]}#{self.pass_charges[fam]}", fam,
+                                    dict(descriptors or {}), params))
+        self._census = None
         return int(row["n"])
+
+    def census(self) -> tl.LedgerCensus:
+        """The ledger's N_effective for this pass. Every sampled member declares its family's
+        raw width, so the unseen members are charged as redundant as the seen ones."""
+        rows: list[tl.Trial] = []
+        for fam, members in self.trials.items():
+            width = max(1, self.pass_charges.get(fam, len(members)))
+            rows.extend(tl.Trial(t.trial_id, t.family, t.descriptors, t.params, width)
+                        for t in members)
+        self._census = tl.census(rows)
+        return self._census
 
     def survivor(self, expr: Expr) -> None:
         fam = dsl.family_key(expr)
@@ -267,18 +342,28 @@ class FamilyTrials:
         return self.pass_charges.get(dsl.family_key(expr), 0)
 
     def n_effective(self, charges: dict[str, int] | None = None) -> float:
-        rows = charges if charges is not None else {k: int(v["n"]) for k, v in self.families.items()}
+        rows = charges if charges is not None else {k: int(v["n"])
+                                                    for k, v in self.families.items()}
         return float(sum(1.0 + math.log(max(1, n)) for n in rows.values()))
 
     def summary(self) -> dict[str, Any]:
+        c = self._census or self.census()
+        top = sorted(c.families.values(), key=lambda f: -f.n_raw)[:20]
         return {"families_lifetime": len(self.families),
                 "trials_lifetime": int(sum(int(v["n"]) for v in self.families.values())),
                 "n_effective_lifetime": round(self.n_effective(), 2),
                 "families_this_pass": len(self.pass_charges),
                 "trials_this_pass": int(sum(self.pass_charges.values())),
                 "n_effective_this_pass": round(self.n_effective(self.pass_charges), 2),
-                "mirrored_to_trial_ledger": self._ledger is not None,
-                "rule": "N_effective = sum_f (1 + ln n_f); windows blanked define the family"}
+                "ledger": {"n_raw": c.n_raw, "n_effective": round(c.n_effective, 2),
+                           "inflation": round(c.inflation, 3), "n_families": len(c.families),
+                           "basis": c.basis, "sample_per_family": self.LEDGER_SAMPLE,
+                           "top_families": [f.to_dict() for f in top]},
+                "mirrored_to_trial_ledger": True,
+                "rule": ("windows blanked define the family; N_effective_this_pass is the stated "
+                         "rule sum_f (1 + ln n_f), ledger.n_effective is trial_ledger.census "
+                         "(participation ratio x declared width) and is the number the gauntlet "
+                         "deflates by")}
 
     def save(self) -> None:
         atomic_json(self.path, {"at": now_iso(), "families": self.families,
@@ -300,10 +385,29 @@ class World:
     bindings: dict[str, dsl.Field] = field(default_factory=dict)
     asset_class: str = ""
     cost_status: str = "MEASURED"
+    lockbox: dict[str, Any] = field(default_factory=dict)
 
     @property
     def n(self) -> int:
         return int(self.logclose.size)
+
+
+def _seal(bars: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, Any]]:
+    """The research slice of a world's bars and its lockbox record. The sealed tail is held by
+    `libs.validation.lockbox.LockedHoldout`, whose `open_lockbox` nothing here calls: the
+    factory has no method that reads it, and the record says `opened: False` because it is."""
+    n = len(bars)
+    if LockedHoldout is None:
+        return bars, {"status": "UNMEASURED", "opened": False,
+                      "why": "libs.validation.lockbox unimportable; no slice sealed"}
+    if n * (1.0 - LOCKBOX_FRAC) < LOCKBOX_MIN_BARS:
+        return bars, {"status": "UNSEALED", "opened": False,
+                      "why": f"{n} bars leave fewer than {LOCKBOX_MIN_BARS} research bars"}
+    box = LockedHoldout(bars, holdout_fraction=LOCKBOX_FRAC)
+    research = box.research()
+    return research, {"status": "SEALED", "frac": LOCKBOX_FRAC, "research_bars": len(research),
+                      "sealed_bars": n - len(research),
+                      "sealed_from": str(bars.index[box.split_index]), "opened": box.is_opened}
 
 
 def _regimes(vol: pd.Series) -> np.ndarray:
@@ -325,7 +429,10 @@ def _hour_multipliers(surface_row: dict[str, Any] | None) -> tuple[np.ndarray, s
         return mult, "UNMEASURED (no cost surface row)"
     try:
         dear = float(surface_row.get("dear_over_cheap") or 1.0)
-        h = int(surface_row.get("dearest_hour"))
+        h_raw = surface_row.get("dearest_hour")
+        if h_raw is None:
+            return mult, "UNMEASURED (no dearest hour in the surface row)"
+        h = int(h_raw)
     except (TypeError, ValueError):
         return mult, "UNMEASURED (surface row unreadable)"
     for k in (-1, 0, 1):
@@ -334,6 +441,10 @@ def _hour_multipliers(surface_row: dict[str, Any] | None) -> tuple[np.ndarray, s
     unmeasured = sum(1 for v in hours.values() if isinstance(v, dict)
                      and v.get("status") == "UNMEASURED")
     return mult, ("MEASURED" if unmeasured == 0 else f"{unmeasured} hours UNMEASURED in surface")
+
+
+def _every_symbol(_s: str) -> bool:
+    return True
 
 
 class Lake:
@@ -357,13 +468,14 @@ class Lake:
 
     # ---- which symbols
     def hypothesis_symbols(self) -> list[str]:
+        allowed: Callable[[str], bool]
         try:
-            import universe_policy as up
+            from research import universe_policy as up
             allowed = up.may_hypothesise
         except Exception:
-            def allowed(_s: str) -> bool:                       # type: ignore[misc]
-                return True
-        have = sorted(p.stem.removesuffix("_H1") for p in self.paths.universe_dir.glob("*_H1.parquet"))
+            allowed = _every_symbol
+        have = sorted(p.stem.removesuffix("_H1")
+                      for p in self.paths.universe_dir.glob("*_H1.parquet"))
         have += [s for s in self.injected if s not in have]
         return [s for s in have if allowed(s) or s in self.injected]
 
@@ -382,7 +494,7 @@ class Lake:
         if sym in self.injected:
             return self.injected[sym]
         try:
-            import proposer_common as pc
+            from research import proposer_common as pc
             return pc.bars(sym)
         except Exception:
             return None
@@ -393,7 +505,8 @@ class Lake:
             return out
         try:
             from mt5desk.economic_drivers import ROLES, driver_sets
-            have = {p.stem.removesuffix("_H1") for p in self.paths.universe_dir.glob("*_H1.parquet")}
+            have = {p.stem.removesuffix("_H1")
+                    for p in self.paths.universe_dir.glob("*_H1.parquet")}
             for ds in driver_sets(sym, self.meta, have):
                 for d in ds.drivers:
                     for role, cands in ROLES.items():
@@ -416,7 +529,8 @@ class Lake:
             if not cands:
                 continue
             if term == "macro":
-                cands = cands[self.macro_index % len(cands):] + cands[:self.macro_index % len(cands)]
+                k = self.macro_index % len(cands)
+                cands = cands[k:] + cands[:k]
             for f in cands:
                 s = self.catalogue.series(f, idx)
                 if s is not None and bool(s.notna().sum() >= 100):
@@ -429,7 +543,7 @@ class Lake:
         if sym in self.injected:
             return 1e-4
         try:
-            import proposer_common as pc
+            from research import proposer_common as pc
             c = pc.cost_frac(sym, self.meta, close)
             return float(c) if c is not None and math.isfinite(c) and c > 0 else 2e-4
         except Exception:
@@ -441,6 +555,7 @@ class Lake:
         bars = self.bars(sym)
         if bars is None or len(bars) < 3 * NORM:
             return None
+        bars, lockbox = _seal(bars)
         raw = bars
         extra, bound = self._bind_externals(sym, bars.index)
         frames = ag.terminal_frames(bars, raw=raw, drivers=self._drivers(sym), extra=extra)
@@ -449,7 +564,8 @@ class Lake:
         mult, status = _hour_multipliers(self.surface.get(sym))
         world = World(sym, frames, np.log(close.to_numpy(dtype=float)),
                       idx.hour.to_numpy(dtype=np.int16), _regimes(frames["vol"]),
-                      self._cost(sym, close), mult, bound, self.asset_class(sym), status)
+                      self._cost(sym, close), mult, bound, self.asset_class(sym), status,
+                      lockbox)
         self.worlds[sym] = world
         return world
 
@@ -467,25 +583,37 @@ class Cell:
     origin: str = "transfer"        #: harvest | transfer | mutation | invention
     parent: str = ""
     generator: str = ""
+    asset_class: str = ""
+    chain: list[str] = field(default_factory=list)   #: the mutation chain from the parent
 
     @property
     def key(self) -> str:
         return f"{self.symbol}|{self.hold}|{self.state}|{dsl.canonical_key(self.expr)}"
 
-    def descriptor(self) -> str:
-        """The QD archive's cell: shape x horizon x state kind x panel x external."""
+    def mechanism(self) -> str:
+        """The tree's shape as the grammar describes it, with the state kind it is conditioned
+        on: the MECHANISM axis of the archive."""
         shape = ag.describe(self.expr).split(": ", 1)[1].split(" of ", 1)[0]
+        return f"{shape}/{self.state.split(':')[0]}"
+
+    def representation(self) -> str:
         terms = ag.terminals_in(self.expr)
-        ext = "ext" if terms & set(ag.EXTERNAL_TERMINALS) else "bar"
-        drv = "drv" if terms & set(ag.DRIVER_TERMINALS) else "own"
-        return "|".join((shape, f"h{self.hold}", self.state.split(":")[0],
-                         "panel" if dsl.has_panel(self.expr) else "single", ext, drv))
+        return "+".join(("panel" if dsl.has_panel(self.expr) else "single",
+                         "ext" if terms & set(ag.EXTERNAL_TERMINALS) else "bar",
+                         "drv" if terms & set(ag.DRIVER_TERMINALS) else "own"))
+
+    def descriptor(self) -> str:
+        """The QD archive's key: mechanism x horizon x asset class x representation."""
+        return "|".join((self.mechanism(), f"h{self.hold}", self.asset_class or "unclassified",
+                         self.representation()))
 
     def as_dict(self) -> dict[str, Any]:
         return {"expr": self.expr, "rendered": ag.to_str(self.expr), "symbol": self.symbol,
                 "hold": self.hold, "state": self.state, "origin": self.origin,
                 "parent": self.parent, "generator": self.generator,
-                "family": dsl.family_key(self.expr), "descriptor": self.descriptor()}
+                "asset_class": self.asset_class, "chain": list(self.chain), "key": self.key,
+                "family": dsl.family_key(self.expr), "mechanism": self.mechanism(),
+                "representation": self.representation(), "descriptor": self.descriptor()}
 
 
 def executable_by_formula_family(expr: Expr, state: str) -> str | None:
@@ -507,9 +635,9 @@ def _state_mask(world: World, state: str) -> np.ndarray | None:
     kind, _, name = state.partition(":")
     if kind == "session" and name in SESSIONS:
         lo, hi = SESSIONS[name]
-        return (world.hours >= lo) & (world.hours < hi)
+        return np.asarray((world.hours >= lo) & (world.hours < hi))
     if kind == "regime" and name in REGIMES:
-        return world.vol_regime == REGIMES.index(name)
+        return np.asarray(world.vol_regime == REGIMES.index(name))
     return None
 
 
@@ -532,11 +660,11 @@ def _entries(z: np.ndarray, hold: int, mask: np.ndarray | None) -> np.ndarray:
 def _gross(world: World, entries: np.ndarray, z: np.ndarray, hold: int) -> np.ndarray:
     """sign(z) x forward log return over `hold` bars, per entry (the FOLLOW side)."""
     lc = world.logclose
-    return np.sign(z[entries]) * (lc[entries + hold] - lc[entries])
+    return np.asarray(np.sign(z[entries]) * (lc[entries + hold] - lc[entries]))
 
 
 def _costs(world: World, entries: np.ndarray) -> np.ndarray:
-    return world.cost * world.hour_mult[world.hours[entries]]
+    return np.asarray(world.cost * world.hour_mult[world.hours[entries]])
 
 
 def _tstat(x: np.ndarray) -> float:
@@ -548,7 +676,100 @@ def _tstat(x: np.ndarray) -> float:
 
 def _zscore(v: pd.Series) -> np.ndarray:
     r = v.rolling(NORM, min_periods=NORM)
-    return ((v - r.mean()) / r.std()).to_numpy(dtype=float)
+    return np.asarray(((v - r.mean()) / r.std()).to_numpy(dtype=float))
+
+
+def _corr(a: np.ndarray, b: np.ndarray) -> float:
+    if a.size < 3 or b.size != a.size:
+        return 0.0
+    with np.errstate(invalid="ignore", divide="ignore"):
+        if float(np.std(a)) <= 0 or float(np.std(b)) <= 0:
+            return 0.0
+        r = float(np.corrcoef(a, b)[0, 1])
+    return r if math.isfinite(r) else 0.0
+
+
+def cheap_screens(value: pd.Series, z: np.ndarray, world: World, hold: int,
+                  twins: Sequence[tuple[str, np.ndarray]]) -> tuple[str | None, dict[str, Any]]:
+    """THE CHEAP LAYER, in order of cost (`CHEAP_ORDER`): the first failing screen is returned
+    with the metrics measured up to it, None when all five pass. A cell that dies here has cost
+    one vectorised evaluation and nothing else -- no null, no neighbour, no gauntlet cell."""
+    v = value.to_numpy(dtype=float)
+    m: dict[str, Any] = {}
+    finite = np.isfinite(v)
+    m["finite_frac"] = round(float(finite.mean()) if v.size else 0.0, 3)
+    if v.size < 3 * NORM or m["finite_frac"] < CHEAP["finite_frac"]:
+        return "finite", m
+    fv = v[finite]
+    sample = fv[:: max(1, fv.size // 4000)]
+    m["unique"] = int(np.unique(sample).size)
+    if float(np.std(fv)) <= 0.0 or m["unique"] < CHEAP["min_unique"]:
+        return "non_constant", m
+    pos = np.where(np.isfinite(z) & (np.abs(z) >= ENTRY_Z), np.sign(z), 0.0)
+    m["turnover"] = round(float(np.mean(np.abs(np.diff(pos))) / 2.0), 4) if pos.size > 1 else 0.0
+    if m["turnover"] > CHEAP["turnover_max"]:
+        return "turnover", m
+    fwd = np.roll(world.logclose, -hold) - world.logclose
+    ok = np.isfinite(z) & np.isfinite(fwd)
+    ok[-hold:] = False
+    m["ic"] = round(_corr(z[ok], fwd[ok]), 5) if ok.sum() > 100 else 0.0
+    if abs(m["ic"]) < CHEAP["ic_min"]:
+        return "ic", m
+    rho_max = 0.0
+    for _k, zt in twins:
+        both = np.isfinite(z) & np.isfinite(zt)
+        if both.sum() > 500:
+            rho_max = max(rho_max, abs(_corr(z[both], zt[both])))
+    m["rho_max"] = round(rho_max, 3)
+    if rho_max >= TWIN_RHO:
+        return "orthogonality", m
+    return None, m
+
+
+def null_factory(world: World, entries: np.ndarray, z: np.ndarray, side: int, hold: int,
+                 observed: float, rng: np.random.Generator) -> dict[str, Any]:
+    """THREE NULLS PER CANDIDATE, each keeping the trade structure (count, hold, side, cost)
+    and destroying exactly one thing. PERMUTATION shifts the entries circularly (the
+    alignment); SHUFFLE block-shuffles the forward returns in blocks of `hold` bars (the
+    path's order); SYNTHETIC re-reads the same entries on a Gaussian random walk with the
+    world's own bar volatility (the path itself). Each p is the share of nulls at or above the
+    observed net; the gate reads the WORST of the three."""
+    lc = world.logclose
+    n = lc.size
+    span = n - hold - 1
+    k = dict(NULLS)
+    if entries.size == 0 or span <= hold:
+        return {"p_perm": 1.0, "p_shuffle": 1.0, "p_synth": 1.0, "p_null": 1.0,
+                "worst": "empty", "k": k}
+    sgn = side * np.sign(z[entries])
+    cost = _costs(world, entries)
+    perm = np.empty(k["perm"])
+    for i in range(k["perm"]):
+        shift = int(rng.integers(hold, span))
+        e = (entries + shift) % span
+        perm[i] = float(np.mean(sgn * (lc[e + hold] - lc[e]) - _costs(world, e)))
+    fwd = lc[hold:] - lc[:-hold]
+    nb = max(1, fwd.size // hold)
+    blocks = fwd[:nb * hold].reshape(nb, hold)
+    shuf = np.empty(k["shuffle"])
+    for i in range(k["shuffle"]):
+        f = blocks[rng.permutation(nb)].reshape(-1)
+        e = entries < f.size
+        shuf[i] = float(np.mean(sgn[e] * f[entries[e]] - cost[e])) if e.any() else -np.inf
+    r = np.diff(lc)
+    r = r[np.isfinite(r)]
+    sd = float(np.std(r)) if r.size > 10 else 0.0
+    syn = np.empty(k["synth"])
+    for i in range(k["synth"]):
+        path = np.concatenate([[0.0], np.cumsum(rng.normal(0.0, sd, n - 1))]) if sd > 0 \
+            else np.zeros(n)
+        syn[i] = float(np.mean(sgn * (path[entries + hold] - path[entries]) - cost))
+    ps = {"permutation": float(np.mean(perm >= observed)),
+          "shuffle": float(np.mean(shuf >= observed)),
+          "synthetic": float(np.mean(syn >= observed))}
+    worst = max(ps, key=lambda q: ps[q])
+    return {"p_perm": ps["permutation"], "p_shuffle": ps["shuffle"], "p_synth": ps["synthetic"],
+            "p_null": ps[worst], "worst": worst, "k": k}
 
 
 @dataclass
@@ -571,13 +792,20 @@ class Tier1:
     entries: np.ndarray = field(default_factory=lambda: np.zeros(0, dtype=np.int64))
     oos_returns: np.ndarray = field(default_factory=lambda: np.zeros(0))
     z: np.ndarray | None = None
+    p_shuffle: float = 1.0
+    p_synth: float = 1.0
+    p_null: float = 1.0
+    worst_null: str = ""
 
     def metrics(self) -> dict[str, Any]:
         return {"passed": self.passed, "reason": self.reason,
                 "side_mode": "follow" if self.side > 0 else "fade", "n_is": self.n_is,
                 "n_oos": self.n_oos, "gross_is": round(self.gross_is, 7),
                 "net_oos": round(self.net_oos, 7), "t_oos": round(self.t_oos, 3),
-                "p_perm": round(self.p_perm, 3), "trades_per_year": round(self.trades_per_year, 1),
+                "p_perm": round(self.p_perm, 3), "p_shuffle": round(self.p_shuffle, 3),
+                "p_synth": round(self.p_synth, 3), "p_null": round(self.p_null, 3),
+                "worst_null": self.worst_null,
+                "trades_per_year": round(self.trades_per_year, 1),
                 "finite_frac": round(self.finite_frac, 3), "ic": round(self.ic, 4),
                 "n_all": self.n_all, "net_all": round(self.net_all, 7),
                 "t_all": round(self.t_all, 3)}
@@ -605,23 +833,18 @@ def tier1(cell: Cell, world: World, value: pd.Series, rng: np.random.Generator) 
     oos = net[cut:]
     n_oos = int(oos.size)
     net_oos, t_oos = float(np.mean(oos)), _tstat(oos)
-    # THE PERMUTATION NULL: the same trade structure at circularly shifted entries. It keeps
-    # the count, the hold and the side and destroys the alignment, which is the only thing a
-    # signal can claim to have.
-    null = np.empty(PERM_K)
-    span = world.n - cell.hold - 1
-    for k in range(PERM_K):
-        shift = int(rng.integers(cell.hold, span))
-        e = (entries[cut:] + shift) % span
-        g = side * np.sign(z[entries[cut:]]) * (world.logclose[e + cell.hold] - world.logclose[e])
-        null[k] = float(np.mean(g - _costs(world, e)))
-    p_perm = float(np.mean(null >= net_oos))
+    # THE NULL FACTORY: permutation, shuffle and synthetic nulls of the OOS trades, the same
+    # trade structure each time; the worst of the three is the p the gate reads.
+    nulls = null_factory(world, entries[cut:], z, side, cell.hold, net_oos, rng)
+    p_perm = float(nulls["p_perm"])
     fwd = np.roll(world.logclose, -cell.hold) - world.logclose
     ok = np.isfinite(z) & np.isfinite(fwd)
     ok[-cell.hold:] = False
-    ic = float(np.corrcoef(z[ok], fwd[ok])[0, 1]) if ok.sum() > 100 else 0.0
+    ic = _corr(z[ok], fwd[ok]) if ok.sum() > 100 else 0.0
     t = Tier1(True, "ok", side, cut, n_oos, float(np.mean(gross[:cut])), net_oos, t_oos, p_perm,
-              tpy, finite, ic, n, float(np.mean(net)), _tstat(net), entries, oos, z)
+              tpy, finite, ic, n, float(np.mean(net)), _tstat(net), entries, oos, z,
+              float(nulls["p_shuffle"]), float(nulls["p_synth"]), float(nulls["p_null"]),
+              str(nulls["worst"]))
     if n_oos < T1["n_oos"]:
         t.passed, t.reason = False, f"n_oos {n_oos} < {T1['n_oos']}"
     elif tpy < T1["trades_per_year"]:
@@ -630,8 +853,9 @@ def tier1(cell: Cell, world: World, value: pd.Series, rng: np.random.Generator) 
         t.passed, t.reason = False, f"net_oos {net_oos:.2e} <= 0 after cost"
     elif t_oos < T1["t_oos"]:
         t.passed, t.reason = False, f"t_oos {t_oos:.2f} < {T1['t_oos']}"
-    elif p_perm > T1["p_perm"]:
-        t.passed, t.reason = False, f"permutation p {p_perm:.2f} > {T1['p_perm']}"
+    elif t.p_null > T1["p_perm"]:
+        t.passed, t.reason = False, (f"null factory p {t.p_null:.2f} > {T1['p_perm']} "
+                                     f"({t.worst_null} null)")
     return t
 
 
@@ -725,7 +949,7 @@ def tier2(cell: Cell, world: World, t1: Tier1, evaluate: Any, rng: np.random.Gen
     # 4. rough selection correction against the family's trials THIS pass
     out.family_trials = max(1, families.pass_count(cell.expr))
     try:
-        from multiplicity import deflate_t
+        from research.multiplicity import deflate_t
         out.t_deflated = float(deflate_t(t1.t_all, out.family_trials))
     except Exception:
         out.t_deflated = float(t1.t_all - math.sqrt(2.0 * math.log(max(2, out.family_trials))))
@@ -758,6 +982,7 @@ class Parent:
     recent: list[int] = field(default_factory=list)    #: 1/0 tier-1 results, last EXHAUST_TAIL
     axes: dict[str, list[str]] = field(default_factory=dict)
     transferred: bool = False
+    chain: list[str] = field(default_factory=list)
 
     def value(self, families: FamilyTrials, archive_n: int) -> float:
         """V(a) = P(survive|D) x E[dG|survive] x Novelty x Orthogonality x InformationGain /
@@ -800,6 +1025,208 @@ def _prune(expr: Expr, rng: np.random.Generator) -> Expr:
     return e
 
 
+# ============================================================================ credits
+class Credits:
+    """SEARCH-METHOD EVOLUTION: per-operator and per-move credit from what screens and what
+    survives, and the failure scientist's negative knowledge -- which operators never survive
+    on which asset classes. The mutation engine draws its moves by `move_weights`, so the
+    budget flows toward what earns; a never-surviving (operator, asset class) pair is REPORTED
+    with its trial count and its draw weight falls. Nothing is vetoed."""
+
+    def __init__(self, path: Path) -> None:
+        self.path = path
+        doc = read_json(path, {}) or {}
+        self.ops: dict[str, dict[str, int]] = dict(doc.get("operators") or {})
+        self.moves: dict[str, dict[str, int]] = dict(doc.get("moves") or {})
+        self.negative: dict[str, dict[str, int]] = dict(doc.get("negative") or {})
+        self.pass_moves: dict[str, dict[str, int]] = {}
+
+    @staticmethod
+    def _bump(table: dict[str, dict[str, int]], key: str, what: str) -> None:
+        row = table.setdefault(key, {"trials": 0, "screened": 0, "survivors": 0})
+        row[what] = int(row.get(what, 0)) + 1
+
+    def _touch(self, expr: Expr, move: str, klass: str, what: str) -> None:
+        for op in dsl.operators_in(expr):
+            self._bump(self.ops, op, what)
+            self._bump(self.negative, f"{op}|{klass or 'unclassified'}", what)
+        if move:
+            self._bump(self.moves, move, what)
+            self._bump(self.pass_moves, move, what)
+
+    def charge(self, expr: Expr, move: str, klass: str) -> None:
+        self._touch(expr, move, klass, "trials")
+
+    def screened(self, expr: Expr, move: str, klass: str) -> None:
+        self._touch(expr, move, klass, "screened")
+
+    def survivor(self, expr: Expr, move: str, klass: str) -> None:
+        self._touch(expr, move, klass, "survivors")
+
+    @staticmethod
+    def credit(row: dict[str, int] | None) -> float:
+        r = row or {}
+        return (2.0 * int(r.get("survivors", 0)) + int(r.get("screened", 0)) + 0.5) / (
+            int(r.get("trials", 0)) + 5.0)
+
+    def move_weights(self, moves: Sequence[str]) -> np.ndarray:
+        w = np.array([self.credit(self.moves.get(m)) for m in moves], dtype=float)
+        w = np.maximum(w, 1e-6)
+        return np.asarray(w / w.sum())
+
+    def op_weight(self, op: str, klass: str) -> float:
+        return self.credit(self.negative.get(f"{op}|{klass or 'unclassified'}"))
+
+    def never_survives(self) -> list[dict[str, Any]]:
+        out: list[dict[str, Any]] = []
+        for key, row in self.negative.items():
+            if int(row.get("trials", 0)) >= NEG_KNOWLEDGE_N and int(row.get("survivors", 0)) == 0:
+                op, _, klass = key.partition("|")
+                out.append({"operator": op, "asset_class": klass, "trials": int(row["trials"]),
+                            "screened": int(row.get("screened", 0)),
+                            "verdict": "never survived here (measured)"})
+        return sorted(out, key=lambda r: -int(r["trials"]))
+
+    def summary(self, moves: Sequence[str]) -> dict[str, Any]:
+        weights = self.move_weights(moves)
+        ranked = sorted(self.ops.items(), key=lambda kv: -self.credit(kv[1]))[:40]
+        return {"moves": {m: {**self.moves.get(m, {}), "credit": round(self.credit(
+            self.moves.get(m)), 4)} for m in moves},
+            "move_weights": {m: round(float(w), 4) for m, w in zip(moves, weights, strict=True)},
+            "moves_this_pass": self.pass_moves,
+            "operators": {op: {**row, "credit": round(self.credit(row), 4)} for op, row in ranked},
+            "negative_knowledge": self.never_survives()[:60],
+            "n_negative_pairs": len(self.negative),
+            "rule": ("credit = (2 survivors + screened + 0.5) / (trials + 5); the mutation "
+                     "engine draws its moves by this weight so budget flows toward what earns; "
+                     f"an (operator, asset class) pair with >= {NEG_KNOWLEDGE_N} trials and no "
+                     "survivor is negative knowledge: reported, weight lowered, never vetoed")}
+
+    def save(self) -> None:
+        atomic_json(self.path, {"at": now_iso(), "operators": self.ops, "moves": self.moves,
+                                "negative": self.negative})
+
+
+# ============================================================================ campaign
+class CampaignError(RuntimeError):
+    """An illegal campaign transition, or a transition on a row that was never proposed."""
+
+
+class Campaign:
+    """THE CAMPAIGN STATE MACHINE: PROPOSED -> SCREENED -> QUEUED -> TESTING -> FORWARD |
+    FAILED, persisted as an append-only `campaign.jsonl` of transitions plus a `campaign.json`
+    snapshot of every row that reached the cheap layer (rows that died in it are counted, not
+    kept). QUEUED and TESTING rows are advanced from the registry's own status on the next pass
+    (`refresh`): the ONE gauntlet judges, this machine only records where each cell stands."""
+
+    def __init__(self, state_dir: Path) -> None:
+        self.snapshot = state_dir / "campaign.json"
+        self.journal = state_dir / "campaign.jsonl"
+        doc = read_json(self.snapshot, {}) or {}
+        self.rows: dict[str, dict[str, Any]] = dict(doc.get("rows") or {})
+        self.lifetime: dict[str, int] = dict(doc.get("lifetime") or {})
+        self.pass_counts: dict[str, int] = dict.fromkeys(CAMPAIGN_STATES, 0)
+        self.transitions: list[dict[str, Any]] = []
+
+    def propose(self, cell: Cell) -> dict[str, Any]:
+        row = self.rows.get(cell.key)
+        if row is not None:
+            return row
+        row = {"state": "PROPOSED", "at": now_iso(), "symbol": cell.symbol, "hold": cell.hold,
+               "state_filter": cell.state, "origin": cell.origin, "parent": cell.parent,
+               "generator": cell.generator, "chain": list(cell.chain),
+               "rendered": ag.to_str(cell.expr), "family": dsl.family_key(cell.expr),
+               "asset_class": cell.asset_class, "candidate_id": "", "history": ["PROPOSED"]}
+        self.rows[cell.key] = row
+        self.pass_counts["PROPOSED"] += 1
+        return row
+
+    def state_of(self, key: str) -> str | None:
+        row = self.rows.get(key)
+        return None if row is None else str(row["state"])
+
+    def advance(self, key: str, state: str, **why: Any) -> dict[str, Any]:
+        row = self.rows.get(key)
+        if row is None:
+            raise CampaignError(f"{key[:60]}: never PROPOSED")
+        if state not in CAMPAIGN_STATES:
+            raise CampaignError(f"{state!r} is not one of {CAMPAIGN_STATES}")
+        cur = str(row["state"])
+        if state not in TRANSITIONS[cur]:
+            raise CampaignError(f"{cur} -> {state} is not a legal transition")
+        row["state"], row["at"] = state, now_iso()
+        row["history"].append(state)
+        row.update(why)
+        self.pass_counts[state] += 1
+        self.transitions.append({"at": row["at"], "key": key, "from": cur, "to": state,
+                                 **{k: str(v)[:200] for k, v in why.items()}})
+        return row
+
+    def fail(self, key: str, why: str) -> None:
+        row = self.rows.get(key)
+        if row is not None and row["state"] not in ("FORWARD", "FAILED"):
+            self.advance(key, "FAILED", why=why)
+
+    def refresh(self, conn: Any) -> dict[str, int]:
+        """QUEUED / TESTING rows re-read from the registry: claimed -> TESTING; survived ->
+        FORWARD; judged and not survived -> FAILED with the failing gate named."""
+        moved = {"TESTING": 0, "FORWARD": 0, "FAILED": 0, "unchanged": 0}
+        for key, row in list(self.rows.items()):
+            if row["state"] not in ("QUEUED", "TESTING") or not row.get("candidate_id"):
+                continue
+            cid = str(row["candidate_id"])
+            r = conn.execute("SELECT status, survived, terminal_gate, failure_class FROM "
+                             "research_candidates WHERE id=? OR donated_cell=?",
+                             (cid, cid)).fetchone()
+            if r is None:
+                moved["unchanged"] += 1
+                continue
+            status = str(r["status"] or "").lower()
+            survived = int(r["survived"] or 0)
+            if survived or status in ("survived", "certified", "promoted", "live"):
+                self.advance(key, "FORWARD", registry_status=status)
+                moved["FORWARD"] += 1
+            elif status in ("judged", "failed", "rejected", "retired", "killed"):
+                self.advance(key, "FAILED", why=f"registry {status}: "
+                             f"{r['failure_class'] or r['terminal_gate'] or 'gate'}")
+                moved["FAILED"] += 1
+            elif status in ("claimed", "testing", "running") and row["state"] == "QUEUED":
+                self.advance(key, "TESTING", registry_status=status)
+                moved["TESTING"] += 1
+            else:
+                moved["unchanged"] += 1
+        return moved
+
+    def counts(self) -> dict[str, Any]:
+        by_state: dict[str, int] = {}
+        for r in self.rows.values():
+            by_state[str(r["state"])] = by_state.get(str(r["state"]), 0) + 1
+        return {"this_pass": dict(self.pass_counts), "rows_by_state": by_state,
+                "lifetime": dict(self.lifetime), "rows_kept": len(self.rows),
+                "states": list(CAMPAIGN_STATES),
+                "transitions": {k: sorted(v) for k, v in TRANSITIONS.items()}}
+
+    def save(self, keep_terminal: int = 2000) -> list[Path]:
+        for state, n in self.pass_counts.items():
+            self.lifetime[state] = self.lifetime.get(state, 0) + n
+        keep = {k: r for k, r in self.rows.items()
+                if r["state"] != "PROPOSED" and not (r["state"] == "FAILED"
+                                                     and len(r["history"]) == 2)}
+        terminal = [k for k, r in keep.items() if r["state"] in ("FORWARD", "FAILED")]
+        for k in terminal[:max(0, len(terminal) - keep_terminal)]:
+            keep.pop(k)
+        self.rows = keep
+        atomic_json(self.snapshot, {"at": now_iso(), "states": list(CAMPAIGN_STATES),
+                                    "transitions": {k: sorted(v) for k, v in TRANSITIONS.items()},
+                                    "rows": keep, "lifetime": self.lifetime})
+        if self.transitions:
+            self.journal.parent.mkdir(parents=True, exist_ok=True)
+            with self.journal.open("a", encoding="utf-8") as fh:
+                for t in self.transitions[-5000:]:
+                    fh.write(json.dumps(t, default=str) + "\n")
+        return [self.snapshot, self.journal]
+
+
 # ============================================================================ the factory
 class Factory:
     def __init__(self, paths: Paths = DEFAULT_PATHS, *, lake: Lake | None = None,
@@ -820,11 +1247,17 @@ class Factory:
         self.registry = registry
         self.caps = derive_caps(free_phys_mb())
         self.twins: dict[str, list[tuple[str, np.ndarray]]] = {}
+        self.credits = Credits(paths.state_dir / "credits.json")
+        self.campaign = Campaign(paths.state_dir)
+        self.islands: dict[str, dict[str, Any]] = (read_json(paths.state_dir / "islands.json",
+                                                             {}) or {}).get("islands", {})
         self.counts: dict[str, Any] = {
             "generated": dict.fromkeys(STAGES, 0), "tier0": {"evaluated": 0, "rejected": {}},
+            "cheap": {"passed": 0, "rejected": {}},
             "tier1": {"evaluated": 0, "passed": 0, "rejected": {}},
             "tier2": {"evaluated": 0, "passed": 0, "rejected": {}},
             "survivors": [], "blocked": [], "transfers_held": 0, "transfer_cells": 0,
+            "mutations": {"by_move": {}, "by_trial_family": {}, "noop": {}}, "migrants": 0,
         }
         self.memos: dict[str, Any] = {}
         self.cache: Any = None
@@ -850,7 +1283,8 @@ class Factory:
         return self.elapsed() >= self.budget_s * cutoff
 
     def _reject(self, tier: str, why: str) -> None:
-        key = why.split(":")[0].split(" <")[0].split(" >")[0][:60]
+        m = re.match(r"[A-Za-z_ :/]+", why)
+        key = (m.group(0) if m else why).strip()[:60] or why[:60]
         d = self.counts[tier]["rejected"]
         d[key] = d.get(key, 0) + 1
 
@@ -962,13 +1396,26 @@ class Factory:
         """Tier 0 -> Tier 1 -> Tier 2 on one cell; every evaluation charged. Never raises."""
         self.counts["generated"][cell.origin] = self.counts["generated"].get(cell.origin, 0) + 1
         self.counts["tier0"]["evaluated"] += 1
+        if cell.origin == "mutation":
+            # EVERY MUTATION COUNTED BY FAMILY (LAWS 5k): by the move that made it and by the
+            # trial family it lands in, whether or not it compiles or is new.
+            bm = self.counts["mutations"]["by_move"]
+            bm[cell.generator] = bm.get(cell.generator, 0) + 1
+            fam = dsl.family_key(cell.expr)
+            bf = self.counts["mutations"]["by_trial_family"]
+            bf[fam] = bf.get(fam, 0) + 1
         world = self.lake.worlds.get(cell.symbol)
         if world is None:
             self._reject("tier0", "impossible execution: symbol not loaded")
             return {"tier": 0, "why": "symbol not loaded"}
-        if not ag.is_valid(cell.expr):
+        if not cell.asset_class:
+            cell.asset_class = world.asset_class
+        try:
+            compiled = dsl.compile_expr(cell.expr, terminals=ag.available_terminals(world.frames))
+        except dsl.CompileError as exc:
             self._reject("tier0", "syntax/type/units")
-            return {"tier": 0, "why": "syntax/type/units"}
+            return {"tier": 0, "why": f"compile: {exc}"}
+        cell.expr = compiled.expr
         why = dsl.future_data_impossible(cell.expr, world.bindings)
         if why:
             self._reject("tier0", "future data: " + why)
@@ -978,7 +1425,11 @@ class Factory:
             return {"tier": 0, "why": "duplicate AST"}
         self.seen.add(cell.key)
         self.cells_done += 1
-        self.families.charge(cell.expr)
+        self.campaign.propose(cell)
+        self.families.charge(cell.expr, descriptors={
+            "symbol": cell.symbol, "horizon": str(cell.hold), "state": cell.state,
+            "asset_class": cell.asset_class, "mechanism": cell.mechanism()})
+        self.credits.charge(cell.expr, cell.generator, cell.asset_class)
         if parent is not None:
             parent.evaluated += 1
             parent.axes.setdefault("symbols", []).append(cell.symbol)
@@ -989,28 +1440,25 @@ class Factory:
             value = self.evaluate(cell.expr, cell.symbol)
         except Exception as exc:
             self._reject("tier0", f"evaluation raised {type(exc).__name__}")
+            self.campaign.fail(cell.key, f"evaluation raised {type(exc).__name__}")
             return {"tier": 0, "why": f"evaluation raised {type(exc).__name__}: {exc}"}
-        finite = float(value.notna().mean()) if len(value) else 0.0
-        if finite < T1["finite_frac"]:
-            self._reject("tier0", "insufficient sample")
-            if parent is not None:
-                parent.recent.append(0)
-            return {"tier": 0, "why": f"insufficient sample: finite {finite:.2f}"}
-        # semantic twin: the same signal in another spelling, against the symbol's archive
+        # THE CHEAP LAYER: finite, non-constant, turnover, minimal IC, orthogonality vs the
+        # symbol's archive -- in that order of cost, and nothing dearer runs on a failure.
         z = _zscore(value)
         twins = self.twins.setdefault(cell.symbol, [])
-        rho_max = 0.0
-        for _k, zt in twins:
-            ok = np.isfinite(z) & np.isfinite(zt)
-            if ok.sum() > 500:
-                rho = abs(float(np.corrcoef(z[ok], zt[ok])[0, 1]))
-                if math.isfinite(rho):
-                    rho_max = max(rho_max, rho)
-        if rho_max >= TWIN_RHO:
-            self._reject("tier0", "semantic twin")
+        failed, cheap = cheap_screens(value, z, world, cell.hold, twins)
+        rho_max = float(cheap.get("rho_max", 0.0))
+        if failed is not None:
+            rejected = self.counts["cheap"]["rejected"]
+            rejected[failed] = rejected.get(failed, 0) + 1
+            self._reject("tier0", f"cheap:{failed}")
+            self.campaign.fail(cell.key, f"cheap:{failed}")
             if parent is not None:
                 parent.recent.append(0)
-            return {"tier": 0, "why": f"semantic twin (|rho| {rho_max:.2f})"}
+            return {"tier": 0, "why": f"cheap layer {failed}: {cheap}"}
+        self.counts["cheap"]["passed"] += 1
+        self.campaign.advance(cell.key, "SCREENED", cheap=cheap)
+        self.credits.screened(cell.expr, cell.generator, cell.asset_class)
         self.counts["tier1"]["evaluated"] += 1
         t1 = tier1(cell, world, value, self.rng)
         if parent is not None:
@@ -1019,6 +1467,7 @@ class Factory:
             parent.orth.append(1.0 - rho_max)
         if not t1.passed:
             self._reject("tier1", t1.reason)
+            self.campaign.fail(cell.key, f"tier1: {t1.reason}")
             return {"tier": 1, "why": t1.reason, "t1": t1.metrics()}
         self.counts["tier1"]["passed"] += 1
         if parent is not None:
@@ -1040,9 +1489,11 @@ class Factory:
                                   "net_oos": round(t1.net_oos, 7), "at": now_iso()}
         if not t2.passed:
             self._reject("tier2", t2.reason)
+            self.campaign.fail(cell.key, f"tier2: {t2.reason}")
             return {"tier": 2, "why": t2.reason, "t1": t1.metrics(), "t2": t2.metrics()}
         self.counts["tier2"]["passed"] += 1
         self.families.survivor(cell.expr)
+        self.credits.survivor(cell.expr, cell.generator, cell.asset_class)
         if parent is not None:
             parent.tier2_pass += 1
         blocked = executable_by_formula_family(cell.expr, cell.state)
@@ -1063,7 +1514,8 @@ class Factory:
 
     # ---- the four stages
     def worlds_for(self, expr: Expr, hold: int, states: Iterable[str] = ("none",)) -> list[Cell]:
-        return [Cell(expr, s, hold, st, "transfer") for s in self.lake.worlds for st in states]
+        return [Cell(expr, s, hold, st, "transfer", asset_class=w.asset_class)
+                for s, w in self.lake.worlds.items() for st in states]
 
     def transfer(self, parent: Parent) -> None:
         """The parent UNCHANGED across symbols x horizons; across sessions and regimes where it
@@ -1074,6 +1526,7 @@ class Factory:
         for hold in HORIZONS:
             for cell in self.worlds_for(expr, hold):
                 cell.origin, cell.parent, cell.generator = origin, parent.pid, "transfer"
+                cell.chain = [*parent.chain, "transfer"]
                 res = self.run_cell(cell, parent)
                 self.counts["transfer_cells"] += 1
                 if res.get("tier", 0) >= 2:
@@ -1083,7 +1536,8 @@ class Factory:
         states = [f"session:{s}" for s in SESSIONS] + [f"regime:{r}" for r in REGIMES]
         for sym, hold in worked[:4]:
             for st in states:
-                cell = Cell(expr, sym, hold, st, origin, parent.pid, "transfer_state")
+                cell = Cell(expr, sym, hold, st, origin, parent.pid, "transfer_state",
+                            self.lake.worlds[sym].asset_class, [*parent.chain, "transfer_state"])
                 self.run_cell(cell, parent)
                 if self.out_of_budget("transfer"):
                     break
@@ -1098,34 +1552,48 @@ class Factory:
         base = parent.expr if parent.status == "TESTABLE" else _prune(parent.expr, rng)
         syms = list(self.lake.worlds)
         sym = syms[int(rng.integers(len(syms)))]
-        terms = ag.available_terminals(self.lake.worlds[sym].frames)
+        world = self.lake.worlds[sym]
+        terms = ag.available_terminals(world.frames)
         hold = int(rng.choice(HORIZONS))
         state = "none"
-        move = rng.random()
-        gen = "mutate"
-        if qd_target and "session" in qd_target:
-            state, gen = f"session:{rng.choice(list(SESSIONS))}", "qd_state"
-            expr = base
-        elif qd_target and "regime" in qd_target:
-            state, gen = f"regime:{rng.choice(REGIMES)}", "qd_state"
-            expr = base
-        elif move < 0.35:
-            expr = ag.mutate(base, rng, terminals=terms)
-        elif move < 0.55:
-            others = [p for p in self.parents.values() if p.transferred and p.pid != parent.pid]
-            other = others[int(rng.integers(len(others)))] if others else parent
-            expr, gen = ag.crossover(base, other.expr, rng), "crossover"
-        elif move < 0.70:
-            neigh = _neighbours(base, rng, limit=2)
-            expr, gen = (neigh[0] if neigh else base), "window_step"
-        elif move < 0.80:
-            expr, gen = self._swap_rank(base), "basket_swap"
-        elif move < 0.90:
-            expr, gen = base, "horizon"
-            hold = HORIZONS[(HORIZONS.index(hold) + 1) % len(HORIZONS)]
+        if qd_target and ("session" in qd_target or "regime" in qd_target):
+            state = (f"session:{rng.choice(list(SESSIONS))}" if "session" in qd_target
+                     else f"regime:{rng.choice(REGIMES)}")
+            expr, gen = base, "qd_state"
         else:
-            expr, gen = self._bind_external(base, terms), "external_bind"
-        return Cell(expr, sym, hold, state, "mutation", parent.pid, gen)
+            # THE MOVE IS DRAWN BY MEASURED CREDIT: what screened and survived earns the draws.
+            gen = str(rng.choice(MOVES, p=self.credits.move_weights(MOVES)))
+            child = self._apply_move(base, gen, terms, parent)
+            for fallback in ("constant", "point", "subtree"):
+                if child is not None:
+                    break
+                noop = self.counts["mutations"]["noop"]
+                noop[gen] = noop.get(gen, 0) + 1
+                gen = fallback
+                child = self._apply_move(base, gen, terms, parent)
+            expr = base if child is None else child
+            if gen == "horizon":
+                hold = HORIZONS[(HORIZONS.index(hold) + 1) % len(HORIZONS)]
+        return Cell(expr, sym, hold, state, "mutation", parent.pid, gen, world.asset_class,
+                    [*parent.chain, gen])
+
+    def _apply_move(self, base: Expr, move: str, terms: Sequence[str],
+                    parent: Parent) -> Expr | None:
+        """One named move; None when it produced no dimension-preserving child."""
+        if move in dsl.MUTATIONS:
+            partner: Expr | None = None
+            if move == "crossover":
+                others = [p for p in self.parents.values()
+                          if p.transferred and p.pid != parent.pid]
+                partner = others[int(self.rng.integers(len(others)))].expr if others else None
+            return dsl.mutate(base, move, self.rng, terminals=terms, partner=partner)
+        if move == "basket_swap":
+            out = self._swap_rank(base)
+        elif move == "horizon":
+            return ag._clone(base)
+        else:
+            out = self._bind_external(base, terms)
+        return None if ag.key(out) == ag.key(base) else out
 
     def _swap_rank(self, expr: Expr) -> Expr:
         """ts_rank <-> xrank at one node: the same question asked of peers instead of time."""
@@ -1166,7 +1634,7 @@ class Factory:
         terms = ag.available_terminals(self.lake.worlds[sym].frames)
         expr = ag.random_expr(self.rng, max_depth=3, terminals=terms)
         return Cell(expr, sym, int(self.rng.choice(HORIZONS)), "none", "invention", "",
-                    "random")
+                    "random", self.lake.worlds[sym].asset_class, ["invent"])
 
     def pick_parent(self, pool: list[Parent]) -> Parent:
         """V(a)-weighted draw among the pool, empty QD cells favoured through novelty."""
@@ -1176,21 +1644,59 @@ class Factory:
         return pool[int(self.rng.choice(len(pool), p=weights))]
 
     def _archive_n(self, parent: Parent) -> int:
-        d = Cell(parent.expr, "", HORIZONS[0]).descriptor().split("|")[0]
+        d = Cell(parent.expr, "", HORIZONS[0]).mechanism().split("/")[0]
         return sum(1 for k in self.archive if k.startswith(d))
 
-    def empty_qd_targets(self) -> list[str]:
-        """Descriptor cells the archive has never filled, for the scheduler to search."""
+    def empty_qd_targets(self, klass: str | None = None) -> list[str]:
+        """Archive cells (mechanism x horizon x asset class x representation) never filled
+        for this pass's asset class, for the scheduler to aim a share of the draws at."""
         have = set(self.archive)
-        shapes = {k.split("|")[0] for k in have} or {"a momentum-type measure"}
+        shapes = {k.split("|")[0].split("/")[0] for k in have} or {"a momentum-type measure"}
+        klass = klass or str(self.state.get("basket") or "unclassified")
         out: list[str] = []
-        for shape in shapes:
+        for shape in sorted(shapes):
             for hold in HORIZONS:
                 for st in ("none", "session", "regime"):
-                    key = f"{shape}|h{hold}|{st}|single|bar|own"
+                    key = f"{shape}/{st}|h{hold}|{klass}|single+bar+own"
                     if key not in have:
                         out.append(key)
         return out
+
+    # ---- islands
+    def migrate(self, klass: str) -> int:
+        """Elites of the OTHER islands become `migrant` parents of this one, transferred
+        unchanged before anything is tuned: TRANSFER BEFORE TUNING holds for a migrant exactly
+        as it holds for a public alpha."""
+        pool: list[tuple[float, str, dict[str, Any]]] = []
+        for island, doc in self.islands.items():
+            if island == klass:
+                continue
+            for row in (doc.get("elites") or {}).values():
+                pool.append((float(row.get("score", 0.0)), island, row))
+        pool.sort(key=lambda t: -t[0])
+        n = 0
+        for _score, island, row in pool[:MIGRANTS_PER_PASS]:
+            cell = row.get("cell") or {}
+            expr = cell.get("expr")
+            if expr is None or not ag.is_valid(expr):
+                continue
+            p = self._parent(f"migrant:{island}:{ag.subtree_hash(dsl.canonical(expr))}", expr,
+                             "migrant")
+            p.chain = [*(cell.get("chain") or []), f"migrate:{island}->{klass}"]
+            n += 1
+        self.counts["migrants"] = n
+        return n
+
+    def update_islands(self, klass: str) -> None:
+        elites: dict[str, Any] = self.islands.setdefault(klass, {"elites": {}})["elites"]
+        for desc, row in self.archive.items():
+            if str((row.get("cell") or {}).get("asset_class") or "unclassified") != klass:
+                continue
+            if desc not in elites or float(elites[desc].get("score", -1e9)) < float(row["score"]):
+                elites[desc] = row
+        top = sorted(elites.items(), key=lambda kv: -float(kv[1].get("score", 0.0)))
+        self.islands[klass]["elites"] = dict(top[:ISLAND_ELITES])
+        self.islands[klass]["at"] = now_iso()
 
     # ---- one pass
     def load_worlds(self, symbols: Sequence[str] | None, max_symbols: int | None) -> list[str]:
@@ -1252,9 +1758,17 @@ class Factory:
             report["status"] = "NO_WORLDS"
             report["why"] = "no hypothesis-lane symbol with 720+ H1 bars could be loaded"
             return self.finish(report)
-        # HARVEST -> TRANSFER: harvested parents first, then the public alphas by V(a), the canon
+        klass = self.lake.worlds[loaded[0]].asset_class
+        self.state["basket"] = klass
+        report["worlds"]["lockbox"] = {s: w.lockbox for s, w in self.lake.worlds.items()}
+        report["migration"] = {"island": klass, "migrants": self.migrate(klass),
+                               "islands": {k: len(v.get("elites") or {})
+                                           for k, v in self.islands.items()}}
+        # HARVEST -> MIGRANTS -> TRANSFER: the dead and the parked first, then the other
+        # islands' elites, then the public alphas and the canon by V(a)
         order = [p for p in self.parents.values() if p.kind == "harvest"]
-        rest = [p for p in self.parents.values() if p.kind != "harvest"]
+        order += [p for p in self.parents.values() if p.kind == "migrant"]
+        rest = [p for p in self.parents.values() if p.kind not in ("harvest", "migrant")]
         while rest and not self.out_of_budget("transfer"):
             p = self.pick_parent(rest)
             rest.remove(p)
@@ -1265,7 +1779,7 @@ class Factory:
             self.transfer(p)
         # LIGHT MUTATION, parents by V(a), a share of draws aimed at empty QD cells
         pool = [p for p in self.parents.values() if p.transferred and not p.exhausted()]
-        targets = self.empty_qd_targets()
+        targets = self.empty_qd_targets(klass)
         n_mut = 0
         while pool and not self.out_of_budget("mutation"):
             parent = self.pick_parent(pool)
@@ -1317,12 +1831,44 @@ class Factory:
             (report.get("parents_census") or {}).get("nontestable_by_missing", {})
         report["survivors"] = self.counts["survivors"][:200]
         report["blocked_survivors"] = self.counts["blocked"][:200]
+        self.update_islands(str(self.state.get("basket") or "unclassified"))
+        report["population"] = {
+            "parents_by_kind": _count_by(p.kind for p in self.parents.values()),
+            "parents_transferred": sum(1 for p in self.parents.values() if p.transferred),
+            "parents_exhausted": sum(1 for p in self.parents.values() if p.exhausted()),
+            "archive_cells": len(self.archive), "seen_keys": len(self.seen),
+            "islands": {k: len(v.get("elites") or {}) for k, v in self.islands.items()},
+            "migrants_this_pass": self.counts["migrants"],
+            "twins_kept": {s: len(t) for s, t in self.twins.items()}}
+        report["cheap_layer"] = {"order": list(CHEAP_ORDER), "thresholds": CHEAP,
+                                 **self.counts["cheap"]}
+        report["null_factory"] = {"k": NULLS, "threshold_p": T1["p_perm"],
+                                  "rule": "permutation, block-shuffle and synthetic random-walk "
+                                          "nulls per candidate; the gate reads the worst p"}
+        mut = self.counts["mutations"]
+        report["mutations"] = {
+            "moves": list(MOVES), "by_move": mut["by_move"],
+            "by_trial_family_top": dict(sorted(mut["by_trial_family"].items(),
+                                               key=lambda kv: -kv[1])[:20]),
+            "trial_families_mutated": len(mut["by_trial_family"]), "no_child_found": mut["noop"],
+            "rule": "every move is dimension-preserving (alpha_dsl.mutate: production screen "
+                    "AND the parent's root unit); every mutated cell is charged to its trial "
+                    "family (LAWS 5k) and counted here by move and by family"}
+        report["credits"] = self.credits.summary(MOVES)
+        report["campaign"] = self.campaign.counts()
+        report["catalogue"] = dsl.catalogue_census()
         report["qd_archive"] = {"cells_filled": len(self.archive),
-                                "empty_targets": len(self.empty_qd_targets())}
+                                "empty_targets": len(self.empty_qd_targets()),
+                                "key": "mechanism|horizon|asset_class|representation",
+                                "islands": {k: len(v.get("elites") or {})
+                                            for k, v in self.islands.items()},
+                                "order": "HARVEST -> TRANSFER (migrants included) -> LIGHT "
+                                         "MUTATION -> NEW INVENTION; no parent tuned before "
+                                         "its unchanged transfer sweep"}
         report["debts"] = [
-            "trial ledger: libs/research/trial_ledger.py not present on this tree; the family "
-            "counter in data/expression_factory/trial_families.json is the ledger and "
-            "N_effective = sum_f (1 + ln n_f) is a stated rule, not a measured correlation",
+            "trial ledger: libs/research/trial_ledger.py prices the pass (families.ledger); "
+            "the mid-pass tier-2 deflation still uses the family's raw pass count because the "
+            "census is priced once at the end -- the gauntlet's charge is the binding one",
             "executor: family_formula runs one instrument with bar and driver terminals only; "
             "survivors carrying a panel node, a state filter or an external terminal are "
             "recorded BLOCKED in the registry (blocked_survivors above), not donated",
@@ -1353,11 +1899,18 @@ class Factory:
         atomic_json(sd / "parents.json", {"at": now_iso(), "parents": self.parent_book})
         atomic_json(sd / "state.json", {**self.state, "at": now_iso()})
         written += [sd / "archive.json", sd / "seen.json", sd / "parents.json", sd / "state.json"]
+        atomic_json(sd / "islands.json", {"at": now_iso(), "islands": self.islands,
+                                          "elites_per_island": ISLAND_ELITES,
+                                          "migrants_per_pass": MIGRANTS_PER_PASS})
+        self.credits.save()
+        written += [sd / "islands.json", self.credits.path]
         donated = self.donate()
         if donated is not None:
             written.append(donated)
         report["donation"] = self._donation_counts()
         report["registry"] = self.record_registry()
+        written += self.campaign.save()
+        report["campaign"] = self.campaign.counts()
         return written
 
     # ---- outputs
@@ -1393,8 +1946,10 @@ class Factory:
         if not cands:
             return None
         try:
-            import proposer_common as pc
-            return pc.donate(SOURCE, cands, tests_run=self.counts["tier1"]["evaluated"])
+            from research import proposer_common as pc
+            donated: Path | None = pc.donate(SOURCE, cands,
+                                             tests_run=self.counts["tier1"]["evaluated"])
+            return donated
         except Exception as exc:
             self.say(f"donation failed ({type(exc).__name__}: {exc}); writing the seat file "
                      "directly")
@@ -1409,7 +1964,7 @@ class Factory:
 
     def _donation_counts(self) -> dict[str, Any]:
         try:
-            import proposer_common as pc
+            from research import proposer_common as pc
             return dict(pc.donation_counts())
         except Exception:
             return {"donated": len(self.counts["survivors"]), "via": "direct"}
@@ -1420,10 +1975,11 @@ class Factory:
         reg = self.registry
         if reg is None:
             try:
-                from libs.moat import registry as reg  # type: ignore[no-redef]
+                from libs.moat import registry as reg
             except Exception as exc:
                 return {"error": f"registry unavailable: {type(exc).__name__}"}
-        out = {"parents": 0, "cells": 0, "blocked": 0, "links": 0, "errors": []}
+        out: dict[str, Any] = {"parents": 0, "cells": 0, "blocked": 0, "links": 0,
+                               "queued": 0, "queued_existing": 0, "errors": []}
         try:
             origin = reg.origin_of(SOURCE)
         except Exception:
@@ -1480,18 +2036,60 @@ class Factory:
                         reg.set_discovery_state(did, "BLOCKED",
                                                 reason=f"NO_EXECUTOR: {row['executor_block']}",
                                                 blocked_cells=1, conn=conn)
+                        self.campaign.fail(str(c["key"]), f"NO_EXECUTOR: {row['executor_block']}")
                         out["blocked"] += 1
                     else:
                         reg.set_discovery_state(did, "QUEUED", possible_cells=1,
                                                 generated_cells=1, compiled_cells=1,
                                                 queued_cells=1, conn=conn)
+                        # THE CAMPAIGN ADAPTER: the survivor becomes a registry candidate the
+                        # ONE gauntlet judges, carrying its provenance -- parent genome,
+                        # mutation chain, operator credits -- as lineage.
+                        cid, created = reg.enqueue_candidate(
+                            family="formula", symbol=c["symbol"], params=params, origin=origin,
+                            mechanism=ag.describe(c["expr"], row["t1"]["side_mode"]),
+                            generator=SOURCE, department="mathlab",
+                            source_id=f"parent:{pid}" if pid else "invention",
+                            discovery_id=did, trial_family=c["family"],
+                            parent_ids_json=[parent_ids[pid]] if pid in parent_ids else [],
+                            falsifier=row["falsifier"], horizon=str(c["hold"]),
+                            session=c["state"] if c["state"].startswith("session") else "",
+                            regime=c["state"] if c["state"].startswith("regime") else "",
+                            asset_class=str(c.get("asset_class") or ""),
+                            expected_costs=(self.lake.worlds[c["symbol"]].cost
+                                            if c["symbol"] in self.lake.worlds else None),
+                            novelty_vs_live=row["orthogonality"],
+                            exact_rules=json.dumps({"family": "formula", "params": params,
+                                                    "entry": f"|z_{NORM}| >= {ENTRY_Z}",
+                                                    "hold_bars": c["hold"]}, default=str),
+                            lineage_json=self._provenance(c, pid, g, p), conn=conn)
+                        self.campaign.advance(str(c["key"]), "QUEUED", candidate_id=cid,
+                                              created=created)
+                        out["queued" if created else "queued_existing"] += 1
                     out["cells"] += 1
                 except Exception as exc:
                     out["errors"].append(f"{type(exc).__name__}: {exc}"[:200])
+            out["campaign_refresh"] = self.campaign.refresh(conn)
         finally:
             conn.close()
         out["errors"] = out["errors"][:10]
         return out
+
+    def _provenance(self, c: dict[str, Any], pid: str, genome: Any, parent: Parent | None
+                    ) -> dict[str, Any]:
+        """What the candidate descends from: the parent genome and its public formula, the
+        mutation chain that produced the cell, and the measured credit of every operator in it
+        on this asset class."""
+        klass = str(c.get("asset_class") or "")
+        return {"source": SOURCE, "parent_genome": pid or "invention",
+                "parent_kind": parent.kind if parent is not None else "",
+                "parent_formula": (genome.formula if genome is not None else
+                                   ag.to_str(parent.expr) if parent is not None else ""),
+                "mutation_chain": list(c.get("chain") or []),
+                "operator_credits": {op: round(self.credits.op_weight(op, klass), 4)
+                                     for op in sorted(dsl.operators_in(c["expr"]))},
+                "trial_family": c["family"], "descriptor": c["descriptor"],
+                "generator": c.get("generator", "")}
 
 
 # ============================================================================ CLI
@@ -1513,6 +2111,7 @@ def main(argv: list[str] | None = None) -> int:
           f"{cells.get('tier1', {}).get('passed', 0)} passed / tier2 "
           f"{cells.get('tier2', {}).get('passed', 0)} passed; survivors "
           f"{cells.get('survivors', 0)} + blocked {cells.get('blocked_survivors', 0)}; "
+          f"campaign {(rep.get('campaign') or {}).get('this_pass')}; "
           f"N_eff {rep.get('N_effective_charged')}; "
           f"{'DRY RUN, nothing written' if a.dry_run else 'report ' + str(DEFAULT_PATHS.report)}",
           flush=True)

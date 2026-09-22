@@ -1,19 +1,23 @@
 """The Digital Twin organ: one calibrated posterior of worlds per hunt-universe instrument, and
 every sleeve and queued candidate judged across it (LAWS 5m; ledger U29/U30).
 
-    python desks/mt5/research/digital_twin.py --once [--budget-s 1200] [--dry-run] [--symbol X]
+    python desks/mt5/research/digital_twin.py --once [--budget-s 600] [--dry-run] [--symbol X]
 
-WHAT ONE PASS DOES. It walks the hypothesis-lane universe (`universe_policy.may_hypothesise`,
-never a symbol list) from the rotation cursor, and for each instrument the budget reaches: reads
-the newest window of bars (M5 where the desk holds it, else H1) and, where the tick tape holds
-the same days, the per-bar spread, order-flow imbalance and quote flicker; summarises the window;
-runs ABC-SMC over the latent worlds (`libs.research.digital_twin.infer`); runs the posterior
-predictive checks group by group; asks whether the three canonical mechanisms can exist in the
-posterior; and stores the posterior under `data/digital_twin/<symbol>.json`. Then every
-LIVE/STANDBY sleeve and the newest queued candidates whose instrument has a twin are run across
-sampled posterior worlds, and the distribution of their outcome is written to the registry as a
-`twin_robustness` memory row and, for a candidate, into the `posterior_world_robustness` column
-the UniversalCell law names.
+WHAT ONE PASS DOES (hourly cycle, execution department, 600 s). It walks the hypothesis-lane
+universe (`universe_policy.may_hypothesise`, never a symbol list) from the rotation cursor, and
+for each instrument the budget reaches: reads the newest window of bars (M5 where the desk holds
+it, else H1) and, where the tick tape holds the same days, the per-bar spread, order-flow
+imbalance and quote flicker; summarises the window; runs ABC-SMC over the latent worlds
+(`libs.research.digital_twin.infer`); runs the posterior predictive checks group by group and
+publishes the twin-vs-reality CALIBRATION SCORE (the share of measurable statistics the posterior
+reproduces); PRE-REGISTERS the three canonical mechanisms (expected effect size per event, its
+90% band, the events one window yields and the events a test needs at 80% power); and stores it
+all under `data/digital_twin/<symbol>.json`. Then every LIVE/STANDBY sleeve and the newest
+queued candidates whose instrument has a twin are run across the SAME sampled posterior worlds
+at zero, actual and doubled spread -- the distribution of their outcome and the counterfactual
+execution cost under the posterior -- and written to the registry as a `twin_robustness` memory
+row and, for a candidate, into the `posterior_world_robustness` column the UniversalCell law
+names.
 
 UNMEASURED IS A VALUE. A twin whose posterior fails a predictive check is stored with its verdict
 and the failing statistic, and no candidate gets a robustness number from a world that could not
@@ -32,6 +36,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import sys
 import time
@@ -67,7 +72,7 @@ MIN_BARS = 200
 #: Newest tick-day files read per instrument (bounded: the tape is per day, ~1 MB each).
 MAX_TICK_DAYS = 6
 N_ROUNDS = 3
-PPC_DRAWS = 48
+PPC_DRAWS = 64
 ROBUST_WORLDS = 32
 MECHANISM_WORLDS = 32
 MAX_TWINS_PER_PASS = 8
@@ -282,16 +287,19 @@ def calibrate(symbol: str, window: dt.SimBars, meta: dict[str, Any], *, rng: np.
                     tod=tod, rng=rng, n_particles=n_particles, n_rounds=N_ROUNDS,
                     deadline=deadline)
     check = dt.ppc(post, obs, tod=tod, rng=rng, n_draws=PPC_DRAWS)
+    score = dt.calibration_score(check)
     mean_world = np.array([[post.mean()[n] for n in dt.PARAM_NAMES]])
     mix = dt.participant_mix(dt.simulate(mean_world, window.n_bars, window.steps_per_bar, tod,
                                          rng, attribution=True))
-    mechanisms = {}
+    # the pre-registration: what a test of each canonical mechanism should expect on this
+    # instrument BEFORE it runs -- effect size, its band, and the sample the power needs
+    prereg: dict[str, dict[str, Any]] = {}
     for mech in MECHANISMS:
         if deadline():
-            mechanisms[mech.name] = {"verdict": "UNMEASURED", "why": "budget"}
+            prereg[mech.name] = {"mechanism": mech.name, "verdict": "UNMEASURED", "why": "budget"}
             continue
-        mechanisms[mech.name] = dt.mechanism_plausibility(mech, post, MECHANISM_WORLDS, tod=tod,
-                                                          rng=rng, deadline=deadline).to_dict()
+        prereg[mech.name] = dt.preregister(mech, post, MECHANISM_WORLDS, tod=tod, rng=rng,
+                                           deadline=deadline).to_dict()
     unmeasured_stats = [n for n, v in zip(dt.STAT_NAMES, obs, strict=True) if not np.isfinite(v)]
     return {
         "symbol": symbol, "calibrated_at": now_iso(), "rule": RULE,
@@ -301,9 +309,11 @@ def calibrate(symbol: str, window: dt.SimBars, meta: dict[str, Any], *, rng: np.
                      for n, v in zip(dt.STAT_NAMES, obs, strict=True)},
         "unmeasured_statistics": unmeasured_stats,
         "posterior": post.to_dict(), "ppc": check.to_dict(), "verdict": check.verdict,
-        "failing_statistics": check.failing, "participant_mix": mix,
-        "mechanisms": mechanisms, "n_particles": n_particles,
-        "elapsed_s": round(time.monotonic() - started, 1),
+        "failing_statistics": check.failing, "calibration": score.to_dict(),
+        "calibration_score": score.score, "participant_mix": mix,
+        "preregistrations": prereg,
+        "mechanisms": {k: v.get("verdict") for k, v in prereg.items()},
+        "n_particles": n_particles, "elapsed_s": round(time.monotonic() - started, 1),
     }
 
 
@@ -338,22 +348,30 @@ def _family_engine() -> Any:
         return None
 
 
-def proxy_rule(family: str) -> tuple[dt.StrategyRule | None, str]:
+RuleAt = Callable[[float], dt.StrategyRule]
+
+
+def proxy_rule(family: str) -> tuple[RuleAt | None, str]:
+    """A vocabulary proxy for a family the twin cannot call; the spread is charged by the twin,
+    so the cost multiplier is the caller's and the rule ignores it."""
     fam = str(family or "").lower()
     for words, kind in PROXY_RULES:
         if any(w in fam for w in words):
             if kind == "mean_reversion":
-                return dt.mean_reversion_rule(3), "proxy:mean_reversion"
-            if kind == "momentum":
-                return dt.momentum_rule(5), "proxy:momentum"
-            return dt.breakout_rule(20), "proxy:breakout"
+                rule = dt.mean_reversion_rule(3)
+            elif kind == "momentum":
+                rule = dt.momentum_rule(5)
+            else:
+                rule = dt.breakout_rule(20)
+            return (lambda _m, r=rule: r), f"proxy:{kind}"
     return None, "UNMEASURED:no rule vocabulary for family " + repr(family)
 
 
 def rule_for(symbol: str, family: str, params: dict[str, Any], side: int, selector: str,
-             twin: dict[str, Any]) -> tuple[dt.StrategyRule | None, str]:
-    """The strategy as something a world can run: the desk's family through its own replay
-    when the family is price-only and callable here, else a vocabulary proxy, else UNMEASURED."""
+             twin: dict[str, Any]) -> tuple[RuleAt | None, str]:
+    """The strategy as something a world can run, as a factory over the cost multiplier: the
+    desk's family through its own replay when the family is price-only and callable here, else a
+    vocabulary proxy, else UNMEASURED."""
     sr = _family_engine()
     fn = sr.family_fn(family) if sr is not None else None
     index = twin.get("index")
@@ -385,24 +403,26 @@ def rule_for(symbol: str, family: str, params: dict[str, Any], side: int, select
     digits = meta.get("digits")
     point = 10.0 ** -float(digits) if isinstance(digits, int | float) and digits > 0 else 1e-5
 
-    def rule(world: dt.WorldBars) -> float:
-        n = min(len(idx), world.close.size)
-        vol = world.volume[:n]
-        vscale = volume_scale / max(float(np.mean(vol)), 1e-9)
-        df = pd.DataFrame({
-            "open": world.open[:n] * price_scale, "high": world.high[:n] * price_scale,
-            "low": world.low[:n] * price_scale, "close": world.close[:n] * price_scale,
-            "tick_volume": np.rint(vol * vscale).astype("int64"),
-            "spread": np.rint(np.nan_to_num(world.spread[:n]) * world.close[:n] * price_scale
-                              / point).astype("int64"),
-            "real_volume": np.zeros(n, dtype="int64")}, index=idx[:n])
-        sigs = sr._signals(fn, df, side, call_params, selector)
-        if not sigs:
-            return 0.0
-        rs = sr._minimal_replay(df, sigs, cost_px)
-        return float(sum(rs)) if rs else 0.0
+    def rule_at(cost_mult: float) -> dt.StrategyRule:
+        def rule(world: dt.WorldBars) -> float:
+            n = min(len(idx), world.close.size)
+            vol = world.volume[:n]
+            vscale = volume_scale / max(float(np.mean(vol)), 1e-9)
+            df = pd.DataFrame({
+                "open": world.open[:n] * price_scale, "high": world.high[:n] * price_scale,
+                "low": world.low[:n] * price_scale, "close": world.close[:n] * price_scale,
+                "tick_volume": np.rint(vol * vscale).astype("int64"),
+                "spread": np.rint(np.nan_to_num(world.spread[:n]) * world.close[:n] * price_scale
+                                  / point).astype("int64"),
+                "real_volume": np.zeros(n, dtype="int64")}, index=idx[:n])
+            sigs = sr._signals(fn, df, side, call_params, selector)
+            if not sigs:
+                return 0.0
+            rs = sr._minimal_replay(df, sigs, cost_px * cost_mult)
+            return float(sum(rs)) if rs else 0.0
+        return rule
 
-    return rule, "family_engine"
+    return rule_at, "family_engine"
 
 
 # ---------------------------------------------------------------------------- the subjects
@@ -461,18 +481,30 @@ def evaluate(subject: dict[str, Any], twin: dict[str, Any], *, rng: np.random.Ge
                        / 24.0) for v in (twin.get("index") or [])], dtype=float)
     if tod.shape[0] != post.n_bars:
         tod = (np.arange(post.n_bars) % 24) / 24.0
-    rule, basis = rule_for(subject["symbol"], subject["family"], subject["params"],
-                           int(subject["side"]), subject["selector"], twin)
+    rule_at, basis = rule_for(subject["symbol"], subject["family"], subject["params"],
+                              int(subject["side"]), subject["selector"], twin)
     row: dict[str, Any] = {"name": subject["name"], "kind": subject["kind"],
                            "symbol": subject["symbol"], "family": subject["family"],
                            "basis": basis, "twin_verdict": twin.get("verdict"),
                            "twin_failing": twin.get("failing_statistics") or [],
+                           "twin_calibration_score": twin.get("calibration_score"),
                            "evaluated_at": now_iso(), "posterior_world_robustness": None}
-    if rule is None:
+    if rule_at is None:
         row["robustness"] = {"verdict": "UNMEASURED"}
+        row["execution_cost"] = {"verdict": "UNMEASURED"}
         return row
-    rb = dt.robustness(rule, post, ROBUST_WORLDS, tod=tod, rng=rng, deadline=deadline)
+    # one set of worlds for everything below: the robustness at actual cost, and the same rule
+    # at zero and doubled spread -- the counterfactual execution cost under the posterior
+    bars = dt.simulate_posterior(post, ROBUST_WORLDS, tod=tod, rng=rng)
+    rb = dt.robustness(rule_at(1.0), post, ROBUST_WORLDS, tod=tod, rng=rng, deadline=deadline,
+                       bars=bars)
     row["robustness"] = rb.to_dict()
+    ec = dt.execution_cost(rule_at, post, ROBUST_WORLDS, tod=tod, rng=rng, deadline=deadline,
+                           bars=bars)
+    row["execution_cost"] = ec.to_dict()
+    # the pre-registered expectation for this subject's own test: the outcome band across
+    # worlds, stated before the forward tape has spoken
+    row["expected_outcome"] = ({"mean": rb.mean, **rb.quantiles} if rb.n_worlds else None)
     realistic = str(twin.get("verdict") or "").startswith("REALISTIC")
     if realistic and rb.verdict != "UNMEASURED":
         row["posterior_world_robustness"] = rb.p_positive
@@ -526,7 +558,7 @@ def record(rows: list[dict[str, Any]]) -> int:
 
 # ---------------------------------------------------------------------------- the pass
 
-def run(*, budget_s: float = 1200.0, dry_run: bool = False,
+def run(*, budget_s: float = 600.0, dry_run: bool = False,
         symbols: list[str] | None = None) -> dict[str, Any]:
     started = time.monotonic()
     calib_deadline = started + budget_s * CALIBRATION_SHARE
@@ -544,6 +576,7 @@ def run(*, budget_s: float = 1200.0, dry_run: bool = False,
 
     calibrated: list[dict[str, Any]] = []
     unmeasured: list[dict[str, Any]] = []
+    fresh: dict[str, dict[str, Any]] = {}
     next_index = int(cursor.get("next_index") or 0) % max(len(universe), 1)
     for sym in order:
         if len(calibrated) >= MAX_TWINS_PER_PASS or time.monotonic() > calib_deadline:
@@ -561,22 +594,21 @@ def run(*, budget_s: float = 1200.0, dry_run: bool = False,
             _atomic(twin_path(sym), doc)
         calibrated.append({"symbol": sym, "timeframe": meta["timeframe"], "n_bars": meta["n_bars"],
                            "verdict": doc["verdict"], "failing": doc["failing_statistics"],
+                           "calibration_score": doc["calibration_score"],
+                           "calibration": doc["calibration"],
                            "unmeasured_statistics": doc["unmeasured_statistics"],
-                           "n_particles": n_particles, "posterior_n": doc["posterior"]["n_bars"]
-                           and len(doc["posterior"]["particles"]),
-                           "elapsed_s": doc["elapsed_s"],
-                           "mechanisms": {k: v.get("verdict") for k, v in doc["mechanisms"].items()},
+                           "n_particles": n_particles,
+                           "posterior_n": len(doc["posterior"]["particles"]),
+                           "elapsed_s": doc["elapsed_s"], "mechanisms": doc["mechanisms"],
+                           "preregistrations": doc["preregistrations"],
                            "participant_mix": doc["participant_mix"]})
+        fresh[sym] = doc
         if not symbols:
             next_index = (universe.index(sym) + 1) % len(universe)
 
+    # the twins on disk plus, on a dry run, the ones just built in memory (nothing is written)
     twins = stored_twins()
-    for row in calibrated:
-        if dry_run:
-            twins.pop(row["symbol"], None)
-    if dry_run:
-        # a dry run judges against the twins it just built, in memory only
-        pass
+    twins.update(fresh)
     previous = _read_json(REPORT) if REPORT.exists() else None
     prev_eval: dict[str, str] = {}
     if isinstance(previous, dict):
@@ -602,9 +634,25 @@ def run(*, budget_s: float = 1200.0, dry_run: bool = False,
     n_rows = 0 if dry_run else record(evaluations)
 
     verdicts: dict[str, int] = {}
+    scores: list[float] = []
     for doc in twins.values():
         key = str(doc.get("verdict") or "UNMEASURED").split(":", 1)[0]
         verdicts[key] = verdicts.get(key, 0) + 1
+        sc = doc.get("calibration_score")
+        if isinstance(sc, int | float) and math.isfinite(float(sc)):
+            scores.append(float(sc))
+    # THE PUBLISHED TWIN-VS-REALITY SCORE: across every stored twin, the share of measurable
+    # statistics the posterior reproduces. A universe with no scored twin publishes None.
+    calibration = {
+        "score_mean": round(float(np.mean(scores)), 4) if scores else None,
+        "score_min": round(float(np.min(scores)), 4) if scores else None,
+        "score_median": round(float(np.median(scores)), 4) if scores else None,
+        "n_scored": len(scores), "n_twins": len(twins),
+        "n_realistic": sum(1 for d in twins.values()
+                           if str(d.get("verdict") or "").startswith("REALISTIC")),
+        "worst": sorted(((d.get("calibration") or {}).get("worst_statistic"), s)
+                        for s, d in twins.items() if d.get("calibration"))[:5],
+    }
     report = {
         "at": now_iso(), "rule": RULE, "budget_s": budget_s, "dry_run": dry_run,
         "elapsed_s": round(time.monotonic() - started, 1),
@@ -615,16 +663,20 @@ def run(*, budget_s: float = 1200.0, dry_run: bool = False,
                      "cursor_next_index": next_index,
                      "next_symbol": universe[next_index] if universe else None},
         "calibrated": calibrated, "unmeasured": unmeasured,
+        "calibration": calibration,
         "twins": {s: {"verdict": d.get("verdict"), "failing": d.get("failing_statistics") or [],
+                      "calibration_score": d.get("calibration_score"),
                       "calibrated_at": d.get("calibrated_at"),
-                      "timeframe": (d.get("window") or {}).get("timeframe")}
+                      "timeframe": (d.get("window") or {}).get("timeframe"),
+                      "mechanisms": d.get("mechanisms") or {}}
                   for s, d in sorted(twins.items())},
         "twin_verdicts": verdicts,
         "evaluations": evaluations,
         "evaluation_counts": {
             "sleeves": sum(1 for e in evaluations if e["kind"] == "sleeve"),
             "candidates": sum(1 for e in evaluations if e["kind"] == "candidate"),
-            "carried": sum(1 for e in evaluations if e.get("posterior_world_robustness") is not None),
+            "carried": sum(1 for e in evaluations
+                           if e.get("posterior_world_robustness") is not None),
             "unmeasured": sum(1 for e in evaluations
                               if (e.get("robustness") or {}).get("verdict") == "UNMEASURED"),
         },
@@ -642,7 +694,7 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
     ap.add_argument("--once", action="store_true", help="one pass (the only mode; the clock is "
                                                         "the hourly cycle's validate department)")
-    ap.add_argument("--budget-s", type=float, default=1200.0)
+    ap.add_argument("--budget-s", type=float, default=600.0)
     ap.add_argument("--dry-run", action="store_true", help="calibrate and print; write nothing")
     ap.add_argument("--symbol", action="append", default=None,
                     help="restrict to these symbols (diagnosis)")
@@ -650,13 +702,14 @@ def main(argv: list[str] | None = None) -> int:
     report = run(budget_s=args.budget_s, dry_run=args.dry_run, symbols=args.symbol)
     print(f"digital twin: {len(report['calibrated'])} twin(s) calibrated this pass, "
           f"{report['universe']['with_twin']}/{report['universe']['hunt']} instruments with a "
-          f"twin, {report['evaluation_counts']['sleeves']} sleeve(s) and "
+          f"twin, calibration score mean {report['calibration']['score_mean']}, "
+          f"{report['evaluation_counts']['sleeves']} sleeve(s) and "
           f"{report['evaluation_counts']['candidates']} candidate(s) judged, "
           f"{report['evaluation_counts']['carried']} carried, {report['registry_rows']} registry "
           f"row(s), worlds/batch {report['memory']['worlds_per_batch']}, {report['elapsed_s']}s")
     for c in report["calibrated"]:
-        print(f"    {c['symbol']:<10}{c['timeframe']:>4}  {c['verdict']:<28} "
-              f"{c['elapsed_s']:>7.1f}s  mechanisms={c['mechanisms']}")
+        print(f"    {c['symbol']:<10}{c['timeframe']:>4}  {c['verdict']:<28} score="
+              f"{c['calibration_score']} {c['elapsed_s']:>7.1f}s  mechanisms={c['mechanisms']}")
     for e in report["evaluations"][:12]:
         rb = e.get("robustness") or {}
         print(f"    {e['kind']:<9} {e['name'][:40]:<40} {e['symbol']:<8} {rb.get('verdict')}"

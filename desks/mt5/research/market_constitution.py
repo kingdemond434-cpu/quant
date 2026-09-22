@@ -24,6 +24,18 @@ WHAT ONE PASS DOES, in the order the budget is spent:
        H1 bars of the venue's instruments. Venues the budget did not reach are named.
     5. REPORT `reports/MARKET_CONSTITUTION.json`: the calendar, every study with its verdict,
        the reading list of DECLARED_VERIFY rules, the preregistrations, and what was skipped.
+    6. COMPILE. The broker registry (`data/universe/universe.json`, MetaTrader's own tick
+       size, digits, contract size, volume step and swaps per symbol) is joined to the venue
+       rules in force on the broker's local date -- sessions, halts, settlement, the desk's
+       own close -- into ONE machine-readable file, `data/market_constraints.json`
+       (`libs.research.market_constitution.compile_constraints`). Its consumers read it
+       without importing anything: the gateway door
+       (`mt5desk/decision_core.stamp_market_constraints`) stamps each admitted sleeve row with
+       its instrument's clauses as an INPUT, and the campaign runner
+       (`side_channels/run_external_backtest.constraints_coverage`) records which docket
+       symbols ran under a compiled constitution. An axis the registry does not carry (margin,
+       the stops/freeze distance) is UNMEASURED by name on the row; nothing here caps, vetoes
+       or filters (GROWTH_GOVERNANCE Rule 1).
 
 WHAT IT NEVER DOES. It sizes nothing, it promotes nothing, it edits no state file another
 organ writes, and `--dry-run` writes nothing at all -- no parquet, no report, no registry row,
@@ -60,7 +72,19 @@ UNIVERSE = _DESK / "data" / "universe" / "universe.json"
 RULE_STATES_DIR = _DESK / "data" / "rule_states"
 INTEL_DIR = _DESK / "data" / "intelligence" / "market_constitution"
 REPORT = _DESK / "reports" / "MARKET_CONSTITUTION.json"
+CONSTRAINTS = _DESK / "data" / "market_constraints.json"
 COUNTRIES_DIR = _DESK / "research" / "countries"
+#: Who reads `data/market_constraints.json`. Named on the file itself so a reader that finds it
+#: on a box knows what else depends on it.
+CONSTRAINT_CONSUMERS: tuple[str, ...] = (
+    "desks/mt5/mt5desk/decision_core.py stamp_market_constraints (the gateway door: every "
+    "admitted sleeve row carries its instrument's tick, session, halt and settlement clauses as "
+    "`constraints`, an INPUT and never a filter)",
+    "desks/mt5/side_channels/run_external_backtest.py constraints_coverage (the campaign "
+    "runner records which docket symbols ran under a compiled constitution in "
+    "reports/BACKTEST_COVERAGE.json)",
+    "reports/MARKET_CONSTITUTION.json `constraints` (the counts, for the issue board)",
+)
 
 MAX_STAMP_BARS = 60_000         # H1 bars per (symbol, class); the box holds the live terminal
 PRE_DAYS = 120                  # trading days each side of a rule change
@@ -126,6 +150,15 @@ def universe_symbols() -> set[str]:
     except (OSError, ValueError):
         return set()
     return {str(k).upper() for k, v in doc.items() if isinstance(v, dict)}
+
+
+def universe_rows() -> dict[str, dict[str, Any]]:
+    """The registry's rows in the broker's own spelling, {} when absent or unreadable."""
+    try:
+        doc = json.loads(UNIVERSE.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return {str(k): v for k, v in doc.items() if isinstance(v, dict)}
 
 
 def _fallback_may_hypothesise(symbol: str) -> bool:
@@ -385,15 +418,46 @@ def donate(rows: list[dict[str, Any]], dry_run: bool) -> dict[str, Any]:
 
 
 # --------------------------------------------------------------------------- one pass
+def compile_constraints(venues: list[mc.Venue], dry_run: bool,
+                        now: datetime | None = None) -> dict[str, Any]:
+    """Step 6: the registry joined to the rules in force, written as `data/market_constraints.json`
+    for the gateway door and the campaign runner. Returns the report's summary block; an absent
+    registry is UNMEASURED by name and writes nothing."""
+    rows = universe_rows()
+    if not rows:
+        return {"status": "UNMEASURED", "n_symbols": 0,
+                "why": f"no registry rows at {UNIVERSE}; nothing to compile"}
+    doc = mc.compile_constraints(rows, venues, now or datetime.now(UTC))
+    doc["writer"] = "desks/mt5/research/market_constitution.py"
+    doc["consumers"] = list(CONSTRAINT_CONSUMERS)
+    summary: dict[str, Any] = {
+        "status": "MEASURED", "generated_at": doc["generated_at"],
+        "rules_version": doc["rules_version"], "n_symbols": doc["n_symbols"],
+        "by_status": doc["by_status"], "by_instrument_class": doc["by_instrument_class"],
+        "unmeasured_axes": doc["unmeasured_axes"], "axes": doc["axes"],
+        "consumers": list(CONSTRAINT_CONSUMERS), "rule": doc["rule"],
+    }
+    if not dry_run:
+        _atomic_json(CONSTRAINTS, doc)
+        summary["path"] = (str(CONSTRAINTS.relative_to(_DESK)) if CONSTRAINTS.is_relative_to(_DESK)
+                           else str(CONSTRAINTS))
+    return summary
+
+
 def run_once(budget_s: float, dry_run: bool, today: date | None = None) -> dict[str, Any]:
     t0 = time.monotonic()
     deadline = t0 + max(5.0, float(budget_s))
     universe = universe_symbols()
     now = today or datetime.now(UTC).date()
+    now_dt = (datetime.now(UTC) if today is None
+              else datetime(today.year, today.month, today.day, 12, tzinfo=UTC))
     venues, notes = all_venues(range(2008, now.year + 3))
     studies = run_studies(universe, today=now)
     registered = register(studies, dry_run)
     donated = donate(seeds(studies, _may_hypothesise()), dry_run)
+    # THE CONSTRAINTS ARE COMPILED BEFORE THE STAMPS, which are the step the budget can cut: a
+    # pass that runs out of time still leaves the placer and the campaign a current file.
+    constraints = compile_constraints(venues, dry_run, now_dt)
     stamps: list[dict[str, Any]] = []
     skipped: list[str] = []
     for v in venues:
@@ -415,6 +479,7 @@ def run_once(budget_s: float, dry_run: bool, today: date | None = None) -> dict[
         "calendar": [c.as_row() for c in mc.rule_change_calendar()],
         "studies": studies, "studies_by_verdict": by_verdict,
         "registry": registered, "donations": donated,
+        "constraints": constraints,
         "stamps": stamps, "stamps_skipped_for_budget": skipped,
         "unmeasured": [{"change_id": st["change_id"], "why": st.get("why") or
                         [r.get("why") for r in st["results"]]}
@@ -443,6 +508,8 @@ def main(argv: list[str] | None = None) -> int:
           f"studies={rep['studies_by_verdict']} "
           f"discoveries=+{r['discoveries_created']}/{r['discoveries_existing']} "
           f"seeds={rep['donations']['n']} "
+          f"constraints={rep['constraints'].get('n_symbols')} "
+          f"({rep['constraints'].get('by_status') or rep['constraints'].get('status')}) "
           f"stamped={sum(1 for s in rep['stamps'] if s.get('verdict') == 'STAMPED')} "
           f"skipped={len(rep['stamps_skipped_for_budget'])} elapsed={rep['elapsed_s']}s")
     for st in rep["studies"]:

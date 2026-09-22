@@ -58,6 +58,8 @@ GENOMES = STORE / "genomes.json"
 CONTRACTS = STORE / "contracts.json"
 LINEAGE = STORE / "lineage.jsonl"
 CURSOR = STORE / "cursor.json"
+UNITS = STORE / "units.json"
+MAX_UNIT_ROWS = 3_000
 OUT = DESK / "reports" / "FEATURE_COMPILER.json"
 CALENDAR = DESK / "data" / "forced_flow_calendar.json"
 #: Rule states are published by the market constitution compiler; absent here = UNMEASURED.
@@ -67,7 +69,7 @@ UNIVERSE_JSON = DESK / "data" / "universe" / "universe.json"
 UNMEASURED = "UNMEASURED"
 MODALITIES: tuple[str, ...] = ("prices", "text_claims", "physical_observations", "calendars",
                                "rule_states", "positioning", "macro_releases", "representations",
-                               "UNCLASSIFIED")
+                               "execution_records", "UNCLASSIFIED")
 ROUTE: tuple[str, ...] = ("DISCOVERED", "PIT_ARCHIVED", "SEMANTICS", "ENTITY_MAPPED", "FORGED",
                           "WORLD_MODEL_INPUT")
 RULE = ("every ingested modality becomes typed, contracted, lineage-hashed representations with "
@@ -173,6 +175,18 @@ CONTRACT_BASE: dict[str, dict[str, Any]] = {
                        "jurisdiction": "US / EU / CH", "revision_policy": "REVISED_IN_PLACE",
                        "retention_policy": "INDEFINITE", "compliance_owner": "principal",
                        "timestamp_semantics": "both", "source_class": "official"},
+    "execution_records": {"source": "desk live ledger and shadow states (the desk's own fills)",
+                          "owner": "the desk (its own record); Fusion Markets (the fills)",
+                          "acquisition_method": "gateway / shadow_forward write the ledgers",
+                          "public_or_licensed": "LICENSED",
+                          "licence_version": "MT5 account data licence (own trading record)",
+                          "permitted_uses": ("research", "backtest", "live_signal"),
+                          "redistribution_rights": "NONE", "personal_data_status": "NONE",
+                          "mnpi_review_status": "NOT_APPLICABLE",
+                          "jurisdiction": "AU (Fusion Markets, ASIC)",
+                          "revision_policy": "APPEND_ONLY", "retention_policy": "INDEFINITE",
+                          "compliance_owner": "principal", "timestamp_semantics": "both",
+                          "source_class": "broker"},
     "representations": {"source": "representation forge store (derived from held series)",
                         "owner": "the desk (derived); the origin dataset's owner (content)",
                         "acquisition_method": "research/representation_forge.py",
@@ -198,6 +212,7 @@ PIT_LABEL: dict[str, str] = {
     "positioning": IL.PIT_BASIS["axis_series"],
     "macro_releases": IL.PIT_BASIS["axis_series"],
     "representations": "carried from the inputs; a value at t uses only inputs available at t",
+    "execution_records": IL.PIT_BASIS["sleeve_ledger"],
 }
 
 
@@ -502,6 +517,83 @@ def _points_rows(series: R.Series) -> list[dict[str, Any]]:
             for p in series.sorted().points]
 
 
+# --------------------------------------------------------------------- every ingested unit
+def ledger_units(cursor: dict[str, Any], conn: Any, deadline: float
+                 ) -> tuple[list[IL.Unit], dict[str, int], dict[str, int]]:
+    """Every unit the ingestion ledger would judge this pass, through its own collector."""
+    gaps: list[dict[str, str]] = []
+    return IL.collect(dict(cursor), conn, gaps, deadline)
+
+
+def modality_contract(modality: str, at: str) -> DC.DatasetContract:
+    """The contract a modality's datasets are held under when no per-dataset row names one."""
+    probe = R.Series(series_id=f"modality:{modality}", dataset=f"modality:{modality}")
+    return contract_for(probe, modality, at)
+
+
+def modality_contracts(at: str) -> dict[str, dict[str, Any]]:
+    out: dict[str, dict[str, Any]] = {}
+    for modality in CONTRACT_BASE:
+        built = modality_contract(modality, at)
+        out[modality] = {"contract": built.to_json(), "admission": built.admission().to_json(),
+                         "recorded_at": at}
+    return out
+
+
+def unit_features(units: list[IL.Unit], contracts: dict[str, dict[str, Any]],
+                  typed: dict[str, dict[str, Any]], at: str
+                  ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """EVERY INGESTED UNIT COMPILES TO A TYPED FEATURE WITH LINEAGE: its modality, the series
+    typed from its dataset (when one exists), a content-hashed lineage id and a contract state.
+    A unit whose dataset has no contract is a CONTRACT_MISSING DEFECT ROW -- reported, never a
+    brake: the ledger still judges and exploits it."""
+    by_dataset: dict[str, list[str]] = {}
+    for fid, row in typed.items():
+        by_dataset.setdefault(str(row["dataset"]), []).append(fid)
+    modality_ok = {m: modality_contract(m, at).admissible() for m in CONTRACT_BASE}
+    rows: list[dict[str, Any]] = []
+    by_kind: Counter[str] = Counter()
+    by_state: Counter[str] = Counter()
+    defects: dict[str, dict[str, Any]] = {}
+    for unit in units:
+        dataset = unit.dataset_name or f"kind:{unit.kind}"
+        modality = "positioning" if dataset == "axis:cot" else IL.UNIT_MODALITY.get(
+            unit.kind, "UNCLASSIFIED")
+        entry = contracts.get(dataset)
+        if entry is not None:
+            state = "CONTRACTED" if entry["admission"]["admitted"] else "CONTRACT_INCOMPLETE"
+            ref = dataset
+        elif modality in modality_ok:
+            state = "CONTRACTED" if modality_ok[modality] else "CONTRACT_INCOMPLETE"
+            ref = f"modality:{modality}"
+        else:
+            state, ref = DC.CONTRACT_MISSING, ""
+        features = list(by_dataset.get(dataset, []))
+        for sym in unit.symbols:
+            features.extend(by_dataset.get(f"bars:{sym}", []))
+        lineage_id = DC.sha({"unit_id": unit.unit_id, "kind": unit.kind, "path": unit.path,
+                             "keys": list(unit.keys), "at": unit.at})[:32]
+        rows.append({"unit_id": unit.unit_id, "kind": unit.kind, "dataset": dataset,
+                     "modality": modality, "pit": bool(unit.pit), "contract": state,
+                     "contract_ref": ref, "lineage_id": lineage_id, "features": features[:6],
+                     "route": "TYPED_SERIES" if features else "TYPED_UNIT"})
+        by_kind[unit.kind] += 1
+        by_state[state] += 1
+        if state == DC.CONTRACT_MISSING:
+            defect = defects.setdefault(dataset, {"dataset": dataset, "kind": unit.kind,
+                                                  "modality": modality, "units": 0,
+                                                  "defect": DC.CONTRACT_MISSING,
+                                                  "fix": "declare the dataset's contract (a "
+                                                         "CONTRACT_BASE modality or a per-dataset "
+                                                         "row); the unit is still exploited"})
+            defect["units"] += 1
+    note = {"n": len(rows), "by_kind": dict(by_kind), "by_contract_state": dict(by_state),
+            "with_series": sum(1 for r in rows if r["features"]),
+            "contract_defects": sorted(defects.values(), key=lambda d: -int(d["units"]))[:40],
+            "n_contract_defects": len(defects), "brake": False, "rule": DC.DEFECT_RULE}
+    return rows, note
+
+
 # ------------------------------------------------------------------------------- the pass
 def _append_lineage(records: list[dict[str, Any]]) -> None:
     LINEAGE.parent.mkdir(parents=True, exist_ok=True)
@@ -601,25 +693,28 @@ def run(*, budget_s: float = BUDGET_S, dry_run: bool = False, max_typed: int = M
             contract = contracts.get(series.dataset)
             if contract is None:
                 built = contract_for(series, modality, at)
-                snap = DC.snapshot(built, _points_rows(series), at=at, code_version=code,
-                                   transform="type")
-                contracts[series.dataset] = {"contract": snap.contract.to_json(),
-                                             "admission": snap.contract.admission().to_json(),
-                                             "recorded_at": at}
-                lineage_rows.append(snap.lineage.to_json())
-                contract = contracts[series.dataset]
-                if not snap.contract.admissible():
+                contract = {"contract": built.to_json(),
+                            "admission": built.admission().to_json(), "recorded_at": at,
+                            "object": built}
+                contracts[series.dataset] = contract
+                if not built.admissible():
                     inadmissible.append({"dataset_id": series.dataset,
-                                         "reasons": list(snap.contract.admission().reasons)})
-            lineage_id = str(lineage_rows[-1]["lineage_id"]) if lineage_rows else UNMEASURED
+                                         "reasons": list(built.admission().reasons)})
+            # ONE LINEAGE RECORD PER FIELD: the contract is the dataset's, the content hash is
+            # the series' own, so a replay names exactly the points a feature was built from.
+            snap = DC.snapshot(contract["object"], _points_rows(series), at=at,
+                               code_version=code, transform=f"type:{series.series_id}")
+            lineage_row = {**snap.lineage.to_json(), "feature_id": series.series_id}
+            lineage_rows.append(lineage_row)
+            lineage_id = str(lineage_row["lineage_id"])
             route["PIT_ARCHIVED"] += 1
             route["SEMANTICS"] += 1
             entity = entity_of(series, universe)
             route["ENTITY_MAPPED"] += 1
             researcher = "representation_forge" if modality == "representations" \
                 else "feature_compiler"
-            gen = genome_for(series, modality, entity, DC.DatasetContract.from_json(
-                contract["contract"]), lineage_id, researcher=researcher)
+            gen = genome_for(series, modality, entity, contract["object"], lineage_id,
+                             researcher=researcher)
             admissible = bool(contract["admission"]["admitted"])
             forge_ok = admissible and series in own and modality != "representations"
             symbol = entity if not entity.startswith("region:") else ""
@@ -638,6 +733,22 @@ def run(*, budget_s: float = BUDGET_S, dry_run: bool = False, max_typed: int = M
             per_modality[modality]["typed"] += 1
             if len(examples[modality]) < 6:
                 examples[modality].append(series.series_id)
+
+        # 4b. EVERY INGESTED UNIT, through the ingestion ledger's own collector: typed to a
+        #     modality, linked to the series typed from its dataset, given a lineage id and a
+        #     contract state. A dataset with no contract is a CONTRACT_MISSING defect row, never
+        #     a brake -- the ledger still judges and exploits the unit.
+        ledger_cursor = cursor.get("ledger") if isinstance(cursor.get("ledger"), dict) else {}
+        try:
+            units, ledger_next, ledger_missed = ledger_units(ledger_cursor, c, deadline)
+        except Exception as exc:
+            units, ledger_next, ledger_missed = [], dict(ledger_cursor), {}
+            unmeasured.append({"modality": "units", "name": "ingestion ledger units",
+                               "why": f"collect raised {type(exc).__name__}: {exc}",
+                               "measured_by": "the ingestion_ledger leg"})
+        cursor["ledger"] = ledger_next
+        unit_rows, unit_note = unit_features(units, contracts, typed, at)
+        unit_note["not_reached"] = {k: v for k, v in ledger_missed.items() if v}
 
         # 5. THE FORGE: the compiler's own admissible fields become transforms, compositions and
         #    interactions in the forge's store, which the world model reads next pass.
@@ -697,12 +808,18 @@ def run(*, budget_s: float = BUDGET_S, dry_run: bool = False, max_typed: int = M
             genomes_doc = _bounded(old_genomes if isinstance(old_genomes, dict) else {},
                                    typed, MAX_GENOMES)
             contracts_doc = _bounded(old_contracts if isinstance(old_contracts, dict) else {},
-                                     contracts, MAX_CONTRACTS)
+                                     {k: {kk: vv for kk, vv in v.items() if kk != "object"}
+                                      for k, v in contracts.items()}, MAX_CONTRACTS)
             _atomic(GENOMES, {"at": at, "rule": FG.RULE, "layers": list(FG.LAYERS),
                               "n": len(genomes_doc), "genomes": genomes_doc})
             _atomic(CONTRACTS, {"at": at, "rule": DC.LEGALITY_RULE,
                                 "fields": list(DC.CONTRACT_FIELDS), "n": len(contracts_doc),
-                                "contracts": contracts_doc})
+                                "contracts": contracts_doc,
+                                "modality_contracts": modality_contracts(at)})
+            _atomic(UNITS, {"at": at, "rule": DC.DEFECT_RULE, "n": len(unit_rows),
+                            "by_kind": unit_note["by_kind"],
+                            "by_contract_state": unit_note["by_contract_state"],
+                            "units": unit_rows[:MAX_UNIT_ROWS]})
             _append_lineage(lineage_rows)
             _atomic(CURSOR, cursor)
             new_rows = 0
@@ -743,6 +860,7 @@ def run(*, budget_s: float = BUDGET_S, dry_run: bool = False, max_typed: int = M
                            "note": modality_notes.get(m)} for m in MODALITIES},
         "route": {step: int(route.get(step, 0)) for step in ROUTE},
         "typed": len(typed), "max_typed": max_typed,
+        "units": unit_note,
         "lane_held": {"n": len(lane_held), "ids": lane_held[:20],
                       "why": "single-name equities are typed and contracted but never forged "
                              "into the hypothesis lane (two-lane mandate)"},
@@ -765,7 +883,8 @@ def run(*, budget_s: float = BUDGET_S, dry_run: bool = False, max_typed: int = M
                           **concentration.to_json()},
         "forge": forge_report,
         "registry": registry_status,
-        "store": {"genomes": str(GENOMES), "contracts": str(CONTRACTS), "cursor": cursor},
+        "store": {"genomes": str(GENOMES), "contracts": str(CONTRACTS), "units": str(UNITS),
+                  "cursor": cursor},
         "unmeasured": unmeasured[:60],
         "n_unmeasured": len(unmeasured),
     }

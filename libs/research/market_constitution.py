@@ -803,6 +803,11 @@ _FUSION_ENGINE = Source(citation="desks/mt5/mt5desk/engine.py ROLLOVER_HOUR_UTC=
                                  "the earlier hour is used deliberately)", verified=VERIFIED)
 _FUSION_CLOSE = Source(citation="desks/mt5/mt5desk/decision_core.py CLOSE_HOUR=19.5 (the desk "
                                 "force-closes the gold book at 19:30 UTC)", verified=VERIFIED)
+_FUSION_EQUITY_HOURS = Source(citation="NYSE/Nasdaq core trading session 09:30-16:00 New York "
+                                       "(public); Fusion share CFDs quote the underlying's "
+                                       "cash session",
+                              note="the broker's share-CFD specification page has not been "
+                                   "read; the New York / Athens DST mismatch weeks are unread")
 _FUSION_HOURS = Source(citation="Fusion Markets published trading hours (FX Sunday 22:05 - "
                                 "Friday 21:55 UTC-equivalent; metals and index CFDs with a "
                                 "daily break around server midnight)",
@@ -816,6 +821,11 @@ def venue_fusion() -> Venue:
           Window("rollover", "23:55", "00:05", "ROLLOVER"))
     metals = (Window("metals_day", "01:00", "23:59", "CONTINUOUS"),
               Window("metals_break", "23:59", "01:00", "ROLLOVER"))
+    # NYSE/Nasdaq core session 09:30-16:00 New York is 16:30-23:00 on the server's own clock
+    # (Athens, seven hours ahead of New York in both seasons but for the two or three weeks the
+    # two DST switches disagree, which the source note names as unread).
+    equities = (Window("us_cash", "16:30", "23:00", "CONTINUOUS"),
+                Window("us_closed", "23:00", "16:30", "CLOSED"))
     rules = (
         RuleRow("fusion.session.fx", v, "forex", "session", "2010-01-04", "", {"windows": fx},
                 "24/5 with a rollover at server midnight; the desk counts it at 21:00 UTC "
@@ -827,6 +837,10 @@ def venue_fusion() -> Venue:
                 {"windows": metals},
                 "index CFDs follow the underlying future's near-24h clock with a daily break",
                 _FUSION_HOURS),
+        RuleRow("fusion.session.equities", v, "equities", "session", "2010-01-04", "",
+                {"windows": equities},
+                "share CFDs trade the underlying's cash session only; an overnight gap is the "
+                "whole of the close-to-open move", _FUSION_EQUITY_HOURS),
         RuleRow("fusion.rollover.swap", v, "*", "rollover", "2010-01-04", "",
                 {"rollover_hour_utc": 21, "triple_swap_weekday": 2},
                 "financing is charged at the rollover; a position held across it pays or "
@@ -1162,3 +1176,196 @@ def unverified_rules(venues: Iterable[Venue]) -> list[dict[str, str]]:
     """Every rule row still waiting for its document, by venue -- the reading list."""
     return [{"venue": v.venue_id, "rule_id": r.rule_id, "citation": r.source.citation}
             for v in venues for r in v.rules if r.source.verified != VERIFIED]
+
+
+# --------------------------------------------------------------------------- constraints
+#: THE REGISTRY COMPILED INTO CONSTRAINTS THE MACHINE CAN READ. `universe.json` is MetaTrader's
+#: own answer about every symbol (tick size, digits, contract size, volume step, swaps) and the
+#: venue rules above say when the symbol trades, when it halts and how it settles. Neither is a
+#: constraint until the two are joined per symbol, and until that join is a FILE a placer and a
+#: campaign runner can read without importing this module. `compile_constraints` is that join.
+#: An axis the registry does not carry (margin: the terminal's `margin_initial` is never synced
+#: into the registry; the stops/freeze distance: read live at the order) is UNMEASURED by name on
+#: the row -- the gateway reads the terminal for those and the row says so.
+MEASURED = "MEASURED"
+UNMEASURED = "UNMEASURED"
+PARTIAL = "PARTIAL"
+#: The broker registry's `asset_class` vocabulary (MetaTrader's own path names, lower-cased) ->
+#: the Fusion instrument class its rule rows are keyed by. A class absent here is UNCLASSIFIED:
+#: its session clause reads UNDECLARED, never a neighbour's hours.
+CLASS_OF_ASSET: dict[str, str] = {
+    "forex": "forex", "forex exotics": "forex", "forex majors": "forex", "forex minors": "forex",
+    # MetaTrader files the spot metals (XAUUSD, XAGUSD, XPTUSD, the base metals) under
+    # "Commodities" on this broker (measured on the registry 2026-09-22: 12 symbols, all X??USD
+    # metals); the softs carry their own class and no session clause yet.
+    "metals": "metals", "commodities": "metals", "indices": "indices", "equities": "equities",
+    "us share cfds": "equities", "share cfds": "equities",
+    "soft commodity": "softs", "energy": "energy", "crypto": "crypto", "bonds": "bonds",
+}
+#: Registry fields a constraint row is compiled from, by axis.
+TICK_FIELDS: tuple[str, ...] = ("tick_size", "digits", "tick_value", "contract_size",
+                                "volume_min", "volume_step", "median_spread_pts",
+                                "spread_pts_at_collection")
+MARGIN_FIELDS: tuple[str, ...] = ("margin_initial", "margin_maintenance", "margin_rate",
+                                  "margin_hedged", "margin_currency")
+CONSTRAINT_AXES: tuple[str, ...] = ("sessions", "halts", "tick", "margin", "settlement")
+CONSTRAINTS_RULE = ("one row per registry symbol: sessions, halts, tick, margin and settlement "
+                    "joined from MetaTrader's registry row and the venue rules in force on the "
+                    "broker's local date; an axis the registry does not carry is UNMEASURED by "
+                    "name and the gateway reads the terminal for it; a row is an INPUT to the "
+                    "placer and the campaign runner, never a cap, a veto or a filter")
+STOPS_LEVEL_WHY = ("the registry does not carry trade_stops_level or trade_freeze_level; the "
+                   "gateway reads both from the terminal's symbol_info at the order")
+MARGIN_WHY = ("the registry carries no margin field (the terminal's margin_initial is not "
+              "synced); the gateway reads it at the order")
+
+
+def instrument_class_of(asset_class: Any) -> str:
+    """The Fusion instrument class of a registry `asset_class`, '' when unclassified."""
+    return CLASS_OF_ASSET.get(str(asset_class or "").strip().lower(), "")
+
+
+def next_closed_day(venue: Venue, day: date, horizon_days: int = 14) -> tuple[str, str] | None:
+    """(ISO date, WEEKEND | HOLIDAY) of the venue's next closed day at or after `day` inside the
+    horizon; None when every day in the horizon is open."""
+    for i in range(max(1, int(horizon_days))):
+        d = day + timedelta(days=i)
+        state = closed_day_state(venue, d)
+        if state:
+            return d.isoformat(), state
+    return None
+
+
+def symbol_venue_map(venues: Iterable[Venue]) -> dict[str, str]:
+    """Upper-cased MT5 symbol -> the UNDERLYING venue that lists it. The broker's own venue is
+    excluded because every symbol trades on it; the first listing venue wins."""
+    out: dict[str, str] = {}
+    for v in venues:
+        if v.venue_id == "FUSION":
+            continue
+        for s in v.mt5_symbols:
+            out.setdefault(str(s).upper(), v.venue_id)
+    return out
+
+
+def _num(v: Any) -> float | None:
+    if isinstance(v, bool) or not isinstance(v, (int, float)):
+        return None
+    f = float(v)
+    return f if np.isfinite(f) else None
+
+
+def _windows_of(rows: Sequence[RuleRow]) -> list[dict[str, Any]]:
+    srule = _pick(rows, "session")
+    if srule is None:
+        return []
+    return [{"name": w.name, "start": w.start, "end": w.end, "state": w.session_state,
+             "auction": w.auction_state, "weekdays": list(w.weekdays)}
+            for w in srule.spec.get("windows", ()) if isinstance(w, Window)]
+
+
+def compile_symbol(symbol: str, meta: Mapping[str, Any], broker: Venue, now: datetime,
+                   underlying: Venue | None = None) -> dict[str, Any]:
+    """One symbol's constraint row: the registry row joined to the broker's rules in force on
+    its local date at `now`, and to the underlying venue's state where one lists the symbol."""
+    cls = instrument_class_of(meta.get("asset_class"))
+    ts = _as_utc(now)
+    st = state_at(broker, ts, cls or "unclassified")
+    loc_day = local_time(ts, broker.tz).date()
+    rows = rules_in_force(broker, loc_day, cls or "unclassified")
+    windows = _windows_of(rows)
+    roll = _pick(rows, "rollover")
+    close = _pick(rows, "desk_close")
+    under_state = state_at(underlying, ts) if underlying is not None else None
+    nxt = next_closed_day(broker, loc_day)
+    unmeasured: list[str] = []
+    tick = {k: _num(meta.get(k)) for k in TICK_FIELDS}
+    tick_ok = tick["tick_size"] is not None and tick["digits"] is not None
+    if not tick_ok:
+        unmeasured.append("tick: the registry row carries no tick_size/digits")
+    margin_vals = {k: meta.get(k) for k in MARGIN_FIELDS if meta.get(k) is not None}
+    if not margin_vals:
+        unmeasured.append("margin: " + MARGIN_WHY)
+    sessions_ok = st.session_state != "UNDECLARED"
+    if not sessions_ok:
+        unmeasured.append(f"sessions: no session clause for instrument class "
+                          f"{cls or 'unclassified'!r} on {broker.venue_id}")
+    status = (MEASURED if tick_ok and sessions_ok and margin_vals
+              else PARTIAL if tick_ok else UNMEASURED)
+    margin: dict[str, Any] = {"status": MEASURED if margin_vals else UNMEASURED, **margin_vals}
+    if not margin_vals:
+        margin["why"] = MARGIN_WHY
+    return {
+        "symbol": symbol, "asset_class": meta.get("asset_class"),
+        "instrument_class": cls or UNMEASURED, "venue": broker.venue_id, "venue_tz": broker.tz,
+        "sessions": {"status": MEASURED if sessions_ok else UNMEASURED, "windows": windows,
+                     "state_now": st.session_state, "auction_now": st.auction_state,
+                     "window_now": st.window, "local_time": st.local_time,
+                     "closed_today": closed_day_state(broker, loc_day) or "",
+                     "next_closed_day": nxt[0] if nxt else None,
+                     "next_closed_state": nxt[1] if nxt else None,
+                     "underlying_state_now": (under_state.session_state if under_state
+                                              else None)},
+        "halts": {"price_band": st.price_band, "weekly_closed": list(broker.weekly_closed),
+                  "n_holidays": len(broker.holidays),
+                  "daily_break": next((w for w in windows if w["state"] == "ROLLOVER"), None),
+                  "desk_close_utc": (close.spec.get("close_utc") if close is not None
+                                     else None),
+                  "desk_close_book": close.spec.get("book") if close is not None else None,
+                  "underlying_venue": underlying.venue_id if underlying is not None else None,
+                  "underlying_price_band": (under_state.price_band if under_state
+                                            else None)},
+        "tick": {**tick, "status": MEASURED if tick_ok else UNMEASURED,
+                 "stops_level": None, "freeze_level": None, "stops_level_why": STOPS_LEVEL_WHY},
+        "margin": margin,
+        "settlement": {"state": st.settlement_state,
+                       "rollover_hour_utc": (roll.spec.get("rollover_hour_utc")
+                                             if roll is not None else None),
+                       "triple_swap_weekday": (roll.spec.get("triple_swap_weekday")
+                                               if roll is not None else None),
+                       "swap_long": _num(meta.get("swap_long")),
+                       "swap_short": _num(meta.get("swap_short")),
+                       "currency_profit": meta.get("currency_profit"),
+                       "underlying_settlement": (under_state.settlement_state if under_state
+                                                 else None)},
+        "short_state": st.short_state, "fee_regime": st.fee_regime,
+        "rule_version": st.rule_version, "rule_ids": list(st.rule_ids),
+        "unverified": list(st.unverified), "status": status, "unmeasured": unmeasured,
+    }
+
+
+def compile_constraints(universe: Mapping[str, Any], venues: Sequence[Venue],
+                        now: datetime) -> dict[str, Any]:
+    """The whole registry compiled into machine-readable constraints at `now`.
+
+    Pure: the registry mapping and the venues are given, nothing is read. The broker's venue is
+    the FUSION venue among `venues` (or the module's own when absent); a symbol listed by another
+    venue's `mt5_symbols` carries that venue's state beside the broker's as its underlying.
+    """
+    by_id = {v.venue_id: v for v in venues}
+    broker = by_id.get("FUSION") or venue_fusion()
+    under_ids = symbol_venue_map(venues)
+    rows: dict[str, dict[str, Any]] = {}
+    by_status: dict[str, int] = {}
+    by_class: dict[str, int] = {}
+    unmeasured_axes: dict[str, int] = {}
+    for sym in sorted(universe):
+        meta = universe[sym]
+        if not isinstance(meta, Mapping):
+            continue
+        under = by_id.get(under_ids.get(str(sym).upper(), ""))
+        row = compile_symbol(str(sym), meta, broker, now, under)
+        rows[str(sym)] = row
+        by_status[row["status"]] = by_status.get(row["status"], 0) + 1
+        by_class[row["instrument_class"]] = by_class.get(row["instrument_class"], 0) + 1
+        for u in row["unmeasured"]:
+            axis = u.split(":", 1)[0]
+            unmeasured_axes[axis] = unmeasured_axes.get(axis, 0) + 1
+    return {
+        "generated_at": _as_utc(now).isoformat(timespec="seconds"),
+        "rules_version": RULES_VERSION, "venue": broker.venue_id, "venue_tz": broker.tz,
+        "n_symbols": len(rows), "by_status": by_status, "by_instrument_class": by_class,
+        "axes": list(CONSTRAINT_AXES), "unmeasured_axes": unmeasured_axes,
+        "n_unverified_rules": sum(1 for r in broker.rules if r.source.verified != VERIFIED),
+        "symbols": rows, "rule": CONSTRAINTS_RULE,
+    }

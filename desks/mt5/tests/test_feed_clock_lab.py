@@ -49,7 +49,13 @@ def _write_tape(root: Path, bars: pd.DataFrame, *, delay_hours: float | None) ->
     ms = t0 + np.arange(0, 12 * 3600, 2) * 1000.0
     hours = ((ms - t0) // 3_600_000).astype(int)
     day_bars = bars.loc[bars.index >= TAPE_DAY]
-    mid = day_bars["close"].to_numpy()[hours]
+    # A QUOTE THAT MOVES ON TWO TICKS IN THREE. The observatory's stale term is the tape's own
+    # repeat rate, so a mid frozen at the bar's close for the whole hour IS a frozen feed by
+    # its measure (repeat rate 0.9995) and would read every sleeve TIMING_FRAGILE. One cent of
+    # flicker keeps the reference check at lag 0 (0.02 bps against a 5 bps tolerance) and the
+    # repeat rate near a third, which is a live quote.
+    mid = (day_bars["close"].to_numpy()[hours]
+           + 0.01 * rng.choice(np.array([-1.0, 0.0, 1.0]), size=ms.size))
     delay = (30_000.0 + rng.uniform(0, 2000, ms.size) if delay_hours is None
              else rng.uniform(0, delay_hours * 3_600_000.0, ms.size))
     recv = pd.to_datetime(ms + delay, unit="ms", utc=True)

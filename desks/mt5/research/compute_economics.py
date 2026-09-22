@@ -367,7 +367,7 @@ def fidelity_ladder(gate_rows: list[dict[str, Any]], why: str | None) -> dict[st
         fam = str(r.get("family") or "?")
         gate = str(r.get("terminal_gate") or ("PASSED" if r.get("passed") else "?"))
         per_family[fam][gate] += 1
-    ladder = [g for g in GATE_ORDER]
+    ladder = list(GATE_ORDER)
     out: dict[str, Any] = {}
     total_cells = 0
     cheap_kills = 0
@@ -502,7 +502,7 @@ def run(*, budget_s: float = BUDGET_S, dry_run: bool = False,
         "data_pounds": pounds,
         "by_tier": by_tier, "by_department": by_department, "by_forest": by_forest,
         "by_search_family": by_family,
-        "by_layer": {k: v for k, v in sorted(comp["layer"].items())},
+        "by_layer": dict(sorted(comp["layer"].items())),
         "roi": rates,
         "policy": policy,
         "early_stopping": fidelity,

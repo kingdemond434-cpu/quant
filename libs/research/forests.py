@@ -38,7 +38,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
@@ -71,6 +71,11 @@ ROOT = Path(__file__).resolve().parents[2]
 DESK = ROOT / "desks" / "mt5"
 #: Written by the research-ROI organ; absent is a normal state, not a failure.
 ALLOCATION_JSON: Path = DESK / "data" / "forest_allocation.json"
+#: The compute-economics scientist's policy (LAWS 5m/5k): a two-sided factor on every
+#: forest's budget, the exploration tier's learned share over its 20% prior. Absent or
+#: UNMEASURED reads exactly 1.0 -- an unearned policy moves no seconds.
+POLICY_JSON: Path = DESK / "data" / "compute_policy.json"
+POLICY_CLIP: tuple[float, float] = (0.5, 1.5)
 #: Where a country pack lives. `<code>` is the pack DIRECTORY name, which is not always ISO-2
 #: (India is `ind`, Indonesia `idn`, the euro area `ea`) -- the packs' own convention, read.
 PACK_DIR: Path = DESK / "research" / "countries"
@@ -385,10 +390,12 @@ class Allocation:
     why: str = ""
     source: str = "defaults"
     overrides: tuple[str, ...] = field(default_factory=tuple)
+    policy_factor: float = 1.0
 
     def as_row(self) -> dict[str, Any]:
         return {"forest": self.forest, "workers": self.workers, "budget_s": self.budget_s,
                 "scout_floor": self.scout_floor, "roi": self.roi, "why": self.why,
+                "policy_factor": self.policy_factor,
                 "source": self.source, "overrides": list(self.overrides)}
 
 
@@ -400,7 +407,30 @@ def _int(value: Any, default: int, floor: int) -> tuple[int, bool]:
     return (max(floor, got), got < floor)
 
 
-def allocation_for(forest_id: str, path: Path | None = None) -> Allocation:
+def policy_factor(path: Path | None = None) -> tuple[float, str]:
+    """(factor, why) from `compute_policy.json`: `factors.forests` when the policy is MEASURED
+    and applied, clipped to `POLICY_CLIP`; exactly 1.0 with the reason otherwise."""
+    src = path or POLICY_JSON
+    try:
+        doc = json.loads(Path(src).read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError):
+        return 1.0, f"{UNMEASURED}: no readable {Path(src).name}; budgets unchanged"
+    if (not isinstance(doc, Mapping) or not doc.get("applied")
+            or str(doc.get("status")) != "MEASURED"):
+        status = doc.get("status") if isinstance(doc, Mapping) else "not an object"
+        return 1.0, f"{UNMEASURED}: compute policy is {status}; budgets unchanged"
+    factors = doc.get("factors")
+    raw = factors.get("forests") if isinstance(factors, Mapping) else None
+    if not isinstance(raw, (int, float)):
+        return 1.0, f"{UNMEASURED}: compute policy carries no forest factor; budgets unchanged"
+    f = float(min(POLICY_CLIP[1], max(POLICY_CLIP[0], float(raw))))
+    raw_split = doc.get("split")
+    split: Mapping[str, Any] = raw_split if isinstance(raw_split, Mapping) else {}
+    return f, (f"compute policy MEASURED: exploration share {split.get('exploration')} over "
+               f"its prior -> x{f:.3f} on every forest budget")
+
+
+def _base_allocation(forest_id: str, path: Path | None = None) -> Allocation:
     """This forest's workers, budget and scout floor, from the research-ROI organ's file.
 
     THE CONTRACT (written by `research_roi`, read here and nowhere else)::
@@ -455,6 +485,22 @@ def allocation_for(forest_id: str, path: Path | None = None) -> Allocation:
     return Allocation(forest=fid, workers=workers, budget_s=budget_s, scout_floor=True, roi=roi,
                       why=str(row.get("why") or str(doc.get("rule") or "")),
                       source=str(Path(src).name), overrides=tuple(overrides))
+
+
+def allocation_for(forest_id: str, path: Path | None = None,
+                   policy_path: Path | None = None) -> Allocation:
+    """`_base_allocation` (the research-ROI organ's workers and budget, or the defaults) with the
+    compute-economics policy applied to the budget -- two-sided, clipped, recorded in
+    `overrides`, and exactly 1.0 when the policy is UNMEASURED. The policy applies on the
+    defaults path too: a forest the ROI organ has not priced still lives under the learned
+    exploration share. Workers and the scout floor are never touched by it."""
+    base = _base_allocation(forest_id, path)
+    pf, pf_why = policy_factor(policy_path)
+    if pf == 1.0:
+        return base
+    budget = max(int(MIN_ROLE_S * len(ROLES)), round(base.budget_s * pf))
+    return replace(base, budget_s=budget, policy_factor=pf,
+                   overrides=(*base.overrides, f"budget_s x{pf:.3f} -> {budget}: {pf_why}"))
 
 
 def role_plan(forest_id: str, allocation: Allocation | None = None) -> list[tuple[str, float]]:

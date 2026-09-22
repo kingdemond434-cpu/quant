@@ -231,3 +231,67 @@ def test_placebo_dates_avoid_the_true_change_and_the_edges() -> None:
     assert (np.abs(idx - true_idx) >= 240).all()
     assert idx.min() >= 120 and idx.max() < days.size - 120
     assert mc.placebo_dates(days[:100], change, 120, 120).size == 0
+
+
+def test_compile_constraints_joins_the_registry_to_the_rules_and_names_absent_axes() -> None:
+    """One row per registry symbol: MetaTrader's tick fields, the broker's session clause for
+    the symbol's class, the rollover/settlement clause, the desk's own close, the underlying
+    venue where one lists the symbol -- and margin UNMEASURED by name, never a default."""
+    universe = {
+        "XAUUSD": {"asset_class": "Commodities", "tick_size": 0.01, "digits": 2,
+                   "contract_size": 100.0, "volume_min": 0.01, "volume_step": 0.01,
+                   "tick_value": 1.0, "swap_long": -61.76, "swap_short": 29.45,
+                   "currency_profit": "USD", "median_spread_pts": 16.0},
+        "JPN225": {"asset_class": "Indices", "tick_size": 0.01, "digits": 2},
+        "Apple": {"asset_class": "US Share CFDs"},
+        "XTIUSD": {"asset_class": "Energy", "tick_size": 0.01, "digits": 2},
+        "note": "not a row",
+    }
+    venues = list(V.values())
+    wed = datetime(2026, 9, 23, 10, 0, tzinfo=UTC)               # a Wednesday, 13:00 Athens
+    doc = mc.compile_constraints(universe, venues, wed)
+    assert doc["n_symbols"] == 4 and doc["venue"] == "FUSION"
+    assert set(doc["axes"]) == set(mc.CONSTRAINT_AXES)
+    gold = doc["symbols"]["XAUUSD"]
+    assert gold["instrument_class"] == "metals" and gold["status"] == mc.PARTIAL
+    assert gold["sessions"]["status"] == "MEASURED"
+    assert gold["sessions"]["state_now"] == "CONTINUOUS"
+    assert gold["sessions"]["closed_today"] == "" and gold["sessions"]["next_closed_day"] == \
+        "2026-09-26" and gold["sessions"]["next_closed_state"] == "WEEKEND"
+    assert gold["halts"]["daily_break"]["state"] == "ROLLOVER"
+    assert gold["halts"]["desk_close_utc"] == "19:30" and gold["halts"]["desk_close_book"] == "gold"
+    assert gold["halts"]["price_band"] == "NO_LIMIT"
+    assert gold["tick"]["status"] == "MEASURED" and gold["tick"]["tick_size"] == 0.01
+    assert gold["tick"]["stops_level"] is None and "symbol_info" in gold["tick"]["stops_level_why"]
+    assert gold["margin"]["status"] == "UNMEASURED" and "margin" in gold["margin"]["why"]
+    assert gold["settlement"] == {"state": "CFD_ROLLOVER", "rollover_hour_utc": 21,
+                                  "triple_swap_weekday": 2, "swap_long": -61.76,
+                                  "swap_short": 29.45, "currency_profit": "USD",
+                                  "underlying_settlement": None}
+    assert gold["rule_version"].startswith(mc.RULES_VERSION) and gold["rule_ids"]
+    assert [u.split(":")[0] for u in gold["unmeasured"]] == ["margin"]
+    # the underlying venue rides beside the broker's clause where one lists the symbol
+    nk = doc["symbols"]["JPN225"]
+    assert nk["halts"]["underlying_venue"] == "TSE"
+    assert nk["sessions"]["underlying_state_now"] in mc.SESSION_STATES
+    assert nk["settlement"]["underlying_settlement"] == "T+2"
+    # a share CFD carries the US cash session; at 13:00 Athens it is CLOSED, and with no tick
+    # fields its row is UNMEASURED and says which axes are missing
+    ap = doc["symbols"]["Apple"]
+    assert ap["instrument_class"] == "equities" and ap["sessions"]["state_now"] == "CLOSED"
+    assert ap["status"] == "UNMEASURED" and ap["tick"]["status"] == "UNMEASURED"
+    assert {u.split(":")[0] for u in ap["unmeasured"]} == {"tick", "margin"}
+    # a class with no session clause is UNDECLARED by name, never a neighbour's hours
+    oil = doc["symbols"]["XTIUSD"]
+    assert oil["sessions"]["status"] == "UNMEASURED"
+    assert oil["sessions"]["state_now"] == "UNDECLARED"
+    assert oil["settlement"]["rollover_hour_utc"] == 21          # the '*' clauses still apply
+    assert doc["unmeasured_axes"] == {"margin": 4, "tick": 1, "sessions": 1}
+    assert doc["by_status"] == {mc.PARTIAL: 3, "UNMEASURED": 1}
+    # the weekend reads closed today, and the Sunday row names the next open day's closure too
+    sat = mc.compile_constraints({"EURUSD": universe["XAUUSD"] | {"asset_class": "Forex"}},
+                                 venues, datetime(2026, 9, 26, 10, 0, tzinfo=UTC))
+    eu = sat["symbols"]["EURUSD"]
+    assert eu["sessions"]["closed_today"] == "WEEKEND" and eu["sessions"]["state_now"] == "WEEKEND"
+    assert eu["sessions"]["next_closed_day"] == "2026-09-26"
+    assert mc.instrument_class_of("Forex Exotics") == "forex" and mc.instrument_class_of(None) == ""

@@ -38,7 +38,8 @@ from __future__ import annotations
 import json
 import math
 import re
-from collections.abc import Iterable, Mapping, MutableMapping
+import warnings
+from collections.abc import Callable, Iterable, Mapping, MutableMapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from functools import lru_cache
@@ -1210,7 +1211,9 @@ def _xs_rank(vals: np.ndarray, min_members: int) -> np.ndarray:
 def _xs_z(vals: np.ndarray, min_members: int) -> np.ndarray:
     finite = np.isfinite(vals)
     n = finite.sum(axis=1)
-    with np.errstate(invalid="ignore", divide="ignore"):
+    with np.errstate(invalid="ignore", divide="ignore"), warnings.catch_warnings():
+        # an all-NaN row (a bar no member has a value on) is NaN below, not a warning
+        warnings.simplefilter("ignore", category=RuntimeWarning)
         mean = np.nanmean(np.where(finite, vals, np.nan), axis=1)
         std = np.nanstd(np.where(finite, vals, np.nan), axis=1)
         z = (vals - mean[:, None]) / std[:, None]
@@ -1260,28 +1263,475 @@ def evaluate_cell(expr: Expr, frames: Mapping[str, Mapping[str, pd.Series]], tar
     return ag.evaluate(expr, dict(frames[target]), memos.setdefault(target, {}))
 
 
+# ============================================================================ typed DAG
+#: THE FACTORY'S SEVEN-WORD TYPE VOCABULARY (mandate: every node typed price / return / volume /
+#: count / ratio / time / bool). The grammar's dtype x unit algebra is the AUTHORITY -- `kind`
+#: is its reading in the words the mandate uses, so a report and a catalogue can say what a
+#: node IS without a second algebra. `time` is what a window argument is (bars); `bool` is what
+#: the logic macros below return (a -1/0/+1 gate, the only truth value the grammar can carry).
+DSL_TYPES: tuple[str, ...] = ("price", "return", "volume", "count", "ratio", "time", "bool")
+_VOLUME_DTYPES = frozenset({"ACTIVITY", "FLOW", "POSITIONING"})
+
+
+class CompileError(ValueError):
+    """The expression cannot be compiled: a structural, type or unit defect, named by path."""
+
+    def __init__(self, why: str, path: tuple[int, ...] = ()) -> None:
+        super().__init__(f"{why} at {'/'.join(map(str, path)) or 'root'}")
+        self.why = why
+        self.path = path
+
+
+class UnitMismatch(CompileError):
+    """Two quantities the unit algebra refuses to combine: a compile error, never a NaN."""
+
+
+@dataclass(frozen=True)
+class TypedNode:
+    """One node of the typed DAG: hashed by structure, typed by the grammar, read as a kind."""
+
+    node_id: str
+    op: str
+    kind: str
+    dtype: str
+    unit: str
+    dimension: str
+    children: tuple[str, ...]
+    window: int | None
+    depth: int
+
+    def as_dict(self) -> dict[str, Any]:
+        return {"id": self.node_id, "op": self.op, "kind": self.kind, "dtype": self.dtype,
+                "unit": self.unit, "dimension": self.dimension, "children": list(self.children),
+                "window": self.window, "depth": self.depth}
+
+
+def kind_of(expr: Expr) -> str:
+    """The node's kind in the seven-word vocabulary; `bool` for a logic macro head, INVALID
+    where the grammar's algebra refuses the composition."""
+    if isinstance(expr, (list, tuple)) and expr and str(expr[0]) in _LOGIC_MACROS:
+        return "bool" if ag.is_valid(lower(expr)) else ag.INVALID
+    e = lower(expr)
+    t = ag.type_of(e)
+    if t == ag.INVALID:
+        return ag.INVALID
+    dim = ag.dimension_of(e)
+    unit = ag.unit_of(e)
+    if dim is None or unit is None:
+        return ag.INVALID
+    if t == "COUNT" or unit == ag.BARS:
+        return "time" if unit == ag.BARS else "count"
+    if t in _VOLUME_DTYPES:
+        return "volume"
+    if t == "RETURN":
+        return "return"
+    if dim.price != 0:
+        return "price"
+    if dim.count != 0:
+        return "volume"
+    if dim.time != 0:
+        return "time"
+    return "ratio"
+
+
+def typed_dag(expr: Expr) -> dict[str, TypedNode]:
+    """The expression as a DAG of typed nodes keyed by `ag.subtree_hash`: a subtree that
+    appears twice is ONE node (the cache's own key), and every node carries its kind, dtype,
+    unit and dimension. Raises `CompileError` / `UnitMismatch` on the innermost bad node."""
+    out: dict[str, TypedNode] = {}
+
+    def _walk(x: Expr, path: tuple[int, ...], d: int) -> str:
+        if isinstance(x, str):
+            if x not in ag.TERMINALS:
+                raise CompileError(f"unknown terminal {x!r}", path)
+            nid = ag.subtree_hash(x)
+            if nid not in out:
+                out[nid] = TypedNode(nid, x, kind_of(x), ag.DTYPES[x], str(ag.TERMINAL_UNITS[x]),
+                                     str(ag.TERMINAL_DIMENSIONS[x]), (), None, d)
+            return nid
+        if not isinstance(x, (list, tuple)) or not x:
+            raise CompileError("empty node", path)
+        op = str(x[0])
+        if op in _MACROS or op in _ALIASES:
+            return _walk(lower(x), path, d)
+        if op not in ag.ALL_OPERATORS:
+            raise CompileError(f"unknown operator {op!r}", path)
+        kids: list[str] = []
+        window: int | None = None
+        for i, c in enumerate(x[1:], start=1):
+            if isinstance(c, (list, tuple, str)):
+                kids.append(_walk(c, (*path, i), d + 1))
+            elif isinstance(c, int) and not isinstance(c, bool):
+                if c not in ag.WINDOWS:
+                    raise CompileError(f"window {c} is not one of {ag.WINDOWS}", (*path, i))
+                window = int(c)
+                wid = f"w{c}"
+                if wid not in out:
+                    out[wid] = TypedNode(wid, "window", "time", "COUNT", str(ag.BARS),
+                                         str(ag.DIMENSIONLESS), (), int(c), d + 1)
+                kids.append(wid)
+            else:
+                raise CompileError(f"bad argument {c!r}", (*path, i))
+        lowered = lower(x)
+        if not ag._structurally_valid(lowered):
+            raise CompileError(f"malformed {op} node", path)
+        t = ag.type_of(lowered)
+        u = ag.unit_of(lowered)
+        dim = ag.dimension_of(lowered)
+        if t == ag.INVALID or u is None or dim is None:
+            raise UnitMismatch(
+                f"{op}({', '.join(_brief(c) for c in x[1:])}): "
+                f"{'type' if t == ag.INVALID else 'unit'} mismatch", path)
+        nid = ag.subtree_hash(lowered)
+        if nid not in out:
+            out[nid] = TypedNode(nid, op, kind_of(x), t, str(u), str(dim), tuple(kids),
+                                 window, d)
+        return nid
+
+    _walk(expr, (), 0)
+    return out
+
+
+def _brief(x: Expr) -> str:
+    if isinstance(x, str):
+        return f"{x}:{ag.TERMINAL_KINDS.get(x, ag.INVALID)}"
+    if isinstance(x, (list, tuple)) and x:
+        return f"{x[0]}(..):{ag.kind_of(lower(x))}"
+    return str(x)
+
+
+@dataclass
+class Compiled:
+    """A compiled expression: lowered to the grammar, typed, hashed, with its family."""
+
+    expr: Expr
+    source: Expr
+    dag: dict[str, TypedNode]
+    root: str
+    kind: str
+    dtype: str
+    unit: str
+    canonical: str
+    family: str
+    hits: int = 0
+    misses: int = 0
+
+    @property
+    def n_nodes(self) -> int:
+        return len(self.dag)
+
+    def evaluate(self, frames: Mapping[str, pd.Series], memo: Any = None) -> pd.Series:
+        """Vectorised evaluation through the grammar, every subtree memoised by its hash in
+        `memo` (a dict or an `ag.SubtreeCache` scope): the second call is a lookup."""
+        m: Any = {} if memo is None else memo
+        k = memo_key(self.expr)
+        if k in m:
+            self.hits += 1
+            return m[k]
+        self.misses += 1
+        return ag.evaluate(self.expr, dict(frames), m)
+
+    def as_dict(self) -> dict[str, Any]:
+        return {"expr": self.expr, "rendered": ag.to_str(self.expr), "kind": self.kind,
+                "dtype": self.dtype, "unit": self.unit, "root": self.root,
+                "n_nodes": self.n_nodes, "family": self.family, "canonical": self.canonical}
+
+
+def compile_expr(expr: Expr, terminals: Sequence[str] | None = None) -> Compiled:
+    """THE COMPILER. Lowers the macros, builds the typed DAG (raising `UnitMismatch` on the
+    first node the unit algebra refuses), runs the production screen, and returns the
+    compiled form with its canonical key and trial family. A `terminals` pool narrows the
+    legal leaves to the series a world actually has."""
+    lowered = lower(expr)
+    dag = typed_dag(lowered)
+    if ag.depth(lowered) > ag.MAX_DEPTH:
+        raise CompileError(f"depth {ag.depth(lowered)} > MAX_DEPTH {ag.MAX_DEPTH}")
+    if not ag.is_valid(lowered, terminals=terminals):
+        bad = sorted(set(ag.terminals_in(lowered)) - set(terminals or ag.TERMINALS))
+        raise CompileError(f"terminal(s) {bad} not available on this world" if bad
+                           else "production screen refused the tree")
+    root = ag.subtree_hash(lowered)
+    node = dag[root]
+    return Compiled(lowered, expr, dag, root, node.kind, node.dtype, node.unit,
+                    canonical_key(lowered), family_key(lowered))
+
+
+# ============================================================================ operator catalogue
+@dataclass(frozen=True)
+class OpSpec:
+    """One operator's entry: category, arity, whether it takes a window, and its type/unit
+    signature. `lowers_to` names the grammar expansion of a macro; "" for a primitive."""
+
+    name: str
+    category: str
+    arity: int
+    windowed: bool
+    signature: str
+    lowers_to: str = ""
+
+    def as_dict(self) -> dict[str, Any]:
+        return {"name": self.name, "category": self.category, "arity": self.arity,
+                "windowed": self.windowed, "signature": self.signature,
+                "lowers_to": self.lowers_to}
+
+
+OP_CATEGORIES: tuple[str, ...] = ("time_series", "cross_sectional", "group", "math", "logic",
+                                  "event", "regime")
+
+#: MACROS: the DSL's logic, event and regime-conditioned operators, each an expansion into the
+#: grammar's own nodes, so the unit algebra, the evaluator and the cache see one vocabulary.
+#: Without numeric constants in the grammar a truth value is a sign: gt(a, b) is sign(a - b),
+#: which the algebra refuses unless a and b share a unit -- the compile error the mandate asks
+#: for -- and `trade_when` reads a gate as "on" where it is > 0.
+_LOGIC_MACROS: dict[str, Callable[[list[Any]], Expr]] = {
+    "gt": lambda a: ["sign", ["sub", a[0], a[1]]],
+    "lt": lambda a: ["sign", ["sub", a[1], a[0]]],
+    "and": lambda a: ["min2", ["sign", a[0]], ["sign", a[1]]],
+    "or": lambda a: ["max2", ["sign", a[0]], ["sign", a[1]]],
+    "not": lambda a: ["neg", ["sign", a[0]]],
+}
+_EVENT_MACROS: dict[str, Callable[[list[Any]], Expr]] = {
+    "event_decay": lambda a: ["decay", "event", a[0]],
+    "bars_since_event": lambda a: ["bars_since_max", "event", a[0]],
+    "event_gate": lambda a: ["trade_when", "event", a[0]],
+}
+_REGIME_MACROS: dict[str, Callable[[list[Any]], Expr]] = {
+    "when_regime": lambda a: ["trade_when", "state_prob", a[0]],
+    "regime_neutral": lambda a: ["group_zscore", a[0], "state_prob", a[1]],
+    "regime_rank": lambda a: ["group_rank", a[0], "state_prob", a[1]],
+}
+_ALIASES: dict[str, str] = {"ts_argmax": "bars_since_max", "ts_argmin": "bars_since_min",
+                            "ts_mean": "mean", "ts_std": "std", "ts_delta": "delta",
+                            "ts_delay": "delay", "ts_corr": "corr", "ts_cov": "cov",
+                            "ts_decay": "decay", "ts_sum": "sum", "ts_min": "min",
+                            "ts_max": "max", "rank": "xrank", "neutralise": "group_zscore"}
+_MACROS: dict[str, Callable[[list[Any]], Expr]] = {**_LOGIC_MACROS, **_EVENT_MACROS,
+                                                   **_REGIME_MACROS}
+
+
+def lower(expr: Expr) -> Expr:
+    """Expand every macro and alias, innermost first, into the grammar's closed operator set.
+    A tree with no macro comes back structurally equal (a fresh copy)."""
+    if not isinstance(expr, (list, tuple)) or not expr:
+        return expr
+    op = str(expr[0])
+    kids = [lower(c) if isinstance(c, (list, tuple)) else c for c in expr[1:]]
+    if op in _MACROS:
+        return lower(_MACROS[op](kids))
+    return [_ALIASES.get(op, op), *kids]
+
+
+def _sig_windowed(op: str) -> str:
+    rule = ag._WINDOWED_OUT[op]
+    out = {"same": "T[u]", "diff": "dT[u]", "SCALE": "SCALE[u]", "RANK": "RANK[1]",
+           "Z": "Z[1]", "COUNT": "COUNT[bars]"}.get(rule, rule)
+    if op == "atr_norm":
+        return "(x: PRICE[quote], w: time[bars]) -> Z[1]"
+    return f"(x: T[u], w: time[bars]) -> {out}"
+
+
+def _catalogue() -> dict[str, OpSpec]:
+    cat: dict[str, OpSpec] = {}
+    ts_ops = ("delay", "delta", "mean", "std", "min", "max", "ts_rank", "zscore", "decay",
+              "sum", "bars_since_max", "bars_since_min", "atr_norm", "ts_backfill", "scale")
+    for op in ts_ops:
+        cat[op] = OpSpec(op, "time_series", 1, True, _sig_windowed(op))
+    cat["corr"] = OpSpec("corr", "time_series", 2, True, "(x: T[u], y: S[v], w) -> Z[1]")
+    cat["cov"] = OpSpec("cov", "time_series", 2, True, "(x: T[u], y: S[v], w) -> SCALE[u v]")
+    cat["residual"] = OpSpec("residual", "time_series", 2, True,
+                             "(x: T[u], y: S[v], w) -> T[u]  (x minus its rolling beta to y)")
+    for op in ag.PANEL:
+        cat[op] = OpSpec(op, "cross_sectional", 1, False,
+                         f"(x: T[u]) -> {'RANK' if op == 'xrank' else 'Z'}[1] across the "
+                         "cell's basket")
+    cat["group_rank"] = OpSpec("group_rank", "group", 2, True,
+                               "(x: T[u], g: group, w) -> RANK[1] within g's peers")
+    cat["group_zscore"] = OpSpec("group_zscore", "group", 2, True,
+                                 "(x: T[u], g: group, w) -> Z[1] neutralised within g")
+    for op in ("neg", "abs"):
+        cat[op] = OpSpec(op, "math", 1, False, "(x: T[u]) -> T[u]")
+    cat["sign"] = OpSpec("sign", "math", 1, False, "(x: T[u]) -> Z[1]")
+    for op in ("add", "sub", "max2", "min2"):
+        cat[op] = OpSpec(op, "math", 2, False, "(x: T[u], y: T[u]) -> T[u]  (units must match)")
+    cat["mul"] = OpSpec("mul", "math", 2, False, "(x: T[u], y: S[v]) -> [u v]")
+    cat["div"] = OpSpec("div", "math", 2, False, "(x: T[u], y: S[v]) -> [u / v]; T/T -> RATIO")
+    cat["trade_when"] = OpSpec("trade_when", "logic", 2, False,
+                               "(gate: bool|Z[1], x: T[u]) -> T[u] held where gate <= 0")
+    for op in ("gt", "lt", "and", "or"):
+        cat[op] = OpSpec(op, "logic", 2, False, "(a: T[u], b: T[u]) -> bool",
+                         ag.to_str(_LOGIC_MACROS[op](["a", "b"])))
+    cat["not"] = OpSpec("not", "logic", 1, False, "(a: T[u]) -> bool",
+                        ag.to_str(_LOGIC_MACROS["not"](["a"])))
+    cat["event_decay"] = OpSpec("event_decay", "event", 0, True, "(w) -> EVENT[1]",
+                                ag.to_str(_EVENT_MACROS["event_decay"]([24])))
+    cat["bars_since_event"] = OpSpec("bars_since_event", "event", 0, True,
+                                     "(w) -> COUNT[bars]",
+                                     ag.to_str(_EVENT_MACROS["bars_since_event"]([24])))
+    cat["event_gate"] = OpSpec("event_gate", "event", 1, False, "(x: T[u]) -> T[u]",
+                               ag.to_str(_EVENT_MACROS["event_gate"](["x"])))
+    cat["when_regime"] = OpSpec("when_regime", "regime", 1, False, "(x: T[u]) -> T[u]",
+                                ag.to_str(_REGIME_MACROS["when_regime"](["x"])))
+    cat["regime_neutral"] = OpSpec("regime_neutral", "regime", 1, True,
+                                   "(x: T[u], w) -> Z[1] within the regime",
+                                   ag.to_str(_REGIME_MACROS["regime_neutral"](["x", 24])))
+    cat["regime_rank"] = OpSpec("regime_rank", "regime", 1, True,
+                                "(x: T[u], w) -> RANK[1] within the regime",
+                                ag.to_str(_REGIME_MACROS["regime_rank"](["x", 24])))
+    return cat
+
+
+OPERATOR_CATALOGUE: dict[str, OpSpec] = _catalogue()
+
+
+def catalogue_census() -> dict[str, Any]:
+    by_cat: dict[str, list[str]] = {c: [] for c in OP_CATEGORIES}
+    for spec in OPERATOR_CATALOGUE.values():
+        by_cat[spec.category].append(spec.name)
+    return {"n_operators": len(OPERATOR_CATALOGUE), "by_category": by_cat,
+            "primitives": sorted(k for k, v in OPERATOR_CATALOGUE.items() if not v.lowers_to),
+            "macros": sorted(k for k, v in OPERATOR_CATALOGUE.items() if v.lowers_to),
+            "aliases": dict(_ALIASES), "types": list(DSL_TYPES)}
+
+
+def operators_in(expr: Expr) -> set[str]:
+    if not isinstance(expr, (list, tuple)) or not expr:
+        return set()
+    out = {str(expr[0])}
+    for c in expr[1:]:
+        out |= operators_in(c)
+    return out
+
+
+# ============================================================================ mutation engine
+#: THE MOVES, each DIMENSION-PRESERVING BY CONSTRUCTION: a child is returned only when the
+#: production screen accepts it AND its root unit equals the parent's (units imply dimensions).
+#: The grammar's only numeric constants are its windows, so `constant` perturbation is a window
+#: step; `simplify` is the exact canonical form (a no-op, returned as None, on a canonical tree).
+MUTATIONS: tuple[str, ...] = ("point", "subtree", "crossover", "constant", "operator_swap",
+                              "simplify")
+
+
+def dimension_preserving(parent: Expr, child: Expr) -> bool:
+    if not ag.is_valid(child):
+        return False
+    pu, cu = ag.unit_of(parent), ag.unit_of(child)
+    return pu is not None and cu is not None and pu == cu
+
+
+def _internal_paths(expr: Expr) -> list[tuple[int, ...]]:
+    return [p for p in ag._paths(expr) if isinstance(ag._get(expr, p), list)]
+
+
+def _leaf_paths(expr: Expr) -> list[tuple[int, ...]]:
+    return [p for p in ag._paths(expr) if isinstance(ag._get(expr, p), str)]
+
+
+def mutate(expr: Expr, move: str, rng: np.random.Generator,
+           terminals: Sequence[str] | None = None, partner: Expr | None = None,
+           tries: int = 16) -> Expr | None:
+    """One named move on a copy of `expr`; None when no dimension-preserving child was found
+    in `tries` draws (the caller counts that as a move that produced nothing)."""
+    pool = tuple(terminals) if terminals else ag.terminal_pool(True)
+    base = lower(expr)
+    if move == "simplify":
+        c = canonical(base)
+        return None if ag.key(c) == ag.key(base) else c
+    for _ in range(tries):
+        cand: Expr | None = None
+        if move == "point":
+            leaves = _leaf_paths(base)
+            p = leaves[int(rng.integers(len(leaves)))]
+            old = ag._get(base, p)
+            same = [t for t in pool if t != old
+                    and ag.TERMINAL_KINDS.get(t) == ag.TERMINAL_KINDS.get(old)]
+            if not same:
+                continue
+            cand = ag._set(ag._clone(base), p, str(rng.choice(same)))
+        elif move == "subtree":
+            paths = _internal_paths(base) or [()]
+            p = paths[int(rng.integers(len(paths)))]
+            cand = ag._set(ag._clone(base), p, ag.random_expr(rng, 2, terminals=pool))
+        elif move == "crossover":
+            if partner is None:
+                return None
+            other = lower(partner)
+            pa, pb = ag._paths(base), ag._paths(other)
+            cand = ag._set(ag._clone(base), pa[int(rng.integers(len(pa)))],
+                           ag._clone(ag._get(other, pb[int(rng.integers(len(pb)))])))
+        elif move == "constant":
+            paths = [p for p in _internal_paths(base)
+                     if str(ag._get(base, p)[0]) in ag.WINDOWED + ag.BINARY_WINDOWED]
+            if not paths:
+                return None
+            p = paths[int(rng.integers(len(paths)))]
+            node = list(ag._get(base, p))
+            w = int(node[-1])
+            i = ag.WINDOWS.index(w) if w in ag.WINDOWS else -1
+            j = i + (1 if rng.random() < 0.5 else -1)
+            node[-1] = int(ag.WINDOWS[j]) if 0 <= j < len(ag.WINDOWS) \
+                else int(rng.choice(ag.WINDOWS))
+            if node[-1] == w:
+                continue
+            cand = ag._set(ag._clone(base), p, node)
+        elif move == "operator_swap":
+            paths = _internal_paths(base)
+            if not paths:
+                return None
+            p = paths[int(rng.integers(len(paths)))]
+            node = list(ag._get(base, p))
+            cls = next((c for c in (ag.UNARY, ag.WINDOWED, ag.BINARY, ag.BINARY_WINDOWED,
+                                    ag.PANEL) if node[0] in c), None)
+            if cls is None or len(cls) < 2:
+                continue
+            new_op = str(rng.choice([o for o in cls if o != node[0]]))
+            node[0] = new_op
+            cand = ag._set(ag._clone(base), p, node)
+        else:
+            raise ValueError(f"unknown move {move!r}; one of {MUTATIONS}")
+        if cand is not None and ag.key(cand) != ag.key(base) \
+                and dimension_preserving(base, cand):
+            return cand
+    return None
+
+
 __all__ = [
     "ALPHA101",
     "AVAILABILITY_RULES",
+    "DSL_TYPES",
+    "MUTATIONS",
+    "OPERATOR_CATALOGUE",
+    "OP_CATEGORIES",
     "OVERRIDES",
     "PAPER_FIELDS",
     "PARENT_STATUSES",
     "SEMANTIC_TERMINAL",
     "SEMANTIC_TYPES",
+    "CompileError",
+    "Compiled",
     "Field",
     "FieldCatalogue",
+    "OpSpec",
     "ParentGenome",
+    "TypedNode",
+    "UnitMismatch",
     "axis_fields",
     "bar_fields",
     "canonical",
     "canonical_key",
+    "catalogue_census",
+    "compile_expr",
+    "dimension_preserving",
     "evaluate_cell",
     "family_key",
     "future_data_impossible",
     "genome_census",
     "has_panel",
+    "kind_of",
+    "lower",
     "memo_key",
+    "mutate",
     "nearest_window",
+    "operators_in",
     "panel_nodes",
     "parent_genomes",
     "parse_formula",
@@ -1289,5 +1739,6 @@ __all__ = [
     "seed_panels",
     "skeleton",
     "transpile",
+    "typed_dag",
     "windows_in",
 ]

@@ -56,6 +56,7 @@ def desk(tmp_path, monkeypatch):
     monkeypatch.setattr(org, "RULE_STATES_DIR", d / "data" / "rule_states")
     monkeypatch.setattr(org, "INTEL_DIR", d / "data" / "intelligence" / "market_constitution")
     monkeypatch.setattr(org, "REPORT", d / "reports" / "MARKET_CONSTITUTION.json")
+    monkeypatch.setattr(org, "CONSTRAINTS", d / "data" / "market_constraints.json")
     monkeypatch.setattr(org, "load_bars",
                         lambda s, timeframe="H1": _tape(s) if s in SEEDS else None)
     monkeypatch.setattr(org, "pack_venues", lambda: ([], ["packs stubbed"]))
@@ -72,6 +73,7 @@ def test_dry_run_writes_nothing(desk, capsys):
     assert org.main(["--once", "--budget-s", "30", "--dry-run"]) == 0
     assert not (desk / "reports").exists() and not (desk / "data" / "rule_states").exists()
     assert not (desk / "data" / "intelligence").exists()
+    assert not (desk / "data" / "market_constraints.json").exists()
     assert R.discoveries() == [] and R.memories(category=org.SOURCE) == []
     out = capsys.readouterr().out
     assert "dry run" in out and "tse_closing_auction_2024" in out
@@ -142,3 +144,67 @@ def test_budget_exhaustion_names_the_venues_it_skipped(desk, monkeypatch):
     rep = org.run_once(5, dry_run=True, today=TODAY)
     assert rep["stamps"] == [] and set(rep["stamps_skipped_for_budget"]) >= {"TSE", "KRX"}
     assert rep["studies"]                                   # the studies ran before the clock
+
+
+def test_constraints_are_compiled_for_the_gateway_door_and_the_campaign_runner(desk):
+    """Step 6: the registry joined to the rules in force lands as data/market_constraints.json;
+    the gateway door stamps it on the roster as an INPUT (never a filter) and the campaign
+    runner records it beside its coverage numbers; an absent file is UNMEASURED by name."""
+    import importlib.util
+
+    from mt5desk import decision_core as core
+
+    rep = org.run_once(60, dry_run=False, today=TODAY)
+    c = rep["constraints"]
+    assert c["status"] == "MEASURED" and c["n_symbols"] == len(UNIVERSE)
+    assert Path(c["path"]) == Path("data/market_constraints.json")
+    assert c["consumers"] == list(org.CONSTRAINT_CONSUMERS)
+    doc = json.loads((desk / "data" / "market_constraints.json").read_text("utf-8"))
+    assert doc["writer"].endswith("market_constitution.py") and doc["consumers"]
+    gold = doc["symbols"]["XAUUSD"]
+    assert gold["instrument_class"] == "metals"
+    assert gold["sessions"]["state_now"] == "CONTINUOUS"          # Tuesday 12:00 UTC
+    assert gold["halts"]["desk_close_utc"] == "19:30"
+    assert gold["settlement"]["rollover_hour_utc"] == 21
+    # this fixture's registry carries only the asset class: tick and margin are UNMEASURED by
+    # name on every row, and the file says so in its own counts
+    assert gold["status"] == "UNMEASURED" and gold["tick"]["status"] == "UNMEASURED"
+    assert doc["unmeasured_axes"]["tick"] == len(UNIVERSE)
+    assert doc["unmeasured_axes"]["margin"] == len(UNIVERSE)
+    assert doc["symbols"]["Apple"]["instrument_class"] == "equities"
+    # THE GATEWAY DOOR: the clauses ride on the sleeve row; an unknown symbol gets nothing.
+    rows = [{"symbol": "XAUUSD", "name": "a"}, {"symbol": "apple", "name": "b"},
+            {"symbol": "ZZZ", "name": "c"}]
+    assert core.stamp_market_constraints(rows, desk / "data" / "market_constraints.json") == 2
+    got = rows[0]["constraints"]
+    assert got["session_state"] == "CONTINUOUS" and got["input_not_cap"] is True
+    assert got["rollover_hour_utc"] == 21 and got["desk_close_utc"] == "19:30"
+    assert got["margin"] == "UNMEASURED" and got["status"] == "UNMEASURED"
+    assert got["at"] == doc["generated_at"] and got["rule_version"] == gold["rule_version"]
+    assert rows[1]["constraints"]["instrument_class"] == "equities"   # case-folded lookup
+    assert "constraints" not in rows[2]
+    assert core.stamp_market_constraints(rows, desk / "data" / "absent.json") == 0
+    # THE ROSTER HOOK reads the file beside sleeves.json on the way through the live policy.
+    sleeves = desk / "data" / "sleeves.json"
+    sleeves.write_text(json.dumps({"sleeves": [
+        {"name": "gold_asia_t", "symbol": "XAUUSD", "family": "session_range_breakout",
+         "timeframe": "H1", "session": "asia", "status": "LIVE", "risk_frac": 0.005}]}),
+        encoding="utf-8")
+    kept, _notes = core.load_sleeves_verbose(sleeves)
+    assert [k.get("constraints", {}).get("session_state") for k in kept] in (["CONTINUOUS"], [])
+    # THE CAMPAIGN RUNNER records which docket symbols ran under a compiled constitution.
+    src = _DESK / "side_channels" / "run_external_backtest.py"
+    spec = importlib.util.spec_from_file_location("_reb_under_test", src)
+    assert spec is not None and spec.loader is not None
+    reb = importlib.util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(reb)
+    except Exception as exc:                                   # a clone with no registry
+        pytest.skip(f"campaign runner not importable here: {type(exc).__name__}: {exc}")
+    cov = reb.constraints_coverage(["XAUUSD", "eurusd", "NOPE", ""],
+                                   path=desk / "data" / "market_constraints.json")
+    assert cov["status"] == "MEASURED" and cov["docket_symbols"] == 3
+    assert cov["with_constraints"] == 2 and cov["without_constraints"] == ["NOPE"]
+    assert cov["by_status"] == {"UNMEASURED": 2} and cov["generated_at"] == doc["generated_at"]
+    absent = reb.constraints_coverage(["XAUUSD"], path=desk / "data" / "absent.json")
+    assert absent["status"] == "UNMEASURED" and "market_constitution" in absent["why"]

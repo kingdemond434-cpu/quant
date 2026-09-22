@@ -358,6 +358,7 @@ def run(*, budget_s: float = 900.0, dry_run: bool = False, max_new: int = MAX_NE
                     "rule": "a value stamped available_time t uses only inputs available at t"},
             "minted_at": now_iso(),
         }
+        record["genome"] = genome_of(record, origin)
         if record["id"] in seen_ids:
             # THE ONE INVARIANT OF A STORE KEYED BY ID. A collision means two different features
             # would occupy one row, and the count would say 56 while the store held 46. It is
@@ -444,6 +445,32 @@ def build_roi_table(rows: dict[str, dict[str, Any]], history: dict[str, dict[str
                     "survivors, forward rows, live attribution -- never by having been minted"}
 
 
+def genome_of(record: dict[str, Any], origin: R.Series | None) -> dict[str, Any] | None:
+    """THE FEATURE GENOME HOOK (LAWS 5m), GUARDED. A minted representation carries its chain --
+    data origin, the PIT rule it inherited, the region it is about, the transform chain and the
+    forge as researcher -- so the candidate compiler and the world model can read which dataset
+    two features share. An absent genome library costs the record nothing but this field."""
+    try:
+        from libs.research import feature_genome as FG
+    except Exception:
+        return None
+    try:
+        pit = record.get("pit") if isinstance(record.get("pit"), dict) else {}
+        return FG.genome(
+            str(record["id"]),
+            data_origin=[str(record.get("source_dataset") or record.get("dataset") or "")],
+            pit_normalisation=[str(pit.get("rule") or "")],
+            entity_alignment=[f"region:{record.get('region') or 'UNKNOWN'}"],
+            representation=[f"representation:{record.get('family') or 'unknown'}"],
+            transform=str(record.get("transform") or "").split("|"),
+            researcher=["representation_forge"],
+            meta={"inputs": list(record.get("inputs") or []), "n": record.get("n"),
+                  "information_type": origin.information_type if origin is not None else ""},
+        ).to_json()
+    except Exception:
+        return None
+
+
 def donation_rows(minted: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Structured donations announcing new representations to the compiler's intake.
 
@@ -478,6 +505,7 @@ def donation_rows(minted: list[dict[str, Any]]) -> list[dict[str, Any]]:
             "pit": row["pit"],
             "novelty": row.get("novelty"),
             "expected_value": row.get("expected_value"),
+            "genome": row.get("genome"),
             "public_source": "desks/mt5/reports/REPRESENTATION_FORGE.json",
         })
     return rows
@@ -504,6 +532,7 @@ def record_registry(minted: list[dict[str, Any]], credit: dict[str, float]) -> d
                 pit=row["pit"], novelty=row.get("novelty"),
                 expected_value=row.get("expected_value"),
                 explained_variance=credit.get(str(row["family"])), origin="representation_forge",
+                genome_json=row.get("genome"),
                 payload={"inputs": row["inputs"], "file": row["file"]}, conn=conn)
             out["upserted"] += 1
             out["new"] += int(created)

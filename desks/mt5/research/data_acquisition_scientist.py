@@ -80,8 +80,9 @@ DEFAULT_DATA_COST = 2.0          # no catalogue route: declared, flagged cost_un
 DEFAULT_ENGINEERING = 3.0
 PACK_ABSENT_VALUE = 0.25         # coverage debt: a dataset a pack names absent
 MISSED_PARENT_VALUE = 0.5
-FORMULA = ("EV = p_survivor x diversification_value / (data_cost + compute + engineering) "
-           "x legal (1 or 0)")
+FORMULA = ("EV = p_survivor x information_gain x independence / (data_cost + compute + "
+           "engineering) x legal (1 or 0); information_gain sums the EVIG of the coverage-tensor "
+           "holes and the residual effect sizes the dataset would explain")
 RULE = ("the scientist ranks missing datasets by expected research value, samples lawfully "
         "through existing fetchers where a public route exists, contracts every request, and "
         "never lets legality be traded against value: an inadmissible contract is EV 0")
@@ -137,17 +138,20 @@ def _candidate(key: str, observable: str, *, register: str, ref: str, p: float |
                value: float, why: str, mechanisms: list[str] | None = None,
                assets: list[str] | None = None, country: str = "", url: str = "",
                licence: str = "", machine_use_allowed: bool | None = None,
-               how_to_fetch: str = "", source_class: str = "") -> dict[str, Any]:
+               how_to_fetch: str = "", source_class: str = "", revisions: str = "",
+               pit_feasible: bool | None = None) -> dict[str, Any]:
     return {"dataset": key, "observable": observable,
             "named_by": [{"register": register, "ref": ref, "p_survivor": p, "value": value,
                           "why": why}],
             "mechanisms": sorted({m for m in (mechanisms or []) if m})[:12],
             "assets": sorted({a for a in (assets or []) if a})[:12], "country": country,
             "url": url, "licence": licence, "machine_use_allowed": machine_use_allowed,
-            "how_to_fetch": how_to_fetch, "source_class": source_class}
+            "how_to_fetch": how_to_fetch, "source_class": source_class,
+            "revisions": revisions, "pit_feasible": pit_feasible}
 
 
-def from_coverage_holes(path: Path = COVERAGE) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+def from_coverage_holes(path: Path | None = None) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    path = path or COVERAGE
     doc = _read_json(path, None)
     top = (doc.get("frontier") or {}).get("top") if isinstance(doc, dict) else None
     if not isinstance(top, list):
@@ -177,7 +181,8 @@ def from_coverage_holes(path: Path = COVERAGE) -> tuple[list[dict[str, Any]], di
     return out, {"status": "measured", "holes": len(top), "candidates": len(out)}
 
 
-def from_residual_targets(path: Path = RESIDUAL) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+def from_residual_targets(path: Path | None = None) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    path = path or RESIDUAL
     doc = _read_json(path, None)
     targets = doc.get("targets") if isinstance(doc, dict) else None
     if isinstance(targets, dict):
@@ -207,8 +212,9 @@ def from_residual_targets(path: Path = RESIDUAL) -> tuple[list[dict[str, Any]], 
     return out, {"status": "measured", "targets": len(targets), "candidates": len(out)}
 
 
-def from_missed_trade_parents(paths: tuple[Path, ...] = MISSED
+def from_missed_trade_parents(paths: tuple[Path, ...] | None = None
                               ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    paths = paths or MISSED
     for path in paths:
         doc = _read_json(path, None)
         if not isinstance(doc, dict):
@@ -285,7 +291,10 @@ def from_country_packs(packs: dict[str, Any]) -> tuple[list[dict[str, Any]], dic
                 assets=[str(a) for a in (row.get("assets") or [])] or instruments,
                 country=code, url=url_m.group(0) if url_m else "",
                 licence=str(row.get("licence") or ""),
-                how_to_fetch=str(row.get("how_to_fetch") or ""), source_class="official"))
+                how_to_fetch=str(row.get("how_to_fetch") or ""), source_class="official",
+                revisions=str(row.get("revisions") or ""),
+                pit_feasible=(bool(row["pit_feasible"]) if row.get("pit_feasible") is not None
+                              else None)))
         for row in list(_pack_get(pack, "source_classes") or [])[:MAX_PACK_ROWS]:
             if not isinstance(row, dict) or not str(row.get("id") or "").startswith("absent_"):
                 continue
@@ -358,10 +367,11 @@ def merge(rows: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
         have["named_by"].extend(row["named_by"])
         for field in ("mechanisms", "assets"):
             have[field] = sorted(set(have[field]) | set(row[field]))[:12]
-        for field in ("country", "url", "licence", "how_to_fetch", "source_class"):
+        for field in ("country", "url", "licence", "how_to_fetch", "source_class", "revisions"):
             have[field] = have[field] or row[field]
-        if have.get("machine_use_allowed") is None:
-            have["machine_use_allowed"] = row.get("machine_use_allowed")
+        for field in ("machine_use_allowed", "pit_feasible"):
+            if have.get(field) is None:
+                have[field] = row.get(field)
     return out
 
 
@@ -412,13 +422,32 @@ def jurisdiction_of(cand: dict[str, Any], route: dict[str, Any]) -> str:
     return UNMEASURED
 
 
+def revision_policy_of(cand: dict[str, Any], route: dict[str, Any]) -> str:
+    """The source's revision behaviour, read off the catalogue's PIT note or the pack's own
+    `revisions` field; UNMEASURED when neither says anything."""
+    pit = str(route.get("pit_status") or "") if route.get("catalogue") else ""
+    low = f"{pit} {cand.get('revisions') or ''}".strip().lower()
+    if not low:
+        return UNMEASURED
+    if "vintage" in low or "first-released" in low or "first published" in low:
+        return "IMMUTABLE_VINTAGES"
+    if "never" in low or low.startswith("none") or "not revised" in low:
+        return "NEVER_REVISED"
+    if "revis" in low:
+        return "REVISED_IN_PLACE"
+    return "APPEND_ONLY"
+
+
 def contract_for(cand: dict[str, Any], route: dict[str, Any], at: str
                  ) -> tuple[DC.DatasetContract, AC.AccessVerdict]:
     access = str(route.get("access") or "")
     licence = str(cand.get("licence") or "")
     meta: dict[str, Any] = {"source_id": cand["dataset"], "url": cand.get("url") or "",
                             "source_class": cand.get("source_class") or "",
-                            "licence": licence or (f"declared {access}" if access else "")}
+                            "licence": licence or (f"declared {access}" if access else ""),
+                            # the licence prose is also TERMS, so the hard boundary's markers
+                            # (material non-public, leaked database, ...) are read off it
+                            "terms": licence, "licence_note": licence}
     if cand.get("machine_use_allowed") is not None:
         meta["machine_use_allowed"] = bool(cand["machine_use_allowed"])
     if access == "free" or "public" in licence.lower() or "free" in licence.lower():
@@ -454,16 +483,16 @@ def contract_for(cand: dict[str, Any], route: dict[str, Any], at: str
                             else ("PENDING" if label != "LICENSED" else "REVIEWED_CLEAR")),
         jurisdiction=jurisdiction_of(cand, route),
         point_in_time_timestamp=at,
-        revision_policy=("IMMUTABLE_VINTAGES" if "vintage" in str(route.get("pit_status")).lower()
-                         else ("REVISED_IN_PLACE" if "revis" in str(route.get("pit_status")).lower()
-                               else UNMEASURED if route.get("pit_status") == UNMEASURED
-                               else "APPEND_ONLY")),
+        revision_policy=revision_policy_of(cand, route),
         retention_policy="INDEFINITE" if public else UNMEASURED,
         compliance_owner="principal",
         provenance_state=DC.provenance_from_verdict(refused=verdict.refused,
                                                     quarantine=verdict.quarantine),
         schema={"available_time": "iso8601", "period_time": "iso8601", "value": "float"},
-        timestamp_semantics="both" if route.get("pit_status") != UNMEASURED else UNMEASURED,
+        timestamp_semantics=("both" if route.get("catalogue") or cand.get("pit_feasible")
+                             else ("period_time" if cand.get("pit_feasible") is False
+                                   else UNMEASURED)),
+        machine_use_allowed=bool(verdict.machine_use_allowed),
         notes=f"access verdict {verdict.access_label} ({verdict.basis}): {verdict.reason}")
     return contract, verdict
 
@@ -550,22 +579,36 @@ def score(cand: dict[str, Any], *, marks: set[str], catalogue: Any, at: str
                else f"prior {PRIOR_P_SURVIVOR}: no judged neighbourhood")
     red, red_basis = redundancy(cand["observable"], marks)
     independence = 1.0 - red
-    diversification = sum(float(n["value"]) for n in named) * independence
+    information_gain = sum(float(n["value"]) for n in named)
+    diversification = information_gain * independence
     route = route_and_cost(cand, catalogue)
     denom = float(route["data_cost"]) + COMPUTE_COST + float(route["engineering"])
     contract, verdict = contract_for(cand, route, at)
     legal = 1 if contract.admissible() else 0
+    # TWO TASKS, ONE GATE EACH. ACQUIRE (fetch, sample, use) needs the full contract admitted.
+    # SOURCE_HUNT (ask the scouts to find a lawful public source for a dataset nobody has
+    # located) needs only that the dataset is not BLOCKED: a hole in the coverage tensor has
+    # no source yet, so its contract is incomplete by construction, and refusing to even look
+    # for one would turn the legality gate into a brake on discovery.
+    legal_hunt = 0 if (contract.provenance_state == "BLOCKED"
+                       or contract.public_or_licensed in AC.REFUSED_LABELS
+                       or contract.personal_data_status == "PERSONAL") else 1
     raw_ev = p_survivor * diversification / max(denom, 1e-9)
     ev = raw_ev * legal
+    ev_hunt = raw_ev * legal_hunt
+    task = "ACQUIRE" if legal else ("SOURCE_HUNT" if legal_hunt else "REFUSED")
     return {
         "dataset": cand["dataset"], "observable": cand["observable"], "country": cand["country"],
-        "ev": round(ev, 8), "ev_if_legal": round(raw_ev, 8),
+        "url": cand.get("url") or "", "ev": round(ev, 8), "ev_if_legal": round(raw_ev, 8),
+        "ev_hunt": round(ev_hunt, 8), "task": task,
         "terms": {"p_survivor": round(p_survivor, 6), "p_basis": p_basis,
+                  "information_gain": round(information_gain, 6),
+                  "independence": round(independence, 6),
                   "diversification_value": round(diversification, 6),
                   "redundancy": round(red, 6), "redundancy_basis": red_basis,
                   "data_cost": route["data_cost"], "compute": COMPUTE_COST,
                   "engineering": route["engineering"], "cost_basis": route["cost_basis"],
-                  "legal": legal},
+                  "legal": legal, "legal_hunt": legal_hunt},
         "held_already": red >= 1.0,
         "n_registers": len(named), "named_by": named[:8],
         "mechanisms": cand["mechanisms"], "assets": cand["assets"],
@@ -581,18 +624,22 @@ def _request_rows(ranked: list[dict[str, Any]], samples: dict[str, dict[str, Any
                   ) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for r in ranked:
-        if not r["admission"]["admitted"] or r["held_already"] or r["ev"] <= 0.0:
+        if r["task"] == "REFUSED" or r["held_already"] or r["ev_hunt"] <= 0.0:
             continue
         rows.append({
             "kind": "dataset_request", "source": SEAT, "needs_selector_work": True,
+            "task": r["task"], "ev_acquire": r["ev"], "ev_hunt": r["ev_hunt"],
             "dataset": r["dataset"], "observable": r["observable"],
             "title": f"dataset request: {r['observable']}",
             "text": (f"The acquisition scientist ranks {r['observable']} at expected research "
                      f"value {r['ev']:.6f} ({FORMULA}); named by {r['n_registers']} register(s): "
                      + "; ".join(f"{n['register']} {n['ref']}" for n in r['named_by'][:4])
                      + ". A contract is attached; legality was a hard gate, not a term."),
-            "expected_value": r["ev"], "ev_terms": r["terms"], "contract": r["contract"],
+            "expected_value": r["ev"] if r["task"] == "ACQUIRE" else r["ev_hunt"],
+            "ev_terms": r["terms"], "contract": r["contract"],
             "named_by": r["named_by"], "mechanisms": r["mechanisms"], "symbols": r["assets"][:8],
+            "url": r.get("url") or "", "country": r.get("country") or "",
+            "machine_use_allowed": r.get("machine_use_allowed"),
             "route": {k: r["route"][k] for k in ("catalogue", "how_to_fetch", "access")},
             "sample": samples.get(r["dataset"]),
             "available_time": at, "event_time": at,
@@ -625,9 +672,80 @@ def donate(rows: list[dict[str, Any]], at: str, code: str) -> dict[str, Any]:
     return {"rows": len(stamped), "path": str(path), "seat": f"data/intelligence/{SEAT}"}
 
 
+def register_hunt(row: dict[str, Any], conn: Any) -> bool:
+    """OPEN THE ACQUISITION TASK IN THE REGISTRY'S SOURCE-HUNT QUEUE: a `sources` row in status
+    `candidate` (the scout swarm's crawl queue) carrying the URL, when the terms let a machine
+    read it. A dataset with no URL, or whose terms forbid machine extraction, is registered as a
+    dataset source by `data_scout._register_source` instead and never queued for a crawl."""
+    url = str(row.get("url") or "")
+    if not url or row.get("machine_use_allowed") is False or row.get("task") != "ACQUIRE":
+        return False
+    try:
+        from research import source_frontier as SF
+    except ImportError:                                                      # pragma: no cover
+        import source_frontier as SF  # type: ignore[no-redef]
+    return bool(SF.register_source(
+        f"hunt:{row['dataset']}", url=url, kind="dataset_request",
+        country=str(row.get("country") or ""), asset_classes=list(row.get("symbols") or []),
+        discovered_from=SEAT, discovered_via="acquisition_request", status="candidate",
+        licence_note=str(row["contract"].get("licence_version") or "")[:300],
+        meta={"expected_value": row["expected_value"], "observable": row["observable"],
+              "contract_hash": row["contract"].get("contract_hash")}, conn=conn))
+
+
+def source_roi_of(source_id: str, conn: Any) -> dict[str, Any]:
+    try:
+        from research import source_frontier as SF
+    except ImportError:                                                      # pragma: no cover
+        import source_frontier as SF  # type: ignore[no-redef]
+    try:
+        return SF.source_roi(source_id, conn)
+    except Exception as exc:
+        return {"status": UNMEASURED, "why": f"source_roi raised {type(exc).__name__}: {exc}"}
+
+
+def source_roi_ledger(state: dict[str, Any], marks: set[str], conn: Any, now: str, *,
+                      dry_run: bool = False) -> tuple[list[dict[str, Any]], bool]:
+    """DELAYED SOURCE ROI: for every dataset ever requested, whether a held mark now answers it
+    (acquired), how long that took from the first request, the EV claimed at request time, and
+    what the registry's source-yield posteriors say its leads have earned since. The first time
+    a request reads as acquired its source gets one lead, so the ROI posterior starts counting;
+    a prior-only row is nobody's evidence and says so."""
+    rows: list[dict[str, Any]] = []
+    changed = False
+    for key, have in sorted(state.items()):
+        if not isinstance(have, dict):
+            continue
+        observable = str(have.get("observable") or key)
+        acquired = not DS.is_missing(observable, marks)
+        if acquired and not have.get("acquired_at") and not dry_run:
+            have["acquired_at"] = now
+            changed = True
+            try:
+                from research import source_frontier as SF
+                SF.bump_source_yield(f"dataset:{key}", conn, leads=1.0)
+            except Exception:
+                pass
+        delay_s: float | None = None
+        first = have.get("first_requested_at")
+        if have.get("acquired_at") and first:
+            try:
+                delay_s = (datetime.fromisoformat(str(have["acquired_at"]))
+                           - datetime.fromisoformat(str(first))).total_seconds()
+            except (TypeError, ValueError):
+                delay_s = None
+        rows.append({"dataset": key, "observable": observable, "first_requested_at": first,
+                     "last_donated_at": have.get("last_donated_at"), "acquired": acquired,
+                     "acquired_at": have.get("acquired_at"), "delay_s": delay_s,
+                     "ev_at_request": have.get("ev"),
+                     "roi": source_roi_of(f"dataset:{key}", conn)})
+    return rows, changed
+
+
 def record_registry(rows: list[dict[str, Any]], conn: Any) -> dict[str, Any]:
     new_disc = 0
     new_src = 0
+    hunts = 0
     for r in rows:
         try:
             _, created = REG.record_discovery(
@@ -645,11 +763,12 @@ def record_registry(rows: list[dict[str, Any]], conn: Any) -> dict[str, Any]:
                 "how_to_fetch": r["route"].get("how_to_fetch"), "cost": r["ev_terms"]["data_cost"],
                 "integration_effort": r["ev_terms"]["engineering"], "access": r["route"].get(
                     "access"), "score": r["expected_value"]}, conn=conn))
+            hunts += int(register_hunt(r, conn))
         except Exception as exc:
             return {"status": "ERROR", "why": f"{type(exc).__name__}: {exc}",
-                    "discoveries_new": new_disc, "sources_new": new_src}
+                    "discoveries_new": new_disc, "sources_new": new_src, "hunts_opened": hunts}
     return {"status": "OK", "discoveries_new": new_disc, "sources_new": new_src,
-            "rows": len(rows)}
+            "hunts_opened": hunts, "rows": len(rows)}
 
 
 # ------------------------------------------------------------------------------- the pass
@@ -694,15 +813,15 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
         marks, _why = DS.held_observables(axes_dir)
         cat = catalogue if catalogue is not None else DS.CATALOGUE
         scored = [score(cand, marks=marks, catalogue=cat, at=at) for cand in merged.values()]
-        scored.sort(key=lambda r: (-r["ev"], -r["ev_if_legal"], r["dataset"]))
+        scored.sort(key=lambda r: (-r["ev_hunt"], -r["ev"], r["dataset"]))
         held = [r for r in scored if r["held_already"]]
         blocked = [{"dataset": r["dataset"], "ev_if_legal": r["ev_if_legal"],
                     "reasons": r["admission"]["reasons"]}
                    for r in scored if not r["admission"]["admitted"]]
         no_machine = [r["dataset"] for r in scored if r["machine_use_allowed"] is False]
-        top = [r for r in scored if r["ev"] > 0.0 and not r["held_already"]][:top_k]
+        top = [r for r in scored if r["ev_hunt"] > 0.0 and not r["held_already"]][:top_k]
         samples: dict[str, dict[str, Any]] = {}
-        for r in top:
+        for r in [t for t in top if t["task"] == "ACQUIRE"]:
             if len(samples) >= max_samples or time.monotonic() >= deadline:
                 break
             if dry_run:
@@ -726,10 +845,20 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
                 donation.update(donate(due, at, code))
                 registry = record_registry(due, c)
                 for r in due:
-                    state[r["dataset"]] = {"last_donated_at": at, "ev": r["expected_value"]}
-                _atomic(STATE, state)
+                    prior = state.get(r["dataset"])
+                    prior = prior if isinstance(prior, dict) else {}
+                    state[r["dataset"]] = {
+                        "last_donated_at": at, "ev": r["expected_value"],
+                        "task": r["task"], "observable": r["observable"],
+                        "first_requested_at": prior.get("first_requested_at") or at,
+                        "acquired_at": prior.get("acquired_at")}
             else:
                 registry = {"status": "NOTHING_DUE"}
+        # DELAYED SOURCE ROI over every request ever made, this pass's included.
+        roi_rows, roi_changed = source_roi_ledger(state, marks, c, at, dry_run=dry_run)
+        if not dry_run:
+            if due or roi_changed:
+                _atomic(STATE, state)
             for key, s in samples.items():
                 if s.get("status") == "SAMPLED":
                     _atomic(SAMPLES / f"{_slug(key)}.json", s)
@@ -745,18 +874,29 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
         "candidates": {"named": len(rows), "merged": len(merged), "held_already": len(held),
                        "held_examples": [r["dataset"] for r in held[:10]],
                        "scored": len(scored), "top_k": top_k},
-        "ranked": [{k: v for k, v in r.items() if k not in ("_contract", "_verdict", "contract",
-                                                             "named_by", "route")}
+        "ranked": [{**{k: v for k, v in r.items()
+                       if k not in ("_contract", "_verdict", "contract", "named_by", "route")},
+                    "route": {k: r["route"].get(k) for k in ("catalogue", "how_to_fetch",
+                                                              "access")}}
                    for r in public[:top_k]],
         "legality": {"gate": DC.LEGALITY_RULE,
                      "admissible": sum(1 for r in scored if r["admission"]["admitted"]),
                      "blocked": blocked[:40], "n_blocked": len(blocked),
                      "registered_no_machine_extraction": no_machine[:40],
+                     "by_task": {t: sum(1 for r in scored if r["task"] == t)
+                                 for t in ("ACQUIRE", "SOURCE_HUNT", "REFUSED")},
                      "contract_fields": list(DC.CONTRACT_FIELDS)},
         "samples": list(samples.values()),
         "requests": {"built": len(requests), "due": len(due),
+                     "by_task": {t: sum(1 for r in requests if r["task"] == t)
+                                 for t in ("ACQUIRE", "SOURCE_HUNT")},
                      "datasets": [r["dataset"] for r in requests[:top_k]]},
         "donations": donation, "registry": registry,
+        "source_roi": {"n": len(roi_rows), "acquired": sum(1 for r in roi_rows if r["acquired"]),
+                       "rows": roi_rows[:60],
+                       "rule": "delayed ROI: a request is scored again when a held mark answers "
+                               "it, by the delay from first request and the source-yield "
+                               "posteriors of what it then produced"},
         "state": {"path": str(STATE), "known_requests": len(state)},
         "unmeasured": unmeasured,
     }

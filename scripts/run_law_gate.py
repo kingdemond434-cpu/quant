@@ -114,6 +114,11 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("check_growth_governance.py", ()),
     # IMMUTABLE EVALUATOR: research organs may change the hypothesis, never the judge.
     ("check_immutable_evaluator.py", ()),
+    # THE EVOLVABLE / IMMUTABLE BOUNDARY (LAWS 5m): an evolvable organ's change set may not
+    # touch a rail. Re-uses the evaluator's seal (one manifest, reported beside its own
+    # verdict) and adds what a hash cannot see: the meta-evolution layer's lineage ledger
+    # and the evolved-commit rule. Portable: the rails are code, the ledger optional.
+    ("check_immutable_rails.py", ()),
     # THE OPEN-SOURCE RESEARCH FEDERATION (LAWS 5h, principal 2026-09-17). The PORTABLE half:
     # the roster, the vocabularies, the sandbox policy, the packet contract that cannot carry
     # a verdict, and the admission rule that collapses a fork storm into one lineage. The
@@ -127,6 +132,13 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # forests.FOREST_TASKS) may disagree with the specs. Portable: it reads the tree and the
     # manifest, so it means the same in CI, a fresh clone and on the box.
     ("check_component_registry.py", ()),
+    # ONE CERTIFICATE TRUTH (principal 2026-09-22). One writer (external_gauntlet.py), one
+    # authority file (UNIVERSAL_SURVIVORS.json), one consumer (promoter.py); every derived store
+    # -- survivors ledger, sleeve registry, shadow/lane states, sleeves.json, forward_reconcile --
+    # must agree with it, banned-family (discovered) certificates and clocks are residue, and the
+    # fence fails on any divergence. Without desk state it reads UNMEASURED and passes; the
+    # state half below requires the state.
+    ("check_certificate_truth.py", ()),
 )
 
 #: STATE FENCES -- box-only. They measure LIVE STATE (artifacts, ledgers, organ freshness) that
@@ -156,6 +168,8 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # defined downstream state. A STATE fence: on a clean checkout the ingestion artifact is
     # absent and the verdict is UNMEASURED, which is a real answer and not a pass.
     ("check_ingestion_exploitation.py", ()),
+    # the live half of ONE CERTIFICATE TRUTH: on the box an absent authority file is a defect
+    ("check_certificate_truth.py", ("--require-state",)),
 )
 
 
