@@ -34,9 +34,16 @@ if (-not (Test-Path $Script)) { throw "Adopt-And-Seal.ps1 missing at $Script" }
 $action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument `
     ("-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"{0}`"" -f $Script)
 
-$trigger = New-ScheduledTaskTrigger -Once -At ((Get-Date).Date.AddMinutes(12)) `
+# A DAILY trigger repeating hourly for one day, never a -Once trigger with a long duration.
+# MEASURED 2026-09-22 on the trading box: the registered task carried
+# `<Duration>P9DT2H40M</Duration><StopAtDurationEnd>true</StopAtDurationEnd>` -- the scheduler
+# had folded the long duration into nine days -- so the repetition EXPIRED on 2026-09-21 02:52,
+# `Next Run Time: N/A`, and nothing shipped after that ever reached the box. Daily-at-:12 with a
+# one-day hourly repetition re-arms itself every midnight and has no end to expire.
+$trigger = New-ScheduledTaskTrigger -Daily -At ((Get-Date).Date.AddMinutes(12))
+$trigger.Repetition = (New-ScheduledTaskTrigger -Once -At ((Get-Date).Date.AddMinutes(12)) `
     -RepetitionInterval (New-TimeSpan -Hours 1) `
-    -RepetitionDuration (New-TimeSpan -Days 3650)
+    -RepetitionDuration (New-TimeSpan -Days 1)).Repetition
 
 # StartWhenAvailable so an hour missed to a reboot is caught up rather than silently skipped;
 # IgnoreNew so a slow adoption is never stacked on itself; twenty minutes because an adoption
@@ -49,7 +56,9 @@ $settings = New-ScheduledTaskSettingsSet `
 # The same principal shape as MT5-ShadowSync, the task whose commits this one follows: the
 # logged-on user, interactive, limited. Adoption writes files and runs git; it needs nothing
 # more, and a task that asks for more than it needs is the one that fails to register.
-$principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType Interactive -RunLevel Limited
+# SYSTEM, ServiceAccount: the box's tasks run as SYSTEM (an Interactive principal only fires while
+# that user holds a desktop session, and the adoption then dies with it).
+$principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
 
 if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
     Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false

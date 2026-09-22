@@ -74,10 +74,16 @@ def test_the_round_trip_is_stamped_so_it_is_visible() -> None:
 
 
 def test_the_purge_itself_is_unchanged() -> None:
-    """The restore does not weaken the purge: an untradeable symbol still leaves `survivors`."""
-    assert ("ok, why = symbol_is_tradeable(sym, meta) if sym else "
-            "(False, \"no symbol on the row\")") in GAUNTLET
+    """The restore does not weaken the purge: a symbol the venue explicitly disallows still leaves
+    `survivors`. The purge predicate is `certificate_retirement_reason`, which retires ONLY on
+    venue evidence (`tradeable is False`), never on a missing parquet or an unknown registry row:
+    missing bars block execution and testing, they do not invalidate measured evidence."""
+    assert "why = certificate_retirement_reason(sym, meta)" in GAUNTLET
     assert "row = dict(survivors_all.pop(key) or {})" in GAUNTLET
+    fn = GAUNTLET[GAUNTLET.index("def certificate_retirement_reason("):]
+    fn = fn[:fn.index("\ndef ")]
+    assert 'row.get("tradeable") is False' in fn
+    assert "symbol_is_tradeable(" not in fn, "a missing chart must never retire a certificate"
 
 
 # --------------------------------------- 2. an attestation mismatch never empties the library
@@ -104,8 +110,10 @@ def test_the_only_empty_returns_left_are_for_an_unreadable_or_malformed_file() -
 def test_adopt_and_seal_runs_in_the_only_safe_order() -> None:
     steps = ["Adopt-Release.ps1", "if ($sealed -eq $head)", "git status --porcelain",
              "release.seal(by='Adopt-And-Seal')", 'git add -- "desks/mt5/data/RELEASE.json"',
-             "git commit -q -m", 'Stop-ScheduledTask  -TaskName "MT5-Gateway"',
-             'Start-ScheduledTask -TaskName "MT5-Gateway"']
+             "git commit -q -m",
+             # a79c35a8475: the gateway is a 24/7 resident now; the seal STARTS its keep-alive
+             # task (a running singleton makes that a no-op) instead of stop/start of MT5-Gateway
+             'Start-ScheduledTask -TaskName "MT5-GatewayResident"']
     idx = [ADOPT.index(s) for s in steps]
     assert idx == sorted(idx), "adopt -> seal-if-needed -> commit alone -> restart"
 
@@ -223,7 +231,12 @@ def test_the_standalone_installer_agrees_with_the_full_one() -> None:
     for s in ("MT5-AdoptRelease", "Adopt-And-Seal.ps1",
               "-RepetitionInterval (New-TimeSpan -Hours 1)", "(Get-Date).Date.AddMinutes(12)",
               "-ExecutionTimeLimit (New-TimeSpan -Minutes 20)", "-MultipleInstances IgnoreNew",
-              "-LogonType Interactive -RunLevel Limited", "-StartWhenAvailable"):
+              "-LogonType ServiceAccount -RunLevel Highest", "-StartWhenAvailable",
+              # a DAILY trigger repeating hourly for ONE day: a -Once trigger with a long
+              # duration was folded to P9DT2H40M by the scheduler and expired 2026-09-21
+              "New-ScheduledTaskTrigger -Daily -At", "-RepetitionDuration (New-TimeSpan -Days 1)"):
+        assert "-RepetitionDuration (New-TimeSpan -Days 3650)" not in blk
+        assert "-RepetitionDuration (New-TimeSpan -Days 3650)" not in STANDALONE
         assert s in blk, f"installer block lost {s}"
         assert s in STANDALONE, f"standalone installer lost {s}"
 

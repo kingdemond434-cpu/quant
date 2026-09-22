@@ -129,6 +129,25 @@ $tasks = @(
                      -RepetitionInterval (New-TimeSpan -Minutes 1) `
                      -RepetitionDuration (New-TimeSpan -Days 3650) }
        Desc = "One gateway pass per minute; file-locked against overlap." },
+    # THE RESIDENT GATEWAY, AND WHY IT EXISTS BESIDE THE PER-MINUTE TASK.
+    #
+    # `MT5-Gateway` runs as Administrator with LogonType=Interactive, because the MT5 Python API
+    # reaches terminal64 over local IPC and the terminal lives in the interactive session -- a
+    # task under SYSTEM sits in Session 0, cannot see it, and would fail to initialise. But an
+    # Interactive task only executes while that user holds a desktop session: without one it
+    # returns ERROR_NO_SUCH_LOGON_SESSION (2147946720) and no pass happens at all. Measured
+    # 2026-09-15, that was the task's last result while E8-Executor (SYSTEM) returned 0 every
+    # time.
+    #
+    # A loop ALREADY RUNNING needs no logon session to be created for it. AtLogOn starts it once
+    # inside the session, which is the pattern this box already runs successfully -- macro_intel,
+    # meta_desk and crowding_miner have been up since 2026-09-08. The two cannot double-trade:
+    # `run_gateway_loop` holds a PID-aware lock, so whichever starts a pass owns it.
+    @{ Name = "MT5-GatewayResident"
+       Script = "research\\gateway_resident.py"
+       Trigger = { New-ScheduledTaskTrigger -AtLogOn }
+       TimeLimit = ([TimeSpan]::Zero)
+       Desc = "Resident gateway loop: passes continue when the Interactive task cannot start." },
     @{ Name = "MT5-Hourly"
        Script = "research\hourly_cycle.py"
        Trigger = { New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
@@ -502,15 +521,21 @@ if ((Test-Path $adoptSeal) -and -not $WhatIfOnly) {
     try {
         $adoptAction = New-ScheduledTaskAction -Execute "powershell.exe" -Argument `
             ("-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"{0}`"" -f $adoptSeal)
-        $adoptTrigger = New-ScheduledTaskTrigger -Once -At ((Get-Date).Date.AddMinutes(12)) `
+        # DAILY at :12 repeating hourly for one day -- never -Once with a long duration: the
+        # scheduler folded that into P9DT2H40M on the trading box and the repetition EXPIRED on
+        # 2026-09-21, after which nothing shipped was adopted (install_adopt_release_task.ps1).
+        $adoptTrigger = New-ScheduledTaskTrigger -Daily -At ((Get-Date).Date.AddMinutes(12))
+        $adoptTrigger.Repetition = (New-ScheduledTaskTrigger -Once -At ((Get-Date).Date.AddMinutes(12)) `
             -RepetitionInterval (New-TimeSpan -Hours 1) `
-            -RepetitionDuration (New-TimeSpan -Days 3650)
+            -RepetitionDuration (New-TimeSpan -Days 1)).Repetition
         $adoptSettings = New-ScheduledTaskSettingsSet `
             -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable `
             -RestartCount 2 -RestartInterval (New-TimeSpan -Minutes 2) `
             -ExecutionTimeLimit (New-TimeSpan -Minutes 20) -MultipleInstances IgnoreNew
-        $adoptPrincipal = New-ScheduledTaskPrincipal -UserId $env:USERNAME `
-            -LogonType Interactive -RunLevel Limited
+        # SYSTEM, ServiceAccount: the box's tasks run as SYSTEM (an Interactive principal only
+        # fires while that user holds a desktop session, and the adoption then dies with it).
+        $adoptPrincipal = New-ScheduledTaskPrincipal -UserId "SYSTEM" `
+            -LogonType ServiceAccount -RunLevel Highest
         Unregister-ScheduledTask -TaskName "MT5-AdoptRelease" `
             -Confirm:$false -ErrorAction SilentlyContinue
         Register-ScheduledTask -TaskName "MT5-AdoptRelease" -Action $adoptAction `
