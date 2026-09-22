@@ -1,0 +1,387 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5316\u80a5\u6d88\u8d39\u91cf\uff08\u6bcf\u516c\u9877\u8015\u5730\u5343\u514b\u6570\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/AG.CON.FERT.ZS",
+  "published": "2026-09-22T17:15:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/AG.CON.FERT.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "d2d120fb2b75a6b4b1be",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u56fd\u571f\u9762\u79ef\uff08\u5e73\u65b9\u5343\u7c73\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/AG.SRF.TOTL.K2",
+  "published": "2026-09-22T17:15:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/AG.SRF.TOTL.K2?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "3b7b9fb9b19f9e3238ff",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u571f\u5730\u9762\u79ef\uff08\u5e73\u65b9\u516c\u91cc\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/AG.LND.TOTL.K2",
+  "published": "2026-09-22T17:15:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/AG.LND.TOTL.K2?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "71fa1fe8e35a2a5c2240",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u68ee\u6797\u9762\u79ef\uff08\u5360\u571f\u5730\u9762\u79ef\u7684\u767e\u5206\u6bd4\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/AG.LND.FRST.ZS",
+  "published": "2026-09-22T17:15:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/AG.LND.FRST.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "8f7fefbf1d145e387fcd",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u68ee\u6797\u9762\u79ef\uff08\u5e73\u65b9\u516c\u91cc\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/AG.LND.FRST.K2",
+  "published": "2026-09-22T17:15:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/AG.LND.FRST.K2?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "9a3d19a39d4ce9b10ef4",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u6c38\u4e45\u6027\u4f5c\u7269\u7528\u5730\uff08\u5360\u571f\u5730\u7684\u767e\u5206\u6bd4\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/AG.LND.CROP.ZS",
+  "published": "2026-09-22T17:15:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/AG.LND.CROP.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "bfdd0f35d5314e13508f",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u755c\u7267\u4e1a\u751f\u4ea7\u6307\u6570\uff082014-2016 = 100\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/AG.PRD.LVSK.XD",
+  "published": "2026-09-22T17:15:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/AG.PRD.LVSK.XD?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "354fbef515b34ce1d65c",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8015\u5730\uff08\u4eba\u5747\u516c\u9877\u6570\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/AG.LND.ARBL.HA.PC",
+  "published": "2026-09-22T17:15:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/AG.LND.ARBL.HA.PC?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "7b88554c9392de21f3f1",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8015\u5730\uff08\u5360\u571f\u5730\u9762\u79ef\u7684\u767e\u5206\u6bd4\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/AG.LND.ARBL.ZS",
+  "published": "2026-09-22T17:15:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/AG.LND.ARBL.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "358b579c68b68254bdcf",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8c37\u7269\u8015\u5730\uff08\u516c\u9877\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/AG.LND.CREL.HA",
+  "published": "2026-09-22T17:15:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/AG.LND.CREL.HA?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "54859a6c6903917857aa",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8c37\u7c7b\u4ea7\u91cf\uff08\u6bcf\u516c\u9877\u5343\u514b\u6570\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/AG.YLD.CREL.KG",
+  "published": "2026-09-22T17:15:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/AG.YLD.CREL.KG?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "d0ef1b2cc22eccf99a14",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u98df\u54c1\u751f\u4ea7\u6307\u6570\uff082014-2016 = 100\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/AG.PRD.FOOD.XD",
+  "published": "2026-09-22T17:15:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/AG.PRD.FOOD.XD?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "1c15b277087928047d7c",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "PM2.5 air pollution, mean annual exposure (micrograms per cubic meter) | Data",
+  "url": "https://data.worldbank.org.cn/indicator/EN.ATM.PM25.MC.M3",
+  "published": "2026-09-22T17:15:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/EN.ATM.PM25.MC.M3?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "4258e36e829f16e33382",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "PM2.5 air pollution, population exposed to levels exceeding WHO guideline value (% of total) | Data",
+  "url": "https://data.worldbank.org.cn/indicator/EN.ATM.PM25.MC.ZS",
+  "published": "2026-09-22T17:15:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/EN.ATM.PM25.MC.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "fd2e0bdab0fa069a7a0d",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Population living in slums (% of urban population) | Data",
+  "url": "https://data.worldbank.org.cn/indicator/EN.POP.SLUM.UR.ZS",
+  "published": "2026-09-22T17:15:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/EN.POP.SLUM.UR.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "124974ac4d1ce13a162b",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4eba\u53e3\u5bc6\u5ea6\uff08\u6bcf\u516c\u91cc\u571f\u5730\u9762\u79ef\u4eba\u6570\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/EN.POP.DNST",
+  "published": "2026-09-22T17:15:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/EN.POP.DNST?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "b7e3831c2b4c006a4349",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Euro vs Japanese Yen (EURJPY.p) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/EURJPY.p/",
+  "published": "2026-09-22T17:16:14+00:00",
+  "symbols": [
+   "EURJPY",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790076865",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "2b8e8ab54808f87ec67c",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "001 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:05 - 23:55 Term currency JPY 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 14.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY",
+      "EURJPY"
+     ],
+     "mentioned": [
+      "yen",
+      "eurjpy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "66c5801231df"
+   }
+  ],
+  "n_claims": 1
+ }
+]
