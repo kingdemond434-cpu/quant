@@ -3,18 +3,13 @@
  "schema_version": 1,
  "stages": {
   "canonical_external_pipeline": {
-   "command": [
-    "systemctl",
-    "--user",
-    "start",
-    "quant-external-pipeline.service"
-   ],
-   "passes_completed": 0,
-   "started_at": "2026-09-22T18:08:48.265212+00:00",
-   "status": "RUNNING"
+   "finished_at": "2026-09-22T18:53:12.199789+00:00",
+   "passes_completed": 1,
+   "returncode": 1,
+   "status": "FAILED"
   },
   "certificate_projection": {
-   "finished_at": "2026-09-22T16:54:06.309752+00:00",
+   "finished_at": "2026-09-22T18:54:16.371155+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -26,13 +21,13 @@
    "status": "DONE"
   },
   "external_queue_projection": {
-   "finished_at": "2026-09-22T16:53:24.984499+00:00",
+   "finished_at": "2026-09-22T18:53:46.039477+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "external_queue_reconciliation": {
-   "finished_at": "2026-09-22T16:53:59.530356+00:00",
+   "finished_at": "2026-09-22T18:54:09.356936+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -62,7 +57,7 @@
    "status": "FAILED"
   },
   "fusion_state_pull": {
-   "finished_at": "2026-09-22T17:11:36.321693+00:00",
+   "finished_at": "2026-09-22T19:46:09.142459+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -86,5 +81,5 @@
    "status": "DONE"
   }
  },
- "updated_at": "2026-09-22T18:08:48.265212+00:00"
+ "updated_at": "2026-09-22T19:46:09.142459+00:00"
 }

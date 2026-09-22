@@ -1,0 +1,102 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u79c1\u4eba\u8f6c\u79fb\u548c\u96c7\u5458\u62a5\u916c\uff0c\u6536\u8bab\uff08\u73b0\u4ef7\u7f8e\u5143\uff0c\u5355\u4f4d\uff1a\u767e\u4e07\u7f8e\u5143\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/BX.TRF.PWKR.CD.DT",
+  "published": "2026-09-22T19:48:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/BX.TRF.PWKR.CD.DT?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5cced209a2b34e164424",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u7ecf\u5e38\u8d26\u6237\u4f59\u989d\uff08BoP\uff0c\u73b0\u4ef7\u7f8e\u5143\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/BN.CAB.XOKA.CD",
+  "published": "2026-09-22T19:48:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/BN.CAB.XOKA.CD?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "fd2d6e6aea5919692dad",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Progression to secondary school, female (%) | Data",
+  "url": "https://data.worldbank.org.cn/indicator/SE.SEC.PROG.FE.ZS",
+  "published": "2026-09-22T19:48:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/SE.SEC.PROG.FE.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "562e2489becb99d8cfa3",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Progression to secondary school, male (%) | Data",
+  "url": "https://data.worldbank.org.cn/indicator/SE.SEC.PROG.MA.ZS",
+  "published": "2026-09-22T19:48:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/SE.SEC.PROG.MA.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "cc3cb5a5ef8c34d6be42",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Proportion of time spent on unpaid domestic and care work, female (% of 24 hour day) | Data",
+  "url": "https://data.worldbank.org.cn/indicator/SG.TIM.UWRK.FE",
+  "published": "2026-09-22T19:48:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/SG.TIM.UWRK.FE?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "1cebd59f18e59bd34f3d",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ }
+]
