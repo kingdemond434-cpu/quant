@@ -712,6 +712,198 @@ Research is NOT closed by this: forex mechanisms keep being mined, tested in the
 on forward clocks, and their evidence keeps accruing. What they may not do is take live capital
 until the principal says otherwise.
 
+## 5k. THE 24/7 GLOBAL ORTHOGONAL ALPHA SWARM LAW (principal 2026-09-19, permanent)
+
+The research organism never idles. It continuously discovers new information sources,
+mechanisms, representations, mathematical operators, regional behaviours, execution effects and
+strategy descendants across every lawful public or licensed market-relevant source worldwide.
+**Raw candidate count is never the objective.** The objective is maximum expected future
+independent portfolio value per unit of compute, data and statistical trial budget:
+
+    max  E[future incremental robust portfolio E log W] x effective orthogonality x information gain
+         / (compute + data + statistical budget + time)
+
+The swarm is a hierarchy: global discovery swarms (repos, papers, archives, exchanges,
+regulators, central banks, universities, practitioner communities, native-language sources, old
+strategies, failed systems, new open-source agents), mechanism swarms (causes, never "give me a
+strategy"), representation swarms, mathematical swarms, external-agent swarms, the
+WorldQuant-style expression swarm, and a separate cross-region swarm that hunts interactions
+between forests. Every candidate is the tuple C = (M, D, R, G, S, H, E, F) -- mechanism, data
+source, representation, geography, state/regime/session, horizon, execution dependency, failure
+mode -- and two candidates are near-duplicates when most of that tuple is the same, whatever
+their parameters. A quality-diversity archive over mechanism x data family x region x asset x
+session x regime x horizon x execution dependency is maintained, and the scheduler actively
+searches empty or weakly populated cells rather than improving one family forever.
+
+Search priority is V(a) = P(survive|D) x E[dE log W | survive] x Novelty x Orthogonality x
+InformationGain / (Compute + DataCost + TrialCost + Delay). The throughput is a funnel, never
+millions of full backtests: Tier 0 (free: syntax, future-data impossibility, duplicate AST,
+semantic twin, impossible execution, insufficient sample), Tier 1 (cheap vectorised tests,
+mechanism sanity, effect direction, coverage, simple costs, permutation nulls), Tier 2 (stability
+across neighbouring settings, symbol/session/regime splits, effective sample size, rough
+selection correction), Tier 3 (the canonical gauntlet), Tier 4 (Forward Lab, frozen identities),
+Tier 5 (live/shadow attribution). **Every mutation counts**: EMA(19,57), EMA(20,58) and
+EMA(21,59) are related trials, the effective trial count follows the family, and a million cells
+a day that are not trial-accounted make the evidence worse, not better. Every discovered source
+is forced through source -> PIT truth -> semantic/entity graph -> representation forge ->
+mechanism compiler -> candidate descendants -> orthogonality archive; nothing useful is merely
+stored, summarised, cloned or copied -- it must produce data, a representation, a mechanism, a
+mathematical primitive, a candidate, a falsifier, an execution insight, negative knowledge or an
+improvement to the research process itself. Every swarm competes: ROI_i = forward survivors x
+incremental portfolio value x novelty / (compute + data + trials consumed), and compute follows
+it -- a cloning enumerator is starved, a forest that finds a high-information data family is
+flooded, an LLM swarm producing prose loses its budget. Market open: forward observations,
+execution experiments, live attribution, microstructure, event routing, state updates. Market
+closed: archaeology, source discovery, deep repo mining, data cleaning, mathematical search,
+representation invention, synthetic falsification, agent evolution, Meta-R&D. RESEARCH_IDLE =
+FALSE unless every feasible action is worth less than its cost, in which case the desk drops to
+cheap surveillance rather than stopping.
+
+**TRANSFER BEFORE TUNING; HARVEST BEFORE INVENTING.** The measured lesson from public factories:
+the most productive worker reused abandoned work, transferred a working signal UNCHANGED across
+markets before tuning it, and used very few free parameters -- 15 candidates from 59 backtests
+against 4 from 685 for a heavy optimiser. The desk's order of operations is HARVEST (the graveyard
+and every parked candidate are searchable research material) -> TRANSFER (sweep worlds --
+symbols, countries, sessions, regimes, horizons -- with parameters frozen; transfer tells you
+whether you found a mechanism or fitted one chart) -> LIGHT MUTATION -> NEW INVENTION. A
+candidate does not exist without its falsifier: exact mechanism, exact input, target, direction,
+timing, state conditioning, implementation, costs, expected failure regime and the test that
+would make the desk abandon it.
+
+## 5l. THE WORLDQUANT-STYLE MASSIVE ALPHA FACTORY LAW (principal 2026-09-19, permanent)
+
+The desk shall independently reproduce the economically useful public research paradigm of
+massively parallel operator-based alpha generation using its own lawful data, public formula
+families, symbolic/program search, evolutionary search and continuous global data ingestion.
+All public WorldQuant formulas, papers, operator concepts and legally reusable research
+mechanisms are seeds. Private/proprietary WorldQuant alphas, restricted BRAIN data and
+unauthorised platform extraction are excluded. The factory operates continuously and contributes
+candidates -- not verdicts -- to the canonical gauntlet.
+
+Every public formula (the 101 Formulaic Alphas first) is a PARENT GENOME
+A_i = (D, O, T, H, S, N, E): data fields, operator tree, transformations, horizon, state,
+normalisation/cross-section, execution assumptions. The engine mutates parents across the whole
+MT5 information universe (equity volume -> FX activity proxy, cross-sectional rank -> currency-
+basket rank, condition on session, condition on macro-surprise state, change decay horizon,
+combine with rates/DXY/yields) so one public formula yields thousands of legitimate descendants
+without copying a private strategy. Every new dataset automatically exposes typed fields to the
+DSL: new dataset -> semantic typing -> new operators/representations -> candidate generation.
+The factory never enumerates the Cartesian product; GP, symbolic regression, MCTS, quality-
+diversity, evolutionary search, LLM-guided generation and Bayesian search navigate it, and the
+factory records N_effective_trials across mutations, hyperparameters, horizons, symbols, regimes
+and selection steps. Five million cells are not five million discoveries; clone families are
+compressed structurally and semantically and only genuinely different mechanisms count toward
+breadth. The factory is ONE population inside the federation, beside RD-Agent co-evolution,
+AgonAlpha MCTS, QuantaAlpha trajectory evolution, the AI mathematicians, the regional forests,
+causal discovery and the residual hunt -- all donating into ONE registry, ONE trial census, ONE
+gauntlet, ONE Forward Lab.
+
+## 5m. FULL EXPLOITATION OF THE FEDERATION (principal 2026-09-19, permanent)
+
+"Do not merely install open-source systems. Extract every useful capability, run it where
+appropriate, generate descendants, feed the gauntlet, then the Forward Lab, then delayed real
+credit." A system is fully exploited only when its legally reusable code or mechanism is present
+or wrapped; its native strength is preserved rather than reduced to a summary prompt; it runs
+independently in an isolated environment with no broker or live authority; its loaders,
+representations, search algorithms, memory, mutation logic, reviewers, failure knowledge and
+tooling are mined or used where transferable ("use the engine" AND "mine the engine"); it has a
+real schedule and a monotonic progress watermark; it produces canonical candidates, data,
+representations or mechanisms; those outputs are consumed by the one trial ledger ->
+dedup/orthogonality -> gauntlet -> Forward Lab; its own verdict has zero authority; later
+forward/live results flow back and decide its compute; and upstream releases are delta-scanned.
+The operational conjunction is REGISTERED and SANDBOXED and SCHEDULED and EXECUTED and
+PROGRESSED and PRODUCED and CONSUMED and ATTRIBUTED. Each system's native comparative advantage
+is preserved, never homogenised: RD-Agent/Qlib own hypothesis -> implementation -> experiment ->
+feedback and factor/model co-optimisation; AgonAlpha the research tree, MCTS, fresh-context
+verification and reruns; QuantaAlpha trajectory evolution; AlphaAgent program-level originality;
+AlphaCrafter constrained factor -> regime -> trader loops; Hubble-style workers typed DSL search;
+FinRL control/allocation/timing; TradingAgents qualitative/event reasoning with KR/CN descendants
+owning local data; LEAN/Nautilus execution, replay and parity laboratories; Hummingbot
+transferable execution mechanisms; OpenBB/AKShare/TuShare data civilizations; FinGPT/Kronos
+learned-representation populations; the WorldQuant-style factory deterministic expression search;
+PAT/AIA-style workers ambiguous question -> plan -> PIT evidence -> calculations -> causal
+explanation -> testable hypotheses. Genealogical duplicates collapse before compute (ten
+TradingAgents forks are one lineage plus unique local components). Every system has a benchmark
+twin (native workflow vs integrated variant at equal compute); if integration makes a system
+worse, the native path is kept. Cross-breeding is deliberate and tracked. Compute follows delayed
+real truth with an exploration budget so obscure systems can prove themselves; prestige is an
+initial prior only. External failures, bugs and abandoned branches are research assets. Every
+system is delta-scanned; the exact upstream revision used for every candidate is persisted.
+Security is release-blocking: no floating dependency, no unknown binary plugin, no opaque model
+artefact without provenance, no third-party environment gaining broader permissions, no mutable
+upstream main used for certification, no candidate without code/config/data hashes; external
+code is untrusted research code forever, even after proving valuable. The federation dashboard
+shows scientific outputs, never uptime, and the exact first invariant preventing
+FEDERATION_CLOSED_AND_HEALTHY = true.
+
+**THE EVOLVABLE / IMMUTABLE BOUNDARY.** The system may evolve its research machinery --
+hypothesis generators, feature generators, agent prompts and programs, model architectures,
+experiment allocation, research code, representations, search algorithms, simulation
+populations, cross-breeding rules, data-acquisition priorities, curricula, ontologies, invented
+tools -- but NEVER its rails: point-in-time requirements, look-ahead and leakage checks, data
+provenance, effective-trial records, holdout boundaries, forward clocks, independent replication
+requirements, risk-limit authority, live-promotion rules, audit logs, legal/licensing gates. A
+self-improving system that could weaken its evaluator would improve its score by weakening the
+truth; the evaluator is immutable and separately authorised.
+
+**TWO ALLOCATORS, NEVER ONE OPTIMISER.** The research-capital allocator answers where the next
+GPU-hour, API pound or researcher-hour goes (expected information gain x probability of
+independent discovery x forward-survival probability x diversification x novelty / research
+cost, with an explicit exploration share for under-researched niches). The portfolio-capital
+allocator answers where the next unit of risk, liquidity and balance sheet goes (posterior edge
+x confidence x regime relevance x diversification x capacity x liquidity x execution quality x
+alpha half-life, less impact, financing stress, common hidden exposures, LINEAGE CONCENTRATION
+and tail risk). They interact and never collapse, or today's profitable strategies monopolise
+research and the desk exploits known edges instead of finding independent ones.
+
+**INSTITUTIONAL INTELLIGENCE PROVENANCE.** Public institutional practice is mined for process,
+never for signals, and every claim carries an evidence grade. Provenance states: PUBLIC_OFFICIAL,
+PUBLIC_ACADEMIC, PUBLIC_PATENT, PUBLIC_INTERVIEW, PUBLIC_JOURNALISM, LICENSED_DATA, OPEN_SOURCE,
+ANECDOTAL_PUBLIC; BLOCKED: LEAKED_CONFIDENTIAL, NDA_BREACH, STOLEN_CREDENTIALS,
+UNAUTHORISED_SYSTEM_ACCESS, UNCLEAR_PROVENANCE. Clean-room reconstruction from documented public
+information only; no soliciting confidential knowledge from current or former employees; a
+public patent is a concept donor and its production implementation is independently designed
+and checked. Public successful traders and systems are hypothesis generators, never evidence
+that their inferred mechanism works (SARES evidence grades A-F; an F-grade idea may enter cheap
+exploration and never inherits credibility from reputation).
+
+The named organs of this phase, each a resident of the existing architecture and not a new box:
+the Market Constitution Compiler (exchange rules, auctions, price limits, short states,
+settlement and rule changes as PIT state variables and natural experiments -- TSE's 2024 closing
+auction and its planned 2027 random close, KRX volatility interruptions, China's programmatic
+trading rules), the Reality-Calibrated Digital Twin with simulation-based inference, the
+Anytime-Valid Science Controller (online FDR / confidence sequences for an unbounded research
+stream), the Feed/Clock/Propagation Observatory, the Rough-Path/Signature Laboratory, the
+Multimodal Physical-World Perception Swarm (Sentinel, AIS, night lights, weather), the
+Borrow/Financing Ecology Lab, the Collateral/Settlement/Balance-Sheet allocator, the Missed-Trade
+Archaeologist, the Compute-Economics Scientist, the Strategy Archaeology and Reverse-Engineering
+Sandbox (SARES, ten specialist agents), the Probability and Fair-Value Dislocation Lab (several
+independent calibrated probability engines against what the MT5 instrument prices), the
+Multimodal Feature Compiler with its Feature Genome, the Data-as-Code point-in-time contract
+layer, the Anti-Homogenisation Swarm, the Cross-Market Event Graph with a Causal/Mechanism
+Adjudicator, the Independent Replication Civilization, and the meta-evolution layer (research-
+algorithm evolution, researcher populations under quality diversity, program/prompt optimisation,
+curriculum generation, world co-evolution, active sensing, tool and ontology invention).
+
+## 5n. REGIONAL PARITY (principal 2026-09-19, permanent)
+
+**NO REGION MAY BE ABSENT; NO REGION IS ENTITLED TO WASTEFUL EQUAL COMPUTE.** Every world region
+receives the same DEPTH of civilization -- official, institutional, academic, practitioner,
+retail-ecology, app, media, archive, physical-economy and source-graph layers in the native
+language, own mechanics, own calendars, own rule states, own transmission map -- so that every
+region can generate orthogonal candidates for the gauntlet, data for the world model and macro
+intelligence. Compute is not equal: it follows
+Priority = P(useful) x Orthogonality x InformationGain x CoverageDebt / (Compute + DataCost +
+TrialBurden), where the coverage-debt bonus keeps neglected regions discovering and the
+expected-value terms keep low-information areas from wasting resources. Australia and New
+Zealand are covered at full depth (RBA, ABS, AOFM, ASX, ASIC/APRA, AEMO, BOM, iron ore, coal,
+LNG, gold, China linkage; RBNZ, Stats NZ, NZDM, NZX/FMA, dairy, migration, housing, electricity,
+terms of trade); the Pacific island economies, Central Asia, South Asia beyond India, and every
+other economy the packs do not yet name receive discovery rights and a transmission map into
+executable assets. A country is never "covered" by five obvious sources (5f); a region's forest
+never stops source discovery (5h); and the parity fence turns the desk red when a region the
+packs name has no resident, no discovery in its trailing window, or no candidate in its lattice.
+
 ## 6. OPERATING LAWS (every session, human or machine)
 
 - **Gates before any push:** `./ops/gates.sh` (ruff, pytest --co, mypy); `--full` adds suite +
