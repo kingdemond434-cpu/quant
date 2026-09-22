@@ -42,6 +42,7 @@ class FakeAPI:
         self._state = state or {"balance": 100_000.0, "openNetPnL": -250.0}
         self._details = details or {1: {"minLot": 0.01}, 2: {"minLot": 0.01}, 3: {"minLot": 0.01}}
         self.sent: list[dict] = []
+        self.modified: list[tuple[int, dict]] = []
         self.reject = reject
 
     def get_all_instruments(self):
@@ -70,6 +71,10 @@ class FakeAPI:
 
     def close_all_positions(self):
         return True
+
+    def modify_position(self, position_id, modification_params):
+        self.modified.append((int(position_id), dict(modification_params)))
+        return not self.reject
 
 
 def _venue(**kw) -> TradeLockerVenue:
@@ -143,6 +148,15 @@ def test_the_stop_travels_with_the_order() -> None:
     (sent,) = v._raw_api.sent                                    # type: ignore[attr-defined]
     assert sent["stop_loss"] == 1.0950 and sent["stop_loss_type"] == "absolute"
     assert sent["type_"] == "market" and sent["quantity"] == 0.10 and sent["side"] == "buy"
+
+
+def test_a_stop_ratchet_is_an_absolute_broker_acknowledged_patch() -> None:
+    v = _venue()
+    assert v.modify_stop(77, 2412.5)
+    assert v._raw_api.modified == [(77, {"stopLoss": 2412.5,
+                                        "stopLossType": "absolute"})]  # type: ignore[attr-defined]
+    with pytest.raises(VenueError, match="non-positive"):
+        v.modify_stop(77, 0.0)
 
 
 def test_the_lot_is_floored_at_the_venue_minimum_and_otherwise_untouched() -> None:

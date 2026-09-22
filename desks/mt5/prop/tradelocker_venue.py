@@ -326,6 +326,18 @@ class TradeLockerVenue:
         return bool(self._api.close_position(position_id=int(position_id),
                                              close_quantity=float(quantity)))
 
+    def modify_stop(self, position_id: int, stop: float) -> bool:
+        """Move an open position's protective stop to an absolute price.
+
+        The caller owns the ratchet decision; this adapter only translates it.  A non-positive
+        stop is refused locally so a malformed management row cannot remove protection through
+        the venue's PATCH endpoint.
+        """
+        if not (float(stop) > 0):
+            raise VenueError(f"refusing non-positive stop {stop} for position {position_id}")
+        return bool(self._api.modify_position(
+            int(position_id), {"stopLoss": float(stop), "stopLossType": "absolute"}))
+
     def close_all(self) -> bool:
         """Used by the guard at the daily stand-down and nowhere else."""
         return bool(self._api.close_all_positions())

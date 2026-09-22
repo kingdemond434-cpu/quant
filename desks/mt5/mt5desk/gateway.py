@@ -1337,6 +1337,36 @@ def _original_stop_distance(st: dict, ticket: int, price_open: float, sl: float)
     return float(store[key])
 
 
+def _rates_since_position(symbol: str, timeframe: int, opened_at: int,
+                          *, count: int = 2000) -> pd.DataFrame:
+    """Terminal bars from the bar containing ``opened_at`` through the current bar.
+
+    Fusion stamps both positions and bars in its server-clock epoch (UTC+2/+3), while Python's
+    aware ``datetime.now(UTC)`` is real UTC.  ``copy_rates_range(opened_at, now_utc)`` therefore
+    asks for a range whose *end precedes the position* for the first server-offset hours.  The
+    live symptom was not theoretical: ticket 224204547 logged "fewer than 2 bars" from 11:52 to
+    its 18:01 close and gave a winner back into a EUR36.49 loss without one stop update.
+
+    Positional history is clock-domain agnostic: MetaTrader returns the latest bars and their own
+    epochs.  Filtering those epochs against the position's epoch keeps both sides in the same
+    clock domain.  The containing bar is included because the backtest trail observes that bar's
+    post-entry extreme; the manager still requires a later bar before it can act.
+    """
+    raw = mt5.copy_rates_from_pos(symbol, timeframe, 0, int(count))
+    if raw is None or len(raw) == 0:
+        return pd.DataFrame()
+    bars = pd.DataFrame(raw)
+    if "time" not in bars:
+        return pd.DataFrame()
+    # This helper currently manages H1 positions.  Deriving the bucket from the requested
+    # timeframe would need an MT5-constant map; using the actual adjacent bar spacing avoids a
+    # second hard-coded clock and also survives a future move to M15/M5.
+    ts = sorted({int(x) for x in bars["time"]})
+    step = min((b - a for a, b in zip(ts, ts[1:]) if b > a), default=3600)
+    start = int(opened_at) - (int(opened_at) % max(1, step))
+    return bars[bars["time"].astype("int64") >= start].reset_index(drop=True)
+
+
 def manage_open_positions(st: dict, sleeves: list[dict]) -> None:
     """Ratchet the stop on every open position. SHADOW UNLESS `st["armed"]`.
 
@@ -1386,15 +1416,15 @@ def manage_open_positions(st: dict, sleeves: list[dict]) -> None:
                     f"nothing to ratchet against and none invented")
                 continue
 
-            # Bars SINCE ENTRY only. A pre-entry extreme is a level the thesis never reached.
-            since = mt5.copy_rates_range(symbol, mt5.TIMEFRAME_H1,
-                                         datetime.fromtimestamp(p.time, tz=UTC),
-                                         datetime.now(tz=UTC))
-            if since is None or len(since) < 2:
+            # Bars SINCE ENTRY only.  Do not use copy_rates_range here: Fusion's position/bar
+            # epochs are in the broker clock while datetime.now(UTC) is real UTC, which made
+            # every new trade invisible to management for the server offset (and, measured on
+            # 2026-09-18, for the whole six-hour life of a losing close).
+            bars = _rates_since_position(symbol, mt5.TIMEFRAME_H1, int(p.time))
+            if len(bars) < 2:
                 log(f"MANAGE ticket {p.ticket} ({symbol}): fewer than 2 bars since entry; "
-                    f"too early to locate an extreme")
+                    f"too early to locate an extreme (broker-clock positional read)")
                 continue
-            bars = pd.DataFrame(since)
 
             # ATR on a longer window than the holding period, because a young position has too
             # few bars of its own to characterise volatility with.
@@ -1462,6 +1492,52 @@ def manage_open_positions(st: dict, sleeves: list[dict]) -> None:
                 if abs(got - decision.new_stop) > (tick_size or 1e-9):
                     log(f"{tag}: WARNING requested sl {decision.new_stop:.5f} but the broker "
                         f"reports {got:.5f} -- next pass re-proposes against what it reports")
+
+
+def collapse_opposing_gold_positions(st: dict) -> int:
+    """Close-by redundant opposite positions in the gold bracket book, preserving net lots.
+
+    This is deliberately narrower than generic account netting: only this gateway's MAGIC and
+    ``DWgold_`` bracket tags are eligible.  Manual trades, E8, family sleeves and scalp sleeves
+    are untouched.  MT5 CLOSE_BY closes equal volume on opposite tickets against one another,
+    avoiding the second market spread; unequal tickets leave their residual net position open.
+
+    A new gold window is also prevented from being placed while an earlier gold bracket position
+    remains open (see the placement loop).  This repair handles positions opened before that
+    prevention landed and any race where two stops fill between gateway passes.
+    """
+    positions = [p for p in (mt5.positions_get(symbol=GOLD_SYMBOL) or [])
+                 if int(getattr(p, "magic", 0) or 0) == MAGIC
+                 and str(getattr(p, "comment", "") or "").startswith("DWgold_")]
+    buys = sorted((p for p in positions if p.type == mt5.POSITION_TYPE_BUY),
+                  key=lambda p: int(p.ticket))
+    sells = sorted((p for p in positions if p.type != mt5.POSITION_TYPE_BUY),
+                   key=lambda p: int(p.ticket))
+    paired = 0
+    while buys and sells:
+        buy, sell = buys.pop(0), sells.pop(0)
+        lots = min(float(buy.volume), float(sell.volume))
+        if lots <= 0:
+            continue
+        if not st.get("armed"):
+            log(f"SHADOW would CLOSE_BY gold hedge buy {buy.ticket} / sell {sell.ticket} "
+                f"({lots:.2f} lots each; net exposure unchanged)")
+            paired += 1
+            continue
+        res = mt5.order_send({
+            "action": mt5.TRADE_ACTION_CLOSE_BY,
+            "position": int(buy.ticket),
+            "position_by": int(sell.ticket),
+            "magic": MAGIC,
+            "comment": order_comment("portfolio_net"),
+        })
+        rc = getattr(res, "retcode", None) if res is not None else None
+        log(f"CLOSE_BY gold hedge buy {buy.ticket} / sell {sell.ticket} "
+            f"({lots:.2f} lots each) -> retcode={rc} "
+            f"{diagnose(rc, getattr(res, 'comment', '') if res is not None else '')}")
+        if rc == getattr(mt5, "TRADE_RETCODE_DONE", 10009):
+            paired += 1
+    return paired
 
 
 def reconcile(st: dict) -> dict:
@@ -1580,8 +1656,9 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
         log(f"ledger: history unreadable ({type(exc).__name__}: {exc}); nothing recorded")
         return
     written = 0
+    closing_entries = {mt5.DEAL_ENTRY_OUT, getattr(mt5, "DEAL_ENTRY_OUT_BY", object())}
     for d in deals:
-        if d.entry != mt5.DEAL_ENTRY_OUT:
+        if d.entry not in closing_entries:
             continue
         if getattr(d, "ticket", None) in seen_deals:
             continue
@@ -1895,12 +1972,13 @@ def _net_routes(symbols: set[str]) -> None:
 
 
 def _closing_fill(ticket: int) -> tuple[float, float] | None:
-    """(lots closed, volume-weighted close price) from the position's DEAL_ENTRY_OUT deals, or
+    """(lots closed, volume-weighted close price) from OUT/OUT_BY closing deals, or
     None while the terminal has not recorded one. Read-only history, the same call
     `_position_entry` makes; never raises past its caller's guard."""
     lots = notional = 0.0
+    closing_entries = {mt5.DEAL_ENTRY_OUT, getattr(mt5, "DEAL_ENTRY_OUT_BY", object())}
     for x in (mt5.history_deals_get(position=ticket) or ()):
-        if getattr(x, "entry", None) == mt5.DEAL_ENTRY_OUT:
+        if getattr(x, "entry", None) in closing_entries:
             v = float(getattr(x, "volume", 0.0) or 0.0)
             lots += v
             notional += v * float(getattr(x, "price", 0.0) or 0.0)
@@ -3387,6 +3465,14 @@ def main() -> None:
         # degraded; a desk that cannot place or reconcile anything because management raised is
         # broken, and the second is strictly worse than the first.
         log(f"MANAGE FAILED (positions left untouched): {type(exc).__name__}: {exc}")
+    # A hedging account will happily carry +0.02 and -0.02 XAU at once.  That is zero net
+    # exposure with two spreads, two margin legs and two swap legs.  Collapse only the gold
+    # bracket book's redundant pair via CLOSE_BY; every other lane and manual position is out of
+    # scope.  The placement fence below prevents the state from recurring on later windows.
+    try:
+        collapse_opposing_gold_positions(st)
+    except Exception as exc:
+        log(f"GOLD HEDGE COLLAPSE FAILED (positions left untouched): {type(exc).__name__}: {exc}")
     # A sleeve that left the roster leaves the book: retired names queued by the decay monitor
     # have their open positions closed here, one pass at a time, never from inside management.
     try:
@@ -3739,6 +3825,15 @@ def main() -> None:
                 # terminal with AutoTrading off, two total rejections in one pass. A bracket the
                 # cancel hour would take back is never sent.
                 continue
+            if s.get("symbol") == GOLD_SYMBOL:
+                _gold_open = [p for p in (mt5.positions_get(symbol=GOLD_SYMBOL) or [])
+                              if int(getattr(p, "magic", 0) or 0) == MAGIC
+                              and str(getattr(p, "comment", "") or "").startswith("DWgold_")]
+                if _gold_open:
+                    log(f"[{s['name']}] DEFERRED: an earlier gold bracket position is still "
+                        f"open ({', '.join(str(p.ticket) for p in _gold_open)}); placing a "
+                        f"two-sided bracket could hedge the account against itself")
+                    continue
             # THE ORDER THE HEAT CAP PRICED IS THE ORDER THAT IS SENT, AND NOTHING ELSE IS.
             # The pre-cap phase resolved this sleeve's bracket, sized it and charged the cap at
             # its exact realised risk; this site consumes that resolution and NEVER resolves

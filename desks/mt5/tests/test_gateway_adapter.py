@@ -826,6 +826,56 @@ def test_the_scalp_tag_is_the_lane_s_own_and_only_the_scalp_lane_s() -> None:
     assert tag == frozenset({("DW" + "a" * 40)[:29]})            # the venue's measured 29-char comment
 
 
+def test_position_bars_use_the_broker_clock_not_wall_clock() -> None:
+    """Fusion stamps a 13:01 broker-time position while UTC can still be 10:01.  A range ending
+    at UTC-now returns nothing; latest-bars filtered against the broker epoch returns the entry
+    bar and every subsequent broker bar, which is the clock domain management needs."""
+    base = 1_790_000_000
+    opened = base + 3 * 3600 + 61
+    first = opened - (opened % 3600) - 2 * 3600
+    raw = [{"time": first + i * 3600, "open": 100 + i, "high": 102 + i,
+            "low": 99 + i, "close": 101 + i} for i in range(5)]
+    mt5 = SimpleNamespace(copy_rates_from_pos=lambda *a: raw)
+    ns = _exec(("_rates_since_position",), {"mt5": mt5})
+    got = ns["_rates_since_position"]("XAUUSD", 60, opened)
+    assert got["time"].tolist() == [opened - (opened % 3600),
+                                    opened - (opened % 3600) + 3600,
+                                    opened - (opened % 3600) + 7200]
+
+
+def test_gold_bracket_hedges_are_collapsed_by_close_by_and_nothing_else() -> None:
+    sent: list[dict] = []
+    positions = [
+        SimpleNamespace(ticket=1, symbol="XAUUSD", type=0, volume=0.02,
+                        magic=341953, comment="DWgold_london_am"),
+        SimpleNamespace(ticket=2, symbol="XAUUSD", type=1, volume=0.02,
+                        magic=341953, comment="DWgold_asia"),
+        SimpleNamespace(ticket=3, symbol="XAUUSD", type=1, volume=0.01,
+                        magic=341953, comment="DWxau_m5_other"),
+        SimpleNamespace(ticket=4, symbol="XAUUSD", type=1, volume=0.02,
+                        magic=999, comment="manual"),
+    ]
+    mt5 = SimpleNamespace(
+        positions_get=lambda symbol=None: list(positions), POSITION_TYPE_BUY=0,
+        TRADE_ACTION_CLOSE_BY=10, TRADE_RETCODE_DONE=10009,
+        order_send=lambda req: (sent.append(req) or SimpleNamespace(retcode=10009, comment="")))
+    logs: list[str] = []
+    ns = _exec(("collapse_opposing_gold_positions", "order_comment"),
+               {"mt5": mt5, "log": logs.append, "diagnose": lambda *a: "",
+                "MAGIC": 341953})
+    assert ns["collapse_opposing_gold_positions"]({"armed": True}) == 1
+    assert sent == [{"action": 10, "position": 1, "position_by": 2, "magic": 341953,
+                     "comment": "DWportfolio_net"}]
+
+
+def test_close_by_deals_are_closing_fills_not_lost_attribution() -> None:
+    deals = [SimpleNamespace(entry=3, volume=0.02, price=4317.5)]
+    mt5 = SimpleNamespace(DEAL_ENTRY_OUT=1, DEAL_ENTRY_OUT_BY=3,
+                          history_deals_get=lambda position=None: deals)
+    ns = _exec(("_closing_fill",), {"mt5": mt5})
+    assert ns["_closing_fill"](123) == pytest.approx((0.02, 4317.5))
+
+
 def test_main_scopes_the_daily_close_and_not_the_friday_one() -> None:
     """Pinned on the source: the daily backstop passes the scalp tags, the weekend close does
     not, and the daily one comes first."""
