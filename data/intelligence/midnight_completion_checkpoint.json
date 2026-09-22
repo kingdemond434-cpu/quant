@@ -9,13 +9,10 @@
    "status": "FAILED"
   },
   "certificate_projection": {
-   "command": [
-    "/home/quant/quant-platform/.venv/bin/python",
-    "scripts/build_gauntlet_survivors.py"
-   ],
-   "passes_completed": 0,
-   "started_at": "2026-09-22T09:49:45.567240+00:00",
-   "status": "RUNNING"
+   "finished_at": "2026-09-22T09:54:13.532059+00:00",
+   "passes_completed": 1,
+   "returncode": 0,
+   "status": "DONE"
   },
   "certificate_yield_fence": {
    "finished_at": "2026-09-22T09:08:52.079726+00:00",
@@ -48,10 +45,13 @@
    "status": "FAILED"
   },
   "forward_identity_reconciliation": {
-   "finished_at": "2026-09-22T09:08:11.801595+00:00",
-   "passes_completed": 1,
-   "returncode": 0,
-   "status": "DONE"
+   "command": [
+    "/home/quant/quant-platform/.venv/bin/python",
+    "desks/mt5/research/forward_reconcile.py"
+   ],
+   "passes_completed": 0,
+   "started_at": "2026-09-22T10:05:38.068944+00:00",
+   "status": "RUNNING"
   },
   "forward_lane_heal": {
    "finished_at": "2026-09-22T09:08:25.499304+00:00",
@@ -60,7 +60,7 @@
    "status": "FAILED"
   },
   "fusion_state_pull": {
-   "finished_at": "2026-09-22T09:07:58.452106+00:00",
+   "finished_at": "2026-09-22T10:05:34.195387+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -84,5 +84,5 @@
    "status": "DONE"
   }
  },
- "updated_at": "2026-09-22T09:49:45.567240+00:00"
+ "updated_at": "2026-09-22T10:05:38.068944+00:00"
 }
