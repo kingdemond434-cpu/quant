@@ -195,29 +195,69 @@ LOT = 0.02
 #: the block carries `noqa: I001`: isort wants every explicit re-export in a statement of its own,
 #: which would turn one readable list of fourteen re-exported names into fourteen import lines.
 from mt5desk.decision_core import (
-    CONTRACT_OZ as CONTRACT_OZ,
-    DIST_USD as DIST_USD,
-    FX_EUR as FX_EUR,
-    GOLD_WINDOWS as GOLD_WINDOWS,
     ABSOLUTE_SIM_MAX as ABSOLUTE_SIM_MAX,
+)
+from mt5desk.decision_core import (
+    CONTRACT_OZ as CONTRACT_OZ,
+)
+from mt5desk.decision_core import (
+    DIST_USD as DIST_USD,
+)
+from mt5desk.decision_core import (
     ENTRY_DRIFT_TOL_FRAC as ENTRY_DRIFT_TOL_FRAC,
+)
+from mt5desk.decision_core import (
+    FX_EUR as FX_EUR,
+)
+from mt5desk.decision_core import (
+    GOLD_WINDOWS as GOLD_WINDOWS,
+)
+from mt5desk.decision_core import (
     HEAT_SLIDE as HEAT_SLIDE,
+)
+from mt5desk.decision_core import (
     MAX_HEAT_CEILING as MAX_HEAT_CEILING,
+)
+from mt5desk.decision_core import (
     MIN_LOT_RISK_EUR as MIN_LOT_RISK_EUR,
+)
+from mt5desk.decision_core import (
     RETCODE_MEANING as RETCODE_MEANING,
+)
+from mt5desk.decision_core import (
     RR as RR,
+)
+from mt5desk.decision_core import (
     allocator_order as allocator_order,
+)
+from mt5desk.decision_core import (
     bracket_spec as bracket_spec,
+)
+from mt5desk.decision_core import (
     day_range as day_range,
+)
+from mt5desk.decision_core import (
     family_entry as family_entry,
+)
+from mt5desk.decision_core import (
     gold_book_lot as gold_book_lot,
+)
+from mt5desk.decision_core import (
     heat_budget as heat_budget,
+)
+from mt5desk.decision_core import (
     live_heat_ceiling as live_heat_ceiling,
+)
+from mt5desk.decision_core import (
     min_lot_risk_eur as min_lot_risk_eur,
 )
 from mt5desk.gateway_config_fallback import (
     HEAT_HARD_CEILING as HEAT_HARD_CEILING,
+)
+from mt5desk.gateway_config_fallback import (
     HEAT_TARGET as HEAT_TARGET,
+)
+from mt5desk.gateway_config_fallback import (
     Q_OPT as Q_OPT,
 )
 
@@ -384,6 +424,19 @@ def load_sleeves() -> list[dict]:
     sleeves, notes = _core.load_sleeves_verbose(SLEEVES_FILE)
     for note in notes:
         log(note)
+    # LINEAGE IS ACKNOWLEDGED, NEVER INFERRED (LAWS.md 7). This is the last mandatory edge of the
+    # whole pipeline -- promoter -> allocator -> GATEWAY -- and without the acknowledgement the
+    # control plane can only observe that sleeves.json was written, never that the gateway read
+    # it. Fully guarded: a failure here may not touch the money path.
+    try:
+        import sys as _sys
+        _root = str(BASE.parents[1])
+        if _root not in _sys.path:
+            _sys.path.insert(0, _root)
+        from libs.ops.control_plane.lease import ack_artifact
+        ack_artifact("task:MT5-Gateway", SLEEVES_FILE)
+    except Exception:
+        pass
     return sleeves
 
 

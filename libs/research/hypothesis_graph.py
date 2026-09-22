@@ -610,3 +610,35 @@ def record_verdicts(verdicts: Iterable[dict[str, Any]], graph: Graph | None = No
                       edges=edges_for(sym, params)))
         n += 1
     return n
+
+
+CAUSAL_GATE = "causal_adjudication"
+
+
+def record_causal_verdicts(rows: Iterable[Mapping[str, Any]], graph: Graph | None = None) -> int:
+    """Record the causal adjudicator's verdict on a cell as a gate reading (LAWS 5m).
+
+    `rows` carry `symbol`, `family`, `params` and `verdict` (SUPPORTED / REFUTED /
+    UNIDENTIFIABLE / UNMEASURED) with `failing_test`. The node keeps its BORN fate: an
+    adjudication is a reading about the mechanism, not a fate the gauntlet has not decided
+    (L1.60), so it lands in `gates[CAUSAL_GATE]` where `death_profile` and the cartographer can
+    see it beside the ten gates without any of them being edited.
+    """
+    g = graph or Graph()
+    n = 0
+    for row in rows:
+        sym, family, params = spec_identity(row)
+        if not sym or not family:
+            continue
+        verdict = str(row.get("verdict") or "UNMEASURED")
+        g.append(Node(symbol=sym, family=family, params=params,
+                      source=str(row.get("source") or "event_graph_lab"), fate=BORN,
+                      why=f"causal adjudication: {verdict}"
+                          + (f" ({row.get('failing_test')})" if row.get("failing_test") else ""),
+                      gates={CAUSAL_GATE: {"passed": verdict == "SUPPORTED", "verdict": verdict,
+                                           "failing_test": str(row.get("failing_test") or ""),
+                                           "effect": row.get("effect"),
+                                           "eligible": bool(row.get("eligible"))}},
+                      edges=edges_for(sym, params)))
+        n += 1
+    return n

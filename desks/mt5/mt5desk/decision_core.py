@@ -1429,7 +1429,36 @@ def load_sleeves_verbose(path: Path) -> tuple[list[dict], list[str]]:
     keep, refused = admit(live)
     notes = [f"LIVE POLICY refused {r.get('name') or r.get('symbol')}: {why}"
              for r, why in refused]
+    # FEED HEALTH IS AN INPUT, NEVER A FILTER (LAWS 5m observatory; GROWTH_GOVERNANCE Rule 1).
+    # The observatory (research/feed_clock_lab.py) stamps data/feed_health.json beside this
+    # file; the reading rides on the row for entry timing to read and drops nothing.
+    stamp_feed_health(keep, path.with_name("feed_health.json"))
     return keep, notes
+
+
+def stamp_feed_health(sleeves: list[dict], path: Path) -> int:
+    """Annotate each sleeve with its instrument's feed-health reading from `path`, in place.
+
+    Returns how many rows were stamped. An absent, unreadable or stale file stamps nothing and
+    changes nothing: a sleeve is never admitted or refused on this reading, so the only failure
+    mode is a missing INPUT, which the row then visibly lacks (`feed_health` absent, not 0).
+    """
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8"))
+        table = doc.get("instruments") if isinstance(doc, dict) else None
+        if not isinstance(table, dict):
+            return 0
+    except (OSError, ValueError):
+        return 0
+    n = 0
+    for s in sleeves:
+        row = table.get(str(s.get("symbol") or ""))
+        if isinstance(row, dict):
+            s["feed_health"] = {"status": row.get("status"),
+                                "p_trustworthy": row.get("p_trustworthy"),
+                                "at": doc.get("at"), "input_not_cap": True}
+            n += 1
+    return n
 
 
 def load_retired_gold(path: Path) -> dict:

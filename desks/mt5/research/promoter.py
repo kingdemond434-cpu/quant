@@ -187,14 +187,31 @@ def plog(msg: str) -> None:
             time.sleep(_LOG_RETRY_SLEEP_S * (attempt + 1))
 
 
+def _ack(consumer: str, path) -> None:
+    """LINEAGE IS ACKNOWLEDGED, NEVER INFERRED (LAWS.md 7). The promoter reading the forward
+    ledger is the edge `enrol_clocks -> promoter`; without this call the control plane can only
+    see that two files have nearby timestamps, which is not evidence that one was read."""
+    try:
+        import sys as _sys
+        root = str(BASE.parents[1])
+        if root not in _sys.path:
+            _sys.path.insert(0, root)
+        from libs.ops.control_plane.lease import ack_artifact
+        ack_artifact(consumer, path)
+    except Exception:
+        pass
+
+
 def load_shadow() -> dict:
     p = SHADOW_DIR / "shadow_state.json"
     if not p.exists():
         return {}
     try:
-        return json.loads(p.read_text(encoding="utf-8"))
+        doc = json.loads(p.read_text(encoding="utf-8"))
     except Exception:
         return {}
+    _ack("leg:promoter", p)
+    return doc
 
 
 def artifact_of(row: dict) -> dict:

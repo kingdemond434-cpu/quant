@@ -33,10 +33,40 @@ EVIDENCE IS NEVER DESTROYED. Retiring sets a status and a reason on the row; led
 lists and day counts stay exactly as they were, so a retired row remains auditable and a future
 certificate can revive it through a FRESH forward window (never by inheriting the old clock --
 that clock was measured under no pre-registration).
+
+ANYTIME-VALID MONITORING, BESIDE THE HOLM BARS (review R3, 2026-09-17)
+---------------------------------------------------------------------
+The desk enrols dozens of forward candidates against twelve slots and RE-READS their evidence
+every hour. A fixed-sample t-stat is calibrated for ONE look: re-testing it on every pass spends
+alpha the Holm bars do not price, and under continuous monitoring a nominal 5% test rejects a
+true null with probability approaching 1. `forward_stats.holm_bar` says so in its own docstring
+(measured on this desk's cohort: 0.0042 at one look, 0.0367 under daily peeking -- 8.8x nominal).
+
+`anytime_monitor` therefore publishes, per ENROLLED clock, the peek-safe statistic beside the
+peek-unsafe one:
+
+  * `e_value`   -- `libs.research.anytime_valid.e_value` on the clock's forward R series, testing
+                   H0: mean R <= 0. It is a non-negative supermartingale under H0, so by Ville's
+                   inequality P(sup_t E_t >= 1/alpha) <= alpha AT EVERY t SIMULTANEOUSLY. That is
+                   what makes hourly re-reading legitimate. `anytime_reject` is E >= 1/0.05 = 20.
+  * `lower_cb`  -- `forward_verdict.sequential_lower_bound`, the desk's ONE always-valid lower
+                   confidence bound on mean R (Robbins normal mixture at alpha 0.05, variance
+                   proxy = max(sample sd, half the observed range)). A second implementation of a
+                   confidence sequence is the last thing this desk needs.
+  * `looks`     -- how many passes have READ this clock, persisted in data/forward_looks.json.
+                   The count is the alpha the fixed test has been spending and never declaring.
+
+IT CHANGES NO DECISION. The promoter keeps its bar, `verdict()` is untouched, and nothing above
+reads these fields. What the desk gets is the DISAGREEMENT named: a candidate the fixed-sample
+test passes and the e-process does not is listed by name, with both numbers and the look count
+beside it. Below `ANYTIME_MIN_TRADES` trades the row is UNMEASURED (L1.28a) -- an e-value drawn
+from four trades is a number that looks like evidence.
 """
 from __future__ import annotations
 
 import json
+import math
+import os
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -49,6 +79,19 @@ SHADOW = BASE / "reports" / "shadow"
 CERTS = BASE / "reports" / "UNIVERSAL_SURVIVORS.json"
 CANON = BASE / "data" / "UNIVERSAL_SURVIVORS.canon.json"
 OUT = BASE / "data" / "forward_reconcile.json"
+#: The persisted look counter, resolved from BASE at call time so a test that repoints BASE does
+#: not write the box's own state file. Rows are never deleted: a clock that leaves and re-enrols
+#: keeps its look count, because the alpha those looks spent was really spent.
+LOOKS_NAME = "forward_looks.json"
+RANKER = "FORWARD_SLOT_RANKER.json"
+
+#: ONE alpha for both gates. `forward_stats.holm_alpha` converts it into a fixed-sample t bar and
+#: Ville's inequality converts the same number into a wealth threshold 1/alpha; reading them from
+#: one constant is what stops the two drifting apart.
+ANYTIME_ALPHA = 0.05
+ANYTIME_THRESHOLD = 1.0 / ANYTIME_ALPHA
+#: Below this many forward trades a candidate is UNMEASURED rather than "not rejecting".
+ANYTIME_MIN_TRADES = 5
 
 TERMINAL = {"KILL", "KILLED", "PROMOTED", "DEAD", "REJECTED", "RETIRED",
             "RETIRED_ORPHAN", "RETIRED_GATE_FAIL", "RETIRED_UNRECONSTRUCTIBLE",
@@ -61,6 +104,23 @@ def _read(p: Path) -> dict:
         return v if isinstance(v, dict) else {}
     except (OSError, ValueError):
         return {}
+
+
+def _write_atomic(path: Path, doc: dict) -> bool:
+    """Write a state file without ever leaving a half-written one. False on any OS refusal --
+    this organ's monitoring must not take the reconcile down for a read-only directory."""
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.with_name(path.name + ".tmp")
+        tmp.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
+        try:
+            os.replace(tmp, path)
+        except PermissionError:          # a read-only destination is WinError 5 on this box
+            path.chmod(0o644)
+            os.replace(tmp, path)
+        return True
+    except OSError:
+        return False
 
 
 def _engine_clock_families() -> dict[str, str]:
@@ -157,21 +217,61 @@ def _family_name(key: str, row: dict | None, engine_fams: dict[str, str],
 
 def family_budget(enrolled: set[str] | None, rows: dict[str, dict],
                   engine_fams: dict[str, str] | None) -> dict:
-    """THE PARTITIONED MULTIPLE-TESTING BUDGET, PUBLISHED BESIDE THE FLAT COHORT. Decides nothing.
+    """THE PARTITIONED MULTIPLE-TESTING BUDGET, AND WHAT IT NOW DECIDES.
 
     The desk corrects its forward cohort as ONE Holm family of `MAX_FORWARD_SLOTS` seats, so a new
     clock in one mechanism tightens the bar for every clock in every other. `libs.validation.
     family_multiplicity` holds the partitioned alternative -- each census family corrected against
     its own m -- and until now its only reader was a breadth report over slot names. This emits,
     per ENROLLED clock, the family the census places it in and that family's own BH bar, beside
-    the flat cohort's numbers, so tiering can be evaluated on measured cohorts before any seat
-    count moves. MAX_FORWARD_SLOTS and every seat rule are unchanged; a bar published is not a bar
-    applied.
+    the flat cohort's numbers.
 
     UNCLASSIFIED is floored at the largest declared family (`effective_m`), so a clock whose
     mechanism the census cannot place pays the worst bar on the desk rather than a cheaper one --
     declining to declare must never be the cheaper path. UNKNOWN enrolment reports UNMEASURED:
     a clock that cannot be enumerated cannot be placed.
+
+    THE ENROLMENT CAP -- WHAT REPLACED `"decides": "NOTHING"` (review R4, 2026-09-17)
+    ---------------------------------------------------------------------------------
+    A measured shadow price that decides nothing is a price nobody pays. The same Holm machinery
+    that prices the bars prices the SEATS, and the arithmetic is stated rather than asserted:
+
+        per_candidate_charge = holm_alpha(MAX_FORWARD_SLOTS, 1) = alpha / 12   (the desk's own
+                               standing per-seat level -- what one forward seat costs today)
+        family_alpha         = family_error_budget(F)["alpha_per_family"] = alpha
+        spent                = n_members * per_candidate_charge
+        remaining            = max(0, family_alpha - spent)
+        caps[family]         = floor(remaining / per_candidate_charge)
+
+    THIS IS AN EXPANSION, NOT A BRAKE, AND THE DIRECTION MATTERS (GROWTH_GOVERNANCE rule 2). The
+    flat cohort gives the WHOLE desk twelve seats. Per-family budgets give twelve to EACH declared
+    family, so a family under its own alpha is authorised to enrol clocks the flat cohort forbids
+    outright. It bites only where a family has already enrolled past its own error budget, and
+    `family_error_budget` publishes what partitioning costs globally in the same block, so the
+    price is on the artifact rather than in someone's head.
+
+    EVERY CAP CARRIES ITS MISSED-GROWTH LINE (`missed_growth_lines`), priced from the forward
+    ranker's own waiting queue -- what the desk is NOT testing because the cap stands. Zero waiting
+    candidates is a measured zero (NOT_BINDING), an unreadable ranker is UNMEASURED, and neither is
+    ever read as "free". `libs.portfolio.rails` exposes no writer and registering a new Rail would
+    need a `measure_*` in `research/missed_growth.py`, so the lines are published on the artifact
+    exactly as `forward_slot_ranker` publishes its own.
+
+    THE CONTRACT WITH THE ENROLMENT PATH (the promoter is NOT edited, and must not be)
+    ---------------------------------------------------------------------------------
+    Reader: `research/promoter.py` and any engine that enrols a new forward clock.
+    Source: `desks/mt5/data/forward_reconcile.json` -> `family_budget`, and NOTHING else. This
+            module never calls the promoter and the promoter never imports this one.
+    Key:    `family_budget["caps"][<census family>]` -- an INTEGER count of NEW enrolments that
+            family may take on this pass, where the family name is
+            `libs.validation.family_multiplicity.family_of(<the candidate's declared mechanism>)`.
+    Scope:  NEW enrolments only. It never retires, kills, resizes or unseats a running clock, and
+            a clock already enrolled is never re-charged.
+    Fail-open, deliberately: a missing artifact, `status != "MEASURED"`, a `checked_at` the reader
+            judges stale, or a family absent from `caps` is NOT a cap of zero. The reader falls
+            back to today's behaviour (uncapped). A research cap that fails CLOSED would let an
+            unwritten file quietly stop the desk from testing anything, which is the timid failure
+            the growth governance forbids.
     """
     if enrolled is None:
         return {"status": "UNMEASURED",
@@ -182,7 +282,7 @@ def family_budget(enrolled: set[str] | None, rows: dict[str, dict],
             sys.path.insert(0, root)
         from libs.research.slot_registry import MAX_FORWARD_SLOTS
         from libs.validation import family_multiplicity as fm
-        from libs.validation.forward_stats import holm_bar
+        from libs.validation.forward_stats import holm_alpha, holm_bar
     except Exception as exc:
         return {"status": "UNMEASURED",
                 "why": f"family_multiplicity unavailable: {type(exc).__name__}: {exc}"}
@@ -206,11 +306,52 @@ def family_budget(enrolled: set[str] | None, rows: dict[str, dict],
         m = eff[c["family"]]
         c.update({"family_m": m, "bh_bar": fm.bh_bar(m, 1), "holm_bar": holm_bar(m, 1)})
     m_flat = max(1, len(enrolled))
+    budget = fm.family_error_budget(len(parts))
+    charge = float(holm_alpha(MAX_FORWARD_SLOTS, 1))
+    alpha_family = float(budget.get("alpha_per_family") or 0.05)
+    caps: dict[str, int] = {}
+    cap_detail: dict[str, dict] = {}
+    for fam, members in sorted(parts.items()):
+        # CHARGED AT THE EFFECTIVE m, NOT THE RAW MEMBER COUNT, for the same reason the bars are:
+        # UNCLASSIFIED is floored at the largest declared family, so a cohort of one undeclared
+        # mechanism cannot buy eleven new seats while a declared family of four buys eight.
+        # Declining to declare must never be the cheaper path -- on the seats as well as the bar.
+        m = eff[fam]
+        spent = m * charge
+        remaining = max(0.0, alpha_family - spent)
+        # THE EPSILON IS NOT COSMETIC. floor() on a quotient of two floats that divide exactly
+        # loses a whole seat when the division lands at 10.999999999999998, and a seat lost to
+        # float dust is a hypothesis the desk never tests. The published alphas carry nine
+        # decimals for the same reason: a reader recomputing the cap from a six-decimal charge
+        # gets a different integer than the one on the artifact.
+        caps[fam] = max(0, math.floor(remaining / charge + 1e-9)) if charge > 0 else 0
+        cap_detail[fam] = {
+            "n_enrolled": len(members), "charged_m": m,
+            "per_candidate_charge": round(charge, 9),
+            "family_alpha": alpha_family, "spent_alpha": round(spent, 9),
+            "remaining_alpha": round(remaining, 9), "cap": caps[fam],
+            "seats_at_this_charge": round(alpha_family / charge) if charge > 0 else 0,
+        }
     return {
         "status": "MEASURED",
-        "decides": ("NOTHING -- MAX_FORWARD_SLOTS and every seat rule are unchanged; this "
-                    "publishes the per-family budget beside the flat cohort so tiering can be "
-                    "evaluated on measured cohorts"),
+        "decides": "ENROLMENT_CAP_PER_FAMILY",
+        "caps": caps,
+        "cap_detail": cap_detail,
+        "cap_basis": ("floor(remaining_alpha / per_candidate_charge) per census family, where "
+                      "per_candidate_charge = forward_stats.holm_alpha("
+                      f"MAX_FORWARD_SLOTS={MAX_FORWARD_SLOTS}, 1) = {charge:.6f} -- the level one "
+                      "forward seat already costs -- and the family's own budget is "
+                      "family_multiplicity.family_error_budget's alpha_per_family = "
+                      f"{alpha_family}. For an integer count that is exactly "
+                      "max(0, seats_at_this_charge - charged_m), which is the identity to check "
+                      "the artifact against -- charged_m is the family's EFFECTIVE m, so an "
+                      "undeclared mechanism buys no more seats than a declared one. NEW "
+                      "enrolments only; it never retires, resizes or "
+                      "unseats a running clock, and an absent or stale artifact means UNCAPPED, "
+                      "never zero"),
+        "consumer": ("research/promoter.py and any enrolling engine, through "
+                     "data/forward_reconcile.json only -- no import, no call"),
+        "missed_growth_lines": _cap_missed_growth(caps, cap_detail, parts),
         "flat_cohort": {
             "max_forward_slots": MAX_FORWARD_SLOTS, "m_enrolled": m_flat,
             "holm_bar_rank1_at_cap": holm_bar(MAX_FORWARD_SLOTS, 1),
@@ -220,10 +361,357 @@ def family_budget(enrolled: set[str] | None, rows: dict[str, dict],
         },
         "families": families,
         "clocks": clocks,
-        "error_budget": fm.family_error_budget(len(parts)),
+        "error_budget": budget,
         "orthogonality_floor": fm.ORTHOGONALITY_FLOOR,
         "basis": ("libs.validation.family_multiplicity (family_of / effective_m / bh_bar); "
                   "UNCLASSIFIED is floored at the largest declared family"),
+    }
+
+
+def _waiting_by_family() -> tuple[dict[str, list[dict]], str | None]:
+    """The forward ranker's WAITING queue, grouped into census families -- what the desk would
+    enrol next if a seat were free. `(rows_by_family, unmeasured_reason)`.
+
+    This is the only thing that can price an enrolment cap honestly: a cap costs exactly the
+    candidates it stops, and the ranker already measures each one's slot value in E[log W] per
+    day. No ranker artifact is UNMEASURED, not zero -- and an empty queue is a measured zero.
+    """
+    try:
+        from libs.validation import family_multiplicity as fm
+    except Exception as exc:
+        return {}, f"family_multiplicity unavailable: {type(exc).__name__}: {exc}"
+    path = BASE / "reports" / RANKER
+    doc = _read(path)
+    if not doc:
+        return {}, f"forward ranker unreadable or absent: {path}"
+    waiting = doc.get("waiting")
+    if not isinstance(waiting, list):
+        return {}, f"{RANKER} carries no `waiting` list: the queue depth is unmeasured"
+    out: dict[str, list[dict]] = {}
+    for row in waiting:
+        if not isinstance(row, dict):
+            continue
+        name = str(row.get("family") or row.get("cell") or "")
+        out.setdefault(fm.family_of(name), []).append(row)
+    return out, None
+
+
+def _cap_missed_growth(caps: dict[str, int], detail: dict[str, dict],
+                       parts: dict[str, list[str]]) -> list[dict]:
+    """One missed-growth row per CAPPED family: what the cap forbids, in the ranker's own units.
+
+    A cap with no ledger line is exactly what the growth governance forbids, so every family whose
+    cap is zero gets a row whether or not anything is waiting -- NOT_BINDING is a measurement and
+    silence is not. Published here rather than appended to data/missed_growth.jsonl: that ledger is
+    keyed by `libs.portfolio.rails.RAILS` and this cap registers no rail, exactly as
+    `forward_slot_ranker` publishes its slot-occupancy lines on its own artifact.
+    """
+    capped = [fam for fam, n in sorted(caps.items()) if n <= 0]
+    if not capped:
+        return []
+    waiting, why_unmeasured = _waiting_by_family()
+    now = datetime.now(tz=UTC)
+    lines: list[dict] = []
+    for fam in capped:
+        rows = waiting.get(fam, [])
+        values = [float(r["slot_value"]) for r in rows
+                  if isinstance(r.get("slot_value"), (int, float))
+                  and not isinstance(r.get("slot_value"), bool)]
+        line = {
+            "day": now.date().isoformat(), "at": now.isoformat(timespec="seconds"),
+            "rail": f"forward_enrolment_cap:{fam}", "kind": "opportunity_cost",
+            "units": "E[log W] per day of book growth, per day of forward wait",
+            "family": fam, "cap": int(caps.get(fam, 0)),
+            "n_enrolled": int((detail.get(fam) or {}).get("n_enrolled", len(parts.get(fam, [])))),
+            "n_blocked": len(rows),
+            "why": ("what this family's exhausted error budget forbids the desk from testing this "
+                    "pass, priced from FORWARD_SLOT_RANKER.json's waiting queue; PUBLISHED, never "
+                    "appended to data/missed_growth.jsonl and never executed -- the cap registers "
+                    "no rail and stops no running clock"),
+        }
+        if why_unmeasured is not None:
+            line.update(value=None, verdict="UNMEASURED", unmeasured=why_unmeasured)
+        elif not rows:
+            line.update(value=0.0, verdict="NOT_BINDING",
+                        note="no candidate of this family is waiting for a seat, so the cap "
+                             "forbade nothing this pass -- a measured zero, not an absent number")
+        elif not values:
+            line.update(value=None, verdict="UNMEASURED",
+                        unmeasured=f"{len(rows)} waiting candidate(s) carry no measured slot_value")
+        else:
+            line.update(value=round(-sum(values), 14), verdict="COSTS_GROWTH",
+                        n_priced=len(values), best_blocked=round(max(values), 14))
+        lines.append(line)
+    return lines
+
+
+# --------------------------------------------------------------- anytime-valid forward monitoring
+#: Resolved once per process. `_rows_of` is called for every enrolled clock, so an unguarded
+#: import failure would print its warning once per clock -- a hundred and fifty identical lines
+#: in the leg's log, which is how a real warning becomes invisible.
+_PA: list[object | None] = []
+
+
+def _posterior() -> object | None:
+    """`posterior_alpha`'s tolerant readers, or None. ONE implementation of "what counts as a
+    forward trade" -- `phase == "forward"` rows only, an unreconstructed live R dropped rather
+    than read as a zero. A second parser of these ledgers is how two organs come to disagree
+    about how many trades a clock has."""
+    if _PA:
+        return _PA[0]
+    try:
+        import posterior_alpha as pa
+        _PA.append(pa)
+    except Exception as exc:
+        print(f"  WARN: posterior_alpha readers unavailable ({exc}); anytime monitor reads raw")
+        _PA.append(None)
+    return _PA[0]
+
+
+def _rows_of(path: Path) -> list[dict]:
+    pa = _posterior()
+    raw = pa._read_json(path, []) if pa is not None else None
+    if raw is None:
+        try:
+            raw = json.loads(path.read_text("utf-8"))
+        except (OSError, ValueError):
+            return []
+    return [r for r in raw if isinstance(r, dict)] if isinstance(raw, list) else []
+
+
+def _fnum(v: object) -> float | None:
+    if isinstance(v, bool) or not isinstance(v, (int, float)):
+        return None
+    f = float(v)
+    return f if math.isfinite(f) else None
+
+
+def live_series() -> dict[str, list[float]]:
+    """{live sleeve name: its per-trade R}, from data/live_ledger.jsonl by posterior_alpha's own
+    rule: a row stamped `r_multiple: 0.0` against non-zero P&L is an UNRECONSTRUCTED R, not an
+    observation of no edge, and is dropped."""
+    path = BASE / "data" / "live_ledger.jsonl"
+    pa = _posterior()
+    if pa is not None:
+        rows = pa._read_jsonl(path)
+    else:
+        try:
+            lines = path.read_text("utf-8-sig").splitlines()
+        except OSError:
+            return {}
+        rows = []
+        for line in lines:
+            try:
+                row = json.loads(line)
+            except ValueError:
+                continue
+            if isinstance(row, dict):
+                rows.append(row)
+    out: dict[str, list[float]] = {}
+    for row in rows:
+        name = str(row.get("sleeve") or "").strip()
+        if not name or name.startswith("["):
+            continue                                   # a broker comment, not a sleeve
+        value = _fnum(row.get("r_multiple"))
+        pl = _fnum(row.get("pl_quote")) or 0.0
+        if row.get("r_unreconstructible") or value is None or (value == 0.0 and pl != 0.0):
+            continue
+        out.setdefault(name, []).append(value)
+    return out
+
+
+def forward_series(key: str, row: dict | None,
+                   live: dict[str, list[float]] | None = None) -> tuple[list[float], str]:
+    """(forward per-trade R, where it came from) for one enrolled clock.
+
+    The shadow ledger first (`ledger_<key with dots as underscores>.json`), then the same name
+    with the parameter signature stripped, then the live ledger for a clock promoted to a sleeve,
+    then the row's own moments -- which are NOT a series and are reported as such rather than
+    silently imputed.
+
+    THE STRIPPED NAME IS FLAGGED, NOT SILENTLY ACCEPTED. `shadow_forward` writes one ledger per
+    (symbol, family, window) and appends no parameter signature, so EVERY parameterisation of one
+    cell shares that file -- `XAUUSD.asia#rr=1.5` and `#rr=2.5` read the same trades. The row's own
+    `forward_t` is per-parameterisation and this series is not, so the basis says
+    `shadow_ledger_forward_shared` wherever that fallback fired and a reader can see which rows
+    hold a series that is not exclusively their clock's.
+    """
+    base_key = key.split("#", 1)[0]
+    exact = key.replace(".", "_")
+    for stem in (exact, base_key.replace(".", "_")):
+        path = SHADOW / f"ledger_{stem}.json"
+        if not path.exists():
+            continue
+        r = [v for v in (_fnum(t.get("r_multiple")) for t in _rows_of(path)
+                         if str(t.get("phase") or "") == "forward") if v is not None]
+        if r:
+            return r, ("shadow_ledger_forward" if stem == exact
+                       else "shadow_ledger_forward_shared")
+    names = live if live is not None else live_series()
+    if names:
+        stem = base_key.replace(".", "_")
+        if stem in names:
+            return list(names[stem]), "live_ledger"
+        hits = [n for n in names if n.startswith(stem)]
+        if len(hits) == 1:                             # an ambiguous prefix names nothing
+            return list(names[hits[0]]), "live_ledger"
+    n = _fnum((row or {}).get("n"))
+    if n and n > 0:
+        return [], "row_moments"
+    return [], "none"
+
+
+def fixed_sample_t(r: list[float], row: dict | None) -> tuple[float | None, str]:
+    """THE EXISTING NUMBER, not a new one: `shadow_forward` publishes `forward_t` = mean /
+    (sd / sqrt(n)) on every row it evaluates, and that is the statistic the desk re-reads every
+    hour. It is preferred from the row and only recomputed -- by the identical formula -- for a
+    lane that publishes none, so this organ can never disagree with the engine about it."""
+    v = _fnum((row or {}).get("forward_t"))
+    if v is not None:
+        return round(v, 3), "row.forward_t (shadow_forward)"
+    n = len(r)
+    if n < 2:
+        return None, f"{n} trade(s): a t-stat needs two"
+    mean = sum(r) / n
+    var = sum((x - mean) ** 2 for x in r) / (n - 1)
+    if var <= 0:
+        return None, "zero dispersion: the series never moved"
+    return round(mean / ((var / n) ** 0.5), 3), "recomputed mean/(sd/sqrt(n)): row published none"
+
+
+def bump_looks(keys: list[str], now: str, path: Path | None = None) -> tuple[dict[str, int], bool]:
+    """Count this pass as a LOOK at every enrolled clock, persisted. (counts, persisted?).
+
+    The number this file holds is the alpha the fixed-sample test has been spending without
+    declaring it: a bar calibrated for one look, re-read `looks` times. Rows of clocks not
+    enrolled this pass are left exactly as they are -- a clock that leaves and comes back keeps
+    its count, because the looks it already cost were really taken.
+    """
+    p = path if path is not None else BASE / "data" / LOOKS_NAME
+    doc = _read(p)
+    clocks = doc.get("clocks") if isinstance(doc.get("clocks"), dict) else {}
+    out: dict[str, int] = {}
+    for key in keys:
+        prev = clocks.get(key) if isinstance(clocks.get(key), dict) else {}
+        n = int(_fnum(prev.get("looks")) or 0) + 1
+        clocks[key] = {"looks": n, "first_look_at": prev.get("first_look_at") or now,
+                       "last_look_at": now}
+        out[key] = n
+    persisted = _write_atomic(p, {
+        "at": now, "n_clocks": len(clocks), "clocks": clocks,
+        "rule": ("one row per forward clock, incremented every pass that READS it. A fixed-sample "
+                 "bar is calibrated for one look; this is how many it has actually had")})
+    return out, persisted
+
+
+def anytime_monitor(enrolled: set[str] | None, rows: dict[str, dict], fam: dict | None,
+                    now: str, looks_path: Path | None = None) -> dict:
+    """PEEK-SAFE EVIDENCE BESIDE THE PEEK-UNSAFE BAR, per enrolled clock. Decides nothing.
+
+    e_value  `anytime_valid.e_value` on the forward R series, H0: mean R <= 0. Ville's inequality
+             bounds sup_t P(E_t >= 1/alpha) by alpha AT EVERY t, so this may be re-read hourly.
+    lower_cb `forward_verdict.sequential_lower_bound` at alpha 0.05 -- the desk's one always-valid
+             lower bound on mean R (Robbins mixture, variance proxy max(sample sd, range/2)).
+    looks    how many passes have read this clock (data/forward_looks.json).
+    disagreement  the fixed-sample verdict against the anytime one. A clock the t-stat passes and
+             the e-process does not is NAMED, which is the entire point of publishing both.
+    """
+    if enrolled is None:
+        return {"status": "UNMEASURED",
+                "why": "enrolment unreadable this pass; no clock can be monitored"}
+    try:
+        root = str(BASE.parent.parent)
+        if root not in sys.path:
+            sys.path.insert(0, root)
+        import forward_verdict as fv
+
+        from libs.research import anytime_valid as av
+    except Exception as exc:
+        return {"status": "UNMEASURED",
+                "why": f"anytime_valid unavailable: {type(exc).__name__}: {exc}"}
+
+    keys = sorted(enrolled)
+    looks, persisted = bump_looks(keys, now, looks_path)
+    fam_clocks = (fam or {}).get("clocks") if isinstance(fam, dict) else None
+    flat = (fam or {}).get("flat_cohort") if isinstance(fam, dict) else None
+    flat_bar = _fnum((flat or {}).get("holm_bar_rank1_at_enrolled"))
+    live = live_series()
+    clocks: dict[str, dict] = {}
+    n_any = n_fixed = n_dis = n_measured = 0
+    for key in keys:
+        row = rows.get(key)
+        r, basis = forward_series(key, row, live)
+        n = len(r)
+        t, t_src = fixed_sample_t(r, row)
+        bar = _fnum(((fam_clocks or {}).get(key) or {}).get("holm_bar"))
+        if bar is None:
+            bar = flat_bar
+        fixed_reject = bool(t is not None and bar is not None and t >= bar)
+        e = log_e = lcb = None
+        if n < ANYTIME_MIN_TRADES:
+            status = "UNMEASURED"
+            why = f"{n}/{ANYTIME_MIN_TRADES} forward trades ({basis}): too few to monitor"
+        elif n < av._MIN_OBS:
+            status = "UNMEASURED"
+            why = (f"{n}/{av._MIN_OBS} forward trades: below the e-process's own floor, where its "
+                   "estimate of scale is not trustworthy")
+        else:
+            e = float(av.e_value(r))
+            if e <= 0.0:
+                status = "UNMEASURED"
+                why = ("the e-process returned no capital: a degenerate series (no variation) or "
+                       "a tail that excluded every mixture component")
+                e = None
+            else:
+                status = "MEASURED"
+                why = ("" if basis != "shadow_ledger_forward_shared" else
+                       "series read from the cell's shared ledger: shadow_forward writes one "
+                       "ledger per (symbol, family, window), so every parameterisation of this "
+                       "cell reads the same trades")
+                log_e = round(math.log(e), 6)
+                e = round(e, 6)
+                n_measured += 1
+                b = fv.sequential_lower_bound(r, alpha=ANYTIME_ALPHA)
+                lcb = round(b, 6) if math.isfinite(b) else None
+        anytime_reject = bool(e is not None and e >= ANYTIME_THRESHOLD)
+        n_any += int(anytime_reject)
+        n_fixed += int(fixed_reject)
+        n_dis += int(anytime_reject != fixed_reject)
+        # THE ENGINE'S OWN COUNT, BESIDE THE ONE THIS ORGAN READ. They differ when the ledger is
+        # missing or was written by another lane, and `n: 0` next to a row claiming nine trades is
+        # a discrepancy a reader must be able to see rather than a number to be trusted.
+        n_row = _fnum((row or {}).get("n"))
+        clocks[key] = {"n": n, "n_row": int(n_row) if n_row is not None else None,
+                       "looks": looks.get(key, 0), "basis": basis, "status": status,
+                       "e_value": e, "log_e": log_e, "lower_cb": lcb,
+                       "anytime_reject": anytime_reject, "fixed_sample_t": t,
+                       "fixed_t_source": t_src, "holm_bar": bar, "fixed_reject": fixed_reject,
+                       "disagreement": anytime_reject != fixed_reject, "why": why}
+    disagreeing = sorted(k for k, v in clocks.items() if v["disagreement"])
+    return {
+        "status": "MEASURED",
+        "summary": {
+            "n_enrolled": len(keys), "n_anytime_reject": n_any, "n_fixed_reject": n_fixed,
+            "n_disagree": n_dis,
+            "rule": ("an e-process may be monitored continuously and stopped at any time and "
+                     "remains valid; the t-stat re-read on every look is not"),
+        },
+        "alpha": ANYTIME_ALPHA, "e_threshold": ANYTIME_THRESHOLD,
+        "min_trades": ANYTIME_MIN_TRADES,
+        "n_measured": n_measured, "n_unmeasured": len(keys) - n_measured,
+        "max_looks": max(looks.values(), default=0),
+        "looks_state": str(looks_path if looks_path is not None else BASE / "data" / LOOKS_NAME),
+        "looks_persisted": persisted,
+        "fixed_passes_anytime_does_not": sorted(
+            k for k, v in clocks.items() if v["fixed_reject"] and not v["anytime_reject"]),
+        "disagreeing": disagreeing,
+        "decides": ("NOTHING -- the promoter keeps its bar and no field here is read by any "
+                    "promotion path. Both numbers are published so the disagreement is named"),
+        "basis": ("libs.research.anytime_valid.e_value (H0: mean R <= 0, Ville) and "
+                  "forward_verdict.sequential_lower_bound (Robbins mixture at alpha "
+                  f"{ANYTIME_ALPHA}); the fixed-sample t is shadow_forward's own forward_t "
+                  "against this clock's published Holm bar"),
+        "clocks": clocks,
     }
 
 
@@ -580,6 +1068,14 @@ def main() -> int:
         _families = family_budget(enrolled, all_rows, engine_clock_families())
     except Exception as exc:
         _families = {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
+    _lines = _families.pop("missed_growth_lines", []) if isinstance(_families, dict) else []
+
+    # ANYTIME-VALID MONITORING, beside the bars it is measured against. Same rule again: a
+    # measurement attached to a health report never takes the reconcile down.
+    try:
+        _anytime = anytime_monitor(enrolled, all_rows, _families, now)
+    except Exception as exc:
+        _anytime = {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
 
     # REPORT UNKNOWN AS UNKNOWN. `"enrolled": 0` is what a reader saw for a full day while the
     # real cause was an unpack error -- indistinguishable from an engine that legitimately enrols
@@ -601,10 +1097,17 @@ def main() -> int:
          # a bare `continue` in shadow_admission and left no trace anywhere.
          # Reported beside the counts it explains so the two are read together.
          "unreachable_certified": _unreachable,
-         # PER-FAMILY MULTIPLICITY, PUBLISHED FOR EVALUATION. Each enrolled clock's census
-         # family and that family's own BH bar, beside the flat 12-seat cohort's bar. It
-         # grants no seat and moves no bar; it makes the cost of the flat cohort readable.
+         # PER-FAMILY MULTIPLICITY, AND THE ENROLMENT CAP IT NOW DECIDES. Each enrolled clock's
+         # census family and that family's own BH bar, beside the flat 12-seat cohort's bar --
+         # plus `caps`, the new enrolments each family's own error budget still affords. The
+         # enrolment path reads that through THIS FILE and nothing else (see family_budget).
          "family_budget": _families,
+         # WHAT THE CAPS FORBID, IN THE RANKER'S UNITS. A cap with no missed-growth line is what
+         # the growth governance forbids; an empty list means no family is capped this pass.
+         "missed_growth_lines": _lines,
+         # THE PEEK-SAFE READING OF THE SAME COHORT. `looks` is how many times the fixed-sample
+         # bar beside it has been re-read -- alpha it spends and does not price.
+         "anytime_valid": _anytime,
          "actions": actions}, indent=1), "utf-8")
     counts: dict[str, int] = {}
     for a in actions:
@@ -617,7 +1120,46 @@ def main() -> int:
     elif _n_unreach is None:
         print("  CEILING: UNMEASURED -- no certificate report was readable, which is "
               "not the same as nothing being blocked")
+    if _families.get("decides") == "ENROLMENT_CAP_PER_FAMILY":
+        print(f"  ENROLMENT CAPS: {_families.get('caps')} "
+              f"({len(_lines)} missed-growth line(s))")
+    _sum = _anytime.get("summary") if isinstance(_anytime.get("summary"), dict) else {}
+    if _sum:
+        print(f"  ANYTIME: {_sum['n_anytime_reject']}/{_sum['n_enrolled']} e-process reject, "
+              f"{_sum['n_fixed_reject']} fixed-sample reject, {_sum['n_disagree']} disagree "
+              f"(max looks {_anytime.get('max_looks')})")
+        for key in _anytime.get("fixed_passes_anytime_does_not") or []:
+            c = _anytime["clocks"][key]
+            print(f"    DISAGREEMENT {key}: t={c['fixed_sample_t']} >= bar {c['holm_bar']} but "
+                  f"e={c['e_value']} on n={c['n']} after {c['looks']} look(s) -- {c['status']}")
+    else:
+        print(f"  ANYTIME: UNMEASURED -- {_anytime.get('why')}")
+    _forward_watermark(enrolled, _anytime)
     return 0
+
+
+def _forward_watermark(enrolled: object, anytime: dict) -> None:
+    """THE FORWARD LANE'S PROGRESS WATERMARK (LAWS.md 7): `forward_observations`.
+
+    Not the number of clocks -- the number of OBSERVATIONS they have accrued. A forward lane with
+    the same eighty-four clocks and no new observations is the exact shape that cost this desk
+    those clocks in the first place: scheduled, running, reporting, and making no progress.
+    """
+    try:
+        import sys as _sys
+        root = str(BASE.parents[1])
+        if root not in _sys.path:
+            _sys.path.insert(0, root)
+        from libs.ops.control_plane import watermarks as wm
+        clocks = anytime.get("clocks") if isinstance(anytime, dict) else None
+        total = sum(int(c.get("n") or 0) for c in clocks.values()
+                    if isinstance(c, dict)) if isinstance(clocks, dict) else None
+        if total is None:
+            return
+        wm.progress("leg:forward_reconcile", "forward_observations", total,
+                    enrolled=None if enrolled is None else len(enrolled))
+    except Exception as exc:
+        print(f"  forward watermark not recorded: {type(exc).__name__}: {exc}")
 
 
 if __name__ == "__main__":

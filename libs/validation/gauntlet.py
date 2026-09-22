@@ -16,6 +16,7 @@ import numpy as np
 from pydantic import BaseModel, ConfigDict
 
 from libs.costs.scenarios import CostScenario
+from libs.research.trial_ledger import effective_count_of_records
 from libs.store.trials import TrialsLedger
 from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio
 from libs.validation.economic_prior import economic_prior_gate
@@ -59,6 +60,12 @@ class GauntletResult(BaseModel):
     verdict: str
     n_trials: int
     stages: list[StageResult]
+    #: THE EFFECTIVE-TRIAL LEDGER (LAWS 5k, libs/research/trial_ledger.py): `n_trials` is
+    #: ceil(N_effective x multiplier), where N_effective prices the ledger's rows by their
+    #: similarity -- parameter-neighbours of one family collapse, a declared search width
+    #: expands. Both counts are kept so the size of the correction is visible on every verdict.
+    n_trials_raw: int = 0
+    n_trials_effective: float = 0.0
 
     def __bool__(self) -> bool:
         return self.passed
@@ -86,25 +93,34 @@ class Gauntlet:
         self.required_cost_scenario = required_cost_scenario
         self.lockbox_min_sharpe = lockbox_min_sharpe
 
-    def _resolve_n_trials(self, candidate: CandidateEvaluation, observed_sr: float) -> int:
+    def _resolve_n_trials(self, candidate: CandidateEvaluation,
+                          observed_sr: float) -> tuple[int, int, float]:
+        """(charged, raw rows, N_effective). The charge follows the FAMILY: the ledger's rows
+        are priced by `trial_ledger.census` -- EMA(19,57)/(20,58)/(21,59) are one search and
+        cost one-and-a-bit trials, three mechanisms cost three, and a row that declares the
+        width it was picked from (`extra["search_width"]`) costs that width. Two-sided by
+        construction: the count falls for clones and rises for real families."""
         if candidate.n_trials_override is not None:
-            return max(2, candidate.n_trials_override)
+            return max(2, candidate.n_trials_override), 0, 0.0
         if self.ledger is not None:
             self.ledger.append(
                 candidate.hypothesis_id,
                 candidate.family,
                 method="gauntlet",
-                params={"candidate_id": candidate.candidate_id},
+                params={"candidate_id": candidate.candidate_id,
+                        **{k: v for k, v in candidate.extra.items()
+                           if k in ("search_width", "declared_width", "genome", "params")}},
                 in_sample_metric=observed_sr,
             )
-            true_count = self.ledger.count()
-            return max(2, math.ceil(true_count * self.trials_multiplier))
-        return 2
+            rows = self.ledger.all()
+            n_eff = effective_count_of_records(rows)
+            return max(2, math.ceil(n_eff * self.trials_multiplier)), len(rows), n_eff
+        return 2, 0, 0.0
 
     def run(self, candidate: CandidateEvaluation) -> GauntletResult:
         stages: list[StageResult] = []
         observed_sr = sharpe_ratio(candidate.returns)
-        n_trials = self._resolve_n_trials(candidate, observed_sr)
+        n_trials, n_raw, n_eff = self._resolve_n_trials(candidate, observed_sr)
 
         def finalize() -> GauntletResult:
             passed = all(s.passed for s in stages)
@@ -115,6 +131,8 @@ class Gauntlet:
                 verdict="PASS" if passed else "FAIL",
                 n_trials=n_trials,
                 stages=stages,
+                n_trials_raw=n_raw,
+                n_trials_effective=n_eff,
             )
 
         # 1) Economic-prior gate (cheapest, runs first)

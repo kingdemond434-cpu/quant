@@ -85,6 +85,13 @@ DONE = BASE / "reports" / "DONE_pf_allocation"
 #: The change-point report `research/drift_monitor.py` writes. Read by the crisis overlay below;
 #: absent or stale, the crisis-world share is exactly what it was.
 DRIFT = BASE / "reports" / "DRIFT.json"
+#: THE ALLOCATOR-V2 EVIDENCE (LAWS 5m), read as INPUTS to the posterior and nothing else.
+#: `financing_lab` writes the first (lineage concentration, financing R/day, whether the
+#: replay charged it); `research_roi` writes the second (per-mechanism ROI). Both are
+#: `kind: "evidence"`, both degrade to NEUTRAL when absent or stale, and neither can reach the
+#: heat floor, the gold lot floor or the daily-loss parameters: see `apply_allocator_evidence`.
+ALLOCATOR_EVIDENCE = BASE / "data" / "allocator_evidence.json"
+ROI_EVIDENCE = BASE / "data" / "roi_capital_evidence.json"
 CACHE = BASE / "data" / "pf_allocator_cache"
 ARMED = BASE / "data" / "PF_ALLOCATOR_ARMED"
 #: Append-only record of what each pass EXPECTED. Read by `allocator_attribution.py`.
@@ -1744,6 +1751,122 @@ def read_drift() -> tuple[dict[str, Any] | None, str]:
     return doc, f"DRIFT.json verdict={doc.get('verdict')} structure={doc.get('structure_verdict')}"
 
 
+def read_allocator_evidence() -> tuple[dict[str, Any] | None, str]:
+    """`data/allocator_evidence.json` if readable, else None with the reason. Never raises."""
+    try:
+        doc = json.loads(ALLOCATOR_EVIDENCE.read_text("utf-8"))
+    except (OSError, ValueError) as exc:
+        return None, f"allocator_evidence.json unreadable ({type(exc).__name__}): neutral"
+    if not isinstance(doc, dict):
+        return None, "allocator_evidence.json is not an object: neutral"
+    return doc, "allocator_evidence.json read"
+
+
+def read_roi_evidence() -> tuple[dict[str, Any] | None, str]:
+    """`data/roi_capital_evidence.json` if readable, else None with the reason. Never raises."""
+    try:
+        doc = json.loads(ROI_EVIDENCE.read_text("utf-8"))
+    except (OSError, ValueError) as exc:
+        return None, f"roi_capital_evidence.json unreadable ({type(exc).__name__}): neutral"
+    if not isinstance(doc, dict):
+        return None, "roi_capital_evidence.json is not an object: neutral"
+    return doc, "roi_capital_evidence.json read"
+
+
+def apply_allocator_evidence(ev: list[SleeveEvidence], evidence_doc: dict[str, Any] | None,
+                             roi_doc: dict[str, Any] | None, *, now: datetime | None = None
+                             ) -> dict[str, Any]:
+    """Read the Allocator-V2 evidence INTO the posterior, per sleeve, before the solve.
+
+    THE TWO TERMS THE ALLOCATOR DID NOT ALREADY PRICE (LAWS 5m; `libs.portfolio.
+    allocator_evidence` names all fourteen and declares which ones this file prices from
+    returns itself -- those are reported by the lab and consumed by nothing, so no term is
+    charged twice):
+
+      * LINEAGE CONCENTRATION x RESEARCH ROI enter as a TILT of the sleeve's mean: the mean is
+        moved up or down by `(tilt - 1) x |mean|`, dispersion untouched, tilt bounded to
+        [TILT_LO, TILT_HI] around 1.0. The lineage half is HEAT-NEUTRAL by construction (the
+        heat-weighted mean tilt over the funded book is exactly 1.0, so a sleeve whose lineage
+        the book already holds is tilted down and a sleeve with a unique lineage is tilted UP);
+        the ROI half ranks the mechanism among its measured peers and is shrunk by how many
+        cells were judged. UNMEASURED is 1.0 exactly.
+      * FINANCING enters as a SIGNED LEVEL SHIFT in R per day, only where the lab measured
+        that the replay did NOT charge it (SWAP_REJUDGE: every certificate was minted at zero
+        swap): a carry credit RAISES the mean, a carry debit lowers it, by the venue's own
+        table. It is the swap line of the growth identity's cost table, not a rail.
+
+    WHY THIS IS NOT A REDUCTION (GROWTH_GOVERNANCE Rules 1 and 2, both satisfied). Nothing
+    here multiplies a fraction outside the solve: the tilt and the shift change the EVIDENCE
+    the E[log W] optimiser reads, and the optimiser decides the fractions exactly as before.
+    Total heat is resolved downstream by the heat law (20% floor, measured ceiling) and this
+    cannot lower it; the gold lot floor and the daily-loss parameters live in the gateway and
+    are not touched. Both channels are two-sided and can RAISE a sleeve (Rule 2: a unique
+    lineage, a high-ROI mechanism or a carry credit earns MORE), and the sleeves they lower are
+    lowered only by a measured cost or a measured redundancy priced through the objective
+    itself (Rule 1: E[log W] with the swap charged is the robust forward growth; without it the
+    optimum sizes a quantity the desk cannot buy). Registered two-sided as
+    `capital_modifiers.REGISTRY["allocator_evidence"]`; proof in reports/FINANCING_LAB.json.
+    """
+    from dataclasses import replace as _replace
+
+    from libs.portfolio.allocator_evidence import (
+        TILT_HI,
+        TILT_LO,
+        consumed_inputs,
+        match_mechanism,
+        roi_factors_by_mechanism,
+    )
+    rows, ev_why = consumed_inputs(evidence_doc, now=now)
+    roi_terms, roi_why = roi_factors_by_mechanism(roi_doc)
+    mechanisms = list(roi_terms)
+    by_sleeve: dict[str, dict[str, Any]] = {}
+    n_tilted = n_shifted = 0
+    for i, e in enumerate(ev):
+        row = rows.get(e.name) or {}
+        lf = float(row.get("lineage_factor", 1.0))
+        mech = match_mechanism(e.name, e.family, mechanisms) if mechanisms else None
+        rf = float(roi_terms[mech].factor) if mech and mech in roi_terms else 1.0
+        tilt = float(min(TILT_HI, max(TILT_LO, lf * rf)))
+        shift = 0.0
+        fin = row.get("financing_cost_r_per_day")
+        if fin is not None and row.get("financing_charged_in_replay") is False:
+            shift = -float(fin)                      # cost positive -> the mean goes DOWN
+        if abs(tilt - 1.0) < 1e-9 and shift == 0.0:
+            continue
+        arr = np.asarray(e.daily_r, dtype=float).copy()
+        mask = np.isfinite(arr)
+        if not mask.any():
+            continue
+        mean = float(arr[mask].mean())
+        arr[mask] = arr[mask] + (tilt - 1.0) * abs(mean) + shift
+        ev[i] = _replace(e, daily_r=arr)
+        n_tilted += int(abs(tilt - 1.0) >= 1e-9)
+        n_shifted += int(shift != 0.0)
+        by_sleeve[e.name] = {"tilt": round(tilt, 6), "lineage_factor": round(lf, 6),
+                             "roi_factor": round(rf, 6), "mechanism": mech,
+                             "financing_r_per_day_shift": round(shift, 8),
+                             "mean_before": round(mean, 8),
+                             "mean_after": round(float(arr[mask].mean()), 8)}
+    return {
+        "status": "APPLIED" if by_sleeve else "NEUTRAL",
+        "evidence": ev_why, "roi": roi_why,
+        "n_sleeves": len(ev), "n_tilted": n_tilted, "n_shifted": n_shifted,
+        "n_neutral": len(ev) - len(by_sleeve),
+        "bounds": [TILT_LO, TILT_HI], "by_sleeve": by_sleeve,
+        "rule": ("mean += (tilt - 1) x |mean| + financing shift, dispersion unchanged; tilt = "
+                 "clip(lineage_factor x roi_factor); the shift only where the replay charged "
+                 "no swap; UNMEASURED reads 1.0 / 0.0; nothing outside the E[log W] solve"),
+        "governance": {
+            "rule_1": ("a sleeve is lowered only by a measured swap cost or a measured lineage "
+                       "redundancy, priced through E[log W] itself; the heat floor, gold lot "
+                       "floor and daily-loss parameters are untouched"),
+            "rule_2": ("a unique lineage, a high-ROI mechanism or a carry credit RAISES the "
+                       "sleeve's posterior mean and therefore its fraction; the band reaches "
+                       f"{TILT_HI}x"),
+            "modifier": "capital_modifiers.REGISTRY allocator_evidence (two_sided, 0.5..2.0)"},
+    }
+
+
 #: The structural-duplicate map `research/alpha_genome.py` writes. Its own docstring (:23-25)
 #: says it is consumed "by the allocator artifact, where `n_clusters` is reported beside
 #: `k_eff`" -- and a repo-wide grep for ALPHA_GENOME found no allocator reader at all, so the
@@ -2857,6 +2980,17 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             _relieved_txt = ", ".join(f"{k}={v['decay_prob_i']:.2f}" for k, v in _relieved)
             _log(f"decay posterior: {decay_meta['n_from_hazard']} sleeve(s) carry their own "
                  f"decay (blanket {_blanket:.2f}); most relieved {_relieved_txt}")
+    # THE ALLOCATOR-V2 EVIDENCE (LAWS 5m), after the hazard and before the solve: lineage
+    # concentration x research ROI as a bounded two-sided tilt of each sleeve's mean, and the
+    # venue's financing as a signed level shift where the replay never charged it. Inputs to
+    # the same posterior the worlds are drawn from -- never a multiplier on the answer -- and
+    # neutral when either file is absent or stale (see `apply_allocator_evidence`).
+    _ev_doc, _ev_why = read_allocator_evidence()
+    _roi_doc, _roi_why = read_roi_evidence()
+    evidence_meta = apply_allocator_evidence(ev, _ev_doc, _roi_doc)
+    _log(f"allocator evidence: {evidence_meta['status']} -- {evidence_meta['n_tilted']} "
+         f"tilted, {evidence_meta['n_shifted']} financing-shifted, "
+         f"{evidence_meta['n_neutral']} neutral ({_ev_why}; {_roi_why})")
 
     cfg = WorldConfig(seed=seed, regime_labels=labels, regime_probs=probs,
                       # The fast clock buys its speed here and nowhere else: a smaller world
@@ -3908,6 +4042,10 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         # which hazard, how far below the blanket, and what that was worth on the published book
         # (`billing`). `missed_growth.measure_decay_posterior` reads growth_with/growth_without.
         "decay_posterior": decay_meta,
+        # THE ALLOCATOR-V2 EVIDENCE READ INTO THE POSTERIOR: which sleeves were tilted by
+        # lineage x ROI, which were shifted by measured financing, and why the rest were
+        # neutral. `financing_lab` and `research_roi` are its producers.
+        "allocator_evidence": evidence_meta,
         "no_trade": nt,
         "opportunity": opp,
         # `probabilities` is the FORWARD mix the worlds were drawn from; `transition` carries the
@@ -4062,7 +4200,25 @@ def main() -> int:
             # keeps its last good content and the failure is loud and non-zero.
             _log(f"ALLOCATOR FAILED: {type(exc).__name__}: {exc}")
             raise
+        _book_generation(args.mode)
     return 0
+
+
+def _book_generation(mode: str) -> None:
+    """THE ALLOCATOR'S PROGRESS WATERMARK (LAWS.md 7): `book_generation`, a monotone count of
+    books this desk has published. An allocator process that is alive while the book generation
+    stands still is STALLED, and the gateway would go on deploying a book nobody refreshed."""
+    try:
+        import sys as _sys
+        root = str(BASE.parents[1])
+        if root not in _sys.path:
+            _sys.path.insert(0, root)
+        from libs.ops.control_plane import watermarks as wm
+        prev = wm.read("leg:pf_allocator") or {}
+        wm.progress("leg:pf_allocator", "book_generation", int(prev.get("value") or 0) + 1,
+                    mode=mode)
+    except Exception as exc:
+        _log(f"allocator watermark not recorded: {type(exc).__name__}: {exc}")
 
 
 if __name__ == "__main__":

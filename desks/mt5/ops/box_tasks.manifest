@@ -95,6 +95,10 @@ TASK name="MT5-Moat-Resurrect" trigger="at startup + every 10 minutes (keep-aliv
 # residents of department_resident.py like the other nine.
 TASK name="MT5-Dept-Japan" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
 TASK name="MT5-Dept-Regions" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
+# THE AI MATHEMATICS RESEARCH CIVILIZATION (principal 2026-09-17 / 2026-09-22): twenty-eight
+# mathematical traditions on the world model's residual, one leg (math_lab) on its own 24/7
+# resident (HOURLY_PLAN=dept:mathlab), like the other departments.
+TASK name="MT5-Dept-Mathlab" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
 # THE FOREST FEDERATION (principal 2026-09-17). Eleven regional research civilizations,
 # each a 24/7 resident running the eleven agent roles of libs/research/forests.ROLES in
 # parallel through desks/mt5/research/forest_runner.py. Japan and global macro already

@@ -135,6 +135,35 @@ def tradeable_universe() -> dict[str, str]:
     return out
 
 
+def _ack(path: Path) -> None:
+    """LINEAGE IS ACKNOWLEDGED, NEVER INFERRED (LAWS 7): the merge names every source docket it
+    read by that docket's producer run id, so `compile_candidates -> merge_docket` is an observed
+    edge. Guarded: a failure to record lineage may not stop the merge."""
+    try:
+        import sys as _sys
+        root = str(BASE.parents[1])
+        if root not in _sys.path:
+            _sys.path.insert(0, root)
+        from libs.ops.control_plane.lease import ack_artifact
+        ack_artifact("leg:merge_docket", path)
+    except Exception:
+        pass
+
+
+def _lease(path: Path) -> None:
+    """The docket carries its own freshness lease and producer run id (sidecar), so the gauntlet
+    can acknowledge THIS run of it and the control plane can say when it went stale."""
+    try:
+        import sys as _sys
+        root = str(BASE.parents[1])
+        if root not in _sys.path:
+            _sys.path.insert(0, root)
+        from libs.ops.control_plane.lease import stamp_sidecar
+        stamp_sidecar(path, "leg:merge_docket", ttl="hourly", root=BASE.parents[1])
+    except Exception:
+        pass
+
+
 def main() -> int:
     now = datetime.now(tz=UTC)
     # HUNT ONLY WHAT THE DESK CAN TRADE (principal, 2026-09-03: "limit all hunting to fusion
@@ -164,6 +193,7 @@ def main() -> int:
             per_source[name] = -1          # ABSENT is distinct from empty; -1 says so
             source_state[name] = "ABSENT"
             continue
+        _ack(source_path)
         if not _fresh_for_run(source_path, started_at):
             # A previous run's output remains immutable provenance, but it is not a discovery
             # from THIS run and must not be represented or retested as one.
@@ -315,6 +345,7 @@ def main() -> int:
                   f"{len(prior)} candidate(s) rather than shipping an empty file downstream.")
             return 0
     TARGET.write_text(json.dumps(rows_out, indent=1, default=str), "utf-8")
+    _lease(TARGET)
     (HYP / "merge_report.json").write_text(json.dumps({
         "merged_at": now.isoformat(timespec="seconds"),
         "pipeline_started_at": started_at.isoformat(timespec="seconds") if started_at else None,

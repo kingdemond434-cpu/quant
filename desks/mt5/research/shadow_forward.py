@@ -105,7 +105,10 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
                 side = _runnable_side(run, fam)
                 if side is None:
                     continue                # refused and logged by _runnable_side
-                rows.append((run["symbol"], run["selector"], params, fam, side))
+                rows.append((run["symbol"], run["selector"], params, fam, side,
+                             str(run.get("gate_admission") or ""),
+                             tuple(run.get("power_deficiencies") or ()),
+                             bool(run.get("promotion_authority", True))))
                 continue
             # EVERY certified family owes a clock (one-pipeline law; the same-day fence carried
             # CERTIFIED-NOT-ENROLLED on two overnight_gap_decay certificates while this branch
@@ -130,7 +133,10 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
             side = _runnable_side(run, fam)
             if side is None:
                 continue                    # refused and logged by _runnable_side
-            rows.append((run["symbol"], run["selector"], dict(run["params"] or {}), fam, side))
+            rows.append((run["symbol"], run["selector"], dict(run["params"] or {}), fam, side,
+                         str(run.get("gate_admission") or ""),
+                         tuple(run.get("power_deficiencies") or ()),
+                         bool(run.get("promotion_authority", True))))
     except Exception as exc:
         slog(f"certified_sleeves FAILED ({type(exc).__name__}: {exc}); "
              f"running grandfathered sleeves only this pass")
@@ -405,11 +411,20 @@ def clock_breaches() -> dict[str, str]:
     return out
 
 
-def main() -> None:
+def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
+    """Evaluate a set of forward rows and write their ledger.
+
+    PARAMETERISED SO THE PRE-CERTIFICATION LANE REUSES THIS ENGINE RATHER THAN COPYING IT. The
+    defaults are exactly the behaviour this has always had -- certificates plus grandfathered
+    rows, into shadow_state.json -- and `precert_shadow.py` passes its own rows and its own
+    ledger. A second implementation of forward evaluation is the last thing this desk needs: the
+    costs, the bar fetch, the side resolution and the clock-breach fence all live here and all had
+    to be got right once.
+    """
     from mt5desk.engine import run_backtest
 
     meta = json.loads((UNI / "universe.json").read_text(encoding="utf-8"))
-    state_path = SHADOW_DIR / "shadow_state.json"
+    state_path = SHADOW_DIR / ledger
     state = {}
     if state_path.exists():
         try:
@@ -424,9 +439,9 @@ def main() -> None:
     # Grandfathered rows are long by construction -- they predate the side field entirely --
     # and are stated as such rather than left to a default, so every row in `enrolled` has the
     # same arity and the loop below never has to guess which shape it is holding.
-    enrolled = ([(s, w, dict(WINDOWS.get(w, {})), "session_range_breakout", "LONG")
-                 for s, w in SLEEVES]
-                + certified_sleeves())
+    enrolled = rows if rows is not None else (
+        [(s, w, dict(WINDOWS.get(w, {})), "session_range_breakout", "LONG") for s, w in SLEEVES]
+        + certified_sleeves())
     # Keep variants of one symbol adjacent so their bars are loaded once, while never retaining
     # the full multi-symbol history set. The old unbounded h1_cache crossed the service's 400 MB
     # safety ceiling as soon as all certified families became genuinely enrollable.
@@ -496,7 +511,7 @@ def main() -> None:
         try:
             from universe_policy import lane, may_hypothesise
             _allowed, _lane = may_hypothesise(sym), lane(sym)
-        except Exception:                                            # noqa: BLE001
+        except Exception:
             _allowed, _lane = True, ""      # no policy module: enrol exactly as before
         if not _allowed:
             st["status"] = "REFUSED_BY_UNIVERSE_POLICY"
@@ -874,9 +889,35 @@ def main() -> None:
             st["bar_source"] = bars.source
             st["evidence_venue"] = bars.evidence_venue
             st["bar_source_stale"] = bars.stale
-            st["promotion_authority"] = bars.promotion_authority
             st["order_authority"] = False
-            st["gate_admission"] = "ORIGINAL_UNIVERSAL_10_PASS"
+            # THE ADMISSION BASIS IS THE ROW'S, NOT A CONSTANT (fixed 2026-09-13).
+            #
+            # This stamped `ORIGINAL_UNIVERSAL_10_PASS` on EVERY clock unconditionally, which was
+            # true while the only rows that reached here were ten-gate certificates. The power-cure
+            # lane now enrols validity-pass, power-deficient cells alongside them -- and they were
+            # being stamped as ten-gate passes too.
+            #
+            # THAT WOULD HAVE MADE THE CURE LANE INERT AND SILENTLY SO. `pipeline/promote.py`
+            # branches on this exact string: it promotes `FULL_10_PASS`, applies the forward cure
+            # thresholds to `VALIDITY_PASS_POWER_DEFICIENT`, and BLOCKS everything else with "No
+            # validity pass". `ORIGINAL_UNIVERSAL_10_PASS` matches neither branch, so all 120 cure
+            # clocks would have accrued forward evidence for a fortnight and then been refused --
+            # a lane that looks like it is working and cannot produce.
+            #
+            # `promotion_authority` is likewise the ROW's when the row denies it. A cure candidate
+            # carries False by construction: it has no certificate, and bar provenance cannot
+            # grant an authority the gauntlet withheld.
+            # SLICED WITH DEFAULTS, exactly as `sym, win, params` are above and for the same
+            # reason: a row built by an older `certified_sleeves` must not raise here. A row
+            # that carries no admission is a ten-gate certificate, which is what every row was
+            # before the cure lane existed.
+            _adm = str(row[5]).strip() if len(row) > 5 else ""
+            _defs = list(row[6]) if len(row) > 6 else []
+            _row_auth = bool(row[7]) if len(row) > 7 else True
+            st["gate_admission"] = _adm or "ORIGINAL_UNIVERSAL_10_PASS"
+            if _defs:
+                st["power_deficiencies"] = _defs
+            st["promotion_authority"] = bool(bars.promotion_authority and _row_auth)
             if trades:
                 rs = [t.r_multiple for t in trades]
                 cum = [sum(rs[:i + 1]) for i in range(len(rs))]
@@ -965,12 +1006,49 @@ def main() -> None:
             slog(f"{key}: SLEEVE BLOCKED -- {detail}; this row is not evaluated this pass and "
                  f"every other sleeve continues")
             slog(traceback.format_exc())
+    # TWO TIMESTAMP FIELDS, ONE MAINTAINED, AND CONSUMERS READ THE OTHER (fixed 2026-09-14).
+    #
+    # This set `last_run` (a DATE) on every pass and left `updated_at` wherever it had last been
+    # written. Measured tonight: the file was rewritten 0.4h ago carrying
+    # `updated_at: 2026-08-27T00:01:46` -- frozen for EIGHTEEN DAYS while the rows inside it were
+    # current to the minute.
+    #
+    # IT WAS NOT COSMETIC. `heal_forward_lane` reports STALE_ATTEMPT from this field, so it was
+    # announcing "engine last evaluated this row 434.1h ago" about rows the engine had just
+    # evaluated -- 434.1h being exactly the age of this stamp. A health check that says an organ
+    # is eighteen days dead while it runs every thirty minutes is worse than no health check: it
+    # trains the reader to discount the one row that will eventually be true.
+    #
+    # A date is not a timestamp. `last_run` cannot distinguish a pass at 00:01 from one at 23:59,
+    # which is why it could look maintained while carrying no usable freshness at all. Both are
+    # written now, and `updated_at` carries the time.
     state["last_run"] = today
+    state["updated_at"] = datetime.now(UTC).isoformat(timespec="seconds")
     state["configured_sleeves"] = len(enrolled)
     state["gate_blocked_sleeves"] = 0
     state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
     slog(f"shadow state saved ({len(enrolled)} sleeves, "
          f"{len(enrolled) - len(SLEEVES)} certificate-enrolled)")
+    _enrolment_watermark(len(enrolled), ledger)
+
+
+def _enrolment_watermark(enrolled: int, ledger: str) -> None:
+    """THE ENROLMENT PASS'S PROGRESS WATERMARK (LAWS.md 7).
+
+    This pass was SIGKILLed partway through the same prefix every hour for long enough to strand
+    eighty-four certificates, and it reported as scheduled and running throughout. A truncated
+    job that restarts from the same end is not slow, it is BROKEN, and the only thing that can
+    tell the two apart from outside is a counter that stops moving.
+    """
+    try:
+        import sys as _sys
+        root = str(BASE.parents[1])
+        if root not in _sys.path:
+            _sys.path.insert(0, root)
+        from libs.ops.control_plane import watermarks as wm
+        wm.progress("leg:enrol_clocks", "forward_observations", enrolled, ledger=ledger)
+    except Exception as exc:
+        slog(f"enrolment watermark not recorded: {type(exc).__name__}: {exc}")
 
 
 if __name__ == "__main__":
