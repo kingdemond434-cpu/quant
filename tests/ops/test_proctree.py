@@ -9,6 +9,8 @@ import pytest
 
 from libs.ops import proctree
 
+psutil = pytest.importorskip("psutil")
+
 GRANDCHILD = (
     "import subprocess, sys, time\n"
     "p = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)'])\n"
@@ -18,17 +20,10 @@ GRANDCHILD = (
 
 
 def _alive(pid: int) -> bool:
-    if proctree.psutil is not None:
-        try:
-            return proctree.psutil.Process(pid).is_running() and \
-                proctree.psutil.Process(pid).status() != proctree.psutil.STATUS_ZOMBIE
-        except proctree.psutil.NoSuchProcess:
-            return False
-    try:  # pragma: no cover - psutil is present on every desk box
-        import os
-        os.kill(pid, 0)
-        return True
-    except OSError:
+    try:
+        pr = psutil.Process(pid)
+        return bool(pr.is_running() and pr.status() != psutil.STATUS_ZOMBIE)
+    except psutil.NoSuchProcess:
         return False
 
 
