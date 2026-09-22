@@ -1,0 +1,28 @@
+[
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "Probing Massive Invisible Dark Photons in Higgs Decays via Gluon--Gluon Fusion at ATLAS Run 3",
+    "summary": "The ATLAS Collaboration has searched for Higgs-boson decays into a photon and missing transverse momentum using $135~\\mathrm{fb}^{-1}$ of Run~3 proton--proton collision data at $\\sqrt{s}=13.6~\\mathrm{",
+    "url": "https://arxiv.org/abs/2609.24527v1",
+    "published": "2026-09-21T13:00:51Z",
+    "trading_terms": [
+      "momentum"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  },
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "Convergence of Rotation-based Matrix Optimizers: A Unified Analysis of SOAP, Conda, and SPlus",
+    "summary": "In this work, we develop a unified theoretical framework for analyzing the convergence of rotation-based matrix optimizers, which apply orthogonal transformations to map the momentum into a rotated sp",
+    "url": "https://arxiv.org/abs/2609.24522v1",
+    "published": "2026-09-21T12:56:55Z",
+    "trading_terms": [
+      "momentum"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  }
+]

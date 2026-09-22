@@ -1,0 +1,853 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Ausgabe und Umlauf",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/issuance/html/index.de.html",
+  "published": "2026-09-22T02:03:08+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "de",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.de.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c4cdc61b3201553bce3f",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0388\u03ba\u03b4\u03bf\u03c3\u03b7 \u03ba\u03b1\u03b9 \u03ba\u03c5\u03ba\u03bb\u03bf\u03c6\u03bf\u03c1\u03af\u03b1",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/issuance/html/index.el.html",
+  "published": "2026-09-22T02:03:10+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "el",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.el.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "89199f0c76b19519f3fd",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Emisi\u00f3n y circulaci\u00f3n",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/issuance/html/index.es.html",
+  "published": "2026-09-22T02:03:12+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.es.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "7afcbd8b3768809a5120",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Emiteerimine ja ringlus",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/issuance/html/index.et.html",
+  "published": "2026-09-22T02:03:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "et",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.et.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5b987acf7eeb9ab4f1d7",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Liikkeeseenlasku ja kierto",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/issuance/html/index.fi.html",
+  "published": "2026-09-22T02:03:16+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow",
+   "seasonality"
+  ],
+  "confidence": 0.75,
+  "lang": "fi",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.fi.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "56f95a922e485ce81c95",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "L\u2019\u00e9mission et la circulation",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/issuance/html/index.fr.html",
+  "published": "2026-09-22T02:03:18+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.fr.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "3fb547ef6b60bba0a322",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Issuance and circulation",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/issuance/html/index.ga.html",
+  "published": "2026-09-22T02:03:20+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "ga",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.ga.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "91a34a8f56afc4f57e4e",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Izdavanje i distribucija",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/issuance/html/index.hr.html",
+  "published": "2026-09-22T02:03:22+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "hr",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.hr.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5cb8e731a9de69dcf755",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Kibocs\u00e1t\u00e1s \u00e9s forgalmaz\u00e1s",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/issuance/html/index.hu.html",
+  "published": "2026-09-22T02:03:24+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "hu",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.hu.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "261a76d68a3fd49ccb4f",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Emissione e circolazione",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/issuance/html/index.it.html",
+  "published": "2026-09-22T02:03:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "it",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.it.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "44363370a8ae2b5ef9de",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "I\u0161leidimas \u012f apyvart\u0105",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/issuance/html/index.lt.html",
+  "published": "2026-09-22T02:03:28+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "lt",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.lt.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "1fe12a5f1d8a44f6b7ac",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Emisija un apgroz\u012bba",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/issuance/html/index.lv.html",
+  "published": "2026-09-22T02:03:30+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "lv",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.lv.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5bb543a6a26ddffe4020",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0126ru\u0121 u \u010birkolazzjoni",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/issuance/html/index.mt.html",
+  "published": "2026-09-22T02:03:32+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "mt",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.mt.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "70987508b2211f5ae2ee",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Uitgifte en circulatie",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/issuance/html/index.nl.html",
+  "published": "2026-09-22T02:03:34+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "nl",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.nl.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "302a46b955b0ad15b364",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Emisja i&amp;nbsp;obieg",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/issuance/html/index.pl.html",
+  "published": "2026-09-22T02:03:36+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "pl",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.pl.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "4a8cd8acbd7da3dd3b92",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Emiss\u00e3o e circula\u00e7\u00e3o",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/issuance/html/index.pt.html",
+  "published": "2026-09-22T02:03:38+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "momentum",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "pt",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.pt.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "3324302073fd34ecbc97",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Emisiune \u0219i punere \u00een circula\u021bie",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/issuance/html/index.ro.html",
+  "published": "2026-09-22T02:03:40+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "ro",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.ro.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "0cce7196fd94d19640ff",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Emisia a&amp;nbsp;obeh",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/issuance/html/index.sk.html",
+  "published": "2026-09-22T02:03:42+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "sk",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.sk.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "edcb07e8b5361a7bb2a5",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Mga Madalas Itanong | RoboForex Help Center",
+  "url": "https://roboforex.com/ph/help/",
+  "published": "2026-09-22T02:03:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "ph-PH",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1743511020"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "295855aff17950bfbda3",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Infinity program para sa mga Partners - RoboForex",
+  "url": "https://roboforex.com/ph/partner-program/",
+  "published": "2026-09-22T02:03:45+00:00",
+  "symbols": [
+   "BTCUSD",
+   "EURUSD",
+   "GBPUSD",
+   "US30",
+   "US500",
+   "USDJPY",
+   "XAGUSD",
+   "XAUUSD",
+   "XTIUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "e614a8acabae638351fa",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "GBPUSD USDJPY XAGUSD USTech US500 US30 Brent WTI Bayad kada 1 lot USD Average Spread pips Swap Long pips % Swap Short pips % Saradong positions, lots Bukas na overnight, lots Kabuuang income kada araw USD Komisyon mula sa spread USD Komisyon mula sa swap long Komisyon mula sa swap short USD Ang komisyon ng partner ay calculated sa MT4/5 Pro accounts.",
+    "lang": "en",
+    "quantities": [
+     "spread",
+     "swap"
+    ],
+    "direction": [
+     "long",
+     "short"
+    ],
+    "horizon": [
+     "overnight"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAGUSD",
+      "XTIUSD",
+      "US500",
+      "US30",
+      "GBPUSD",
+      "USDJPY"
+     ],
+     "mentioned": [
+      "xagusd",
+      "brent",
+      "us500",
+      "us30",
+      "gbpusd",
+      "usdjpy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "7e7d82ff75a2"
+   },
+   {
+    "claim": "Tumingin tayo ng example: Sabihin natin na ang cliente ay nag open ng long position na 1 lot sa EURUSD ng Lunes at sinarado ito ng Biyernes.",
+    "lang": "pt",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "eurusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "ff4807ea44cd"
+   },
+   {
+    "claim": "0001 Volume ng position = 1 lot Contract size ng EURUSD = 100,000 EUR Swap na inapply sa position = 6 (ang position ay hawak ng 4 na gabi na may 3-day swap applied ng Wednesday) Komisyon ng partner mula sa swap = 30% 1.",
+    "lang": "pt",
+    "quantities": [
+     "volume",
+     "swap"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "eurusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "9e467aefc38e"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Partners Loyalty - RoboForex",
+  "url": "https://roboforex.com/ph/promo/loyalty-program/",
+  "published": "2026-09-22T02:03:46+00:00",
+  "symbols": [
+   "BTCUSD",
+   "EURUSD",
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "8ff700c04b8c22383b64",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "CopyFX Partner program \u2013 Mababayaran para sa mga Investor na iyong inaakit - RoboForex",
+  "url": "https://roboforex.com/ph/partner-program/copy-trading-partner-program/",
+  "published": "2026-09-22T02:03:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "b7b0d3cd6a070f7c4631",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Mabilis na Pagpapalawak ng Tagabigay ng Serbisyong Pangkalakalan - RoboForex",
+  "url": "https://roboforex.com/ph/about/company/about/",
+  "published": "2026-09-22T02:03:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://roboforex.com/ph/forex-trading/terminals/download/",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "46659c61a312ce721a82",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Seguridad ng Pondo ng mga cliente - RoboForex",
+  "url": "https://roboforex.com/ph/about/company/security/",
+  "published": "2026-09-22T02:03:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "804b1d71f79494f3ef5e",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Mga Balita sa RoboForex - RoboForex",
+  "url": "https://roboforex.com/ph/about/company/news/",
+  "published": "2026-09-22T02:03:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "9c0047e66da7c0344c84",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Mga Parangal ng Kumpanya - RoboForex",
+  "url": "https://roboforex.com/ph/about/activity/awards/",
+  "published": "2026-09-22T02:03:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "7d237ffa2e60d8bbcdc4",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "RoboForex Regulation | Financial brokerage company - RoboForex",
+  "url": "https://roboforex.com/ph/about/company/regulation/",
+  "published": "2026-09-22T02:03:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "928f9cdd524da78ee5fa",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Mga dokumento - RoboForex",
+  "url": "https://roboforex.com/ph/about/company/documents/",
+  "published": "2026-09-22T02:04:00+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "d9fb2d7948231d212d83",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Magbukas ng Cent (micro) account - micro lots para sa testing at EAs - RoboForex",
+  "url": "https://roboforex.com/ph/forex-trading/trading/cent-account/",
+  "published": "2026-09-22T02:04:02+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1789647144",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "118a7b92e64d9b83cad1",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]
