@@ -1,0 +1,370 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Net acquisition of financial assets (% of GDP) | Data",
+  "url": "https://data.worldbank.org.cn/indicator/GC.AST.TOTL.GD.ZS",
+  "published": "2026-09-22T16:30:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/GC.AST.TOTL.GD.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "d0435930443941ee77ec",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Net incurrence of liabilities, total (% of GDP) | Data",
+  "url": "https://data.worldbank.org.cn/indicator/GC.LBL.TOTL.GD.ZS",
+  "published": "2026-09-22T16:30:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/GC.LBL.TOTL.GD.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "a3fa62d49d27189912a8",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Net investment in nonfinancial assets (% of GDP) | Data",
+  "url": "https://data.worldbank.org.cn/indicator/GC.NFN.TOTL.GD.ZS",
+  "published": "2026-09-22T16:30:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/GC.NFN.TOTL.GD.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "7b2bd6cf95cef6000c86",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Net lending (+) / net borrowing (-) (% of GDP) | Data",
+  "url": "https://data.worldbank.org.cn/indicator/GC.NLD.TOTL.GD.ZS",
+  "published": "2026-09-22T16:30:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/GC.NLD.TOTL.GD.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "052a4282295d69409347",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e2d\u592e\u653f\u5e9c\u503a\u52a1\uff0c\u603b\u989d\uff08\u5360 GDP \u7684\u767e\u5206\u6bd4\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/GC.DOD.TOTL.GD.ZS",
+  "published": "2026-09-22T16:30:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/GC.DOD.TOTL.GD.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "15be2230e34e0fa3de85",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u519b\u8d39\u652f\u51fa\uff08\u5360GDP\u7684\u767e\u5206\u6bd4\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/MS.MIL.XPND.GD.ZS",
+  "published": "2026-09-22T16:30:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/MS.MIL.XPND.GD.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "46e0febde079a9a766ff",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u519b\u8d39\u652f\u51fa\uff08\u5360\u4e2d\u592e\u653f\u5e9c\u652f\u51fa\u7684\u767e\u5206\u6bd4\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/MS.MIL.XPND.ZS",
+  "published": "2026-09-22T16:30:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/MS.MIL.XPND.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ac43e2d303c49f327b0a",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u56fd\u5bb6\u653f\u7b56\u548c\u5236\u5ea6\u8bc4\u4f30 (CPIA) \u516c\u5171\u90e8\u95e8\u7ba1\u7406\u548c\u673a\u6784\u96c6\u7fa4\u5e73\u5747\u503c\uff081=\u4f4e\u81f3 6=\u9ad8\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/IQ.CPA.PUBS.XQ",
+  "published": "2026-09-22T16:30:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/IQ.CPA.PUBS.XQ?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "01110e6d20bbde1937db",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u56fd\u5bb6\u653f\u7b56\u548c\u5236\u5ea6\u8bc4\u4f30 (CPIA) \u793e\u4f1a\u5305\u5bb9\u6027/\u516c\u5e73\u653f\u7b56\u96c6\u7fa4\u5e73\u5747\u503c\uff081=\u4f4e\u81f3 6=\u9ad8\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/IQ.CPA.SOCI.XQ",
+  "published": "2026-09-22T16:30:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/IQ.CPA.SOCI.XQ?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "3c36cdebc6b361770a8f",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u56fd\u5bb6\u653f\u7b56\u548c\u5236\u5ea6\u8bc4\u4f30 (CPIA) \u7ecf\u6d4e\u7ba1\u7406\u96c6\u7fa4\u5747\u503c\uff081=\u4f4e\u81f3 6=\u9ad8\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/IQ.CPA.ECON.XQ",
+  "published": "2026-09-22T16:31:00+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/IQ.CPA.ECON.XQ?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "9d93ed138c67894e373e",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u56fd\u5bb6\u653f\u7b56\u548c\u5236\u5ea6\u8bc4\u4f30 (CPIA) \u7ed3\u6784\u653f\u7b56\u96c6\u7fa4\u5e73\u5747\u503c \uff081=\u4f4e\u81f3 6=\u9ad8\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/IQ.CPA.STRC.XQ",
+  "published": "2026-09-22T16:31:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/IQ.CPA.STRC.XQ?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f7458822779e0984dc76",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u56fd\u5bb6\u8bae\u4f1a\u4e2d\u5987\u5973\u5e2d\u4f4d\u7684\u6bd4\u4f8b\uff08%\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/SG.GEN.PARL.ZS",
+  "published": "2026-09-22T16:31:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/SG.GEN.PARL.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "aeda67f1ba2f2d821f97",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u56fd\u9645\u5f00\u53d1\u534f\u4f1a\uff08IDA \uff09\u8d44\u6e90\u5206\u914d\u6307\u6570\uff081=\u4f4e\uff0c6=\u9ad8\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/IQ.CPA.IRAI.XQ",
+  "published": "2026-09-22T16:31:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/IQ.CPA.IRAI.XQ?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ff04d0223e08a9abfaef",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u56fd\u9645\u8c0b\u6740\u72af\u7f6a\u7387\uff08\u6bcf10\u4e07\u4eba\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/VC.IHR.PSRC.P5",
+  "published": "2026-09-22T16:31:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/VC.IHR.PSRC.P5?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f06da7e18ba917e7caaa",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u652f\u51fa\uff08\u5360 GDP \u7684\u767e\u5206\u6bd4\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/GC.XPN.TOTL.GD.ZS",
+  "published": "2026-09-22T16:31:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/GC.XPN.TOTL.GD.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "e26678c5f648f0336b29",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u6536\u5165\uff0c\u4e0d\u5305\u62ec\u6350\u8d60\uff08\u5360GDP\u7684\u6bd4\u4f8b\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/GC.REV.XGRT.GD.ZS",
+  "published": "2026-09-22T16:31:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/GC.REV.XGRT.GD.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "cbd04e82812a7f7494ed",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u7a0e\u6536\uff08\u5360\u56fd\u6c11\u751f\u4ea7\u603b\u503c\uff08GDP\uff09\u6bd4\u4f8b\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/GC.TAX.TOTL.GD.ZS",
+  "published": "2026-09-22T16:31:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/GC.TAX.TOTL.GD.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "067f69cfc24066234489",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4f5c\u7269\u751f\u4ea7\u6307\u6570\uff082014-2016 = 100\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/AG.PRD.CROP.XD",
+  "published": "2026-09-22T16:31:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/AG.PRD.CROP.XD?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "3bc82056fbf9acad09e2",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ }
+]
