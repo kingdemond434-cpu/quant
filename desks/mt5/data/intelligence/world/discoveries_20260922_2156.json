@@ -1,0 +1,42 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8bc6\u5b57\u7387\uff0c\u6210\u5e74\u7537\u6027\uff08\u5360 15 \u5c81\u4ee5\u4e0a\u7537\u6027\u4eba\u53e3\u7684\u767e\u5206\u6bd4\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/SE.ADT.LITR.MA.ZS",
+  "published": "2026-09-22T21:55:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/SE.ADT.LITR.MA.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ac1acab9289fe595c99b",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8bc6\u5b57\u7387\uff0c\u9752\u5e74\u5973\u6027\uff08\u5360 15-24 \u5c81\u5973\u6027\u4eba\u53e3\u7684\u767e\u5206\u6bd4\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/SE.ADT.1524.LT.FE.ZS",
+  "published": "2026-09-22T21:55:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/SE.ADT.1524.LT.FE.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "acce90e18196fce5b906",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ }
+]
