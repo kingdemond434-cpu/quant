@@ -3,16 +3,32 @@
  "schema_version": 1,
  "stages": {
   "canonical_external_pipeline": {
+   "finished_at": "2026-09-22T03:49:10.833787+00:00",
+   "passes_completed": 1,
+   "returncode": 1,
+   "status": "FAILED"
+  },
+  "certificate_projection": {
    "command": [
-    "systemctl",
-    "--user",
-    "start",
-    "quant-external-pipeline.service"
+    "/home/quant/quant-platform/.venv/bin/python",
+    "scripts/build_gauntlet_survivors.py"
    ],
    "passes_completed": 0,
-   "started_at": "2026-09-22T02:07:38.859880+00:00",
+   "started_at": "2026-09-22T03:50:08.590562+00:00",
    "status": "RUNNING"
+  },
+  "external_queue_projection": {
+   "finished_at": "2026-09-22T03:49:21.859887+00:00",
+   "passes_completed": 1,
+   "returncode": 0,
+   "status": "DONE"
+  },
+  "external_queue_reconciliation": {
+   "finished_at": "2026-09-22T03:50:05.198348+00:00",
+   "passes_completed": 1,
+   "returncode": 0,
+   "status": "DONE"
   }
  },
- "updated_at": "2026-09-22T02:07:38.859880+00:00"
+ "updated_at": "2026-09-22T03:50:08.590562+00:00"
 }
