@@ -1,0 +1,95 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Blackjack Strategy Charts - Generate Charts for 1-8 Decks",
+  "url": "http://www.blackjackinfo.com/bjbse.php///",
+  "published": "2026-09-18T06:50:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b2eb2337c6d863053f05",
+  "host": "www.blackjackinfo.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Human Verification | Open Library",
+  "url": "https://openlibrary.org/subjects/algorithms",
+  "published": "2026-09-18T06:50:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://openlibrary.org/static/manifest.json?v=fbf2b3dc370d159ad53f12260ad27c9c"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "8b0a535b21ab073645e0",
+  "host": "openlibrary.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "R-Forge: TradeAnalytics: SCM Repository",
+  "url": "https://r-forge.r-project.org/scm/viewvc.php/pkg/quantstrat/?root=blotter",
+  "published": "2026-09-18T06:50:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://r-forge.r-project.org/export/rss_sfnews.php",
+   "https://r-forge.r-project.org/export/rss20_news.php",
+   "https://r-forge.r-project.org/export/rss_sfprojects.php",
+   "https://r-forge.r-project.org/export/rss20_activity.php?group_id=316",
+   "https://r-forge.r-project.org/export/search_plugin.php"
+  ],
+  "n_endpoints": 5,
+  "vault_sha": "c56048dd98cd0c7146f3",
+  "host": "r-forge.r-project.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The MVCI (Whatever That Means) Indicator | Jay On The Markets",
+  "url": "http://tinyurl.com/pjcw6z6",
+  "published": "2026-09-18T06:50:49+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3698bdf42f8a6eef3926",
+  "host": "tinyurl.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]

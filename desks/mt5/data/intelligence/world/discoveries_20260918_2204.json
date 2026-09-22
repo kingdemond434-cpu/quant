@@ -1,0 +1,468 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\ud22c\uc790\uc815\ubcf4::\ud55c\uacbd\uc720\ub808\uce74 NO.1 AI\ud22c\uc790\uc11c\ube44\uc2a4",
+  "url": "https://eureka.hankyung.com/insight/detail/61",
+  "published": "2026-09-18T22:03:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6400835d6448dd7a62ab",
+  "host": "eureka.hankyung.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\ud22c\uc790\uc815\ubcf4::\ud55c\uacbd\uc720\ub808\uce74 NO.1 AI\ud22c\uc790\uc11c\ube44\uc2a4",
+  "url": "https://eureka.hankyung.com/invest/detail?board_id=19639",
+  "published": "2026-09-18T22:03:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7302bd2b6a5299b4add5",
+  "host": "eureka.hankyung.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\ub728\uac70\uc6e0\ub358 \ud22c\uc790 \uc2dc\uc7a5\u2026\uc2e0\uc120\ud55c \uc804\ub9dd \ub208\uc5d0 \ub748 10\uba85\uc758 \uc2e0\uc608\ub294 \ub204\uad6c2025 \ubca0\uc2a4\ud2b8 \uc560\ub110\ub9ac\uc2a4\ud2b8 \u2502 \ud55c\uacbd\ub9e4\uac70\uc9c4&\ubd81",
+  "url": "https://magazine.hankyung.com/business/article/202601087964b",
+  "published": "2026-09-18T22:04:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "flow",
+   "orderflow",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "ko",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "31d5de2748de05d66d4e",
+  "host": "magazine.hankyung.com",
+  "claims": [
+   {
+    "claim": "\ud1b5\uc2e0, \ub85c\ubd07, \ubc29\uc0b0, IT(\ubc18\ub3c4\uccb4) \ub4f1 \ucf54\uc2a4\ud53c 4000 \ub3cc\ud30c\uc758 \uc8fc\uc5ed\uc774\uc5c8\ub358 \ubd84\uc57c\ub4e4\uc774\ub2e4.",
+    "lang": "ko",
+    "quantities": [
+     "\ub3cc\ud30c",
+     "\ucf54\uc2a4\ud53c"
+    ],
+    "direction": [
+     "\ub3cc\ud30c"
+    ],
+    "horizon": [
+     "\ubd84",
+     "\uc8fc"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "\ucf54\uc2a4\ud53c"
+     ],
+     "transfer_only": [
+      "\ucf54\uc2a4\ud53c->indices (KRX)"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "f390244041dd"
+   },
+   {
+    "claim": "\uadf8\ub294 \u201c\uaf2d \uad6d\ub0b4 \ud1b5\uc2e0, \ud1b5\uc2e0\uc7a5\ube44\uc8fc \ubd84\uc11d\uc774 \uc544\ub2c8\ub354\ub77c\ub3c4 \ud22c\uc790\uc790\ub4e4\uc5d0\uac8c \uc9c1\uac04\uc811\uc801\uc73c\ub85c \ub3c4\uc6c0\uc744 \uc904 \uc218 \uc788\ub294 \ucf58\ud150\uce20\ub97c \ub9cc\ub4e4\uc5b4 \ub098\uac00\uace0 \uc788\ub2e4\u201d\uba74\uc11c \u201c\ud1b5\uc2e0\uc5c5\uc885\uc740 \ud574\ud0b9 \uc774\uc288\uac00 \ud574\uc18c\ub418\uba70 \uc644\ub9cc\ud55c \uc8fc\uac00 \uc0c1\uc2b9\uc744 \uc804\ub9dd\ud558\uba70 2026\ub144 \uc0c1\ubc18\uae30 \uc790\uc0ac\uc8fc \ub9e4\uc785\uc744 \uc55e\ub454 KT\ub97c \ud1b1\ud53d\uc73c\ub85c \ucd94\ucc9c \ud55c\ub2e4\u201d\uace0 \ubc1d\ud614\ub2e4.",
+    "lang": "ko",
+    "quantities": [
+     "\uc740"
+    ],
+    "direction": [
+     "\uc0c1\uc2b9"
+    ],
+    "horizon": [
+     "\ubd84",
+     "\uc8fc"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "\ucf54\uc2a4\ud53c"
+     ],
+     "transfer_only": [
+      "\ucf54\uc2a4\ud53c->indices (KRX)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "51c134affeab"
+   },
+   {
+    "claim": "\uc804\ub7b5\uc740 \ud1b5\uc0c1 \uc8fc\ub2c8\uc5b4\uc5d0\uac8c \uc9c4\uc785\uc7a5\ubcbd\uc774 \ub192\ub2e4\uace0 \ud3c9\uac00\ubc1b\ub294 \ubd84\uc57c\uc774\ub2e4.",
+    "lang": "ko",
+    "quantities": [
+     "\uc740"
+    ],
+    "direction": [
+     "\uc9c4\uc785"
+    ],
+    "horizon": [
+     "\ubd84",
+     "\uc8fc"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "\ucf54\uc2a4\ud53c"
+     ],
+     "transfer_only": [
+      "\ucf54\uc2a4\ud53c->indices (KRX)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "162ac1e7ab31"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\ubca0\uc2a4\ud2b8 \uc560\ub110\ub9ac\uc2a4\ud2b8 2023 \ud22c\uc790\uc804\ub7b5 \u2464 2022 \ud558\ubc18\uae30 \ubca0\uc2a4\ud2b8 \uc560\ub110\ub9ac\uc2a4\ud2b8 \u2502 \ud55c\uacbd\ub9e4\uac70\uc9c4&\ubd81",
+  "url": "https://magazine.hankyung.com/business/article/202301077690b",
+  "published": "2026-09-18T22:04:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "ko",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5aa20bd6cd29661d72b7",
+  "host": "magazine.hankyung.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\u5982\u4f55\u5b9e\u73b0\u81ea\u5df1\u7684\u91cf\u5316\u56de\u6d4b\u7cfb\u7edf\uff08\u4e0b\uff09\u4e3b\u6d41\u6846\u67b6\u9009\u578b + \u5b9e\u6218\u4ee3\u7801\u793a\u4f8b\u524d\u8a00 \u63a5\u4e0a\u7bc7\u5185\u5bb9\uff0c\u672c\u7bc7\u7ee7\u7eed\u8bb2\u89e3\u91cf\u5316\u56de\u6d4b &amp; \u5b9e\u76d8\u4ea4\u6613\u4e3b\u6d41\u5f00 - \u6398\u91d1",
+  "url": "https://juejin.cn/post/7650036977171021859",
+  "published": "2026-09-18T22:04:12+00:00",
+  "symbols": [
+   "BTCUSD",
+   "NAS100",
+   "US500",
+   "US30"
+  ],
+  "timeframes": [
+   "1H"
+  ],
+  "patterns": [
+   "arbitrage",
+   "flow"
+  ],
+  "confidence": 0.95,
+  "lang": "zh",
+  "endpoints": [
+   "https://juejin.cn/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "72c1d289aa84447fb733",
+  "host": "juejin.cn",
+  "claims": [
+   {
+    "claim": "mean()), # \u6210\u4ea4\u91cf\u786e\u8ba4 'enter_long' ] = 1 return dataframe \u56db\u3001\u91cf\u5316\u6846\u67b6\u9009\u578b\u51b3\u7b56\u77e9\u9635\uff08\u4e94\u5927\u6838\u5fc3\u76ee\u6807\uff09 \u7ed3\u5408\u4e0d\u540c\u5f00\u53d1\u9700\u6c42\u3001\u8d44\u91d1\u89c4\u6a21\u3001\u6280\u672f\u80cc\u666f\uff0c\u6574\u7406\u9009\u578b\u6307\u5357\uff0c\u6309\u9700\u9009\u62e9\u5373\u53ef\uff1a \u9996\u8981\u76ee\u6807 \u63a8\u8350\u6280\u672f\u6808 \u8865\u5145\u8bf4\u660e \u5feb\u901f\u9a8c\u8bc1\u56e0\u5b50\u6709\u6548\u6027 Pandas + VectorBT \u6027\u80fd\u5f3a\u52b2\uff0c1 \u5206\u949f\u53ef\u5b8c\u6210 1000 \u6b21\u56de\u6d4b\uff0c\u8f7b\u91cf\u56e0\u5b50\u9996\u9009 \u642d\u5efa\u53ef\u5b9e\u76d8\u591a\u56e0\u5b50\u7cfb\u7edf 1.",
+    "lang": "zh",
+    "quantities": [
+     "\u6210\u4ea4\u91cf"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "\u5206\u949f"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "US30",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "\u7eb3\u65af\u8fbe\u514b",
+      "spy",
+      "\u9053\u6307",
+      "btcusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "421d52b8bf7e"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u8098\u5b50\u7684 Swift \u5468\u62a5 #037 \uff5c \u8fc8\u5165\u671f\u8d27\u65f6\u4ee3\u6b22\u8fce\u8bbf\u95ee weekly.fatbobman.com \u8ba2\u9605\u672c\u5468\u62a5\u7684\u7535\u5b50 - \u6398\u91d1",
+  "url": "https://juejin.cn/post/7383917346643591208",
+  "published": "2026-09-18T22:04:14+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "zh",
+  "endpoints": [
+   "https://juejin.cn/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "0a6aeb1cf54dc4a22bcd",
+  "host": "juejin.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "G\u00f6del's Market: Interviewing the Quants: Marco Simioni and Nightly Patterns",
+  "url": "http://godelsmarket.blogspot.jp/2015/02/interviewing-quants-marco-simioni-and.html",
+  "published": "2026-09-18T22:04:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "correlation",
+   "momentum",
+   "night_session",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8a230fb533ac96bcc9c2",
+  "host": "godelsmarket.blogspot.jp",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "TradingSystemLife.com Legal Terms and Conditions",
+  "url": "http://www.tradingsystemlife.com/Legal.html",
+  "published": "2026-09-18T22:04:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f1898a797754daf01862",
+  "host": "www.tradingsystemlife.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Categoria:Algoritmos - Wikiversidade",
+  "url": "https://pt.wikiversity.org/wiki/Categoria:Algoritmos",
+  "published": "2026-09-18T22:04:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f2e136f2bf6fdc137dfe",
+  "host": "pt.wikiversity.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algoritm \u2013 Vikitsitaadid",
+  "url": "https://et.wikiquote.org/wiki/Algoritm",
+  "published": "2026-09-18T22:04:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "et",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d59525d615bd9a8a12de",
+  "host": "et.wikiquote.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "algoritmo - Wikivortaro",
+  "url": "https://io.wiktionary.org/wiki/Special:Search/Algoritmo",
+  "published": "2026-09-18T22:04:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "io",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8520d8cf99aaf4ec31dd",
+  "host": "io.wiktionary.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Algoritma - Vikikitap: \u00d6zg\u00fcr k\u00fct\u00fcphane",
+  "url": "https://tr.wikibooks.org/wiki/Algoritma",
+  "published": "2026-09-18T22:04:36+00:00",
+  "symbols": [],
+  "timeframes": [
+   "G\u00dcNL\u00dcK"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "tr",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "cd277eca0bcc27f4d30d",
+  "host": "tr.wikibooks.org",
+  "claims": [
+   {
+    "claim": "Bu s\u00f6zc\u00fck daha sonra \"algoritma\"ya d\u00f6n\u00fc\u015f\u00fcr ve genel kapsamda kullan\u0131l\u0131r, G\u00fcnl\u00fck \u00f6rnekler [ d\u00fczenle ] 1- Bir \u00e7ay demleme algoritmas\u0131: [ d\u00fczenle ] Mutfakta de\u011filsen mutfa\u011fa git.",
+    "lang": "tr",
+    "quantities": [
+     "d\u00f6n\u00fc\u015f"
+    ],
+    "direction": [
+     "d\u00f6n"
+    ],
+    "horizon": [
+     "g\u00fcnl\u00fck"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "php"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "91ac21f20903"
+   },
+   {
+    "claim": "3- Yataktan kalk\u0131p,i\u015fe gidene kadar yap\u0131lacak i\u015flemleri anlatacak bir algoritmay\u0131 inceleyelim: [ d\u00fczenle ] Yataktan kalk Pijamalar\u0131n\u0131 \u00e7\u0131kar Banyoya git Du\u015f al Kurulan Giyin Mutfa\u011fa git Kahvalt\u0131 yap Lavoboya git Di\u015flerini f\u0131r\u00e7ala \u0130\u015fe do\u011fru yola \u00e7\u0131k \u015eimdi de ayn\u0131 i\u015flemlerin farkl\u0131 bir s\u0131rada uygulanaca\u011f\u0131n\u0131 d\u00fc\u015f\u00fcnelim.",
+    "lang": "tr",
+    "quantities": [
+     "kur"
+    ],
+    "direction": [
+     "al ",
+     "d\u00fc\u015f"
+    ],
+    "horizon": [
+     "ay"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "php"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "9d497296eaf5"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithms - Wikiquote",
+  "url": "https://en.wikiquote.org/wiki/en:Algorithms",
+  "published": "2026-09-18T22:04:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d815388e737940a278dc",
+  "host": "en.wikiquote.org",
+  "claims": [],
+  "n_claims": 0
+ }
+]

@@ -1,0 +1,146 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Hush&#xE5;llens konsumtion &#xF6;kade i augusti 2026",
+  "url": "https://www.scb.se/hitta-statistik/statistik-efter-amne/hushallens-ekonomi/hushallens-utgifter/hushallens-konsumtion/pong/statistiknyhet/hushallens-konsumtionsindikator-juli-och-augusti-2026-veckoindikator-till-och-med-vecka-36-2026/",
+  "published": "2026-09-18T05:42:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "seasonality"
+  ],
+  "confidence": 0.35,
+  "lang": "sv",
+  "endpoints": [
+   "https://www.scb.se/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "fbb22e01d3bc80c5b561",
+  "host": "www.scb.se",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "R-Forge: TradeAnalytics: SCM Repository",
+  "url": "https://r-forge.r-project.org/scm/viewvc.php/pkg/quantstrat/?root=blotter",
+  "published": "2026-09-18T05:42:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://r-forge.r-project.org/export/rss_sfnews.php",
+   "https://r-forge.r-project.org/export/rss20_news.php",
+   "https://r-forge.r-project.org/export/rss_sfprojects.php",
+   "https://r-forge.r-project.org/export/rss20_activity.php?group_id=316",
+   "https://r-forge.r-project.org/export/search_plugin.php"
+  ],
+  "n_endpoints": 5,
+  "vault_sha": "705befc3ae9f458e3d26",
+  "host": "r-forge.r-project.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The MVCI (Whatever That Means) Indicator | Jay On The Markets",
+  "url": "http://tinyurl.com/pjcw6z6",
+  "published": "2026-09-18T05:42:49+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "45891cc8b6383f939713",
+  "host": "tinyurl.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quant Traders - Academy, Courses, Software, Research + Podcast!",
+  "url": "http://www.thealgorithmicadvantage.com",
+  "published": "2026-09-18T05:42:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f7b60f3823ee8a9a867a",
+  "host": "www.thealgorithmicadvantage.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u200eOANDA - Forex trading App - App Store",
+  "url": "https://app.adjust.com/1bmq613m?redirect_androidhttps%3A%2F%2Fapps.apple.com%2Fus%2Fapp%2Foanda-forex-trading%2Fid370922777",
+  "published": "2026-09-18T05:42:58+00:00",
+  "symbols": [],
+  "timeframes": [
+   "4H",
+   "M1"
+  ],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://app.adjust.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "8c2fab19a4072acf760d",
+  "host": "app.adjust.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Your Key To Investing on The JSE Securities Exchange - South Africa",
+  "url": "https://www4.sharenet.co.za/der/index.php",
+  "published": "2026-09-18T05:43:22+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5ce154e1523324291dbe",
+  "host": "www4.sharenet.co.za",
+  "claims": [],
+  "n_claims": 0
+ }
+]

@@ -1,0 +1,28 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "algoritmizace",
+  "url": "https://ipac.svkkl.cz/arl-kl/cs/detail-kl_us_auth-0220173-algoritmizace",
+  "published": "2026-09-18T19:51:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "cs-CZ",
+  "endpoints": [
+   "https://ipac.svkkl.cz/arl-kl/cs/export/?idx=kl_us_auth*0220173&amp;charset=UTF8&amp;format=LINEMARC",
+   "https://ipac.svkkl.cz/arl-kl/cs/export/?idx=kl_us_auth*0220173&amp;charset=UTF8&amp;format=ISO2709",
+   "https://ipac.svkkl.cz/arl-kl/cs/export/?idx=kl_us_auth*0220173&amp;charset=UTF8&amp;format=XML",
+   "https://ipac.svkkl.cz/arl-kl/cs/export/?idx=kl_us_auth*0220173"
+  ],
+  "n_endpoints": 4,
+  "vault_sha": "b01749593ec6310dcfae",
+  "host": "ipac.svkkl.cz",
+  "claims": [],
+  "n_claims": 0
+ }
+]

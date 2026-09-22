@@ -1,0 +1,134 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "algoritmizace",
+  "url": "https://ipac.svkkl.cz/arl-kl/cs/detail-kl_us_auth-0220173-algoritmizace",
+  "published": "2026-09-18T19:13:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "cs-CZ",
+  "endpoints": [
+   "https://ipac.svkkl.cz/arl-kl/cs/export/?idx=kl_us_auth*0220173&amp;charset=UTF8&amp;format=LINEMARC",
+   "https://ipac.svkkl.cz/arl-kl/cs/export/?idx=kl_us_auth*0220173&amp;charset=UTF8&amp;format=ISO2709",
+   "https://ipac.svkkl.cz/arl-kl/cs/export/?idx=kl_us_auth*0220173&amp;charset=UTF8&amp;format=XML",
+   "https://ipac.svkkl.cz/arl-kl/cs/export/?idx=kl_us_auth*0220173"
+  ],
+  "n_endpoints": 4,
+  "vault_sha": "8963881f6a0a41b83f51",
+  "host": "ipac.svkkl.cz",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Bill Gates: There's a possibility quantum computing will become useful in 3 to 5 years",
+  "url": "https://finance.yahoo.com/news/bill-gates-theres-a-possibility-quantum-computing-will-become-useful-in-3-to-5-years-152007398.html",
+  "published": "2026-09-18T19:14:26+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://finance.yahoo.com/manifest.json",
+   "https://finance.yahoo.com/videos/series/",
+   "https://finance.yahoo.com/videos/series/morning-brief/",
+   "https://finance.yahoo.com/videos/series/opening-bid/",
+   "https://finance.yahoo.com/videos/series/market-catalysts/",
+   "https://finance.yahoo.com/videos/series/market-domination/",
+   "https://finance.yahoo.com/videos/series/market-domination-overtime/",
+   "https://finance.yahoo.com/videos/series/asking-for-a-trend/",
+   "https://finance.yahoo.com/videos/series/daily-wolf/",
+   "https://finance.yahoo.com/videos/series/power-players/",
+   "https://finance.yahoo.com/videos/series/trader-talk/",
+   "https://finance.yahoo.com/videos/series/built-different/",
+   "https://finance.yahoo.com/videos/series/big-idea/"
+  ],
+  "n_endpoints": 13,
+  "vault_sha": "3b3f9ad14a42d1458360",
+  "host": "finance.yahoo.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithmes au cours de l&rsquo;histoire | Accromath",
+  "url": "https://accromath.uqam.ca/2019/10/algorithmes-au-cours-de-lhistoire/",
+  "published": "2026-09-18T19:14:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "fr-FR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bd167838c7572e0d8375",
+  "host": "accromath.uqam.ca",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Louise Bedford - from The Trading Game - Shares for Beginners | Acast",
+  "url": "https://play.acast.com/s/shares-for-beginners/louisebedford-fromthetradinggame",
+  "published": "2026-09-18T19:15:01+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://shows.acast.com/api/oembed/4cf401e4-d184-543c-b73b-5fa7140b9811/341c6781-cfe0-448f-87e9-68c7337bbd77"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "776e46fe571ace746b7e",
+  "host": "play.acast.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Chris Tate - The Trading Game - Shares for Beginners | Acast",
+  "url": "https://play.acast.com/s/shares-for-beginners/christate-thetradinggame",
+  "published": "2026-09-18T19:15:03+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://shows.acast.com/api/oembed/4cf401e4-d184-543c-b73b-5fa7140b9811/2c2e2a40-1be1-4558-94f4-0cd1f330fd11"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "44c3ea03a594587e0ed4",
+  "host": "play.acast.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]

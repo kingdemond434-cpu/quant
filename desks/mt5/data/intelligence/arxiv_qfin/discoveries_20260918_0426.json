@@ -1,0 +1,227 @@
+[
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Principal component error in high-dimensional factor models",
+  "url": "http://arxiv.org/abs/2609.20550v1",
+  "text": "In a statistical factor model, principal components (or eigenvectors) of a sample covariance matrix serve as estimates of {\\it principal directions}, the true drivers of co-movement of a collection of observed variables. We write the often substantial error in these estimates as a sum of two interpretable terms, which we show have almost sure asymptotic limits as the number of variables grows with sample size bounded. This scenario is commonplace in financial economics, genomics, machine learning and signal processing. {\\it Out-of-subspace error} measures the distance from an estimate to the subspace spanned by population factor exposures. It can be expressed in terms of data, providing an estimable floor for error. {\\it In-subspace error} arises from the fixed sample size of the latent fa",
+  "symbols": [],
+  "found_at": "2026-09-18T04:32:18+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Model-Free Passive Execution via Order-Level Shadowing",
+  "url": "http://arxiv.org/abs/2609.18019v1",
+  "text": "Automated execution algorithms are organized into schedule-based and liquidity-seeking families. This paper concerns the first, whose members -- Time-Weighted Average Price (TWAP), Volume-Weighted Average Price (VWAP), Percentage of Volume (POV) and Implementation Shortfall -- are all model-based: each derives its decisions from an explicit model, forecast, schedule or control rule. We introduce Shadow-PPOV, a passive POV whose order-placement rate is set from observed order flow rather than from traded volume. Placing a passive order to fill efficiently conventionally involves an order-book model and a fill prediction. Shadow-PPOV replaces that prediction with tracking: on observing a third-party add, it may transmit its own limit order at the same price on the same venue, recording a sin",
+  "symbols": [],
+  "found_at": "2026-09-18T04:32:18+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "SAiFE-gym: Model-based Environments for Automated Market Making with Concentrated Liquidity",
+  "url": "http://arxiv.org/abs/2609.17788v1",
+  "text": "We present SAiFE_gym, a Python module that provides a collection of simulation environments for studying trading problems in Constant Product Markets (CPMs) with Concentrated Liquidity (CL). These markets give Liquidity Providers (LPs) granular control over how their capital is allocated and enable them to adjust their range of liquidity provision dynamically based on market conditions, which in turn, dictates how they earn fees. We decompose the microstructure of CPMs with CL in interactive components that allow researchers and practitioners to capture various economic settings. We employ a vectorized approach to optimize our environments, making them scalable for high dimensional Reinforcement Learning (RL) workflows that best describe sequential decision problems. We demonstrate the ben",
+  "symbols": [],
+  "found_at": "2026-09-18T04:32:18+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "From Public Evidence to Contractual Outcome: First and Stable Decidability on Kalshi",
+  "url": "http://arxiv.org/abs/2609.16642v1",
+  "text": "Public evidence can become sufficient to settle a prediction-market contract before the venue records its first determination, but the relevant boundary depends on the applicable rule version, exact release object, source hierarchy, correction history, and unfinished contract conditions. This paper defines two Kalshi clocks: first decidability, the earliest contemporaneous singleton in the rule-evidence mapping, and stable decidability, the retrospective earliest time after which the same singleton remains unchanged through finalization. A completed retrospective identification test establishes a narrow feasibility result. In a frozen blind pilot, all 25 identities and blinding checks passed and current rule text was recovered for all 25; no exact or bounded historical rule version and no",
+  "symbols": [],
+  "found_at": "2026-09-18T04:32:18+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Strategic Index Reconstitution: Differential Games, Closed-Loop Equilibria and Mean-Field Dynamics",
+  "url": "http://arxiv.org/abs/2609.15901v1",
+  "text": "We study strategic trading around index reconstitution in a continuous-time, multiasset game with transient cross-asset price impact and heterogeneous beliefs about future index membership. Opportunistic traders position before a public announcement, adjust to the revealed composition, and trade around an indexer following a prescribed execution schedule. Under a no-price-manipulation condition, we construct a subgame-perfect Nash equilibrium on every finite horizon. The affine feedback policies are computed from a non-standard matrix Riccati equation and linear ordinary differential equations whose number and dimensions do not grow with the number of traders. Aggregate inventories and price impact depend on beliefs only through the population-average belief, while differences in beliefs a",
+  "symbols": [],
+  "found_at": "2026-09-18T04:32:18+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "On-Demand Combinatorial Event Markets on Kalshi: Instantiation, Concentration, and Effective Market Breadth",
+  "url": "http://arxiv.org/abs/2609.17610v1",
+  "text": "Kalshi's multivariate-event architecture produces market objects on demand from exact selected legs. Across a registered seven-day interval, 190 independently validated temporal shards yield 7,611,594 unique REST MVE market tickers after excluding 5,777 boundary-overlap observations; the population was created at an average rate of 1.087 million objects per day, with strong hourly burstiness.\n  The hierarchy is sharply compressed relative to the market-object count: 5,262,526 exact event keys, three collection keys, 83,701 selected-leg primitives, and 66,344,938 selected-leg occurrences. The largest collection accounts for 7,217,085 objects (94.82 percent), with an effective collection count of 1.11; the effective primitive count is approximately 720. REST and WebSocket are distinct observ",
+  "symbols": [],
+  "found_at": "2026-09-18T04:32:18+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Resolution Is Not Settlement, Part II: Protocol Finality and Observed Redemption on Polymarket",
+  "url": "http://arxiv.org/abs/2609.15373v1",
+  "text": "An Oracle result is not yet a protocol payout, a redeemable position is not yet collateral in a holder's account, and a redemption event is not a complete measure of economic entitlement. This companion paper develops an event-sourced framework for Polymarket conditions from preparation through protocol finality and observed holder realization.\n  The empirical design uses three Conditional Tokens Framework event families derived from a pinned contract application binary interface (ABI): ConditionPreparation, ConditionResolution, and PayoutRedemption. It separates the contract-wide acquisition universe from the frozen Polymarket adapter-question cohort. The exact bridge contains 108,638 linked conditions. Of these, 99,283 have an observed protocol-resolution event by the fixed snapshot at P",
+  "symbols": [],
+  "found_at": "2026-09-18T04:32:18+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Resolution Is Not Settlement, Part I: Oracle Adjudication and Semantic Governance on Polymarket",
+  "url": "http://arxiv.org/abs/2609.15368v1",
+  "text": "Prediction-market resolution is often reduced to a terminal outcome and one timestamp. That representation is inadequate for leveraged event claims because rule versioning, request creation, proposal, dispute, reset, Oracle finality, and adapter terminality are distinct states with different observation precision and balance-sheet consequences. We reconstruct those states for Polymarket using Oracle request generations as the unit of adjudication.\n  The population is frozen at Polygon block 79,721,080 and contains 185,550 initialized adapter-question instances and 350,703 decoded adapter logs. Exact requester-filtered extraction yields 504,332 decoded Oracle lifecycle events: 184,148 request creations, 159,447 proposals, 1,604 disputes, and 159,133 settlements. The accounting closes as 182",
+  "symbols": [],
+  "found_at": "2026-09-18T04:32:18+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Separated Signal Libraries: Packing, Saturation, and Joint Spectral Limits",
+  "url": "http://arxiv.org/abs/2609.17609v1",
+  "text": "We study libraries of cross-sectional signals: at each date, a forecast vector over $d$ assets intended to predict the next period's cross-sectional return. Demeaned and unit-normalized, a signal is a point on a sphere and its $T$-date history a point on a product of $T$ spheres. A pairwise correlation cap on histories is a minimum angular separation on that product, so growing a library under such a cap is a packing problem. If a large library is not too pairwise correlated and is equally weighted, does the equally weighted sum (EWS) tend to a known principal-component quantity as it grows? We answer this under explicit assumptions on how the library is filled.\n  Separation alone guarantees nothing: it fixes no limiting distribution; a saturated library covers the sphere yet can carry a b",
+  "symbols": [],
+  "found_at": "2026-09-18T04:32:18+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Gate Design and Stage-Dependent Incentives in Retail Proprietary-Trading Evaluations: Why Passing Is Not Standalone Evidence of Skill, and Why the Product Fails to Pay Under Measured Trading Constraints",
+  "url": "http://arxiv.org/abs/2609.14859v1",
+  "text": "Retail proprietary-trading firms sell a two-stage product: a paid evaluation that must reach a profit target before breaching a trailing drawdown, then a funded account that must survive a minimum window and a consistency rule before a payout. We show the geometry of this contract creates incentives that differ by stage and make passing a poor standalone signal of skill. Under end-of-day trailing the evaluation rewards a fast, lumpy cadence while the funded account punishes it, by a factor of nine in the joint gate. The evaluation is defeatable at zero skill: position sizing alone yields a pass probability near 0.40, against a measured cohort rate of 0.168. Pass probability rises with skill, but a real edge and aggressive sizing move it by nearly the same amount, so a pass rate confounds t",
+  "symbols": [],
+  "found_at": "2026-09-18T04:32:18+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "WaVeFuse: Regime-Adaptive Equity Index Forecasting via Channel-Wise Wavelet Denoising and Vertical Attention Fusion",
+  "url": "http://arxiv.org/abs/2609.14733v1",
+  "text": "Hybrid Deep Learning for equity index forecasting is limited by three problems: propagation of OHLCV noise into derived technical indicators (TIs), channel-indiscriminate multi-scale decomposition that conflates heterogeneous frequency signatures, and static multi-branch fusion that cannot adapt to market regime shifts. WaVeFuse addresses these limitations through a unified dual-branch architecture. Symlet-4 wavelet denoising (level 2, MAD soft threshold) suppresses microstructure noise in OHLCV. Seven low-lag TIs computed from denoised prices are encoded by a causal channel-wise continuous wavelet transform (Morlet, 32 scales) into a per-timestep scale-space matrix. A CNN-BiLSTM branch captures temporal dynamics, while a dual-layer Transformer (heads=4, dk in {16, 32}) models inter-scale",
+  "symbols": [],
+  "found_at": "2026-09-18T04:32:18+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Public Opinion as an Option: Leveraging Prediction Markets to Hedge Exposure to Spot Crypto Volatility",
+  "url": "http://arxiv.org/abs/2609.14267v1",
+  "text": "This paper proposes an investment strategy through resource allocation into Kalshi Crypto Event Contracts in order to effectively hedge exposure to spot asset volatility. Using Bitcoin as a proof of concept, we treat corresponding Kalshi markets on the asset's future price as option contracts, and through construction of different portfolio allocations present a framework for which event contracts can be effectively utilized by retail investors in order to control risk framework without reducing underlying exposure to spot volatility. We showcase this information through analysis of three separate Kalshi event contracts, all relating to a different underlying market regime (i.e bullish, bearish, flat), and provide a comprehensive risk profile for each regime. Results show that a dynamic Ka",
+  "symbols": [],
+  "found_at": "2026-09-18T04:32:18+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Special Markowitz: Thermodynamic Formalism for the Joint Regularisation of Returns and Covariance",
+  "url": "http://arxiv.org/abs/2609.14029v2",
+  "text": "Special Markowitz (SM) regularises returns and covariance jointly, relative to a reference state (mu_ref, Sigma_ref). Each eigendirection of the whitened relative operator carries a spectral reliability potential Phi_k, derived from its estimation quality. Its exponential reliability weight exp(-Phi_k) governs both the fraction of the return signal and the fraction of the covariance deviation that survive regularisation. Reliable modes (low Phi_k) are preserved; unreliable modes (high Phi_k) relax to the reference. The logarithmic potential coordinate is characterised by a multiplicative composition law; the Stein loss is characterised as the unique free-energy density (within a natural class) compatible with the resulting coupling. The SM pressure functional is additive across modes - the",
+  "symbols": [],
+  "found_at": "2026-09-18T04:32:18+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "ViperQ: Order Flow Pattern Recognition via Auction Market Theory for Reinforcement Learning Trading",
+  "url": "http://arxiv.org/abs/2609.13825v1",
+  "text": "Reinforcement learning trading systems published in the academic literature overwhelmingly rely on price-aggregate state representations (OHLCV bars) or limit-order-book depth features, leaving microstructure pattern theories from the practitioner literature, namely Auction Market Theory and Market Profile, without a peer-reviewed computational instantiation. We present ViperQ, a reinforcement learning system whose state representation is built explicitly from Auction Market Theory primitives: Volume Point of Control, Value Area position, Low Volume Node flags, Cumulative Volume Delta divergence, and tape-velocity signatures, assembled into a 20-dimensional Z-normalised vector. Two Proximal Policy Optimisation agents are trained with a prospect theory-grounded asymmetric reward function th",
+  "symbols": [],
+  "found_at": "2026-09-18T04:32:18+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Event-Time Order-Flow Memory, Operational-Time Impact, and Subordinated Market Observables",
+  "url": "http://arxiv.org/abs/2609.13715v1",
+  "text": "We consider two canonical market-microstructure regularities: the long-memory of trade signs and the square-root law of meta-order impact. The point is not to propose new empirical laws, but to separate the clocks on which existing laws are defined. The sign-memory law is an event-time statement about the ordering and fragmentation of hidden orders. The square-root impact law is an operational-time statement about front motion in a locally linear latent order book. Starting from a discrete-time random-walk bid/ask reaction--diffusion order book with a separate event clock, we identify an event-time imbalance reduction, derive the operational-time front and impact equations in the locally linear regime, and then subordinate both sign and impact observables to calendar time. Fractional or te",
+  "symbols": [],
+  "found_at": "2026-09-18T04:32:18+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Same Book, Different Fills: Partial Identification of FIFO Execution from Aggregate Order Books",
+  "url": "http://arxiv.org/abs/2609.13597v2",
+  "text": "Price-level limit order book (L2) data reveal aggregate liquidity but not the ordered queue required by price--time priority. Passive-execution backtests can therefore depend on an unobserved cancellation-allocation rule even when observed prices, quantities, and trades are held fixed. We frame recovery of market-by-order histories from aggregate snapshots as a conditional partial identification problem: multiple histories can reproduce the same aggregate path. Holding that path, reconciled market removals, latent order partitions, and additions fixed, our path-preserving compiler varies only cancellation allocation among front, quantity-weighted-random, and back rules. Within this compiler class, we establish front--back fill ordering for a virtual tagged order during one touch-price spel",
+  "symbols": [],
+  "found_at": "2026-09-18T04:32:18+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Diffusion models for dynamic volatility surface generation and data-driven hedging",
+  "url": "http://arxiv.org/abs/2609.13402v3",
+  "text": "We develop a diffusion-model framework for dynamic implied-volatility surface generation and evaluate its economic usefulness through data-driven hedging. The framework consists of two models. AD-Seq-Vol jointly learns the conditional evolution of the underlying asset return and the high-dimensional implied-volatility surface, generating adapted multi-period scenarios by sequentially updating the realized market history. AD-Seq-Vol-FT further incorporates option-market structure through post-training penalties for violations of static no-arbitrage conditions. Using daily SPX option data from 2000 to 2023, we show that the proposed models generate coherent surface trajectories while capturing both cross-sectional and temporal dependence. AD-Seq-Vol produces fewer and less severe static-arbi",
+  "symbols": [],
+  "found_at": "2026-09-18T04:32:18+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "VertiFuseX: Generalizable Financial Forecasting via Multi-Stream Temporal Fusion",
+  "url": "http://arxiv.org/abs/2609.12793v1",
+  "text": "Stock price prediction remains challenging due to the non-stationary and noisy nature of financial time series. Existing deep learning models often rely on rigid decision-level fusion, ad hoc hyperparameter tuning, and compressed final-layer outputs, causing information loss, overfitting, and limited cross-market generalization. We propose VertiFuseX, a hybrid LSTM architecture using penultimate-layer vertical fusion of multi-scale temporal representations. VertiFuseX stacks and reweights penultimate features from LSTM, Bi-LSTM, and St-LSTM branches, integrates a parallel DNN stream, and jointly optimizes all components via backpropagation under a fixed hyperparameter configuration. This preserves richer intermediate temporal information across scales. Evaluated on 15 years (2010-2024) of",
+  "symbols": [],
+  "found_at": "2026-09-18T04:32:18+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Large Signal Libraries: Equal-Weight Limits and the Divergent Spectra of Signals and PnL",
+  "url": "http://arxiv.org/abs/2609.12477v1",
+  "text": "An ensemble of roughly 3,000 signals over 20 assets was reported to have approximately 90% correlation with the leading component of the asset-space return structure. Does having about 158 signals per available linear dimension explain that alignment? The population answer depends on the research process's design distribution and its relation to returns: crowding alone imposes neither a nonzero mean nor agreement with a principal component. The population theory developed here distinguishes four objects: the equal-weight signal, signal principal components, equal-weight profit and loss (PnL), and PnL principal components. The return operator in the motivating observation is a separate object. Independent libraries converge to their design mean; exchangeable libraries can retain a random co",
+  "symbols": [],
+  "found_at": "2026-09-18T04:32:18+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Seasonal Trading in Commodity Futures: Evidence from Regression and Singular Spectrum Signals",
+  "url": "http://arxiv.org/abs/2609.12227v1",
+  "text": "Commodity futures are shaped by harvest cycles, weather shocks, storage conditions, and seasonal demand, but it remains unclear whether recurring patterns yield robust out-of-sample trading profits. Existing research documents return seasonality in commodity futures as well as more complex seasonal structure, while leaving less evidence on how alternative seasonal models compare under common implementation constraints. This article compares dummy-variable regression (DVR), Singular Spectrum Analysis (SSA), and robust low-rank SSA (RLSSA) within a unified trading framework, including a volatility-normalised specification. Using monthly delivery-avoidance returns for 15 liquid commodity futures, the models are estimated on rolling ten-year windows and evaluated from 2016 to 2024 with transac",
+  "symbols": [],
+  "found_at": "2026-09-18T04:32:18+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Entropic Value-at-Risk parity for tempered stable returns",
+  "url": "http://arxiv.org/abs/2609.11905v1",
+  "text": "We develop Entropic Value-at-Risk (EVaR) parity for tempered stable returns. EVaR-based inverse risk parity (IRP) and equal risk contribution (ERC) portfolios are constructed using multivariate normal tempered stable models and independent component analysis with tempered stable components. We derive the corresponding asset-level EVaR and EVaR-deviation contributions and use the latter to separate the fitted location term from EVaR risk contributions. Under Gaussian returns, EVaR-deviation IRP and ERC recover conventional volatility IRP and ERC weights. We evaluate the resulting portfolios in three investment universes. Empirically, EVaR-based ERC portfolios achieve positive Sharpe differences relative to equal weight across the universes.",
+  "symbols": [],
+  "found_at": "2026-09-18T04:32:18+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Deep Learning of Robust Market Making under Regime-Switching Order Flow",
+  "url": "http://arxiv.org/abs/2609.11614v1",
+  "text": "Classical market-making strategies based on stochastic control, such as the Avellaneda-Stoikov and the Gu\u00e9ant-Lehalle-Fernandez-Tapia (GLFT) extension, provide closed-form quoting rules, but rest on assumptions that break down at realistic microstructure timescales. One of them is that order flow is stationary, while empirical evidence points to the existence of regimes, possibly associated with algorithmic execution of metaorders. In this case, existing methods provide negative PnL. In this paper, we develop a deep reinforcement-learning market maker (RLMM) - a Rainbow-style distributional DQN (C51) which is calibrated and tested in a zero-intelligence limit order book. We find that, in the stationary setting, RLMM outperforms GLFT across the entire observed risk-return frontier. The RLMM",
+  "symbols": [],
+  "found_at": "2026-09-18T04:32:18+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "The Elliptically Optimal Confidence Interval: A Bivariate Extension of Wilson's Score Method",
+  "url": "http://arxiv.org/abs/2609.10865v1",
+  "text": "Constructing a confidence interval for the difference between two independent binomial proportions involves a nuisance direction that is not identified by the estimand. The one-sample Wilson score interval inverts a scalar score test, but has no direct bivariate analogue isolating the difference: inverting the joint normal approximation yields an elliptical region in the unit square, whereas the estimand \\(p_1-p_2\\) is one-dimensional. We define the Elliptically Optimal (EO) confidence interval as the range of \\(p_1-p_2\\) over this region and solve the resulting optimization problem in closed form, obtaining explicit bounds in six mutually exclusive and exhaustive cases. The solution admits a compact characterization: the EO interval is the score interval obtained by maximizing over the nu",
+  "symbols": [],
+  "found_at": "2026-09-18T04:32:18+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "dexamine: A Python package for Uniswap event data on Ethereum",
+  "url": "http://arxiv.org/abs/2609.10407v1",
+  "text": "Decentralized exchanges record trading and liquidity provision on public blockchains, but empirical analysis requires interpreting these records and linking them to execution metadata. dexamine is a Python package that parses Uniswap v2 and v3 events on Ethereum. It converts transaction receipt logs into observations of trades and liquidity changes, with token quantities, pool state, transaction order, and gas information. The package separates data retrieval, contract metadata, protocol interpretation, and output construction. The repository provides recorded Ethereum responses and an offline reproducible example, and version 1 has been used to construct data for an empirical study of price discovery in decentralized markets.",
+  "symbols": [],
+  "found_at": "2026-09-18T04:32:18+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Signal Correlation, IC, and PnL Dependence",
+  "url": "http://arxiv.org/abs/2609.09588v1",
+  "text": "Signal correlation and PnL correlation are correlations over different index sets - across assets at each date versus across dates for scalar payoffs - and practitioners often treat the first as a proxy for the second. We give an exact decomposition that shows what that proxy sees and what it discards. We recall that at each date a normalized signal's projection onto the realized demeaned return direction is its realized cross-sectional Pearson IC, so that fixed-signal PnL is return dispersion times IC (Qian and Hua, 2004), and we identify the normalized similarity of two signals in the orthogonal complement as their partial correlation controlling for realized returns; the residual rotational freedom is an orthogonal gauge whose invariants are the transverse Gram matrix. Signal correlatio",
+  "symbols": [],
+  "found_at": "2026-09-18T04:32:18+00:00"
+ }
+]

@@ -1,0 +1,658 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u200eTrading Economics App - App Store",
+  "url": "https://itunes.apple.com/us/app/trading-economics/id1142178921?mt=8",
+  "published": "2026-09-18T00:13:46+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://itunes.apple.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "e91958128fc68ac7516d",
+  "host": "itunes.apple.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cumulative IBS Indicator | European Edges",
+  "url": "http://europeanedges.wordpress.com/2013/01/13/cumulative-ibs-indicator/",
+  "published": "2026-09-18T00:13:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c7d499230c3c9e424667",
+  "host": "europeanedges.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Jeff Brown&#039;s Quantum Keystone Stock Revealed: Is It Good?",
+  "url": "https://steadyincomeinvestments.com/jeff-browns-quantum-keystone-stock-revealed-is-it-good/",
+  "published": "2026-09-18T00:13:49+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "carry",
+   "night_session",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7327fe4dc240c36eeae9",
+  "host": "steadyincomeinvestments.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Trading Terminal Guide: Market Watch, Orders &amp; Bid",
+  "url": "https://zerodha.com/varsity?p=289&comments=all",
+  "published": "2026-09-18T00:14:07+00:00",
+  "symbols": [
+   "XZNUSD",
+   "XTIUSD",
+   "USDKRW",
+   "USDINR",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "breakout",
+   "carry",
+   "gap",
+   "night_session",
+   "orderflow",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "227bf356b556ad349c6a",
+  "host": "zerodha.com",
+  "claims": [
+   {
+    "claim": "40% lower than the previous day\u2019s close, which was Rs.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "day",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XZNUSD",
+      "XTIUSD",
+      "USDKRW",
+      "USDINR",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "zinc",
+      "crude",
+      "sensex",
+      "won",
+      "rupee",
+      "try"
+     ],
+     "transfer_only": [
+      "sensex->indices (NSE/BSE)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5455661ca0bd"
+   },
+   {
+    "claim": "If you notice, there is an open order to buy one share of ITC at Rs.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "buy"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XZNUSD",
+      "XTIUSD",
+      "USDKRW",
+      "USDINR",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "zinc",
+      "crude",
+      "sensex",
+      "won",
+      "rupee",
+      "try"
+     ],
+     "transfer_only": [
+      "sensex->indices (NSE/BSE)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "40559f2dc582"
+   },
+   {
+    "claim": "Reply Franklin says: April 22, 2024 at 12:28 am Sir,Is it still the same process,like,can we short in a CNC basis,like,can short position be carried out to the next day?",
+    "lang": "en",
+    "quantities": [
+     "basis"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "next day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XZNUSD",
+      "XTIUSD",
+      "USDKRW",
+      "USDINR",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "zinc",
+      "crude",
+      "sensex",
+      "won",
+      "rupee",
+      "try"
+     ],
+     "transfer_only": [
+      "sensex->indices (NSE/BSE)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "d3198f241df2"
+   },
+   {
+    "claim": "Reply Karthik Rangappa says: April 22, 2024 at 8:09 am An no, you cannot short in CNC and carry forward the position to next day.",
+    "lang": "en",
+    "quantities": [
+     "carry"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "next day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XZNUSD",
+      "XTIUSD",
+      "USDKRW",
+      "USDINR",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "zinc",
+      "crude",
+      "sensex",
+      "won",
+      "rupee",
+      "try"
+     ],
+     "transfer_only": [
+      "sensex->indices (NSE/BSE)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "7b473cb45d5a"
+   },
+   {
+    "claim": "Another thing in case we buy MIS and then decide to carry forward the order to the next day and do not square off the position the same day considering we have sufficient funds in the account is there a possibility to carry forward the position ?",
+    "lang": "en",
+    "quantities": [
+     "carry"
+    ],
+    "direction": [
+     "buy"
+    ],
+    "horizon": [
+     "next day",
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XZNUSD",
+      "XTIUSD",
+      "USDKRW",
+      "USDINR",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "zinc",
+      "crude",
+      "sensex",
+      "won",
+      "rupee",
+      "try"
+     ],
+     "transfer_only": [
+      "sensex->indices (NSE/BSE)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8f770a163b4c"
+   },
+   {
+    "claim": "Reply Karthik Rangappa says: January 31, 2022 at 10:38 am Yup, thats possible as long as the price is within the day\\\u2019s trading range.",
+    "lang": "en",
+    "quantities": [
+     "range"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XZNUSD",
+      "XTIUSD",
+      "USDKRW",
+      "USDINR",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "zinc",
+      "crude",
+      "sensex",
+      "won",
+      "rupee",
+      "try"
+     ],
+     "transfer_only": [
+      "sensex->indices (NSE/BSE)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b9c44db27d67"
+   },
+   {
+    "claim": "INSTRUMENT SYMBOL EXPIRY_DT STRIKE_PR OPTION_TYP OPEN HIGH LOW CLOSE SETTLE_PR CONTRACTS VAL_INLAKH OPEN_INT CHG_IN_OI TIMESTAMP OPTIDX NIFTY 30-Dec-2021 17000 PE 0 0 0 1875 2361.",
+    "lang": "en",
+    "quantities": [
+     "expiry",
+     "open",
+     "close"
+    ],
+    "direction": [
+     "contracts"
+    ],
+    "horizon": [
+     "expiry",
+     "open"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "nifty"
+     ],
+     "transfer_only": [
+      "nifty->indices (NSE/BSE)"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "f28dc06e2f48"
+   },
+   {
+    "claim": "com/z-connect/zerodha/bulletin-latest-at-zerodha/peak-margin-intraday-leverages-2nd-order-effects-dec-1st-2020 Reply Aravinth says: January 22, 2021 at 1:08 pm How do I place order for Shorting in Futures?",
+    "lang": "da",
+    "quantities": [
+     "futures"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "intraday"
+    ],
+    "instruments": {
+     "analogues": [
+      "XZNUSD",
+      "XTIUSD",
+      "USDKRW",
+      "USDINR",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "zinc",
+      "crude",
+      "sensex",
+      "won",
+      "rupee",
+      "try"
+     ],
+     "transfer_only": [
+      "sensex->indices (NSE/BSE)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "1eb4e9518b8c"
+   }
+  ],
+  "n_claims": 12
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u200eMobileTrader FX Trading Online App - App Store",
+  "url": "https://itunes.apple.com/gb/app/mobiletrader-roboforex/id1137639247?mt=8",
+  "published": "2026-09-18T00:14:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-GB",
+  "endpoints": [
+   "https://itunes.apple.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5e690ddc76a7b418753d",
+  "host": "itunes.apple.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Mercados",
+  "url": "https://www.eleconomista.com.mx/mercados/",
+  "published": "2026-09-18T00:14:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [
+   "https://www.eleconomista.com.mx/mediakit/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "a1ca0f1be647a7194aa7",
+  "host": "www.eleconomista.com.mx",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Divisas",
+  "url": "https://www.eleconomista.com.mx/mercados/divisas",
+  "published": "2026-09-18T00:14:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "orderflow",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [
+   "https://www.eleconomista.com.mx/mediakit/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "e6191a5ece62fb631d9d",
+  "host": "www.eleconomista.com.mx",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithms: A Quest for Absolute Definitions - Microsoft Research",
+  "url": "http://research.microsoft.com/~gurevich/Opera/164.pdf",
+  "published": "2026-09-18T00:14:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.microsoft.com/en-us/research/wp-content/themes/microsoft-research-theme/humans.txt",
+   "https://www.microsoft.com/en-us/download"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "b0367b67df010191f8d9",
+  "host": "research.microsoft.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Microsoft Research \u2013 Emerging Technology, Computer, &amp; Software Research",
+  "url": "http://research.microsoft.com/~gurevich/Opera/141.pdf",
+  "published": "2026-09-18T00:14:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.microsoft.com/en-us/research/wp-content/themes/microsoft-research-theme/humans.txt",
+   "https://www.microsoft.com/en-us/download"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "bece543b2736194a33e6",
+  "host": "research.microsoft.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "G\u00f6del's Market: Interviewing the Quants: An Inside Look With &#8220;Sanz Prophet&#8221;",
+  "url": "http://godelsmarket.blogspot.tw/2015/01/interviewing-quants-inside-look-with.html",
+  "published": "2026-09-18T00:14:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "correlation",
+   "inventory",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3d9a2d2073491c8015c1",
+  "host": "godelsmarket.blogspot.tw",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\u5348\u5e74\u76f8\u5834\u3001\u682a\u4fa1\u306e\u52d5\u304d\u3092\u30a2\u30ce\u30de\u30ea\u30fc\u304b\u3089\u63a2\u308b - \u65e5\u672c\u7d4c\u6e08\u65b0\u805e",
+  "url": "https://www.nikkei.com/article/DGXZQOUB053PX0V00C26A1000000/",
+  "published": "2026-09-18T00:14:35+00:00",
+  "symbols": [
+   "XAUUSD",
+   "JPN225",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "ja",
+  "endpoints": [
+   "https://www.nikkei.com/api/svg/v1/k-search.rev-adf84c.svg?fill=%23333"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "4e2f9ae1ff8c1e413e61",
+  "host": "www.nikkei.com",
+  "claims": [
+   {
+    "claim": "\u30b3\u30e9\u30e0 Podcast \u3053\u3061\u3089\u3082\u304a\u3059\u3059\u3081\uff08\u81ea\u52d5\u691c\u7d22\uff09 \u9700\u7d66\u903c\u8feb\u3067\u6025\u9a30\u3059\u308bMLCC\u95a2\u9023\u682a\u3001\u6ce8\u76ee\u306e\u304d\u3063\u304b\u3051\u306f 6\u670815\u65e5 \u30d1\u30c3\u30af\u30f3\u3068\u52d5\u753b\u3067\u5b66\u3076 \u300c\u30aa\u30eb\u30ab\u30f3\u3060\u3051\u3067\u5927\u4e08\u592b\uff1f",
+    "lang": "ja",
+    "quantities": [
+     "\u9700\u7d66"
+    ],
+    "direction": [
+     "\u6025\u9a30"
+    ],
+    "horizon": [
+     "\u65e5",
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "JPN225",
+      "USDJPY"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1",
+      "\u65e5\u7d4c",
+      "\u30c9\u30eb\u5186"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [
+      "\u65e5\u9280: policy: BoJ / MoF intervention -> JPY",
+      "\u6295\u4fe1: flow: Japanese outbound investment -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "ecae4afe9b31"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The Problem with Forex Fundamental Analysis &#8211; InvestMacro FX",
+  "url": "http://countingpips.com/fx/2011/03/06/the-problem-with-forex-fundamental-analysis/",
+  "published": "2026-09-18T00:14:37+00:00",
+  "symbols": [
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c61c0b2a79659cb40254",
+  "host": "countingpips.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "#012: Andrea Unger, czterokrotny mistrz \u015bwiata w tradingu (EN) - System Trader",
+  "url": "https://systemtrader.pl/st-012-andrea-unger-4-time-world-trading-champion/",
+  "published": "2026-09-18T00:14:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "pl-PL",
+  "endpoints": [
+   "https://api.spreaker.com/download/episode/14924984/st012_andrea_unger_4_time_world_trading_champion.mp3"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "58001650b31449a219f7",
+  "host": "systemtrader.pl",
+  "claims": [],
+  "n_claims": 0
+ }
+]

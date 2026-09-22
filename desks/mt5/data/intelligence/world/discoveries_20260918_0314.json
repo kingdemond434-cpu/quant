@@ -1,0 +1,827 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Transcript of the Governor&#39;s pooled broadcast interview given on 17 September 2026 | Bank of England \u2013 the UK&#39;s central bank",
+  "url": "https://www.bankofengland.co.uk/news/2026/september/the-governor-interview-transcript-17-september-2026",
+  "published": "2026-09-18T03:12:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b5ac140c8b50c9308f7e",
+  "host": "www.bankofengland.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Monetary Policy Committee dates for 2027 | Bank of England \u2013 the UK&#39;s central bank",
+  "url": "https://www.bankofengland.co.uk/news/2026/september/mpc-dates-for-2027",
+  "published": "2026-09-18T03:12:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a2241642a4482a1b7c1d",
+  "host": "www.bankofengland.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Exchange of letters between the Governor and the Chancellor regarding CPI Inflation - September 2026 | Bank of England \u2013 the UK&#39;s central bank",
+  "url": "https://www.bankofengland.co.uk/letter/2026/cpi-inflation-september-2026",
+  "published": "2026-09-18T03:12:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2e9f6ddf9223cdc62456",
+  "host": "www.bankofengland.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Exchange of letters between the Governor and the Chancellor regarding QT and the APF - September 2026 | Bank of England \u2013 the UK&#39;s central bank",
+  "url": "https://www.bankofengland.co.uk/letter/2026/exchange-of-letters-between-the-governor-and-the-chancellor-regarding-qt-and-the-apf",
+  "published": "2026-09-18T03:12:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ef7a3d3b097d4269b9bf",
+  "host": "www.bankofengland.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Bank rate maintained at 3.75% - September 2026 Monetary Policy Summary and Minutes | Bank of England \u2013 the UK&#39;s central bank",
+  "url": "https://www.bankofengland.co.uk/monetary-policy-summary-and-minutes/2026/september-2026",
+  "published": "2026-09-18T03:12:48+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XTIUSD",
+   "US500",
+   "GBPUSD",
+   "UKGILT"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "flow",
+   "inventory",
+   "night_session",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.bankofengland.co.uk/-/media/boe/files/monetary-policy-summary-and-minutes/mpcvoting.xlsx"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "0864a9be162d2ad48487",
+  "host": "www.bankofengland.co.uk",
+  "claims": [
+   {
+    "claim": "6: UK financial conditions had tightened further since the July Report, driven by increases in short-term overnight index swap (OIS) rates.",
+    "lang": "en",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "overnight"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "US500",
+      "GBPUSD",
+      "UKGILT"
+     ],
+     "mentioned": [
+      "gold",
+      "crude",
+      "s&p",
+      "pound",
+      "gilts"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "SOYBEAN",
+      "CORN",
+      "WHEAT",
+      "USDBRL"
+     ],
+     "channels": [
+      "bank of england: policy: BoE -> GBP",
+      "el ni\u00f1o: weather/agri report -> grains and BRL"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a5c34bdaa253"
+   },
+   {
+    "claim": "Based on energy prices as at close of business on 14 September, the direct contribution of energy prices to inflation was expected to increase over coming quarters, reflecting recent further increases in wholesale oil, gas and electricity costs.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "increase"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "US500",
+      "GBPUSD",
+      "UKGILT"
+     ],
+     "mentioned": [
+      "gold",
+      "crude",
+      "s&p",
+      "pound",
+      "gilts"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "SOYBEAN",
+      "CORN",
+      "WHEAT",
+      "USDBRL"
+     ],
+     "channels": [
+      "bank of england: policy: BoE -> GBP",
+      "el ni\u00f1o: weather/agri report -> grains and BRL"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "6347f7561eb8"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Asset Purchase Facility: Gilt Sales \u2013 Market Notice 17 September 2026 | Bank of England \u2013 the UK&#39;s central bank",
+  "url": "https://www.bankofengland.co.uk/markets/market-notices/2026/asset-purchase-facility-gilt-sales-market-notice-17-september-2026",
+  "published": "2026-09-18T03:12:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "10fec6fca6f53e179392",
+  "host": "www.bankofengland.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Chancellor announces Bank of England appointments | Bank of England \u2013 the UK&#39;s central bank",
+  "url": "https://www.bankofengland.co.uk/news/2026/september/chancellor-announces-boe-appointments",
+  "published": "2026-09-18T03:12:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "647cbf6b13ba181df87f",
+  "host": "www.bankofengland.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Hush&#xE5;llens konsumtion &#xF6;kade i augusti 2026",
+  "url": "https://www.scb.se/hitta-statistik/statistik-efter-amne/hushallens-ekonomi/hushallens-utgifter/hushallens-konsumtion/pong/statistiknyhet/hushallens-konsumtionsindikator-juli-och-augusti-2026-veckoindikator-till-och-med-vecka-36-2026/",
+  "published": "2026-09-18T03:12:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "seasonality"
+  ],
+  "confidence": 0.35,
+  "lang": "sv",
+  "endpoints": [
+   "https://www.scb.se/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "d63e1dab00cb391eb2c4",
+  "host": "www.scb.se",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Pakistan Market Strategy \u2014 Risk-Based Fund Allocation | PSX Tactics",
+  "url": "https://psxtactics.vercel.app/MarketStrategy",
+  "published": "2026-09-18T03:12:52+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "61c22f0675b0f245f51c",
+  "host": "psxtactics.vercel.app",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "State Bank of Pakistan",
+  "url": "https://www.sbp.org.pk/",
+  "published": "2026-09-18T03:12:55+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "auction",
+   "flow",
+   "momentum",
+   "night_session"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.sbp.org.pk/our-operations/covid-19-measures-by-sbp/relaxing-credit-requirements-for-exporters-and-importers"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c306357d491654ea701b",
+  "host": "www.sbp.org.pk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The MVCI (Whatever That Means) Indicator | Jay On The Markets",
+  "url": "http://tinyurl.com/pjcw6z6",
+  "published": "2026-09-18T03:12:57+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ea109875646338effdb4",
+  "host": "tinyurl.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quant Traders - Academy, Courses, Software, Research + Podcast!",
+  "url": "http://www.thealgorithmicadvantage.com",
+  "published": "2026-09-18T03:13:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0675826ba40e34716859",
+  "host": "www.thealgorithmicadvantage.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Algorithm - Encyclopedia of Mathematics",
+  "url": "https://encyclopediaofmath.org/wiki/Algorithm",
+  "published": "2026-09-18T03:13:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ca24d17269e449e073b1",
+  "host": "encyclopediaofmath.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u200eOANDA - Forex trading App - App Store",
+  "url": "https://app.adjust.com/1bmq613m?redirect_androidhttps%3A%2F%2Fapps.apple.com%2Fus%2Fapp%2Foanda-forex-trading%2Fid370922777",
+  "published": "2026-09-18T03:13:11+00:00",
+  "symbols": [],
+  "timeframes": [
+   "4H",
+   "M1"
+  ],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://app.adjust.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "011d6e35f74bc9ba6ad4",
+  "host": "app.adjust.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cumulative IBS Indicator | European Edges",
+  "url": "http://europeanedges.wordpress.com/2013/01/13/cumulative-ibs-indicator/",
+  "published": "2026-09-18T03:13:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5d1c0e4e84e2bc64d959",
+  "host": "europeanedges.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Jeff Brown&#039;s Quantum Keystone Stock Revealed: Is It Good?",
+  "url": "https://steadyincomeinvestments.com/jeff-browns-quantum-keystone-stock-revealed-is-it-good/",
+  "published": "2026-09-18T03:13:14+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "carry",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e64e4c643080df28cfb1",
+  "host": "steadyincomeinvestments.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Trading Terminal Guide: Market Watch, Orders &amp; Bid",
+  "url": "https://zerodha.com/varsity?p=289&comments=all",
+  "published": "2026-09-18T03:13:28+00:00",
+  "symbols": [
+   "XZNUSD",
+   "XTIUSD",
+   "USDKRW",
+   "USDINR",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "breakout",
+   "carry",
+   "gap",
+   "night_session",
+   "orderflow",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2e2e45000c4d7c6760e1",
+  "host": "zerodha.com",
+  "claims": [
+   {
+    "claim": "40% lower than the previous day\u2019s close, which was Rs.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "day",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XZNUSD",
+      "XTIUSD",
+      "USDKRW",
+      "USDINR",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "zinc",
+      "crude",
+      "sensex",
+      "won",
+      "rupee",
+      "try"
+     ],
+     "transfer_only": [
+      "sensex->indices (NSE/BSE)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5455661ca0bd"
+   },
+   {
+    "claim": "If you notice, there is an open order to buy one share of ITC at Rs.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "buy"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XZNUSD",
+      "XTIUSD",
+      "USDKRW",
+      "USDINR",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "zinc",
+      "crude",
+      "sensex",
+      "won",
+      "rupee",
+      "try"
+     ],
+     "transfer_only": [
+      "sensex->indices (NSE/BSE)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "40559f2dc582"
+   },
+   {
+    "claim": "Reply Franklin says: April 22, 2024 at 12:28 am Sir,Is it still the same process,like,can we short in a CNC basis,like,can short position be carried out to the next day?",
+    "lang": "en",
+    "quantities": [
+     "basis"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "next day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XZNUSD",
+      "XTIUSD",
+      "USDKRW",
+      "USDINR",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "zinc",
+      "crude",
+      "sensex",
+      "won",
+      "rupee",
+      "try"
+     ],
+     "transfer_only": [
+      "sensex->indices (NSE/BSE)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "d3198f241df2"
+   },
+   {
+    "claim": "Reply Karthik Rangappa says: April 22, 2024 at 8:09 am An no, you cannot short in CNC and carry forward the position to next day.",
+    "lang": "en",
+    "quantities": [
+     "carry"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "next day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XZNUSD",
+      "XTIUSD",
+      "USDKRW",
+      "USDINR",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "zinc",
+      "crude",
+      "sensex",
+      "won",
+      "rupee",
+      "try"
+     ],
+     "transfer_only": [
+      "sensex->indices (NSE/BSE)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "7b473cb45d5a"
+   },
+   {
+    "claim": "Another thing in case we buy MIS and then decide to carry forward the order to the next day and do not square off the position the same day considering we have sufficient funds in the account is there a possibility to carry forward the position ?",
+    "lang": "en",
+    "quantities": [
+     "carry"
+    ],
+    "direction": [
+     "buy"
+    ],
+    "horizon": [
+     "next day",
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XZNUSD",
+      "XTIUSD",
+      "USDKRW",
+      "USDINR",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "zinc",
+      "crude",
+      "sensex",
+      "won",
+      "rupee",
+      "try"
+     ],
+     "transfer_only": [
+      "sensex->indices (NSE/BSE)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8f770a163b4c"
+   },
+   {
+    "claim": "Reply Karthik Rangappa says: January 31, 2022 at 10:38 am Yup, thats possible as long as the price is within the day\\\u2019s trading range.",
+    "lang": "en",
+    "quantities": [
+     "range"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XZNUSD",
+      "XTIUSD",
+      "USDKRW",
+      "USDINR",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "zinc",
+      "crude",
+      "sensex",
+      "won",
+      "rupee",
+      "try"
+     ],
+     "transfer_only": [
+      "sensex->indices (NSE/BSE)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b9c44db27d67"
+   },
+   {
+    "claim": "INSTRUMENT SYMBOL EXPIRY_DT STRIKE_PR OPTION_TYP OPEN HIGH LOW CLOSE SETTLE_PR CONTRACTS VAL_INLAKH OPEN_INT CHG_IN_OI TIMESTAMP OPTIDX NIFTY 30-Dec-2021 17000 PE 0 0 0 1875 2361.",
+    "lang": "en",
+    "quantities": [
+     "expiry",
+     "open",
+     "close"
+    ],
+    "direction": [
+     "contracts"
+    ],
+    "horizon": [
+     "expiry",
+     "open"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "nifty"
+     ],
+     "transfer_only": [
+      "nifty->indices (NSE/BSE)"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "f28dc06e2f48"
+   },
+   {
+    "claim": "com/z-connect/zerodha/bulletin-latest-at-zerodha/peak-margin-intraday-leverages-2nd-order-effects-dec-1st-2020 Reply Aravinth says: January 22, 2021 at 1:08 pm How do I place order for Shorting in Futures?",
+    "lang": "da",
+    "quantities": [
+     "futures"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "intraday"
+    ],
+    "instruments": {
+     "analogues": [
+      "XZNUSD",
+      "XTIUSD",
+      "USDKRW",
+      "USDINR",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "zinc",
+      "crude",
+      "sensex",
+      "won",
+      "rupee",
+      "try"
+     ],
+     "transfer_only": [
+      "sensex->indices (NSE/BSE)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "1eb4e9518b8c"
+   }
+  ],
+  "n_claims": 12
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "R-Forge: TradeAnalytics: SCM Repository",
+  "url": "https://r-forge.r-project.org/scm/viewvc.php/pkg/quantstrat/?root=blotter",
+  "published": "2026-09-18T03:13:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://r-forge.r-project.org/export/rss_sfnews.php",
+   "https://r-forge.r-project.org/export/rss20_news.php",
+   "https://r-forge.r-project.org/export/rss_sfprojects.php",
+   "https://r-forge.r-project.org/export/rss20_activity.php?group_id=316",
+   "https://r-forge.r-project.org/export/search_plugin.php"
+  ],
+  "n_endpoints": 5,
+  "vault_sha": "7c22069523bafdad7bb0",
+  "host": "r-forge.r-project.org",
+  "claims": [],
+  "n_claims": 0
+ }
+]
