@@ -129,7 +129,8 @@ def test_the_ledger_and_file_readers_are_bound_to_the_desks_paths(tmp_path) -> N
     retired = tmp_path / "GOLD_RETIRED.json"
     retired.write_text('{"gold_asia": {"reason": "r"}}', "utf-8")
     ns = _exec(("sleeve_live_n", "load_sleeves", "_load_retired_gold", "ledger_rows"),
-               {"LEDGER": ledger, "SLEEVES_FILE": sleeves, "GOLD_RETIRED_FILE": retired})
+               {"LEDGER": ledger, "SLEEVES_FILE": sleeves, "GOLD_RETIRED_FILE": retired,
+                "log": lambda *_: None})
     assert ns["sleeve_live_n"]("a") == 1 and ns["sleeve_live_n"]("zzz") == 0
     assert ns["load_sleeves"]() == [{"name": "x", "status": "LIVE"}]
     assert ns["_load_retired_gold"]() == {"gold_asia": {"reason": "r"}}
