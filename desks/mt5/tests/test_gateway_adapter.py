@@ -1143,7 +1143,8 @@ def test_the_pause_file_readers_look_under_data_and_main_consults_gateway_paused
 def _manage_ns(mt5: SimpleNamespace) -> dict:
     logs: list[str] = []
     ns = {"mt5": mt5, "log": logs.append, "MAGIC": 1, "_logs": logs}
-    return _exec(("manage_open_positions", "order_comment", "_original_stop_distance"), ns)
+    return _exec(("manage_open_positions", "order_comment", "_original_stop_distance",
+                  "_rates_since_position"), ns)
 
 
 def _manage_mt5(comment: str, sent: list) -> SimpleNamespace:
@@ -1154,7 +1155,7 @@ def _manage_mt5(comment: str, sent: list) -> SimpleNamespace:
         positions_get=lambda symbol=None: [pos],
         symbol_info=lambda symbol: SimpleNamespace(trade_stops_level=0, trade_tick_size=0.00001),
         # No bars since entry: a position that IS managed stops at "fewer than 2 bars".
-        copy_rates_range=lambda *a, **k: None,
+        copy_rates_from_pos=lambda *a, **k: None,
         order_send=lambda req: sent.append(req))
 
 
