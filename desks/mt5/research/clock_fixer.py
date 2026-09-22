@@ -93,6 +93,7 @@ RESIDENTS: dict[str, tuple[str, str, int]] = _load_residents()
 #: `libs/ops/control_plane/actuators.py` runs each one and then PROVES its postcondition by
 #: observation, because every one of them has exited zero while repairing nothing.
 STEPS: tuple[tuple[str, list[str], int], ...] = (
+    ("reap_orphans", [str(DESK / "scripts" / "reap_orphaned_workers.py")], 60),
     ("identity_heal", [str(DESK / "scripts" / "heal_identity_broken_clocks.py"), "--apply"], 120),
     ("orphaned_clocks", [str(DESK / "scripts" / "heal_orphaned_clocks.py")], 120),
     ("silent_demotions", [str(DESK / "scripts" / "heal_silent_demotions.py")], 120),
