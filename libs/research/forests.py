@@ -189,45 +189,59 @@ REGIONAL_FORESTS: tuple[Forest, ...] = (
        grounds=("ru", "ua"),
        mission="Habr, smart-lab, the RU failure vocabulary, the CBR and the CIS commodity plane"),
     _f("south_asia", "South Asia", "regional", countries=("IN", "PK", "BD", "LK", "NP"),
-       languages=("en", "hi", "ur", "bn", "si", "ta"), packs=("ind",),
+       languages=("en", "hi", "ur", "bn", "si", "ta"), packs=("ind", "pk", "bd", "lk"),
        grounds=("in", "pk", "bd", "lk"),
-       mission="the Indian derivatives ecology and the South Asian trade/energy plane"),
+       mission="the Indian derivatives ecology and the South Asian trade/energy plane; "
+               "Pakistan, Bangladesh and Sri Lanka as remittance, IMF-programme and "
+               "textile/tea economies transmitting into USDINR, oil, gold and the US indices"),
     _f("asean", "ASEAN", "regional", countries=("SG", "VN", "TH", "ID", "MY", "PH"),
        languages=("en", "vi", "th", "id", "ms", "tl"),
        packs=("sg", "vn", "th", "idn", "my", "ph"), grounds=("sg", "vn", "th", "id", "my", "ph"),
        mission="the ASEAN commodity, FX and retail-leverage ecologies in their own languages"),
-    _f("oceania", "Oceania", "regional", countries=("AU", "NZ"), languages=("en",),
-       packs=("au", "nz"), grounds=("au", "nz"),
-       mission="the AUD/NZD commodity-currency complex, the RBA/RBNZ plane and the mining tape"),
+    _f("oceania", "Oceania", "regional", countries=("AU", "NZ", "PG", "FJ"),
+       languages=("en", "tpi", "fj", "hif"), packs=("au", "nz", "pacific"),
+       grounds=("au", "nz", "pg", "fj"),
+       mission="the AUD/NZD commodity-currency complex, the RBA/RBNZ plane and the mining tape; "
+               "the Pacific island economies (PNG LNG/gold/copper, Fiji tourism/remittances, "
+               "cyclones) as one pack transmitting into Australia, China and New Zealand"),
     _f("europe", "Europe", "regional",
        countries=("GB", "DE", "FR", "IT", "ES", "NL", "SE", "NO", "DK", "FI", "PL", "CZ", "HU",
-                  "CH", "PT", "AT", "BE", "IE", "GR", "RO"),
+                  "CH", "PT", "AT", "BE", "IE", "GR", "RO", "BG", "RS"),
        languages=("en", "de", "fr", "it", "es", "nl", "sv", "no", "da", "fi", "pl", "cs", "hu",
-                  "pt"),
-       packs=("ea", "uk", "ch", "se", "no", "pl"),
-       grounds=("de", "fr", "it", "es", "nl", "se", "dk", "no", "fi", "pl", "cz", "hu", "gb"),
-       mission="the euro-area and European national planes, each in its own language"),
+                  "pt", "ro", "bg", "sr"),
+       packs=("ea", "uk", "ch", "se", "no", "pl", "cee_balkans"),
+       grounds=("de", "fr", "it", "es", "nl", "se", "dk", "no", "fi", "pl", "cz", "hu", "gb",
+                "ro", "bg", "rs"),
+       mission="the euro-area and European national planes, each in its own language; Romania, "
+               "Bulgaria and Serbia as one CEE/Balkans pack (NBR/BNB/NBS, EU funds, the grain "
+               "corridor) transmitting into the EUR crosses and the European indices"),
     _f("north_america", "North America", "regional", countries=("US", "CA"),
-       languages=("en", "fr"), grounds=("us", "ca"),
+       languages=("en", "fr"), packs=("us", "ca"), grounds=("us", "ca"),
        # MEXICO IS LATAM HERE, and belongs to exactly one forest: its central bank, its
        # language ground and its commodity plane are Latin American, and a country hunted
-       # by two civilizations charges the shared trial budget twice for one question.
-       mission="the US and Canadian official, practitioner and code ecologies",
-       notes="NO COUNTRY PACK EXISTS YET: every role but the scout reports UNMEASURED by name "
-             "until one lands, and the scout works from the mandate's own terms"),
+       # by two civilizations charges the shared trial budget twice for one question. The
+       # `mx` pack therefore stays on the latam roster and is NOT listed here (2026-09-22).
+       mission="the US and Canadian official, practitioner and code ecologies: the Fed/FOMC, "
+               "Treasury/TIC, BLS/BEA/Census, the CFTC COT as the positioning spine, EIA, USDA, "
+               "NOAA, the ports and the regional Feds; the BoC, StatCan, CBSA and the oil sands",
+       notes="the `us` and `ca` packs landed 2026-09-22 under the regional-parity law (LAWS 5n)"),
     _f("latam", "Latin America", "regional", countries=("BR", "MX", "CL", "CO", "PE", "AR"),
        languages=("pt", "es"), packs=("br", "mx", "cl", "co", "ar"),
        grounds=("br", "mx", "cl", "co", "pe", "ar"),
        mission="the Brazilian, Andean and Southern-Cone commodity and FX planes"),
     _f("mena", "Middle East and North Africa", "regional",
-       countries=("SA", "AE", "QA", "TR", "IL", "KW", "OM", "BH"),
-       languages=("ar", "tr", "he", "en"), packs=("sa", "ae", "il", "tr"),
-       grounds=("sa", "ae", "tr", "il"),
-       mission="the Gulf energy plane, the CBRT and the Israeli tech/FX ecology"),
+       countries=("SA", "AE", "QA", "TR", "IL", "KW", "OM", "BH", "MA"),
+       languages=("ar", "tr", "he", "en", "fr"), packs=("sa", "ae", "il", "tr", "ma"),
+       grounds=("sa", "ae", "tr", "il", "ma"),
+       mission="the Gulf energy plane, the CBRT and the Israeli tech/FX ecology; Morocco "
+               "(Bank Al-Maghrib, phosphates, the MRE remittance and tourism planes) as the "
+               "Maghreb pack transmitting into EURUSD, gold and the grain complex"),
     _f("africa", "Sub-Saharan Africa and Egypt", "regional",
-       countries=("EG", "ZA", "NG", "KE", "MA", "GH", "ET", "TZ"),
+       # MOROCCO IS MENA HERE (2026-09-22): its `ma` pack is on the mena roster, and a country
+       # belongs to exactly one forest, so it is no longer listed under africa.
+       countries=("EG", "ZA", "NG", "KE", "GH", "ET", "TZ"),
        languages=("en", "ar", "fr", "sw", "af"), packs=("eg", "za", "ng", "ke", "gh"),
-       grounds=("eg", "za", "ng", "ke", "ma"),
+       grounds=("eg", "za", "ng", "ke"),
        mission="the South African, Nigerian, Kenyan and North African planes: metals, energy, "
                "agriculture and the frontier-FX ecology"),
 )

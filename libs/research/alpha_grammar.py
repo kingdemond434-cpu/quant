@@ -67,6 +67,19 @@ WINDOWED = ("delay", "delta", "mean", "std", "min", "max", "ts_rank", "zscore", 
 BINARY = ("add", "sub", "mul", "div", "max2", "min2", "trade_when")
 BINARY_WINDOWED = ("corr", "residual", "cov", "group_rank", "group_zscore")
 OPERATORS = UNARY + WINDOWED + BINARY + BINARY_WINDOWED
+#: PANEL OPERATORS (the expression factory, LAWS 5l, 2026-09-22): the child's cross-sectional
+#: rank or z-score ACROSS THE CELL'S BASKET -- the currency basket or asset class the factory
+#: evaluates a cell against -- at each bar. The basket is a property of the CELL, not of the tree,
+#: so the node carries no argument: `["xrank", child]`. This is the published alphas' `rank(x)`
+#: said on a panel the desk actually has, where `ts_rank` is the same question asked of time.
+#: DELIBERATELY NOT IN `OPERATORS`: the typed samplers in `generators` offer every member of that
+#: tuple and infer arity from the four classes above, so listing these there would hand a
+#: single-instrument search a node it cannot evaluate. They are type-checked, unit-checked,
+#: structurally checked and mutable here; they EVALUATE only where the caller has seeded the memo
+#: with the panel series under the node's own key (`alpha_dsl.seed_panels`) and read NaN
+#: everywhere else -- the grammar's standing rule for a series it cannot compute.
+PANEL = ("xrank", "xzscore")
+ALL_OPERATORS = OPERATORS + PANEL
 WINDOWS = (2, 3, 5, 8, 12, 24, 48, 120, 240)
 MAX_DEPTH = 5
 #: Bars of log return that `vol` is measured over. One trading day on H1, so the terminal means
@@ -719,6 +732,9 @@ def type_of(expr: Expr) -> str:
             return "Z"
         if op == "residual":
             return a
+    if op in PANEL:
+        t = type_of(expr[1]) if len(expr) > 1 else INVALID
+        return INVALID if t == INVALID else ("RANK" if op == "xrank" else "Z")
     return INVALID
 
 
@@ -842,6 +858,9 @@ def dimension_of(expr: Expr) -> Dimension | None:
         if op == "trade_when":
             return b                                            # the signal's, held or taken
         return a                                                # residual
+    if op in PANEL:
+        a = dimension_of(expr[1]) if len(expr) > 1 else None
+        return None if a is None else DIMENSIONLESS             # a rank or a z across peers
     return None
 
 
@@ -1007,6 +1026,9 @@ def unit_of(expr: Expr) -> Unit | None:
         if op == "trade_when":
             return b if a.is_dimensionless else None            # a gate is a pure number
         return a                                                # residual
+    if op in PANEL:
+        a = unit_of(expr[1]) if len(expr) > 1 else None
+        return None if a is None else NO_UNIT                   # a rank or a z across peers
     return None
 
 
@@ -1122,6 +1144,8 @@ def _structurally_valid(expr: Expr, allow_drivers: bool = True,
         return (len(expr) == 4 and all(_structurally_valid(e, allow_drivers, terminals)
                                        for e in expr[1:3])
                 and isinstance(expr[3], int) and expr[3] in WINDOWS)
+    if op in PANEL:
+        return len(expr) == 2 and _structurally_valid(expr[1], allow_drivers, terminals)
     return False
 
 
@@ -1212,7 +1236,8 @@ def mutate(expr: Expr, rng: np.random.Generator, allow_drivers: bool = True,
             new = list(node)
             new[-1] = int(rng.choice(WINDOWS))
         elif move < 0.65:
-            cls = next(c for c in (UNARY, WINDOWED, BINARY, BINARY_WINDOWED) if node[0] in c)
+            cls = next(c for c in (UNARY, WINDOWED, BINARY, BINARY_WINDOWED, PANEL)
+                       if node[0] in c)
             new = list(node)
             new[0] = str(rng.choice(cls))
         else:
@@ -1253,7 +1278,9 @@ def describe(expr: Expr, side_mode: str = "follow") -> str:
                 _walk(c)
     _walk(expr)
     terms = sorted(terminals_in(expr))
-    if ops & {"group_rank", "group_zscore"}:
+    if ops & set(PANEL):
+        shape = "an extremeness measure AGAINST THE PEERS IN THE CELL'S BASKET"
+    elif ops & {"group_rank", "group_zscore"}:
         shape = "an extremeness measure AGAINST BARS IN THE SAME STATE"
     elif ops & {"delta", "decay", "sum"} and "zscore" not in ops:
         shape = "a momentum-type measure"

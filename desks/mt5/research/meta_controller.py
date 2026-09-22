@@ -338,6 +338,18 @@ KIND_LEGS: dict[str, tuple[str, ...]] = {
 }
 
 
+def _epoch_id(at: datetime) -> str:
+    """The immutable id of this controller cycle. Falls back to the timestamp alone when the
+    control plane is not importable, because a cycle with no id at all is one that any stale
+    report can certify."""
+    try:
+        sys.path.insert(0, str(ROOT))
+        from libs.ops.control_plane.reconciler import epoch_id
+        return epoch_id(at)
+    except Exception:
+        return "E" + at.astimezone(UTC).strftime("%Y%m%dT%H%M%S")
+
+
 def _epoch(kinds: list[str]) -> dict[str, Any]:
     """Did every ranked kind's owning leg run since the previous board? Read from the ledger."""
     from datetime import datetime as _dt
@@ -490,6 +502,13 @@ def build() -> dict[str, Any]:
         # published -- read from the compute ledger, never assumed from the schedule.
         "epoch": _epoch([k for k, v in by_kind.items() if v]),
         "epoch_complete": _epoch([k for k, v in by_kind.items() if v]).get("complete"),
+        # THE EPOCH'S IMMUTABLE ID (principal 2026-09-17, LAWS.md 7). An epoch that is only a
+        # boolean cannot stop an earlier pass's report from certifying a later one: every report
+        # used to certify THIS cycle must carry THIS id, or be created after it began. Derived
+        # from the cycle's own timestamp, so two organs certifying one cycle compute the same id
+        # and a later pass necessarily computes a different one.
+        "epoch_id": _epoch_id(now),
+        "epoch_started_at": now.isoformat(timespec="seconds"),
         "costs_note": (
             "trials are NOT compute. Running a falsifier against an existing certificate costs a "
             "cell of compute and ZERO trials, because it tests a claim the desk has already "
@@ -546,9 +565,28 @@ def main(argv: list[str] | None = None) -> int:
         print("  --apply not given; nothing written")
         return 0
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
+    # THE BOARD IS PUBLISHED WITH ITS OWN LEASE AND ITS EPOCH (LAWS.md 7). The envelope carries
+    # the producer run id and the epoch, so a consumer can prove WHICH pass it read rather than
+    # inferring it from two timestamps that happen to be close together; the watermark carries
+    # the epoch id, which is the controller's progress metric.
+    _publish(doc)
     print(f"-> {OUT}")
     return 0
+
+
+def _publish(doc: dict[str, Any]) -> None:
+    try:
+        sys.path.insert(0, str(ROOT))
+        from libs.ops.control_plane import watermarks as wm
+        from libs.ops.control_plane.lease import write_report
+        env = write_report(OUT, doc, "leg:meta_controller", inputs=(), ttl="hourly",
+                           epoch_id=str(doc.get("epoch_id") or ""), root=ROOT)
+        wm.progress("leg:meta_controller", "epoch_id", str(doc.get("epoch_id") or ""),
+                    run_id=str(env.get("producer_run_id")), epoch_id=str(doc.get("epoch_id")))
+    except Exception as exc:
+        print(f"meta controller: lease/watermark UNAVAILABLE ({type(exc).__name__}: {exc}); "
+              f"writing the board unleased", flush=True)
+        OUT.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
 
 
 if __name__ == "__main__":

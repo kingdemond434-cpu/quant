@@ -253,9 +253,44 @@ def meta() -> dict[str, Any]:
     return out
 
 
+#: The control plane's invariants that OVERLAP this attestation's own guesses, and the flag each
+#: one replaces. Where the reconciler has measured, its verdict wins: it reads leases, watermarks
+#: and acknowledgements, where the blocks above read file ages and booleans.
+_CP_OVERLAPS: dict[str, tuple[str, str]] = {
+    "candidate_conservation": ("truth", "provenance_conservation"),
+    "controller": ("meta", "controller_completed_epoch"),
+    "release": ("release_authority", "sealed_sha_matches"),
+}
+
+
+def control_plane() -> dict[str, Any]:
+    """THE RECONCILER'S REPORT, CONSUMED (LAWS 7). Twelve invariants and the one bit,
+    DESK_CLOSED_AND_HEALTHY; absent, every one is UNMEASURED and this attestation cannot be
+    `complete` -- a closed loop nobody has observed is not closed."""
+    doc = _read(DESK / "reports" / "CONTROL_PLANE.json")
+    out: dict[str, Any] = {}
+    if not isinstance(doc, dict):
+        out["desk_closed_and_healthy"] = None
+        out["control_plane_why"] = "no CONTROL_PLANE.json: the reconciler has not published"
+        return out
+    inv = doc.get("invariants") if isinstance(doc.get("invariants"), dict) else {}
+    for name, row in inv.items():
+        out[f"invariant_{name}"] = row.get("ok") if isinstance(row, dict) else None
+    out["desk_closed_and_healthy"] = bool(doc.get("DESK_CLOSED_AND_HEALTHY"))
+    out["epoch_id"] = doc.get("epoch_id")
+    out["first_broken_invariant"] = doc.get("first_broken_invariant")
+    return out
+
+
 def measure() -> dict[str, Any]:
     blocks = {"release_authority": release_authority(), "truth": truth(), "forward": forward(),
-              "research": research(), "meta": meta()}
+              "research": research(), "meta": meta(), "control_plane": control_plane()}
+    cp = blocks["control_plane"]
+    for inv_name, (block, flag) in _CP_OVERLAPS.items():
+        verdict = cp.get(f"invariant_{inv_name}")
+        if verdict is not None and flag in blocks[block]:
+            blocks[block][flag] = bool(verdict)
+            blocks[block][f"{flag}_basis"] = f"control plane invariant {inv_name}"
     flags: list[tuple[str, Any]] = []
     for b, d in blocks.items():
         for k, v in d.items():

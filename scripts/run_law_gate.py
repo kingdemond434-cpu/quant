@@ -120,6 +120,13 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # live half (dispositions, schedules, watermarks, stranded data) needs desk state and
     # runs in _STATE_FENCES with --require-state.
     ("check_external_federation.py", ()),
+    # THE BIRTH FENCE FOR EXECUTABLES (LAWS 7, principal 2026-09-17). Every executable python
+    # file carries a ComponentSpec, the registry may not lie about itself (no missing code path,
+    # no required component without a schedule), the count of executables with no clock may only
+    # FALL, and no second registry (clock_fixer.RESIDENTS, moat_swarms.TASK_NAMES,
+    # forests.FOREST_TASKS) may disagree with the specs. Portable: it reads the tree and the
+    # manifest, so it means the same in CI, a fresh clone and on the box.
+    ("check_component_registry.py", ()),
 )
 
 #: STATE FENCES -- box-only. They measure LIVE STATE (artifacts, ledgers, organ freshness) that
@@ -129,6 +136,7 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
 #: They run in the hourly box gate, where their verdict is real.
 _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("check_conversion.py", ()),               # L1.28b -- FLATLINE fails
+    ("check_universe_integrity.py", ()),       # bars: corrupt is quarantined, stale named
     ("check_external_federation.py", ("--require-state",)),   # LAWS 5h -- the live half
     ("check_exploration.py", ()),              # L1.32 -- no exploration organ gone dark
     ("check_calibration.py", ()),              # L1.29 -- no ungraded past-due forecast

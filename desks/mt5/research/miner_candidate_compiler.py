@@ -1109,6 +1109,25 @@ def seat_summary(per_source: dict[str, dict[str, int]]) -> dict[str, dict[str, i
             for s in sorted(SEAT_SOURCES)}
 
 
+def _lineage(out: Path) -> None:
+    """LINEAGE, PROVEN (LAWS 7): the compiled docket gets its freshness lease and producer run id
+    (sidecar envelope), and the compiler acknowledges the canonical registry it read -- so
+    `moat_miner -> compile_candidates -> merge_docket` are observed edges rather than inferred
+    from timestamps. Guarded: lineage may never stop the compiler."""
+    try:
+        import sys as _sys
+        if str(ROOT) not in _sys.path:
+            _sys.path.insert(0, str(ROOT))
+        from libs.ops.control_plane.lease import ack_artifact, stamp_sidecar
+        stamp_sidecar(out, "leg:compile_candidates", inputs=("data/alpha_registry.sqlite",),
+                      ttl="hourly", root=ROOT)
+        registry = ROOT / "data" / "alpha_registry.sqlite"
+        if registry.exists():
+            ack_artifact("leg:compile_candidates", registry)
+    except Exception as exc:
+        print(f"compiler lineage not recorded (non-fatal): {type(exc).__name__}: {exc}")
+
+
 def main() -> int:
     now = datetime.now(tz=UTC)
     universe = known_symbols()
@@ -1299,6 +1318,7 @@ def main() -> int:
         "deepening_tasks": len(deepening),
         "rule": "exact recipe or structured causal data only; no prose-to-family guessing",
     }, indent=1, default=str), "utf-8")
+    _lineage(OUT)
     DEEPEN.write_text(json.dumps({
         "built_at": now.isoformat(timespec="seconds"),
         "tasks": list(deepening.values()),

@@ -147,6 +147,18 @@ def heartbeat(dept: str, passes: int, status: str = "running", done_inc: int = 0
                              campaigns_done_inc=done_inc)
     except Exception:
         pass
+    # THE PROGRESS WATERMARK (LAWS.md 7). The heartbeat above says this process is alive; the
+    # watermark says it is WORKING. A resident holding its lock with a frozen pass counter was
+    # green to every liveness probe this desk had and is STALLED to the control plane.
+    try:
+        root = str(DESK.parents[1])
+        if root not in sys.path:
+            sys.path.insert(0, root)
+        from libs.ops.control_plane import watermarks as wm
+        wm.progress(f"resident:dept_{dept}", "passes", passes, run_id=f"pid:{os.getpid()}",
+                    status=status)
+    except Exception:
+        pass
 
 
 def main(argv: list[str] | None = None) -> int:

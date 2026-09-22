@@ -353,6 +353,23 @@ def specialities(post: dict[tuple[str, str], dict[str, Any]]) -> dict[str, list[
     return out
 
 
+def weak_domains(doc: dict[str, Any], k: int = 6) -> list[str]:
+    """The domains the organisation is WEAKEST in, read from a published report: the domains
+    whose best-routed miner carries the lowest posterior, lowest first. The meta-evolution
+    layer's curriculum points new research questions there. An absent or shapeless report is an
+    empty list, never a guess."""
+    routing = doc.get("routing_top") if isinstance(doc, dict) else None
+    if not isinstance(routing, dict):
+        return []
+    best: dict[str, float] = {}
+    for dom, rows in routing.items():
+        ps = [float(r.get("p")) for r in (rows if isinstance(rows, list) else [])
+              if isinstance(r, dict) and isinstance(r.get("p"), (int, float))]
+        if ps:
+            best[str(dom)] = max(ps)
+    return [d for d, _ in sorted(best.items(), key=lambda kv: kv[1])[:max(0, k)]]
+
+
 def elastic(miners: list[str], post: dict[tuple[str, str], dict[str, Any]],
             depth: dict[tuple[str, str], int]) -> dict[str, dict[str, Any]]:
     """Floor + hottest-queue excess. Every miner stays ON; the floor is never zero.

@@ -740,7 +740,8 @@ def _parent_payload(row: Mapping[str, Any], conn: Any,
         return cache[did]
     payload: dict[str, Any] = {}
     try:
-        got = conn.execute("SELECT payload_json FROM discoveries WHERE id=?", (did,)).fetchone()
+        got = conn.execute("SELECT payload_json FROM discoveries WHERE discovery_id=?",
+                           (did,)).fetchone()
         raw = got["payload_json"] if got is not None else ""
         parsed = json.loads(raw) if isinstance(raw, str) and raw.strip() else {}
         if isinstance(parsed, dict):
@@ -779,9 +780,32 @@ def _candidate_view(row: Mapping[str, Any], conn: Any = None,
     return view
 
 
+def _own_discovery_ids(p: Pass) -> set[str]:
+    """Discovery ids this region's miners recorded, by generator/source prefix or declared
+    region in the payload. A candidate the compiler built from one of them is the region's own
+    even though the candidate row itself carries no region tag."""
+    t = RM.tag(p.mandate)
+    like = f"{t}%"
+    region_tok = f'"region": "{p.mandate.region}"'
+    try:
+        rows = p.conn.execute(
+            "SELECT discovery_id FROM discoveries WHERE generator LIKE ? OR source_id LIKE ? "
+            "OR payload_json LIKE ?", (like, like, f"%{region_tok}%")).fetchall()
+    except Exception:
+        return set()
+    return {str(r["discovery_id"] if hasattr(r, "keys") else r[0]) for r in rows}
+
+
 def _queued(p: Pass) -> list[dict[str, Any]]:
-    return [r for r in R.candidates(status="queued", limit=MAX_ROWS, conn=p.conn)
-            if RM.is_region_row(p.mandate, r)]
+    """The region's OWN queued candidates: rows that carry the region's prefix or declared
+    region, plus rows the compiler built from the region's discoveries. Never every candidate
+    on an instrument the mandate names (see `region_mandate.OWN_CRITERIA`)."""
+    own_discoveries = _own_discovery_ids(p)
+    out: list[dict[str, Any]] = []
+    for r in R.candidates(status="queued", limit=MAX_ROWS, conn=p.conn):
+        if RM.is_own_row(p.mandate, r) or str(r.get("discovery_id") or "") in own_discoveries:
+            out.append(r)
+    return out
 
 
 def _dedupe(p: Pass, budget_s: float) -> dict[str, Any]:

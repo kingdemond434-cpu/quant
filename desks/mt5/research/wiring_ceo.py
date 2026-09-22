@@ -164,6 +164,34 @@ def _desk_file(parts: tuple[str, ...]) -> Path:
     return DESK.joinpath(*parts)
 
 
+WIRED_LAW = ("scheduled AND executed AND progressed AND produced owned output AND consumer "
+             "acknowledged it")
+
+
+def control_plane_wiring() -> dict[str, Any]:
+    """The other four conjuncts of WIRED, read from the reconciler's own report.
+
+    UNMEASURED when the control plane has not published: this census then proves SCHEDULED and
+    nothing else, and says so, rather than letting an import closure stand in for an
+    acknowledgement it never observed.
+    """
+    p = DESK / "reports" / "CONTROL_PLANE.json"
+    doc = _read(p)
+    if not doc:
+        return {"status": "UNMEASURED", "law": WIRED_LAW,
+                "why": "CONTROL_PLANE.json absent: executed/progressed/produced/acknowledged "
+                       "are unproven by this census"}
+    inv = doc.get("invariants") if isinstance(doc.get("invariants"), dict) else {}
+    loop = inv.get("closed_loop_proof") if isinstance(inv.get("closed_loop_proof"), dict) else {}
+    prog = inv.get("progress_coverage") if isinstance(inv.get("progress_coverage"), dict) else {}
+    return {"status": "MEASURED", "law": WIRED_LAW,
+            "at": doc.get("at"), "epoch_id": doc.get("epoch_id"),
+            "DESK_CLOSED_AND_HEALTHY": doc.get("DESK_CLOSED_AND_HEALTHY"),
+            "first_broken_invariant": doc.get("first_broken_invariant"),
+            "progressed": prog.get("measured"), "edges": loop.get("measured"),
+            "states": doc.get("states")}
+
+
 def _census_files() -> list[tuple[str, Path, str]]:
     """(rel, path, text) for every candidate .py under ORGAN_AREAS, read ONCE.
 
@@ -174,8 +202,11 @@ def _census_files() -> list[tuple[str, Path, str]]:
         base = ROOT / area
         if not base.is_dir():
             continue
-        for p in sorted(base.glob("*.py")):
-            if p.name.startswith("_") or "test" in p.name.lower():
+        # RECURSIVE, NOT ONE LEVEL (LAWS 7). `glob("*.py")` saw only the top of each area, so an
+        # organ in a subpackage -- desks/mt5/research/countries/*, the moat's engines -- was never
+        # censused at all: not wired, not unwired, invisible. The census now walks the tree.
+        for p in sorted(base.rglob("*.py")):
+            if p.name.startswith("_") or "test" in p.name.lower() or "__pycache__" in p.parts:
                 continue
             try:
                 out.append((_rel(p), p, p.read_text(encoding="utf-8", errors="replace")))
@@ -827,9 +858,19 @@ def build(apply: bool = False) -> dict[str, Any]:
         "identity_heal": heal,
         "exempt": EXEMPT,
         "scheduled_sample": {k: v[:3] for k, v in list(named.items())[:40]},
-        "rule": ("an organ is wired only when a clock names it or a scheduled organ imports it; "
-                 "the rest are docketed, the safe ones exercised on probation, and the count "
-                 "ratchets down"),
+        # WIRED IS ONE LAW (LAWS 7, principal 2026-09-17). "A clock names it" is the SCHEDULED
+        # conjunct and nothing more: the census above is the first of five tests, and the other
+        # four -- executed, progressed, produced owned output, consumer acknowledged -- are read
+        # from the control plane's report, which proves them from watermarks, envelopes and
+        # acknowledgements rather than from this file's import closure.
+        "wired_law": control_plane_wiring(),
+        "rule": ("WIRED = scheduled AND executed AND progressed AND produced owned output AND "
+                 "consumer acknowledged it. This census establishes SCHEDULED (a clock names the "
+                 "organ or a scheduled organ imports it); the remaining conjuncts are proven by "
+                 "the control plane (desks/mt5/reports/CONTROL_PLANE.json) from progress "
+                 "watermarks, artifact envelopes and consumer acknowledgements. The unscheduled "
+                 "are docketed, the safe ones exercised on probation, and the count ratchets "
+                 "down"),
     }
     if apply:
         OUT.parent.mkdir(parents=True, exist_ok=True)

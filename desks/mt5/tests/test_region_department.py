@@ -593,3 +593,36 @@ def test_a_miner_may_name_its_own_generator_without_colliding(tmp_path, monkeypa
     assert rows and str(rows[0]["generator"]).startswith("japan:")
     conn.close()
     R.set_path(None)
+
+def test_the_queue_is_the_regions_own_rows_never_every_row_on_its_instruments(tmp_path,
+                                                                                 monkeypatch):
+    """MEASURED 2026-09-22: is_region_row matched every queued candidate on USDJPY/XAUUSD/JPN225
+    (1,704 rows, none Japan's), so the department ranked the whole desk and claimed nothing."""
+    import time
+
+    from libs.moat import registry as R
+
+    monkeypatch.setattr(R, "BACKUP", tmp_path / "no_backup")
+    R.set_path(tmp_path / "r.sqlite")
+    conn = R.connect()
+    import japan.mandate as jm
+    mandate = jm.MANDATE
+    # a desk candidate on an instrument the mandate names, from another generator
+    other, _ = R.enqueue_candidate(family="carry", symbol="USDJPY", params={"k": 1},
+                                   origin="DESK", mechanism="carry", conn=conn)
+    # the region's own discovery and the candidate the compiler built from it
+    did, _ = R.record_discovery(source_id="japan:mine_gotobi", source_type="calendar",
+                                mechanism="gotobi_fix_flow", origin="MOAT",
+                                generator="japan:mine_gotobi",
+                                payload={"region": "japan"}, conn=conn)
+    own, _ = R.enqueue_candidate(family="fx_fixing_flow", symbol="USDJPY", params={"k": 2},
+                                 origin="DESK", mechanism="gotobi_fix_flow",
+                                 discovery_id=did, conn=conn)
+    assert RM.is_region_row(mandate, {"symbol": "USDJPY"})          # the register still counts it
+    assert not RM.is_own_row(mandate, {"symbol": "USDJPY"})         # the queue does not claim it
+    p = RD.Pass(region="japan", mandate=mandate, miners={}, conn=conn, budget_s=5,
+                dry_run=True, started=time.monotonic())
+    ids = {r["id"] for r in RD._queued(p)}
+    assert own in ids and other not in ids
+    conn.close()
+    R.set_path(None)

@@ -132,11 +132,30 @@ EXTENSIONS: dict[str, tuple[tuple[str, str], ...]] = {
         ("transformation", "TEXT"), ("information", "TEXT"), ("claimed_by", "TEXT"),
         ("claimed_at", "TEXT"), ("donated_cell", "TEXT"), ("judged_at", "TEXT"),
         ("terminal_gate", "TEXT"), ("failure_class", "TEXT"), ("lineage_json", "TEXT"),
+        # THE CAUSAL ADJUDICATOR'S VERDICT (LAWS 5m; event_graph_lab): SUPPORTED / REFUTED /
+        # UNIDENTIFIABLE / UNMEASURED with the failing rung named. Recorded, never a status
+        # change: the ten gates keep their authority (L1.60). `causal_eligible` is the LAWS 5k
+        # contract -- a falsifier and competing explanations declared -- as 0/1.
+        ("causal_verdict", "TEXT"), ("causal_failing_test", "TEXT"), ("causal_effect", "REAL"),
+        ("causal_judged_at", "TEXT"), ("causal_eligible", "INTEGER"),
+        # THE INDEPENDENT REPLICATION CIVILIZATION'S VERDICT (replication_civilization):
+        # REPLICATED / MISMATCH / UNMEASURED and, on a mismatch, the divergence it quarantined on.
+        ("replication_verdict", "TEXT"), ("replication_mismatch_json", "TEXT"),
+        ("replication_judged_at", "TEXT"),
+        # THE RESEARCH GENOME (LAWS 5k; research/science_controller.py): C = (M, D, R, G, S,
+        # H, E, F) stamped from the row's own columns, the near-duplicate family it belongs
+        # to, and the science controller's launch state (OPEN | BLOCKED:<reason>). ADD COLUMN.
+        ("genome_json", "TEXT"), ("family_id", "TEXT"), ("science_state", "TEXT"),
     ),
     "research_memory": (("kind", "TEXT"), ("memory_key", "TEXT"), ("payload_json", "TEXT"),
                         ("evidence_json", "TEXT"), ("updated_at", "TEXT")),
     "workers": (("kind", "TEXT"), ("beat", "TEXT"), ("department", "TEXT"),
                 ("generator", "TEXT")),
+    #: THE FEATURE GENOME (LAWS 5m): a typed or minted representation carries its genome, the
+    #: DatasetContract its data origin is held under, and the lineage hash its data version
+    #: replays from. Written by research/feature_compiler.py through representation_upsert.
+    "representations": (("genome_json", "TEXT"), ("contract_id", "TEXT"),
+                        ("lineage_hash", "TEXT")),
     "research_runs": (("organ", "TEXT"), ("department", "TEXT"), ("started_at", "TEXT"),
                       ("finished_at", "TEXT"), ("compute_s", "REAL"), ("outcome", "TEXT"),
                       ("inputs_json", "TEXT"), ("outputs_json", "TEXT")),

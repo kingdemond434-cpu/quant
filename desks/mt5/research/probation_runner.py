@@ -167,6 +167,50 @@ def artifacts_since(t0: float, limit: int = 5) -> tuple[int, list[str]]:
     return len(hits), rels
 
 
+OWNERSHIP_BASIS = ("artifact envelopes (libs/ops/control_plane/lease.py) whose "
+                   "producer_component_id names this organ and whose created_at falls inside "
+                   "the run: PROOF of authorship, which a file's mtime is not")
+
+
+def _component_ids(organ: str) -> set[str]:
+    """The component ids an organ file may stamp: its `exe:` id, and its `leg:` id when it is a
+    producer script of the hourly cycle (the registry names both against the same path)."""
+    ids = {f"exe:{organ}"}
+    try:
+        import importlib.util
+        path = ROOT / "desks" / "mt5" / "ops" / "components.py"
+        spec = importlib.util.spec_from_file_location("_pr_components", path)
+        if spec is not None and spec.loader is not None:
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            ids |= {s.component_id for s in mod.registry(ROOT).owners_of(organ)}
+    except Exception:
+        pass
+    return ids
+
+
+def owned_since(organ: str, t0: float, limit: int = 5) -> tuple[int, list[str]]:
+    """(count, sample) of artifacts whose ENVELOPE proves this organ produced them in this run."""
+    mine = _component_ids(organ)
+    hits: list[str] = []
+    for p, m in _scan():
+        if m < t0 - 1.0:
+            continue
+        if not (p.endswith(".envelope.json") or p.endswith(".json")):
+            continue
+        try:
+            doc = json.loads(Path(p).read_text(encoding="utf-8-sig"))
+        except (OSError, ValueError):
+            continue
+        env = doc if p.endswith(".envelope.json") else (
+            doc.get("_envelope") if isinstance(doc, dict) else None)
+        if not isinstance(env, dict) or str(env.get("producer_component_id")) not in mine:
+            continue
+        hits.append(str(env.get("artifact_id") or p))
+    hits = sorted(set(hits))
+    return len(hits), hits[:limit]
+
+
 def _argv_for(row: dict[str, Any]) -> list[str]:
     """What this row's organ is called with. An explicit `argv` (the revive rows carry the
     organ's declared PRODUCTION_ARGS) wins; otherwise probation's own `--dry-run`, and only when
@@ -194,10 +238,17 @@ def run_one(row: dict[str, Any], budget_s: int, cwd: Path | None = None) -> dict
         r = subprocess.run(args, capture_output=True, text=True, cwd=str(work),
                            timeout=budget_s, check=False)
         n_art, art = artifacts_since(wall0)
+        n_owned, owned = owned_since(organ, wall0)
         out = {"organ": organ, "status": "OK" if r.returncode == 0 else "EXIT",
                "exit_code": r.returncode, "seconds": round(time.monotonic() - t0, 1),
                "dry_run": bool(row.get("dry_run")) and not row.get("argv"), "argv": argv,
                "artifacts": n_art, "artifacts_sample": art,
+               # OWNERSHIP IS PROVEN BY THE ENVELOPE, NOT THE WINDOW (LAWS 7). `artifacts`
+               # counts files whose mtime fell inside the run -- evidence a concurrent leg can
+               # plant. `owned_artifacts` counts envelopes whose producer_component_id names THIS
+               # organ and whose producer_run_id was minted inside this run: authorship, proven.
+               "owned_artifacts": n_owned, "owned_sample": owned,
+               "ownership_basis": OWNERSHIP_BASIS,
                "tail": (r.stdout or r.stderr or "").strip().splitlines()[-3:]}
         if r.returncode != 0:
             # THE REASON IS THE TRACEBACK'S TAIL, not the happy stream. stdout is where an organ

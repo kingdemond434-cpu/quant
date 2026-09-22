@@ -736,7 +736,7 @@ GLOBAL_FOREST_LEGS: tuple[str, ...] = ("forest_global_web", "forest_global_acade
 
 DEPARTMENTS: tuple[str, ...] = ("japan", "regions", "data", "intel", "discovery", "validate",
                                 "macro", "execution",
-                                "forward", "meta", "rest", *FOREST_DEPARTMENTS)
+                                "forward", "meta", "rest", "mathlab", *FOREST_DEPARTMENTS)
 LEG_DEPARTMENT: dict[str, str] = {
     # data: bars, tapes, lakes, sources -- the inputs every other department reads
     **dict.fromkeys(("refresh_bars", "tape_features", "lake_promote", "universe_integrity",
@@ -744,16 +744,18 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "asia_plane", "archive_tape", "reclaim_disk", "maintain_miners",
                      "spread_provenance", "microstructure_census", "fusion_cost",
                      "cost_construction", "swap_rejudge", "sge_premium", "moat_series",
-                     "unused_information", "ingestion_ledger", "representation_forge"), "data"),
+                     "unused_information", "ingestion_ledger", "representation_forge",
+                     "feature_compiler", "data_acquisition_scientist"), "data"),
     # intel: the global intelligence agency -- crawlers, forests, frontier scouts
     **dict.fromkeys(("world_crawler", "deep_forest", "moat_miner", "market_intel", "mine",
                      "exogenous_search", "standing_questions", "frontier", "frontier_report",
                      "frontier_implementer", "hunt12", "scout_roster", "analyst_pipeline",
                      "knowledge_graph", "moat_collectors", "actor_atlas", "scout_swarm",
                      "source_frontier", "data_scout", "external_federation",
-                     "understanding_seat", "archaeology", "shadow_institutional",
+                     "understanding_seat", "archaeology", "sares", "shadow_institutional",
                      "source_civilizations", "evidence_watchtower", "prediction_markets",
-                     "latent_actors", "residual_hunt", "evidence_router"), "intel"),
+                     "latent_actors", "residual_hunt", "evidence_router",
+                     "federation_ops"), "intel"),
     # discovery: the candidate pipeline, in order, plus the evolutionary generators
     **dict.fromkeys(("search", "sweep", "breadth_sweep", "compile_candidates", "merge_docket",
                      "deepen", "alpha_evolution", "alpha_rl", "ml_layer", "ensemble_optimizer",
@@ -766,18 +768,21 @@ LEG_DEPARTMENT: dict[str, str] = {
     # validate: the adversarial evidence lab
     **dict.fromkeys(("external_gauntlet", "backtest", "falsifier_run", "adversaries",
                      "stop_reverse", "orthogonality", "blind_reviewer", "synthetic_regimes",
-                     "evaluator_lab", "lead_replication"), "validate"),
+                     "evaluator_lab", "lead_replication", "science_controller",
+                     "replication_civilization"), "validate"),
     # macro: the cross-asset / macro brain
     **dict.fromkeys(("fred_macro", "futures_lead_lag", "causal_graph", "residual_factors",
                      "weak_signals", "edges_macro_fusion_sweep", "strategy_paths",
                      "counterfactual_world", "opportunity_forecast", "forecast_contract",
                      "exposure_decomposition", "event_response_atlas", "causal_lab",
+                     "event_graph_lab",
                      "world_lab", "macro_department", "news_event_stream",
-                     "event_sleeves", "macro_intelligence", "world_model"), "macro"),
+                     "event_sleeves", "macro_intelligence", "world_model",
+                     "market_constitution", "dislocation_lab"), "macro"),
     # execution: the execution research command
     **dict.fromkeys(("execution_twin", "entry_timing", "cost_to_edge", "exit_study",
                      "execution_resolver", "netting_report", "execution_alpha",
-                     "latency_lab"), "execution"),
+                     "latency_lab", "feed_clock_lab", "impact_lab"), "execution"),
     # forward: forward evidence, promotion and the allocator
     **dict.fromkeys(("enrol_clocks", "pf_allocator", "daily", "hunt12_forward", "regime_router",
                      "forward_slot_ranker", "forward_exploitation", "shadow_discovery"),
@@ -788,9 +793,13 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "research_gap_map", "gauntlet_backpressure", "miner_specialisation",
                      "research_roi",
                      "research_debt", "paradigm_router", "meta_controller",
-                     "ingestion_exploitation", "coverage_tensor"), "meta"),
+                     "ingestion_exploitation", "coverage_tensor", "control_plane"), "meta"),
     # japan: the Japan research division (the principal's 47-section mandate, hourly)
     **dict.fromkeys(("japan_department",), "japan"),
+    # mathlab: the AI mathematics research civilization -- twenty-eight mathematical traditions
+    # in parallel over the world model's residual, every object through the same gauntlet, credit
+    # back to the mathematical method (principal 2026-09-17 / 2026-09-22). Its own 24/7 resident.
+    **dict.fromkeys(("math_lab",), "mathlab"),
     # regions: the global native-market research OS over every country lab, plus the four
     # GLOBAL-LAYER forests (web, academic+code, physical data, market data) -- layers of the
     # world that would be mined seventeen times over if each region hunted them itself.
@@ -1022,7 +1031,31 @@ def _costed(name: str, fn):
     if close_run and run is not None:
         close_run(run, outcome=outcome, outputs=_leg_artifacts(name))
     _emit_leg(name, outcome)
+    _advance_watermark(name, outcome)
     return out
+
+
+def _advance_watermark(name: str, outcome: str) -> None:
+    """THE LEG'S PROGRESS WATERMARK (LAWS.md 7). A PID is not health; a moving work counter is.
+
+    One monotone counter per leg, advanced only when the leg actually COMPLETED -- a failed,
+    timed-out or skipped leg leaves the watermark where it was, which is the whole point: the
+    control plane reads a watermark that has not moved beyond the component's silence window as
+    STALLED, and a leg that "ran" and failed every hour must look exactly like one that stopped.
+
+    Never fails the leg, for the same reason the compute ledger and the event log do not: an
+    organ that dies because its telemetry failed is worse than one that runs untelemetered.
+    """
+    if not outcome.startswith("ok") and not outcome.startswith("verdict_exit"):
+        return
+    try:
+        from libs.ops.control_plane import watermarks as wm
+        cid = f"leg:{name}"
+        prev = wm.read(cid) or {}
+        wm.progress(cid, "leg_completions", int(prev.get("value") or 0) + 1,
+                    run_id=f"hourly_cycle@{datetime.now(UTC).isoformat(timespec='seconds')}")
+    except Exception as exc:
+        print(f"  watermark for {name} not recorded: {type(exc).__name__}: {exc}", flush=True)
 
 
 def _emit_leg(name: str, outcome: str) -> None:
@@ -1093,6 +1126,11 @@ def _producer(name: str, script: str,
 #: must consume its backlog first so that truncation still makes progress. `shadow_forward` gets
 #: the budget to finish; the gauntlet already does the other (never-judged cells sort first).
 LEG_BUDGET_SEC: dict[str, int] = {
+    # THE CONTROL PLANE'S OBSERVE PASS walks ~1,100 components, every watermark, every lease and
+    # every mandatory edge. Its own budget is 600 s (it stops itself), so the cycle's cap sits
+    # above that: a cap BELOW an organ's own budget is the truncated-job defect that cost this
+    # desk eighty-four forward clocks.
+    "control_plane": 660,
     "probation": 1_800,   # a pass is 40 organs; at 720 s it was cut at ~12 min every hour
     "enrol_clocks": 2_700,
     # THE FOUR ACTIVATION LEGS ARE SEARCHES, NOT RENDERERS. `weak_signals` rebuilds member
@@ -1108,7 +1146,20 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # truncated at the same prefix every hour, reported as scheduled, and never finishing.
     "world_model": 1_500,
     "representation_forge": 1_100,
+    # THE FEATURE COMPILER runs the forge over its own typed fields under a 900 s budget and the
+    # ACQUISITION SCIENTIST samples under 600 s; each cap sits above the organ's own budget so
+    # it stops itself and writes its artifact rather than being killed at the same prefix.
+    "feature_compiler": 1_000,
+    "data_acquisition_scientist": 700,
     "residual_hunt": 800,
+    # THE TWO LAWS-5m ORGANS each stop themselves at their own 900 s `--budget-s` and write
+    # their artifact; the cycle's cap sits above that for the reason `enrol_clocks` was raised.
+    "event_graph_lab": 1_000,
+    "replication_civilization": 1_000,
+    # The dislocation lab stops itself at --budget-s 900 and writes; the cap sits above it.
+    "dislocation_lab": 1_000,
+    # the organ's own budget is 900 s; the cap sits above it so it stops itself, never cut
+    "market_constitution": 1_020,
     # A FOREST IS GIVEN THE BUDGET IT IS ASKED FOR. Each leg passes `--budget-s 3000` down to
     # `forest_runner`, which divides it across eleven parallel agents; a 720 s cycle cap would
     # SIGKILL every forest at the same prefix every hour -- the truncated-job failure that cost
@@ -2599,6 +2650,16 @@ def main() -> None:
     # THE CAUSAL DISCOVERY LAB: PCMCI-style lagged discovery with FDR, a NOTEARS-lite DAG,
     # economic restrictions and edge classes on the PIT panel; an LLM never invents an edge.
     clb = _costed("causal_lab", lambda: _producer("causal_lab", "research/causal_lab.py"))
+    # THE CROSS-MARKET EVENT GRAPH WITH ITS CAUSAL / MECHANISM ADJUDICATOR (LAWS 5m): the graph
+    # over events, entities, industries, commodities, countries, currencies, rates, flows and
+    # MT5 assets built from the ontology, the country packs' seeds and the world causal graph;
+    # a rotating slice of edges measured on the desk's own series (x_t against y_(t+lag)); the
+    # newest queued candidates and every LIVE/STANDBY sleeve adjudicated through identification
+    # -> estimation -> counterfactual -> refutation, verdicts recorded on the registry rows
+    # (status untouched) and edge-derived seeds donated to the compiler. Macro department.
+    egl = _costed("event_graph_lab", lambda: _producer("event_graph_lab",
+                                                        "research/event_graph_lab.py",
+                                                        "--once", "--budget-s", "900"))
     # THE GLOBAL PROBABILISTIC WORLD MODEL (principal 2026-09-17): forward log returns of the
     # hypothesis lane at 1h/4h/1d/5d from every PIT series the desk holds, strictly
     # anti-lookahead, with per-dataset contribution and the regime forecast. It ALLOCATES NO
@@ -2644,6 +2705,15 @@ def main() -> None:
     mci = _costed("macro_intelligence", lambda: _producer("macro_intelligence",
                                                            "research/macro_intelligence.py",
                                                            "--budget-s", "240"))
+    # THE MARKET CONSTITUTION COMPILER (LAWS 5m; U22/U23): exchange rules, auction states,
+    # price bands, short-sale states, settlement, fee and HFT regimes as POINT-IN-TIME columns
+    # on the desk's own tapes (data/rule_states/<venue>.parquet); every dated rule change run
+    # as a natural experiment against an unaffected control venue with a placebo null; each
+    # measured effect or null a DESK discovery; survivors donated to the compiler; the 2027
+    # TSE random close pre-registered. It sizes nothing. Macro department.
+    mcc = _costed("market_constitution", lambda: _producer("market_constitution",
+                                                            "research/market_constitution.py",
+                                                            "--once", "--budget-s", "900"))
     # THE MOAT SERIES REGISTRY + BUILDER (C20/W13): every proprietary series registered with its
     # depth, coverage, moat score and named gaps; derived tape series built per instrument-day.
     mos = _costed("moat_series", lambda: _producer("moat_series", "research/moat_series.py",
@@ -2717,6 +2787,13 @@ def main() -> None:
     rfg = _costed("representation_forge", lambda: _producer("representation_forge",
                                                              "research/representation_forge.py",
                                                              "--once", "--budget-s", "900"))
+    # THE MULTIMODAL FEATURE COMPILER (LAWS 5m; RESEARCH 11): every ingested modality -- prices,
+    # text claims through polyglot, the shadow/data-plane sensors, calendars, rule states,
+    # positioning, macro releases -- typed into contracted, lineage-hashed representations with a
+    # FEATURE GENOME and routed through the forge to the world model. Data: it makes inputs.
+    fcp = _costed("feature_compiler", lambda: _producer("feature_compiler",
+                                                         "research/feature_compiler.py",
+                                                         "--once", "--budget-s", "900"))
     # THE UNIVERSAL DISCOVERY-TO-CELL COMPILER (M7): every discovery gets a disposition; the
     # closure under economic compatibility, twelve transformation miners, three gates, exact
     # rules compiled into the registry and the docket. Discovery department resident.
@@ -2816,10 +2893,32 @@ def main() -> None:
                                                          "research/lead_replication.py",
                                                          "--max-leads", "10",
                                                          "--budget-s", "240"))
+    # THE INDEPENDENT REPLICATION CIVILIZATION (LAWS 5m): every certificate and every
+    # forward-enrolled row rebuilt in rotation from its WRITTEN specification and the raw bars
+    # only -- no import of the original implementation -- and quarantined by name when fills,
+    # P&L, position state or costs disagree materially. Validate.
+    rpc = _costed("replication_civilization", lambda: _producer(
+        "replication_civilization", "research/replication_civilization.py",
+        "--once", "--budget-s", "900"))
+    # THE ANYTIME-VALID SCIENCE CONTROLLER (LAWS 5k/5m, Tier-1 U19): stamps the research genome
+    # and family id on every registry candidate, prices the trial stream at N_effective (the
+    # count follows the FAMILY), keeps online-FDR wealth per lineage and records BLOCKED for the
+    # launches an exhausted lineage cannot afford. Report only: it lowers no sealed gate.
+    # Validate department, 600 s.
+    scc = _costed("science_controller", lambda: _producer(
+        "science_controller", "research/science_controller.py", "--once", "--budget-s", "600"))
     # THE DATA-DISCOVERY SWARM (M12): every missing information requirement and the cheapest
     # PIT-clean source that could expose it, as dataset discoveries. Intel.
     dsc2 = _costed("data_scout", lambda: _producer("data_scout", "research/data_scout.py",
                                                     "--budget-s", "120"))
+    # THE ACTIVE DATA-ACQUISITION SCIENTIST (LAWS 5m; RESEARCH 11): which MISSING dataset has the
+    # highest expected research value -- P(independent survivor) x diversification value /
+    # (data + compute + engineering) x 1[legal] -- read off the coverage holes, the residual
+    # targets, the missed-trade parents and the packs' declared-absent datasets; a small lawful
+    # sample through the existing fetch path; a DatasetContract on every dataset_request.
+    daq = _costed("data_acquisition_scientist", lambda: _producer(
+        "data_acquisition_scientist", "research/data_acquisition_scientist.py", "--once",
+        "--budget-s", "600"))
     # THE JAPAN RESEARCH DIVISION (the principal's mandate, 2026-09-17, HOURLY): the twenty-step
     # loop over the twenty-four Japan miners, the compiler, the registers, the frontier and the
     # dashboard, as one leg of the japan department resident.
@@ -2827,6 +2926,12 @@ def main() -> None:
                                                          "research/region_department.py",
                                                          "--region", "japan", "--once",
                                                          "--budget-s", "1800"))
+    # THE AI MATHEMATICS RESEARCH CIVILIZATION (mathlab, 24/7 resident): twenty-eight parallel
+    # mathematical traditions attack the world model's residual, each object charged its own
+    # search burden, the executable ones donated to the compiler's EXACT_RECIPE door as `formula`
+    # recipes, credit back to the tradition through generator_yield and data/math_allocation.json.
+    mlb = _costed("math_lab", lambda: _producer("math_lab", "research/math_lab.py", "--once",
+                                                 "--budget-s", "3000"))
     # THE GLOBAL NATIVE-MARKET RESEARCH OS (regions): every country lab at equal priority with
     # measured adjustments, the transmission engine, the compiler; one pass per hour.
     gro = _costed("global_research_os", lambda: _producer("global_research_os",
@@ -2838,6 +2943,12 @@ def main() -> None:
     arch = _costed("archaeology", lambda: _producer("archaeology",
                                                      "research/archaeology/civilization.py",
                                                      "--once", "--budget-s", "900"))
+    # SARES, THE STRATEGY ARCHAEOLOGY AND REVERSE-ENGINEERING SANDBOX (RESEARCH 11, LAWS 5m):
+    # ten specialist agents over the population and captures the civilization already holds --
+    # graded A-F cells with a falsifier and a genealogy, illusions as cells, negative knowledge
+    # from the graveyard. Reaches no host; leaderboard profitability never bypasses the gauntlet.
+    srs = _costed("sares", lambda: _producer("sares", "research/archaeology/sares.py",
+                                             "--once", "--budget-s", "900"))
     # THE FREE SHADOW-INSTITUTIONAL STACK: public proxies for the institutional capabilities
     # the desk cannot buy, each latent fused from at least two sensors or named UNMEASURED.
     shi = _costed("shadow_institutional", lambda: _producer("shadow_institutional",
@@ -2853,6 +2964,20 @@ def main() -> None:
     lab = _costed("latency_lab", lambda: _producer("latency_lab",
                                                     "research/latency_lab.py",
                                                     "--once", "--budget-s", "600"))
+    # THE FEED/CLOCK/PROPAGATION OBSERVATORY (LAWS 5m): feed health per instrument stamped into
+    # data/feed_health.json (an INPUT for entry timing, never a cap), the causally admissible
+    # propagation graph, and the timing-corruption test on every LIVE/STANDBY sleeve.
+    fcl = _costed("feed_clock_lab", lambda: _producer("feed_clock_lab",
+                                                       "research/feed_clock_lab.py",
+                                                       "--part", "observatory",
+                                                       "--once", "--budget-s", "600"))
+    # THE EXECUTION / MARKET-IMPACT ALPHA LAB (LAWS 5m): the desk's own fills against its own
+    # tape -- Kyle-lambda with a permutation null, session cost curves, toxicity as a state,
+    # execution cells recorded and execution-conditioned seeds donated to the compiler.
+    imp = _costed("impact_lab", lambda: _producer("impact_lab",
+                                                   "research/feed_clock_lab.py",
+                                                   "--part", "impact",
+                                                   "--once", "--budget-s", "600"))
     # THE OPEN-SOURCE RESEARCH FEDERATION (LAWS 5h): every public research system disposed,
     # ledgered, delta-watched and budgeted, and every sandbox packet drained into the one
     # canonical gauntlet. It never fetches or executes third-party code -- provisioning is
@@ -2860,6 +2985,14 @@ def main() -> None:
     xfd = _costed("external_federation", lambda: _producer("external_federation",
                                                             "research/external_federation.py",
                                                             "--once", "--budget-s", "600"))
+    # FEDERATION OPERATIONS (LAWS 5h/5m): the persisted per-system registry with its append-only
+    # history, upstream delta scans by hash through the existing fetcher, spawn signals from
+    # already-fetched material through `admit`, the technique exchange across the forests, the
+    # benchmark twins, and reports/FEDERATION.json naming the first broken invariant. Reads the
+    # federation organ's state and the sandbox runner's artifacts; never runs third-party code.
+    fops = _costed("federation_ops", lambda: _producer("federation_ops",
+                                                        "research/federation_ops.py",
+                                                        "--once", "--budget-s", "600"))
     # THE MACRO RESEARCH DIVISION as a region instance (the Japan template for global macro):
     # nineteen miners over G10 banks, releases, positioning, rates, auctions, interventions,
     # propagation, fixings, commodity fundamentals, risk regimes; hourly on the macro resident.
@@ -2887,6 +3020,16 @@ def main() -> None:
     pmk = _costed("prediction_markets", lambda: _producer("prediction_markets",
                                                           "research/prediction_markets.py",
                                                           "--no-fetch", "--budget-s", "180"))
+    # THE PROBABILITY AND FAIR-VALUE DISLOCATION LAB (RESEARCH 11, LAWS 5m): six independent
+    # probability engines, each with a reliability curve per regime measured on history under
+    # the anti-lookahead rule, against what the instrument itself prices. A cell fires only
+    # when the CALIBRATED ensemble disagrees net of costs, model uncertainty and a regime
+    # buffer, and is donated as an exact recipe. It CONSUMES the macro, world, news, shadow,
+    # transmission and prediction-market reports the legs above write, re-implements none of
+    # them, and sizes nothing. Macro department, prediction layer.
+    dsl = _costed("dislocation_lab", lambda: _producer("dislocation_lab",
+                                                       "research/dislocation_lab.py",
+                                                       "--once", "--budget-s", "900"))
     # THE FOREST FEDERATION (principal 2026-09-17). Korea 24/7 || Japan 24/7 || China 24/7 ||
     # Russia 24/7 || ... || Global 24/7: every region its own research civilization, running the
     # eleven agent roles in parallel on its own resident, all feeding ONE registry through ONE
@@ -3100,6 +3243,14 @@ def main() -> None:
     # nothing new, which is the same one-hour lag wearing a different explanation.
 
     et = _costed("execution_twin", execution_twin)
+    # THE COLLATERAL / SETTLEMENT / BALANCE-SHEET LAYER and the Allocator-V2 evidence (LAWS 5m):
+    # the live book's swaps paid, margin, funding by currency and rollover calendar; the three
+    # stress scenarios; the named evidence vector per LIVE/STANDBY sleeve and for the book.
+    # Writes data/allocator_evidence.json, which pf_allocator reads into its posterior on its
+    # next pass, and reports/FINANCING_LAB.json. Execution department, 600 s.
+    fin = _costed("financing_lab", lambda: _producer("financing_lab",
+                                                      "research/financing_lab.py",
+                                                      "--once", "--budget-s", "600"))
     cg = _costed("causal_graph", causal_graph)
     arl = _costed("alpha_rl", alpha_rl)
     rxs = _costed("research_exchange_score", research_exchange_score)
@@ -3253,6 +3404,13 @@ def main() -> None:
     #   layer_census      which of the seven strategy layers the hour's compute went to
     #   opportunity_cost  what the hour therefore did NOT test, by name
     #   acceptance        the five acceptance properties, measured or UNMEASURED
+    # THE CONTROL PLANE'S OBSERVE PASS (principal 2026-09-17, LAWS.md 7). Desired state minus
+    # observed state, for every component the desk declares: schedules, locks, progress
+    # watermarks, freshness leases and the mandatory producer->consumer edges. It REPAIRS
+    # nothing here -- the fifteen-minute MT5-ClockFixer task runs the same organ with --apply --
+    # so a red invariant costs a report and never an hour of research.
+    cp = _costed("control_plane", lambda: _producer(
+        "control_plane", "research/control_plane.py", "--once", "--budget-s", "600"))
     lc = _costed("layer_census", lambda: _producer("layer_census", "libs/research/layers.py"))
     oc = _costed("opportunity_cost", lambda: _producer(
         "opportunity_cost", "research/opportunity_cost.py"))
@@ -3306,7 +3464,8 @@ def main() -> None:
                     "artifact_chain": acv, "residual_queue": rsq, "unseen_frontier": usf,
                     "source_registry": srg, "event_response_atlas": era, "world_lab": wlb,
                     "news_event_stream": nes, "event_sleeves": evs,
-                    "causal_lab": clb, "world_model": wmd, "residual_hunt": rhu,
+                    "causal_lab": clb, "event_graph_lab": egl,
+                    "world_model": wmd, "residual_hunt": rhu,
                     "representation_forge": rfg,
                     "registry_sync": rsy, "axis_proposer": axp,
                     "program_alpha_lane": pal, "trajectory_evolution": tev,
@@ -3317,7 +3476,7 @@ def main() -> None:
                     "forward_exploitation": mfe, "alpha_recombination": mar,
                     "unused_information": mui, "discovery_compiler": dcp, "research_debt": rdb,
                     "ingestion_ledger": igl, "ingestion_exploitation": ige,
-                    "macro_intelligence": mci,
+                    "macro_intelligence": mci, "market_constitution": mcc,
                     "mining_objective": mob, "research_gap_map": rgm,
                     "evidence_router": evr, "research_roi": rroi,
                     "coverage_tensor": cov,
@@ -3326,16 +3485,23 @@ def main() -> None:
                     "actor_atlas": aat, "understanding_seat": usd,
                     "netting_report": ntr, "execution_alpha": exa,
                     "paradigm_router": prr, "meta_controller": mtc, "lead_replication": lrp,
+                    "replication_civilization": rpc,
+                    "science_controller": scc,
                     "data_scout": dsc2, "japan_department": jpd, "global_research_os": gro,
-                    "external_federation": xfd, "archaeology": arch,
+                    "feature_compiler": fcp, "data_acquisition_scientist": daq,
+                    "math_lab": mlb,
+                    "external_federation": xfd, "archaeology": arch, "sares": srs,
+                    "federation_ops": fops,
                     "source_civilizations": svc, "evidence_watchtower": ewt,
-                    "prediction_markets": pmk,
+                    "prediction_markets": pmk, "dislocation_lab": dsl,
                     "shadow_institutional": shi, "latent_actors": lat, "latency_lab": lab,
+                    "feed_clock_lab": fcl, "impact_lab": imp,
                     "macro_department": mcd, **forests_out,
                     "probation": prb, "standing_questions": sqs, "exposure_decomposition": exd,
                     "auto_legs": auto,
                     "sweep": sw, "compile": cc,
-                    "execution_twin": et, "causal_graph": cg, "alpha_rl": arl,
+                    "execution_twin": et, "financing_lab": fin,
+                    "causal_graph": cg, "alpha_rl": arl,
                     "research_exchange_score": rxs, "lake_promote": lkp,
                     "orthogonality": orth,
                     "session_allocation": sess,
@@ -3371,6 +3537,7 @@ def main() -> None:
                     "frontier_ontology": fo, "exit_study": xs,
                     "graveyard_model": gm, "world_crawler": wc,
                     "release_identity": ri, "burn_in": bi, "layer_census": lc,
+                    "control_plane": cp,
                     "opportunity_cost": oc, "acceptance": ac, "opportunity_forecast": ofc,
                     "edge_reliability": erl, "arena": ar, "session_capital": scap,
                     "prosecutor": pc, "scaling_laws": slw,

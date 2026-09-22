@@ -630,6 +630,23 @@ def is_region_row(m: Mandate, row: Mapping[str, Any]) -> bool:
     return region_match(m, row) is not None
 
 
+#: The criteria that mean a row is the region's OWN work, as opposed to merely being about an
+#: instrument the mandate names. Measured 2026-09-22 on the Japan department: `is_region_row`
+#: admitted every queued candidate on USDJPY, XAUUSD and JPN225 -- 1,704 rows, none of them
+#: Japan's -- so the department ranked the whole desk's queue, held every row upstream for the
+#: ten section-33 fields its own miners had written into their DISCOVERY payloads, and claimed
+#: nothing, every pass. Ownership is prefix or declared region; the instrument is a register axis.
+OWN_CRITERIA: frozenset[str] = frozenset({
+    "prefix:generator", "prefix:source_id", "prefix:source_type", "prefix:origin",
+    "prefix:department", "prefix:claimed_by", "prefix:worker_id", "row.region",
+    "payload_json.region", "payload.region", "extra_json.region", "lineage_json.region"})
+
+
+def is_own_row(m: Mandate, row: Mapping[str, Any]) -> bool:
+    """The region's OWN row: a generator/source prefix or a declared region, never the symbol."""
+    return region_match(m, row) in OWN_CRITERIA
+
+
 def disposition_of(blocked_reason: str | None, state: str) -> str:
     """ONE of the seven dispositions for every operator, every time (section 23).
 

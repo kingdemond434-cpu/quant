@@ -22,6 +22,15 @@ publishes what it fixed and what it could not with the reason.
 
 Every step is time-boxed; the pass never exceeds --budget-s. `--dry-run` measures and repairs
 nothing.
+
+THE RECONCILER OWNS HEALTH NOW (principal 2026-09-17, LAWS.md 7). This organ is no longer the
+authority on whether anything is well; it is the fifteen-minute APPLY PASS of the desired-state
+control plane. `libs/ops/control_plane/reconciler.py` computes desired minus observed for every
+component in `desks/mt5/ops/components.py`, assigns the state, and plans the work; the steps above
+are its ACTUATORS, each of which must now prove a postcondition by observation before anything is
+recorded as repaired. `RESIDENTS` is derived from the specs rather than written here, and `main()`
+exits non-zero when a required repair did not prove itself -- so the task cannot report success
+over a repair that did not take.
 """
 from __future__ import annotations
 
@@ -42,37 +51,47 @@ LEDGER = DESK / "data" / "clock_fixer.jsonl"
 LOCKS = DESK / "data" / "locks"
 LOGS = DESK / "logs"
 
-#: resident lock stem -> (keep-alive task, log file, max silence seconds)
-RESIDENTS: dict[str, tuple[str, str, int]] = {
-    "dept_data": ("MT5-Dept-Data", "MT5-Dept-Data.log", 4 * 3600),
-    "dept_intel": ("MT5-Dept-Intel", "MT5-Dept-Intel.log", 4 * 3600),
-    "dept_discovery": ("MT5-Hourly", "MT5-Hourly.log", 4 * 3600),
-    "dept_validate": ("MT5-Dept-Validate", "MT5-Dept-Validate.log", 4 * 3600),
-    "dept_macro": ("MT5-Dept-Macro", "MT5-Dept-Macro.log", 4 * 3600),
-    "dept_execution": ("MT5-Dept-Execution", "MT5-Dept-Execution.log", 4 * 3600),
-    "dept_forward": ("MT5-Dept-Forward", "MT5-Dept-Forward.log", 4 * 3600),
-    "dept_meta": ("MT5-Dept-Meta", "MT5-Dept-Meta.log", 4 * 3600),
-    "dept_rest": ("MT5-Dept-Rest", "MT5-Dept-Rest.log", 4 * 3600),
-    "dept_japan": ("MT5-Dept-Japan", "MT5-Dept-Japan.log", 4 * 3600),
-    "dept_regions": ("MT5-Dept-Regions", "MT5-Dept-Regions.log", 4 * 3600),
-    # THE FOREST FEDERATION (2026-09-17): one 24/7 resident per regional research
-    # civilization. Japan and macro are already above; the four global-LAYER forests
-    # ride dept_regions and so are not separate residents.
-    "dept_korea": ("MT5-Forest-Korea", "MT5-Forest-Korea.log", 4 * 3600),
-    "dept_china": ("MT5-Forest-China", "MT5-Forest-China.log", 4 * 3600),
-    "dept_russia_cis": ("MT5-Forest-RussiaCis", "MT5-Forest-RussiaCis.log", 4 * 3600),
-    "dept_south_asia": ("MT5-Forest-SouthAsia", "MT5-Forest-SouthAsia.log", 4 * 3600),
-    "dept_asean": ("MT5-Forest-Asean", "MT5-Forest-Asean.log", 4 * 3600),
-    "dept_oceania": ("MT5-Forest-Oceania", "MT5-Forest-Oceania.log", 4 * 3600),
-    "dept_europe": ("MT5-Forest-Europe", "MT5-Forest-Europe.log", 4 * 3600),
-    "dept_north_america": ("MT5-Forest-NorthAmerica", "MT5-Forest-NorthAmerica.log", 4 * 3600),
-    "dept_latam": ("MT5-Forest-Latam", "MT5-Forest-Latam.log", 4 * 3600),
-    "dept_mena": ("MT5-Forest-Mena", "MT5-Forest-Mena.log", 4 * 3600),
-    "dept_africa": ("MT5-Forest-Africa", "MT5-Forest-Africa.log", 4 * 3600),
-    "moat_exploit": ("MT5-Moat-Exploit", "MT5-Moat-Exploit.log", 4 * 3600),
-    "moat_explore": ("MT5-Moat-Explore", "MT5-Moat-Explore.log", 4 * 3600),
-    "moat_resurrect": ("MT5-Moat-Resurrect", "MT5-Moat-Resurrect.log", 4 * 3600),
-}
+def _load_residents() -> dict[str, tuple[str, str, int]]:
+    """resident lock stem -> (keep-alive task, log file, max silence seconds), FROM THE SPECS.
+
+    THIS MAP USED TO LIVE HERE AS A LITERAL, and it was one of four registries of the same
+    machine (this one, `moat_swarms.TASK_NAMES`, `forests.FOREST_TASKS`, `box_tasks.manifest`),
+    each true about a different subset and each edited by hand when a department, a forest or a
+    swarm was added. It is now derived from `desks/mt5/ops/components.residents()`, which derives
+    it from the departments, the forest federation and the swarm table -- so a new resident
+    arrives here the moment it arrives anywhere, and `scripts/check_component_registry.py` fails
+    the gate if these two ever disagree again.
+
+    THE SILENCE WINDOW IS DERIVED TOO. It was a flat four hours for every resident: almost no
+    margin for a department whose pass may legitimately run three hours, and eight times too long
+    for a moat swarm whose pass is capped at thirty-two minutes, so a dead swarm sat unnoticed
+    for most of a shift. `specs.derive_max_silence(cadence, that family's own pass ceiling)`
+    gives 14400s to MT5-Hourly, 11400s to the ten-minute keep-alive departments and 2520s to the
+    swarms.
+
+    The fallback is the empty dict rather than a stale copy: a clock fixer that cannot read
+    desired state must report that it cannot, not repair against a guess.
+    """
+    try:
+        import importlib.util
+        path = DESK / "ops" / "components.py"
+        spec = importlib.util.spec_from_file_location("_cf_components", path)
+        if spec is None or spec.loader is None:
+            return {}
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return dict(mod.residents())
+    except Exception as exc:                                    # pragma: no cover - import guard
+        print(f"clock fixer: component registry UNREADABLE ({type(exc).__name__}: {exc}); "
+              f"no resident is judged this pass", flush=True)
+        return {}
+
+
+RESIDENTS: dict[str, tuple[str, str, int]] = _load_residents()
+
+#: The healers, in the order that repairs the costliest defect first. They are ACTUATORS now:
+#: `libs/ops/control_plane/actuators.py` runs each one and then PROVES its postcondition by
+#: observation, because every one of them has exited zero while repairing nothing.
 STEPS: tuple[tuple[str, list[str], int], ...] = (
     ("identity_heal", [str(DESK / "scripts" / "heal_identity_broken_clocks.py"), "--apply"], 120),
     ("orphaned_clocks", [str(DESK / "scripts" / "heal_orphaned_clocks.py")], 120),
@@ -235,6 +254,62 @@ def _write(doc: dict) -> None:
                                default=str) + "\n")
 
 
+def run_reconciler(apply: bool, budget_s: float) -> dict:
+    """The RECONCILER is the authority now; this organ is its fifteen-minute apply pass.
+
+    Health is no longer decided here. `libs/ops/control_plane/reconciler.py` computes desired vs
+    observed for every component, assigns the state, plans the work and runs each actuator with a
+    postcondition -- and this file supplies the actuators. A failure to load it is reported and
+    does not stop the healers below: a control plane that takes the healers down with it when it
+    cannot import is strictly worse than the healers alone.
+    """
+    try:
+        sys.path.insert(0, str(ROOT))
+        import importlib.util
+
+        from libs.ops.control_plane import reconciler as rc
+        path = DESK / "ops" / "components.py"
+        spec = importlib.util.spec_from_file_location("_cf_components_rc", path)
+        if spec is None or spec.loader is None:
+            return {"status": "MISSING", "why": f"{path} not loadable"}
+        comp = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(comp)
+        doc = rc.reconcile(registry=comp.registry(ROOT), root=ROOT, apply=apply,
+                           budget_s=budget_s, census=comp.census(ROOT))
+        if apply:
+            rc.write(doc, DESK / "reports" / "CONTROL_PLANE.json", ROOT)
+        return doc
+    except Exception as exc:
+        return {"status": "FAILED", "why": f"{type(exc).__name__}: {exc}"}
+
+
+def run_actuated_steps(apply: bool, budget_s: float, t0: float) -> list[dict]:
+    """The healers, each PROVING its postcondition. A return code of 0 is never proof."""
+    try:
+        sys.path.insert(0, str(ROOT))
+        from libs.ops.control_plane import actuators as ac
+    except Exception as exc:                                    # pragma: no cover - import guard
+        return [{"step": "actuators", "status": "UNAVAILABLE",
+                 "why": f"{type(exc).__name__}: {exc}"}]
+    table = ac.desk_actuators(DESK)
+    out: list[dict] = []
+    for name, _args, timeout_s in STEPS:
+        remaining = budget_s - (time.monotonic() - t0)
+        if remaining < 30:
+            out.append({"step": name, "status": "skipped", "why": "budget exhausted"})
+            continue
+        a = table.get(name)
+        if a is None:
+            out.append({"step": name, "status": "MISSING", "why": "no actuator declared"})
+            continue
+        rec = ac.run_actuator(a, apply=apply)
+        out.append({"step": name, "status": rec["result"].lower(), "repaired": rec.get("repaired"),
+                    "seconds": rec.get("seconds"), "rc": rec.get("rc"),
+                    "proofs": rec.get("proofs"), "why": rec.get("why"),
+                    "budget_s": min(timeout_s, int(remaining))})
+    return out
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--dry-run", action="store_true")
@@ -242,29 +317,60 @@ def main(argv: list[str] | None = None) -> int:
     a = ap.parse_args(argv)
     apply = not a.dry_run
     t0 = time.monotonic()
-    residents = check_residents(apply)
-    steps: list[dict] = []
-    for name, args, timeout_s in STEPS:
-        remaining = a.budget_s - (time.monotonic() - t0)
-        if remaining < 30:
-            steps.append({"step": name, "status": "skipped", "why": "budget exhausted"})
-            continue
-        steps.append(run_step(name, args, min(timeout_s, int(remaining)), apply))
+    # THE RECONCILER IS TIME-BOXED LIKE EVERY OTHER STEP: half the budget, never more than five
+    # minutes, and skipped by name when the budget cannot hold it -- the rule the healers below
+    # have always run under.
+    if a.budget_s >= 30:
+        control = run_reconciler(apply, min(float(a.budget_s) / 2.0, 300.0))
+    else:
+        control = {"status": "skipped", "why": "budget exhausted"}
+    reconciled = isinstance(control, dict) and "invariants" in control
+    # WHO RESTARTS A DEAD RESIDENT. When the reconciler ran, it already did -- with a
+    # postcondition (a NEW live pid holding the lock and a moving watermark), which is strictly
+    # more than this organ's own fire-and-forget `schtasks /Run`. So the census below only ACTS
+    # when the reconciler could not: a control plane that fails to import must not leave the
+    # residents unrestarted, and one that succeeded must not restart them twice.
+    residents = check_residents(apply and not reconciled)
+    steps = run_actuated_steps(apply, float(a.budget_s), t0)
     cert = certificates_without_clocks()
     steps.append(enrol_if_needed(apply, cert))
     dead = [r["resident"] for r in residents if r["state"] != "ALIVE"]
     fixed = [r["resident"] for r in residents if r.get("action") == "started"]
+    if reconciled:
+        fixed += [str(r.get("component_id")) for r in (control.get("repairs") or [])
+                  if r.get("repaired")]
+    failed_required = list(control.get("failed_required_repairs") or []) if isinstance(
+        control, dict) else []
+    failed_steps = [s["step"] for s in steps if s.get("status") == "failed"]
     doc = {"at": now(), "dry_run": a.dry_run, "seconds": round(time.monotonic() - t0, 1),
            "residents": residents, "dead": dead, "fixed": fixed, "steps": steps,
            "certificates_without_clocks": cert,
-           "rule": ("every certificate and every stopped clock gets a live clock every fifteen "
-                    "minutes; every dead resident is restarted; verification is by observation "
-                    "(lock holder alive, log advancing, clock row advancing), never a label")}
+           "control_plane": {
+               "DESK_CLOSED_AND_HEALTHY": control.get("DESK_CLOSED_AND_HEALTHY")
+               if isinstance(control, dict) else None,
+               "first_broken_invariant": control.get("first_broken_invariant")
+               if isinstance(control, dict) else None,
+               "epoch_id": control.get("epoch_id") if isinstance(control, dict) else None,
+               "states": control.get("states") if isinstance(control, dict) else None,
+               "planned": len(control.get("plan") or []) if isinstance(control, dict) else None,
+               "repairs": control.get("repairs") if isinstance(control, dict) else None,
+               "status": control.get("status") if isinstance(control, dict) else None,
+               "why": control.get("why") if isinstance(control, dict) else None},
+           "failed_required_repairs": failed_required,
+           "failed_steps": failed_steps,
+           "rule": ("the reconciler owns health: desired state minus observed state is the "
+                    "repair plan, every repair proves a postcondition by observation, and a "
+                    "return code of zero is never proof; this organ is its apply pass")}
     if apply:
         _write(doc)
     print(f"clock fixer: residents dead={dead} restarted={fixed} "
           f"certs_without_clocks={cert.get('n')} steps={[s['status'] for s in steps]} "
+          f"closed_and_healthy={doc['control_plane']['DESK_CLOSED_AND_HEALTHY']} "
           f"in {doc['seconds']}s", flush=True)
+    if failed_required or failed_steps:
+        print(f"clock fixer: FAILED repairs required={failed_required} steps={failed_steps}",
+              file=sys.stderr, flush=True)
+        return 1
     return 0
 
 

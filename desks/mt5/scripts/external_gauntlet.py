@@ -1686,6 +1686,18 @@ def gate_independence(verdicts: list[dict]) -> dict:
     }
 
 
+def structural_trial_census(cells) -> dict:
+    """The effective-trial ledger's census of this sweep's cells (family, symbol, timeframe,
+    params), raw beside effective; the per-family rows are capped so the report stays small."""
+    from libs.research.trial_ledger import census, trial_from_record
+    doc = census(trial_from_record(c, index=i) for i, c in enumerate(cells)).to_dict()
+    fams = sorted(doc.get("families", {}).values(), key=lambda f: -int(f.get("n_raw", 0)))
+    doc["families"] = fams[:50]
+    doc["note"] = ("descriptor/parameter participation ratio per family; reported beside the "
+                   "sealed fixed charge (n_trials), never in place of it")
+    return doc
+
+
 def lifetime_trial_report(families) -> dict:
     """`lifetime_trials` and per-family trials from the experiment ledger (V21), REPORTED beside
     the sealed charge and never substituted for it.
@@ -2556,6 +2568,11 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
         # holds for every family in the sweep so the two counters can be read side by side.
         "trial_ledger": _safe(lambda: lifetime_trial_report(c.get("family") for c in cells),
                               "trial_ledger"),
+        # N_EFFECTIVE BESIDE THE SEALED CHARGE (LAWS 5k; libs/research/trial_ledger.py): this
+        # sweep's cells priced by their descriptors and parameters, so clones of one family
+        # collapse and distinct mechanisms count in full. Reported so the reader can see what
+        # the charge would be if it followed the family; it never sets the bar.
+        "effective_trials": _safe(lambda: structural_trial_census(cells), "effective_trials"),
         # GATE INDEPENDENCE, COUNTED (V1): how many verdicts' lockbox restates walk-forward,
         # and that PBO/SPA are one matrix-level number on every verdict. Measurement only.
         "gate_independence": _safe(lambda: gate_independence(verdicts), "gate_independence"),
@@ -2592,6 +2609,7 @@ def main():
         return
     survivors = json.loads(surv_file.read_text("utf-8"))
     print(f"Loaded {len(survivors)} external survivors")
+    _ack_docket(surv_file)
     # EMPTY INPUT IS A HALT, NOT A SWEEP (2026-08-26, measured). The hourly merge briefly wrote
     # a 0-row input; this gauntlet then ran "normally" on nothing and rewrote the AUTHORITY file
     # to n=0 -- wiping 21 certificates with exit code 0. Zero candidates means there is nothing
@@ -3367,27 +3385,6 @@ def main():
     # A missing host cache must not erase every certificate on the Windows box. Require explicit
     # venue restriction below; native data and promotion guards still govern execution.
     retired = dict(old_doc.get("retired_certificates") or {})
-    # A legacy certifier could replace the live authority file and drop its retirement archive.
-    # The durable canon preserves that archive. Recover only rows that still carry an exact
-    # ten-gate verdict; the normal obstruction check below then decides whether each row stays
-    # retired or returns. This restores evidence, never invents or weakens it.
-    canon_path = DATA / "UNIVERSAL_SURVIVORS.canon.json"
-    try:
-        canon_doc = json.loads(canon_path.read_text("utf-8"))
-        canon_retired = canon_doc.get("retired_certificates") or {}
-        if isinstance(canon_retired, dict):
-            recovered = 0
-            for key, row in canon_retired.items():
-                if (key not in retired and key not in survivors_all
-                        and isinstance(row, dict) and all_ten_pass(row.get("gates"))):
-                    retired[key] = row
-                    recovered += 1
-            if recovered:
-                print(f"recovered {recovered} archived certificate row(s) from durable canon "
-                      "for current obstruction re-check")
-    except (OSError, ValueError, TypeError) as exc:
-        print(f"durable certificate archive unavailable ({type(exc).__name__}); "
-              "continuing without guessing")
     if meta:
         stamp = datetime.now(UTC).isoformat()
         for key in list(survivors_all):
@@ -3486,6 +3483,43 @@ def main():
     ledger_path.write_text(json.dumps({"n": len(claims), "claims": claims},
                                       indent=2, default=str), encoding="utf-8")
     print(f"SURVIVORS_LEDGER.json: {len(claims)} claim(s)")
+    _progress_watermark(len(cells), len(claims))
+
+
+def _ack_docket(path) -> None:
+    """LINEAGE IS ACKNOWLEDGED, NEVER INFERRED (LAWS 7): the judge names the docket it read, by
+    the docket's own producer run id, so `merge_docket -> external_gauntlet` is an observed edge
+    rather than two nearby timestamps."""
+    try:
+        import sys as _sys
+        if str(BASE) not in _sys.path:
+            _sys.path.insert(0, str(BASE))
+        from libs.ops.control_plane.lease import ack_artifact
+        ack_artifact("leg:external_gauntlet", path)
+    except Exception as exc:
+        print(f"docket acknowledgement not recorded: {type(exc).__name__}: {exc}")
+
+
+def _progress_watermark(cells_judged: int, claims: int) -> None:
+    """THE GAUNTLET'S PROGRESS WATERMARK (LAWS.md 7): the trial cursor, not the process.
+
+    A judging process that is alive and whose trial id has not moved is STALLED, and it looked
+    identical to a healthy one on every dashboard this desk had. The monotone counter is the
+    number of cells this lane has ever judged; `libs/ops/control_plane/watermarks.py` keeps the
+    high-water mark, so a restart that resets the count leaves a recorded regression rather than
+    erasing the evidence.
+    """
+    try:
+        import sys as _sys
+        root = str(BASE)
+        if root not in _sys.path:
+            _sys.path.insert(0, root)
+        from libs.ops.control_plane import watermarks as wm
+        prev = wm.read("leg:external_gauntlet") or {}
+        wm.progress("leg:external_gauntlet", "trial_id",
+                    int(prev.get("value") or 0) + int(cells_judged), claims=claims)
+    except Exception as exc:
+        print(f"gauntlet watermark not recorded: {type(exc).__name__}: {exc}")
 
 
 def _cli_main() -> int:

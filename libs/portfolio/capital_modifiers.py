@@ -107,6 +107,18 @@ REGISTRY: tuple[Modifier, ...] = (
              "libs/portfolio/robust_elog._posterior_mu (macro level of the hierarchy, from "
              "SleeveEvidence.macro_w set by pf_allocator via libs.portfolio.macro_state)",
              "desks/mt5/reports/pf_allocation.json (macro_regime)"),
+    # THE ALLOCATOR-V2 EVIDENCE (LAWS 5m, 2026-09-22): lineage concentration x research ROI as
+    # a bounded, two-sided tilt of each sleeve's posterior mean, and the venue's financing as a
+    # signed level shift where the replay never charged it -- both INPUTS to the E[log W]
+    # solve, never a multiplier on its answer. Heat-neutral on the lineage half by
+    # construction; a unique lineage, a high-ROI mechanism or a carry credit RAISES a sleeve.
+    # Neutral (1.0 / 0.0) whenever data/allocator_evidence.json or roi_capital_evidence.json
+    # is absent or stale.
+    Modifier("allocator_evidence", 0.5, 2.0, "two_sided",
+             "pf_allocator.apply_allocator_evidence <- data/allocator_evidence.json "
+             "(research/financing_lab.py) and data/roi_capital_evidence.json "
+             "(research/research_roi.py), applied to SleeveEvidence.daily_r before the solve",
+             "desks/mt5/reports/FINANCING_LAB.json"),
     Modifier("fade", 0.5, 1.0, "reduce_only",
              "mt5desk.sizing.decay_factor (L1.59 fade flag from decay_monitor)",
              "desks/mt5/reports/MISSED_GROWTH.json"),

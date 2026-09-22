@@ -131,6 +131,11 @@ LEG_LAYER: dict[str, str] = {
     # Route repair for dead sources and bars-file integrity are both about whether the desk's
     # inputs can be read at all: information.
     "source_fixer": "information",
+    # THE FEATURE COMPILER and THE DATA-ACQUISITION SCIENTIST (LAWS 5m): typing what the desk
+    # holds, and deciding which dataset to hold next, are both about what the desk knows before
+    # it predicts anything: information.
+    "feature_compiler": "information",
+    "data_acquisition_scientist": "information",
     "universe_integrity": "information",
     # Formulaic alpha generation is a predictor search; the closed-loop attestation is meta.
     "alpha_evolution": "prediction",
@@ -166,6 +171,9 @@ LEG_LAYER: dict[str, str] = {
     "artifact_chain": "meta", "residual_queue": "information", "unseen_frontier": "information",
     "source_registry": "information", "synthetic_regimes": "meta",
     "event_response_atlas": "information", "causal_lab": "information", "world_lab": "prediction",
+    # THE MARKET CONSTITUTION: which rule the price was formed under, as a PIT column, and
+    # whether a rule change moved anything -- what the desk knows before it predicts.
+    "market_constitution": "information",
     # THE 2026-09-17 WORLD-MODEL TRIAD. `world_model` turns every PIT series into a conditional
     # distribution over forward returns -- prediction, and the only one of the three that makes a
     # claim about returns at all. `residual_hunt` asks what dataset, participant, region,
@@ -175,6 +183,11 @@ LEG_LAYER: dict[str, str] = {
     # `unused_information` is: it decides what inputs exist, not what they imply.
     "world_model": "prediction", "residual_hunt": "information",
     "representation_forge": "information",
+    # THE MATHEMATICS CIVILIZATION (2026-09-17): every object it invents is a claim about the
+    # residual -- E[eps | f(x)] -- which is a claim about returns, so the hour is billed to
+    # prediction like `world_model` and `discovery_compiler`. The representations it mints are a
+    # by-product of that claim, not a separate information hour.
+    "math_lab": "prediction",
     "news_event_stream": "information", "event_sleeves": "prediction",
     "registry_sync": "meta", "axis_proposer": "information", "program_alpha_lane": "prediction",
     "trajectory_evolution": "prediction", "research_os_archive": "meta", "regime_router": "sizing",
@@ -205,6 +218,18 @@ LEG_LAYER: dict[str, str] = {
     "understanding_seat": "information",
     "netting_report": "execution", "execution_alpha": "execution",
     "paradigm_router": "meta", "meta_controller": "meta", "lead_replication": "information",
+    # THE ANYTIME-VALID SCIENCE CONTROLLER (LAWS 5k/5m): online-FDR wealth per lineage, the
+    # effective-trial census and the genome archive. It predicts, sizes and times nothing; it
+    # measures whether the machine's evidence is still evidence after an unbounded stream of
+    # launches, and refuses the launches that would make it not so: meta.
+    "science_controller": "meta",
+    # THE CROSS-MARKET EVENT GRAPH (LAWS 5m). It assembles what the desk knows about how events
+    # reach assets and adjudicates each mechanism's evidence; it predicts nothing itself, so like
+    # `knowledge_graph` and `causal_graph` it is information. THE REPLICATION CIVILIZATION judges
+    # the desk's own implementations against a written spec, never the market: it is the
+    # machine measuring the machine, beside `evaluator_lab` and `blind_reviewer` -- meta, which
+    # is this vocabulary's word for the validation layer.
+    "event_graph_lab": "information", "replication_civilization": "meta",
     "data_scout": "information", "japan_department": "information",
     "global_research_os": "information", "macro_department": "information",
     # THE FOREST FEDERATION (2026-09-17). Seventeen research civilizations, each running eleven
@@ -221,23 +246,35 @@ LEG_LAYER: dict[str, str] = {
     "forest_africa": "information",
     "forest_global_web": "information", "forest_global_academic_code": "information",
     "forest_global_physical_data": "information", "forest_global_market_data": "information",
-    "external_federation": "information",
+    "external_federation": "information", "federation_ops": "information",
     "source_civilizations": "information", "evidence_watchtower": "information",
     "prediction_markets": "information",
     "archaeology": "information",
+    "sares": "information",
     "shadow_institutional": "information",
     "latent_actors": "information",
     "latency_lab": "execution",
+    # THE FEED/CLOCK OBSERVATORY and THE IMPACT LAB (LAWS 5m): what the desk's picture of the
+    # market is worth at the instant it decides, and what its own orders do to the price. Both
+    # are about how an order reaches the venue and what it meets there -- execution.
+    "feed_clock_lab": "execution", "impact_lab": "execution",
     # THE INGESTION-EXPLOITATION CONTRACT (LAWS 5c, 2026-09-17). The ledger inventories the
     # desk's information estate and gives every ingested datum a downstream state: information.
     # The fusion turns that estate into regime posteriors and nowcasts: prediction. The gate
     # that ratchets both is meta, like every other fence.
     "ingestion_ledger": "information", "macro_intelligence": "prediction",
+    # THE DISLOCATION LAB (RESEARCH 11) turns six engines' claims into a calibrated ensemble
+    # against the instrument's own market-implied state: a claim about returns, prediction.
+    "dislocation_lab": "prediction",
     "ingestion_exploitation": "meta",
     # sizing: how much
     "capacity": "sizing", "ensemble_optimizer": "sizing",
     # portfolio: how the book is composed
     "pf_allocator": "portfolio",
+    # The balance-sheet layer and the Allocator-V2 evidence: what the book costs to carry and
+    # what each sleeve is worth to it -- a question about the book's composition, not about
+    # how an order reaches the venue.
+    "financing_lab": "portfolio",
     # execution: how the order reaches the venue
     "execution_resolver": "execution", "execution_twin": "execution",
     # What the venue charges and where that number came from is execution arithmetic, not
@@ -252,6 +289,9 @@ LEG_LAYER: dict[str, str] = {
     "burn_in": "meta", "maintain_miners": "meta", "reclaim_disk": "meta", "daily": "meta",
     "layer_census": "meta", "opportunity_cost": "meta", "acceptance": "meta",
     "wiring_audit": "meta", "queue_cycle": "meta", "time_joins": "meta", "brain_ab": "meta",
+    # THE CONTROL PLANE is meta by construction: it measures whether the machine that runs the
+    # machine is doing what desired state says, and it predicts, sizes and times nothing.
+    "control_plane": "meta",
     "session_capital": "portfolio",
 }
 

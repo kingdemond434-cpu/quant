@@ -1029,6 +1029,26 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
     state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
     slog(f"shadow state saved ({len(enrolled)} sleeves, "
          f"{len(enrolled) - len(SLEEVES)} certificate-enrolled)")
+    _enrolment_watermark(len(enrolled), ledger)
+
+
+def _enrolment_watermark(enrolled: int, ledger: str) -> None:
+    """THE ENROLMENT PASS'S PROGRESS WATERMARK (LAWS.md 7).
+
+    This pass was SIGKILLed partway through the same prefix every hour for long enough to strand
+    eighty-four certificates, and it reported as scheduled and running throughout. A truncated
+    job that restarts from the same end is not slow, it is BROKEN, and the only thing that can
+    tell the two apart from outside is a counter that stops moving.
+    """
+    try:
+        import sys as _sys
+        root = str(BASE.parents[1])
+        if root not in _sys.path:
+            _sys.path.insert(0, root)
+        from libs.ops.control_plane import watermarks as wm
+        wm.progress("leg:enrol_clocks", "forward_observations", enrolled, ledger=ledger)
+    except Exception as exc:
+        slog(f"enrolment watermark not recorded: {type(exc).__name__}: {exc}")
 
 
 if __name__ == "__main__":
