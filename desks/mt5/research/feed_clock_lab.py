@@ -250,9 +250,19 @@ def observe_instrument(symbol: str, tape: Mapping[str, np.ndarray], bars: Any, n
         tol = max(1000.0, 2.0 * poll_ms) if poll_ms else 120_000.0
         delta = recv - arrival
         delta = delta[np.isfinite(delta)]
-        p_ok = float(np.mean(delta <= tol)) if delta.size else None
+        # THE MEDIAN DELAY IS THE RECORDER'S OWN POLL OFFSET -- a constant the act clock
+        # (latency_lab) already prices and `offset_ms` above reports. The receipt component
+        # measures the EXCESS over it, the part the feed adds, against the poll cadence.
+        # MEASURED 2026-09-22: judging the raw delay put a healthy 30 s poller at
+        # p_within_tolerance 0 (every tick 15 poll-spacings late) and the whole feed at
+        # P(trustworthy) = 0 -- a clock offset read as a dead feed.
+        centred = delta - float(np.median(delta)) if delta.size else delta
+        p_ok = float(np.mean(np.abs(centred) <= tol)) if delta.size else None
         row["receipt"] = {**lat, "poll_spacing_ms": poll_ms, "tolerance_ms": tol,
                           "p_within_tolerance": p_ok, "receipt_source": receipt_source,
+                          "tolerance_basis": "|delay - median delay| <= max(1 s, 2 x poll"
+                                             " spacing): the median is the recorder's poll"
+                                             " offset (offset_ms), the excess is the feed's",
                           "basis": "tape recv_utc against the venue's time_msc on the same row;"
                                    " the RESEARCH recorder POLLS, so this is the feature"
                                    " staleness clock and not the gateway's read path"}

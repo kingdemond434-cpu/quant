@@ -67,7 +67,14 @@ UNKNOWNS = R / "UNKNOWN_UNKNOWNS.json"
 JOINT = R / "JOINT_EVOLUTION.json"
 ORTHO = R / "ORTHOGONALITY.json"
 SURVIVORS = R / "UNIVERSAL_SURVIVORS.json"
+#: The anytime-valid science controller: the QD archive's empty high-value cells and the
+#: campaign continuation decisions (research_genome consumed here, U19).
+SCIENCE = R / "SCIENCE_CONTROLLER.json"
 OUT = R / "META_CONTROLLER.json"
+#: The meta-evolution layer's curriculum and the missed-trade archaeologist's frozen
+#: dataset requests: two more sources of the SAME action kinds, priced in the same market.
+EVOLUTION = R / "RESEARCH_EVOLUTION.json"
+MISSED = R / "MISSED_TRADES.json"
 
 #: The nine action kinds, with what each COSTS in the desk's own units.
 #:
@@ -300,7 +307,98 @@ def _actions() -> list[dict[str, Any]]:
             "frees_cells": float(row.get("trials") or 0.0),
             "p_success": None, "source": "research_tree",
         })
+
+    # 1, AGAIN, FROM THE CURRICULUM (LAWS 5m). The meta-evolution layer mints a research
+    # question wherever its archive has never been -- a descriptor cell no variant occupies,
+    # joined to a coverage hole. An unlit cell's information gain is the uniform Beta's, the
+    # same reading `investigate_anomaly` gives zero observations: maximum uncertainty, no
+    # probability claimed.
+    ev = _read(EVOLUTION)
+    for q in (ev.get("curriculum") or [])[:40]:
+        if not isinstance(q, dict):
+            continue
+        cell: dict[str, Any] = q["cell"] if isinstance(q.get("cell"), dict) else {}
+        acts.append({
+            "kind": "new_hypothesis",
+            "target": "curriculum:" + "|".join(str(cell.get(k) or "?") for k in
+                                               ("search_family", "data_family", "region",
+                                                "horizon")),
+            "why": str(q.get("question") or "")[:200],
+            "info_gain_nats": float(_beta_gain(0.0, 0.0)),
+            "p_success": None, "source": "research_evolution",
+        })
+
+    # 3, AGAIN, FROM THE ARCHAEOLOGIST. A frozen `dataset_request` names the input that was
+    # absent at a decision that lost; its value is credited only by evidence after `frozen_at`,
+    # which the desk has not observed yet -- UNMEASURED, ranked on the board that needs no price.
+    mt = _read(MISSED)
+    for h in (mt.get("hypotheses") or [])[:40]:
+        if not isinstance(h, dict) or h.get("kind") != "dataset_request":
+            continue
+        acts.append({
+            "kind": "acquire_dataset", "target": h.get("hypothesis_id"),
+            "why": str(h.get("statement") or "")[:200],
+            "info_gain_nats": None, "value_status": "UNMEASURED",
+            "value_why": ("frozen at " + str(h.get("frozen_at")) + "; credit only from "
+                          "evidence stamped after that, none observed yet"),
+            "p_success": None, "source": "missed_trade_archaeologist",
+        })
+
+    # 10. THE SCIENCE CONTROLLER'S VERDICTS (U19; research_genome consumed). Its QD archive names
+    # the EMPTY cells one axis from the strongest elites -- a new hypothesis each, valued at the
+    # neighbours' mean quality times the empty-cell bonus; its anytime-valid campaign decisions
+    # name the families to deepen (STOP_DISCOVERED) and the futile ones whose queued launches
+    # are compute freed (STOP_FUTILE). Guarded: an absent report contributes nothing and says so.
+    acts.extend(_science_actions(_read(SCIENCE)))
     return acts
+
+
+def _science_actions(science: dict[str, Any]) -> list[dict[str, Any]]:
+    """Actions read off SCIENCE_CONTROLLER.json; empty when the report is absent or malformed."""
+    out: list[dict[str, Any]] = []
+    if not isinstance(science, dict) or not science:
+        return out
+    for row in (science.get("empty_high_value_cells") or [])[:PER_KIND * 2]:
+        if not isinstance(row, dict) or not row.get("cell"):
+            continue
+        out.append({
+            "kind": "new_hypothesis", "target": f"archive:{row['cell']}",
+            "why": (f"an EMPTY quality-diversity cell one axis from {row.get('neighbours', 0)} "
+                    f"populated neighbour(s), valued {float(row.get('value') or 0.0):.4f} with "
+                    f"the empty-cell bonus"),
+            "info_gain_nats": float(_beta_gain(0.0, 0.0)),
+            "p_success": float(row.get("value") or 0.0), "source": "science_controller",
+        })
+    fams = science.get("families")
+    top = (fams.get("top") or []) if isinstance(fams, dict) else []
+    for fam in top:
+        if not isinstance(fam, dict):
+            continue
+        cont: dict[str, Any] = (fam["continuation"]
+                                if isinstance(fam.get("continuation"), dict) else {})
+        decision = str(cont.get("decision") or "")
+        fid = str(fam.get("family_id") or "")
+        if not fid or not decision:
+            continue
+        passes = float(fam.get("passes_at_gate") or 0.0)
+        judged = float(fam.get("judged") or 0.0)
+        if decision == "STOP_DISCOVERED":
+            out.append({
+                "kind": "deepen_existing", "target": f"family:{fid}",
+                "why": f"anytime-valid DISCOVERY: {cont.get('why', '')}"[:200],
+                "info_gain_nats": float(_beta_gain(passes, max(0.0, judged - passes))),
+                "p_success": max(0.0, 1.0 - float(cont.get("anytime_p") or 1.0)),
+                "compute_override": 1.0, "source": "science_controller",
+            })
+        elif decision == "STOP_FUTILE" and int(fam.get("queued") or 0) > 0:
+            out.append({
+                "kind": "abandon_region", "target": f"family:{fid}",
+                "why": f"anytime-valid FUTILE: {cont.get('why', '')}"[:200],
+                "info_gain_nats": 0.0,
+                "frees_cells": float(fam.get("queued") or 0.0),
+                "p_success": None, "source": "science_controller",
+            })
+    return out
 
 
 def _beta_gain(a: float, b: float) -> float:

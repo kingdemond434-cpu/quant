@@ -63,6 +63,9 @@ ADVERSE_R = -1.0            # a fill that lost at least one unit of risk
 MOVE_ATR = 2.0              # a "large" move: two ATR(14) inside the horizon
 HORIZON_BARS = 8            # completed H1 bars after the decision the move is measured over
 REGIME_MIN_TRADES = 3
+STATE_TAIL = 400            # completed bars the state is computed on (every window is <= 121)
+#: The share of the pass budget episode SELECTION may take; the rest reconstructs and writes.
+SELECT_SHARE = 0.6
 KINDS: tuple[str, ...] = ("large_adverse_move", "missed_forward_move", "bad_exit",
                           "regime_failure")
 #: Veto reasons that name a wiring or venue defect: no dataset changes those decisions.
@@ -157,12 +160,19 @@ def completed_before(bars: Any, t: datetime, bar_hours: float = 1.0) -> Any:
 
 
 def _atr(df: Any, n: int = 14) -> float | None:
+    """ATR over the last `n` completed bars, vectorised on exactly the n+1 rows it needs. The
+    first version ran a Python-level `Series.combine` over the whole 50,000-bar history for
+    every episode and the organ's first real pass never reached its own report inside 900 s."""
     if len(df) < n + 1:
         return None
-    high, low, close = df["high"], df["low"], df["close"]
-    prev = close.shift(1)
-    tr = (high - low).combine((high - prev).abs(), max).combine((low - prev).abs(), max)
-    v = float(tr.tail(n).mean())
+    import numpy as np
+    tail = df.tail(n + 1)
+    high = tail["high"].to_numpy(dtype=float)
+    low = tail["low"].to_numpy(dtype=float)
+    close = tail["close"].to_numpy(dtype=float)
+    prev = close[:-1]
+    tr = np.maximum.reduce([high[1:] - low[1:], np.abs(high[1:] - prev), np.abs(low[1:] - prev)])
+    v = float(tr.mean())
     return v if v == v and v > 0 else None
 
 
@@ -174,6 +184,8 @@ def reconstruct(bars: Any, t: datetime) -> dict[str, Any]:
         return {"status": UNMEASURED, "why": f"{0 if df is None else len(df)} completed bar(s) "
                                               f"before the decision; the state needs 30",
                 "as_of": None, "decision_time": _iso(t)}
+    n_completed = len(df)
+    df = df.tail(STATE_TAIL)     # every window below is <= 121 bars; the rest is history
     close = df["close"]
     last = float(close.iloc[-1])
     atr = _atr(df)
@@ -194,7 +206,7 @@ def reconstruct(bars: Any, t: datetime) -> dict[str, Any]:
         "status": "MEASURED",
         "decision_time": _iso(t),
         "as_of": df.index[-1].isoformat(),
-        "bars_used": n,
+        "bars_used": n_completed,
         "close": last,
         "atr14": round(atr, 6) if atr else None,
         "ret_24h": round(last / float(close.iloc[-25]) - 1.0, 6) if n >= 25 else None,
@@ -253,9 +265,13 @@ def _episode_id(kind: str, symbol: str, sleeve: str, t: datetime) -> str:
 
 def find_episodes(decisions: list[dict[str, Any]], live: list[dict[str, Any]],
                   shadow: dict[str, list[dict[str, Any]]],
-                  bars_for: Any) -> list[dict[str, Any]]:
-    """Every episode the ledgers name, each with the outcome that selected it."""
+                  bars_for: Any, deadline: float | None = None,
+                  unmeasured: list[dict[str, str]] | None = None) -> list[dict[str, Any]]:
+    """Every episode the ledgers name, each with the outcome that selected it. `deadline` is a
+    monotonic instant: the shadow scan stops there and says so, so a slow box still gets a
+    report from every pass instead of the same truncated prefix every hour."""
     out: list[dict[str, Any]] = []
+    notes = unmeasured if unmeasured is not None else []
     # decisions by sleeve, taken, for joining live fills to their decision time
     taken_by_sleeve: dict[str, list[tuple[datetime, dict[str, Any]]]] = defaultdict(list)
     for d in decisions:
@@ -293,7 +309,8 @@ def find_episodes(decisions: list[dict[str, Any]], live: list[dict[str, Any]],
         t_dec, _d = joined[-1]
         out.append({"kind": "large_adverse_move", "lane": "live", "symbol": sym,
                     "sleeve": sleeve, "decision_time": t_dec,
-                    "side": f.get("side"), "outcome": {"r": round(loss_r, 3), "deal": f.get("deal")},
+                    "side": f.get("side"),
+                    "outcome": {"r": round(loss_r, 3), "deal": f.get("deal")},
                     "status": "SELECTED"})
 
     # (b) decisions not taken whose bracket would have run
@@ -329,7 +346,12 @@ def find_episodes(decisions: list[dict[str, Any]], live: list[dict[str, Any]],
 
     # (c)+(d) shadow ledgers: adverse rows, bad exits, regime failures
     regime_rows: dict[str, list[dict[str, Any]]] = defaultdict(list)
-    for clock, rows in shadow.items():
+    for i, (clock, rows) in enumerate(sorted(shadow.items())):
+        if deadline is not None and time.monotonic() > deadline:
+            notes.append({"what": "shadow scan", "why": f"selection deadline reached after "
+                                                          f"{i} of {len(shadow)} ledgers; the "
+                                                          f"rest are scanned next pass"})
+            break
         parts = clock.split(".")
         sym = _sym(parts[0])
         regime = parts[2] if len(parts) >= 3 else None
@@ -505,7 +527,7 @@ def run(*, budget_s: float = BUDGET_S, dry_run: bool = False,
     live, l_why = _jsonl(LIVE)
     if l_why:
         unmeasured.append({"what": "live ledger", "why": l_why})
-    shadow, s_why = load_shadow()
+    shadow, s_why = load_shadow(SHADOW_DIR)
     if s_why:
         unmeasured.append({"what": "shadow ledgers", "why": s_why})
     state_doc = _read(STATE) or {}
@@ -515,12 +537,13 @@ def run(*, budget_s: float = BUDGET_S, dry_run: bool = False,
 
     def bars_for(sym: str) -> Any:
         if sym not in cache:
-            cache[sym] = load_bars(sym)
+            cache[sym] = load_bars(sym, UNIVERSE)
             if cache[sym] is None:
                 unmeasured.append({"what": f"bars {sym}", "why": "no readable H1 parquet"})
         return cache[sym]
 
-    episodes = find_episodes(decisions, live, shadow, bars_for)
+    episodes = find_episodes(decisions, live, shadow, bars_for,
+                             deadline=t0 + budget_s * SELECT_SHARE, unmeasured=unmeasured)
     counts = {k: sum(1 for e in episodes if e["kind"] == k) for k in KINDS}
     by_status = {s: sum(1 for e in episodes if e["status"] == s)
                  for s in ("SELECTED", "OPERATIONAL", UNMEASURED)}

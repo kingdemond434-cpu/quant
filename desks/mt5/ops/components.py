@@ -204,7 +204,6 @@ def hourly_leg_specs() -> list[ComponentSpec]:
     dept = dict(getattr(mod, "LEG_DEPARTMENT", {}) or {})
     budget = dict(getattr(mod, "LEG_BUDGET_SEC", {}) or {})
     default_budget = int(getattr(mod, "SEARCH_BUDGET_SEC", 720) or 720)
-    core = set(getattr(mod, "CORE_LEGS", ()) or ())
     producers = _producer_calls()
     ledger = _ledger_outputs()
     specs: list[ComponentSpec] = []
@@ -220,12 +219,11 @@ def hourly_leg_specs() -> list[ComponentSpec]:
                     break
         timeout = int(budget.get(leg, default_budget))
         decl = ledger.get(leg, {})
-        task = "MT5-HourlyCore" if leg in core else department_task(department)
         specs.append(ComponentSpec(
             component_id=f"leg:{leg}",
             kind="leg", host="box", code_paths=tuple(dict.fromkeys(code)),
-            outputs=(decl.get("artifact"),) if decl.get("artifact") else (),
-            consumers=(decl.get("consumer"),) if decl.get("consumer") else (),
+            outputs=(str(decl["artifact"]),) if decl.get("artifact") else (),
+            consumers=(str(decl["consumer"]),) if decl.get("consumer") else (),
             dependencies=(f"resident:dept_{department}",),
             cadence_s=3600, timeout_s=timeout,
             progress_metric="leg_completions",
@@ -379,7 +377,7 @@ def swarm_tasks() -> dict[str, str]:
     m = re.search(r"TASK_NAMES:\s*dict\[str,\s*str\]\s*=\s*\{(.*?)\}", src, re.S)
     if not m:
         return {}
-    return {k: v for k, v in re.findall(r'"([a-z_]+)"\s*:\s*"([A-Za-z0-9-]+)"', m.group(1))}
+    return dict(re.findall(r'"([a-z_]+)"\s*:\s*"([A-Za-z0-9-]+)"', m.group(1)))
 
 
 def department_names() -> tuple[str, ...]:
@@ -509,11 +507,7 @@ def timer_specs(root: Path | None = None) -> list[ComponentSpec]:
         except OSError:
             continue
         service = timer.with_suffix(".service")
-        stext = ""
-        try:
-            stext = service.read_text(encoding="utf-8", errors="replace")
-        except OSError:
-            pass
+        stext = _read_text(service)
         cadence: int | None = None
         m = _ON_ACTIVE.search(ttext)
         if m:
@@ -625,7 +619,9 @@ def executables(root: Path | None = None) -> list[str]:
         if not d.is_dir():
             continue
         for p in sorted(d.rglob("*.py")):
-            if "__pycache__" in p.parts or p.name.startswith("_"):
+            # `_retired/` holds files a session retired with a row in docs/research/
+            # retirements.jsonl; they are kept for the record and are not this desk's to run.
+            if "__pycache__" in p.parts or "_retired" in p.parts or p.name.startswith("_"):
                 continue
             try:
                 text = p.read_text(encoding="utf-8", errors="replace")
@@ -662,13 +658,236 @@ def discovered_specs(claimed: set[str], root: Path | None = None) -> list[Compon
     return out
 
 
+# ------------------------------------------------- the VPS crontab, the law gate, the hooks
+CRONTAB = ROOT / "ops" / "crontab.manifest"
+LAW_GATE = ROOT / "scripts" / "run_law_gate.py"
+#: Files that run on a git event rather than a timer: every commit and every push is a trigger.
+HOOK_FILES: tuple[str, ...] = ("ops/githooks/pre-commit", "ops/githooks/pre-push", "ops/gates.sh")
+_CRON_LINE = re.compile(r"^([-*/,\d]+)\s+([-*/,\d]+)\s+\S+\s+\S+\s+\S+\s+(.*)$")
+_PATH_REF = re.compile(r"(?<![\w/\\.-])((?:desks|scripts|libs|ops|deploy|research|mt5desk|moat)"
+                       r"[/\\][\w./\\-]+?\.(?:py|sh|ps1|cmd))(?![\w.])")
+_MODULE_REF = re.compile(r"-m\s+([A-Za-z_][\w.]*)")
+_FENCE_REF = re.compile(r'\(\s*"(check_[\w]+\.py)"\s*,')
+
+
+def _read_text(path: Path) -> str:
+    try:
+        return path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return ""
+
+
+def _cron_cadence(minute: str, hour: str) -> int | None:
+    """Seconds between firings for the two fields that decide it; None when unreadable."""
+    m = re.fullmatch(r"\*/(\d+)", minute)
+    if m and hour == "*":
+        return int(m.group(1)) * 60
+    if minute == "*" and hour == "*":
+        return 60
+    h = re.fullmatch(r"\*/(\d+)", hour)
+    if h:
+        return int(h.group(1)) * 3600
+    if hour == "*":
+        return 3600
+    if re.fullmatch(r"\d+(,\d+)*", hour):
+        return 86_400 // max(1, hour.count(",") + 1)
+    return None
+
+
+def scripts_named_in(text: str, root: Path | None = None) -> list[str]:
+    """Repo-relative files a clock text or wrapper names: path literals (either slash) and
+    `-m dotted.module`, resolved against the repo root and the desk, existing files only."""
+    base = root or ROOT
+    out: list[str] = []
+    for raw in _PATH_REF.findall(text):
+        rel = raw.replace("\\", "/")
+        for prefix in (base, base / "desks" / "mt5"):
+            cand = prefix / rel
+            if cand.is_file():
+                out.append(cand.resolve().relative_to(base.resolve()).as_posix())
+                break
+    for dotted in _MODULE_REF.findall(text):
+        rel = dotted.replace(".", "/") + ".py"
+        for prefix in (base, base / "desks" / "mt5"):
+            cand = prefix / rel
+            if cand.is_file():
+                out.append(cand.resolve().relative_to(base.resolve()).as_posix())
+                break
+    return list(dict.fromkeys(out))
+
+
+def cron_specs(root: Path | None = None) -> list[ComponentSpec]:
+    """One spec per live crontab line of the VPS (ops/crontab.manifest), owning the scripts the
+    line runs and the scripts its shell wrappers run. The manifest IS the VPS's clock
+    (check_scheduler_manifest keeps it honest against the live crontab)."""
+    base = root or ROOT
+    out: list[ComponentSpec] = []
+    for no, line in enumerate(_read_text(base / "ops" / "crontab.manifest").splitlines(), 1):
+        s = line.strip()
+        if not s or s.startswith("#") or s[0] not in "*0123456789@":
+            continue
+        m = _CRON_LINE.match(s)
+        if not m:
+            continue
+        minute, hour, cmd = m.group(1), m.group(2), m.group(3)
+        scripts = scripts_named_in(cmd, base)
+        # a wrapper (ops/run_x.sh) runs the scripts it names; they are on this clock too
+        for wrapper in [p for p in scripts if p.endswith((".sh", ".cmd", ".ps1"))]:
+            scripts += [p for p in scripts_named_in(_read_text(base / wrapper), base)
+                        if p not in scripts]
+        if not scripts:
+            continue
+        cadence = _cron_cadence(minute, hour)
+        out.append(ComponentSpec(
+            component_id=f"cron:{no}:{Path(scripts[0]).stem}",
+            kind="timer", host="vps", code_paths=tuple(dict.fromkeys(scripts)),
+            cadence_s=cadence, timeout_s=None, progress_metric="cron_runs",
+            owner="vps", restart_action="crontab (ops/crontab.manifest, applied by hand)",
+            criticality="optional", resource_budget={},
+            schedule=f"crontab:{no}", artifact_class=_class_for_cadence(cadence),
+            notes=f"ops/crontab.manifest line {no}: {minute} {hour} ..."))
+    return out
+
+
+def law_gate_specs(root: Path | None = None) -> list[ComponentSpec]:
+    """One spec per fence the law gate runs. The gate itself fires hourly on the VPS crontab and
+    on every push, so every fence it lists is on a clock and none of them is 'a script nobody
+    runs'."""
+    base = root or ROOT
+    out: list[ComponentSpec] = []
+    for name in dict.fromkeys(_FENCE_REF.findall(_read_text(base / "scripts" / "run_law_gate.py"))):
+        rel = f"scripts/{name}"
+        if not (base / rel).is_file():
+            continue
+        out.append(ComponentSpec(
+            component_id=f"fence:{Path(name).stem}",
+            kind="task", host="any", code_paths=(rel,),
+            cadence_s=3600, timeout_s=600, progress_metric="gate_runs",
+            owner="law_gate", restart_action="scripts/run_law_gate.py",
+            criticality="optional", resource_budget={"budget_s": 600},
+            schedule="run_law_gate.py", artifact_class="hourly",
+            notes="fence listed in scripts/run_law_gate.py (_LAW_FENCES/_STATE_FENCES)"))
+    return out
+
+
+def hook_specs(root: Path | None = None) -> list[ComponentSpec]:
+    """The git hooks and the gate wrapper: they fire on every commit and push, and the scripts
+    they name run then."""
+    base = root or ROOT
+    out: list[ComponentSpec] = []
+    for rel in HOOK_FILES:
+        p = base / rel
+        if not p.is_file():
+            continue
+        scripts = [s for s in scripts_named_in(_read_text(p), base) if s != rel]
+        out.append(ComponentSpec(
+            component_id=f"hook:{Path(rel).name}",
+            kind="task", host="any", code_paths=tuple(dict.fromkeys([rel, *scripts])),
+            cadence_s=None, timeout_s=None, progress_metric="hook_runs",
+            owner="git", restart_action="git config core.hooksPath ops/githooks",
+            criticality="optional", resource_budget={},
+            schedule=f"git-hook:{Path(rel).name}", artifact_class=UNMEASURED,
+            notes="fires on every commit/push; the scripts it names run then"))
+    return out
+
+
+# ------------------------------------------------------ reach: what a clocked organ pulls in
+_AREA_FILES: dict[str, dict[str, Path]] = {}
+
+
+def _area_files(root: Path | None = None) -> dict[str, Path]:
+    """rel -> path for every .py under the walked areas (libraries included), read once."""
+    base = root or ROOT
+    key = str(base)
+    if key not in _AREA_FILES:
+        files: dict[str, Path] = {}
+        for area in EXECUTABLE_AREAS:
+            d = base / area
+            if not d.is_dir():
+                continue
+            for p in d.rglob("*.py"):
+                if "__pycache__" in p.parts or "_retired" in p.parts:
+                    continue
+                files[p.relative_to(base).as_posix()] = p
+        _AREA_FILES[key] = files
+    return _AREA_FILES[key]
+
+
+def _import_stems(text: str) -> set[str]:
+    """Module stems a file imports: `import x`, `from pkg.x import y` (both `x` and `y`, since
+    `from research import x` binds a module) -- the wide form, because the question is REACH."""
+    out: set[str] = set()
+    try:
+        tree = ast.parse(text)
+    except (SyntaxError, ValueError):
+        return out
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            out |= {a.name.split(".")[-1] for a in node.names}
+        elif isinstance(node, ast.ImportFrom):
+            if node.module:
+                out.add(node.module.split(".")[-1])
+            out |= {a.name.split(".")[0] for a in node.names}
+    return out
+
+
+def reach_specs(reg: Registry, root: Path | None = None) -> list[ComponentSpec]:
+    """A spec for every executable a CLOCKED organ reaches -- by import (kind `library`,
+    schedule `import:<importer>`) or by naming it as a script to run (kind `executable`,
+    schedule `invoked:<invoker>`). The closure walks from every scheduled spec's code paths
+    through imports and invocations, so a module three imports below an hourly leg is on that
+    leg's clock, which is where it actually runs. Nothing here invents a clock: every schedule
+    names the file that carries the edge, and a reader can open it."""
+    base = root or ROOT
+    files = _area_files(base)
+    exes = set(executables(base))
+    by_stem: dict[str, list[str]] = {}
+    for rel, p in files.items():
+        by_stem.setdefault(p.stem, []).append(rel)
+    claimed = reg.claimed_paths()
+    reached: dict[str, tuple[str, str]] = {}
+    frontier = [p for s in reg.all() if s.scheduled for p in s.code_paths]
+    while frontier:
+        rel = frontier.pop()
+        text = _read_text(base / rel)
+        if not text:
+            continue
+        if rel.endswith(".py"):
+            for stem in _import_stems(text):
+                for target in by_stem.get(stem, ()):
+                    if target != rel and target not in claimed and target not in reached:
+                        reached[target] = ("library", rel)
+                        frontier.append(target)
+        for target in scripts_named_in(text, base):
+            if target != rel and target not in claimed and target not in reached:
+                reached[target] = ("executable", rel)
+                frontier.append(target)
+    out: list[ComponentSpec] = []
+    for rel, (kind, via) in sorted(reached.items()):
+        if rel not in exes:
+            continue                     # a pure library: not an executable, nothing to claim
+        out.append(ComponentSpec(
+            component_id=f"{kind}:{rel}",
+            kind=kind, host="any", code_paths=(rel,),
+            cadence_s=None, timeout_s=None, progress_metric=UNMEASURED,
+            owner=UNMEASURED, restart_action=UNMEASURED,
+            criticality="optional", resource_budget={},
+            schedule=f"{'import' if kind == 'library' else 'invoked'}:{via}",
+            artifact_class=UNMEASURED,
+            notes=("REACHED: imported by a clocked organ, runs when it runs" if kind == "library"
+                   else "REACHED: named as a script by a clocked organ, runs when it runs")))
+    return out
+
+
 # ------------------------------------------------------------------------------ the registry
 def build_registry(root: Path | None = None) -> Registry:
     reg = Registry()
     for group in (explicit_specs(), resident_specs(), hourly_leg_specs(), daily_step_specs(),
-                  manifest_task_specs(), timer_specs(root), federation_worker_specs()):
+                  manifest_task_specs(), timer_specs(root), federation_worker_specs(),
+                  cron_specs(root), law_gate_specs(root), hook_specs(root)):
         for s in group:
             reg.add(s, replace=True)
+    reg.add_all(reach_specs(reg, root), replace=True)
     reg.add_all(discovered_specs(reg.claimed_paths(), root), replace=True)
     return reg
 
@@ -689,10 +908,15 @@ def census(root: Path | None = None) -> dict[str, Any]:
     exes = executables(root)
     claimed = reg.claimed_paths()
     unclaimed = [e for e in exes if e not in claimed]
-    unclocked = [s.component_id for s in reg.by_kind("executable")]
+    # UNCLOCKED means kind `executable` AND no schedule: a file a clocked organ invokes carries
+    # `invoked:<file>` and is on that organ's clock; a `library` runs whenever its importer does.
+    unclocked = [s.component_id for s in reg.by_kind("executable") if not s.scheduled]
     return {**reg.census(root), "executables": len(exes),
             "executables_unclaimed": unclaimed,
             "executables_without_clock": len(unclocked),
+            "unclocked": sorted(s.split(":", 1)[1] for s in unclocked),
+            "reached_library": sum(1 for s in reg.by_kind("library")),
+            "reached_invoked": sum(1 for s in reg.by_kind("executable") if s.scheduled),
             "coverage": round(1.0 - len(unclaimed) / len(exes), 6) if exes else None}
 
 

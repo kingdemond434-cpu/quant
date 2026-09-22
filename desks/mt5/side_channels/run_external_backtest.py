@@ -423,6 +423,49 @@ def route_by_lane(grid: list[dict]) -> tuple[list[dict], dict]:
     }
 
 
+def constraints_coverage(symbols: list[str], path: Path | None = None) -> dict:
+    """What the market constitution says about the docket's symbols, recorded beside the coverage
+    numbers -- the campaign runner's reading of `data/market_constraints.json` (writer:
+    research/market_constitution.py, one row per registry symbol: sessions, halts, tick, margin,
+    settlement).
+
+    RECORDED, NEVER A GATE. A cell runs whether or not its constitution is compiled; what this
+    adds is the answer to "which of the cells this campaign judged ran under a compiled session
+    and settlement clause, and which symbols the compiler could not classify" -- so a session-
+    conditioned survivor can be read against the hours its venue actually keeps, and a symbol
+    with no clause is named here rather than silently costed like its neighbours. An absent
+    file is UNMEASURED by name: the compiler has not run on this host, which is a fact about
+    the host and not about the docket.
+    """
+    p = path or BASE / "data" / "market_constraints.json"
+    try:
+        doc = json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {"status": "UNMEASURED", "path": str(p),
+                "why": (f"{p.name} absent or unreadable: research/market_constitution.py has not "
+                        f"compiled the registry on this host")}
+    table = doc.get("symbols") if isinstance(doc, dict) else None
+    if not isinstance(table, dict):
+        return {"status": "UNMEASURED", "path": str(p), "why": f"{p.name} carries no `symbols`"}
+    upper = {str(k).upper(): v for k, v in table.items() if isinstance(v, dict)}
+    syms = sorted({str(s).upper() for s in symbols if s})
+    with_c = [s for s in syms if s in upper]
+    without = [s for s in syms if s not in upper]
+    by_status = Counter(str(upper[s].get("status")) for s in with_c)
+    undeclared = sorted(s for s in with_c
+                        if (upper[s].get("sessions") or {}).get("status") == "UNMEASURED")
+    return {
+        "status": "MEASURED", "generated_at": doc.get("generated_at"),
+        "rules_version": doc.get("rules_version"), "docket_symbols": len(syms),
+        "with_constraints": len(with_c), "without_constraints": without[:50],
+        "n_without_constraints": len(without), "by_status": dict(by_status),
+        "sessions_undeclared": undeclared[:50], "n_sessions_undeclared": len(undeclared),
+        "why": ("recorded, never a gate: every cell runs regardless; the compiled clauses are the "
+                "campaign's INPUT for session-conditioned families, and the gateway door stamps "
+                "the same rows on every admitted sleeve"),
+    }
+
+
 def hold_uncoverable(grid: list[dict]) -> tuple[list[dict], dict]:
     """Split the grid into what this host can honestly test and what it cannot, BY CAUSE.
 
@@ -506,6 +549,9 @@ def run_all() -> list[dict]:
     grid, routing = route_by_lane(grid)
     grid, coverage = hold_uncoverable(grid)
     coverage["routing"] = routing
+    # THE MARKET CONSTITUTION, READ AND RECORDED (LAWS 5m compiler): which of these cells run
+    # under a compiled session/settlement clause, and which symbols carry none. Never a gate.
+    coverage["constraints"] = constraints_coverage([str(c.get("symbol") or "") for c in grid])
     print(f"Running {len(grid):,} executable test cells ({len(raw_grid):,} submitted; "
           f"{removed} unsupported parameter occurrence(s) removed)...")
 

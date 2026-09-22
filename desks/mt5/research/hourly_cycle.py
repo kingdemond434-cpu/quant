@@ -763,7 +763,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "understanding_seat", "archaeology", "sares", "shadow_institutional",
                      "source_civilizations", "evidence_watchtower", "prediction_markets",
                      "latent_actors", "residual_hunt", "evidence_router",
-                     "federation_ops"), "intel"),
+                     "federation_ops", "sandbox_runner"), "intel"),
     # discovery: the candidate pipeline, in order, plus the evolutionary generators
     **dict.fromkeys(("search", "sweep", "breadth_sweep", "compile_candidates", "merge_docket",
                      "deepen", "alpha_evolution", "alpha_rl", "ml_layer", "ensemble_optimizer",
@@ -777,7 +777,7 @@ LEG_DEPARTMENT: dict[str, str] = {
     **dict.fromkeys(("external_gauntlet", "backtest", "falsifier_run", "adversaries",
                      "stop_reverse", "orthogonality", "blind_reviewer", "synthetic_regimes",
                      "evaluator_lab", "lead_replication", "science_controller",
-                     "replication_civilization"), "validate"),
+                     "replication_civilization", "certificate_truth"), "validate"),
     # macro: the cross-asset / macro brain
     **dict.fromkeys(("fred_macro", "futures_lead_lag", "causal_graph", "residual_factors",
                      "weak_signals", "edges_macro_fusion_sweep", "strategy_paths",
@@ -790,7 +790,8 @@ LEG_DEPARTMENT: dict[str, str] = {
     # execution: the execution research command
     **dict.fromkeys(("execution_twin", "entry_timing", "cost_to_edge", "exit_study",
                      "execution_resolver", "netting_report", "execution_alpha",
-                     "latency_lab", "feed_clock_lab", "impact_lab"), "execution"),
+                     "latency_lab", "feed_clock_lab", "impact_lab", "digital_twin"),
+                    "execution"),
     # forward: forward evidence, promotion and the allocator
     **dict.fromkeys(("enrol_clocks", "pf_allocator", "daily", "hunt12_forward", "regime_router",
                      "forward_slot_ranker", "forward_exploitation", "shadow_discovery",
@@ -809,7 +810,7 @@ LEG_DEPARTMENT: dict[str, str] = {
     # mathlab: the AI mathematics research civilization -- twenty-eight mathematical traditions
     # in parallel over the world model's residual, every object through the same gauntlet, credit
     # back to the mathematical method (principal 2026-09-17 / 2026-09-22). Its own 24/7 resident.
-    **dict.fromkeys(("math_lab",), "mathlab"),
+    **dict.fromkeys(("math_lab", "expression_factory", "physics_lab"), "mathlab"),
     # regions: the global native-market research OS over every country lab, plus the four
     # GLOBAL-LAYER forests (web, academic+code, physical data, market data) -- layers of the
     # world that would be mined seventeen times over if each region hunted them itself.
@@ -1170,6 +1171,16 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "replication_civilization": 1_000,
     # The dislocation lab stops itself at --budget-s 900 and writes; the cap sits above it.
     "dislocation_lab": 1_000,
+    # The sandbox runner stops itself at --budget-s 900 (each system inside its ROI share) and
+    # writes SANDBOX_RUNNER.json; the cap sits above it so it is never cut at the same prefix.
+    "sandbox_runner": 1_000,
+    # The physics lab stops itself at --budget-s 600 and writes PHYSICS_LAB.json; the cap sits
+    # above it so the institution's pass is never cut at the same prefix every hour.
+    "physics_lab": 700,
+    # The certificate-truth audit reads six JSON stores and stops itself at --budget-s 120.
+    "certificate_truth": 150,
+    # The expression factory stops itself at --budget-s 600 and writes; the cap sits above it.
+    "expression_factory": 720,
     # the organ's own budget is 900 s; the cap sits above it so it stops itself, never cut
     "market_constitution": 1_020,
     # A FOREST IS GIVEN THE BUDGET IT IS ASKED FOR. Each leg passes `--budget-s 3000` down to
@@ -2965,6 +2976,24 @@ def main() -> None:
     # recipes, credit back to the tradition through generator_yield and data/math_allocation.json.
     mlb = _costed("math_lab", lambda: _producer("math_lab", "research/math_lab.py", "--once",
                                                  "--budget-s", "3000"))
+    # THE EXPRESSION FACTORY (LAWS 5l, 5k; RESEARCH 11), the mathlab department's second leg:
+    # the 101 public parent genomes and the desk's own families through a typed, unit-checked
+    # DSL -- harvest -> transfer unchanged -> credit-weighted dimension-preserving mutation ->
+    # invention -- a cost-ordered cheap layer, a three-null factory, the trial ledger and the
+    # lockbox before any gauntlet cell; survivors become registry candidates with provenance
+    # (campaign PROPOSED -> SCREENED -> QUEUED -> TESTING -> FORWARD | FAILED).
+    xpf = _costed("expression_factory", lambda: _producer("expression_factory",
+                                                           "research/expression_factory.py",
+                                                           "--once", "--budget-s", "600"))
+    # THE PHYSICS LAB (2026-09-22), the mathlab department's institution: two independent
+    # civilizations (disjoint seeds) of the nineteen physics traditions plus a rotating slice of
+    # the mathematical ones over LOCKBOXED panels; every object becomes a hypothesis card with a
+    # falsifier, consequences, peer review (discoverer + destroyer), a multiplicity charge through
+    # the effective-trial ledger, a second independent run before FORWARD, a Pareto front, credit
+    # back to the method, planted nulls that must die, the fifteen engines, the theorem memory
+    # under data/mathlab/, and a wiring proof naming every organ that ran.
+    phl = _costed("physics_lab", lambda: _producer("physics_lab", "research/physics_lab.py",
+                                                    "--once", "--budget-s", "600"))
     # THE GLOBAL NATIVE-MARKET RESEARCH OS (regions): every country lab at equal priority with
     # measured adjustments, the transmission engine, the compiler; one pass per hour.
     gro = _costed("global_research_os", lambda: _producer("global_research_os",
@@ -2982,6 +3011,14 @@ def main() -> None:
     # from the graveyard. Reaches no host; leaderboard profitability never bypasses the gauntlet.
     srs = _costed("sares", lambda: _producer("sares", "research/archaeology/sares.py",
                                              "--once", "--budget-s", "900"))
+    # ONE CERTIFICATE TRUTH (principal 2026-09-22). Audits every store that claims a certificate
+    # or a clock (canon + seal, survivors ledger, sleeve registry, shadow and lane states,
+    # sleeves.json, forward_reconcile.json) against the ONE lane -- external_gauntlet.py writes
+    # UNIVERSAL_SURVIVORS.json, promoter.py reads it -- and publishes every divergence to
+    # reports/CERTIFICATE_TRUTH.json. NEVER --apply on the clock: the migration is a one-time
+    # act the coordinator runs on the box. scripts/check_certificate_truth.py fails on residue.
+    ctt = _costed("certificate_truth", lambda: _producer(
+        "certificate_truth", "research/certificate_truth.py", "--once", "--budget-s", "120"))
     # THE FREE SHADOW-INSTITUTIONAL STACK: public proxies for the institutional capabilities
     # the desk cannot buy, each latent fused from at least two sensors or named UNMEASURED.
     shi = _costed("shadow_institutional", lambda: _producer("shadow_institutional",
@@ -3026,6 +3063,14 @@ def main() -> None:
     fops = _costed("federation_ops", lambda: _producer("federation_ops",
                                                         "research/federation_ops.py",
                                                         "--once", "--budget-s", "600"))
+    # THE SANDBOX RUNNER (LAWS 5h): the federation's execution layer. Runs the highest-ROI
+    # runnable adapters in their sandboxes and the desk's own rebuilt cells over the desk's PIT
+    # bars, converts every packet into registry candidates with provenance and charged trials,
+    # records UNMEASURED with an install task for every absent library; TEXT_ONLY is never a
+    # resting state. Third-party code runs only inside libs/research/sandbox.py.
+    sbr = _costed("sandbox_runner", lambda: _producer("sandbox_runner",
+                                                      "research/sandbox_runner.py",
+                                                      "--once", "--budget-s", "900"))
     # THE MACRO RESEARCH DIVISION as a region instance (the Japan template for global macro):
     # nineteen miners over G10 banks, releases, positioning, rates, auctions, interventions,
     # propagation, fixings, commodity fundamentals, risk regimes; hourly on the macro resident.
@@ -3276,6 +3321,15 @@ def main() -> None:
     # nothing new, which is the same one-hour lag wearing a different explanation.
 
     et = _costed("execution_twin", execution_twin)
+    # THE MARKET DIGITAL TWIN (LAWS 5m): a posterior over latent simulator worlds calibrated
+    # per hunt-universe instrument by ABC-SMC on the desk's own bars and ticks, posterior
+    # predictive checks with a published calibration score, pre-registered effect sizes for
+    # the canonical mechanisms, and every LIVE/STANDBY sleeve and the newest queued
+    # candidates run across the SAME posterior worlds at zero/actual/doubled spread:
+    # posterior-world robustness and counterfactual execution cost. It sizes nothing.
+    # Execution department, 600 s; a rotation cursor covers the universe over passes.
+    dtw = _costed("digital_twin", lambda: _producer("digital_twin", "research/digital_twin.py",
+                                                     "--once", "--budget-s", "600"))
     # THE COLLATERAL / SETTLEMENT / BALANCE-SHEET LAYER and the Allocator-V2 evidence (LAWS 5m):
     # the live book's swaps paid, margin, funding by currency and rollover calendar; the three
     # stress scenarios; the named evidence vector per LIVE/STANDBY sleeve and for the book.
@@ -3524,9 +3578,10 @@ def main() -> None:
                     "science_controller": scc,
                     "data_scout": dsc2, "japan_department": jpd, "global_research_os": gro,
                     "feature_compiler": fcp, "data_acquisition_scientist": daq,
-                    "math_lab": mlb,
+                    "math_lab": mlb, "expression_factory": xpf, "physics_lab": phl,
                     "external_federation": xfd, "archaeology": arch, "sares": srs,
-                    "federation_ops": fops,
+                    "certificate_truth": ctt,
+                    "federation_ops": fops, "sandbox_runner": sbr,
                     "source_civilizations": svc, "evidence_watchtower": ewt,
                     "prediction_markets": pmk, "dislocation_lab": dsl,
                     "shadow_institutional": shi, "latent_actors": lat, "latency_lab": lab,
@@ -3535,7 +3590,7 @@ def main() -> None:
                     "probation": prb, "standing_questions": sqs, "exposure_decomposition": exd,
                     "auto_legs": auto,
                     "sweep": sw, "compile": cc,
-                    "execution_twin": et, "financing_lab": fin,
+                    "execution_twin": et, "financing_lab": fin, "digital_twin": dtw,
                     "causal_graph": cg, "alpha_rl": arl,
                     "research_exchange_score": rxs, "lake_promote": lkp,
                     "orthogonality": orth,

@@ -1433,6 +1433,11 @@ def load_sleeves_verbose(path: Path) -> tuple[list[dict], list[str]]:
     # The observatory (research/feed_clock_lab.py) stamps data/feed_health.json beside this
     # file; the reading rides on the row for entry timing to read and drops nothing.
     stamp_feed_health(keep, path.with_name("feed_health.json"))
+    # THE MARKET CONSTITUTION IS AN INPUT TOO (LAWS 5m compiler). research/market_constitution.py
+    # compiles the registry's tick, session, halt and settlement clauses per symbol into
+    # data/market_constraints.json beside this file; the row carries its instrument's clauses
+    # for the placer to read and, again, drops nothing.
+    stamp_market_constraints(keep, path.with_name("market_constraints.json"))
     return keep, notes
 
 
@@ -1458,6 +1463,58 @@ def stamp_feed_health(sleeves: list[dict], path: Path) -> int:
                                 "p_trustworthy": row.get("p_trustworthy"),
                                 "at": doc.get("at"), "input_not_cap": True}
             n += 1
+    return n
+
+
+def stamp_market_constraints(sleeves: list[dict[str, Any]], path: Path) -> int:
+    """Annotate each sleeve with its instrument's compiled market constraints from `path`
+    (writer: research/market_constitution.py, `data/market_constraints.json`), in place.
+
+    Returns how many rows were stamped. The clauses ride on the row as `constraints` -- tick
+    size and digits, the session state now and the next closed day, the desk's own close, the
+    rollover hour and the swaps, and the row's own status -- for the placer to read as an INPUT.
+    An absent, unreadable or shapeless file stamps nothing and changes nothing: a sleeve is never
+    admitted or refused on this reading, so the only failure mode is a missing input, which the
+    row then visibly lacks (`constraints` absent, never a default clause).
+    """
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8"))
+        table = doc.get("symbols") if isinstance(doc, dict) else None
+        if not isinstance(table, dict):
+            return 0
+    except (OSError, ValueError):
+        return 0
+    # the registry spells share CFDs in mixed case (`Apple`); the roster may carry either
+    by_upper = {str(k).upper(): v for k, v in table.items() if isinstance(v, dict)}
+    n = 0
+    for s in sleeves:
+        sym = str(s.get("symbol") or "")
+        row = table.get(sym) if isinstance(table.get(sym), dict) else by_upper.get(sym.upper())
+        if not isinstance(row, dict):
+            continue
+
+        def _block(key: str, _row: dict[str, Any] = row) -> dict[str, Any]:
+            v = _row.get(key)
+            return v if isinstance(v, dict) else {}
+
+        tick, sess, halts = _block("tick"), _block("sessions"), _block("halts")
+        settle, margin = _block("settlement"), _block("margin")
+        s["constraints"] = {
+            "status": row.get("status"), "rule_version": row.get("rule_version"),
+            "instrument_class": row.get("instrument_class"),
+            "tick_size": tick.get("tick_size"), "digits": tick.get("digits"),
+            "volume_min": tick.get("volume_min"), "volume_step": tick.get("volume_step"),
+            "session_state": sess.get("state_now"), "session_window": sess.get("window_now"),
+            "closed_today": sess.get("closed_today"),
+            "next_closed_day": sess.get("next_closed_day"),
+            "desk_close_utc": halts.get("desk_close_utc"), "price_band": halts.get("price_band"),
+            "rollover_hour_utc": settle.get("rollover_hour_utc"),
+            "triple_swap_weekday": settle.get("triple_swap_weekday"),
+            "swap_long": settle.get("swap_long"), "swap_short": settle.get("swap_short"),
+            "margin": margin.get("status"), "unmeasured": list(row.get("unmeasured") or []),
+            "at": doc.get("generated_at"), "input_not_cap": True,
+        }
+        n += 1
     return n
 
 

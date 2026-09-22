@@ -40,6 +40,7 @@ KINDS = (
     "CANDIDATES_COMPILED", "DOCKET_MERGED", "GAUNTLET_SWEPT", "FALSIFIERS_RUN",
     "CLOCKS_ENROLLED", "PROMOTION_DECIDED", "ALLOCATION_DECIDED",
     "RELEASE_IDENTIFIED", "STATE_PUBLISHED",
+    "EXPRESSIONS_SCREENED",
 )
 
 #: Legs whose completion IS a domain transition. Every other leg emits only LEG_DONE.
@@ -50,6 +51,7 @@ LEG_EVENT = {
     "enrol_clocks": "CLOCKS_ENROLLED", "promoter": "PROMOTION_DECIDED",
     "pf_allocator": "ALLOCATION_DECIDED", "release_identity": "RELEASE_IDENTIFIED",
     "publish_state": "STATE_PUBLISHED",
+    "expression_factory": "EXPRESSIONS_SCREENED",
 }
 
 

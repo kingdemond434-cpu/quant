@@ -223,7 +223,7 @@ def random_config(family: str, rng: random.Random) -> dict[str, Any]:
     cfg: dict[str, Any] = {}
     for knob, (lo, hi) in KNOBS[family].items():
         v = rng.uniform(lo, hi)
-        cfg[knob] = int(round(v)) if knob in INT_KNOBS else round(v, 3)
+        cfg[knob] = round(v) if knob in INT_KNOBS else round(v, 3)
     if family == "program_ir":
         cfg["rolling_ops"] = sorted(rng.sample(PROGRAM_ROLLING, cfg["n_rolling"]))
         cfg["binary_ops"] = sorted(rng.sample(PROGRAM_BINARY, cfg["n_binary"]))
@@ -245,7 +245,7 @@ def mutate_config(family: str, cfg: dict[str, Any], rng: random.Random) -> dict[
     lo, hi = KNOBS[family][knob]
     step = (hi - lo) * rng.uniform(-0.25, 0.25)
     v = min(hi, max(lo, float(out.get(knob, lo)) + step))
-    out[knob] = int(round(v)) if knob in INT_KNOBS else round(v, 3)
+    out[knob] = round(v) if knob in INT_KNOBS else round(v, 3)
     if family == "program_ir":
         for key, menu, n_key in (("rolling_ops", PROGRAM_ROLLING, "n_rolling"),
                                  ("binary_ops", PROGRAM_BINARY, "n_binary"),
@@ -462,12 +462,13 @@ def propose(population: dict[str, Any], archive: dict[str, Any], split: dict[str
             hard: dict[str, Any], rng: random.Random, n: int) -> list[dict[str, Any]]:
     """`n` proposals in the policy's shares: exploit (mutate a measured elite), explore (cross two
     elites), frontier (an immigrant into an empty cell)."""
-    genomes: list[dict[str, Any]] = [g for g in population.get("genomes", []) if isinstance(g, dict)]
+    genomes: list[dict[str, Any]] = [g for g in population.get("genomes", [])
+                                     if isinstance(g, dict)]
     gen = int(population.get("generation") or 0) + 1
     measured = [g for g in genomes if g.get("fitness", {}).get("status") == "MEASURED"]
     measured.sort(key=lambda g: -float(g["fitness"].get("value") or 0.0))
-    n_exploit = int(round(n * split["exploitation"]))
-    n_explore = int(round(n * split["exploration"]))
+    n_exploit = round(n * split["exploitation"])
+    n_explore = round(n * split["exploration"])
     n_frontier = max(0, n - n_exploit - n_explore)
     out: list[dict[str, Any]] = []
     # exploitation: needs a measured elite; otherwise the share is spent as exploration of the
@@ -645,7 +646,8 @@ def run(*, budget_s: float = BUDGET_S, dry_run: bool = False,
         if time.monotonic() - t0 > budget_s:
             unmeasured.append({"what": "proposals", "why": f"budget {budget_s}s reached; "
                                                             f"{len(proposals)} proposed, "
-                                                            f"{len(applied) + len(refused)} judged"})
+                                                            f"{len(applied) + len(refused)} "
+                                                            f"judged"})
             break
         verdict = IR.refuse_proposal(g)
         g["novelty"] = novelty(g, archive)

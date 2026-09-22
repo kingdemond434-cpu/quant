@@ -32,6 +32,7 @@ import hashlib
 import json
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass, field, replace
+from datetime import UTC, datetime
 from typing import Any, Final
 
 from libs.research.access_classifier import ACCESS_LABELS, REFUSED_LABELS
@@ -61,6 +62,13 @@ PERSONAL_DATA_STATES: Final[tuple[str, ...]] = ("NONE", "AGGREGATED", "PSEUDONYM
                                                 "PERSONAL", UNMEASURED)
 TIMESTAMP_SEMANTICS: Final[tuple[str, ...]] = ("available_time", "period_time", "both",
                                                UNMEASURED)
+#: THE CONTRACT DEFECT. A dataset owes a contract; one without is CONTRACT_MISSING -- a defect
+#: row the ingestion ledger publishes, never a brake on mining.
+CONTRACT_MISSING: Final = "CONTRACT_MISSING"
+CONTRACT_STATES: Final[tuple[str, ...]] = ("CONTRACTED", "CONTRACT_INCOMPLETE", CONTRACT_MISSING)
+DEFECT_RULE: Final = ("a dataset without a contract is recorded CONTRACT_MISSING as a defect row; "
+                      "it never brakes mining -- the datum is still ingested, judged and "
+                      "exploited, and the defect names the contract nobody wrote")
 #: `public_or_licensed` is spelt in the access classifier's own vocabulary, so one label means
 #: one thing across the router, the ingestion ledger and this contract.
 PUBLIC_OR_LICENSED: Final[tuple[str, ...]] = tuple(ACCESS_LABELS)
@@ -179,6 +187,14 @@ class DatasetContract:
     timestamp_semantics: str = UNMEASURED
     vintage: Vintage | None = None
     notes: str = ""
+    #: False when the terms forbid machine extraction: registered, read by API or by hand, never
+    #: scraped. None is UNMEASURED, which `may("machine_extract")` reads as NOT permitted.
+    machine_use_allowed: bool | None = None
+    #: The freshness lease: how long a held value may be trusted before re-acquisition, seconds.
+    freshness_lease_s: float | None = None
+    #: Availability timestamps of the held copy: first and last `available_time` snapshotted.
+    first_available: str = UNMEASURED
+    last_available: str = UNMEASURED
 
     # -- completeness ----------------------------------------------------------------------
     def missing(self) -> tuple[str, ...]:
@@ -238,6 +254,29 @@ class DatasetContract:
     def admissible(self) -> bool:
         return self.admission().admitted
 
+    def may(self, use: str) -> bool:
+        """Is `use` permitted? Machine extraction needs the terms to allow a machine EXPLICITLY:
+        an unmeasured `machine_use_allowed` is not permission (L1.28a)."""
+        if use not in self.permitted_uses:
+            return False
+        if use == "machine_extract":
+            return self.machine_use_allowed is True
+        return True
+
+    def fresh(self, now: str) -> bool | None:
+        """Is the held copy inside its freshness lease at `now`? None when the lease or the last
+        availability stamp is UNMEASURED."""
+        if self.freshness_lease_s is None or self.last_available == UNMEASURED:
+            return None
+        last = _parse_iso(self.last_available)
+        at = _parse_iso(now)
+        if last is None or at is None:
+            return None
+        return (at - last).total_seconds() <= float(self.freshness_lease_s)
+
+    def contract_state(self) -> str:
+        return "CONTRACTED" if self.complete else "CONTRACT_INCOMPLETE"
+
     # -- serialisation -----------------------------------------------------------------------
     def to_json(self) -> dict[str, Any]:
         doc = asdict(self)
@@ -261,6 +300,13 @@ class DatasetContract:
             if isinstance(schema, Mapping) else {}
         vintage = doc.get("vintage")
         kw["vintage"] = Vintage.from_json(vintage) if isinstance(vintage, Mapping) else None
+        machine = doc.get("machine_use_allowed")
+        kw["machine_use_allowed"] = bool(machine) if isinstance(machine, bool) else None
+        lease = doc.get("freshness_lease_s")
+        kw["freshness_lease_s"] = float(lease) if isinstance(lease, (int, float)) else None
+        for name in ("first_available", "last_available"):
+            if doc.get(name):
+                kw[name] = str(doc[name])
         return cls(dataset_id=str(doc.get("dataset_id") or ""), **kw)
 
     def content_hash(self) -> str:
@@ -269,6 +315,19 @@ class DatasetContract:
         doc.pop("vintage", None)
         doc["permitted_uses"] = sorted(self.permitted_uses)
         return sha(doc)
+
+
+def _parse_iso(value: str) -> datetime | None:
+    try:
+        parsed = datetime.fromisoformat(str(value))
+    except (TypeError, ValueError):
+        return None
+    return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=UTC)
+
+
+def contract_state_of(contract: DatasetContract | None) -> str:
+    """CONTRACTED / CONTRACT_INCOMPLETE / CONTRACT_MISSING for a dataset that may have none."""
+    return CONTRACT_MISSING if contract is None else contract.contract_state()
 
 
 def provenance_from_verdict(*, refused: bool, quarantine: bool) -> str:
@@ -371,6 +430,10 @@ def snapshot(contract: DatasetContract, rows: Sequence[Mapping[str, Any]], *, at
                       point_in_time_timestamp=(contract.point_in_time_timestamp
                                                if contract.point_in_time_timestamp != UNMEASURED
                                                else at))
+    available = sorted(str(r["available_time"]) for r in rows
+                       if isinstance(r, Mapping) and r.get("available_time"))
+    if available:
+        stamped = replace(stamped, first_available=available[0], last_available=available[-1])
     lineage = LineageRecord(dataset_id=contract.dataset_id, vintage_id=vid, content_hash=digest,
                             schema_hash=schema_hash, contract_hash=stamped.content_hash(),
                             parents=tuple(parents), transform=transform,
@@ -424,10 +487,11 @@ def lineage_chain(records: Iterable[LineageRecord], lineage_id: str, *, depth: i
 
 
 __all__ = [
-    "CONTRACT_FIELDS", "LEGALITY_RULE", "MNPI_RESOLVED", "MNPI_STATES", "PERSONAL_DATA_STATES",
-    "PROVENANCE_STATES", "PUBLIC_OR_LICENSED", "RETENTION_POLICIES", "REVISION_POLICIES",
-    "TIMESTAMP_SEMANTICS", "UNMEASURED", "VINTAGE_RULE", "Admission", "DatasetContract",
-    "LineageRecord", "Snapshot", "Vintage", "canonical", "gate", "hash_rows", "hash_schema",
+    "CONTRACT_FIELDS", "CONTRACT_MISSING", "CONTRACT_STATES", "DEFECT_RULE", "LEGALITY_RULE",
+    "MNPI_RESOLVED", "MNPI_STATES", "PERSONAL_DATA_STATES", "PROVENANCE_STATES",
+    "PUBLIC_OR_LICENSED", "RETENTION_POLICIES", "REVISION_POLICIES", "TIMESTAMP_SEMANTICS",
+    "UNMEASURED", "VINTAGE_RULE", "Admission", "DatasetContract", "LineageRecord", "Snapshot",
+    "Vintage", "canonical", "contract_state_of", "gate", "hash_rows", "hash_schema",
     "lineage_chain", "provenance_from_verdict", "replay_key", "revise", "sha", "snapshot",
     "verify",
 ]

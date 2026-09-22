@@ -105,6 +105,11 @@ LEG_LAYER: dict[str, str] = {
     "weak_signals": "prediction",
     "residual_factors": "prediction",
     "markout": "execution",
+    # THE MARKET DIGITAL TWIN (2026-09-22) is billed to execution: it is calibrated to spreads,
+    # depth, cancellations and impact on the desk's own tape, and what it adds to a claim about
+    # returns is the counterfactual execution cost of the rule under the posterior worlds. The
+    # robustness number it writes routes research; it sizes nothing and predicts no return.
+    "digital_twin": "execution",
     "exogenous_search": "information",
     # `stop_reverse` asks what the desk's own orders did to it at the venue -- execution.
     "stop_reverse": "execution",
@@ -188,6 +193,12 @@ LEG_LAYER: dict[str, str] = {
     # prediction like `world_model` and `discovery_compiler`. The representations it mints are a
     # by-product of that claim, not a separate information hour.
     "math_lab": "prediction",
+    # THE EXPRESSION FACTORY (2026-09-22): every cell it screens is a claim about returns from
+    # a formula on the desk's own bars -- prediction, beside math_lab whose department it shares.
+    "expression_factory": "prediction",
+    # THE PHYSICS LAB (2026-09-22): the institution around the mathematics + physics scientists --
+    # every card it judges is a claim about the residual, so the hour is prediction like math_lab.
+    "physics_lab": "prediction",
     "news_event_stream": "information", "event_sleeves": "prediction",
     "registry_sync": "meta", "axis_proposer": "information", "program_alpha_lane": "prediction",
     "trajectory_evolution": "prediction", "research_os_archive": "meta", "regime_router": "sizing",
@@ -218,6 +229,13 @@ LEG_LAYER: dict[str, str] = {
     "understanding_seat": "information",
     "netting_report": "execution", "execution_alpha": "execution",
     "paradigm_router": "meta", "meta_controller": "meta", "lead_replication": "information",
+    # THE META-EVOLUTION LAYER, THE COMPUTE-ECONOMICS SCIENTIST AND THE MISSED-TRADE
+    # ARCHAEOLOGIST (LAWS 5m, 2026-09-22). The first two are the machine measuring and
+    # rewriting the machine: meta. The archaeologist asks which INPUT was absent at a
+    # decision -- what the desk knew before it predicted -- which is information, exactly as
+    # `residual_hunt` is.
+    "research_evolution": "meta", "compute_economics": "meta",
+    "missed_trade_archaeologist": "information",
     # THE ANYTIME-VALID SCIENCE CONTROLLER (LAWS 5k/5m): online-FDR wealth per lineage, the
     # effective-trial census and the genome archive. It predicts, sizes and times nothing; it
     # measures whether the machine's evidence is still evidence after an unbounded stream of
@@ -247,10 +265,16 @@ LEG_LAYER: dict[str, str] = {
     "forest_global_web": "information", "forest_global_academic_code": "information",
     "forest_global_physical_data": "information", "forest_global_market_data": "information",
     "external_federation": "information", "federation_ops": "information",
+    # THE SANDBOX RUNNER executes federated engines and rebuilt cells over the desk's bars and
+    # donates hypotheses and representations: what the desk can know, so information.
+    "sandbox_runner": "information",
     "source_civilizations": "information", "evidence_watchtower": "information",
     "prediction_markets": "information",
     "archaeology": "information",
     "sares": "information",
+    # ONE CERTIFICATE TRUTH: the audit of every certificate/clock store against the one lane is a
+    # fence over the machine's own bookkeeping -- meta, like every other fence.
+    "certificate_truth": "meta",
     "shadow_institutional": "information",
     "latent_actors": "information",
     "latency_lab": "execution",

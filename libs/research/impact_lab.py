@@ -91,7 +91,11 @@ class OrderRecord:
             return None
         if self.side == 0:
             return None
-        return float(self.side * (self.fill_price - self.requested) / self.requested * 1e4)
+        # Rounded at a nanobasis-point: 1e4 * (100.01 - 100) / 100 is 1.0000000000005116 in
+        # binary, and a slippage read as "one bp and change" by an exact comparison is noise
+        # wearing a measurement's clothes (measured 2026-09-22, the lab's own test).
+        return round(float(self.side * (self.fill_price - self.requested) / self.requested * 1e4),
+                     9)
 
     def markout_bps(self, horizon: str) -> float | None:
         """Signed mid move AFTER the fill in the desk's direction: negative is adverse."""

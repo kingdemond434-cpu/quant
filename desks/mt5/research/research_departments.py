@@ -314,6 +314,51 @@ def roi_shares(out: Path | None = None) -> tuple[dict[str, float], str]:
                         f"{block.get('floor_share')}")
 
 
+POLICY_FILENAME = "compute_policy.json"
+
+
+def policy_factors(depts: dict[str, dict[str, Any]], out: Path | None = None) -> dict[str, Any]:
+    """THE COMPUTE-ECONOMICS POLICY as a two-sided factor per department (LAWS 5m/5k).
+
+    `compute_economics` publishes the exploitation / exploration / frontier split it LEARNED from
+    survivors per hour and, for each department, the ratio of its tier's share to that tier's
+    default -- above 1.0 when the tier earned more than its prior, below when less. Read here
+    exactly as `roi_factors` reads the delayed-credit ROI: clipped to `SPEND_CLIP`, and reading
+    EXACTLY 1.0 for every department when the policy is absent, unreadable, or UNMEASURED (its
+    own `applied` false). A policy that has not been earned moves no seconds.
+    """
+    base = (out or OUT).parent
+    p = ((base.parent / "data" / POLICY_FILENAME) if base.name == "reports"
+         else base / "data" / POLICY_FILENAME)
+    doc = _read(p)
+    names = sorted(depts)
+    factors = dict.fromkeys(names, 1.0)
+    if not doc:
+        return {"applied": False, "factors": factors, "split": None,
+                "why": f"no compute policy at {p.name}: the compute-economics organ has not "
+                       f"published one; every department reads 1.0"}
+    if not doc.get("applied") or str(doc.get("status")) != "MEASURED":
+        return {"applied": False, "factors": factors, "split": doc.get("split"),
+                "why": f"compute policy is {doc.get('status')}: {doc.get('why') or 'no reason'}; "
+                       f"every department reads 1.0"}
+    raw = (doc.get("factors") or {}).get("departments") if isinstance(doc.get("factors"),
+                                                                       dict) else None
+    if not isinstance(raw, dict):
+        return {"applied": False, "factors": factors, "split": doc.get("split"),
+                "why": "compute policy carries no per-department factors; every department "
+                       "reads 1.0"}
+    for d in names:
+        v = raw.get(d)
+        if isinstance(v, (int, float)):
+            factors[d] = round(max(SPEND_CLIP[0], min(SPEND_CLIP[1], float(v))), 3)
+    return {"applied": True, "factors": factors, "split": doc.get("split"),
+            "why": (f"compute policy {doc.get('status')} from {p.name}: split "
+                    f"{doc.get('split')} learned from survivors per hour, two-sided"),
+            "rule": ("a department in a tier that earned more survivors per hour than its "
+                     "70/20/10 prior gets more elastic seconds, one that earned fewer gets "
+                     "fewer; clipped, never zero, and UNMEASURED reads 1.0")}
+
+
 def roi_factors(depts: dict[str, dict[str, Any]], out: Path | None = None) -> dict[str, Any]:
     """The ROI share as a TWO-SIDED factor about the equal share: above it gets more, below gets
     less, clipped, and an unpriced department reads exactly 1.0. Never a cap and never zero."""
@@ -335,7 +380,8 @@ def roi_factors(depts: dict[str, dict[str, Any]], out: Path | None = None) -> di
 
 
 def spend(depts: dict[str, dict[str, Any]], binding: dict[str, Any],
-          window_days: int, roi: dict[str, Any] | None = None) -> dict[str, Any]:
+          window_days: int, roi: dict[str, Any] | None = None,
+          policy: dict[str, Any] | None = None) -> dict[str, Any]:
     """THE ALLOCATING BLOCK: the binding resource's seconds follow measured marginal value.
 
     Above the median gets MORE, below gets less, both bounded by SPEND_CLIP -- the same two-sided
@@ -400,8 +446,23 @@ def spend(depts: dict[str, dict[str, Any]], binding: dict[str, Any],
             factors[d] = round(max(SPEND_CLIP[0],
                                    min(SPEND_CLIP[1], factors[d] * roi["factors"][d])), 3)
         why = f"{why}; x delayed-credit ROI ({roi['why']})"
+    # THE COMPUTE-ECONOMICS POLICY, FOLDED IN THE SAME WAY (LAWS 5m/5k): the learned 70/20/10
+    # split as a per-department factor, two-sided, clipped to the same band, passed in and never
+    # read here for the same reason the ROI is. UNMEASURED reads exactly 1.0.
+    policy = policy if policy is not None else {"applied": False,
+                                                "factors": dict.fromkeys(depts, 1.0),
+                                                "split": None,
+                                                "why": "no compute policy passed to spend(): "
+                                                       "every department reads 1.0"}
+    if policy.get("applied"):
+        for d in factors:
+            factors[d] = round(max(SPEND_CLIP[0],
+                                   min(SPEND_CLIP[1],
+                                       factors[d] * float(policy["factors"].get(d, 1.0)))), 3)
+        why = f"{why}; x compute policy ({policy['why']})"
     return {
         "roi": roi,
+        "compute_policy": policy,
         "resource": resource, "authoritative": authoritative, "why": why,
         "denominator": denom, "median_marginal_value": round(med, 6) if measured else None,
         "mean_marginal_value": round(scale, 6) if measured else None,
@@ -504,7 +565,8 @@ def build(window_days: int = WINDOW_DAYS) -> dict[str, Any]:
         "binding_resource": binding,
         # THE SAME PRICE, SPENT. `factors` above reports; this decides -- but only when every
         # input behind it is measured, which `research_budget` checks and records.
-        "spend": spend(depts, binding, window_days, roi_factors(depts)),
+        "spend": spend(depts, binding, window_days, roi_factors(depts),
+                       policy_factors(depts)),
         "rule": ("every department runs at full useful throughput on its own clock; spare "
                  "seconds follow measured survivors and novelty per compute-hour; UNMEASURED "
                  "reallocates nothing"),
