@@ -103,6 +103,22 @@ def claim_singleton(dept: str):
     return fh
 
 
+def _tree_runner():
+    """libs/ops/proctree.run when it imports (kills the whole tree on timeout), else
+    subprocess.run -- a resident must keep running even when the rail cannot load."""
+    try:
+        root = str(DESK.parents[1])
+        if root not in sys.path:
+            sys.path.insert(0, root)
+        from libs.ops import proctree
+        return proctree.run
+    except Exception:
+        return subprocess.run
+
+
+_run_tree = _tree_runner()
+
+
 def run_pass(dept: str, timeout_s: int = PASS_TIMEOUT_S) -> dict:
     """One department pass as a child under HOURLY_PLAN=dept:<name>, BELOW_NORMAL priority."""
     env = dict(os.environ)
@@ -112,8 +128,8 @@ def run_pass(dept: str, timeout_s: int = PASS_TIMEOUT_S) -> dict:
         kwargs["creationflags"] = BELOW_NORMAL_PRIORITY_CLASS
     t0 = time.monotonic()
     try:
-        r = subprocess.run([sys.executable, "-W", "ignore", str(CYCLE)], cwd=str(DESK),
-                           env=env, timeout=timeout_s, check=False, **kwargs)
+        r = _run_tree([sys.executable, "-W", "ignore", str(CYCLE)], cwd=str(DESK),
+                      env=env, timeout=timeout_s, check=False, **kwargs)
         return {"rc": r.returncode, "seconds": round(time.monotonic() - t0, 1), "status": "ok"
                 if r.returncode == 0 else "exit"}
     except subprocess.TimeoutExpired:

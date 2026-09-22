@@ -245,6 +245,9 @@ def desk_actuators(desk: Path | None = None) -> dict[str, Actuator]:
     """
     d = desk or DESK
     return {
+        "reap_orphans": script_actuator(
+            "reap_orphans", d / "scripts" / "reap_orphaned_workers.py", (),
+            output=str(d / "reports" / "ORPHAN_REAPER.json"), window_s=60, timeout_s=60),
         "identity_heal": script_actuator(
             "identity_heal", d / "scripts" / "heal_identity_broken_clocks.py", ("--apply",),
             output=str(d / "reports" / "IDENTITY_HEAL.json"), window_s=120, timeout_s=120),

@@ -49,6 +49,14 @@ REPO = BASE.parent.parent
 for _p in (str(BASE), str(BASE / "research"), str(REPO)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
+# EVERY BUDGETED CHILD RUNS UNDER THE TREE-KILLING RUNNER (libs/ops/proctree.py). Measured
+# 2026-09-22: `subprocess.run(timeout=)` killed the leg and left its worker pools behind --
+# 72 orphans, 147 GB of commit -- until every new leg died of STATUS_COMMITMENT_LIMIT.
+try:
+    from libs.ops import proctree as _proctree
+    _run_tree = _proctree.run
+except Exception:
+    _run_tree = subprocess.run
 # THE INTERPRETER THAT IS ACTUALLY RUNNING, never a path typed once and left behind. These were
 # hardcoded to C:\Users\dell\...\Python312, which is the OLD box: this desk runs as
 # Administrator on Python314, so the path did not exist and `start()` could never launch
@@ -233,9 +241,9 @@ def daily() -> dict:
     target = BASE / "research" / "daily_cycle.py"
     timeout_s = max(60, float(os.environ.get("DAILY_CYCLE_HOURLY_BUDGET_SEC", "900")))
     try:
-        r = subprocess.run([sys.executable, "-u", "-W", "ignore", str(target)],
-                           capture_output=True, text=True, cwd=str(BASE),
-                           timeout=timeout_s, check=False)
+        r = _run_tree([sys.executable, "-u", "-W", "ignore", str(target)],
+                      capture_output=True, text=True, cwd=str(BASE),
+                      timeout=timeout_s, check=False)
         return {"exit_code": int(r.returncode),
                 "status": "OK" if r.returncode == 0 else "FAILED",
                 "tail": (r.stdout or r.stderr or "")[-500:],
@@ -349,7 +357,7 @@ def state_vector() -> dict:
     target = BASE / "research" / "state_vector_build.py"
     timeout_s = max(15, float(os.environ.get("STATE_VECTOR_HOURLY_BUDGET_SEC", "45")))
     try:
-        r = subprocess.run(
+        r = _run_tree(
             [sys.executable, "-u", "-W", "ignore", str(target), "--budget-s",
              str(max(10, timeout_s - 5))],
             capture_output=True, text=True, cwd=str(BASE), timeout=timeout_s, check=False,
@@ -785,7 +793,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "latency_lab", "feed_clock_lab", "impact_lab"), "execution"),
     # forward: forward evidence, promotion and the allocator
     **dict.fromkeys(("enrol_clocks", "pf_allocator", "daily", "hunt12_forward", "regime_router",
-                     "forward_slot_ranker", "forward_exploitation", "shadow_discovery"),
+                     "forward_slot_ranker", "forward_exploitation", "shadow_discovery",
+                     "missed_trade_archaeologist"),
                     "forward"),
     # meta: the machine that runs the machine (the heavy part of it)
     **dict.fromkeys(("issue_board", "publish_state", "model_league", "ml_layer_meta",
@@ -793,7 +802,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "research_gap_map", "gauntlet_backpressure", "miner_specialisation",
                      "research_roi",
                      "research_debt", "paradigm_router", "meta_controller",
-                     "ingestion_exploitation", "coverage_tensor", "control_plane"), "meta"),
+                     "ingestion_exploitation", "coverage_tensor", "research_evolution",
+                     "compute_economics", "control_plane"), "meta"),
     # japan: the Japan research division (the principal's 47-section mandate, hourly)
     **dict.fromkeys(("japan_department",), "japan"),
     # mathlab: the AI mathematics research civilization -- twenty-eight mathematical traditions
@@ -843,8 +853,8 @@ def _auto_leg(entry: dict) -> dict:
     budget = max(15, int(entry.get("budget_s") or 120))
     cwd = BASE if organ.startswith("desks/mt5/") else REPO
     try:
-        r = subprocess.run([sys.executable, "-u", "-W", "ignore", str(target),
-                            *[str(a) for a in (entry.get("argv") or [])]],
+        r = _run_tree([sys.executable, "-u", "-W", "ignore", str(target),
+                       *[str(a) for a in (entry.get("argv") or [])]],
                            capture_output=True, text=True, cwd=str(cwd), timeout=budget,
                            check=False)
         return {"exit_code": r.returncode, "tail": (r.stdout or r.stderr or "")[-300:],
@@ -1152,6 +1162,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "feature_compiler": 1_000,
     "data_acquisition_scientist": 700,
     "residual_hunt": 800,
+    # THE META-EVOLUTION LAYER stops itself at 900 s and writes; the cycle's cap sits above.
+    "research_evolution": 1_020,
     # THE TWO LAWS-5m ORGANS each stop themselves at their own 900 s `--budget-s` and write
     # their artifact; the cycle's cap sits above that for the reason `enrol_clocks` was raised.
     "event_graph_lab": 1_000,
@@ -1196,7 +1208,7 @@ def _producer_impl(name: str, script: str, args: tuple[str, ...] = ()) -> dict:
                 "at": datetime.now(UTC).isoformat()}
     budget = LEG_BUDGET_SEC.get(name, SEARCH_BUDGET_SEC)
     try:
-        r = subprocess.run([sys.executable, "-u", "-W", "ignore", str(target), *args],
+        r = _run_tree([sys.executable, "-u", "-W", "ignore", str(target), *args],
                            capture_output=True, text=True, cwd=str(root),
                            timeout=budget, check=False)
         return {"exit_code": r.returncode, "tail": (r.stdout or r.stderr or "")[-300:],
@@ -2772,6 +2784,13 @@ def main() -> None:
     msd = _costed("shadow_discovery", lambda: _producer("shadow_discovery",
                                                          "research/shadow_discovery.py",
                                                          "--budget-s", "240"))
+    # THE MISSED-TRADE ARCHAEOLOGIST (LAWS 5m, U35): every large adverse move, missed forward
+    # move, bad exit and regime failure in the live and shadow ledgers, reconstructed from bars
+    # that had closed before the decision; each answer a frozen prospective hypothesis or
+    # dataset_request, credited only by later unseen evidence. Forward department.
+    mta = _costed("missed_trade_archaeologist", lambda: _producer(
+        "missed_trade_archaeologist", "research/missed_trade_archaeologist.py",
+        "--once", "--budget-s", "600"))
     mfe = _costed("forward_exploitation", lambda: _producer("forward_exploitation",
                                                              "research/forward_exploitation.py"))
     mar = _costed("alpha_recombination", lambda: _producer("alpha_recombination",
@@ -2887,6 +2906,20 @@ def main() -> None:
     mtc = _costed("meta_controller", lambda: _producer("meta_controller",
                                                         "research/meta_controller.py",
                                                         "--apply"))
+    # THE META-EVOLUTION LAYER (LAWS 5m, U33): the research machinery evolved under the immutable
+    # rails -- every proposal fenced by immutable_rails before it is applied, one elite per
+    # (search family x data family x region x horizon), fitness the delayed yield research_roi
+    # credits. Meta department resident.
+    rev = _costed("research_evolution", lambda: _producer("research_evolution",
+                                                           "research/research_evolution.py",
+                                                           "--once", "--budget-s", "900"))
+    # THE COMPUTE-ECONOMICS SCIENTIST (U34): survivors per CPU-hour, wall-hour and data-pound by
+    # department, forest, search family and layer; the 70/20/10 policy learned two-sided and
+    # written to data/compute_policy.json for the departments' exchange and the forest
+    # allocator to read. Meta.
+    cec = _costed("compute_economics", lambda: _producer("compute_economics",
+                                                          "research/compute_economics.py",
+                                                          "--once", "--budget-s", "300"))
     # LEAD-LEVEL BLIND REPLICATION (M13): important leads frozen and reproduced by a second
     # implementation with minimal context before they earn expensive resources. Validate.
     lrp = _costed("lead_replication", lambda: _producer("lead_replication",
@@ -3485,6 +3518,8 @@ def main() -> None:
                     "actor_atlas": aat, "understanding_seat": usd,
                     "netting_report": ntr, "execution_alpha": exa,
                     "paradigm_router": prr, "meta_controller": mtc, "lead_replication": lrp,
+                    "research_evolution": rev, "compute_economics": cec,
+                    "missed_trade_archaeologist": mta,
                     "replication_civilization": rpc,
                     "science_controller": scc,
                     "data_scout": dsc2, "japan_department": jpd, "global_research_os": gro,
