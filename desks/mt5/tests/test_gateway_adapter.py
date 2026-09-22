@@ -125,14 +125,16 @@ def test_the_ledger_and_file_readers_are_bound_to_the_desks_paths(tmp_path) -> N
     ledger = tmp_path / "live_ledger.jsonl"
     ledger.write_text('{"sleeve": "a", "r_multiple": 1.0}\n{"sleeve": "b"}\n', "utf-8")
     sleeves = tmp_path / "sleeves.json"
-    sleeves.write_text(json.dumps({"sleeves": [{"name": "x", "status": "LIVE"}]}), "utf-8")
+    live = {"name": "gold_asia_v2", "symbol": "XAUUSD", "chart": "H1",
+            "status": "LIVE"}
+    sleeves.write_text(json.dumps({"sleeves": [live]}), "utf-8")
     retired = tmp_path / "GOLD_RETIRED.json"
     retired.write_text('{"gold_asia": {"reason": "r"}}', "utf-8")
     ns = _exec(("sleeve_live_n", "load_sleeves", "_load_retired_gold", "ledger_rows"),
                {"LEDGER": ledger, "SLEEVES_FILE": sleeves, "GOLD_RETIRED_FILE": retired,
                 "log": lambda *_: None})
     assert ns["sleeve_live_n"]("a") == 1 and ns["sleeve_live_n"]("zzz") == 0
-    assert ns["load_sleeves"]() == [{"name": "x", "status": "LIVE"}]
+    assert ns["load_sleeves"]() == [live]
     assert ns["_load_retired_gold"]() == {"gold_asia": {"reason": "r"}}
     assert ns["ledger_rows"]() == [{"sleeve": "a", "r_multiple": 1.0}, {"sleeve": "b"}]
 
