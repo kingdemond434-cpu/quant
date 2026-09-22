@@ -565,3 +565,31 @@ def test_dry_run_writes_nothing(desk):
     assert R.generator_yields() == []
     assert _rows("SELECT * FROM workers") == []
     assert "--dry-run" in desk["runner"].calls[0]
+
+def test_a_miner_may_name_its_own_generator_without_colliding(tmp_path, monkeypatch):
+    """MEASURED 2026-09-17: four Japan calendar miners pass generator="japan:mine_gotobi" and the
+    wrapper built one too, so every call raised TypeError and the department logged UNMEASURED
+    while the miners recorded nothing, every pass."""
+    import time
+
+    from libs.moat import registry as R
+
+    monkeypatch.setattr(R, "BACKUP", tmp_path / "no_backup")
+    R.set_path(tmp_path / "r.sqlite")
+    conn = R.connect()
+    try:
+        mandate = RM.Mandate(region="japan", label="Japan", actors=(), domains=(),
+                                datasets=(), miners=(), instruments=("XAUUSD",))
+    except TypeError:                     # the framework's Mandate takes more fields than this
+        import japan.mandate as jm
+        mandate = jm.MANDATE
+    ctx = RD.Ctx(region="japan", mandate=mandate, conn=conn, budget_s=5,
+                 deadline=time.monotonic() + 5, dry_run=False, miner="JapanGotobiMiner")
+    did, created = ctx.record_discovery(mechanism="gotobi_fix_flow", source_id="mine_gotobi",
+                                        generator="japan:mine_gotobi", kind="calendar",
+                                        payload={"window": "tokyo_fix"})
+    assert did and created
+    rows = R.discoveries(conn=conn)
+    assert rows and str(rows[0]["generator"]).startswith("japan:")
+    conn.close()
+    R.set_path(None)
