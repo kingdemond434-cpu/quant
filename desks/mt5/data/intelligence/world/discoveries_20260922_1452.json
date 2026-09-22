@@ -1,0 +1,446 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5b9e\u9645\u6709\u6548\u6c47\u7387\u6307\u6570\uff082010 = 100\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/PX.REX.REER",
+  "published": "2026-09-22T14:51:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/PX.REX.REER?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "a6774c72c907d09e5243",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "0-14\u5c81\u7684\u4eba\u53e3\uff08\u5360\u603b\u4eba\u53e3\u7684\u767e\u5206\u6bd4\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/SP.POP.0014.TO.ZS",
+  "published": "2026-09-22T14:51:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/SP.POP.0014.TO.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "a2ef998f99b19e85a246",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "15-64\u5c81\u7684\u4eba\u53e3\uff08\u5360\u603b\u4eba\u53e3\u7684\u767e\u5206\u6bd4\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/SP.POP.1564.TO.ZS",
+  "published": "2026-09-22T14:51:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/SP.POP.1564.TO.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f4bd638e504dbdb856f9",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "65\u5c81\u548c65\u5c81\u4ee5\u4e0a\u7684\u4eba\u53e3\uff08\u5360\u603b\u4eba\u53e3\u7684\u767e\u5206\u6bd4\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/SP.POP.65UP.TO.ZS",
+  "published": "2026-09-22T14:51:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/SP.POP.65UP.TO.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f6693145beb88a11b6af",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Cause of death, by communicable diseases and maternal, prenatal and nutrition conditions (% of total) | Data",
+  "url": "https://data.worldbank.org.cn/indicator/SH.DTH.COMM.ZS",
+  "published": "2026-09-22T14:51:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/SH.DTH.COMM.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "41dd80e484170800b26c",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Cause of death, by injury (% of total) | Data",
+  "url": "https://data.worldbank.org.cn/indicator/SH.DTH.INJR.ZS",
+  "published": "2026-09-22T14:51:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/SH.DTH.INJR.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "fdd20a235775864e43dc",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Cause of death, by non-communicable diseases (% of total) | Data",
+  "url": "https://data.worldbank.org.cn/indicator/SH.DTH.NCOM.ZS",
+  "published": "2026-09-22T14:51:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/SH.DTH.NCOM.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "71b24ca8cb29b7e1de91",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Completeness of death registration with cause-of-death information (%) | Data",
+  "url": "https://data.worldbank.org.cn/indicator/SP.REG.DTHS.ZS",
+  "published": "2026-09-22T14:51:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/SP.REG.DTHS.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "68582e58928657539705",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "DPT \u514d\u75ab\u63a5\u79cd\u7387\uff08\u5360 12 - 23 \u4e2a\u6708\u5e74\u9f84\u7ec4\u7684\u767e\u5206\u6bd4\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/SH.IMM.IDPT",
+  "published": "2026-09-22T14:52:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/SH.IMM.IDPT?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f6a3963551e14aeab906",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Diabetes prevalence (% of population ages 20 to 79) | Data",
+  "url": "https://data.worldbank.org.cn/indicator/SH.STA.DIAB.ZS",
+  "published": "2026-09-22T14:52:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/SH.STA.DIAB.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "9ee1a0c97964117c47d6",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Mortality caused by road traffic injury (per 100,000 people) | Data",
+  "url": "https://data.worldbank.org.cn/indicator/SH.STA.TRAF.P5",
+  "published": "2026-09-22T14:52:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/SH.STA.TRAF.P5?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "aab9c163454be9451e58",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Prevalence of anemia among children (% of children under 5) | Data",
+  "url": "https://data.worldbank.org.cn/indicator/SH.ANM.CHLD.ZS",
+  "published": "2026-09-22T14:52:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/SH.ANM.CHLD.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "0d63329034e3457af4ff",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Prevalence of severe wasting, weight for height (% of children under 5) | Data",
+  "url": "https://data.worldbank.org.cn/indicator/SH.SVR.WAST.ZS",
+  "published": "2026-09-22T14:52:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/SH.SVR.WAST.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "95a429acd8588279fdd0",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Specialist surgical workforce (per 100,000 population) | Data",
+  "url": "https://data.worldbank.org.cn/indicator/SH.MED.SAOP.P5",
+  "published": "2026-09-22T14:52:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/SH.MED.SAOP.P5?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ff7aa2fc8098f5bcddf4",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Specialist surgical workforce (per 100,000 population) | Data",
+  "url": "https://data.worldbank.org.cn/indicator/SH.SGR.CRSK.ZS",
+  "published": "2026-09-22T14:52:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/SH.SGR.CRSK.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "e61cfc87c150fef42dab",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Specialist surgical workforce (per 100,000 population) | Data",
+  "url": "https://data.worldbank.org.cn/indicator/SH.SGR.IRSK.ZS",
+  "published": "2026-09-22T14:52:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/SH.SGR.IRSK.ZS?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "26fa9c6c582438deb4a0",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Specialist surgical workforce (per 100,000 population) | Data",
+  "url": "https://data.worldbank.org.cn/indicator/SH.SGR.PROC.P5",
+  "published": "2026-09-22T14:52:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/SH.SGR.PROC.P5?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "48e71e407f280c9e7280",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4eba\u53e3\u589e\u957f\uff08\u5e74\u5ea6\u767e\u5206\u6bd4\uff09 | Data",
+  "url": "https://data.worldbank.org.cn/indicator/SP.POP.GROW",
+  "published": "2026-09-22T14:52:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://api.worldbank.org/v2/zh/indicator/SP.POP.GROW?downloadformat=csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f3f2fb1fd6d5873265b7",
+  "host": "data.worldbank.org.cn",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Berkshire Hathaway Inc. stocks CFD (BRK.B) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/BRK.B/",
+  "published": "2026-09-22T14:52:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790076865",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "4d01c4b6f09a29efcae3",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "McDonald&#039;s Corporation stocks CFD (MCD) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/MCD/",
+  "published": "2026-09-22T14:52:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790076865",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "c8d24a3a28509ef19b5e",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Prudential Financial, Inc. stocks CFD (PRU) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/PRU/",
+  "published": "2026-09-22T14:52:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790076865",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "9f259af01e0bf554ac32",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Starbucks Corporation stocks CFD (SBUX) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/SBUX/",
+  "published": "2026-09-22T14:52:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790076865",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "6c0f19fbdda4895ee9b3",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]
