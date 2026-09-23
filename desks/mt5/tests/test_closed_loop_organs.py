@@ -366,3 +366,61 @@ def test_the_two_ratchets_fail_only_when_a_backlog_rises() -> None:
                         "oldest_age_h": 900.0, "oldest_window_h": 144.0})
     assert len(rose) == 3, "both ratchets and the stale window must each speak"
     assert cs.check({})[0], "an absent artifact is UNMEASURED and fails"
+
+
+def test_the_organ_repairs_rather_than_filing_a_task(tmp_path: Path, monkeypatch) -> None:
+    """LAWS 7, a report is not a remedy: bytes with no series go to the desk's own reader, and a
+    represented source with no cell is enqueued through the canonical registry door."""
+    from research import source_drain as sd
+    calls: dict[str, object] = {}
+
+    def _parse_all(only=None):                                  # the desk's own generic reader
+        calls["parsed"] = list(only or [])
+        return {"n_sources": len(only or [])}
+
+    monkeypatch.setitem(sys.modules, "research.asia_parser",
+                        type("M", (), {"parse_all": staticmethod(_parse_all)})())
+    seen: list[str] = []
+
+    def _record(**kw):                                          # the canonical registry door
+        seen.append(str(kw["source_id"]))
+        return "disc_1", True
+
+    monkeypatch.setitem(sys.modules, "libs.moat.registry",
+                        type("R", (), {"record_discovery": staticmethod(_record)})())
+    rows = [
+        {"id": "bytes_only", "collected": True, "ingested": False, "represented": False,
+         "cells_emitted": 0, "cells_judged": 0, "targets": ["XAUUSD"], "parse_error": None},
+        {"id": "represented", "collected": True, "ingested": True, "represented": True,
+         "cells_emitted": 0, "cells_judged": 0, "targets": ["AUDUSD"], "parse_error": None},
+    ]
+    out = sd.repair(rows, ["bytes_only", "represented"], budget_s=5.0)
+    assert out["parsed_attempted"] == ["bytes_only"], "a source stopped at bytes is re-parsed"
+    assert seen == ["represented"], "a represented source is enqueued as a cell"
+    assert out["enqueued"][0]["discovery_id"] == "disc_1"
+
+
+def test_a_source_registered_tomorrow_inherits_the_whole_chain(tmp_path: Path,
+                                                               monkeypatch) -> None:
+    """The set is DERIVED from the registry, so no list anywhere has to be maintained."""
+    from research import source_drain as sd
+    monkeypatch.setattr(sd, "REGISTRY", tmp_path / "sources.json")
+    (tmp_path / "sources.json").write_text(json.dumps({"sources": [
+        {"id": "born_today", "url": "https://example.test/x", "cadence": "daily"}]}),
+        encoding="utf-8")
+    assert [s["id"] for s in sd._sources()] == ["born_today"]
+    monkeypatch.setattr(sd, "VAULT", tmp_path / "vault")
+    monkeypatch.setattr(sd, "SERIES", tmp_path / "series")
+    row = sd.chain_for(sd._sources()[0], {}, {})
+    assert row["stage_reached"] == "none" and row["cells_judged"] == 0
+
+
+def test_chain_state_is_published_for_another_fence(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(__import__("research.source_drain", fromlist=["x"]), "CHAIN_STATE",
+                        tmp_path / "chain.json")
+    from research import source_drain as sd
+    (tmp_path / "chain.json").write_text(json.dumps({"by_source": {
+        "a": {"stage_reached": "collected", "stops_at": "ingested"}}}), encoding="utf-8")
+    assert sd.chain_state()["a"]["stops_at"] == "ingested"
+    monkeypatch.setattr(sd, "CHAIN_STATE", tmp_path / "missing.json")
+    assert sd.chain_state() == {}, "absence is UNMEASURED, never a pass"

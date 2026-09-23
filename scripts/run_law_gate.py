@@ -108,6 +108,16 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # construction -- it reads docs/, scripts/ and the tracked decision ledger, and judges only
     # what git TRACKS, so it means the same in CI, a fresh clone and on the box.
     ("check_birth_properties.py", ()),
+    # EVERY OBLIGATION IS INHERITED, NOT REMEMBERED (LAWS 7, principal 2026-09-23). The same
+    # shape as the line above, widened from documents and scripts to the five axes on which this
+    # desk keeps acquiring obligations: an executable needs a clock, an artifact, a named consumer
+    # and a row in the runtime attestation; a source needs a position in the collection chain; a
+    # family needs to be inside the judge's derived coverage; a region arrives at the CURRENT
+    # depth and breadth floors, never at zero; a destructive path arrives guarded against acting
+    # on an absence. It derives each set from the tree and fails on the axis that REGRESSED,
+    # naming the thing that arrived incomplete -- so a thing created next month inherits the
+    # obligation instead of waiting for a session to remember it.
+    ("check_birth_obligations.py", ()),
     # GROWTH GOVERNANCE (principal 2026-09-04): every risk-reduction mechanism proves it raises
     # robust forward E[log W]; every strong opportunity may raise capital above normal; the
     # 20% floor is flat and filled, growth free above it to 30%; the gateway deploys the book.

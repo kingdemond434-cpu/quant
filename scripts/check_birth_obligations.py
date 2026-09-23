@@ -73,8 +73,10 @@ DESTRUCTIVE = re.compile(r"\b(?:shutil\.rmtree|os\.remove|os\.unlink|\.unlink\(|
 
 #: A guard that proves the destructive path looked before it acted. `UNMEASURED` counts because
 #: recording "I could not see it" IS the guard this desk asks for (L1.28a).
+#: NO TRAILING \b: `exists()` is followed by `:` or `)`, both non-word, so a closing boundary
+#: never matches and every guarded path would read as unguarded. Measured 2026-09-23.
 ABSENCE_GUARD = re.compile(r"\b(?:exists\(\)|is_file\(\)|is_dir\(\)|missing_ok|FileNotFoundError|"
-                           r"UNMEASURED|no_retirement_on_absence)\b")
+                           r"UNMEASURED|no_retirement_on_absence)")
 
 
 def _read(path: Path) -> str:

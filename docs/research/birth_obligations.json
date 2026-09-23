@@ -1,6 +1,6 @@
 {
  "schema": "birth_obligations_floor/1",
- "at": "2026-09-23T11:23:20+00:00",
+ "at": "2026-09-23T11:25:24+00:00",
  "note": "The names known to be incomplete on each axis. An object that ACQUIRES its obligation drops out of this file automatically (the ratchet falling); an object that ARRIVES incomplete fails scripts/check_birth_obligations.py. Pre-existing debt is the floor, not a pass -- drive it down on purpose.",
  "axes": {
   "executable": {
@@ -1412,9 +1412,6 @@
   },
   "destructive": {
    "incomplete": [
-    "desks/mt5/research/formal_invariants.py",
-    "desks/mt5/research/hunt_deflate.py",
-    "desks/mt5/research/retire_untradeable.py",
     "desks/mt5/scripts/heal_orphaned_clocks.py",
     "desks/mt5/scripts/heal_silent_demotions.py",
     "libs/alpha/decay.py",
@@ -1427,14 +1424,9 @@
     "libs/self_improvement/lifecycle_actions.py",
     "libs/signal_engine/decay.py",
     "libs/store/models.py",
-    "libs/store/registries.py",
-    "scripts/daily_max.py",
-    "scripts/make_probe_worktree.py",
-    "scripts/rollback_guard.py",
-    "scripts/run_moat_backup.py",
-    "scripts/run_mutation.py"
+    "libs/store/registries.py"
    ],
-   "count": 21,
+   "count": 13,
    "names_dropped": 0,
    "obligation": "a guard against acting on an absence",
    "verdict": "measured"

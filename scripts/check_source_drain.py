@@ -6,8 +6,15 @@ backlog's direction a law:
 
   1. `uncollected` may never RISE above its own best (the ratchet in
      `desks/mt5/data/source_drain_ratchet.json`, written by `research/source_drain.py`)
-  2. `collected_but_unconverted` may never RISE above its own best
-  3. the OLDEST never-collected source may never age past its own cadence window
+  2. `collected_but_unconverted`, NET of sources collected since the last best, may never RISE
+     above its own best -- a source collected today is born unconverted and punishing that would
+     make this fence an argument for collecting less
+  3. `needs_code` -- the rows whose repair genuinely needs new code, because the desk's own
+     generic reader failed on them -- may never RISE above its own best
+  4. a NON-ZERO count that has not FALLEN inside the stall window is a breach too: a ratchet
+     that only falls says nothing about a number that never moves, and the point is maximum
+     conversion 24/7, not a backlog sitting at today's figure forever
+  5. the OLDEST never-collected source may never age past its own cadence window
 
 A rise is a breach and exits 1. A LARGE backlog that is falling is not a breach -- the fence
 exists to force the direction, never to punish the size. An absent artifact is UNMEASURED and
@@ -21,6 +28,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -43,7 +51,10 @@ def check(ratchet: dict[str, Any]) -> tuple[list[str], dict[str, Any]]:
         return ([f"UNMEASURED: no {RATCHET.relative_to(ROOT)} -- research/source_drain.py has "
                  f"not run on this host, so the backlog has no measured direction"], {})
     unc = int(ratchet.get("uncollected", 0))
-    conv = int(ratchet.get("unconverted", 0))
+    # NET OF SOURCES COLLECTED SINCE THE LAST BEST: a newly collected source is born
+    # unconverted, and a fence that called that a breach would be an argument for collecting
+    # less. Convert one and this falls; collect one and it does not rise.
+    conv = int(ratchet.get("unconverted_net", ratchet.get("unconverted", 0)))
     best_unc = int(ratchet.get("best_uncollected", unc))
     best_conv = int(ratchet.get("best_unconverted", conv))
     if unc > best_unc:
@@ -52,6 +63,25 @@ def check(ratchet: dict[str, Any]) -> tuple[list[str], dict[str, Any]]:
     if conv > best_conv:
         problems.append(f"unconverted RATCHET BREACHED: {conv} collected sources have no judged "
                         f"cell against a best of {best_conv} -- conversion went backwards")
+    code = int(ratchet.get("needs_code", 0))
+    best_code = int(ratchet.get("best_needs_code", code))
+    if code > best_code:
+        problems.append(f"needs_code RATCHET BREACHED: {code} source(s) need new code against a "
+                        f"best of {best_code} -- repairs went backwards")
+    window_h = float(ratchet.get("stall_window_h") or 168.0)
+    now = datetime.now(tz=UTC)
+    for name, count, stamp in (("unconverted", conv, ratchet.get("unconverted_last_fell_at")),
+                               ("needs_code", code, ratchet.get("needs_code_last_fell_at"))):
+        if count <= 0 or not stamp:
+            continue
+        try:
+            fell = datetime.fromisoformat(str(stamp).replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        stalled_h = (now - fell).total_seconds() / 3600.0
+        if stalled_h > window_h:
+            problems.append(f"{name} STALLED: {count} row(s) and the count has not fallen for "
+                            f"{stalled_h:.1f}h against a {window_h:.0f}h window")
     age = float(ratchet.get("oldest_age_h") or 0.0)
     window = float(ratchet.get("oldest_window_h") or 0.0)
     oldest = ratchet.get("oldest_never_collected")
@@ -60,6 +90,8 @@ def check(ratchet: dict[str, Any]) -> tuple[list[str], dict[str, Any]]:
                         f"own {window:.0f}h cadence window")
     return problems, {"uncollected": unc, "best_uncollected": best_unc,
                       "unconverted": conv, "best_unconverted": best_conv,
+                      "needs_code": code, "best_needs_code": best_code,
+                      "stall_window_h": window_h,
                       "oldest_never_collected": oldest, "oldest_age_h": age,
                       "oldest_window_h": window,
                       "drain_rate_per_pass": _read(REPORT).get("drain_rate_per_pass")}
@@ -78,7 +110,8 @@ def main(argv: list[str] | None = None) -> int:
         if census:
             print(f"source drain: uncollected {census['uncollected']} (best "
                   f"{census['best_uncollected']}), unconverted {census['unconverted']} (best "
-                  f"{census['best_unconverted']}), oldest {census['oldest_never_collected']} at "
+                  f"{census['best_unconverted']}), needs_code {census['needs_code']} (best "
+                  f"{census['best_needs_code']}), oldest {census['oldest_never_collected']} at "
                   f"{census['oldest_age_h']:.1f}h of {census['oldest_window_h']:.0f}h, rate "
                   f"{census['drain_rate_per_pass']}/pass")
         print("source drain: OK" if not problems else "source drain: RATCHET BREACHED")
