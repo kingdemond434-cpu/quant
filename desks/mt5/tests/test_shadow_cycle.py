@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -121,7 +123,28 @@ def test_missing_sleeve_fails_loud(tmp_path: Path, monkeypatch: pytest.MonkeyPat
     monkeypatch.setattr(shadow_cycle, "BASE", tmp_path)
     monkeypatch.setattr(shadow_cycle, "OUT", tmp_path / "health.json")
     health, rc = shadow_cycle.run()
-    assert rc == 1 and health["missing_sleeves"] == ["1 certified sleeve(s)"]
+    assert rc == 3 and health["missing_sleeves"] == ["1 certified sleeve(s)"]
+
+
+def test_fresh_authoritative_scalp_bars_avoid_a_second_terminal_connection(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    universe = tmp_path / "data" / "universe"
+    universe.mkdir(parents=True)
+    (universe / "XAUUSD_scalp_source.json").write_text(json.dumps({
+        "promotion_authority": True, "source_server": "FusionMarkets-Live",
+    }))
+    now = datetime.now(UTC)
+    for timeframe in ("M1", "M5", "M15"):
+        path = universe / f"XAUUSD_{timeframe}.parquet"
+        path.write_bytes(b"canonical-bars")
+        os.utime(path, (now.timestamp(), now.timestamp()))
+    monkeypatch.setattr(shadow_cycle, "BASE", tmp_path)
+    assert shadow_cycle._fresh_authoritative_scalp_bars(now) is True
+    stale = universe / "XAUUSD_M1.parquet"
+    old = now - timedelta(seconds=shadow_cycle.SCALP_BAR_MAX_AGE_SECONDS + 1)
+    os.utime(stale, (old.timestamp(), old.timestamp()))
+    assert shadow_cycle._fresh_authoritative_scalp_bars(now) is False
 
 
 def test_nonzero_step_result_fails_loud(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
