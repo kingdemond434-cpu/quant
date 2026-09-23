@@ -265,6 +265,9 @@ LEG_LAYER: dict[str, str] = {
     # it buys INPUT and none of it buys a claim about returns, so it is information by the same
     # reading that puts `world_crawler` and `deep_forest` there.
     "coverage_drain": "information",
+    # Which families the scarce judge actually spends itself on, measured per family as unjudged
+    # backlog. It buys INFORMATION about the mined population, not a signal or a position.
+    "judge_coverage": "information",
     "gauntlet_backpressure": "meta", "miner_specialisation": "meta",
     # THE TIER-5 RESIDUALS (mandate 90, 110, 131/132, 133, 134, 136, 97/98, 162). The bounty
     # board and the drawdown-alpha miner are PORTFOLIO: both ask what the BOOK lacks -- a payoff
