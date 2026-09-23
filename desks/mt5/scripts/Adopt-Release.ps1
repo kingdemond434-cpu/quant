@@ -214,7 +214,21 @@ function Invoke-Git {
     }) -join " "
     $psi = New-Object System.Diagnostics.ProcessStartInfo
     $psi.FileName               = "git"
-    $psi.Arguments              = ('-C "{0}" {1}' -f $RepoRoot, $quoted)
+    # AUTOSTASH IS BANNED HERE AND THE BAN IS CARRIED ON THE COMMAND LINE, NOT IN CONFIG
+    # (2026-09-23). `merge.autoStash` / `rebase.autoStash` make git run `git stash` IMPLICITLY
+    # before a merge -- no script names the command, so nothing in this file would show it. R0423
+    # forbids `git stash` in this tree for a measured reason: the box's working tree carried
+    # 21,884 modified/untracked paths when this was found, including the bars, the intelligence
+    # corpora and every live ledger. An autostash over that either takes minutes under the index
+    # lock this script already fights, or fails halfway and leaves the live research state parked
+    # in a stash no organ knows to pop. The `-s ours` merge below is the one that would have done
+    # it, and it does not need the working tree at all: the adoption has ALREADY proven the code
+    # tree equals the target before it records the merge.
+    # Config was measured UNSET in every scope on both boxes and is now pinned false in each repo,
+    # but config is exactly what drifted, so the flags travel with the call -- a `-c` on the
+    # command line outranks system, global and local config, and cannot be re-enabled by anything
+    # that edits a gitconfig later.
+    $psi.Arguments              = ('-C "{0}" -c merge.autoStash=false -c rebase.autoStash=false {1}' -f $RepoRoot, $quoted)
     $psi.UseShellExecute        = $false
     $psi.RedirectStandardOutput = $true
     $psi.RedirectStandardError  = $true
@@ -279,7 +293,9 @@ function Invoke-GitBytes {
     param([string] $ArgLine)
     $psi = New-Object System.Diagnostics.ProcessStartInfo
     $psi.FileName               = "git"
-    $psi.Arguments              = ('-C "{0}" {1}' -f $RepoRoot, $ArgLine)
+    # Same autostash ban as Invoke-Git, for the same reason -- see the comment there. Both
+    # wrappers carry it so no future call site can reach git through the quiet one.
+    $psi.Arguments              = ('-C "{0}" -c merge.autoStash=false -c rebase.autoStash=false {1}' -f $RepoRoot, $ArgLine)
     $psi.UseShellExecute        = $false
     $psi.RedirectStandardOutput = $true
     $psi.RedirectStandardError  = $true

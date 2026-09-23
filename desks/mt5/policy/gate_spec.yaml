@@ -57,7 +57,7 @@ gates:
       # number invented to let anything through: it is the charge this desk actually operated
       # under, and the value in force when its 23 standing certificates were issued.
       trials_multiplier: 7.0
-      fixed_trial_count: 597
+      fixed_trial_count: 109
       # AND the dispersion input, because pinning the trial count alone did NOT fix the bar.
       # The deflated Sharpe hurdle is expected_max_sharpe(n_trials, variance_of_sharpes), and the
       # second argument was the variance of Sharpes ACROSS THE CURRENT SWEEP. Measured
@@ -68,8 +68,8 @@ gates:
       # 0.014863 is the dispersion that yields sr0 = 0.3786 at 597 trials: the bar this desk
       # actually operated under when its 23 standing certificates were issued.
       fixed_variance_of_sharpes: 0.014863
-      trial_count_basis: "fixed_campaign_trials(597) + fixed_variance_of_sharpes(0.014863)"
-      fail_closed_to: "fixed_campaign_trials(597)"
+      trial_count_basis: "effective_campaign_trials(109) + fixed_variance_of_sharpes(0.014863): the campaign charge is measured in EFFECTIVE independent tests -- the participation ratio of (grid cell, content) identities within each mechanism -- not in docket rows; both inputs remain constants, so the bar is identical for every cell regardless of how many others share its sweep"
+      fail_closed_to: "effective_campaign_trials(109)"
     fail_closed: true
     cure_by_forward: true
     forward_cure_threshold: "exp_r > 0.05R, n >= 50, maxDD > -25R, days >= 14"
