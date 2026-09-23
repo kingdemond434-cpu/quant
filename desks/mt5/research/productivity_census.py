@@ -769,9 +769,21 @@ def build(window_days: float = COMPUTE_WINDOW_DAYS,
     # on the LEG name; if no leg in the window matches a roster producer, every ledger hour in
     # the census is 0.0 and `certificates_per_compute_hour` is being divided by a registry number
     # alone. A reader must be told that, or they will read a small denominator as a cheap organ.
+    # AND A NULL NOTE SAID TWO DIFFERENT THINGS, WHICH IS WHY IT IS NOW ALWAYS WRITTEN. This
+    # field was `None` both when there was no caveat to make (the ledger matched producers and
+    # the hours are real) and when the caveat could not be computed at all (the ledger is not
+    # available). A reader downstream -- the desk dashboard among them -- rendered that null as
+    # UNMEASURED, which was wrong in the first case and not specific enough in the second: a
+    # measured emptiness is a MEASUREMENT, and only a genuine hole may wear the word UNMEASURED.
+    # So all three states are now named, and the field is never null.
     matched_ledger = sum(1 for r in rows if r["compute_hours_ledger"] > 0)
-    ledger_note = None
-    if comp.get("available") and not matched_ledger:
+    if not comp.get("available"):
+        ledger_note = (
+            f"{UNMEASURED}: the compute ledger itself is unavailable on this host "
+            f"({comp.get('why') or 'no reason recorded'}), so no caveat about it could be "
+            "computed. Every compute hour in this census comes from the producers' own "
+            "generator_yield/source_yield compute_s.")
+    elif not matched_ledger:
         ledger_note = (
             f"{UNMEASURED}: the compute ledger holds {comp.get('n_runs_priced', 0)} priced run(s) "
             f"in the last {window_days:g} days and NONE of them names a roster producer "
@@ -779,6 +791,12 @@ def build(window_days: float = COMPUTE_WINDOW_DAYS,
             "in this census comes from generator_yield/source_yield compute_s, which the "
             "producers charge themselves. Certificates-per-compute-hour is a registry ratio on "
             "this host, not a wall-clock one.")
+    else:
+        ledger_note = (
+            f"NO CAVEAT: the compute ledger is available and {matched_ledger} roster producer(s) "
+            f"match a priced run in the last {window_days:g} days, so certificates-per-compute-"
+            "hour has a wall-clock denominator for those producers. A producer outside that set "
+            "still charges itself through generator_yield/source_yield compute_s.")
 
     def _certs(r: dict[str, Any]) -> int:
         v = r["funnel"].get("certificates")
@@ -920,7 +938,9 @@ def render(census: dict[str, Any]) -> str:
     if not census.get("compute_available"):
         L.append(f"**UNMEASURED compute:** {census.get('compute_why')}")
     if census.get("compute_ledger_note"):
-        L.append(f"**Compute caveat:** {census['compute_ledger_note']}")
+        # The note now names the no-caveat case too, so the label is neutral: calling a clean
+        # reading a "caveat" is the same class of mislabel this pass exists to remove.
+        L.append(f"**Compute ledger:** {census['compute_ledger_note']}")
     if census.get("totals", {}).get("unattributed_certificates"):
         L.append(f"**{census['totals']['unattributed_certificates']} of "
                  f"{census['totals']['certificates']} certificates are UNATTRIBUTED** -- no name "

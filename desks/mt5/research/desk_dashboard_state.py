@@ -62,6 +62,19 @@ CADENCE_S = 3600.0
 
 MEASURED, STALE, MISSING, UNMEASURED, UNREADABLE = (
     "MEASURED", "STALE", "MISSING", "UNMEASURED", "UNREADABLE")
+#: THE WORD UNMEASURED HAS TO MEAN ONE THING OR IT MEANS NOTHING (principal, 2026-09-24).
+#:
+#: Two different facts wore it here. "Nobody looked" is a hole and a defect. "The desk looked and
+#: the thing is genuinely not there" is a MEASUREMENT -- the gateway holding no open position is
+#: a real and correct answer about a flat book, and rendering it UNMEASURED taught every reader
+#: to skim past the word until the word stopped working. A reader who cannot tell the two apart
+#: cannot tell which rows are work.
+#:
+#: So a measured emptiness renders MEASURED_EMPTY and carries the FACT rather than a reason for
+#: absence. It is published in its own list, never folded into `unmeasured`, and never hidden:
+#: absence still never resolves to a clean verdict (L1.28a, WS-005) -- but a measured emptiness
+#: was never an absence.
+MEASURED_EMPTY = "MEASURED_EMPTY"
 
 
 def _now() -> datetime:
@@ -133,6 +146,25 @@ class Src:
             return cite
         cite["value"] = value
         return cite
+
+    def empty(self, value: Any, fact: str, why_absent: str = "") -> dict[str, Any]:
+        """A field whose EMPTINESS IS THE ANSWER. Present-and-empty is MEASURED_EMPTY with the
+        fact; a source that is missing or silent about the field is still UNMEASURED.
+
+        The caller uses this only where it has checked that the artifact ANSWERED -- that the
+        producer ran, looked, and found nothing. Anywhere the producer might simply not have
+        written the field, `field()` is the honest call and UNMEASURED is the honest verdict.
+        """
+        cite = self.cite()
+        if self.status in (MISSING, UNREADABLE):
+            cite["value"] = None
+            return cite
+        if value in (None, "", [], {}):
+            cite["status"] = MEASURED_EMPTY
+            cite["why"] = fact
+            cite["value"] = value if value is not None else None
+            return cite
+        return self.field(value, why_absent)
 
 
 def _dig(doc: Any, *path: str, default: Any = None) -> Any:
@@ -245,6 +277,112 @@ def _stats(values: list[float]) -> dict[str, Any]:
             "sharpe": round(mean / sd, 4), "why": ""}
 
 
+# ------------------------------------------------------- WHEN WAS THIS CERTIFICATE BORN
+#: The census's own birth ledger. THE SEALED STORE IS READ AND NEVER WRITTEN: this file is
+#: written by this organ, holds one row per certificate key, and only ever moves a birth EARLIER.
+#: Derived from `DESK` at CALL TIME, not bound at import: a module constant would ignore a test's
+#: temporary desk and read -- or write -- the real box's ledger from inside a test.
+def births_path() -> Path:
+    return DESK / "reports" / "CERTIFICATE_BIRTHS.json"
+
+
+def _births(survivors: list[tuple[str, dict[str, Any]]], now: datetime) -> dict[str, Any]:
+    """Every certificate's own birth time, and the evidence it rests on.
+
+    THE BIRTH WAS ALWAYS THERE AND NOTHING READ IT. This row rendered UNMEASURED on the grounds
+    that `UNIVERSAL_SURVIVORS.json` records one `swept_at` for the whole store -- true, and
+    beside the point, because every survivor row carries its own `gated_at`: the instant that
+    certificate passed the tenth gate. That is its birth, stamped by the sealed writer at the
+    moment of birth, and the dashboard was reading `days` (the BACKTEST span) instead.
+
+    WHY A LEDGER RATHER THAN JUST READING THE FIELD. A certificate that is retired and later
+    restored is re-stamped, and `restored_at` on this box's own store is three weeks after
+    `gated_at`. Reading the live field alone would let a certificate get YOUNGER, and an age that
+    can fall is not an age. So the ledger is a RATCHET ON TRUTH: a birth may move earlier when
+    older evidence turns up -- the append-only `SURVIVORS_LEDGER.json` keeps the original
+    `gated_at` of claims the canonical store has since re-stamped -- and never later.
+
+    A certificate with no `gated_at` anywhere is NOT given a birth. It gets a FLOOR: this host
+    first saw it at T, so it is no younger than that, and the row says which it is.
+    """
+    prior = _read_json(births_path())
+    raw_rows = prior.get("certificates")
+    rows: dict[str, Any] = raw_rows if isinstance(raw_rows, dict) else {}
+    ledger = _read_json(DESK / "reports" / "SURVIVORS_LEDGER.json")
+    raw_claims = ledger.get("claims")
+    claims: dict[str, Any] = raw_claims if isinstance(raw_claims, dict) else {}
+    # The ledger keys claims as "<lane>.<hunt>.<cell>" and the store keys them "<hunt>.<cell>";
+    # the CELL is the identity both spellings agree on, so the fallback joins on it.
+    by_cell: dict[str, str] = {}
+    for row in claims.values():
+        if isinstance(row, dict) and row.get("cell") and row.get("gated_at"):
+            cell = str(row["cell"])
+            stamp = str(row["gated_at"])
+            if stamp < by_cell.get(cell, "￿"):
+                by_cell[cell] = stamp
+
+    out: dict[str, dict[str, Any]] = {k: dict(v) for k, v in rows.items() if isinstance(v, dict)}
+    for key, cert in survivors:
+        seen = out.setdefault(key, {})
+        candidates: list[tuple[str, str]] = []
+        if isinstance(cert.get("gated_at"), str) and cert["gated_at"].strip():
+            candidates.append((cert["gated_at"], "UNIVERSAL_SURVIVORS.<cert>.gated_at"))
+        cell = str(cert.get("cell") or "")
+        if cell in by_cell:
+            candidates.append((by_cell[cell], "SURVIVORS_LEDGER.claims[].gated_at (append-only)"))
+        if isinstance(seen.get("born_at"), str):
+            candidates.append((seen["born_at"], str(seen.get("basis") or "prior ledger row")))
+        if candidates:
+            born, basis = min(candidates, key=lambda c: c[0])
+            seen["born_at"] = born
+            seen["basis"] = basis
+        seen.setdefault("first_seen_here", now.isoformat(timespec="seconds"))
+        seen["n_passes"] = int(seen.get("n_passes") or 0) + 1
+        seen["last_seen_here"] = now.isoformat(timespec="seconds")
+    return {"certificates": out, "ledger_claims_joined": len(by_cell)}
+
+
+def _read_json(path: Path) -> dict[str, Any]:
+    try:
+        got = json.loads(path.read_text("utf-8", errors="replace"))
+    except (OSError, ValueError):
+        return {}
+    return got if isinstance(got, dict) else {}
+
+
+def _age_block(rows: list[dict[str, Any]], births: dict[str, Any]) -> dict[str, Any]:
+    """The store's age, per certificate and in summary. An unbirthed certificate is named."""
+    ages = [r["age_s"] for r in rows if isinstance(r.get("age_s"), (int, float))]
+    floored = [r["certificate"] for r in rows if r.get("age_basis") == "FLOOR"]
+    if not rows:
+        return {"status": UNMEASURED, "value": None, "source": str(births_path()),
+                "why": "the canonical store holds no certificate to date"}
+    if not ages:
+        return {"status": UNMEASURED, "value": None, "source": str(births_path()),
+                "why": (f"none of the {len(rows)} certificate(s) carries a `gated_at` in the "
+                        f"canonical store or in the append-only survivors ledger, so no birth "
+                        f"time exists on this host to date them from")}
+    ages.sort()
+    mid = ages[len(ages) // 2]
+    return {
+        "status": MEASURED, "source": str(births_path()),
+        "value": {"n_dated": len(ages), "n_undated": len(rows) - len(ages),
+                  "oldest_age": _human_age(ages[-1]), "oldest_age_s": round(ages[-1], 1),
+                  "newest_age": _human_age(ages[0]), "newest_age_s": round(ages[0], 1),
+                  "median_age": _human_age(mid), "median_age_s": round(mid, 1)},
+        "floored": floored[:10],
+        "why": ("" if not floored else
+                f"{len(floored)} certificate(s) carry a FLOOR rather than a birth: this host "
+                f"first saw them at the stamped time and no earlier evidence exists, so they are "
+                f"no YOUNGER than the age shown and may be older"),
+        "basis": ("birth = the earliest `gated_at` for this certificate across the sealed store "
+                  "and the append-only survivors ledger, ratcheted earlier-only in "
+                  "reports/CERTIFICATE_BIRTHS.json, which this organ owns and writes. The sealed "
+                  "UNIVERSAL_SURVIVORS.json is read and never written."),
+        "ledger_claims_joined": births.get("ledger_claims_joined"),
+    }
+
+
 # ------------------------------------------------------------------------------------- CANON
 def _canon(deadline: float) -> dict[str, Any]:
     ct = Src("desks/mt5/reports/CERTIFICATE_TRUTH.json", 7200,
@@ -290,11 +428,16 @@ def _canon(deadline: float) -> dict[str, Any]:
         pairs = [(str(k), v if isinstance(v, dict) else {}) for k, v in survivors.items()]
     elif isinstance(survivors, list):
         pairs = [(str(k), {}) for k in survivors]
+    births = _births(pairs, _now())
+    birth_rows = births["certificates"]
     rows: list[dict[str, Any]] = []
     if pairs:
         for key, cert in pairs:
             if time.time() > deadline:
                 break
+            born = birth_rows.get(str(key)) or {}
+            born_at = born.get("born_at")
+            age_s = _age_of_iso(born_at) if born_at else _age_of_iso(born.get("first_seen_here"))
             ident = row_identity("UNIVERSAL_SURVIVORS", str(key), {})
             pk = parts(ident.get("symbol"), ident.get("family"), ident.get("selector"))
             backing = clocks.get(pk, [])
@@ -314,6 +457,12 @@ def _canon(deadline: float) -> dict[str, Any]:
                 "clock_why": ("" if backing else
                               "no row in data/sleeve_registry.json joins this identity"),
                 "days": cert.get("days"),
+                "born_at": born_at or born.get("first_seen_here"),
+                "age_s": round(age_s, 1) if age_s is not None else None,
+                "age": _human_age(age_s),
+                "age_basis": ("GATED_AT" if born_at else
+                              "FLOOR" if born.get("first_seen_here") else UNMEASURED),
+                "age_source": born.get("basis") or "first seen by this census",
                 "live": bool(live), "live_sleeve": (live or {}).get("sleeve")})
 
     n_backed = sum(1 for r in rows if r["clocks"])
@@ -334,17 +483,16 @@ def _canon(deadline: float) -> dict[str, Any]:
                                       "no survivor rows to join"),
         "n_live": us.field(sum(1 for r in rows if r["live"]) if rows else None,
                            "no survivor rows to join"),
-        "certificate_age": {"status": UNMEASURED,
-                            "why": ("UNIVERSAL_SURVIVORS.json records one sweep time for the whole "
-                                    "store (swept_at) and no per-certificate birth, so a "
-                                    "certificate's own age is not measured on this host; the "
-                                    "backing clock's forward_start is shown instead"),
-                            "source": "desks/mt5/reports/UNIVERSAL_SURVIVORS.json"},
+        "certificate_age": _age_block(rows, births),
+        "births_written": str(births_path()),
         "divergences": ct.field(_dig(ct.doc, "n_divergences")),
         "divergences_fatal": ct.field(_dig(ct.doc, "n_fatal")),
         "join_coverage": ct.field(_dig(ct.doc, "one_lane", "join", "total_joinable")),
         "join_denominator": ct.field(_dig(ct.doc, "one_lane", "join", "total_denominator")),
         "rows": rows,
+        # Carried out to `_publish`, which owns every write in this module. `build()` stays
+        # side-effect free so `--no-write` really writes nothing, including this ledger.
+        "_births_payload": births,
     }
 
 
@@ -461,8 +609,17 @@ def _live(deadline: float) -> dict[str, Any]:
         "equity": gw.field(_dig(gw.doc, "equity")),
         "armed": gw.field(_dig(gw.doc, "armed")),
         "last_reconcile": gw.field(_dig(gw.doc, "last_reconcile")),
-        "open_position": gw.field(_dig(gw.doc, "position"),
-                                  "the gateway reports no open position"),
+        # A FLAT BOOK IS AN ANSWER. The gateway writes `position` every reconcile; a null there
+        # means it looked and holds nothing, which is a MEASUREMENT of a flat book and was being
+        # rendered as a hole. The hole case is real and separate: `gateway_state.json` absent or
+        # carrying no `position` KEY at all means the gateway never reported, and that still
+        # reads UNMEASURED below.
+        "open_position": (gw.empty(_dig(gw.doc, "position"),
+                                   "FLAT: the gateway reconciled and holds no open position")
+                          if "position" in gw.d else
+                          gw.field(None, "gateway_state.json carries no `position` key at all: "
+                                         "the gateway has not reported a book, which is a hole "
+                                         "and not a flat book")),
         "placement_last_ok": gw.field(_dig(gw.doc, "placement_health", "last_ok")),
         "day_pnl": {**led_cite, "value": (round(day_pnl, 2) if rows else None),
                     "status": (MEASURED if rows else led_cite["status"]),
@@ -547,7 +704,23 @@ def _producers(deadline: float) -> dict[str, Any]:
         "window_days": pc.field(_dig(pc.doc, "window_days")),
         "totals": pc.field(_dig(pc.doc, "totals")),
         "dedup": pc.field(_dig(pc.doc, "dedup")),
-        "compute_note": pc.field(_dig(pc.doc, "compute_ledger_note")),
+        # THE ORPHAN THAT WAS NOT AN ORPHAN. `productivity_census` writes this field and wrote
+        # null both when there was no caveat to make and when the ledger was absent, so the
+        # dashboard rendered a clean reading as UNMEASURED. The census now names all three
+        # states; this reads the sibling keys so an OLD census artifact still resolves rather
+        # than renders a hole (the box adopts on its own clock, and a reader must not have to
+        # wait for it).
+        "compute_note": (pc.field(_dig(pc.doc, "compute_ledger_note"))
+                         if _dig(pc.doc, "compute_ledger_note") is not None else
+                         pc.empty(None,
+                                  (f"NO CAVEAT: the compute ledger is available and "
+                                   f"{_dig(pc.doc, 'compute_ledger_matched_producers')} roster "
+                                   f"producer(s) match a priced run, so there is nothing to "
+                                   f"caveat (census predates the always-written note)")
+                                  if _dig(pc.doc, "compute_available") else
+                                  (f"the compute ledger is unavailable on this host "
+                                   f"({_dig(pc.doc, 'compute_why') or 'no reason recorded'}), so "
+                                   f"no caveat about it could be computed"))),
         "liveness_census": pr.field(_dig(pr.doc, "census"),
                                     "PRODUCER_CENSUS.json carries no census block"),
         "liveness_basis": ("PRODUCER_CENSUS measures whether a producer RUNS (LIVE/DARK/SLOW), "
@@ -658,6 +831,97 @@ def _bottlenecks() -> dict[str, Any]:
     }
 
 
+def _global_factor_scalars(doc: Any) -> dict[str, Any] | None:
+    """The world's scalar factors, from the engine's own block or flattened out of its rows."""
+    block = _dig(doc, "global_factors", default={}) or {}
+    if not isinstance(block, dict):
+        return None
+    scalars = block.get("scalars")
+    if isinstance(scalars, dict) and scalars:
+        return scalars
+    flat: dict[str, Any] = {}
+    for key, row in block.items():
+        if isinstance(row, (int, float, str)) and not isinstance(row, bool):
+            flat[key] = row
+        elif isinstance(row, dict):
+            for field, value in row.items():
+                if (isinstance(value, (int, float)) and not isinstance(value, bool)) or (
+                        field in ("status", "as_of") and isinstance(value, str)):
+                    flat[f"{key}.{field}"] = value
+    return flat or None
+
+
+def _surprise_reading(doc: Any) -> str:
+    """One sentence about the surprise lane, DERIVED from its own counts each pass."""
+    pairs = _dig(doc, "n_pairs")
+    zs = _dig(doc, "surprise", "n_standardized")
+    thin = _dig(doc, "surprise", "thin_history")
+    floor = _dig(doc, "surprise", "min_surprise_n")
+    cells = _dig(doc, "n_cells")
+    if not isinstance(pairs, int):
+        return ("EVENT_SURPRISE.json publishes no pair count on this host, so whether the desk "
+                "can tell a shock from a non-event is itself unmeasured")
+    if pairs == 0:
+        return ("the desk holds releases WITHOUT a consensus, so every z-score is UNMEASURED: a "
+                "release is not a surprise until an expectation is paired to it. No registered "
+                "ground produced a pair this pass")
+    return (f"{pairs} (actual, consensus) pair(s) held; {zs} carry a z against the release's own "
+            f"surprise history and {thin} are still thin (under {floor} prior surprises of the "
+            f"same release, which is counted and never pooled). {cells} measured reaction cell(s) "
+            f"follow from them. A thin release is UNMEASURED by name, not by silence")
+
+
+def _news_stream_organ() -> dict[str, Any]:
+    """Is the news -> world-state lane alive, and if not, WHICH kind of not-alive is it?
+
+    WHAT THIS ROW USED TO SAY, and why it was useless: "news_event_stream.py does not exist on
+    this host". True, and it told a reader nothing they could act on. MEASURED 2026-09-24: the
+    organ exists on the build box, is tracked in git (added 2026-09-17), and is wired as an
+    hourly leg -- but the commit that adds it was never pushed, so the trading box's tree has
+    never carried it and the leg that calls it has been failing every hour since it was wired.
+    It was not renamed and it was not folded into anything.
+
+    So this row now measures the ORGAN'S OUTPUT, which is the thing a reader cares about, and
+    separates three states that were one: the code is absent (a shipping defect, with the leg
+    named), the code is present and has never written (a runtime defect), or the artifacts are
+    there with their ages.
+    """
+    code = DESK / "research" / "news_event_stream.py"
+    report = Src("desks/mt5/reports/NEWS_EVENT_STREAM.json", 7200,
+                 "desks/mt5/research/news_event_stream.py")
+    world = Src("desks/mt5/data/world_state.json", 7200,
+                "desks/mt5/research/news_event_stream.py (fast lane)")
+    if not code.exists():
+        return {
+            "status": MISSING, "value": None,
+            "code_present": False,
+            "source": "desks/mt5/research/news_event_stream.py",
+            "artifacts": [report.cite(), world.cite()],
+            "why": ("SHIPPING DEFECT, not a lost organ: desks/mt5/research/news_event_stream.py "
+                    "is absent from THIS host's tree while hourly_cycle.py still registers the "
+                    "leg `news_event_stream` that runs it, so that leg fails every hour. The "
+                    "file is tracked in git on the build box (added 2026-09-17) and the commit "
+                    "carrying it has not reached this tree. The repair is a push and an "
+                    "adoption, not a rewrite."),
+            "repair": ("push the commit that adds research/news_event_stream.py, then let "
+                       "MT5-AdoptRelease land it"),
+        }
+    if report.status == MISSING and world.status == MISSING:
+        return {"status": UNMEASURED, "value": None, "code_present": True,
+                "source": "desks/mt5/research/news_event_stream.py",
+                "artifacts": [report.cite(), world.cite()],
+                "why": ("the organ's code is present on this host and neither "
+                        "reports/NEWS_EVENT_STREAM.json nor data/world_state.json exists, so it "
+                        "has never completed a pass here: a runtime defect, not a missing file")}
+    live = report if report.status != MISSING else world
+    return {"status": live.status, "code_present": True,
+            "value": {"report": report.cite(), "world_state": world.cite(),
+                      "n_events": _dig(report.doc, "n_events"),
+                      "n_deep": _dig(report.doc, "n_deep")},
+            "source": live.rel, "age": live.cite()["age"],
+            "why": live.why}
+
+
 # -------------------------------------------------------------------------------- MACRO NEWS
 def _macro(deadline: float) -> dict[str, Any]:
     mv = Src("desks/mt5/reports/MACRO_VIEW.json", 21600, "desks/mt5/research/macro_desk.py")
@@ -671,6 +935,8 @@ def _macro(deadline: float) -> dict[str, Any]:
               "desks/mt5/research/forced_flow_calendar.py")
     rr = Src("desks/mt5/reports/REGIME_ROUTER.json", 21600,
              "desks/mt5/research/regime_router.py")
+    gr = Src("desks/mt5/data/event_consensus_sources.json", 10 ** 9,
+             "the registry of public consensus grounds (hand-registered, not produced)")
     sl = Src("desks/mt5/data/sleeves.json", 86400, "desks/mt5/research/promoter.py")
 
     live_symbols = {str(r.get("symbol") or "").upper()
@@ -712,9 +978,16 @@ def _macro(deadline: float) -> dict[str, Any]:
                   "happened_at": r.get("happened_at"), "received_at": r.get("received_at"),
                   "age": _human_age(_age_of_iso(r.get("received_at"))),
                   "lane": r.get("lane"),
-                  "surprise": UNMEASURED,
-                  "surprise_why": ("the desk holds this release without a consensus pair, so no "
-                                   "surprise was measured -- see EVENT_SURPRISE.why")}
+                  # A CAPTURED HEADLINE IS NOT A SCHEDULED RELEASE. These rows are the news
+                  # lane's tail -- wires, statements, stories -- and a consensus pairs to a
+                  # CALENDAR RELEASE with a reference period. There is no expectation to pair to
+                  # a headline, and saying so is a measurement about what this row IS; it is not
+                  # a missing z-score. The desk's z-scores live in EVENT_SURPRISE and are
+                  # counted in `surprise.reading` above.
+                  "surprise": MEASURED_EMPTY,
+                  "surprise_why": ("a captured headline, not a scheduled release: a consensus "
+                                   "pairs to a calendar release with a reference period, and a "
+                                   "headline has none. Release z-scores are in EVENT_SURPRISE")}
                  for r in reversed(captured)]
 
     lean = _dig(mv.doc, "lean", default={}) or {}
@@ -734,10 +1007,12 @@ def _macro(deadline: float) -> dict[str, Any]:
                      for c in scored[:14]]
 
     router_state = _dig(rr.doc, "current_state", default={}) or {}
-    transition = _find_key(rr.doc, "transition")
+    transition = _dig(rr.doc, "last_transition")
+    census = _dig(rr.doc, "router_census")
     return {
         "status": mv.status,
-        "sources": [mv.cite(), mse.cite(), es.cite(), era.cite(), cal.cite(), rr.cite()],
+        "sources": [mv.cite(), mse.cite(), es.cite(), era.cite(), cal.cite(), rr.cite(),
+                    gr.cite()],
         "view": {
             "lean": mv.field([{"ccy": k, "lean": round(float(v), 4)} for k, v in top_lean]
                              or None, "MACRO_VIEW.json carries no lean block"),
@@ -752,21 +1027,43 @@ def _macro(deadline: float) -> dict[str, Any]:
             "blocks": mse.field(sorted(_dig(mse.doc, "blocks", default={}) or {})
                                 if isinstance(_dig(mse.doc, "blocks"), dict) else None),
             "blocks_summary": mse.field(_dig(mse.doc, "blocks_summary")),
-            "global_factors": mse.field({k: v for k, v in
-                                         (_dig(mse.doc, "global_factors", default={}) or {}).items()
-                                         if isinstance(v, (int, float, str))} or None,
-                                        "MACRO_STATE_ENGINE.json carries no scalar global factor"),
+            # THE SCALARS WERE NEVER MISSING -- THIS READER WAS LOOKING AT THE WRONG DEPTH.
+            # `global_factors` is six dispersion DICTS plus the FRED snapshot, each carrying its
+            # own status, so a filter for top-level scalars found nothing and reported the organ
+            # as unmeasured while it was measuring the whole cross-section. The engine now
+            # publishes `global_factors.scalars`, derived from those same rows; this reads it,
+            # and FLATTENS the rows itself when the artifact predates that change, so the
+            # dashboard is never blind waiting for an adoption.
+            "global_factors": mse.field(_global_factor_scalars(mse.doc),
+                                        "MACRO_STATE_ENGINE.json publishes neither a "
+                                        "`global_factors.scalars` block nor any dispersion row "
+                                        "this reader could flatten"),
             "registry_census": mse.field(_dig(mse.doc, "registry_census")),
         },
         "surprise": {
             "status": es.field(_dig(es.doc, "status")),
             "why": es.field(_dig(es.doc, "why")),
-            "n_pairs": es.field(_dig(es.doc, "surprise", "n_pairs")),
+            "n_pairs": es.field(_dig(es.doc, "n_pairs")),
+            "n_standardized": es.field(_dig(es.doc, "surprise", "n_standardized")),
+            "n_thin_history": es.field(_dig(es.doc, "surprise", "thin_history")),
+            "n_releases": es.field(_dig(es.doc, "surprise", "n_releases")),
+            "min_surprise_n": es.field(_dig(es.doc, "surprise", "min_surprise_n")),
             "n_calendar_events": es.field(_dig(es.doc, "calendar", "n_events")),
             "with_consensus_pair": es.field(_dig(es.doc, "calendar", "with_pair")),
-            "reading": ("the desk holds releases WITHOUT a consensus, so every z-score below is "
-                        "UNMEASURED: a release is not a surprise until an expectation is paired "
-                        "to it"),
+            "store_rows": es.field(_dig(es.doc, "store", "rows")),
+            # THE REGISTRY IS ITS OWN MEASUREMENT. Reading the count out of the last pass's
+            # collector block reports UNMEASURED on any pass that ran with --no-collect, which
+            # says nothing about how many grounds are registered -- so the registry is read
+            # where it lives. An absent registry is the real hole here, and it is the one that
+            # kept this whole lane at n_pairs=0.
+            "collector_sources": gr.field(
+                len(_dig(gr.doc, "sources", default=[]) or []) or None,
+                "desks/mt5/data/event_consensus_sources.json registers no source, so the "
+                "consensus collector has nothing to fetch and every z-score stays unmeasured"),
+            "collector_last_pass": es.field(_dig(es.doc, "collector", "status")),
+            # DERIVED, NEVER ASSERTED. This line used to be a hard-coded sentence saying every
+            # z-score was unmeasured, which stayed true-sounding after it stopped being true.
+            "reading": _surprise_reading(es.doc),
         },
         "reactions": {
             "n_cells": era.field(_dig(era.doc, "n_cells")),
@@ -788,25 +1085,39 @@ def _macro(deadline: float) -> dict[str, Any]:
             "status": (MEASURED if news_rows else MISSING),
             "why": ("" if news_rows else
                     "no captured news rows on this host"),
-            "stream_organ": {
-                "status": MISSING,
-                "why": ("desks/mt5/research/news_event_stream.py does not exist on this host; the "
-                        "news lane's capture file is what is published, so the stream organ's "
-                        "own artifact is missing rather than empty")},
+            "stream_organ": _news_stream_organ(),
         },
         "regime": {
             "current_state": rr.field(router_state or None),
             "state_sources": rr.field(_dig(rr.doc, "state_sources")),
             "n_sleeves": rr.field(_dig(rr.doc, "n_sleeves")),
-            "router_active": rr.field(_dig(rr.doc, "counts", "router_active")),
-            "unmeasured": rr.field(_dig(rr.doc, "unmeasured")),
-            "last_transition": ({**rr.cite(), "value": transition[0], "field": transition[1]}
-                                if transition else
+            # ZERO ROUTERS ACTIVE IS TWO DIFFERENT FACTS and the count alone tells them apart
+            # in neither direction: every sleeve judged and none worth its tax is the router
+            # WORKING; nothing judged at all is the router DARK. The census the organ now
+            # publishes carries which -- n_scored against n_not_scored, with the reasons -- so
+            # a measured zero renders as the measurement it is.
+            "router_active": ({**rr.cite(), "value": _dig(rr.doc, "counts", "router_active"),
+                               "status": (MEASURED_EMPTY
+                                          if (census or {}).get("status") == MEASURED
+                                          and not _dig(rr.doc, "counts", "router_active")
+                                          else rr.status),
+                               "why": str((census or {}).get("why") or ""),
+                               "census": census}
+                              if isinstance(census, dict) else
+                              rr.field(_dig(rr.doc, "counts", "router_active"),
+                                       "REGIME_ROUTER.json publishes no router_census, so a "
+                                       "zero here cannot be told from a dark router")),
+            "unmeasured": rr.empty(_dig(rr.doc, "unmeasured"),
+                                   "the router pass recorded no unmeasured axis or subject: a "
+                                   "clean pass, not an unread one"),
+            "last_transition": ({**rr.cite(), **transition}
+                                if isinstance(transition, dict) else
                                 {"status": UNMEASURED, "value": None,
                                  "source": "desks/mt5/reports/REGIME_ROUTER.json",
-                                 "why": ("REGIME_ROUTER publishes the CURRENT state and no "
-                                         "transition history, so the time of the last state "
-                                         "change is not measured on this host")}),
+                                 "why": ("REGIME_ROUTER.json on this host predates the state "
+                                         "history sidecar (data/regime_state_history.jsonl) and "
+                                         "publishes no `last_transition`, so the time of the "
+                                         "last regime change is not measured here yet")}),
         },
     }
 
@@ -839,16 +1150,27 @@ def _headline(sections: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _collect_unmeasured(node: Any, path: str, out: list[dict[str, Any]]) -> None:
+def _collect_unmeasured(node: Any, path: str, out: list[dict[str, Any]],
+                        empty: list[dict[str, Any]] | None = None) -> None:
+    """Two lists, because they are two different things.
+
+    `out` is the WORKLIST: rows nobody measured. `empty` is the register of measured emptinesses
+    -- a flat book, a clean pass, a judged zero -- which are answers and must still be visible,
+    because a measured emptiness that is silently dropped is how an absence gets to resolve to a
+    clean verdict (L1.28a, WS-005). Nothing is hidden; the two are simply not the same list.
+    """
     if isinstance(node, dict):
         status = node.get("status")
         if status in (UNMEASURED, MISSING, UNREADABLE, STALE) and "why" in node:
             out.append({"where": path, "status": status, "why": str(node.get("why") or ""),
                         "source": node.get("source")})
+        elif status == MEASURED_EMPTY and empty is not None and "why" in node:
+            empty.append({"where": path, "status": status, "fact": str(node.get("why") or ""),
+                          "source": node.get("source")})
         for key, val in node.items():
-            if key in ("rows", "sources", "fences", "next"):
+            if key in ("rows", "sources", "fences", "next") or key.startswith("_"):
                 continue
-            _collect_unmeasured(val, f"{path}.{key}" if path else str(key), out)
+            _collect_unmeasured(val, f"{path}.{key}" if path else str(key), out, empty)
 
 
 def build(budget_s: float = 120.0) -> dict[str, Any]:
@@ -864,7 +1186,8 @@ def build(budget_s: float = 120.0) -> dict[str, Any]:
     sections["macro"] = _macro(deadline)
 
     unmeasured: list[dict[str, Any]] = []
-    _collect_unmeasured(sections, "", unmeasured)
+    measured_empty: list[dict[str, Any]] = []
+    _collect_unmeasured(sections, "", unmeasured, measured_empty)
     worst = [name for name, sec in sections.items()
              if isinstance(sec, dict) and sec.get("status") in (MISSING, UNREADABLE, STALE)]
     doc: dict[str, Any] = {
@@ -879,12 +1202,18 @@ def build(budget_s: float = 120.0) -> dict[str, Any]:
         "degraded_sections": worst,
         "rule": ("every value carries the artifact it came from and that artifact's age; an "
                  "absent measurement renders UNMEASURED with its reason and never as a zero; a "
-                 "document older than cadence_s is stale and says so before any number"),
+                 "MEASURED EMPTINESS -- a flat book, a judged zero, a clean pass -- renders "
+                 "MEASURED_EMPTY with the fact, so the word UNMEASURED always means a genuine "
+                 "hole and is always a worklist row; a document older than cadence_s is stale "
+                 "and says so before any number"),
         "headline": _headline(sections),
         "sections": sections,
         "unmeasured": unmeasured[:120],
         "n_unmeasured": len(unmeasured),
+        "measured_empty": measured_empty[:120],
+        "n_measured_empty": len(measured_empty),
     }
+    doc["_births_payload"] = sections["canon"].pop("_births_payload", None)
     return doc
 
 
@@ -892,6 +1221,21 @@ def _publish(doc: dict[str, Any]) -> dict[str, Any]:
     """Write the report, then EXTEND the payload the page already fetches. Never a second file."""
     written: dict[str, Any] = {}
     OUT.parent.mkdir(parents=True, exist_ok=True)
+    payload_births = doc.pop("_births_payload", None)
+    if isinstance(payload_births, dict):
+        births = births_path()
+        births.parent.mkdir(parents=True, exist_ok=True)
+        btmp = births.with_suffix(".tmp")
+        btmp.write_text(json.dumps({
+            "source": "desk_dashboard_state",
+            "written_at": _now().isoformat(timespec="seconds"),
+            "rule": ("one row per certificate; `born_at` is the earliest `gated_at` seen for it "
+                     "in the sealed store or the append-only survivors ledger and moves EARLIER "
+                     "only. A certificate with no gated_at anywhere carries `first_seen_here` "
+                     "as a FLOOR -- it is no younger than that -- and never a birth."),
+            **payload_births}, indent=1, default=str), encoding="utf-8")
+        os.replace(btmp, births)
+        written["births"] = str(births)
     tmp = OUT.with_suffix(".tmp")
     tmp.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
     os.replace(tmp, OUT)
