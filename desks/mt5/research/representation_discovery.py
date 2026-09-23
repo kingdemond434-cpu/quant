@@ -228,6 +228,87 @@ def _score_both(name: str, lane: str, x: Any, y: Any) -> dict[str, Any]:
     return lvl
 
 
+def _stability(x: Any, y: Any) -> dict[str, Any]:
+    """TEMPORAL STABILITY: does the representation carry the same information in both halves of
+    the out-of-sample slice, and in the same DIRECTION? (Tier-1 B4.)
+
+    WHY A REPRESENTATION NEEDS THIS AND AN EXPRESSION DOES NOT. A grammar expression is a stated
+    transformation of named terminals: it can be read, argued with, and refuted by an economic
+    argument. A learned latent is a number with no unit and no story, so the only interrogation
+    available is whether it keeps working -- and a latent fitted on one window that carries
+    information in the first half of the test slice and the OPPOSITE sign in the second half is
+    noise with a good in-sample story, which is precisely the failure mode the learned lane is
+    accused of and has never been tested for here.
+
+    Cheap by construction: mutual information per half and the sign of the linear relation per
+    half, no block-permutation null. The null already ran on the full slice in `_score`; this
+    asks a different question -- consistency -- and paying 200 permutation draws twice more per
+    representation would have made the probe unaffordable and therefore absent.
+    """
+    import numpy as np
+    xa, ya = np.asarray(x, dtype=float), np.asarray(y, dtype=float)
+    n = min(xa.size, ya.size)
+    if n < 240:
+        return {"status": "UNMEASURED", "why": f"{n} test rows, needs 240 for two halves"}
+    half = n // 2
+    out: dict[str, Any] = {"status": "OK", "n": int(n)}
+    mis, signs = [], []
+    for lo, hi, tag in ((0, half, "first"), (half, n, "second")):
+        xs, ys = xa[lo:hi], ya[lo:hi]
+        mi = _mi(xs, ys)
+        mis.append(float(mi) if math.isfinite(mi) else float("nan"))
+        with np.errstate(invalid="ignore"):
+            c = np.corrcoef(xs, np.sign(ys))[0, 1] if np.std(xs) > 0 else float("nan")
+        signs.append(0 if not math.isfinite(float(c)) else (1 if c > 0 else -1))
+        out[f"mi_{tag}_nats"] = None if math.isnan(mis[-1]) else round(mis[-1], 6)
+    lo_mi, hi_mi = (min(mis), max(mis)) if all(math.isfinite(m) for m in mis) else (0.0, 0.0)
+    out["mi_ratio"] = round(lo_mi / hi_mi, 4) if hi_mi > 0 else None
+    out["direction_sign"] = signs
+    out["sign_agrees"] = bool(signs[0] != 0 and signs[0] == signs[1])
+    out["stable"] = bool(out["sign_agrees"] and (out["mi_ratio"] or 0.0) >= 0.30)
+    out["rule"] = ("stable = the direction of the relation is the same in both halves of the "
+                   "test slice AND the weaker half still carries 30% of the stronger half's "
+                   "mutual information")
+    return out
+
+
+def _subspace_stability(panel: Any, idx: Any, tr: slice) -> dict[str, Any]:
+    """Do the cross-market embedding's own AXES survive being refitted on a different window?
+
+    Principal angles between the 3-dimensional subspace fitted on the first half of TRAIN and the
+    one fitted on the second half. A cross-market embedding whose axes rotate freely between two
+    adjacent windows is not a market structure; it is this window's covariance.
+    """
+    import numpy as np
+    if panel is None or getattr(panel, "shape", (0, 0))[1] < 3:
+        return {"status": "UNMEASURED", "why": "fewer than 3 panel columns"}
+    try:
+        pt = panel.reindex(idx).ffill()
+        block = pt.iloc[tr]
+        n = len(block)
+        if n < 600:
+            return {"status": "UNMEASURED", "why": f"{n} train rows, needs 600"}
+        loads = []
+        for lo, hi in ((0, n // 2), (n // 2, n)):
+            b = block.iloc[lo:hi]
+            mu, sd = b.mean(), b.std().replace(0, np.nan)
+            z = ((b - mu) / sd).fillna(0.0).to_numpy()
+            _, _, vt = np.linalg.svd(z - z.mean(axis=0), full_matrices=False)
+            loads.append(vt[:3])
+        m = loads[0] @ loads[1].T
+        sv = np.linalg.svd(m, compute_uv=False)
+        cosines = [round(float(min(1.0, abs(v))), 4) for v in sv]
+    except (ValueError, np.linalg.LinAlgError, KeyError) as exc:
+        return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
+    mean_cos = float(np.mean(cosines))
+    return {"status": "OK", "principal_cosines": cosines,
+            "mean_cosine": round(mean_cos, 4),
+            "stable": bool(mean_cos >= 0.80),
+            "rule": ("principal angles between the 3-D embedding fitted on the first and second "
+                     "halves of TRAIN; mean cosine >= 0.80 is one subspace measured twice, "
+                     "below that the axes are this window's covariance")}
+
+
 # --------------------------------------------------------------------- the two vocabularies
 
 def _base_columns(df: Any) -> dict[str, Any]:
@@ -462,8 +543,11 @@ def build() -> dict[str, Any]:
                 vv = pd.Series(v).reindex(cols["ret"].index)
                 z = _zfit(vv.iloc[tr], vv)
                 lane = "learned_composite" if nm.startswith("composite::") else "learned"
-                sc = _score_both(nm, lane, z.iloc[te].to_numpy(), y.iloc[te].to_numpy())
-                rows.append({**sc, "horizon": h})
+                zt, yt = z.iloc[te].to_numpy(), y.iloc[te].to_numpy()
+                sc = _score_both(nm, lane, zt, yt)
+                # TEMPORAL STABILITY, ON THE LEARNED LANE ONLY, because it is the lane that
+                # cannot be refuted by reading it (Tier-1 B4).
+                rows.append({**sc, "horizon": h, "stability": _stability(zt, yt)})
 
         ok = [r for r in rows if r.get("status") == "OK"]
         ok.sort(key=lambda r: -float(r.get("excess_nats") or 0.0))
@@ -472,6 +556,7 @@ def build() -> dict[str, Any]:
         per_symbol[sym] = {
             "n_bars": n, "n_train": ntr, "n_test": n - ntr - EMBARGO,
             "composite_trials": trials,
+            "subspace_stability": _subspace_stability(panel, cols["ret"].index, tr),
             "leaderboard": ok[:12],
             "best_symbolic": best_sym,
             "best_learned": best_learned,
@@ -499,6 +584,9 @@ def build() -> dict[str, Any]:
     # which heteroskedasticity alone delivers; these beat it on the SIGN.
     directional = [r for r in survivors if r.get("kind") == "directional"]
     directional.sort(key=lambda r: -float((r.get("direction") or {}).get("excess_nats") or 0.0))
+    # THE STABLE HALF OF THE DIRECTIONAL LIST IS THE ONLY THING THAT LEAVES THIS ORGAN.
+    stable_directional = [r for r in directional
+                          if (r.get("stability") or {}).get("stable") is True]
 
     return {
         "at": now.isoformat(timespec="seconds"),
@@ -515,6 +603,15 @@ def build() -> dict[str, Any]:
         "beat_own_null": survivors[:25],
         "n_directional": len(directional),
         "directional": directional[:25],
+        # TEMPORALLY STABLE AND DIRECTIONAL: the intersection, and the only list donated.
+        "n_stable_directional": len(stable_directional),
+        "stable_directional": stable_directional[:25],
+        "stability_probe": (
+            "two probes, both out of sample. Per representation: the direction of the relation "
+            "and the mutual information in each HALF of the test slice (`stability`). Per "
+            "symbol: the principal angles between the cross-market embedding refitted on the two "
+            "halves of TRAIN (`subspace_stability`). A learned latent has no unit and no "
+            "mechanism, so consistency across windows is the only interrogation available to it."),
         "magnitude_vs_direction": (
             "a representation that beats its null on the SIGNED forward return has predicted the "
             "SIZE of the next move in almost every case -- returns are heteroskedastic, so any "
@@ -548,10 +645,76 @@ def build() -> dict[str, Any]:
     }
 
 
+def donate(doc: dict[str, Any]) -> dict[str, Any]:
+    """THE FORMULA BRIDGE (Tier-1 B4): a stable, directional learned representation leaves here
+    as a CELL, through the same stamped contract every other proposer uses.
+
+    It does not become a strategy by winning this organ's competition. It becomes a HYPOTHESIS
+    with a named mechanism, a falsifier and a trial count, and it reaches the book -- if it ever
+    does -- through the ten gates and a forward clock like everything else. What changes is that
+    the learned lane now HAS a door; until this existed the winners were published to a report
+    and read by nobody, which is an organ that looks wired and is not (LAWS 7).
+    """
+    rows = doc.get("stable_directional") or []
+    if not rows:
+        return {"donated": 0, "why": ("no representation is both directional against its own "
+                                      "null and temporally stable across the test halves")}
+    try:
+        from research.proposer_common import donate as _donate
+    except ImportError as exc:
+        return {"donated": 0, "why": f"proposer_common unavailable ({exc})"}
+    cands: list[dict[str, Any]] = []
+    for r in rows[:12]:
+        sym = str(r.get("symbol") or "")
+        if not sym:
+            continue
+        st = r.get("stability") or {}
+        d = r.get("direction") or {}
+        cands.append({
+            "symbol": sym, "family": "joint_genome",
+            "params": {"base_family": "momentum_volgate",
+                       "representation": str(r.get("name")), "lane": str(r.get("lane")),
+                       "horizon": int(r.get("horizon") or 1)},
+            "exp_r": None, "n": None,
+            "source": "representation_discovery",
+            "mechanism_status": "NAMED",
+            "mechanism": f"learned representation {r.get('name')} ({r.get('lane')})",
+            "mechanism_note": (
+                f"out of sample on {sym}, this representation carries "
+                f"{d.get('excess_nats')} nats about the SIGN of the {r.get('horizon')}-bar "
+                f"forward return (p={d.get('p_empirical')}), and the relation holds the same "
+                f"direction in both halves of the test slice "
+                f"(mi_ratio={st.get('mi_ratio')})."),
+            "falsifier": (
+                "refuted if the directional excess nats fall to zero or change sign on the next "
+                "out-of-sample window, or if the cell's verdict leaves its 95% upper bound below "
+                "the desk base rate. A learned latent has no mechanism to defend it: "
+                "inconsistency IS refutation here."),
+            "payer": "unnamed until the experiment names one",
+            "measurement_class": "DIRECT",
+            "selection_trials": int(doc.get("composite_trials_total") or 0),
+        })
+    if not cands:
+        return {"donated": 0, "why": "no stable directional row carries a symbol"}
+    try:
+        path = _donate("representation_discovery", cands,
+                       int(doc.get("composite_trials_total") or 0))
+    except Exception as exc:
+        return {"donated": 0, "why": f"donation refused: {type(exc).__name__}: {exc}"}
+    return {"donated": len(cands) if path else 0, "path": str(path) if path else None,
+            "consumer": "miner_candidate_compiler reads data/intelligence/** and compiles these "
+                        "into executable cells for the gauntlet"}
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--apply", action="store_true", help="write the report")
+    ap.add_argument("--once", action="store_true", help="one pass, write and donate")
+    ap.add_argument("--budget-s", type=float, default=900.0,
+                    help="advisory: the pass is bounded by BARS x symbols, not by wall time")
     a = ap.parse_args(argv)
+    if a.once:
+        a.apply = True
     doc = build()
     if doc.get("status") == "UNMEASURED":
         print(f"representation discovery: UNMEASURED -- {doc.get('why')}")
@@ -581,6 +744,9 @@ def main(argv: list[str] | None = None) -> int:
     if not a.apply:
         print("  --apply not given; nothing written")
         return 0
+    doc["donation"] = donate(doc)
+    print(f"  donated {doc['donation'].get('donated', 0)} learned representation(s)"
+          f"{'' if not doc['donation'].get('why') else ' -- ' + str(doc['donation']['why'])}")
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
     print(f"-> {OUT}")

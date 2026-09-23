@@ -264,6 +264,19 @@ def _actuator_for(spec: ComponentSpec) -> act.Actuator | None:
         from desks.mt5.ops import components as comp  # pragma: no cover - box-side only
         task = comp.residents().get(stem, (UNMEASURED,))[0]
         return act.restart_resident(spec.component_id, task, stem)
+    if action.startswith("run_once:"):
+        # A LEG IS NOT REPAIRED BY RESTARTING ITS DEPARTMENT. Restarting a resident is the repair
+        # for a wedged PROCESS; a leg that has never fired, or whose artifact has gone dark while
+        # the department is healthy, is repaired by running the leg -- and proved by its own
+        # output being newer than before, never by rc=0 (LAWS 7). `producer_actuator` already
+        # carries exactly that discipline, so this branch reaches it rather than minting a fixer.
+        argv = action.split("run_once:", 1)[1].split("\x1f")
+        if not argv or not argv[0]:
+            return None
+        return act.producer_actuator(
+            spec.component_id, argv, spec.outputs,
+            name=f"run_once:{spec.component_id}",
+            window_s=60, timeout_s=min(int(spec.timeout_s or 600), 900))
     return None
 
 

@@ -65,6 +65,14 @@ TREE_REPORT = DESK / "reports" / "RESEARCH_TREE.json"
 PIT = DESK / "reports" / "PIT_AUDIT.json"
 ORTHO = DESK / "reports" / "ORTHOGONALITY.json"
 FWD = DESK / "reports" / "FORWARD_CALIBRATION.json"
+#: The GENERATION seat's ground (the QD frontier's empty regions and the world lab) and the
+#: SIMULATION seat's ground (the synthetic regime battery). Tier-1 Q9.
+QD = DESK / "reports" / "QD_FRONTIER.json"
+WORLD_LAB = DESK / "reports" / "WORLD_LAB.json"
+SYNTH = DESK / "reports" / "SYNTHETIC_REGIMES.json"
+#: Every tournament verdict, appended. Deliberately NOT blind_review_ledger.jsonl --
+#: see `TOURNAMENT_LEDGER_NOTE`.
+TOURNAMENT_LEDGER = DESK / "data" / "scientist_tournament_ledger.jsonl"
 OUT = DESK / "reports" / "SCIENTIST_TOURNAMENT.json"
 DISSENTS = DESK / "data" / "tournament_dissents.jsonl"
 
@@ -73,8 +81,9 @@ DISSENTS = DESK / "data" / "tournament_dissents.jsonl"
 #: spends the last request takes the whole desk dark until 00:00 UTC.
 RESERVE = 60
 
-#: Calls per subject: ten specialists, a reviewer, a meta-reviewer.
-CALLS_PER_SUBJECT = 12
+#: Calls per subject: twelve specialists (ten critics, a generator and a simulator), a
+#: reviewer, a meta-reviewer.
+CALLS_PER_SUBJECT = 14
 
 MAX_TOKENS = 1400
 TEMPERATURE = 0.3
@@ -141,6 +150,23 @@ ROLES: tuple[dict[str, Any], ...] = (
                "desk's forward lane would promote at its own measured dispersion. State what the "
                "forward record can and cannot establish given that rate, and what would have to "
                "change for a forward pass to be informative.")},
+    # THE PANEL WAS ALL CRITICS (Tier-1 Q9). Generation and Simulation are competing FUNCTIONS,
+    # not more criticism: one proposes the rival the subject has to beat, the other says in which
+    # synthetic world it breaks. Both are seated blind to the performance for the same reason the
+    # leakage hunter is -- a generator that knows the incumbent made money proposes its cousin.
+    {"name": "generation", "sees": ("mechanism", "frontier"),
+     "brief": ("You are a GENERATOR, not a critic. You are shown a mechanism and the regions of "
+               "the desk's quality-diversity frontier that are still EMPTY, and deliberately not "
+               "whether the subject made money. Propose the ONE rival mechanism -- payer, "
+               "constraint, instrument, horizon -- that would occupy an empty region and would "
+               "beat this subject if both were true. Name it concretely enough to test. Do not "
+               "critique the subject.")},
+    {"name": "simulation", "sees": ("construction", "worlds"),
+     "brief": ("You are a SIMULATOR. You are shown the construction and this desk's synthetic "
+               "regime battery, and deliberately not the live result. State which synthetic "
+               "world this construction breaks in FIRST, what the failure looks like in that "
+               "world, and which single generated regime would settle it. Do not judge the "
+               "evidence; judge the construction against the worlds.")},
 )
 
 REVIEWER = {
@@ -234,6 +260,30 @@ def _subjects(limit: int) -> list[dict[str, Any]]:
             "gates": row.get("gates"), "hunt": row.get("hunt"),
         })
     rows.sort(key=lambda r: str(r.get("gated_at") or ""), reverse=True)
+    # NEVER-REVIEWED FIRST (Tier-1 Q9). One subject a day against a growing certificate roster
+    # means most certificates are never put in front of a panel at all; `order_cells` puts the
+    # cells with no recorded review at the head, then the least recently reviewed. An unreadable
+    # ledger leaves the newest-first order exactly as it was.
+    seen: set[str] = set()
+    try:
+        import blind_reviewer
+        seen = {str(r.get("cell")) for r in blind_reviewer.ledger_rows()}
+        rows.sort(key=lambda r: (str(r.get("key")) in seen,))
+    except Exception:
+        pass
+    # THEN BY WHAT THE PROPOSING SCIENTIST'S WORK HAS EARNED (Tier-1 B7, 2026-09-23).
+    #
+    # The panel's day is one subject long, so the ORDER of this list is the whole of the
+    # tournament's compute allocation. Ordering it by live marginal E[log W] -- the allocator's
+    # attribution per proposing source plus realised R on live deals -- is what makes the
+    # tournament scored on what the book received rather than on how well a subject reads.
+    # Never-reviewed still comes first, because an unreviewed certificate is the larger unknown.
+    try:
+        from research.scientist_standings import score_of as _score_of
+        rows.sort(key=lambda r: (str(r.get("key")) in seen,
+                                 -float(_score_of(str(r.get("hunt") or ""))[0] or 0.0)))
+    except Exception:
+        pass
     return rows[:limit]
 
 
@@ -270,7 +320,25 @@ def _evidence(subject: dict[str, Any]) -> dict[str, str]:
                                   "n_eff_tail", "hidden_dependence")})[:1200],
         "forward": json.dumps({k: fwd.get(k) for k in ("rule", "lane", "null", "verdict")})[:1200],
         "known_families": ", ".join(fams)[:900],
+        # THE GENERATOR'S AND THE SIMULATOR'S OWN EVIDENCE (Tier-1 Q9). The QD frontier's empty
+        # regions and the world lab's worlds are what a generator needs; the synthetic regime
+        # battery is what a simulator needs. An absent report is NAMED, never faked -- a seat
+        # told "UNMEASURED" answers honestly, and a seat handed an invented frontier does not.
+        "frontier": (_block(QD, ("empty_regions", "coverage", "n_cells", "frontier"))
+                     + "\n" + _block(WORLD_LAB, ("worlds", "n_worlds", "verdict", "rule"))),
+        "worlds": _block(SYNTH, ("regimes", "n_regimes", "battery", "verdict", "rule")),
     }
+
+
+def _block(path: Path, keys: tuple[str, ...], limit: int = 900) -> str:
+    """One report's named keys as evidence, or an explicit UNMEASURED line."""
+    doc = _load(path)
+    if not doc:
+        return f"{path.name}: UNMEASURED (absent or unreadable on this box)"
+    got = {k: doc.get(k) for k in keys if k in doc}
+    if not got:
+        return f"{path.name}: present but carries none of {list(keys)}"
+    return f"{path.name}: " + json.dumps(got, default=str)[:limit]
 
 
 def _prompt(role: dict[str, Any], subject: dict[str, Any], ev: dict[str, str],
@@ -318,6 +386,42 @@ def _verdict_of(text: str) -> str:
 
 # --------------------------------------------------------------------------------- the run
 
+#: WHY THE VERDICTS DO NOT GO INTO `blind_review_ledger.jsonl` (Tier-1 Q9, 2026-09-23).
+#: `blind_reviewer.latest_verdicts` is read by the SEALED promoter, which refuses to write a LIVE
+#: row for any cell whose latest verdict is VETO. Feeding a panel's UNDERMINES into that ledger
+#: would add a new veto over live capital, and the principal's standing order of 2026-09-08 is
+#: that no session reduces the desk's aggressiveness by fiat. REFUSED, not deferred: the
+#: tournament's verdicts are EVIDENCE and live in their own append-only ledger, where the
+#: promoter cannot read them and a human can. Turning this into a gate needs the principal.
+TOURNAMENT_LEDGER_NOTE = (
+    "tournament verdicts are recorded in data/scientist_tournament_ledger.jsonl and are "
+    "deliberately NOT written to blind_review_ledger.jsonl: that ledger vetoes live promotion "
+    "and adding a veto is refused under the never-reduce-aggressiveness standing order")
+
+
+def _append_tournament_ledger(results: list[dict[str, Any]], now: datetime,
+                              path: Path | None = None) -> dict[str, Any]:
+    """One row per judged subject: the tally, the dissent count, the models that spoke."""
+    p = path or TOURNAMENT_LEDGER
+    rows = [{"at": now.isoformat(timespec="seconds"),
+             "cell": str((r.get("subject") or {}).get("key") or ""),
+             "tally": r.get("tally"), "n_dissent_pairs": r.get("n_dissent_pairs"),
+             "roles": [v.get("role") for v in (r.get("verdicts") or [])],
+             "models": sorted({str(v.get("model") or "") for v in (r.get("verdicts") or [])
+                               if v.get("model")}),
+             "gates": None} for r in results if (r.get("subject") or {}).get("key")]
+    if not rows:
+        return {"appended": 0, "path": str(p), "why": "no subject carried a key"}
+    try:
+        p.parent.mkdir(parents=True, exist_ok=True)
+        with p.open("a", encoding="utf-8") as fh:
+            for row in rows:
+                fh.write(json.dumps(row, default=str) + "\n")
+    except OSError as exc:
+        return {"appended": 0, "path": str(p), "error": f"{type(exc).__name__}: {exc}"}
+    return {"appended": len(rows), "path": str(p)}
+
+
 def run(n_subjects: int) -> dict[str, Any]:
     now = datetime.now(tz=UTC)
     try:
@@ -337,7 +441,10 @@ def run(n_subjects: int) -> dict[str, Any]:
 
     budget = llm_seat.free_budget_left() - RESERVE
     affordable = max(0, budget // CALLS_PER_SUBJECT)
-    n = min(n_subjects, affordable)
+    # `--subjects 0` MEANS EVERY SUBJECT THE BUDGET AFFORDS (Tier-1 Q9). The cap that mattered
+    # was never the flag; it was the free-request budget, which is measured right above. Asking
+    # for one subject a day was a habit, not a constraint.
+    n = affordable if int(n_subjects) <= 0 else min(int(n_subjects), affordable)
     if n <= 0:
         return {"at": now.isoformat(timespec="seconds"), "status": "SKIPPED",
                 "free_budget_left": llm_seat.free_budget_left(), "reserve": RESERVE,
@@ -482,6 +589,8 @@ def run(n_subjects: int) -> dict[str, Any]:
         },
         "results": results,
         "n_dissent_pairs": total_dissent,
+        "ledger": _append_tournament_ledger(results, now),
+        "ledger_note": TOURNAMENT_LEDGER_NOTE,
         "headline": (
             f"NO PANEL SAT. {n_spoke} critic(s) answered across {len(results)} subject(s) -- the "
             f"provider's daily free allowance was already spent. This is a SKIP and says nothing "
@@ -510,9 +619,10 @@ def run(n_subjects: int) -> dict[str, Any]:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--apply", action="store_true", help="write the report and the dissent ledger")
-    ap.add_argument("--subjects", type=int, default=1)
+    ap.add_argument("--subjects", type=int, default=0,
+                    help="0 (default) = every subject the budget affords, unreviewed first")
     a = ap.parse_args(argv)
-    doc = run(max(1, a.subjects))
+    doc = run(int(a.subjects))
     st = doc.get("status")
     if st != "OK":
         print(f"scientist tournament: {st} -- {doc.get('why')}")

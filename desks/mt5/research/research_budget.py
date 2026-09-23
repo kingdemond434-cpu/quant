@@ -39,6 +39,12 @@ ENGINE = DESK / "reports" / "ENGINE_REGISTRY.json"
 #: does less work. A high-yield leg may be funded ABOVE par; a low-yield one runs at par and its
 #: evidence is published in ENGINE_REGISTRY.json for a human to argue with.
 ENGINE_FLOOR, ENGINE_CEIL = 1.0, 2.0
+#: P(survival | information source), fitted over every judged cell (Tier-1 C24, graveyard_model).
+GRAVEYARD = DESK / "reports" / "GRAVEYARD_MODEL.json"
+#: ONE-SIDED FOR THE SAME REASON `ENGINE_FLOOR` IS, and for one more: a source that has certified
+#: nothing is the source the desk has the least evidence about, and the only way to get that
+#: evidence is to keep running it. A factor below 1.0 here would make ignorance self-sealing.
+GRAVEYARD_FLOOR, GRAVEYARD_CEIL = 1.0, 2.0
 AUCTION = DESK / "reports" / "RESEARCH_AUCTION.json"
 OUT = DESK / "reports" / "RESEARCH_BUDGET.json"
 FLOOR, CEIL = 0.5, 2.0
@@ -125,6 +131,42 @@ def _engine_factor(leg: str) -> tuple[float, str]:
                    f"leg above par and may never take one below it)")
     except Exception as exc:
         return 1.0, f"engine registry unread ({type(exc).__name__}); par"
+
+
+def _graveyard_factor(leg: str) -> tuple[float, str]:
+    """P(survival | information source) from the graveyard, folded onto the leg that mines it. C24.
+
+    THE LARGEST LEDGER ON THE DESK PRICED NOTHING. `graveyard_model` fits P(survival | family,
+    symbol, source, mechanism, information_source, session, chart) over every judged cell -- 23k
+    of them -- and four organs re-fit it in process to annotate a candidate. Not one of them let
+    it move a SECOND of compute, so the desk's own record of what has never worked had no effect
+    on what the desk does next.
+
+    THE EXPLORATION FLOOR IS THE POINT AND IT IS ONE-SIDED (C4, and the standing order of
+    2026-09-08). A source that has certified nothing yet is the source the desk knows least
+    about, and the rate at which it certifies is exactly what more compute would measure; cutting
+    it would make the estimate permanent. So this factor runs from par UPWARD only: a source
+    certifying above the pooled rate is funded above par, and a source below it runs at par with
+    its number published in GRAVEYARD_MODEL.json for a human to argue with.
+    """
+    try:
+        doc = _read(GRAVEYARD)
+        if doc.get("status") != "MEASURED":
+            return 1.0, f"graveyard: {str(doc.get('why') or 'unmeasured')[:70]}; par"
+        table = ((doc.get("survival_by") or {}).get("source")
+                 if isinstance(doc.get("survival_by"), dict) else None)
+        if not isinstance(table, dict) or leg not in table:
+            return 1.0, f"graveyard: no survival row for source {leg!r}; par"
+        rows = [float(v.get("p_survival") or 0.0) for v in table.values()
+                if isinstance(v, dict)]
+        pooled = (sum(rows) / len(rows)) if rows else 0.0
+        mine = float((table[leg] or {}).get("p_survival") or 0.0)
+        raw = (mine / pooled) if pooled > 0 else 1.0
+        f = max(GRAVEYARD_FLOOR, min(GRAVEYARD_CEIL, raw))
+        return f, (f"graveyard: P(survival|{leg}) {mine:.5f} vs pooled {pooled:.5f} = x{raw:.2f} "
+                   f"-> x{f:.2f} (one-sided: an unproven source keeps its exploration budget)")
+    except Exception as exc:
+        return 1.0, f"graveyard unread ({type(exc).__name__}); par"
 
 
 def _meta_factor(leg: str) -> tuple[float, str]:
@@ -263,8 +305,9 @@ def budget_s(leg: str, base: float) -> tuple[int, dict[str, Any]]:
     engine, engine_why = _engine_factor(leg)
     meta, meta_why = _meta_factor(leg)
     para, para_why = _paradigm_factor(leg)
+    grave, grave_why = _graveyard_factor(leg)
     factor = max(FLOOR, min(CEIL, (share / baseline if baseline > 0 else 1.0) * ladder * dept
-                            * archive * auction * engine * meta * para))
+                            * archive * auction * engine * meta * para * grave))
     applied = round(base * factor)
     rec.update({"share": round(share, 4), "baseline": round(baseline, 4),
                 "ladder_factor": round(ladder, 3), "department_factor": round(dept, 3),
@@ -285,6 +328,10 @@ def budget_s(leg: str, base: float) -> tuple[int, dict[str, Any]]:
                 # The third factor: compute follows the meta-controller's own ranking, not only
                 # the bandit's arms and the breadth ladder.
                 "meta_factor": round(meta, 3), "meta_why": meta_why,
+                # P(SURVIVAL | INFORMATION SOURCE) FROM THE GRAVEYARD (Tier-1 C24). 23k judged
+                # cells finally price an hour: a source that certifies above the pooled rate is
+                # funded above par, and one below it keeps its exploration budget at par.
+                "graveyard_factor": round(grave, 3), "graveyard_why": grave_why,
                 # WHICH PARADIGM THIS LEG IS, AND HOW INDEPENDENT IT IS (Tier-1 Q18).
                 "paradigm_factor": round(para, 3), "paradigm_why": para_why,
                 "factor": round(factor, 3), "applied_s": applied, "applied": True,

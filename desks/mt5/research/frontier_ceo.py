@@ -368,11 +368,35 @@ def propose() -> list[dict]:
     # then cost, then whether anything blocks it. Unfalsifiable rows sink regardless.
     kind_w = {"independent_bet": 0, "capability": 1}
     cost_w = {"low": 0, "medium": 1, "high": 2}
+
+    # THE PROPOSING SCIENTIST'S LIVE RECORD BREAKS THE TIE (Tier-1 B7, 2026-09-23).
+    #
+    # Independence, cost and falsifiability decide the order, as they did. Within a tie, the
+    # proposal from a scientist whose past proposals EARNED -- log-wealth per day in the
+    # allocator's own attribution, plus realised R on live deals -- goes first. That is the
+    # blueprint item's gap in one line: the tournament scored report quality; this scores what
+    # the book received. A scientist with no measured record is UNMEASURED and sorts with the
+    # middle, never last: a seat starved of compute can never produce the evidence that would
+    # change its rank, and failure to discover is not evidence of nothing (L1.25).
+    try:
+        from research.scientist_standings import score_of as _score_of
+    except ImportError:
+        def _score_of(_name: str) -> tuple[float | None, str]:
+            return None, "scientist_standings unavailable"
+    live_rank: dict[str, float] = {}
+    for p in props:
+        src = str(p.get("source") or p.get("scientist") or p.get("proposer") or "")
+        sc, why = _score_of(src) if src else (None, "proposal names no scientist")
+        p["scientist_live_score"] = sc
+        p["scientist_live_why"] = why
+        live_rank[str(p.get("id"))] = -float(sc) if isinstance(sc, (int, float)) else 0.0
+
     props.sort(key=lambda p: (
         str(p.get("experiment", "")).startswith("UNFALSIFIABLE"),
         kind_w.get(str(p.get("kind")), 2),
         cost_w.get(str(p.get("cost")), 3),
         p.get("blocked_on") is not None,
+        live_rank.get(str(p.get("id")), 0.0),
         str(p.get("id")),
     ))
     for i, p in enumerate(props, 1):

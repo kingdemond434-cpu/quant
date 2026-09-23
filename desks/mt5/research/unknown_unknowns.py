@@ -91,6 +91,21 @@ def _live_symbols(limit: int = 20) -> list[str]:
             s = str(r.get("symbol") or "").strip()
             if s and s not in out:
                 out.append(s)
+    # AIMED AT WHAT THE DESK CANNOT EXPLAIN (Tier-1 B8, 2026-09-23). `residual_map` measures
+    # unexplained P&L, calibration holes and execution anomalies per instrument and publishes a
+    # weight per symbol. The scan is BOUNDED by `limit`, so its order IS its allocation: the
+    # instruments the desk's own models got most wrong are visited first.
+    #
+    # ORDER ONLY, NEVER EXCLUSION. Every live symbol stays in the list and the prior's floor is
+    # 0.25, because a symbol the models explain today is exactly where an unknown unknown is
+    # least visible -- dropping it would be a cap on discovery wearing the word "focus".
+    try:
+        from research.residual_map import load_prior
+        weights, _why = load_prior()
+        if weights:
+            out.sort(key=lambda s: (-float(weights.get(s, 0.0)), s))
+    except Exception:
+        pass
     return out[:limit]
 
 

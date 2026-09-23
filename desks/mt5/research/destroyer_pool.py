@@ -57,7 +57,10 @@ for _p in (str(DESK), str(DESK / "research"), str(DESK / "mt5desk"), str(ROOT)):
         sys.path.insert(0, _p)
 
 POOL = DESK / "data" / "destroyer_pool.json"
-FALSIFIERS_REPORT = DESK / "reports" / "FALSIFIERS.json"
+#: `falsifier_run` writes FALSIFIER_VERDICTS.json; FALSIFIERS.json is the older name and is
+#: kept as a fallback so a box carrying either is scored rather than reported empty.
+FALSIFIERS_REPORT = DESK / "reports" / "FALSIFIER_VERDICTS.json"
+FALSIFIERS_ALT = DESK / "reports" / "FALSIFIERS.json"
 OUT = DESK / "reports" / "DESTROYER_POOL.json"
 
 POP_SIZE = 12
@@ -89,8 +92,8 @@ def _genome(gid: str, base: str, block_frac: float, block_len: int, cost_mult: f
 
 
 def seed_pool() -> dict[str, Any]:
-    """The founding population: every base at three views, so generation 0 already spans the axis."""
-    rng = random.Random(20260923)
+    """The founding population: every base at three views, so generation 0 spans the axis."""
+    rng = random.Random(20260923)  # noqa: S311 -- a breeding RNG, seeded for reproducibility
     genomes: list[dict[str, Any]] = []
     i = 0
     for base in BASES:
@@ -111,7 +114,7 @@ def load_pool() -> dict[str, Any]:
         _write(POOL, doc)
     doc.setdefault("prey", {})
     doc.setdefault("records", {})
-    return doc
+    return dict(doc)
 
 
 def _view(signals: list[Any], view: dict[str, Any], seed: int) -> list[Any]:
@@ -122,8 +125,8 @@ def _view(signals: list[Any], view: dict[str, Any], seed: int) -> list[Any]:
     blocks = [(i, min(i + blen, n)) for i in range(0, n, blen)]
     if not blocks:
         return []
-    keep = max(1, int(round(len(blocks) * frac)))
-    rng = random.Random(seed)
+    keep = max(1, round(len(blocks) * frac))
+    rng = random.Random(seed)  # noqa: S311 -- deterministic view sampling, not a secret
     chosen = sorted(rng.sample(range(len(blocks)), min(keep, len(blocks))))
     out: list[Any] = []
     for b in chosen:
@@ -238,7 +241,7 @@ def score(report: dict[str, Any], pool: dict[str, Any]) -> dict[str, Any]:
             row["streak"] = 0
         else:
             row["streak"] = int(row.get("streak") or 0) + 1
-    for gid, f in fitness.items():
+    for f in fitness.values():
         secs = max(float(f["seconds"]), 0.01)
         f["fitness"] = round((f["kills"] + (NOVEL_WEIGHT - 1.0) * f["novel_kills"]) / secs, 6)
         f["kill_rate"] = round(f["kills"] / max(f["attempts"], 1), 4)
@@ -250,7 +253,7 @@ def reproduce(pool: dict[str, Any], fitness: dict[str, Any]) -> dict[str, Any]:
     """Elites survive, breed mutated offspring, the worst retire. Population size is fixed."""
     gen = int(pool.get("generation") or 0) + 1
     genomes = list(pool.get("genomes") or [])
-    rng = random.Random(gen * 7919)
+    rng = random.Random(gen * 7919)  # noqa: S311 -- mutation jitter, seeded by generation
     ranked = sorted(genomes,
                     key=lambda g: -float((fitness.get(str(g.get("id"))) or {}).get("fitness", 0.0)))
     elites = ranked[:ELITE] if ranked else []
@@ -300,11 +303,13 @@ def kill_rates() -> dict[str, float]:
 def build(budget_s: float = 300.0) -> dict[str, Any]:
     t0 = time.monotonic()
     pool = load_pool()
-    report = _read(FALSIFIERS_REPORT, {}) or {}
+    report = _read(FALSIFIERS_REPORT, {}) or _read(FALSIFIERS_ALT, {}) or {}
     if not report.get("per_certificate"):
-        doc = {"at": datetime.now(tz=UTC).isoformat(timespec="seconds"), "status": "UNMEASURED",
-               "why": ("no reports/FALSIFIERS.json with per-certificate rows: the catalogue has "
-                       "not run here, so no destroyer has attempted anything to be scored on"),
+        doc: dict[str, Any] = {"at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+               "status": "UNMEASURED",
+               "why": ("no reports/FALSIFIER_VERDICTS.json with per-certificate rows: the "
+                       "catalogue has not run here, so no destroyer has attempted anything "
+                       "to be scored on"),
                "generation": pool.get("generation"), "population": pool.get("genomes"),
                "prey": pool.get("prey"), "class_kill_rates": {},
                "seconds": round(time.monotonic() - t0, 3)}

@@ -737,7 +737,10 @@ def _pos_neg(docs: Sequence[Doc]) -> tuple[list[Doc], list[Doc]]:
             pos.append(d)
         elif d.kind == "hypothesis":
             fate = str(d.meta.get("fate") or "").upper()
-            (neg if fate in DEAD_FATES else pos if fate == "CERTIFIED" else []).append(d)  # type: ignore[arg-type]
+            if fate in DEAD_FATES:
+                neg.append(d)
+            elif fate == "CERTIFIED":
+                pos.append(d)
         elif d.kind == "verdict":
             (pos if d.meta.get("passed") else neg).append(d)
         elif d.kind == "trade_outcome":

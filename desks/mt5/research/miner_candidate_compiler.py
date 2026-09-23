@@ -486,7 +486,18 @@ def expand_axes(cands: list[dict]) -> list[dict]:
         sym, fam = str(c.get("symbol") or ""), str(c.get("family") or "")
         inv = _invariance(sym, fam)
         demote = 1 if (inv or {}).get("verdict") == "NON_INVARIANT" else 0
-        for tf in [*_charts_with_bars(sym), "H1"]:
+        # WHICH CHART FIRST, MEASURED (Tier-1 B23). The chart order here was fixed and no
+        # measurement ever informed it. `counterfactual_timeframes` re-prices the desk's OWN
+        # trades on M1/M5/M15/H1 with the same pricer and publishes which resolution actually
+        # paid; the charts that paid are expanded first. Every chart is still expanded -- this
+        # is queue order, never a refusal (L1.60), and an absent artifact leaves the old order.
+        _charts = _charts_with_bars(sym)
+        try:
+            from research.counterfactual_timeframes import chart_order
+            _charts = [c for c in chart_order(sym, _charts) if c in _charts]
+        except Exception:
+            pass
+        for tf in [*_charts, "H1"]:
             for sess in SESSION_AXIS:
                 p = dict(base)
                 if tf != "H1":

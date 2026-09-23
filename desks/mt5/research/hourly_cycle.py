@@ -770,6 +770,11 @@ CORE_LEGS: frozenset[str] = frozenset({
     "stamp_freshness", "time_joins", "layer_census", "opportunity_cost", "dead_architecture",
     "producer_census",
     "cycle_pricing", "causal_invariance",
+    # THE CLOSED-LOOP ORGANS (Tier-1 B14-B25): all cheap readers of artifacts that already exist,
+    # so they belong on the core clock rather than the heavy one. `actor_pressure` and
+    # `counterfactual_timeframes` read bars and stop themselves at their own budget.
+    "source_evig", "actor_pressure", "destroyer_pool", "quantbench", "evidence_chain",
+    "clock_ledger", "shortfall_model", "counterfactual_timeframes", "meta_rnd",
     "prosecutor", "scaling_laws", "arena", "session_capital", "session_allocation",
     "allocator_join", "rebalance_trigger", "edge_reliability", "edge_confidence", "capacity",
     "fill_attribution", "execution_resolver", "markout", "swap_rejudge", "queue_compact",
@@ -837,6 +842,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "judge_coverage"), "data"),
     # intel: the global intelligence agency -- crawlers, forests, frontier scouts
     **dict.fromkeys(("world_crawler", "deep_forest", "moat_miner", "market_intel", "mine",
+                     "moat_candidate_compiler", "algorithm_db",
                      "exogenous_search", "standing_questions", "frontier", "frontier_report",
                      "frontier_implementer", "hunt12", "scout_roster", "analyst_pipeline",
                      "knowledge_graph", "moat_collectors", "actor_atlas", "scout_swarm",
@@ -2760,6 +2766,19 @@ def main() -> None:
     # producer whose output arrives after its consumer has run is a producer nobody reads, which
     # is the defect this file has now recorded three times.
     mo = _costed("moat_miner", lambda: _producer("moat_miner", "research/moat_miner.py"))
+    # THE MOAT EXCHANGE, PRICED AND CLAIMED (Tier-1 M6 + M4). Measures novelty vs live,
+    # novelty vs graveyard and independence on queued candidates -- the three factors
+    # `registry.score_candidate` multiplies and 8,741 rows carried as PRIOR -- rescores
+    # them, then lets each department bid through `claim_candidates` and donates the
+    # claims into the intake the docket is built from.
+    mcp = _costed("moat_candidate_compiler", lambda: _producer(
+        "moat_candidate_compiler", "research/moat_candidate_compiler.py", "--once",
+        "--budget-s", "180"))
+    # THE PROGRAM DATABASE (Tier-1 Q3): parameterised ALGORITHM configs per class --
+    # search policy, regime detector, execution model, cost model, validator battery --
+    # with lineage, evolved by mutation/crossover and scored by each class's own organ.
+    adb = _costed("algorithm_db", lambda: _producer(
+        "algorithm_db", "research/algorithm_db.py", "--once", "--budget-s", "120"))
     m = _costed("mine", mine)
     se = _costed("search", search)
     bs = _costed("breadth_sweep", breadth_sweep)
@@ -4036,6 +4055,36 @@ def main() -> None:
     # forward_reconcile's published field, and missed_growth's `causal_invariance` rail line.
     civ = _costed("causal_invariance", lambda: _producer(
         "causal_invariance", "research/causal_invariance.py", "--once", "--budget-s", "600"))
+    # THE CLOSED-LOOP ORGANS (Tier-1 B14-B25, 2026-09-23). Each stops itself at its own
+    # --budget-s and writes its artifact, and each has a named consumer already wired:
+    #   source_evig              -> asia_collector's fetch order (EVIG-priced acquisition)
+    #   actor_pressure           -> the state vector's conditioning block (latent actors)
+    #   destroyer_pool           -> falsifier_run's evolved attack (predators that reproduce)
+    #   quantbench               -> the suite: the defect corpus, beaten whole or not at all
+    #   evidence_chain           -> quantbench QB007: the hash chain over certificates and seeds
+    #   clock_ledger             -> shadow_forward's writer: forward starts made immutable
+    #   shortfall_model          -> execution_policy's cost term, refitted from realised fills
+    #   counterfactual_timeframes-> the compiler's chart order, measured per trade at M1..H1
+    #   meta_rnd                 -> falsifier_run's ordering policy (the process as a subject)
+    sev = _costed("source_evig", lambda: _producer(
+        "source_evig", "research/source_evig.py", "--once", "--budget-s", "120"))
+    apr = _costed("actor_pressure", lambda: _producer(
+        "actor_pressure", "research/actor_pressure.py", "--once", "--budget-s", "300"))
+    dpo = _costed("destroyer_pool", lambda: _producer(
+        "destroyer_pool", "research/destroyer_pool.py", "--once", "--budget-s", "300"))
+    qbn = _costed("quantbench", lambda: _producer(
+        "quantbench", "research/quantbench.py", "--once", "--budget-s", "120"))
+    evc = _costed("evidence_chain", lambda: _producer(
+        "evidence_chain", "research/evidence_chain.py", "--once", "--budget-s", "120"))
+    ckl = _costed("clock_ledger", lambda: _producer(
+        "clock_ledger", "research/clock_ledger.py", "--once", "--budget-s", "60"))
+    shm = _costed("shortfall_model", lambda: _producer(
+        "shortfall_model", "research/shortfall_model.py", "--once", "--budget-s", "120"))
+    ctf = _costed("counterfactual_timeframes", lambda: _producer(
+        "counterfactual_timeframes", "research/counterfactual_timeframes.py",
+        "--once", "--budget-s", "240"))
+    mrd = _costed("meta_rnd", lambda: _producer(
+        "meta_rnd", "research/meta_rnd.py", "--once", "--budget-s", "180"))
     ac = _costed("acceptance", lambda: _producer(
         "acceptance", "scripts/check_acceptance_properties.py"))
     # TWO FORECASTS THE DESK NEVER MADE (Tier-1 P15, P6; 2026-09-09), both reports:
@@ -4200,12 +4249,16 @@ def main() -> None:
                     "bottleneck_attack": bka,
                     "opportunity_cost": oc, "acceptance": ac, "opportunity_forecast": ofc,
                     "cycle_pricing": cyp, "causal_invariance": civ,
+                    "source_evig": sev, "actor_pressure": apr, "destroyer_pool": dpo,
+                    "quantbench": qbn, "evidence_chain": evc, "clock_ledger": ckl,
+                    "shortfall_model": shm, "counterfactual_timeframes": ctf, "meta_rnd": mrd,
                     "edge_reliability": erl, "arena": ar, "session_capital": scap,
                     "prosecutor": pc, "scaling_laws": slw,
                     "dead_architecture": dac, "producer_census": prdc, "input_identity": iid,
                     "publish_state": pub,
                     "enrol_clocks": ecl, "requeue_unrunnable": rq, "reclaim_disk": dd,
                     "miner_conversion": mc, "moat_miner": mo, "archive_tape": ta,
+                    "moat_candidate_compiler": mcp, "algorithm_db": adb,
                     "judging_throughput": jth, "forward_enrolment": fen,
                     "external_gauntlet": gt, "falsifier_run": fz, "merge_docket": mh,
                     "backtest": bt,

@@ -33,7 +33,7 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
 | 5 Adaptive capital brain: regime posterior, decay posterior, joint scenarios, tail dependence, state-dependent Elog, execution-cost prediction, contextual allocation, H <= 20% | 0 | 0 | 2 | 0 | 17 | 0 |
 | 6 Execution intelligence: routing competition, slippage prediction, fill probability, self-footprint, broker microstructure | 0 | 0 | 1 | 0 | 4 | 0 |
 | 7 Recursive research improvement: agents compete for compute by downstream economic value; the machine redesigns itself | 1 | 0 | 0 | 0 | 11 | 0 |
-| B The principal's 28-item closed-loop blueprint (2026-09-16), measured against this tree | 1 | 0 | 23 | 0 | 4 | 0 |
+| B The principal's 28-item closed-loop blueprint (2026-09-16), measured against this tree | 1 | 0 | 12 | 0 | 13 | 2 |
 | C The 2026-09-16 blueprint (principal): production truth, PIT lake, axis registry, effective breadth, mechanism genome, ten engines, macro state, causal graph, residual research, forced flows, event surfaces, execution intelligence, hostile validation, scarce forward slots, posterior alpha, E[log W] allocator, exposure decomposition, hazard engine, self-recorded moat, LLM roles, semantic memory, unknown-unknowns, failures as data, Tier-1 scorecard | 0 | 0 | 14 | 0 | 21 | 0 |
 | D The nine Asian research mechanisms (principal, 2026-09-16): AlphaSchema semantic frontier, QuantaAlpha trajectory evolution, RD-Agent factor x model arms, FactorEngine program-alpha lane, AlphaSAGE reward-proportional sampling, AlphaAgent novelty filter, Alpha Jungle MCTS deepening, TRA/DoubleAdapt regime router, AlphaBench model-role benchmark | 0 | 0 | 2 | 0 | 28 | 0 |
 | K The Korea research civilization (principal 2026-09-17): twelve agents, the structured data plane (KRX, Customs, ECOS, DART) as global state sensors, the candidate lattice with EVIG, the five moat stores, the KR x JP x CN interaction miner, delayed source credit | 0 | 0 | 2 | 0 | 0 | 0 |
@@ -45,7 +45,7 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
 | S The free shadow-institutional stack (principal 2026-09-17): public proxy ensembles for private capabilities, free crypto L2 / Deribit as sensors, the latency laboratory, retail positioning ecology, latent actor inference, synthetic proprietary datasets, the disagreement dataset, the capability gap map | 0 | 0 | 1 | 0 | 0 | 0 |
 | U The data-utilization law (LAWS 5c) and the world information coverage (principal 2026-09-17): PIT truth layer, representation forge, world model posteriors, frequency matching, regional state vectors, allocator conditional distributions, counterfactual attribution, delayed ROI, the data-utilization audit, world exhaust coverage, latency map, missing-information hunter, coverage tensor | 0 | 0 | 0 | 0 | 69 | 0 |
 | W The Global Autonomous Quant Intelligence Organization (principal, 2026-09-16): six organisations in one system -- Global Intelligence Agency, Quant Science Lab, Alpha Search Supercomputer, Adversarial Evidence Lab, Portfolio & Execution Lab, Meta-Research Lab -- sharing one lake, one ontology, one memory, one gauntlet, one live truth; built in the order P0 production truth -> P1 Global Intelligence OS -> P2 knowledge graph + canonical mechanisms -> P3 semantic frontier + unseen-frontier estimator -> P4 cheap scouts -> P5 scientist swarm -> P6 diverse search algorithms -> P7 PIT macro/cross-asset world model -> P8 residual/forced-flow/event/microstructure labs -> P9 artifact-level replication -> P10 forward evidence allocator -> P11 posterior E[log W] allocator -> P12 self-improving Research OS -> P13 proprietary-data flywheel | 0 | 0 | 0 | 0 | 23 | 0 |
-| **all** | 4 | 0 | 62 | 0 | 312 | 0 |
+| **all** | 4 | 0 | 51 | 0 | 321 | 2 |
 
 ## Items
 
@@ -245,12 +245,12 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
   - desks/mt5/tests/test_plumbing_watchdog.py:326
   - clock: hourly_cycle:plumbing_watchdog · artifact: desks/mt5/reports/PLUMBING_WATCHDOG.json · consumer: the test suite (the only consumer a regression guard can have)
   - landed: plumbing watchdog 2026-09-23
-- **JC1 Judge coverage by unjudged backlog: intake allocates the hour so every family holding an unjudged cell is judged every hour, proportional to its backlog with a floor for small families; the banned family is routed out of judging intake; the family set is the live registry, never a fixed tuple** — LANDED
+- **JC1 Judge coverage by unjudged backlog with the remainder allocated by expected value per judge-second: every family holding an unjudged cell keeps an equal floor (the breadth mandate), the remainder goes down a published ranking of learned-prior x net-of-cost value x marginal breadth per measured judge-second, the banned family leaves judging intake, the family set is the live registry, and the opportunity cost drives capacity** — LANDED
   - MEASURED on the box from 120,000 gate verdicts: 60 families judged, `discovered` 22,009 (18% of capacity, 0 passes, BANNED from live capital) while the largest mined populations waited -- cross_asset_residual 55,190, overnight_drift 26,721, clock_transition 20,081
   - desks/mt5/research/judge_coverage.py:1-66 (why order IS selection upstream of the sealed gauntlet), :271-300 allocate (equal floor then proportional, never above a family's own backlog), :302-341 coverage_order (weighted fair queueing, so every prefix the judge's budget reaches is family-balanced, no row dropped)
   - desks/mt5/research/judge_coverage.py:143-161 banned_from_capital -- a family refused at both live doors gets no quota; merge_hypotheses routes its rows to the study bank, kept and never deleted, mining unrestricted
   - desks/mt5/mt5desk/families.py:124-156 live_family_names -- the union of the decorated registry, hunt16, the orthogonal population and the edge queue; judge_coverage reads it so a family registered tomorrow has a table row the same hour (families_live 79 vs the decorated 27 on this tree)
-  - clock: hourly_cycle:judge_coverage · artifact: desks/mt5/reports/JUDGE_COVERAGE.json · consumer: desks/mt5/research/merge_hypotheses.py (order_docket writes the docket the sealed gauntlet reads), scripts/check_judge_coverage.py (law gate, both halves)
+  - clock: hourly_cycle:judge_coverage · artifact: desks/mt5/reports/JUDGE_COVERAGE.json · consumer: desks/mt5/research/merge_hypotheses.py (order_docket writes the docket the sealed gauntlet reads), desks/mt5/research/judging_throughput.py (value at risk raises workers and cadence), libs/research/research_priors.py (fed by learn_priors), scripts/check_judge_coverage.py (law gate, both halves)
 - **RA1 Runtime attestation: one small COMMITTED file proves what ran on the box without committing the reports -- for every organ the component registry declares with an artifact of its own, its clock, last run and exit, and that artifact's age, size, SHA-256 and a declared set of scalar keys the organ itself published; the host, git SHA and release seal it was measured on; MISSING / STALE / NEVER / UNMEASURED as states, never blanks** — LANDED
   - THE DEFECT, stated by a reviewer reading this repository from GitHub 2026-09-23: 'GitHub code is not current VPS reality. The runtime reports -- COEVOLUTION.json, EXPERIMENT_SPINE.json, SANDBOX_RUNNER.json and the rest -- are not committed, so I cannot verify from GitHub alone that each organ ran successfully this morning on the box. Comments in the code describe measured runs, but that is not the same as seeing runtime state.' MEASURED: desks/mt5/reports/ holds 329 files, ~50 MB, rewritten hourly -- uncommittable, so the gap could not be closed by committing the bodies
   - desks/mt5/research/runtime_attestation.py:1-60 (why a docstring is not evidence and a hash is not the body), :297-320 _summary (only the 26 declared SUMMARY_KEYS, at most 6 per organ, scalars truncated to 48 chars -- never a nested report body), :322-336 _state (MISSING / NEVER decided before any freshness arithmetic, UNMEASURED where the registry declares no cadence)
@@ -927,19 +927,22 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
   - libs/portfolio/latent_factors.py
   - clock: hourly_cycle:pf_allocator · artifact: desks/mt5/reports/pf_allocation.json · consumer: gateway allocator_book
   - next: add input-data and mechanism similarity to _structured_corr
-- **B14 Autonomous information-acquisition brain** — PARTIAL
-  - gap: sources are registered by hand; FeatureROI measures value after the fact; no EVIG-priced proposal to fetch a dataset
-  - desks/mt5/research/asia_collector.py
-  - desks/mt5/research/source_fixer.py
-  - desks/mt5/research/feature_roi.py
-  - clock: hourly_cycle:asia_collector · artifact: desks/mt5/reports/ASIA_COLLECTOR.json · consumer: asia_parser, the compiler
-  - next: let feature_roi propose registry rows with an expected-value line
-- **B15 Market ecology / opponent brain: latent actor populations** — PARTIAL
-  - gap: positioning families read COT and participant data; no explicit latent-actor model of dealers, CTAs, vol-control, rebalancers
-  - desks/mt5/mt5desk/families.py
-  - desks/mt5/data/asia_sources.json
-  - clock: hourly_cycle:asia_collector · artifact: desks/mt5/data/lake/series · consumer: cot_* families, participant-plane sources
-  - next: an actor-pressure state in the state vector
+- **B14 Autonomous information-acquisition brain** — LANDED
+  - desks/mt5/research/source_evig.py:168 (price: EVIG = U x novelty x P(usable) x exp(-lag/30) / measured cost, per source)
+  - desks/mt5/research/source_evig.py:218 (fetch_order: the collector's door; an unpriced id keeps its place, never dropped)
+  - desks/mt5/research/asia_collector.py:482 (the due list is fetched in EVIG order, so a spent budget defers the cheapest-value sources)
+  - desks/mt5/tests/test_closed_loop_organs.py:60 (a novel target outranks a covered one; fetch_order drops nothing)
+  - clock: hourly_cycle:source_evig · artifact: desks/mt5/reports/SOURCE_EVIG.json · consumer: asia_collector's fetch order (the ORDER sources are collected in) + the priced proposals list
+  - next: raise the prior from POSTERIOR_ALPHA to a per-instrument decision-regret term once a funded sleeve exists on the instruments the asia registry targets
+  - landed: expected-information-gain priced BEFORE a fetch, from prior uncertainty on the instruments a source declares, the share no collected source already covers, its own usable rate and its publication lag, over its measured cost, wired as an ORDERING, never a refusal: no source is dropped, throttled or de-registered and no URL is invented (proposals come only from declared registry rows or parser-handed-back endpoints), first measured run on this box: 155 sources priced (89 registered + 66 parser-derived), 147 never successfully collected, prior basis POSTERIOR_ALPHA mu_sd per symbol
+- **B15 Market ecology / opponent brain: latent actor populations** — LANDED
+  - desks/mt5/research/actor_pressure.py:235 (judge_symbol: five latent populations per instrument, each with pressure and crowding)
+  - desks/mt5/research/actor_pressure.py:299 (hints_for: the state vector's door)
+  - desks/mt5/research/state_vector_build.py:424 (world_conditioning merges the actor rows onto the vector's conditioning block)
+  - desks/mt5/tests/test_closed_loop_organs.py:89 (a rising series reads trend-follower buying; a symbol with no measured row contributes nothing)
+  - clock: hourly_cycle:actor_pressure · artifact: desks/mt5/reports/ACTOR_PRESSURE.json · consumer: state_vector_build.world_conditioning -> the state vector's conditioning block (information, never authority)
+  - next: replace the dealer-gamma behavioural proxy with an options-derived measure if the desk ever holds a chain; until then the row is stamped PROXY everywhere it appears
+  - landed: an explicit latent-actor model: trend followers, vol-control books, a dealer-gamma PROXY, calendar rebalancers and the carry population the venue's own swap pays, crowded_with / crowded_against per symbol against the desk's own live side -- who is on the other side, named, information and never authority: nothing sizes, vetoes or refuses on these rows, and the state-admission judge still decides what may condition capital, first measured run on this box: 27 of 27 book symbols measured, 0 skipped for budget
 - **B16 Actual causal discovery wired to promotion** — LANDED
   - desks/mt5/research/causal_invariance.py:224 (invariance: per-environment dispersion against a permutation null)
   - desks/mt5/research/causal_invariance.py:262 (judge_cell: session/year/regime axes; NON_INVARIANT if any axis breaks)
@@ -948,60 +951,76 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
   - clock: hourly_cycle:causal_invariance · artifact: desks/mt5/reports/CAUSAL_INVARIANCE.json · consumer: miner_candidate_compiler.expand_axes (intake priority) + forward_reconcile (published field) + missed_growth (rail line)
   - next: price the delay in log-wealth once certification outcomes carry the invariance verdict the cell was queued under; until then missed_growth reports it UNMEASURED with the count delayed
   - landed: an invariance test with a permutation null over session, year and volatility regime, per judged cell, wired BEFORE the sealed judge: the candidate compiler intake deprioritises (never refuses) a NON_INVARIANT mechanism, a missed-growth ledger line for the new refusal, as GROWTH_GOVERNANCE requires, the verdict published beside the certificate by the forward lab, first measured run on this box: 46 cells judged, 7 NON_INVARIANT (overnight_gap_decay on six FX crosses breaks on regime/year; dav_range_filter_adx on AUDNZD on session/regime)
-- **B17 Adversarial co-evolution: destroyers that reproduce** — PARTIAL
-  - gap: falsifiers attack certificates; no paired populations, destroyers do not reproduce on kills
-  - desks/mt5/research/falsifier_run.py
-  - desks/mt5/research/adversary.py
-  - clock: hourly_cycle:falsifier_run · artifact: desks/mt5/reports/FALSIFIERS.json · consumer: the gauntlet
-  - next: score destroyers by false positives killed and mutate them
-- **B18 Permanent QuantBench: every historical defect as an immortal test** — PARTIAL
-  - gap: defects are pinned as tests one by one; no replayable bug corpus that new code must beat as a whole
-  - docs/desk_lessons.jsonl
-  - desks/mt5/tests/test_close_backstop_and_stop_floor.py
-  - desks/mt5/tests/test_symbol_side_cap.py
-  - next: a bug-corpus runner over recorded defect fixtures
-- **B19 Cryptographic evidence vault** — PARTIAL
-  - gap: content-addressed blobs and payload hashes exist; no hash chain over certificates, seeds and gate results
-  - desks/mt5/research/asia_collector.py
-  - libs/data/pit.py
-  - clock: hourly_cycle:asia_collector · artifact: desks/mt5/data/lake/vault · consumer: asia_parser
-  - next: a Merkle manifest per certificate
-- **B20 Statistically first-class forward lab: immutable clocks at the writer** — PARTIAL
-  - gap: forward_start can still move at the writer; a churned clock is reported, not made impossible
-  - desks/mt5/research/shadow_forward.py
-  - desks/mt5/research/promoter.py
-  - clock: task:MT5-Shadow · artifact: desks/mt5/reports/shadow/shadow_health.json · consumer: promoter
-  - next: forward_start = min(previous, current) when the identity hash is unchanged; a new identity opens a new clock
-- **B21 Empirical capacity / impact brain** — PARTIAL
-  - gap: the ceiling refuses itself until realised fills exist (matched_fills 1)
-  - desks/mt5/research/capacity.py
-  - libs/portfolio/kelly_surface.py
+- **B17 Adversarial co-evolution: destroyers that reproduce** — LANDED
+  - desks/mt5/research/destroyer_pool.py:138 (evaluate: a catalogue objection asked about a contiguous-block VIEW of the certificate's own signals at a multiple of its cost)
+  - desks/mt5/research/destroyer_pool.py:168 (attack: the falsifier run's door, inside the same deadline)
+  - desks/mt5/research/destroyer_pool.py:201 (score: fitness = (kills + 4 x novel kills) per second; prey survival streaks per certificate)
+  - desks/mt5/research/destroyer_pool.py:252 (reproduce: elites breed mutated offspring, the worst retire, population fixed at 12)
+  - clock: hourly_cycle:destroyer_pool · artifact: desks/mt5/reports/DESTROYER_POOL.json · consumer: falsifier_run (runs the pool per certificate) + meta_rnd (the measured kill rate per class is one of the ordering policies it judges)
+  - next: carry the prey survival streak into the forward lab's published row once a box with a falsifier report has run several generations
+  - landed: two paired populations persisted in data/destroyer_pool.json: destroyer genomes (predators) and certificates with their survival streaks (prey), destroyers REPRODUCE on kills: elites breed view-mutated offspring each generation and the worst are retired, fitness rewards the kill the fixed catalogue MISSED five times over the kill it duplicated -- a false positive found, not a second battery, ADVISORY by construction: an evolved kill retires no sleeve and moves no gate; the four sealed files are not imported, first run on this box: population seeded at generation 0 with 12 genomes; the scoring pass reads UNMEASURED because this tree carries no FALSIFIER_VERDICTS.json (the catalogue has not run here), which is the measurement, not an absence
+- **B18 Permanent QuantBench: every historical defect as an immortal test** — LANDED
+  - desks/mt5/research/quantbench.py:189 (CHECKS: the registered probes, one per historical defect)
+  - desks/mt5/research/quantbench.py:219 (replay: the whole corpus each pass, UNMEASURED never a pass)
+  - desks/mt5/data/quantbench/corpus.jsonl (7 cases: the leg-budget truncation that cost 84 clocks, the four seals, clock churn, the non-variadic _producer, the 12,000-char memory budget, one-sided modifiers, the evidence chain)
+  - desks/mt5/tests/test_quantbench.py:36 (the suite fails while any case reads REGRESSED)
+  - clock: hourly_cycle:quantbench · artifact: desks/mt5/reports/QUANTBENCH.json · consumer: desks/mt5/tests/test_quantbench.py (the suite) + the hourly QUANTBENCH.json score
+  - next: grow the corpus by appending a row and registering its probe whenever a defect is fixed; a case leaves only with a named falsifier that arrived
+  - landed: one replayable corpus, beaten WHOLE: the bench's verdict is REGRESSED as soon as a single case is, corpus is DATA (expectations pinned as evidence: sealed-file hashes, the memory floor) and probes are CODE, so a case can never be edited into agreement with a tree that broke it, first measured run on this box: 7 of 7 cases PASS, score 1.0
+- **B19 Cryptographic evidence vault** — LANDED
+  - desks/mt5/research/evidence_chain.py:111 (manifest: Merkle leaves over spec, seeds, the ten verdicts, the gate policy, costs and evidence counts)
+  - desks/mt5/research/evidence_chain.py:170 (verify: the chain recomputed from genesis; the first row that does not hold is named)
+  - desks/mt5/research/evidence_chain.py:192 (chain_status: the bench's door)
+  - desks/mt5/research/quantbench.py:172 (QB007 replays chain verification every hour)
+  - clock: hourly_cycle:evidence_chain · artifact: desks/mt5/reports/EVIDENCE_CHAIN.json · consumer: quantbench case QB007 (a chain that stops verifying is a REGRESSED case the suite fails on) + the published head hash
+  - next: publish the certificate's Merkle root beside its forward row so a reader can compare the judged record without reading the chain
+  - landed: a hash chain over CERTIFICATES, SEEDS and VERDICTS: entry = sha256(prev_entry || canonical(row)), appended only when a certificate's Merkle root moves, divergence is the published finding -- which certificates are no longer the ones that were judged, and which leaf moved, published, never acted on: a divergence retires nothing (what it means for capital is the sealed promoter's judgement), first measured run on this box: 58 certificates manifested, 58 rows appended, chain INTACT, head c2fa532ad7c726d9, 0 divergences
+- **B20 Statistically first-class forward lab: immutable clocks at the writer** — LANDED
+  - desks/mt5/research/clock_ledger.py:97 (stamp: start = min(recorded, proposed) for an unchanged identity; a new identity opens a NEW clock and keeps the old)
+  - desks/mt5/research/clock_ledger.py:184 (verify: a live forward_start LATER than the ledger's is churn that happened outside the door)
+  - desks/mt5/research/shadow_forward.py:786 (the registry-path stamper now writes what the ledger returns)
+  - desks/mt5/research/shadow_forward.py:985 (the fallback stamper, through the same door)
+  - clock: hourly_cycle:clock_ledger · artifact: desks/mt5/reports/FORWARD_CLOCK_LEDGER.json · consumer: shadow_forward (the only writer of forward_start) + promoter downstream (sealed, unchanged) + quantbench QB003
+  - next: repoint the ratchet fence at the ledger's own refusal record once a box has run a generation of enrolments through the new door
+  - landed: churn made IMPOSSIBLE at the writer rather than detected afterwards: a later start is refused and recorded, an earlier one is accepted, the monotone direction can only move a sleeve TOWARD its bar -- nothing is capped, no enrolment is refused and no wait is lengthened, a changed identity opens a new clock beside the old one, which is kept with its whole history and lineage, first run on this box: the ledger is empty because this tree carries no shadow_state.json (the forward lab runs on the trading box); the verification pass reports 0 checked, which is the measurement
+- **B21 Empirical capacity / impact brain** — REFUSED
+  - gap: REFUSED, not built. A capacity CEILING sizes the book smaller, and the principal's standing order of 2026-09-08 forbids any session lowering aggressiveness by fiat; an impact slope fitted on evidence this desk does not have would be a believed fiction that caps live sleeves. The exact evidence it waits on: realised fills at MORE THAN ONE SIZE -- today's tape joins 30 fills, all between 0.03 and 0.27 lots, so the size axis an impact slope is fitted on does not exist. The organ that will produce it: the gateway's own fills accruing into data/live_ledger.jsonl, joined per size bucket by research/shortfall_model.py (hourly_cycle:shortfall_model), which publishes a MEASURED cell at 5 fills. Lowering that floor to manufacture a ceiling is forbidden outright (LAWS L1.28a).
+  - desks/mt5/research/capacity.py:238 (the ceiling refuses itself: market impact needs realised fills and matched_fills is 0)
+  - desks/mt5/reports/CAPACITY.json (ceiling_status UNMEASURED on all 31 sleeve rows, with that reason)
+  - desks/mt5/research/shortfall_model.py:179 (the organ that will produce the evidence: realised shortfall per symbol, session, SIZE bucket and order type -- 30 fills joined today, 1 cell measured)
   - clock: hourly_cycle:pf_allocator · artifact: desks/mt5/reports/CAPACITY.json · consumer: pf_allocator survival envelope
-  - next: accrues with live fills; nothing to build
-- **B22 Execution scientist: execution researched with alpha's rigour** — PARTIAL
-  - gap: market/limit/delay are scored at decision time; the shortfall model is not re-fitted from the tape continuously
-  - desks/mt5/mt5desk/execution_policy.py
-  - desks/mt5/research/execution_twin.py
-  - clock: hourly_cycle:execution_twin · artifact: desks/mt5/reports/EXECUTION_TWIN.json · consumer: reports only
-  - next: fit expected shortfall by state/symbol/size from execution_twin's ledger
-- **B23 Live counterfactual attribution per trade at every timeframe** — PARTIAL
-  - gap: arms are priced per decision on one axis; not per trade at M1/M5/M15/H1
-  - libs/research/counterfactual_world.py
-  - desks/mt5/research/counterfactual_replay.py
-  - clock: hourly_cycle:counterfactual_world · artifact: desks/mt5/reports/COUNTERFACTUAL_WORLD.json · consumer: missed_growth
-  - next: multi-timeframe counterfactual paths per live trade
-- **B24 Every risk/growth modifier proves itself** — PARTIAL
-  - gap: every modifier is registered two-sided and ledgered; categories read UNMEASURED until 20 matched days exist
-  - libs/portfolio/capital_modifiers.py
-  - desks/mt5/research/missed_growth.py
-  - scripts/check_growth_governance.py
+  - next: accrues with live fills at size; nothing to build, and nothing may be fitted sooner
+- **B22 Execution scientist: execution researched with alpha's rigour** — LANDED
+  - desks/mt5/research/shortfall_model.py:112 (join: intent.ticket == deal.entry_order|order|position_id -- the join the execution twin never made)
+  - desks/mt5/research/shortfall_model.py:179 (fit: per symbol, session, size bucket and order type, shrunk to the pool by n/(n+10))
+  - desks/mt5/research/shortfall_model.py:208 (expected_shortfall: the decision-time door; None when unmeasured, never a zero cost)
+  - desks/mt5/mt5desk/execution_policy.py:84 (plans() prices MARKET and STOP on the fitted shortfall where it is measured, on the half-spread prior otherwise)
+  - clock: hourly_cycle:shortfall_model · artifact: desks/mt5/reports/SHORTFALL_MODEL.json · consumer: mt5desk/execution_policy.plans() (the cost term behind every order-type utility) + the per-cell record the twin's recalibration block could not produce
+  - next: fit the delay arm the same way once EVENT_DELAY and SPREAD_CONDITIONED plans have been executed often enough to have their own cells
+  - landed: the shortfall model is RE-FITTED from realised fills every hour, not assumed: the ticket join the twin was missing turns 92 intents and 151 deals into measured fills, hierarchical by construction: a cell under 5 fills is UNMEASURED with its n and consumers get the pooled number, never the pooled number wearing a cell's name, a cost, not a cap: it changes which ORDER TYPE wins a utility comparison and sets no size, no heat and no gate; a measured cost below the prior makes MORE trades clear their test, first measured run on this box: 30 fills joined, pooled MEASURED at mean -1.49e-05 of price, 13 cells, 1 cell measured (EURCHF|newyork|xs<=0.05|market, n=5)
+- **B23 Live counterfactual attribution per trade at every timeframe** — LANDED
+  - desks/mt5/research/counterfactual_timeframes.py:231 (the SAME pricer, libs/research/counterfactual_world.price_row, on each chart's bars)
+  - desks/mt5/research/counterfactual_timeframes.py:171 (chart_order: the compiler's door, measured charts first)
+  - desks/mt5/research/miner_candidate_compiler.py:496 (expand_axes expands the charts that paid first; every chart is still expanded)
+  - desks/mt5/tests/test_closed_loop_organs.py:288 (chart_order ranks measured charts first and keeps the unmeasured ones)
+  - clock: hourly_cycle:counterfactual_timeframes · artifact: desks/mt5/reports/COUNTERFACTUAL_TIMEFRAMES.json · consumer: miner_candidate_compiler.expand_axes (which chart is tested first) + the per-chart record beside COUNTERFACTUAL_WORLD.json
+  - next: price the arm SET per chart as well as the baseline once M1 bars exist for a book symbol on this host
+  - landed: per-trade counterfactual attribution at M1, M5, M15 and H1: the identical decision, cost model and bracket, replayed at each resolution, with the horizon difference (ttl_hours) published rather than hidden, first measured run on this box: 222 decisions re-priced; M5 reads +0.869 R against the H1 replay (n=41) and M15 +0.360 R (n=111) -- the hourly replay was flattering itself; M1 UNMEASURED (no M1 parquet here), wired as ORDER, never a refusal: the compiler still expands every chart, so nothing is dropped for being unmeasured
+- **B24 Every risk/growth modifier proves itself** — REFUSED
+  - gap: REFUSED, not built. Every modifier is already registered two-sided and ledgered; what is missing is OBSERVATIONS, and the only ways to manufacture them are forbidden. The exact evidence it waits on: matched modifier-day rows -- 344 ledger rows exist and 2 are matched to a realised day, so four of the five categories have n=0. The organ that will produce it: pf_allocator writing data/capital_modifier_ledger.jsonl each pass, joined to realised days by research/allocator_attribution.py as the live book trades. Lowering the matched-day floor to print a verdict would manufacture the evidence the floor exists to demand (LAWS L1.28a: UNMEASURED is a real answer), and acting on an UNMEASURED category could only shrink a modifier, which the principal's standing order of 2026-09-08 forbids.
+  - libs/portfolio/capital_modifiers.py:61 (REGISTRY: every modifier registered two-sided with its lo/hi and its proof artifact)
+  - desks/mt5/reports/CAPITAL_MODIFIERS.json (344 ledger rows, 2 matched: STRONG_VETO/NORMAL/BOOST/STRONG_BOOST all n=0, REDUCE n=2 -- every category UNMEASURED)
+  - desks/mt5/research/missed_growth.py (the ledger line per rail; scripts/check_growth_governance.py is the fence)
   - clock: hourly_cycle:pf_allocator · artifact: desks/mt5/reports/CAPITAL_MODIFIERS.json · consumer: growth governance fence
-  - next: accrues with live days; nothing to build
-- **B25 Recursive meta-R&D: the research process as an experimental subject** — PARTIAL
-  - gap: seats are A/B'd; gauntlet thresholds, mutation operators and test ordering are not experimental subjects
-  - desks/mt5/research/hourly_cycle.py
-  - clock: hourly_cycle:brain_ab · artifact: desks/mt5/reports/BRAIN_AB.json · consumer: reports only
-  - next: a sandboxed tournament over gate-spec variants
+  - next: accrues with live days; nothing to build, and no floor may be lowered to reach it sooner
+- **B25 Recursive meta-R&D: the research process as an experimental subject** — LANDED
+  - desks/mt5/research/meta_rnd.py:104 (replay_orderings: four ordering policies scored on the seconds each WOULD have spent to the first kill, on rows already run)
+  - desks/mt5/research/meta_rnd.py:139 (ordering_kill_rates: the applied door)
+  - desks/mt5/research/meta_rnd.py:202 (threshold_variants: counterfactual gate-bar counts, published and refused in both directions)
+  - desks/mt5/research/falsifier_run.py:206 (falsify() asks the tournament for the schedule it should run)
+  - clock: hourly_cycle:meta_rnd · artifact: desks/mt5/reports/META_RND.json · consumer: falsifier_run's test ordering (applied) + the operator-mix and threshold-variant comparisons (published, deliberately not fed)
+  - next: hand the operator-mix winner to mutation_yield's own weights file if that organ ever wants a second input; it owns the file today and a second writer would fight it
+  - landed: the research PROCESS as an experimental subject: test ordering, mutation-operator mixes and gauntlet-threshold variants each judged, with verdicts in the arena's own vocabulary (libs/research/arena.judge), ORDERING is applied because it changes no verdict and costs nothing; every objection still runs (L1.60 untouched), THRESHOLDS are refused in both directions and say so in the artifact: lowering a bar manufactures the evidence it demands, raising one sizes the book smaller (principal's standing order), and the four files are sealed, first run on this box: the ordering tournament reads UNMEASURED (no FALSIFIER_VERDICTS.json here) and the threshold subject is MEASURED over 58 certificates, published and fed nowhere
 - **B26 Formal verification hierarchy for plumbing invariants** — LANDED
   - scripts/check_plumbing_invariants.py:1 (the hierarchy ledger: invariant, level EXAMPLE/PROPERTY/PROOF, enforcing node)
   - scripts/check_plumbing_invariants.py:170 (collected: every enforcing node must be collected by pytest, or exit 1)

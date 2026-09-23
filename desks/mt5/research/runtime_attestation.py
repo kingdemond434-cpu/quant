@@ -51,6 +51,7 @@ because a fact nobody outside the box can read is not evidence.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import hashlib
 import json
 import os
@@ -117,12 +118,14 @@ class Paths:
     gateway: Path
     out_json: Path
     out_md: Path
+    ratchet: Path
 
     @classmethod
     def at(cls, root: Path | None = None) -> Paths:
         base = Path(root or ROOT)
         desk = base / "desks" / "mt5"
         return cls(
+            ratchet=base / "docs" / "research" / "runtime_ratchet.json",
             root=base,
             desk=desk,
             events=desk / "data" / "events.jsonl",
@@ -335,6 +338,53 @@ def _state(exists: bool, age_s: float | None, max_silence_s: int | None,
     return "LIVE", f"artifact {age_s / 3600:.1f}h old, inside its cadence"
 
 
+#: Where a state artifact lives on this desk. Used ONLY to find a declared basename that the
+#: declaration put in the wrong directory -- never to invent an artifact nobody declared.
+STATE_DIRS: tuple[str, ...] = (
+    "desks/mt5/reports", "desks/mt5/reports/shadow", "desks/mt5/data", "desks/mt5/data/hypotheses",
+    "docs/research", "data", "web", "reports/shadow",
+)
+
+
+def resolve_artifact(root: Path, outputs: tuple[str, ...]) -> tuple[str, str, float | None, int]:
+    """(path, how, age_s, bytes) for the artifact that PROVES this organ ran.
+
+    A component may declare several outputs; an organ is live if the FRESHEST of them is fresh,
+    because writing any one of its declared artifacts is the organ running. When none of the
+    declared paths exists, the same basename is looked for in the desk's state directories: a
+    declaration that says `reports/X.json` while the organ writes `data/X.json` is a defect in the
+    DECLARATION, and reading it as a dead organ hides a live one behind a typo. The relocation is
+    published as `how` so the defect stays visible instead of being silently absorbed (L1.28a).
+    """
+    best: tuple[str, str, float, int] | None = None
+    for rel in outputs:
+        try:
+            st = (root / rel).stat()
+        except OSError:
+            continue
+        age = _now() - st.st_mtime
+        if best is None or age < best[2]:
+            best = (rel, "declared", age, int(st.st_size))
+    if best is not None:
+        return best
+    for rel in outputs:
+        name = rel.rsplit("/", 1)[-1]
+        for d in STATE_DIRS:
+            cand = f"{d}/{name}"
+            if cand == rel:
+                continue
+            try:
+                st = (root / cand).stat()
+            except OSError:
+                continue
+            age = _now() - st.st_mtime
+            if best is None or age < best[2]:
+                best = (cand, f"relocated (declared {rel})", age, int(st.st_size))
+        if best is not None:
+            return best
+    return (outputs[0] if outputs else UNMEASURED), "absent", None, 0
+
+
 def organ_rows(paths: Paths, budget_s: float) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """One row per organ the component registry declares WITH AN ARTIFACT OF ITS OWN.
 
@@ -347,11 +397,11 @@ def organ_rows(paths: Paths, budget_s: float) -> tuple[list[dict[str, Any]], dic
 
     reg = registry(paths.root)
     runs = run_index(paths)
-    now = _now()
     started = time.monotonic()
     rows: list[dict[str, Any]] = []
     excluded = 0
     hash_skipped = 0
+    relocated = 0
 
     for spec in reg:
         if not spec.outputs:
@@ -360,14 +410,14 @@ def organ_rows(paths: Paths, budget_s: float) -> tuple[list[dict[str, Any]], dic
         leg = spec.schedule.split(":", 1)[1].split()[0] if spec.schedule.startswith(
             "hourly_cycle:") else spec.component_id.split(":", 1)[-1]
         run = runs.get(leg) or runs.get(spec.component_id)
-        art_rel = spec.outputs[0]
+        art_rel, how, age, size = resolve_artifact(paths.root, tuple(spec.outputs))
         art = paths.root / art_rel
-        try:
-            st = art.stat()
-            exists, size, age = True, int(st.st_size), now - st.st_mtime
-        except OSError:
-            exists, size, age = False, 0, None
+        exists = age is not None
+        if how.startswith("relocated"):
+            relocated += 1
         state, why = _state(exists, age, spec.max_silence_s, run is not None)
+        if how.startswith("relocated"):
+            why = f"{why}; DECLARATION DEFECT: {how}"
         over_budget = (time.monotonic() - started) > budget_s
         if exists and not over_budget:
             sha = _sha256(art)
@@ -390,6 +440,9 @@ def organ_rows(paths: Paths, budget_s: float) -> tuple[list[dict[str, Any]], dic
             "last_run_outcome": run["outcome"] if run else UNMEASURED,
             "last_run_source": run["source"] if run else UNMEASURED,
             "artifact": art_rel,
+            "artifact_declared": spec.outputs[0] if spec.outputs else UNMEASURED,
+            "artifact_resolved_by": how,
+            "artifact_declared_n": len(spec.outputs),
             "artifact_age_s": None if age is None else int(age),
             "artifact_bytes": size,
             "artifact_sha256": sha,
@@ -406,6 +459,10 @@ def organ_rows(paths: Paths, budget_s: float) -> tuple[list[dict[str, Any]], dic
         "excluded_reason": "component declares no output artifact -- nothing to hash; the "
                            "registry's own completeness is check_component_registry.py",
         "registry_components": len(reg),
+        "declaration_defects": relocated,
+        "declaration_defects_reason": "the component declares an artifact path the organ does "
+                                      "not write, while the same basename is present elsewhere "
+                                      "in the desk's state -- repair the declaration",
         "hash_skipped_over_budget": hash_skipped,
         "wall_s": round(time.monotonic() - started, 2),
     }
@@ -457,6 +514,53 @@ def attest(paths: Paths | None = None, budget_s: float = 180.0) -> dict[str, Any
         "organs": rows,
     }
     return _trim(doc)
+
+
+#: The three counts that may only ever fall on a given host. LIVE is deliberately NOT ratcheted:
+#: it moves with the registry's size, and a ratchet on it would fail the day an organ is retired.
+RATCHET_KEYS: tuple[str, ...] = ("STALE", "MISSING", "NEVER")
+
+
+def ratchet_update(paths: Paths, host: str, census: dict[str, int],
+                   git_sha: str = UNMEASURED) -> dict[str, Any]:
+    """Lower this host's floor for STALE/MISSING/NEVER, and never raise it.
+
+    ALL LIVE IS A RATCHET, NOT A PHOTOGRAPH (the principal's order, 2026-09-23). A census is a
+    number that drifts back the week after someone reads it; a floor that only falls is what
+    makes the reading stick. The organ records the best this host has ever achieved and
+    `scripts/check_runtime_attestation.py` fails when today's census is above it -- so a leg that
+    stops, an artifact that disappears or a clock that is removed is a fence failure on the box
+    that owns it, rather than a worse number nobody diffed.
+    """
+    doc = _read_json(paths.ratchet) or {"schema": "runtime_ratchet/1", "hosts": {}}
+    hosts = doc.get("hosts")
+    if not isinstance(hosts, dict):
+        hosts = {}
+    _prev = hosts.get(host)
+    prev: dict[str, Any] = _prev if isinstance(_prev, dict) else {}
+    floor: dict[str, Any] = {}
+    lowered: list[str] = []
+    for k in RATCHET_KEYS:
+        cur = int(census.get(k, 0))
+        was = prev.get(k)
+        if isinstance(was, int) and was < cur:
+            floor[k] = was
+        else:
+            floor[k] = cur
+            if isinstance(was, int) and cur < was:
+                lowered.append(f"{k} {was}->{cur}")
+    floor["at"] = _iso(_now())
+    floor["git_sha"] = str(git_sha)[:40]
+    floor["attested"] = int(sum(census.get(k, 0) for k in STATES))
+    hosts[host] = floor
+    doc["hosts"] = hosts
+    doc["note"] = ("Per-host floors for the runtime attestation. These numbers may only FALL. "
+                   "scripts/check_runtime_attestation.py fails when a host's current census is "
+                   "above its floor here -- that is what makes 'all organs live' a ratchet "
+                   "instead of a number that drifts back next week.")
+    with contextlib.suppress(OSError):                       # pragma: no cover - disk only
+        _atomic(paths.ratchet, json.dumps(doc, indent=1, sort_keys=False))
+    return {"floor": floor, "lowered": lowered}
 
 
 def _age(seconds: Any) -> str:
@@ -543,6 +647,9 @@ def main(argv: list[str] | None = None) -> int:
     a = ap.parse_args(argv)
     paths = Paths.at(Path(a.root))
     doc = attest(paths, budget_s=float(a.budget_s))
+    rat = ratchet_update(paths, doc["attests_to_host"], doc["census"],
+                         str(doc["host"].get("git_sha") or UNMEASURED))
+    doc["ratchet"] = rat["floor"]
     try:
         _atomic(paths.out_json, json.dumps(doc, indent=1, default=str, sort_keys=False))
         _atomic(paths.out_md, render(doc))
@@ -565,6 +672,10 @@ def main(argv: list[str] | None = None) -> int:
               f"{doc['scope']['attested']} organ(s): LIVE {c['LIVE']}, STALE {c['STALE']}, "
               f"MISSING {c['MISSING']}, NEVER {c['NEVER']}, {UNMEASURED} {c[UNMEASURED]}; "
               f"{doc['scope']['wall_s']}s -> {paths.out_json.name} + {paths.out_md.name}")
+        f = rat["floor"]
+        print(f"   ratchet floor for {doc['attests_to_host']}: STALE {f['STALE']}, "
+              f"MISSING {f['MISSING']}, NEVER {f['NEVER']}"
+              + (f" (lowered: {', '.join(rat['lowered'])})" if rat["lowered"] else ""))
     return 0
 
 

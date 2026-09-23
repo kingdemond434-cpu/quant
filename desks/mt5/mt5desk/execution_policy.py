@@ -81,10 +81,31 @@ def _row(c: Context, distance_frac: float, order_type: str) -> dict[str, Any]:
             "order_type": order_type}
 
 
+def _fitted_shortfall(c: Context, order_type: str) -> tuple[float | None, str]:
+    """The desk's OWN realised shortfall for this cell, or None (Tier-1 B22).
+
+    `research/shortfall_model.py` joins `order_intents.jsonl` to the deal tape on the ticket --
+    the join the execution twin never made, which is why its slip columns were empty -- and fits
+    a shrunk estimate per (symbol, session, size, order type). None means nothing is measured and
+    this module behaves exactly as it did before the organ existed: the half-spread prior."""
+    try:
+        from research.shortfall_model import expected_shortfall
+        return expected_shortfall(c.symbol, int(c.hour), float(c.lot), order_type)
+    except Exception as exc:
+        return None, f"shortfall model unavailable: {type(exc).__name__}: {exc}"
+
+
 def plans(c: Context, surface: FillSurface | None = None) -> list[Plan]:
     fs = surface or FillSurface()
     edge = _edge_frac(c)
     slip_mu, _ = fs.expected_slip(_row(c, 0.0, "market"), c.spread_frac)
+    # MEASURED BEATS MODELLED WHERE IT EXISTS. A fitted shortfall is the desk's own tape; the
+    # half-spread prior is an assumption nobody measured. It is a COST term only -- no size, no
+    # heat, no gate -- and where the measurement is lower than the prior it makes more trades
+    # clear their own utility test, never fewer.
+    _fit_mu, _fit_why = _fitted_shortfall(c, "market")
+    if _fit_mu is not None:
+        slip_mu = float(_fit_mu)
     out: list[Plan] = []
 
     def add(policy: str, p_fill: float, edge_f: float, cost: float, **detail: Any) -> None:
@@ -95,7 +116,8 @@ def plans(c: Context, surface: FillSurface | None = None) -> list[Plan]:
         out.append(Plan(policy, round(p_fill, 4), round(edge_f, 6), round(cost, 6),
                         round(u, 6), detail))
 
-    add("MARKET", 1.0, edge, c.spread_frac + max(slip_mu, 0.0))
+    add("MARKET", 1.0, edge, c.spread_frac + max(slip_mu, 0.0),
+        **({"shortfall_basis": _fit_why} if _fit_mu is not None else {}))
     for name, dist_atr in (("PASSIVE_LIMIT", 0.0), ("AGGRESSIVE_LIMIT", 0.0),
                            ("PULLBACK", 0.5)):
         d = (c.spread_frac * 0.5 if name == "PASSIVE_LIMIT" else 0.0) + dist_atr * c.atr_frac

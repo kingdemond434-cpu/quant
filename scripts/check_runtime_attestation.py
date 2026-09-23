@@ -99,6 +99,44 @@ def measure(root: Path | None = None) -> dict[str, Any]:
             f"stale on its own host: attested {age / 3600:.1f}h ago, past its "
             f"{ra.MAX_SILENCE_S / 3600:.1f}h max silence -- the hourly leg "
             f"`runtime_attestation` is not running here")
+
+    # THE RATCHET. STALE, MISSING and NEVER may only fall on a given host (the principal's order,
+    # 2026-09-23: "all organs must be switched to LIVE" is a floor, not a photograph). The floor
+    # is per host because the two boxes run different halves of the desk -- the build box disables
+    # every MT5 task by design, so its census is not the trading box's and neither may judge the
+    # other. A host with no floor yet is UNMEASURED and sets one on its next attestation pass,
+    # which is a measurement, not a pass by default.
+    rdoc = ra._read_json(paths.ratchet, max_bytes=ra.MAX_JSON_BYTES) or {}
+    _hosts = rdoc.get("hosts")
+    floors: dict[str, Any] = _hosts if isinstance(_hosts, dict) else {}
+    _floor = floors.get(claimed)
+    floor: dict[str, Any] | None = _floor if isinstance(_floor, dict) else None
+    out["ratchet_floor"] = floor or ra.UNMEASURED
+    out["ratchet_regressions"] = []
+    if floor is None:
+        out["ratchet"] = (f"{ra.UNMEASURED}: no floor recorded for {claimed} -- the next "
+                          f"attestation pass on that host sets one")
+    else:
+        for k in ra.RATCHET_KEYS:
+            was, now_n = floor.get(k), out["census"].get(k)
+            if not isinstance(was, int) or not isinstance(now_n, int):
+                continue
+            if now_n > was:
+                out["ratchet_regressions"].append(f"{k} rose {was} -> {now_n}")
+        if out["ratchet_regressions"]:
+            out["failures"].append(
+                "RATCHET BROKEN on " + str(claimed) + ": "
+                + "; ".join(out["ratchet_regressions"])
+                + f" (floor set {floor.get('at', ra.UNMEASURED)} at "
+                f"{str(floor.get('git_sha', ra.UNMEASURED))[:12]}). These counts may only fall: "
+                "an organ that stopped, an artifact that vanished or a clock that was removed "
+                "is a defect, not a new baseline. Repair the organ through "
+                "libs/ops/control_plane, or RETIRE it with a reason in "
+                "docs/research/retirements.jsonl so it leaves the census honestly.")
+        else:
+            out["ratchet"] = "held: " + ", ".join(
+                f"{k} {out['census'].get(k, ra.UNMEASURED)}<={floor.get(k, ra.UNMEASURED)}"
+                for k in ra.RATCHET_KEYS)
     return out
 
 
@@ -125,6 +163,9 @@ def main(argv: list[str] | None = None) -> int:
           f"/ MISSING {c.get('MISSING', '?')} / NEVER {c.get('NEVER', '?')}, attested {age_h} ago"
           + ("" if v["on_attesting_host"] else
              f" -- this machine is {v['this_host']}, so its freshness is UNMEASURED here"))
+    print("   ratchet: " + str(v.get("ratchet")
+                               or "; ".join(v.get("ratchet_regressions") or [])
+                               or "UNMEASURED (the document carries no census to ratchet)"))
     failures = list(v["failures"])
     if a.require_state and not v["on_attesting_host"]:
         failures.append(f"--require-state on {v['this_host']} but the attestation describes "
