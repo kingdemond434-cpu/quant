@@ -103,9 +103,21 @@ TERM_SPECS: tuple[TermSpec, ...] = (
              consumed_as="heat-neutral tilt of the posterior mean, bounded"),
     TermSpec("tail_risk", "deduction", True,
              "robust_elog crisis worlds / kelly_surface.envelope"),
+    # THE THREE W11 TERMS (2026-09-22): published for months and read by nothing.
+    TermSpec("forward_posterior_prior", "factor", False,
+             "reports/POSTERIOR_ALPHA.json (hierarchical forward posterior, family-pooled)",
+             consumed_as="heat-neutral rank tilt of the posterior mean, shrunk by forward n"),
+    TermSpec("marginal_breadth", "factor", False,
+             "reports/POSTERIOR_ALPHA.json rho_book (incremental P&L independence)",
+             consumed_as="heat-neutral tilt by independence relative to the book's mean"),
+    TermSpec("factor_tier", "deduction", False,
+             "reports/EXPOSURE_DECOMPOSITION.json (cosine with the book's factor exposure)",
+             consumed_as="heat-neutral tilt: a sleeve repeating the book's direction moves down"),
 )
 SPEC_BY_NAME: dict[str, TermSpec] = {s.name: s for s in TERM_SPECS}
-CONSUMED_TILT_TERMS: tuple[str, ...] = ("research_roi", "lineage_concentration")
+CONSUMED_TILT_TERMS: tuple[str, ...] = ("research_roi", "lineage_concentration",
+                                        "forward_posterior_prior", "marginal_breadth",
+                                        "factor_tier")
 
 
 @dataclass(frozen=True)
@@ -287,6 +299,171 @@ def lineage_factors(book: Mapping[str, float], lineage_of: Mapping[str, str]
                       f"same-lineage share {shares[n]:.3f} of book heat; raw {r:.3f} / "
                       f"book mean {mean:.3f}")
     return out
+
+
+# --------------------------------------------------------------------- Tier-1 W11 tilts
+#: THE THREE TERMS W11 NAMED AND NOTHING READ (measured 2026-09-16: "posterior_alpha and
+#: exposure_decomposition are published but not yet read by the world sampler; the marginal-
+#: breadth admission is a research credit, not an allocator tier"). Each is a HEAT-NEUTRAL tilt
+#: of the sleeve's posterior mean: the raw factors are divided by their own mean across the
+#: sleeves that carry them, so the tilt moves capital BETWEEN sleeves and the total the heat law
+#: resolved (20% floor, measured ceiling) is untouched -- nothing here can shrink the book.
+#: Each is TWO-SIDED by construction: a sleeve with the stronger forward posterior, the more
+#: orthogonal factor exposure or the more independent return stream is tilted UP by exactly the
+#: amount its peers are tilted down (GROWTH_GOVERNANCE Rule 2).
+KAPPA_POSTERIOR = 0.5
+KAPPA_FACTOR_TIER = 0.5
+KAPPA_BREADTH = 0.5
+#: Forward observations at which the posterior tilt is fully believed; below it the tilt is
+#: shrunk toward 1.0 by n/(n+K), so one lucky week never reallocates the book.
+K_POSTERIOR_N = 20.0
+
+
+def _heat_neutral(raw: Mapping[str, float]) -> dict[str, float]:
+    """`raw` divided by its own mean and clipped to the tilt band: mean 1.0 by construction.
+
+    A book where every sleeve carries the same raw value normalises back to exactly 1.0 for
+    every sleeve -- a property the whole book shares is not a reason to move the whole book.
+    """
+    vals = [float(v) for v in raw.values() if math.isfinite(float(v))]
+    mean = (sum(vals) / len(vals)) if vals else 1.0
+    if not math.isfinite(mean) or mean <= 0:
+        return dict.fromkeys(raw, 1.0)
+    return {n: float(min(TILT_HI, max(TILT_LO, float(v) / mean))) for n, v in raw.items()}
+
+
+def _sleeve_rows(doc: Mapping[str, Any] | None) -> list[Mapping[str, Any]]:
+    rows = (doc or {}).get("sleeves") if isinstance(doc, Mapping) else None
+    if not isinstance(rows, list):
+        return []
+    out: list[Mapping[str, Any]] = []
+    for r in rows:
+        if isinstance(r, Mapping) and r.get("name"):
+            out.append(r)
+    return out
+
+
+def posterior_prior_factors(doc: Mapping[str, Any] | None
+                            ) -> tuple[dict[str, Term], str]:
+    """The forward posterior `posterior_alpha` publishes, as a heat-neutral tilt per sleeve.
+
+    NOT A SECOND CHARGE OF THE ALLOCATOR'S OWN POSTERIOR. `robust_elog._posterior_mu` shrinks
+    the sleeve's OWN daily series toward a no-edge prior and knows nothing else;
+    `posterior_alpha` publishes a HIERARCHICAL posterior -- pooled across the sleeve's family,
+    across the shadow/forward/live lanes, with the hazard's decay probability -- which is a
+    different estimator over different evidence. It enters as a rank tilt around the book's own
+    mean, shrunk by the sleeve's forward count, so it reallocates and never levers.
+    """
+    rows = _sleeve_rows(doc)
+    if not rows:
+        return {}, "POSTERIOR_ALPHA.json absent or carries no sleeve: every tilt neutral"
+    mus: dict[str, float] = {}
+    ns: dict[str, float] = {}
+    for r in rows:
+        mu = r.get("mu_shrunk_family", r.get("mu_mean"))
+        try:
+            val = float(mu)
+        except (TypeError, ValueError):
+            continue
+        if math.isfinite(val):
+            mus[str(r["name"])] = val
+            try:
+                ns[str(r["name"])] = float(r.get("n") or 0.0)
+            except (TypeError, ValueError):
+                ns[str(r["name"])] = 0.0
+    if len(mus) < 2:
+        return {}, (f"POSTERIOR_ALPHA.json prices {len(mus)} sleeve(s): a rank tilt needs two, "
+                    "every tilt neutral")
+    vals = list(mus.values())
+    mean = sum(vals) / len(vals)
+    var = sum((v - mean) ** 2 for v in vals) / max(len(vals) - 1, 1)
+    sd = math.sqrt(var)
+    out: dict[str, Term] = {}
+    raw: dict[str, float] = {}
+    for name, mu in mus.items():
+        z = (mu - mean) / sd if sd > 0 else 0.0
+        shrink = ns[name] / (ns[name] + K_POSTERIOR_N) if ns[name] >= 0 else 0.0
+        raw[name] = 1.0 + KAPPA_POSTERIOR * shrink * math.tanh(z)
+    tilts = _heat_neutral(raw)
+    for name, mu in mus.items():
+        out[name] = Term("forward_posterior_prior", mu, MEASURED, tilts[name],
+                         "reports/POSTERIOR_ALPHA.json",
+                         f"family-shrunk posterior {mu:+.6f} R/day against a book mean of "
+                         f"{mean:+.6f} on n={ns[name]:.0f} forward observation(s)")
+    return out, (f"POSTERIOR_ALPHA.json read: {len(out)} sleeve(s), book mean {mean:+.6f} "
+                 f"R/day, sd {sd:.6f}")
+
+
+def marginal_breadth_factors(doc: Mapping[str, Any] | None) -> tuple[dict[str, Term], str]:
+    """Marginal effective breadth, from the correlation to the book `posterior_alpha` measures.
+
+    The admission question the item asks is incremental P&L INDEPENDENCE, not profit: a sleeve
+    whose returns the book already owns adds one more copy of a bet it holds, and a sleeve the
+    book is uncorrelated with adds a bet. `rho_book` is the desk's only DATE-ALIGNED correlation
+    of a sleeve to its book (the organ that computes it holds the dates), so independence is
+    1 - rho and the tilt is that independence relative to the book's own mean independence.
+    """
+    rows = _sleeve_rows(doc)
+    indep: dict[str, float] = {}
+    for r in rows:
+        rho = r.get("rho_book")
+        try:
+            val = float(rho)  # type: ignore[arg-type]
+        except (TypeError, ValueError):
+            continue
+        if math.isfinite(val):
+            indep[str(r["name"])] = float(min(2.0, max(0.0, 1.0 - val)))
+    if len(indep) < 2:
+        return {}, (f"POSTERIOR_ALPHA.json carries rho_book for {len(indep)} sleeve(s): a "
+                    "marginal-breadth tilt needs two, every tilt neutral")
+    mean = sum(indep.values()) / len(indep)
+    raw = {n: 1.0 + KAPPA_BREADTH * ((v / mean) - 1.0) if mean > 0 else 1.0
+           for n, v in indep.items()}
+    tilts = _heat_neutral(raw)
+    return ({n: Term("marginal_breadth", indep[n], MEASURED, tilts[n],
+                     "reports/POSTERIOR_ALPHA.json rho_book",
+                     f"independence {indep[n]:.3f} against a book mean of {mean:.3f}")
+             for n in indep},
+            f"marginal breadth read for {len(indep)} sleeve(s); mean independence {mean:.3f}")
+
+
+def factor_tier_factors(doc: Mapping[str, Any] | None) -> tuple[dict[str, Term], str]:
+    """`exposure_decomposition`'s factor tier: how much of the BOOK's exposure a sleeve repeats.
+
+    The cosine between the sleeve's twelve-factor exposure vector and the book's own is the
+    share of the book's direction the sleeve is another copy of. A sleeve pointing where the
+    book already points is tilted down and one pointing somewhere else is tilted UP by the same
+    book; a sleeve whose exposures are unmeasured is exactly neutral.
+    """
+    rows = [r for r in _sleeve_rows(doc) if isinstance(r.get("exposures"), Mapping)]
+    book = (doc or {}).get("book") if isinstance(doc, Mapping) else None
+    if not rows or not isinstance(book, Mapping) or not book:
+        return {}, "EXPOSURE_DECOMPOSITION.json absent or carries no book: every tilt neutral"
+    names = sorted({str(k) for k in book})
+    bvec = [float(book.get(k) or 0.0) for k in names]
+    bnorm = math.sqrt(sum(v * v for v in bvec))
+    if bnorm <= 0:
+        return {}, "EXPOSURE_DECOMPOSITION.json book exposure is all zero: every tilt neutral"
+    cos: dict[str, float] = {}
+    for r in rows:
+        exp = r["exposures"]
+        svec = [float(exp.get(k) or 0.0) for k in names]
+        snorm = math.sqrt(sum(v * v for v in svec))
+        if snorm <= 0:
+            continue
+        dot = sum(a * b for a, b in zip(svec, bvec, strict=True))
+        cos[str(r["name"])] = float(min(1.0, max(-1.0, dot / (snorm * bnorm))))
+    if len(cos) < 2:
+        return {}, (f"EXPOSURE_DECOMPOSITION.json prices {len(cos)} sleeve exposure vector(s): "
+                    "a factor tier needs two, every tilt neutral")
+    raw = {n: 1.0 - KAPPA_FACTOR_TIER * max(0.0, c) for n, c in cos.items()}
+    tilts = _heat_neutral(raw)
+    return ({n: Term("factor_tier", cos[n], MEASURED, tilts[n],
+                     "reports/EXPOSURE_DECOMPOSITION.json",
+                     f"cosine {cos[n]:+.3f} with the book's factor exposure over "
+                     f"{len(names)} factor(s)")
+             for n in cos},
+            f"EXPOSURE_DECOMPOSITION.json read: {len(cos)} sleeve(s) over {len(names)} factors")
 
 
 def financing_term(cost_r_per_trade: float | None, trades_per_day: float | None,

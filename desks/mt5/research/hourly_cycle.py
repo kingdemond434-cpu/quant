@@ -390,6 +390,27 @@ def smoke_release() -> dict:
         return {"rc": None, "error": f"{type(exc).__name__}: {exc}"}
 
 
+def _priced_budget(leg: str, base: int) -> tuple[int, dict]:
+    """The meta controller's priced budget for a leg, recorded; the base on any failure.
+
+    ONE CONTROLLER PRICES EVERY USE OF RESEARCH RESOURCES (Tier-1 B27). `_bandit_budget` below
+    asks `research_budget`, which knows the two legs whose arms the bandit prices;
+    `cycle_pricing` asks the whole price stack -- the meta controller's dE[log W] board first,
+    then the bandit, then the compute policy's tier split -- for EVERY leg, and records planned
+    against applied in reports/CYCLE_PRICING.json. A leg no source prices sits at the median and
+    runs on its base, which is the honest reading of UNMEASURED (L1.28a).
+
+    NEVER STALLS A LEG. Any failure to price returns the base budget, so the worst case is the
+    behaviour this cycle had before the controller existed.
+    """
+    try:
+        import cycle_pricing
+        return cycle_pricing.applied_budget(leg, base)
+    except Exception as exc:
+        return int(base), {"leg": leg, "applied": False, "factor": 1.0,
+                           "why": f"cycle_pricing unavailable: {type(exc).__name__}: {exc}"}
+
+
 def _bandit_budget(leg: str, base: int) -> tuple[int, dict]:
     """The bandit-scaled budget for a leg, recorded; the base on any failure (never a stall)."""
     try:
@@ -690,6 +711,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     "forward_reconcile", "closed_loop", "acceptance", "candidate_conservation", "pit_canaries",
     "mutation_yield", "credit_assignment", "publish_survivors", "publish_dashboard",
     "stamp_freshness", "time_joins", "layer_census", "opportunity_cost", "dead_architecture",
+    "cycle_pricing", "causal_invariance",
     "prosecutor", "scaling_laws", "arena", "session_capital", "session_allocation",
     "allocator_join", "rebalance_trigger", "edge_reliability", "edge_confidence", "capacity",
     "fill_attribution", "execution_resolver", "markout", "swap_rejudge", "queue_compact",
@@ -777,7 +799,9 @@ LEG_DEPARTMENT: dict[str, str] = {
     **dict.fromkeys(("external_gauntlet", "backtest", "falsifier_run", "adversaries",
                      "stop_reverse", "orthogonality", "blind_reviewer", "synthetic_regimes",
                      "evaluator_lab", "lead_replication", "science_controller",
-                     "replication_civilization", "certificate_truth"), "validate"),
+                     "replication_civilization", "certificate_truth", "model_search",
+                     "loop_liveness"),
+                    "validate"),
     # macro: the cross-asset / macro brain
     **dict.fromkeys(("fred_macro", "futures_lead_lag", "causal_graph", "residual_factors",
                      "weak_signals", "edges_macro_fusion_sweep", "strategy_paths",
@@ -795,22 +819,27 @@ LEG_DEPARTMENT: dict[str, str] = {
     # forward: forward evidence, promotion and the allocator
     **dict.fromkeys(("enrol_clocks", "pf_allocator", "daily", "hunt12_forward", "regime_router",
                      "forward_slot_ranker", "forward_exploitation", "shadow_discovery",
-                     "missed_trade_archaeologist"),
+                     "missed_trade_archaeologist", "portfolio_bounty",
+                     "drawdown_alpha_miner", "trade_autopsy"),
                     "forward"),
     # meta: the machine that runs the machine (the heavy part of it)
     **dict.fromkeys(("issue_board", "publish_state", "model_league", "ml_layer_meta",
                      "research_os_archive", "registry_sync", "mining_objective",
                      "research_gap_map", "gauntlet_backpressure", "miner_specialisation",
-                     "research_roi",
+                     "research_auction", "bottleneck_law", "research_latency",
+                     "alpha_replenishment", "research_dashboard",
+                     "research_roi", "experiment_spine",
                      "research_debt", "paradigm_router", "meta_controller",
                      "ingestion_exploitation", "coverage_tensor", "research_evolution",
-                     "compute_economics", "control_plane"), "meta"),
+                     "compute_economics", "control_plane", "attribution_reconcile",
+                     "fence_battery", "organ_battery"), "meta"),
     # japan: the Japan research division (the principal's 47-section mandate, hourly)
     **dict.fromkeys(("japan_department",), "japan"),
     # mathlab: the AI mathematics research civilization -- twenty-eight mathematical traditions
     # in parallel over the world model's residual, every object through the same gauntlet, credit
     # back to the mathematical method (principal 2026-09-17 / 2026-09-22). Its own 24/7 resident.
-    **dict.fromkeys(("math_lab", "expression_factory", "physics_lab"), "mathlab"),
+    **dict.fromkeys(("math_lab", "expression_factory", "physics_lab", "coevolution"),
+                    "mathlab"),
     # regions: the global native-market research OS over every country lab, plus the four
     # GLOBAL-LAYER forests (web, academic+code, physical data, market data) -- layers of the
     # world that would be mined seventeen times over if each region hunted them itself.
@@ -844,14 +873,19 @@ def in_plan(name: str, plan: str | None = None) -> bool:
 AUTO_LEGS_FILE = BASE / "data" / "auto_legs.json"
 
 
-def _auto_leg(entry: dict) -> dict:
-    """Run one auto-clocked organ under its budget; a dict result, never a raise."""
+def _auto_leg(entry: dict, leg: str | None = None) -> dict:
+    """Run one auto-clocked organ under its PRICED budget; a dict result, never a raise.
+
+    `leg` is the costed leg name so `cycle_pricing` can price this organ like any other; without
+    it the entry's own measured budget stands, which is what it was before B27."""
     organ = str(entry.get("organ") or "")
     target = REPO / organ
     if not target.exists():
         return {"exit_code": None, "status": "MISSING", "why": f"{organ} is not in the tree",
                 "at": datetime.now(UTC).isoformat()}
     budget = max(15, int(entry.get("budget_s") or 120))
+    if leg:
+        budget = max(15, _priced_budget(leg, budget)[0])
     cwd = BASE if organ.startswith("desks/mt5/") else REPO
     try:
         r = _run_tree([sys.executable, "-u", "-W", "ignore", str(target),
@@ -891,9 +925,20 @@ def run_auto_legs(plan: str | None = None, path: Path | None = None) -> dict:
 
     chosen = [e for e in legs if _wants(e)]
     out: dict[str, dict] = {}
-    for e in chosen:
-        name = str(e.get("leg") or ("auto_" + Path(str(e["organ"])).stem))
-        out[name] = _costed(name, lambda e=e: _auto_leg(e))
+    # THE ORDER IS THE CONTROLLER'S (Tier-1 B27). When the hour runs short the legs at the back
+    # of this list are the ones that do not run, so position IS an allocation -- and until now it
+    # was whatever order the wiring CEO happened to write the file in. `cycle_pricing.order`
+    # sorts by price with every leg staler than its scout window pulled to the FRONT, so a
+    # cheaply-priced leg is delayed, never starved. An unavailable pricer leaves the order alone.
+    named = [(str(e.get("leg") or ("auto_" + Path(str(e["organ"])).stem)), e) for e in chosen]
+    try:
+        import cycle_pricing
+        rank = {n: i for i, n in enumerate(cycle_pricing.order([n for n, _e in named]))}
+        named.sort(key=lambda ne: rank.get(ne[0], len(rank)))
+    except Exception as exc:
+        print(f"auto legs: unpriced order ({type(exc).__name__}: {exc})", flush=True)
+    for name, e in named:
+        out[name] = _costed(name, lambda e=e, n=name: _auto_leg(e, n))
     print(f"auto legs: {len(chosen)} of {len(legs)} clocked organ(s) ran under plan={p}",
           flush=True)
     return {"n": len(chosen), "of": len(legs), "results": out}
@@ -979,7 +1024,22 @@ def _costed(name: str, fn):
         # that could fail without a word.
         print(f"{name} compute ledger UNAVAILABLE: {type(exc).__name__}: {exc}", flush=True)
         open_run = close_run = None                                     # type: ignore[assignment]
-    run = open_run(name, kind="hourly_cycle") if open_run else None
+    # THE PRICE RIDES ONTO THE LEDGER ROW (Tier-1 B27's consumer). `close_run` writes `**meta`
+    # into the compute-ledger row, so every hourly row now carries the seconds the controller
+    # ALLOWED this leg beside the seconds it actually spent -- which is the only way a later
+    # reader can tell a leg that was priced down from one that finished early. A missing pricer
+    # writes nothing extra and the row is exactly what it always was.
+    _meta: dict[str, object] = {}
+    try:
+        import cycle_pricing
+        _row = (cycle_pricing.plan().get("legs") or {}).get(name)
+        if isinstance(_row, dict):
+            _meta = {"applied_budget_s": _row.get("planned_s"),
+                     "price_factor": _row.get("factor"),
+                     "priced_by": ",".join(_row.get("priced_by") or [])}
+    except Exception:
+        _meta = {}
+    run = open_run(name, kind="hourly_cycle", **_meta) if open_run else None
     try:
         out = fn()
     except (KeyboardInterrupt, SystemExit):
@@ -1137,6 +1197,8 @@ def _producer(name: str, script: str,
 #: must consume its backlog first so that truncation still makes progress. `shadow_forward` gets
 #: the budget to finish; the gauntlet already does the other (never-judged cells sort first).
 LEG_BUDGET_SEC: dict[str, int] = {
+    # The causal invariance organ stops itself at --budget-s 600 and writes; the cap sits above.
+    "causal_invariance": 700,
     # THE CONTROL PLANE'S OBSERVE PASS walks ~1,100 components, every watermark, every lease and
     # every mandatory edge. Its own budget is 600 s (it stops itself), so the cycle's cap sits
     # above that: a cap BELOW an organ's own budget is the truncated-job defect that cost this
@@ -1178,9 +1240,28 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # above it so the institution's pass is never cut at the same prefix every hour.
     "physics_lab": 700,
     # The certificate-truth audit reads six JSON stores and stops itself at --budget-s 120.
+    # The experiment spine stops itself at --budget-s 600 (conversion capped at 55% of it so
+    # the graph refresh, the credit ledger, the prior update and the funnel always run) and
+    # writes both artifacts; the cycle's cap sits above its own budget for the reason
+    # `enrol_clocks` was raised -- a cap below an organ's budget truncates it at the same prefix.
+    "experiment_spine": 700,
     "certificate_truth": 150,
+    # Each standing battery stops itself at --budget-s 600 (it starts no organ it cannot finish
+    # inside what is left); the cap sits above that so a rotation is never cut at the same prefix
+    # every hour, which would starve the tail of the roster permanently.
+    "fence_battery": 720,
+    "organ_battery": 720,
+    # The loop liveness prover stops itself at --budget-s 240; the cap sits above it. It reads
+    # the registry and the artifacts only -- measured 2.3 s on the box -- so the budget is head-
+    # room for a busy sqlite, never a size it expects to use.
+    "loop_liveness": 300,
     # The expression factory stops itself at --budget-s 600 and writes; the cap sits above it.
     "expression_factory": 720,
+    # The closed co-evolution stops itself at --budget-s 900 (breeding, then the islands) and
+    # writes COEVOLUTION.json; the cap sits above it so it is never cut at the same prefix.
+    "coevolution": 1_020,
+    # The model-family civilization stops itself at --budget-s 600 and writes MODEL_SEARCH.json.
+    "model_search": 720,
     # the organ's own budget is 900 s; the cap sits above it so it stops itself, never cut
     "market_constitution": 1_020,
     # A FOREST IS GIVEN THE BUDGET IT IS ASKED FOR. Each leg passes `--budget-s 3000` down to
@@ -1217,7 +1298,11 @@ def _producer_impl(name: str, script: str, args: tuple[str, ...] = ()) -> dict:
         return {"exit_code": None, "status": "MISSING",
                 "why": f"{script} exists under neither {BASE} nor {REPO}",
                 "at": datetime.now(UTC).isoformat()}
-    budget = LEG_BUDGET_SEC.get(name, SEARCH_BUDGET_SEC)
+    # THE META CONTROLLER'S PRICE SETS THE SECONDS (Tier-1 B27). `LEG_BUDGET_SEC` is now the
+    # BASE, not the answer: `cycle_pricing` scales it by the hour's rank price, floors every leg
+    # at a scout budget, and can never reduce the hour's total. An unavailable pricer returns the
+    # base unchanged, so this line is exactly what it was whenever the price cannot be read.
+    budget, _price_rec = _priced_budget(name, LEG_BUDGET_SEC.get(name, SEARCH_BUDGET_SEC))
     try:
         r = _run_tree([sys.executable, "-u", "-W", "ignore", str(target), *args],
                            capture_output=True, text=True, cwd=str(root),
@@ -2635,6 +2720,13 @@ def main() -> None:
     rsq = _costed("residual_queue", lambda: _producer("residual_queue",
                                                        "research/residual_queue.py",
                                                        "--max-donations", "15"))
+    # LIVE TRADE ATTRIBUTION, RECONCILED (Tier-1 W0): MetaTrader truncates the sleeve into the
+    # position comment, so the exact-name join reads 4.6% on a book whose trades all have
+    # owners. The reconciler recovers them by unique prefix and by the tp/sl price the terminal
+    # itself wrote, and PUBLISHES BY NAME every deal it still cannot reach.
+    atr = _costed("attribution_reconcile", lambda: _producer(
+        "attribution_reconcile", "research/attribution_reconcile.py", "--once",
+        "--budget-s", "300"))
     # THE SOURCE REGISTRY: every ground with provenance and result-based reputation, and the
     # intel ROI share each source earns (the crawlers read it as their crawl budget).
     srg = _costed("source_registry", lambda: _producer("source_registry",
@@ -2876,6 +2968,36 @@ def main() -> None:
                                                               "research/gauntlet_backpressure.py"))
     msp = _costed("miner_specialisation", lambda: _producer("miner_specialisation",
                                                              "research/miner_specialisation.py"))
+    # THE TIER-5 RESIDUALS (mandate 90, 110, 131/132, 133, 134, 136, 97/98, 162). The allocator
+    # publishes the payoff shapes and regimes it LACKS and they become research requests; the
+    # departments bid compute for those bounties and the winners are funded next epoch; the
+    # funnel's slowest stage is measured from the registry's own counts and compute shifts
+    # TOWARD it; what pays during the book's own drawdown windows is mined from the live and
+    # forward ledgers; every closed live deal gets an autopsy row; idea->cell->verdict->forward
+    # ->live is timed; the decay-driven replenishment target is compared with what arrived; and
+    # the dashboard joins the hour's artifacts. None of them cuts anything (GROWTH_GOVERNANCE
+    # Rule 1): a bounty is a REQUEST, a bid is two-sided and never a cap.
+    pbt = _costed("portfolio_bounty", lambda: _producer("portfolio_bounty",
+                                                        "research/portfolio_bounty.py",
+                                                        "--once", "--budget-s", "300"))
+    rau = _costed("research_auction", lambda: _producer("research_auction",
+                                                        "research/research_auction.py",
+                                                        "--once", "--budget-s", "300"))
+    btl = _costed("bottleneck_law", lambda: _producer("bottleneck_law",
+                                                      "research/bottleneck_law.py",
+                                                      "--once", "--budget-s", "300"))
+    dam = _costed("drawdown_alpha_miner", lambda: _producer("drawdown_alpha_miner",
+                                                            "research/drawdown_alpha_miner.py",
+                                                            "--once", "--budget-s", "300"))
+    tap = _costed("trade_autopsy", lambda: _producer("trade_autopsy",
+                                                     "research/trade_autopsy.py",
+                                                     "--once", "--budget-s", "300"))
+    rlt = _costed("research_latency", lambda: _producer("research_latency",
+                                                        "research/research_latency.py",
+                                                        "--once", "--budget-s", "300"))
+    arp = _costed("alpha_replenishment", lambda: _producer("alpha_replenishment",
+                                                           "research/alpha_replenishment.py",
+                                                           "--once", "--budget-s", "300"))
     # THE INTELLIGENCE REFINERY (M2/M8/M9/M10/M11): immutable captures and claims, the scout
     # swarm over the source frontier, the actor atlas. Intel department resident.
     mcl = _costed("moat_collectors", lambda: _producer("moat_collectors",
@@ -2917,6 +3039,15 @@ def main() -> None:
     mtc = _costed("meta_controller", lambda: _producer("meta_controller",
                                                         "research/meta_controller.py",
                                                         "--apply"))
+    # THE EXPERIMENT SPINE (RD-Agent closure items 1/4/5/11/16/20, principal 2026-09-22): every
+    # research civilization's row compiles into ONE canonical ExperimentSpec, reaches the campaign
+    # queue, lands in the experiment memory graph, sends credit back along its ancestry, moves the
+    # priors the next allocation draws from, and is divided by what the hour cost in
+    # RESEARCH_FUNNEL.json. A row that cannot compile gets a NAMED blocker in the conversion-debt
+    # ledger -- conversion debt to zero is the standing law. Meta department, meta layer.
+    exs = _costed("experiment_spine", lambda: _producer("experiment_spine",
+                                                        "research/experiment_spine.py",
+                                                        "--once", "--budget-s", "600"))
     # THE META-EVOLUTION LAYER (LAWS 5m, U33): the research machinery evolved under the immutable
     # rails -- every proposal fenced by immutable_rails before it is applied, one elite per
     # (search family x data family x region x horizon), fitness the delayed yield research_roi
@@ -2994,6 +3125,25 @@ def main() -> None:
     # under data/mathlab/, and a wiring proof naming every organ that ran.
     phl = _costed("physics_lab", lambda: _producer("physics_lab", "research/physics_lab.py",
                                                     "--once", "--budget-s", "600"))
+    # FACTOR x MODEL CO-EVOLUTION, closed (2026-09-22, Tier-1 items 2, 3, 7, 10, 13, 14, 15,
+    # 17, 18). Separate populations of factors and of models, bred on four ISLANDS with
+    # different priors and different slices of the vocabulary; BOTH sides mutate from the
+    # residual, the pooled residuals are re-interrogated as a research dataset on seven axes,
+    # every failure emits the descendant its kind implies, migration moves only strictly
+    # stronger concepts, self-play makes a champion beat the strongest SIMPLER explanation, the
+    # next experiment is chosen by expected information gain, and the desk's own
+    # synthetic-world rediscovery score is re-measured every pass. Writes COEVOLUTION.json.
+    cev = _costed("coevolution", lambda: _producer("coevolution",
+                                                   "research/factor_model_coevolution.py",
+                                                   "--once", "--budget-s", "900"))
+    # MODEL-FAMILY SEARCH as its own civilization (Tier-1 items 6 and 7): ten families -- linear,
+    # sparse, tree, boosting, neural, state-space, Bayesian, sequence, graph, mixture-of-experts
+    # -- each with a factor's lineage, novelty key and declared falsifier (its tax), crossed with
+    # six representations of the same bars. The whole (R x M) grid is published, a representation
+    # is DEAD only when every learner tried on it failed, and an absent heavy library reads
+    # UNMEASURED while the pure-Python fallback carries the run. Writes MODEL_SEARCH.json.
+    mds = _costed("model_search", lambda: _producer("model_search", "research/model_search.py",
+                                                    "--once", "--budget-s", "600"))
     # THE GLOBAL NATIVE-MARKET RESEARCH OS (regions): every country lab at equal priority with
     # measured adjustments, the transmission engine, the compiler; one pass per hour.
     gro = _costed("global_research_os", lambda: _producer("global_research_os",
@@ -3019,6 +3169,25 @@ def main() -> None:
     # act the coordinator runs on the box. scripts/check_certificate_truth.py fails on residue.
     ctt = _costed("certificate_truth", lambda: _producer(
         "certificate_truth", "research/certificate_truth.py", "--once", "--budget-s", "120"))
+    # THE TWO STANDING BATTERIES (principal 2026-09-22: "100 percent of everything built always
+    # must be used never forgotten"). A long tail of fences, standing fixers and region organs is
+    # too small to deserve a leg each and invisible the moment it stops running; each battery
+    # rotates its roster under one budget and publishes, per organ, its last verdict and the AGE
+    # of that verdict -- so a rostered organ that died is NAMED in BATTERY_*.json, never silence.
+    fbt = _costed("fence_battery", lambda: _producer(
+        "fence_battery", "research/batteries.py", "--battery", "fences", "--once",
+        "--budget-s", "600"))
+    obt = _costed("organ_battery", lambda: _producer(
+        "organ_battery", "research/batteries.py", "--battery", "organs", "--once",
+        "--budget-s", "600"))
+    # THE LOOP LIVENESS PROVER. Every leg above reports on ITSELF, so the loop can break at one
+    # arrow while fifty-odd reports stay individually truthful and nothing names WHICH arrow.
+    # This leg proves the chain sources -> discoveries -> conversion -> cells -> TEN GATES ->
+    # certificates -> clocks -> accrual -> promoter -> allocator from the registry and the
+    # artifacts, and publishes a stage with input waiting and no output as a STALLED DEFECT
+    # naming the organ and its last costed run. Validate department, meta layer. Reads only.
+    llv = _costed("loop_liveness", lambda: _producer(
+        "loop_liveness", "research/loop_liveness.py", "--once", "--budget-s", "240"))
     # THE FREE SHADOW-INSTITUTIONAL STACK: public proxies for the institutional capabilities
     # the desk cannot buy, each latent fused from at least two sensors or named UNMEASURED.
     shi = _costed("shadow_institutional", lambda: _producer("shadow_institutional",
@@ -3501,6 +3670,18 @@ def main() -> None:
     lc = _costed("layer_census", lambda: _producer("layer_census", "libs/research/layers.py"))
     oc = _costed("opportunity_cost", lambda: _producer(
         "opportunity_cost", "research/opportunity_cost.py"))
+    # THE HOUR'S PRICES, REBUILT AND PUBLISHED (Tier-1 B27). The plan is already built lazily by
+    # the first leg that asks for a budget; this leg exists so the artifact is written and
+    # printed every pass even in an hour where nothing asked, and so the planned-versus-applied
+    # record has a clock of its own rather than living as a side effect of another leg.
+    cyp = _costed("cycle_pricing", lambda: _producer(
+        "cycle_pricing", "research/cycle_pricing.py", "--once", "--budget-s", "120"))
+    # THE INVARIANCE VERDICT PER JUDGED CELL (Tier-1 B16). The organ stops itself at its own
+    # --budget-s and writes CAUSAL_INVARIANCE.json; the cycle's cap sits above it so it is never
+    # cut at the same prefix every hour. Consumers: the candidate compiler's intake (priority),
+    # forward_reconcile's published field, and missed_growth's `causal_invariance` rail line.
+    civ = _costed("causal_invariance", lambda: _producer(
+        "causal_invariance", "research/causal_invariance.py", "--once", "--budget-s", "600"))
     ac = _costed("acceptance", lambda: _producer(
         "acceptance", "scripts/check_acceptance_properties.py"))
     # TWO FORECASTS THE DESK NEVER MADE (Tier-1 P15, P6; 2026-09-09), both reports:
@@ -3531,6 +3712,12 @@ def main() -> None:
         "input_identity", "libs/data/input_identity.py"))
     scap = _costed("session_capital", lambda: _producer(
         "session_capital", "research/session_capital.py"))
+    # THE FINAL RESEARCH DASHBOARD (Tier-5 mandate 162), here for the same reason `publish_state`
+    # is: it JOINS the artifacts this pass wrote, so the dashboard is the hour that just ran and
+    # not the one before it. It reports and never gates.
+    rdh = _costed("research_dashboard", lambda: _producer("research_dashboard",
+                                                          "research/research_dashboard.py",
+                                                          "--once", "--budget-s", "300"))
     # LAST, AND DELIBERATELY SO: it publishes what every leg above just wrote. Placing it here
     # means one pass produces the state AND delivers it, instead of delivering the previous hour's.
     pub = _costed("publish_state", publish_state)
@@ -3549,6 +3736,7 @@ def main() -> None:
                     "evaluator_lab": evl, "synthetic_regimes": syr, "value_of_data": vod,
                     "research_api_status": rap,
                     "artifact_chain": acv, "residual_queue": rsq, "unseen_frontier": usf,
+                    "attribution_reconcile": atr,
                     "source_registry": srg, "event_response_atlas": era, "world_lab": wlb,
                     "news_event_stream": nes, "event_sleeves": evs,
                     "causal_lab": clb, "event_graph_lab": egl,
@@ -3568,10 +3756,15 @@ def main() -> None:
                     "evidence_router": evr, "research_roi": rroi,
                     "coverage_tensor": cov,
                     "gauntlet_backpressure": gbp, "miner_specialisation": msp,
+                    "portfolio_bounty": pbt, "research_auction": rau,
+                    "bottleneck_law": btl, "drawdown_alpha_miner": dam,
+                    "trade_autopsy": tap, "research_latency": rlt,
+                    "alpha_replenishment": arp, "research_dashboard": rdh,
                     "moat_collectors": mcl, "source_frontier": sfr, "scout_swarm": ssw,
                     "actor_atlas": aat, "understanding_seat": usd,
                     "netting_report": ntr, "execution_alpha": exa,
                     "paradigm_router": prr, "meta_controller": mtc, "lead_replication": lrp,
+                    "experiment_spine": exs,
                     "research_evolution": rev, "compute_economics": cec,
                     "missed_trade_archaeologist": mta,
                     "replication_civilization": rpc,
@@ -3579,8 +3772,10 @@ def main() -> None:
                     "data_scout": dsc2, "japan_department": jpd, "global_research_os": gro,
                     "feature_compiler": fcp, "data_acquisition_scientist": daq,
                     "math_lab": mlb, "expression_factory": xpf, "physics_lab": phl,
+                    "coevolution": cev, "model_search": mds,
                     "external_federation": xfd, "archaeology": arch, "sares": srs,
-                    "certificate_truth": ctt,
+                    "certificate_truth": ctt, "loop_liveness": llv,
+                    "fence_battery": fbt, "organ_battery": obt,
                     "federation_ops": fops, "sandbox_runner": sbr,
                     "source_civilizations": svc, "evidence_watchtower": ewt,
                     "prediction_markets": pmk, "dislocation_lab": dsl,
@@ -3629,6 +3824,7 @@ def main() -> None:
                     "release_identity": ri, "burn_in": bi, "layer_census": lc,
                     "control_plane": cp,
                     "opportunity_cost": oc, "acceptance": ac, "opportunity_forecast": ofc,
+                    "cycle_pricing": cyp, "causal_invariance": civ,
                     "edge_reliability": erl, "arena": ar, "session_capital": scap,
                     "prosecutor": pc, "scaling_laws": slw,
                     "dead_architecture": dac, "input_identity": iid,

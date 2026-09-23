@@ -33,10 +33,18 @@ be pricing every research hour off a guess, and every ranking it produced would 
 silently. So there are TWO boards -- one in dE[log W] where the price exists, one in nats per
 cell-equivalent where it does not -- and the report says which is which.
 
-NOTHING HERE HAS AUTHORITY. It publishes a ranked docket. The allocator remains the only thing
-that sizes a position, the gauntlet the only thing that certifies, and the schedulers still run
-what they run. A second mechanism with an opinion about capital is exactly the failure this desk
-has a law about.
+AUTHORITY OVER RESEARCH COMPUTE, AND OVER NOTHING ELSE (Tier-1 B27, 2026-09-22). This board used
+to end "NOTHING HERE HAS AUTHORITY", and the ledger's gap for item 27 said the same thing back:
+*the controller is advisory; the hourly cycle runs every leg on its own clock regardless.* It
+does not any more. `research/cycle_pricing.py` turns the dE[log W] board below into every hourly
+leg's SECONDS and the ORDER the legs run in -- two-sided (a well-priced leg is multiplied up to
+2x), with a scout floor under every leg and a total that can never fall below the unpriced one,
+recorded planned-against-applied in `reports/CYCLE_PRICING.json`.
+
+The allocator remains the only thing that sizes a position and the gauntlet the only thing that
+certifies. A second mechanism with an opinion about CAPITAL is exactly the failure this desk has
+a law about; an hour of research compute is not capital, and leaving it unallocated was the
+failure this item was raised for.
 
     python desks/mt5/research/meta_controller.py [--apply]
 """
@@ -353,6 +361,30 @@ def _actions() -> list[dict[str, Any]]:
     return acts
 
 
+def _anytime_p(cont: dict[str, Any], fam: dict[str, Any]) -> float:
+    """The anytime-valid p-value of a DISCOVERED family, from whichever key carries it.
+
+    THE DEFECT THIS CLOSES (2026-09-23). `science_controller.continuation_of` publishes
+    `anytime_p_discovery` and `anytime_p_futility`; the family row above it publishes
+    `anytime_p` from the indicator e-value. This function read `continuation["anytime_p"]`,
+    which NEITHER produces -- so every real STOP_DISCOVERED action was ranked at
+    `p_success = 1 - 1.0 = 0.0`, i.e. the meta-controller scored an anytime-valid discovery as
+    having no chance of success and sorted it below every speculative empty cell. The unit test
+    did not catch it because its fixture was written by hand with the key the consumer wanted
+    rather than the key the producer emits; `test_science_controller_contract.py` now builds the
+    row from `continuation_of` itself, which is the only shape that can go stale silently.
+
+    Order: the continuation's own discovery p-value, then the family's e-value p-value, then the
+    legacy flat key. An unreadable one is 1.0, which scores the action at zero rather than
+    inventing confidence.
+    """
+    for src, key in ((cont, "anytime_p_discovery"), (fam, "anytime_p"), (cont, "anytime_p")):
+        val = src.get(key)
+        if isinstance(val, (int, float)):
+            return max(0.0, min(1.0, float(val)))
+    return 1.0
+
+
 def _science_actions(science: dict[str, Any]) -> list[dict[str, Any]]:
     """Actions read off SCIENCE_CONTROLLER.json; empty when the report is absent or malformed."""
     out: list[dict[str, Any]] = []
@@ -387,7 +419,7 @@ def _science_actions(science: dict[str, Any]) -> list[dict[str, Any]]:
                 "kind": "deepen_existing", "target": f"family:{fid}",
                 "why": f"anytime-valid DISCOVERY: {cont.get('why', '')}"[:200],
                 "info_gain_nats": float(_beta_gain(passes, max(0.0, judged - passes))),
-                "p_success": max(0.0, 1.0 - float(cont.get("anytime_p") or 1.0)),
+                "p_success": max(0.0, 1.0 - _anytime_p(cont, fam)),
                 "compute_override": 1.0, "source": "science_controller",
             })
         elif decision == "STOP_FUTILE" and int(fam.get("queued") or 0) > 0:
@@ -434,6 +466,39 @@ KIND_LEGS: dict[str, tuple[str, ...]] = {
     "cross_market_transfer": ("session_chart_expansion", "futures_lead_lag"),
     "abandon_region": ("queue_compact", "requeue_unrunnable"),
 }
+
+
+def _attach_priors(actions: list[dict[str, Any]]) -> None:
+    """Stamp each action with the posterior for the organ that proposed it (and its family).
+
+    `libs.research.research_priors` is the desk's record of what every COMPLETED experiment
+    taught: P(source yields value), P(family works), P(operator works). An absent prior store is
+    UNMEASURED and leaves every action exactly as it was -- a controller that could not read the
+    priors must not silently re-weight anything.
+    """
+    try:
+        from libs.research import research_priors as rp
+        state = rp.load()
+    except Exception as exc:
+        for a in actions:
+            a["prior_status"] = f"UNMEASURED: {type(exc).__name__}"
+        return
+    for a in actions:
+        src = str(a.get("source") or "")
+        fam = str(a.get("family") or "")
+        ps = rp.prior_for("source", src, state=state) if src else None
+        pf = rp.prior_for("family", fam, state=state) if fam else None
+        means = [p.mean for p in (ps, pf) if p is not None]
+        mean = sum(means) / len(means) if means else rp.PRIOR_A / (rp.PRIOR_A + rp.PRIOR_B)
+        a["prior_mean"] = round(mean, 6)
+        a["prior_status"] = "POSTERIOR" if any(
+            p is not None and p.status == "POSTERIOR" for p in (ps, pf)) else "PRIOR"
+        ig = a.get("info_per_cell")
+        if isinstance(ig, (int, float)):
+            # TWO-SIDED by construction: the factor is 2 x mean, so a source measured better than
+            # even RAISES the action above its raw information gain and a source measured worse
+            # lowers it. A one-sided shrink would be the timidity the growth law forbids.
+            a["prior_adjusted_info_per_cell"] = round(float(ig) * 2.0 * mean, 8)
 
 
 def _epoch_id(at: datetime) -> str:
@@ -531,10 +596,18 @@ def build() -> dict[str, Any]:
                        "delta_elog_basis": basis})
 
     by_kind: dict[str, list[dict[str, Any]]] = {}
+    # THE PRIORS ARE CONSUMED HERE (RD-Agent closure item 4, principal 2026-09-22). Every
+    # completed experiment moved a Beta posterior on the SOURCE that proposed it and, where the
+    # action names one, the FAMILY. Reading them is what makes this a controller that learns
+    # rather than a board that re-ranks the same organs forever. It ORDERS, it never vetoes: an
+    # unseen source draws the uniform prior (mean 0.5) and therefore still competes, and no
+    # action is dropped for a low posterior -- nothing here reduces the desk's aggressiveness.
+    _attach_priors(priced)
     for a in priced:
         by_kind.setdefault(str(a["kind"]), []).append(a)
     for k in by_kind:
-        by_kind[k].sort(key=lambda r: -(float(r["info_per_cell"] or 0.0)))
+        by_kind[k].sort(key=lambda r: -(float(r.get("prior_adjusted_info_per_cell")
+                                              or r["info_per_cell"] or 0.0)))
         by_kind[k] = by_kind[k][:PER_KIND]
 
     information_board = sorted(
@@ -613,9 +686,19 @@ def build() -> dict[str, Any]:
             "charged itself for; minting a new hypothesis costs both. That asymmetry is the "
             "reason the two are separate columns and not one 'cost' number."),
         "boundary": (
-            "NO AUTHORITY. This publishes a ranked docket. The allocator remains the only thing "
-            "that sizes a position, the gauntlet the only thing that certifies, and the "
-            "schedulers still run what they run."),
+            "AUTHORITY OVER RESEARCH COMPUTE ONLY (Tier-1 B27, 2026-09-22). This board's prices "
+            "now set every hourly leg's seconds and the order the legs run in, through "
+            "`research/cycle_pricing.py` -> `hourly_cycle._priced_budget` -> "
+            "reports/CYCLE_PRICING.json, two-sided and with a scout floor under every leg. "
+            "NOTHING ELSE CHANGED: the allocator remains the only thing that sizes a position, "
+            "the gauntlet the only thing that certifies, and no leg is ever removed from the "
+            "hour -- a cheaply-priced leg is delayed and shortened to its floor, never starved."),
+        "compute_authority": {
+            "consumer": "desks/mt5/research/cycle_pricing.py",
+            "artifact": "desks/mt5/reports/CYCLE_PRICING.json",
+            "what_it_sets": ["hourly_cycle._producer_impl budget", "hourly_cycle._auto_leg budget",
+                             "hourly_cycle.run_auto_legs order"],
+        },
         "why": (
             "the desk allocates compute, trials and capital well and allocates them SEPARATELY, "
             "so it cannot answer the only question that matters at the margin: given one more "

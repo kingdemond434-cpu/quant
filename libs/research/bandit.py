@@ -207,6 +207,86 @@ ARM_GROUP: dict[str, str] = {
 }
 GROUPS: tuple[str, ...] = ("exploit", "adjacent", "cold")
 
+# --------------------------------------------------------------------- THE TREE OF BANDITS
+#: THE PROTECTED EXPLORATION FLOOR AT EVERY NODE. The flat allocator added a uniform
+#: `EXPLORE / len(ARMS)` share to every arm after the group floors were enforced, which made the
+#: per-arm floor a side effect of an addition rather than a floor anybody could name. In the tree
+#: it is the ARM node's own floor, enforced inside its group's budget, so the group floors and
+#: the arm floors hold at the same time and neither erodes the other. It is the SAME number the
+#: uniform share used to guarantee -- floors ratchet up, never down (L1.50).
+ARM_FLOOR = EXPLORE / len(ARMS)
+#: Score_j = E[dg_j] + BETA_UCB x sqrt(ln N / n_j) + LAMBDA_NOVELTY x Novelty_j. Both bonus
+#: terms are in units of the MEAN expected gain, so the two coefficients are scale-free and an
+#: arm can only ever be lifted by them: neither term can subtract from an arm's claim, which is
+#: what keeps the tree from becoming a cap on the arms the evidence already likes.
+BETA_UCB = 0.25
+LAMBDA_NOVELTY = 0.25
+#: The novelty gate's artifact (desks/mt5/research/novelty_gate.py OUT). Read, never written.
+NOVELTY_REPORT = DESK / "reports" / "NOVELTY_GATE.json"
+
+#: THE DISCOVERY TEMPERATURE LADDER. Six temperatures run CONCURRENTLY -- that is the mandate's
+#: claim, and until this table existed nothing measured it. A temperature is not a group and not
+#: an arm: it is how far from what the book already holds a PROPOSAL SOURCE starts. T0 re-works a
+#: held cell; T5 names a mechanism the desk has no word for. The ladder is published per source
+#: with the window's proposals and compute so "all six are running" is a count, not an assertion.
+TEMPERATURES: tuple[str, ...] = ("T0", "T1", "T2", "T3", "T4", "T5")
+TEMPERATURE_ROLE: dict[str, str] = {
+    "T0": "exploit: re-work a cell the book already holds (QD exploiter, deepening, distiller)",
+    "T1": "connect: carry an elite across niches or assets (QD connector, recombination)",
+    "T2": "explore adjacent: an empty niche one free axis from an occupied one (QD explorer)",
+    "T3": "explore far: families the book does not hold at all (sweeps, formula search, screens)",
+    "T4": "standing questions: what the desk has DECLARED it cannot explain",
+    "T5": "unseen frontier / alien: mechanisms nothing in the library has a name for",
+}
+#: Which temperature a PROPOSAL SOURCE starts at. Exact source strings win; otherwise the prefix
+#: before the first colon. A source in neither is UNCLASSIFIED and counted as such -- absence is
+#: not a permission, and a ladder that silently bucketed strangers would report six running
+#: temperatures whatever happened.
+SOURCE_TEMPERATURE: dict[str, str] = {
+    "qd_frontier:exploiter": "T0", "deepening": "T0", "mutation": "T0",
+    "survivor_distiller": "T0", "weak_signal_compiler": "T0", "forward_exploitation": "T0",
+    "alpha_evolution:gp": "T0", "miner:survivor_distiller": "T0",
+    "qd_frontier:connector": "T1", "alpha_recombination": "T1", "cross_asset_graph": "T1",
+    "lead_lag": "T1", "factor_residual": "T1", "miner:factor_residual": "T1",
+    "event_graph": "T1", "macro_graph": "T1",
+    "qd_frontier:explorer": "T2", "alpha_breadth": "T2", "regime_coverage": "T2",
+    "drawdown_alpha": "T2", "survivor_neighbourhood": "T2", "opportunity_curve": "T2",
+    "transition_alpha": "T2", "drift_monitor": "T2",
+    "orthogonal_sweep": "T3", "external": "T3", "edge_search": "T3",
+    "external_discoveries": "T3", "alpha_evolution": "T3", "alpha_evolution:gflownet": "T3",
+    "alpha_evolution:symreg": "T3", "alpha_evolution:program_synthesis": "T3",
+    "alpha_evolution:bayesian": "T3", "alpha_evolution:zoo_mutation": "T3",
+    "alpha_evolution:claims_derived": "T3", "alpha_evolution:causal_derived": "T3",
+    "anomaly_factory": "T3", "tail_alpha": "T3", "style_premia": "T3",
+    "expression_factory": "T3", "plumbing_miner": "T3", "miner:anomalies": "T3",
+    "miner:alpha_evolution": "T3", "miner:seasonality": "T3", "miner:microstructure": "T3",
+    "miner:plumbing": "T3", "microstructure_miner": "T3", "fill_surface": "T3",
+    "excursions": "T3", "exit_accounts": "T3", "coevolution": "T3", "expert_router": "T3",
+    "factor_model_coevolution": "T3",
+    "standing_questions": "T4", "residual_queue": "T4", "unknown_unknowns": "T4",
+    "counterfactual_world": "T4", "research_debt": "T4", "opportunity_gap": "T4",
+    "failure_miner": "T4", "graveyard": "T4", "revival_engine": "T4",
+    "alpha_evolution:graveyard_derived": "T4", "action_counterfactuals": "T4",
+    "unseen_frontier": "T5", "world_crawler": "T5", "world": "T5", "crawler": "T5",
+    "deep_forest": "T5", "repo_miner": "T5", "data_prospector": "T5",
+    "frontier_unknowns": "T5", "fund_playbook": "T5", "miner": "T5",
+}
+#: Which COSTED hourly leg spends each temperature's compute. Same discipline as `ARM_RUNS`:
+#: only where the leg's organ IS that temperature's generator, and every name here is asserted
+#: against hourly_cycle by the tests. `qd_frontier` runs all three of its workers in one leg, so
+#: it is shared and its seconds are split by the temperatures' measured proposal counts.
+TEMP_RUNS: dict[str, tuple[str, ...]] = {
+    "T0": ("deepen", "forward_exploitation"),
+    "T1": ("alpha_recombination", "residual_factors", "futures_lead_lag"),
+    "T2": ("alpha_breadth", "breadth_sweep", "regime_coverage", "drawdown_alpha_miner"),
+    "T3": ("sweep", "search", "alpha_evolution", "expression_factory"),
+    "T4": ("standing_questions", "residual_queue", "research_gap_map", "graveyard_model",
+           "graveyard_resurrection"),
+    "T5": ("unseen_frontier", "world_crawler", "deep_forest", "frontier_unknowns", "mine"),
+}
+#: A leg whose one pass serves several temperatures at once.
+TEMP_SHARED_RUNS: dict[str, tuple[str, ...]] = {"qd_frontier": ("T0", "T1", "T2")}
+
 
 def arm_of(source: str | None, kind: str | None = None) -> str:
     if kind and str(kind) in KIND_ARM:
@@ -418,6 +498,287 @@ def enforce_floors(shares: dict[str, float],
              "unmapped": gf.get("unmapped"), "why": gf.get("why", ""),
              "membership": {g: sorted(a for a in ARMS if group_of(a) == g) for g in GROUPS}}
     return s, check
+
+
+def node_floors(policy: dict[str, Any]) -> dict[str, Any]:
+    """Every node's protected floor: the GROUP floors the policy declares, and the ARM floor.
+
+    THE TREE HAS TWO LEVELS AND SO DOES THE FLOOR. `group_floors` reads the policy's portfolio
+    bounds and mode floors; the arm level takes an optional `arm_floors` section of the same
+    file and, wherever it is silent -- which is everywhere today -- the permanent `ARM_FLOOR`.
+    A declared arm floor can only RAISE it: floors ratchet up, never down (L1.50), so a policy
+    edit can protect an arm further and can never take the standing protection away.
+
+    No node carries a ceiling. The policy's upper portfolio bounds are read and REPORTED here
+    and enforced nowhere: a cap on a group is a cap on the desk's aggressiveness, and adding one
+    would need the missed-growth proof the growth governance demands, not a convenient bracket.
+    """
+    gf = group_floors(policy)
+    declared = policy.get("arm_floors") if isinstance(policy.get("arm_floors"), dict) else {}
+    arms: dict[str, float] = {}
+    raised: list[str] = []
+    for a in ARMS:
+        v = declared.get(a)
+        f = float(v) if isinstance(v, (int, float)) and float(v) > ARM_FLOOR else ARM_FLOOR
+        if f > ARM_FLOOR:
+            raised.append(a)
+        arms[a] = f
+    ceilings: dict[str, float] = {}
+    for key, name in (("exploitation", "exploit"), ("exploration", "exploration")):
+        v = (policy.get("portfolio_bounds") or {}).get(key)
+        if isinstance(v, (list, tuple)) and len(v) > 1 and isinstance(v[1], (int, float)):
+            ceilings[name] = float(v[1])
+    return {
+        "status": gf["status"],
+        "groups": gf.get("floors") or {},
+        "arms": arms,
+        "arm_floor_default": ARM_FLOOR,
+        "arm_floors_raised_by_policy": raised,
+        "ceilings_declared_not_enforced": ceilings,
+        "why": gf.get("why", ""),
+        "unmapped": gf.get("unmapped"),
+        "rule": ("a group floor comes from ops/research_allocation_policy.json; an arm floor is "
+                 f"max(declared, EXPLORE/{len(ARMS)} = {ARM_FLOOR:.5f}) and is enforced INSIDE "
+                 "its group's budget, so both levels hold at once. Declared ceilings are "
+                 "reported and never applied -- a cap would need a missed-growth proof"),
+    }
+
+
+def _split_with_floors(weight: Mapping[str, float], total: float,
+                       floor: Mapping[str, float]) -> tuple[dict[str, float],
+                                                            list[dict[str, Any]]]:
+    """Split `total` across nodes proportionally to `weight`, lifting any node below its floor.
+
+    Lifted nodes are pinned and the remainder is re-split among the free ones until nothing is
+    below its floor. When the floors alone would exhaust the budget the split is proportional to
+    the floors themselves and every node is reported as lifted -- an infeasible floor set is
+    reported, never silently dropped.
+    """
+    keys = list(weight)
+    if not keys:
+        return {}, []
+    fl = {k: max(0.0, float(floor.get(k, 0.0))) for k in keys}
+    fl_sum = sum(fl.values())
+    if fl_sum >= total - 1e-12:
+        denom = fl_sum if fl_sum > 0 else float(len(keys))
+        alloc = {k: total * (fl[k] / denom if fl_sum > 0 else 1.0 / len(keys)) for k in keys}
+        return alloc, [{"node": k, "from": None, "to": fl[k], "why": "floors exhaust the budget"}
+                       for k in keys]
+    w = {k: max(0.0, float(weight[k])) for k in keys}
+    w_sum = sum(w.values())
+    alloc = ({k: total * w[k] / w_sum for k in keys} if w_sum > 0 else
+             dict.fromkeys(keys, total / len(keys)))
+    lifted: list[dict[str, Any]] = []
+    free = set(keys)
+    for _ in range(len(keys) + 1):
+        below = [k for k in free if alloc[k] < fl[k] - 1e-12]
+        if not below:
+            break
+        for k in below:
+            lifted.append({"node": k, "from": round(alloc[k], 6), "to": fl[k]})
+            alloc[k] = fl[k]
+            free.discard(k)
+        if not free:
+            break
+        rest = total - sum(alloc[k] for k in keys if k not in free)
+        fw = sum(w[k] for k in free)
+        for k in free:
+            alloc[k] = rest * w[k] / fw if fw > 0 else rest / len(free)
+    return alloc, lifted
+
+
+def novelty_by_arm(doc: dict[str, Any] | None = None,
+                   path: Path | None = None) -> dict[str, Any]:
+    """Novelty_j in [0, 1] per arm, from the novelty gate's artifact -- neutral when unmeasured.
+
+    THE GATE IS THE ONLY ORGAN THAT MEASURES NOVELTY, so the bandit reads it rather than
+    inventing a second definition. Three shapes are accepted, in order: an explicit `by_arm`
+    block; a `by_source` block, whose source names are routed through `arm_of`; and per-cell rows
+    (`rows` / `verdicts` / `sample`) that carry a `source` or `arm`, from which the arm's novel
+    rate is counted.
+
+    WHEN NONE OF THEM IS THERE the answer is 0.0 for EVERY arm, and the status says UNMEASURED
+    with the pooled rate named beside it. That is the only neutral fallback: the gate's pooled
+    `n_novel / n_screened` is one number, and adding one number to all eleven scores compresses
+    the differences the evidence measured. A term that cannot tell two arms apart must not be
+    allowed to move the budget -- it reports, and nothing else, until the gate publishes an
+    attribution.
+    """
+    if doc is None:
+        target = path or NOVELTY_REPORT
+        try:
+            raw = json.loads(target.read_text("utf-8-sig"))
+            doc = raw if isinstance(raw, dict) else {}
+        except (OSError, ValueError) as exc:
+            return {"status": "UNMEASURED", "basis": "absent",
+                    "why": f"{target.name} unreadable ({type(exc).__name__}): every arm carries "
+                           f"Novelty 0.0, which changes no allocation",
+                    "by_arm": dict.fromkeys(ARMS, 0.0), "pooled_novel_rate": None}
+    screened, novel = doc.get("n_screened"), doc.get("n_novel")
+    pooled = (float(novel) / float(screened)
+              if isinstance(novel, (int, float)) and isinstance(screened, (int, float))
+              and float(screened) > 0 else None)
+
+    def _clip(v: Any) -> float | None:
+        if isinstance(v, dict):
+            v = v.get("novel_rate", v.get("mean"))
+        return min(1.0, max(0.0, float(v))) if isinstance(v, (int, float)) else None
+
+    measured: dict[str, float] = {}
+    basis = ""
+    if isinstance(doc.get("by_arm"), dict):
+        for a, v in doc["by_arm"].items():
+            got = _clip(v)
+            if str(a) in ARMS and got is not None:
+                measured[str(a)] = got
+        basis = "NOVELTY_GATE.by_arm"
+    if not measured and isinstance(doc.get("by_source"), dict):
+        acc: dict[str, list[float]] = {}
+        for s, v in doc["by_source"].items():
+            got = _clip(v)
+            if got is not None:
+                acc.setdefault(arm_of(str(s)), []).append(got)
+        measured = {a: round(float(np.mean(x)), 4) for a, x in acc.items()}
+        basis = "NOVELTY_GATE.by_source routed through arm_of"
+    if not measured:
+        rows = next((doc[k] for k in ("rows", "verdicts", "sample")
+                     if isinstance(doc.get(k), list)), [])
+        hit: dict[str, list[float]] = {}
+        for r in rows:
+            if not isinstance(r, dict):
+                continue
+            src = r.get("source") or r.get("arm")
+            if not isinstance(src, str) or not src:
+                continue
+            a = src if src in ARMS else arm_of(src, r.get("kind"))
+            hit.setdefault(a, []).append(
+                1.0 if r.get("novel") or str(r.get("verdict")) == "NOVEL" else 0.0)
+        measured = {a: round(float(np.mean(x)), 4) for a, x in hit.items()}
+        basis = "per-cell novelty verdicts attributed by their row's source"
+    if not measured:
+        return {"status": "UNMEASURED", "basis": "pooled only",
+                "by_arm": dict.fromkeys(ARMS, 0.0), "pooled_novel_rate": pooled,
+                "why": (f"{NOVELTY_REPORT.name} publishes no per-arm or per-source novelty and "
+                        f"its rows carry no source, so novelty cannot be attributed to an arm; "
+                        f"the pooled rate is {pooled if pooled is None else round(pooled, 4)} "
+                        f"and every arm carries 0.0, which reorders nothing")}
+    fill = pooled if pooled is not None else 0.0
+    return {"status": "MEASURED", "basis": basis,
+            "by_arm": {a: float(measured.get(a, fill)) for a in ARMS},
+            "pooled_novel_rate": pooled,
+            "arms_attributed": sorted(measured),
+            "arms_on_pooled": sorted(a for a in ARMS if a not in measured),
+            "why": (f"{len(measured)} of {len(ARMS)} arm(s) carry a measured novel rate from "
+                    f"{basis}; the rest carry the pooled rate, named here rather than hidden")}
+
+
+def tree_scores(gain: Mapping[str, float], ev: Mapping[str, Mapping[str, Any]],
+                novelty: Mapping[str, float] | None = None,
+                beta: float = BETA_UCB,
+                lam: float = LAMBDA_NOVELTY) -> dict[str, dict[str, Any]]:
+    """Score_j = E[dg_j] + beta x sqrt(ln N / n_j) + lambda x Novelty_j, published term by term.
+
+    `gain` is the evidence mixture -- the desk's E[dg]: what one unit of this arm is expected to
+    buy, already carrying worth, the survival posterior, the measured cost and the breadth
+    credit. `n_j` is the arm's PULLS, meaning hypotheses of that arm the gauntlet has judged;
+    `N` is their total. An arm nothing has judged has `n_j = 0` and therefore the largest bonus
+    any arm can draw, which is the point: the machine must pay to look where it has not looked.
+
+    BOTH BONUSES ARE IN UNITS OF THE MEAN GAIN, so beta and lambda mean the same thing whatever
+    scale the gains arrive on, and both are strictly ADDITIVE -- no term here can lower an arm's
+    claim below what the evidence alone would have given it.
+    """
+    arms = [a for a in ARMS if a in gain]
+    if not arms:
+        return {}
+    pulls = {a: max(0, int(ev.get(a, {}).get("failed") or 0)
+                    + int(ev.get(a, {}).get("certified") or 0)) for a in arms}
+    total_pulls = sum(pulls.values())
+    log_n = math.log(total_pulls) if total_pulls > 1 else 0.0
+    gbar = float(np.mean([max(0.0, float(gain[a])) for a in arms])) or 1.0
+    out: dict[str, dict[str, Any]] = {}
+    for a in arms:
+        g = max(0.0, float(gain[a]))
+        bonus = beta * math.sqrt(log_n / max(1, pulls[a])) * gbar
+        nov = min(1.0, max(0.0, float((novelty or {}).get(a, 0.0))))
+        out[a] = {
+            "group": group_of(a), "expected_gain": round(g, 6),
+            "n_pulls": pulls[a], "never_pulled": pulls[a] == 0, "total_pulls": total_pulls,
+            "ucb_bonus": round(bonus, 6), "novelty": round(nov, 4),
+            "novelty_bonus": round(lam * nov * gbar, 6),
+            "score": round(g + bonus + lam * nov * gbar, 6),
+        }
+    return out
+
+
+def allocate_tree(scores: Mapping[str, Mapping[str, Any]], policy: dict[str, Any],
+                  *, explore: float = EXPLORE) -> tuple[dict[str, float], dict[str, Any]]:
+    """GLOBAL -> group -> arm, every node's floor protected and no budget left unallocated.
+
+    Two splits, never one. The total is divided across the GROUPS by their summed arm scores with
+    the policy's group floors enforced (`enforce_floors`, which knows that `exploration` contains
+    `cold`); each group's budget is then divided across ITS arms with the arm floors enforced
+    inside that budget, so lifting an arm can never pull its group below the floor the policy
+    just gave it. Whatever rounding leaves over goes to the highest-scoring node: a budget that
+    does not add to one is a budget somebody has to guess about.
+    """
+    arms = [a for a in ARMS if a in scores]
+    if not arms:
+        return {}, {"status": "UNMEASURED", "why": "no arm carries a score"}
+    nf = node_floors(policy)
+    per_arm_explore = explore / len(arms) if explore > 0 else 0.0
+    arm_floor = {a: max(float(nf["arms"].get(a, ARM_FLOOR)), per_arm_explore) for a in arms}
+    raw = {a: max(0.0, float(scores[a]["score"])) for a in arms}
+    tot = sum(raw.values())
+    weights = ({a: v / tot for a, v in raw.items()} if tot > 0 else
+               dict.fromkeys(arms, 1.0 / len(arms)))
+    # LEVEL 1: the groups, floored by the desk's own policy (nested exploration included).
+    grouped, check = enforce_floors(weights, policy)
+    budget = dict.fromkeys(GROUPS, 0.0)
+    for a, v in grouped.items():
+        budget[group_of(a)] += float(v)
+    # LEVEL 2: the arms inside each group's budget, floored at the arm node.
+    share: dict[str, float] = {}
+    arm_lifts: list[dict[str, Any]] = []
+    nodes: dict[str, Any] = {}
+    for g in GROUPS:
+        members = [a for a in arms if group_of(a) == g]
+        nodes[g] = {"score": round(sum(raw[a] for a in members), 6),
+                    "budget": round(budget[g], 6),
+                    "floor": (nf["groups"] or {}).get(g), "arms": sorted(members)}
+        if not members:
+            continue
+        alloc, lifts = _split_with_floors({a: raw[a] for a in members}, budget[g],
+                                          {a: arm_floor[a] for a in members})
+        share.update(alloc)
+        arm_lifts.extend({**row, "group": g} for row in lifts)
+    # NOTHING IS LEFT OVER. Rounding to the published precision is the only leak, and it goes to
+    # the highest-scoring node rather than evaporating.
+    out = {a: round(float(share.get(a, 0.0)), 6) for a in arms}
+    best = max(arms, key=lambda a: raw[a])
+    residual = 1.0 - sum(out.values())
+    out[best] = round(out[best] + residual, 6)
+    audit: dict[str, Any] = {
+        "status": check["status"],
+        "rule": ("Score_j = E[dg_j] + beta.sqrt(ln N / n_j) + lambda.Novelty_j; the total is "
+                 "split GLOBAL -> group -> arm, each node floored, the residual to the best "
+                 "node, so 100% of the budget is always allocated"),
+        "beta": BETA_UCB, "lambda": LAMBDA_NOVELTY,
+        "total_pulls": next(iter(scores.values())).get("total_pulls"),
+        "groups": {g: {**nodes[g],
+                       "share": round(sum(out[a] for a in arms if group_of(a) == g), 6)}
+                   for g in GROUPS},
+        "arms": {a: {**dict(scores[a]), "floor": round(arm_floor[a], 6), "share": out[a],
+                     "at_floor": out[a] <= arm_floor[a] + 1e-9} for a in arms},
+        "floors": nf,
+        "group_lifts": check["lifted"],
+        "arm_lifts": arm_lifts,
+        "residual_to": best,
+        "residual": round(residual, 9),
+        "allocated": round(sum(out.values()), 9),
+        "policy": check,
+    }
+    return out, audit
 
 
 def allocate(ev: dict[str, dict[str, Any]], rng: np.random.Generator, *, draws: int = 400,

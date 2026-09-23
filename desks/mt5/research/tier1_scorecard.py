@@ -50,6 +50,13 @@ UNIVERSAL_SURVIVORS = REPORTS / "UNIVERSAL_SURVIVORS.json"
 PIT_CENSUS, LAKE_PROMOTION = REPORTS / "PIT_CENSUS.json", REPORTS / "LAKE_PROMOTION.json"
 LIVE_LEDGER, SLEEVES = DATA / "live_ledger.jsonl", DATA / "sleeves.json"
 PROCESS_HEALTH, SYNC_MARKER = REPORTS / "process_health.json", DATA / "sync_marker.json"
+#: THE RECONCILED ATTRIBUTION (Tier-1 W0). The exact-name join below reads 4.6% on this box's
+#: own ledger because MetaTrader truncates the sleeve into the position comment;
+#: `research/attribution_reconcile.py` publishes the same number after the truncation and the
+#: bracket prints are joined, and PREFERS it when it is present. The exact figure is kept
+#: beside it, because a scorecard that quietly swaps its own measurement is the failure this
+#: row exists to catch.
+ATTRIBUTION_RECONCILE = REPORTS / "ATTRIBUTION_RECONCILE.json"
 SHADOW_STATE, COST_SURFACE = REPORTS / "shadow" / "shadow_state.json", DATA / "cost_surface.json"
 WORLD_CAUSAL_GRAPH = REPORTS / "WORLD_CAUSAL_GRAPH.json"
 CROSS_ASSET_GRAPH = REPORTS / "CROSS_ASSET_GRAPH.json"
@@ -310,10 +317,27 @@ def _r06_live_attribution() -> dict[str, Any]:
     if not deals:
         # An EMPTY ledger is not 100% attributed. It is no evidence at all (L1.28a).
         return _mk(dim, None, f"UNMEASURED: {_rel(LIVE_LEDGER)} holds no deals to attribute")
+    rec = _read(ATTRIBUTION_RECONCILE)
+    rec_pct = _num(_dict_get(rec, "attributed_pct"))
+    if rec_pct is not None:
+        exact_pct = round(100.0 * hit / len(deals), 2)
+        return _mk(dim, rec_pct,
+                   f"{_rel(ATTRIBUTION_RECONCILE)} attributed_pct "
+                   f"({_dict_get(rec, 'attributed_deals')}/{_dict_get(rec, 'n_deals')} by "
+                   f"exact name, unique prefix or tp/sl geometry); the exact-name join alone "
+                   f"reads {exact_pct}%",
+                   _stamp(rec) or str(deals[-1].get("time") or "") or None)
     return _mk(dim, round(100.0 * hit / len(deals), 2),
                f"{_rel(LIVE_LEDGER)} sleeve in {_rel(SLEEVES)} sleeves[*].name or "
-               f"{_rel(UNIVERSAL_SURVIVORS)} survivors keys: {hit}/{len(deals)}",
+               f"{_rel(UNIVERSAL_SURVIVORS)} survivors keys: {hit}/{len(deals)} "
+               f"({_rel(ATTRIBUTION_RECONCILE)} absent: the truncated labels the terminal "
+               f"wrote cannot be recovered without it)",
                str(deals[-1].get("time") or "") or None)
+
+
+def _dict_get(doc: Any, key: str) -> Any:
+    """One field of a report that may be absent, unreadable or not an object."""
+    return doc.get(key) if isinstance(doc, dict) else None
 
 
 def _r07_silent_failures() -> dict[str, Any]:

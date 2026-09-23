@@ -83,6 +83,56 @@ MAX_SLOTS = 12
 #: is how an optimiser ends up tuning a stop it thinks is a lookback.
 RESERVED = ("stop_atr", "rr", "ttl_bars", "atr_n")
 
+#: The meta-evolution layer's active variants (LAWS 5m). A `program_ir` variant narrows the
+#: operator vocabulary `mutate_logic` draws from; it can never widen it past the module's own.
+ACTIVE_VARIANTS = DESK / "data" / "research_evolution" / "active_variants.json"
+
+
+@dataclass(frozen=True)
+class Grammar:
+    """The vocabulary a structural mutation may draw from -- a representation grammar variant.
+
+    Every field is a SUBSET of the module's vocabulary: `active_grammar` intersects a variant's
+    lists with `ROLLING_OPS`, `BINARY_OPS` and `COMPARE_OPS`, so an evolved grammar can focus the
+    search and can never introduce an operator `validate` would refuse.
+    """
+
+    rolling_ops: tuple[str, ...] = ROLLING_OPS
+    binary_ops: tuple[str, ...] = BINARY_OPS
+    compare_ops: tuple[str, ...] = COMPARE_OPS
+    max_depth: int = MAX_DEPTH
+    state_machines: bool = True
+    variant: str | None = None
+
+
+def active_grammar(path: Path | None = None) -> Grammar:
+    """The grammar the meta-evolution layer activated, or the module defaults when none is
+    published, unreadable, or empty after intersection."""
+    try:
+        doc = json.loads((path or ACTIVE_VARIANTS).read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError):
+        return Grammar()
+    var = (doc.get("variants") or {}).get("program_ir") if isinstance(doc, dict) else None
+    if not isinstance(var, dict) or not isinstance(var.get("config"), dict):
+        return Grammar()
+    cfg = var["config"]
+
+    def _sub(key: str, base: tuple[str, ...]) -> tuple[str, ...]:
+        raw = cfg.get(key)
+        if not isinstance(raw, list):
+            return base
+        kept = tuple(op for op in base if op in {str(x) for x in raw})
+        return kept or base
+
+    depth = cfg.get("max_depth")
+    return Grammar(rolling_ops=_sub("rolling_ops", ROLLING_OPS),
+                   binary_ops=_sub("binary_ops", BINARY_OPS),
+                   compare_ops=_sub("compare_ops", COMPARE_OPS),
+                   max_depth=(int(min(MAX_DEPTH, max(2, depth)))
+                              if isinstance(depth, (int, float)) else MAX_DEPTH),
+                   state_machines=bool(cfg.get("state_machines", True)),
+                   variant=str(var.get("id")) if var.get("id") else None)
+
 
 class ProgramError(ValueError):
     """A tree this module refuses, with the reason a reviewer needs."""
@@ -853,7 +903,8 @@ def _rand_compare(rng: np.random.Generator) -> Compare:
     return Compare(op, Series(f), Rolling("mean", Series(f), w))
 
 
-def mutate_logic(tree: Node, rng: np.random.Generator, tries: int = 12) -> Node:
+def mutate_logic(tree: Node, rng: np.random.Generator, tries: int = 12,
+                 grammar: Grammar | None = None) -> Node:
     """One STRUCTURAL edit: the mechanical half of what a seat's logic revision does by hand.
 
     D4 asks for logic revision to be SEPARATE from numeric tuning, and this is the separation
@@ -862,6 +913,7 @@ def mutate_logic(tree: Node, rng: np.random.Generator, tries: int = 12) -> Node:
     optimiser tunes; this changes what is being tuned. A mutation that does not validate is
     discarded and the original returned, so a caller never receives an unrunnable program.
     """
+    g = grammar if grammar is not None else active_grammar()
     n = _count(tree)
     for _ in range(max(1, tries)):
         k = int(rng.integers(0, n))
@@ -871,16 +923,16 @@ def mutate_logic(tree: Node, rng: np.random.Generator, tries: int = 12) -> Node:
         choice = str(rng.choice(np.asarray(["op", "compare", "wrap", "state", "field", "roll"])))
         new: Node | None = None
         if choice == "compare" and isinstance(node, Compare):
-            new = replace(node, op=str(rng.choice(np.asarray(list(COMPARE_OPS)))))
+            new = replace(node, op=str(rng.choice(np.asarray(list(g.compare_ops)))))
         elif choice == "op" and isinstance(node, Binary):
-            new = replace(node, op=str(rng.choice(np.asarray(list(BINARY_OPS)))))
+            new = replace(node, op=str(rng.choice(np.asarray(list(g.binary_ops)))))
         elif choice == "roll" and isinstance(node, Rolling):
-            new = replace(node, op=str(rng.choice(np.asarray(list(ROLLING_OPS)))))
+            new = replace(node, op=str(rng.choice(np.asarray(list(g.rolling_ops)))))
         elif choice == "field" and isinstance(node, Series):
             new = replace(node, field=str(rng.choice(np.asarray(list(FIELDS[:8])))))
         elif choice == "wrap":
             new = Cond(_rand_compare(rng), node, Const(0.0))
-        elif choice == "state":
+        elif choice == "state" and g.state_machines:
             c1, c2 = _rand_compare(rng), _rand_compare(rng)
             new = State((StateDef("flat", 0, (Transition("engaged", c1),)),
                          StateDef("engaged", 1, (Transition("flat", c2),))))

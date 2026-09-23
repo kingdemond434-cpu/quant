@@ -52,6 +52,20 @@ def main() -> int:
 
         from research_budget import authority as _authority
         ok, why = _authority()
+        # AND THE WHOLE CYCLE'S PRICES, NOT JUST THESE TWO LEGS (Tier-1 B27, 2026-09-22).
+        # `research_budget` knows the two legs whose arms this bandit prices; `cycle_pricing`
+        # applies the price stack to EVERY leg's seconds and to the order they run in, and
+        # records planned against applied. Either one obeying makes the controller
+        # authoritative, and the evidence says which -- a claim made by the organ that SPENT.
+        try:
+            from cycle_pricing import authority as _cyc_authority
+            cok, cwhy = _cyc_authority()
+            if cok:
+                ok, why = True, f"{cwhy}; {why}"
+            else:
+                why = f"{why}; cycle_pricing: {cwhy}"
+        except Exception as _exc:
+            why = f"{why}; cycle_pricing unmeasured ({type(_exc).__name__})"
         p = Path(bandit.BUDGET)
         doc = _json.loads(p.read_text(encoding="utf-8"))
         doc["authoritative"] = bool(ok)

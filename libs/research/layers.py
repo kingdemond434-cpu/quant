@@ -174,6 +174,7 @@ LEG_LAYER: dict[str, str] = {
     "qd_frontier": "information", "blind_reviewer": "meta",
     "evaluator_lab": "meta", "value_of_data": "information", "research_api_status": "meta",
     "artifact_chain": "meta", "residual_queue": "information", "unseen_frontier": "information",
+    "attribution_reconcile": "meta",
     "source_registry": "information", "synthetic_regimes": "meta",
     "event_response_atlas": "information", "causal_lab": "information", "world_lab": "prediction",
     # THE MARKET CONSTITUTION: which rule the price was formed under, as a PIT column, and
@@ -199,6 +200,12 @@ LEG_LAYER: dict[str, str] = {
     # THE PHYSICS LAB (2026-09-22): the institution around the mathematics + physics scientists --
     # every card it judges is a claim about the residual, so the hour is prediction like math_lab.
     "physics_lab": "prediction",
+    # THE CLOSED CO-EVOLUTION and THE MODEL-FAMILY CIVILIZATION (2026-09-22, Tier-1 items 2, 3,
+    # 6, 7, 10, 13, 14, 15, 17, 18). Both spend their hour asking what predicts the forward sign
+    # -- one by breeding factors against models on islands and re-interrogating the residual, the
+    # other by sweeping ten model families across six representations of the same bars. The
+    # output of each is a conditioning model, never a size or a fill, so the layer is prediction.
+    "coevolution": "prediction", "model_search": "prediction",
     "news_event_stream": "information", "event_sleeves": "prediction",
     "registry_sync": "meta", "axis_proposer": "information", "program_alpha_lane": "prediction",
     "trajectory_evolution": "prediction", "research_os_archive": "meta", "regime_router": "sizing",
@@ -221,6 +228,17 @@ LEG_LAYER: dict[str, str] = {
     # -- even though the frontier rows it writes become research work downstream. LAWS 5f.
     "coverage_tensor": "information",
     "gauntlet_backpressure": "meta", "miner_specialisation": "meta",
+    # THE TIER-5 RESIDUALS (mandate 90, 110, 131/132, 133, 134, 136, 97/98, 162). The bounty
+    # board and the drawdown-alpha miner are PORTFOLIO: both ask what the BOOK lacks -- a payoff
+    # shape, a regime, something that pays while the book bleeds -- which is a question about the
+    # combination and not about any one cell's forecast. The autopsy splits a CLOSED deal into
+    # signal, cost and slippage against the price the decision intended, which is execution. The
+    # auction, the bottleneck law, the latency clock, the replenishment target and the dashboard
+    # are the machine measuring and re-funding the machine: meta.
+    "portfolio_bounty": "portfolio", "drawdown_alpha_miner": "portfolio",
+    "trade_autopsy": "execution",
+    "research_auction": "meta", "bottleneck_law": "meta", "research_latency": "meta",
+    "alpha_replenishment": "meta", "research_dashboard": "meta",
     "moat_collectors": "information", "source_frontier": "information",
     "scout_swarm": "information", "actor_atlas": "information",
     # INFORMATION, not meta: the understanding seat turns bytes the desk collected but could not
@@ -275,6 +293,20 @@ LEG_LAYER: dict[str, str] = {
     # ONE CERTIFICATE TRUTH: the audit of every certificate/clock store against the one lane is a
     # fence over the machine's own bookkeeping -- meta, like every other fence.
     "certificate_truth": "meta",
+    # THE TWO STANDING BATTERIES rotate rosters that span every layer -- fences over the
+    # machine's own bookkeeping, standing fixers, region organs. Billing the rotation to one
+    # strategy layer would misattribute every other one, so the wiring mechanism is meta and the
+    # organs it runs are billed where their own artifacts land.
+    "fence_battery": "meta", "organ_battery": "meta",
+    # THE LOOP LIVENESS PROVER measures whether the research loop's ten arrows are advancing --
+    # the machine watching the machine, which is meta by the definition at the top of this file.
+    # It predicts nothing, times nothing and sizes nothing; it names the stalled arrow's organ.
+    "loop_liveness": "meta",
+    # THE EXPERIMENT SPINE is the machine's account of its own research: one canonical experiment
+    # object, the memory graph over it, credit back along ancestry, the priors the next allocation
+    # draws from, and the funnel that divides survivors by what they cost. It proposes nothing and
+    # sizes nothing -- meta, like every other organ that runs the machine rather than a strategy.
+    "experiment_spine": "meta",
     "shadow_institutional": "information",
     "latent_actors": "information",
     "latency_lab": "execution",
@@ -312,6 +344,13 @@ LEG_LAYER: dict[str, str] = {
     "publish_state": "meta", "release_identity": "meta", "smoke_release": "meta",
     "burn_in": "meta", "maintain_miners": "meta", "reclaim_disk": "meta", "daily": "meta",
     "layer_census": "meta", "opportunity_cost": "meta", "acceptance": "meta",
+    # CYCLE PRICING is meta for the same reason the control plane is: it decides how much of the
+    # hour each of the other layers gets, and predicts, sizes and times nothing itself.
+    "cycle_pricing": "meta",
+    # CAUSAL INVARIANCE asks whether a cell's effect is the same number in a different session,
+    # year or volatility regime. That is a property of the PREDICTION -- whether the claim about
+    # returns holds outside the environment it was fitted in -- so it is billed there.
+    "causal_invariance": "prediction",
     "wiring_audit": "meta", "queue_cycle": "meta", "time_joins": "meta", "brain_ab": "meta",
     # THE CONTROL PLANE is meta by construction: it measures whether the machine that runs the
     # machine is doing what desired state says, and it predicts, sizes and times nothing.

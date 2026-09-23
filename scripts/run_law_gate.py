@@ -112,6 +112,21 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # robust forward E[log W]; every strong opportunity may raise capital above normal; the
     # 20% floor is flat and filled, growth free above it to 30%; the gateway deploys the book.
     ("check_growth_governance.py", ()),
+    # THE TIER-5 INSTITUTION AUDIT (principal's two blueprints, 2026-09-22): every section of
+    # the COMPLETE TIER-5 BLUEPRINT (I-CII) and the FINAL MAXIMUM-AGGRESSIVE mandate (1-170),
+    # classified EXISTS+WIRED+LIVE / DORMANT / PARTIAL / MISSING / DUPLICATIVE /
+    # REFUSED_CONSERVATIVE. The fence is that the audit cannot claim what the tree does not
+    # hold: a LIVE row must cite a file that exists, a clock this repo knows and an artifact,
+    # and a REFUSED_CONSERVATIVE row must carry the sentence saying whose aggressiveness it
+    # would have cut. Portable: it reads only tracked files.
+    ("check_tier5_audit.py", ()),
+    # THE PLUMBING-INVARIANT HIERARCHY (Tier-1 B26). Not "are the money-path laws tested" --
+    # they always were -- but WHAT EACH TEST SPEAKS FOR: one hand-written state (EXAMPLE), a
+    # generator's draws (PROPERTY), or the whole finite domain (PROOF). The fence is that the
+    # ledger cannot lie: every enforcing node must exist, carry its `def`, and be COLLECTED.
+    # `--no-collect` is deliberately NOT passed: a test that no longer imports is exactly the
+    # state this catches (L1.49, a gate that never ran).
+    ("check_plumbing_invariants.py", ()),
     # IMMUTABLE EVALUATOR: research organs may change the hypothesis, never the judge.
     ("check_immutable_evaluator.py", ()),
     # THE EVOLVABLE / IMMUTABLE BOUNDARY (LAWS 5m): an evolvable organ's change set may not
@@ -139,6 +154,15 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # fence fails on any divergence. Without desk state it reads UNMEASURED and passes; the
     # state half below requires the state.
     ("check_certificate_truth.py", ()),
+    # REGIONAL PARITY (LAWS 5n, principal 2026-09-19). No region absent: every regional forest
+    # resolves a country pack or runs a dedicated region package. Depth, coverage debt and the
+    # Priority = P(useful) x Orthogonality x InformationGain x CoverageDebt / (Compute +
+    # DataCost + TrialBurden) are MEASURED and published for research_roi to fold in as a bonus;
+    # this fence caps no compute and the artifact says so in `caps_compute`. Portable: the packs
+    # are code, so the depth half means the same in CI and on the box, and the live half
+    # (resident, discovery window, lattice) reads UNMEASURED without the registry rather than
+    # failing. `--strict` promotes the live flags and belongs in the hourly box gate, not here.
+    ("check_regional_parity.py", ()),
 )
 
 #: STATE FENCES -- box-only. They measure LIVE STATE (artifacts, ledgers, organ freshness) that
@@ -170,6 +194,11 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("check_ingestion_exploitation.py", ()),
     # the live half of ONE CERTIFICATE TRUTH: on the box an absent authority file is a defect
     ("check_certificate_truth.py", ("--require-state",)),
+    # the live half of REGIONAL PARITY (LAWS 5n): on the box the registry IS open and the forest
+    # reports DO exist, so "no resident", "no discovery in the trailing window" and "no candidate
+    # in the lattice" are measured absences and the law calls each one a defect. It still caps no
+    # compute -- it fails the gate and publishes the debt; the allocator does the rest.
+    ("check_regional_parity.py", ("--strict",)),
 )
 
 

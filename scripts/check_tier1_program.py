@@ -33,7 +33,10 @@ ROOT = Path(__file__).resolve().parents[1]
 LEDGER = ROOT / "docs" / "research" / "tier1_program.json"
 RENDERED = ROOT / "docs" / "research" / "TIER1_PROGRAM.md"
 
-STATUSES = ("EXISTS-LIT", "EXISTS-DARK", "PARTIAL", "MISSING", "LANDED")
+#: REFUSED (2026-09-22): the item is NOT built because a standing order forbids it (the
+#: principal's never-reduce-aggressiveness order, LAWS 4 on the deadman); its `gap` must name
+#: the order. It is a verdict, not a backlog row, and the build order says "never leave PARTIAL".
+STATUSES = ("EXISTS-LIT", "EXISTS-DARK", "PARTIAL", "MISSING", "LANDED", "REFUSED")
 GATES = ("none", "hardware", "capital", "principal", "data", "time", "box-paste")
 #: CODE and DOCUMENT paths are verified against the tree. Artifact paths (.json/.jsonl) are
 #: claims about a box's state -- most live only on the trading box or the VPS and are gitignored
@@ -156,6 +159,12 @@ def check(ledger: dict, root: Path) -> tuple[list[str], dict]:
                 problems.append(f"{iid}: EXISTS-LIT with no artifact")
         if status == "PARTIAL" and not it.get("gap"):
             problems.append(f"{iid}: PARTIAL must say which part is missing")
+        if status == "REFUSED":
+            gap = str(it.get("gap") or "")
+            if "REFUSED" not in gap.upper() or not any(
+                    k in gap.lower() for k in ("standing order", "principal", "laws")):
+                problems.append(f"{iid}: REFUSED must say REFUSED and name the standing order "
+                                f"or the principal's gate in its gap")
     for ap in ledger.get("acceptance_properties", []):
         if ap.get("status") not in ("MET", "PARTIAL", "MISSING"):
             problems.append(f"{ap.get('id')}: acceptance status must be MET/PARTIAL/MISSING")

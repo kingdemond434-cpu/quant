@@ -92,6 +92,16 @@ DRIFT = BASE / "reports" / "DRIFT.json"
 #: heat floor, the gold lot floor or the daily-loss parameters: see `apply_allocator_evidence`.
 ALLOCATOR_EVIDENCE = BASE / "data" / "allocator_evidence.json"
 ROI_EVIDENCE = BASE / "data" / "roi_capital_evidence.json"
+#: THE TWO REPORTS W11 NAMED AND NOTHING READ (Tier-1 W11, measured 2026-09-16: "posterior_alpha
+#: and exposure_decomposition are published but not yet read by the world sampler; the marginal-
+#: breadth admission is a research credit, not an allocator tier"). `posterior_alpha` publishes
+#: the hierarchical forward posterior per sleeve and `rho_book`, its date-aligned correlation to
+#: the book; `exposure_decomposition` publishes the twelve-factor exposure vector of every sleeve
+#: beside the book's own. All three enter as HEAT-NEUTRAL tilts of the posterior mean (mean 1.0
+#: across the book by construction), so they reallocate between sleeves and cannot move the total
+#: the heat law resolved. Absent or unreadable, every tilt is exactly 1.0.
+POSTERIOR_ALPHA = BASE / "reports" / "POSTERIOR_ALPHA.json"
+EXPOSURE_DECOMPOSITION = BASE / "reports" / "EXPOSURE_DECOMPOSITION.json"
 CACHE = BASE / "data" / "pf_allocator_cache"
 ARMED = BASE / "data" / "PF_ALLOCATOR_ARMED"
 #: Append-only record of what each pass EXPECTED. Read by `allocator_attribution.py`.
@@ -1773,8 +1783,34 @@ def read_roi_evidence() -> tuple[dict[str, Any] | None, str]:
     return doc, "roi_capital_evidence.json read"
 
 
+def read_research_evidence() -> tuple[dict[str, Any] | None, dict[str, Any] | None, str]:
+    """POSTERIOR_ALPHA.json and EXPOSURE_DECOMPOSITION.json, or None each with the reason.
+
+    Never raises: an absent, truncated or half-written report leaves the allocator exactly where
+    it was before this reader existed.
+    """
+    out: list[dict[str, Any] | None] = []
+    why: list[str] = []
+    for path in (POSTERIOR_ALPHA, EXPOSURE_DECOMPOSITION):
+        try:
+            doc = json.loads(path.read_text("utf-8"))
+        except (OSError, ValueError) as exc:
+            out.append(None)
+            why.append(f"{path.name} unreadable ({type(exc).__name__}): neutral")
+            continue
+        if not isinstance(doc, dict):
+            out.append(None)
+            why.append(f"{path.name} is not an object: neutral")
+            continue
+        out.append(doc)
+        why.append(f"{path.name} read")
+    return out[0], out[1], "; ".join(why)
+
+
 def apply_allocator_evidence(ev: list[SleeveEvidence], evidence_doc: dict[str, Any] | None,
-                             roi_doc: dict[str, Any] | None, *, now: datetime | None = None
+                             roi_doc: dict[str, Any] | None, *, now: datetime | None = None,
+                             posterior_doc: dict[str, Any] | None = None,
+                             exposure_doc: dict[str, Any] | None = None,
                              ) -> dict[str, Any]:
     """Read the Allocator-V2 evidence INTO the posterior, per sleeve, before the solve.
 
@@ -1813,11 +1849,17 @@ def apply_allocator_evidence(ev: list[SleeveEvidence], evidence_doc: dict[str, A
         TILT_HI,
         TILT_LO,
         consumed_inputs,
+        factor_tier_factors,
+        marginal_breadth_factors,
         match_mechanism,
+        posterior_prior_factors,
         roi_factors_by_mechanism,
     )
     rows, ev_why = consumed_inputs(evidence_doc, now=now)
     roi_terms, roi_why = roi_factors_by_mechanism(roi_doc)
+    post_terms, post_why = posterior_prior_factors(posterior_doc)
+    breadth_terms, breadth_why = marginal_breadth_factors(posterior_doc)
+    tier_terms, tier_why = factor_tier_factors(exposure_doc)
     mechanisms = list(roi_terms)
     by_sleeve: dict[str, dict[str, Any]] = {}
     n_tilted = n_shifted = 0
@@ -1826,7 +1868,10 @@ def apply_allocator_evidence(ev: list[SleeveEvidence], evidence_doc: dict[str, A
         lf = float(row.get("lineage_factor", 1.0))
         mech = match_mechanism(e.name, e.family, mechanisms) if mechanisms else None
         rf = float(roi_terms[mech].factor) if mech and mech in roi_terms else 1.0
-        tilt = float(min(TILT_HI, max(TILT_LO, lf * rf)))
+        pf = float(post_terms[e.name].factor) if e.name in post_terms else 1.0
+        bf = float(breadth_terms[e.name].factor) if e.name in breadth_terms else 1.0
+        tf = float(tier_terms[e.name].factor) if e.name in tier_terms else 1.0
+        tilt = float(min(TILT_HI, max(TILT_LO, lf * rf * pf * bf * tf)))
         shift = 0.0
         fin = row.get("financing_cost_r_per_day")
         if fin is not None and row.get("financing_charged_in_replay") is False:
@@ -1844,18 +1889,28 @@ def apply_allocator_evidence(ev: list[SleeveEvidence], evidence_doc: dict[str, A
         n_shifted += int(shift != 0.0)
         by_sleeve[e.name] = {"tilt": round(tilt, 6), "lineage_factor": round(lf, 6),
                              "roi_factor": round(rf, 6), "mechanism": mech,
+                             "forward_posterior_factor": round(pf, 6),
+                             "marginal_breadth_factor": round(bf, 6),
+                             "factor_tier_factor": round(tf, 6),
                              "financing_r_per_day_shift": round(shift, 8),
                              "mean_before": round(mean, 8),
                              "mean_after": round(float(arr[mask].mean()), 8)}
     return {
         "status": "APPLIED" if by_sleeve else "NEUTRAL",
         "evidence": ev_why, "roi": roi_why,
+        "forward_posterior": post_why, "marginal_breadth": breadth_why, "factor_tier": tier_why,
+        "n_posterior_tilted": sum(1 for e in ev if e.name in post_terms),
+        "n_breadth_tilted": sum(1 for e in ev if e.name in breadth_terms),
+        "n_tier_tilted": sum(1 for e in ev if e.name in tier_terms),
         "n_sleeves": len(ev), "n_tilted": n_tilted, "n_shifted": n_shifted,
         "n_neutral": len(ev) - len(by_sleeve),
         "bounds": [TILT_LO, TILT_HI], "by_sleeve": by_sleeve,
         "rule": ("mean += (tilt - 1) x |mean| + financing shift, dispersion unchanged; tilt = "
-                 "clip(lineage_factor x roi_factor); the shift only where the replay charged "
-                 "no swap; UNMEASURED reads 1.0 / 0.0; nothing outside the E[log W] solve"),
+                 "clip(lineage_factor x roi_factor x forward_posterior x marginal_breadth x "
+                 "factor_tier); every one of the five is heat-neutral (mean 1.0 across the "
+                 "book) so they reallocate and never lever; the shift only where the replay "
+                 "charged no swap; UNMEASURED reads 1.0 / 0.0; nothing outside the E[log W] "
+                 "solve"),
         "governance": {
             "rule_1": ("a sleeve is lowered only by a measured swap cost or a measured lineage "
                        "redundancy, priced through E[log W] itself; the heat floor, gold lot "
@@ -2987,10 +3042,18 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     # neutral when either file is absent or stale (see `apply_allocator_evidence`).
     _ev_doc, _ev_why = read_allocator_evidence()
     _roi_doc, _roi_why = read_roi_evidence()
-    evidence_meta = apply_allocator_evidence(ev, _ev_doc, _roi_doc)
+    # W11: the forward posterior, the marginal-breadth admission and the factor tier, all three
+    # published for months and read by nothing until now. Heat-neutral tilts of the SAME
+    # posterior the worlds are drawn from.
+    _post_doc, _exp_doc, _res_why = read_research_evidence()
+    evidence_meta = apply_allocator_evidence(ev, _ev_doc, _roi_doc, posterior_doc=_post_doc,
+                                             exposure_doc=_exp_doc)
     _log(f"allocator evidence: {evidence_meta['status']} -- {evidence_meta['n_tilted']} "
          f"tilted, {evidence_meta['n_shifted']} financing-shifted, "
          f"{evidence_meta['n_neutral']} neutral ({_ev_why}; {_roi_why})")
+    _log(f"  research evidence: {evidence_meta['n_posterior_tilted']} forward-posterior, "
+         f"{evidence_meta['n_breadth_tilted']} marginal-breadth, "
+         f"{evidence_meta['n_tier_tilted']} factor-tier ({_res_why})")
 
     cfg = WorldConfig(seed=seed, regime_labels=labels, regime_probs=probs,
                       # The fast clock buys its speed here and nowhere else: a smaller world

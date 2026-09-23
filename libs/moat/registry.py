@@ -151,6 +151,13 @@ EXTENSIONS: dict[str, tuple[tuple[str, str], ...]] = {
         # H, E, F) stamped from the row's own columns, the near-duplicate family it belongs
         # to, and the science controller's launch state (OPEN | BLOCKED:<reason>). ADD COLUMN.
         ("genome_json", "TEXT"), ("family_id", "TEXT"), ("science_state", "TEXT"),
+        # THE COUNTEREXAMPLE AGENT'S VERDICT (Tier-1 W6; research/counterexample_agent.py):
+        # ALL_SURVIVED / BROKEN / UNMEASURED and, when broken, which of the five attacks did it
+        # (placebo symbol, placebo date, sign flip, neighbouring parameter, excluded window).
+        # RECORDED, NEVER A STATUS CHANGE and never a veto -- the ten gates keep their authority
+        # (L1.60). ALL_SURVIVED is the POSITIVE signal the queue prioritises on. ADD COLUMN.
+        ("counterexample_verdict", "TEXT"), ("counterexample_broken_by", "TEXT"),
+        ("counterexample_judged_at", "TEXT"),
     ),
     "research_memory": (("kind", "TEXT"), ("memory_key", "TEXT"), ("payload_json", "TEXT"),
                         ("evidence_json", "TEXT"), ("updated_at", "TEXT")),
@@ -234,6 +241,31 @@ MOAT_TABLES: dict[str, str] = {
                        " novelty REAL, expected_value REAL, used_by_candidates INTEGER,"
                        " survivors INTEGER, forward_rows INTEGER, live_attribution REAL,"
                        " explained_variance REAL, compute_s REAL, origin TEXT, payload_json TEXT",
+    #: THE EXPERIMENT MEMORY GRAPH (RD-Agent closure items 1/11/16, principal 2026-09-22). One
+    #: canonical ExperimentSpec per research object -- factor, model, world-miner lead, physics
+    #: law, macro idea, country mechanism, sandbox hypothesis -- so that "what has never been
+    #: tried from this surviving mechanism?" is a QUERY rather than a memory. It is a node table
+    #: only: the edges are `provenance` (kind `experiment`), the verdicts are `trials_ledger`
+    #: and `research_candidates`, and nothing here duplicates a result another table owns.
+    "experiments": "experiment_id TEXT PRIMARY KEY, created_at TEXT, updated_at TEXT, kind TEXT,"
+                   " spec_hash TEXT, family TEXT, symbols_json TEXT, model TEXT,"
+                   " representation TEXT, features_json TEXT, target TEXT, horizon TEXT,"
+                   " chart TEXT, regime TEXT, session TEXT, mechanism TEXT, mechanism_id TEXT,"
+                   " method TEXT, source_id TEXT, generator TEXT, origin TEXT,"
+                   " discovery_id TEXT, candidate_id TEXT, parents_json TEXT,"
+                   " snapshot_hash TEXT, snapshot_vintage TEXT, pit_status TEXT,"
+                   " falsifier TEXT, trial_family TEXT, costs_json TEXT, novelty_json TEXT,"
+                   " status TEXT, verdict TEXT, verdict_at TEXT, failed_assumptions_json TEXT,"
+                   " forward_r REAL, live_delta_elogw REAL, compute_s REAL, spec_json TEXT",
+    #: THE RESEARCH CREDIT LEDGER (item 5): one row per ANCESTOR (source, miner, method,
+    #: representation, model, family, region), carrying what its descendants actually earned --
+    #: survivors, independent survivors, forward R and live dE[log W] -- so the desk learns
+    #: which miners, operators, representations and models create valid alpha rather than rows.
+    "research_credit": "ancestor_kind TEXT, ancestor_id TEXT, experiments INTEGER,"
+                       " candidates INTEGER, judged INTEGER, survivors INTEGER,"
+                       " independent_survivors REAL, forward_r REAL, forward_n INTEGER,"
+                       " live_delta_elogw REAL, compute_s REAL, credit REAL, basis TEXT,"
+                       " updated_at TEXT, PRIMARY KEY(ancestor_kind, ancestor_id)",
     "kpis": "day TEXT, name TEXT, value REAL, detail_json TEXT, updated_at TEXT,"
             " PRIMARY KEY(day, name)",
     "sync_cursor": "key TEXT PRIMARY KEY, value TEXT, updated_at TEXT",
@@ -261,8 +293,11 @@ FAILURE_CLASSES: tuple[str, ...] = ("no_edge", "cost_killed", "regime_specific",
                                     "redundant", "unstable", "execution_killed", "forward_decay")
 GRID_AXES: tuple[str, ...] = ("asset_class", "mechanism", "economic_actor", "information",
                               "chart", "session", "horizon", "regime")
+#: `experiment` joined 2026-09-22: the canonical ExperimentSpec is a node of the DAG, sitting
+#: between the discovery and the cell, so credit walks back from a live sleeve to the experiment,
+#: the method that minted it and the source that suggested it without a second graph beside this.
 PROVENANCE_KINDS: tuple[str, ...] = ("source", "discovery", "mechanism", "cell", "trial",
-                                     "verdict", "card", "miner", "transformation")
+                                     "verdict", "card", "miner", "transformation", "experiment")
 CRYPTO_MARKETS: tuple[str, ...] = ("BINANCE", "BYBIT", "OKX", "HYPERLIQUID", "DERIBIT", "KRAKEN")
 EMPTY_CELL_BONUS = 0.5
 PRIOR = 0.5
@@ -371,6 +406,9 @@ def _evolve(conn: sqlite3.Connection) -> dict[str, int]:
     conn.execute("CREATE INDEX IF NOT EXISTS ix_events_alpha ON alpha_events(alpha_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS ix_trials_hyp ON trials_ledger(hypothesis_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS ix_disc_state ON discoveries(state)")
+    conn.execute("CREATE INDEX IF NOT EXISTS ix_exp_mech ON experiments(mechanism_id)")
+    conn.execute("CREATE INDEX IF NOT EXISTS ix_exp_hash ON experiments(spec_hash)")
+    conn.execute("CREATE INDEX IF NOT EXISTS ix_exp_status ON experiments(status)")
     conn.execute("CREATE INDEX IF NOT EXISTS ix_prov_from ON provenance(from_kind, from_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS ix_prov_to ON provenance(to_kind, to_id)")
     return added

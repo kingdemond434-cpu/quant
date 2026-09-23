@@ -167,6 +167,11 @@ class Paths:
         return self.desk / "data" / "intelligence" / "dislocation_lab"
 
     @property
+    def conformal(self) -> Path:
+        """The sandbox conformal cell's calibration feed (sandboxes/conformal_calibration)."""
+        return self.desk / "reports" / "SANDBOX_CONFORMAL.json"
+
+    @property
     def state(self) -> Path:
         return self.desk / "data" / "dislocation_lab_state.json"
 
@@ -930,6 +935,57 @@ def _in_scope(ctx: Context, fam: str, sym: str) -> bool:
     return True
 
 
+CONFORMAL_MAX_AGE_H = 48.0
+CONFORMAL_MIN_N = 50
+
+
+def _conformal_gap(paths: Paths, sym: str, h: str, now: datetime) -> dict[str, Any]:
+    """The sandbox conformal cell's measured coverage gap for (sym, h) -- a GUARDED hook: the
+    file may be absent, stale, unreadable or thin, and each of those is UNMEASURED by name and
+    changes nothing. Read-only; the cell (research/sandboxes/conformal_calibration.py) writes it
+    on the sandbox_runner leg."""
+    try:
+        doc = _read_json(paths.conformal)
+        if not isinstance(doc, dict):
+            return {"status": UNMEASURED, "gap": None, "why": "no calibration file"}
+        at = _parse_time(doc.get("at"))
+        if at is None or (now - at) > timedelta(hours=CONFORMAL_MAX_AGE_H):
+            return {"status": UNMEASURED, "gap": None,
+                    "why": f"calibration older than {CONFORMAL_MAX_AGE_H:.0f}h"}
+        row = ((doc.get("by_symbol") or {}).get(sym) or {}).get(h)
+        if not isinstance(row, dict):
+            return {"status": UNMEASURED, "gap": None, "why": f"no calibration for {sym}/{h}"}
+        gap, n = _num(row, "coverage_gap"), _num(row, "n_test")
+        if gap is None or n is None or n < CONFORMAL_MIN_N or not np.isfinite(gap):
+            return {"status": UNMEASURED, "gap": None,
+                    "why": f"gap {gap} on n {n} (need n >= {CONFORMAL_MIN_N})"}
+        return {"status": MEASURED, "gap": round(float(gap), 6), "n_test": int(n),
+                "coverage_measured": _num(row, "coverage_measured"),
+                "engine": str(row.get("engine") or ""), "at": _iso(at), "why": ""}
+    except Exception as exc:
+        return {"status": UNMEASURED, "gap": None, "why": f"{type(exc).__name__}: {exc}"[:120]}
+
+
+def _blend_uncertainty(ensemble_uncertainty: float | None, gap: float | None) -> float | None:
+    """TWO-SIDED: the ensemble's pooled uncertainty moved halfway (in quadrature) toward the
+    conformal cell's measured coverage gap. A gap below the ensemble's own term TIGHTENS the
+    threshold, a gap above it WIDENS it; with no measured gap the ensemble's term stands, so
+    the hook can never add a cap the evidence did not measure (GROWTH_GOVERNANCE Rule 1)."""
+    if gap is None:
+        return None
+    if ensemble_uncertainty is None:
+        return float(gap)
+    return float(math.sqrt(0.5 * ensemble_uncertainty ** 2 + 0.5 * gap ** 2))
+
+
+def _conformal_direction(before: float | None, after: float | None) -> str:
+    if after is None or before is None:
+        return UNMEASURED
+    if abs(after - before) < 1e-9:
+        return "unchanged"
+    return "tightened" if after < before else "widened"
+
+
 def _study_target(ctx: Context, sym: str, state: dict[str, Any], horizons: tuple[str, ...],
                   ) -> tuple[dict[str, Any], list[dict[str, Any]], list[dict[str, Any]]]:
     """Every engine, every horizon, for one target: readings, curves, the ensemble against the
@@ -1015,7 +1071,9 @@ def _study_target(ctx: Context, sym: str, state: dict[str, Any], horizons: tuple
                                                  if t is not None) / len(member_regime_tables)
         else:
             buffer = PE.regime_buffer(None)
-        dis = PE.dislocation(ens, market, regime_buffer=buffer)
+        conf = _conformal_gap(ctx.paths, sym, h, now)
+        unc = _blend_uncertainty(ens.uncertainty, conf.get("gap"))
+        dis = PE.dislocation(ens, market, uncertainty=unc, regime_buffer=buffer)
         con = PE.consensus(dict(readings_up))
         # cross-asset confirmation: does the driver reading agree with the ensemble's side?
         p4 = results[P4].p_now if results[P4].usable_now else None
@@ -1040,6 +1098,10 @@ def _study_target(ctx: Context, sym: str, state: dict[str, Any], horizons: tuple
             "dislocation": dis.as_dict(), "fired": dis.fired, "why": dis.why,
             "consensus": con.as_dict(), "cross_asset_confirmation": confirmation,
             "lead_P1_vs_P4": lead_doc,
+            "conformal": {**conf, "uncertainty_used": None if unc is None else round(unc, 6),
+                          "ensemble_uncertainty": (None if ens.uncertainty is None
+                                                   else round(ens.uncertainty, 6)),
+                          "direction": _conformal_direction(ens.uncertainty, unc)},
             "engines": {},
         }
         for n, r in results.items():

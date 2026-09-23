@@ -102,6 +102,178 @@ SPECS: dict[str, Spec] = {s.system_id: s for s in (
     Spec("roughpy", "roughpy", "0.3.0", "roughpy", yields=("representations",)),
 )}
 
+#: THE MANDATED WAVES (principal 2026-09-19/22): symbolic regression, causal machinery, the
+#: foundation models, simulation, feature synthesis, the forecast zoos, information theory,
+#: program evolution, topology, distributed search, point processes, reservoirs, scattering,
+#: simulation-based inference, the meta-evolution layer, and the WRAPPED/REBUILT institutional
+#: methods. A pin is the wheel `pip download --only-binary :all:` resolved on this interpreter
+#: on 2026-09-22; an EMPTY pin means no wheel resolved here (sdist-only, a git-only project, or a
+#: torch stack this interpreter has no build for) and provisioning measures it again. A
+#: git-only project carries NO distribution: `pip download` found no `abides`, `idtxl`,
+#: `alphagen` or `quantifact` wheel, and PyPI's `dso` is a different project -- reading a
+#: namesake's terms is worse than UNVERIFIED, so those are read from their repositories.
+SPECS.update({s.system_id: s for s in (
+    Spec("alphagen", "", "", "alphagen", yields=("candidates",),
+         note="git-only (RL-MLDM/alphagen): provisioning pins the commit, never a wheel"),
+    Spec("dso", "", "", "dso", yields=("mechanisms",),
+         note="git-only (dso-org/deep-symbolic-optimization)"),
+    Spec("pysr", "pysr", "2.5.0", "pysr", weight="heavy", yields=("mechanisms",),
+         note="needs a Julia runtime the first run installs; UNMEASURED until it exists"),
+    Spec("tigramite", "tigramite", "5.2.10.1", "tigramite", yields=("mechanisms",)),
+    Spec("causal_learn", "causal-learn", "0.1.4.8", "causallearn", yields=("mechanisms",)),
+    Spec("dowhy", "dowhy", "0.8", "dowhy", yields=("research_methods", "mechanisms")),
+    Spec("chronos2", "chronos-forecasting", "2.3.2", "chronos", weight="heavy",
+         yields=("representations",), note="weights come from the local HF cache only"),
+    Spec("timesfm", "timesfm", "3.0.2", "timesfm", weight="heavy", yields=("representations",),
+         note="3.0 weights are non-commercial by their terms: research representation only"),
+    Spec("moment", "momentfm", "0.1.4", "momentfm", weight="heavy", yields=("representations",)),
+    Spec("abides", "", "", "abides_core", yields=("datasets", "representations")),
+    Spec("featuretools", "featuretools", "1.31.0", "featuretools", yields=("representations",)),
+    Spec("cvxportfolio", "cvxportfolio", "1.5.1", "cvxportfolio", yields=("research_methods",),
+         note="allocator CHALLENGER: allocation evidence, never a size"),
+    Spec("pymc", "pymc", "6.3.2", "pymc", weight="heavy", yields=("representations",)),
+    Spec("neuralforecast", "neuralforecast", "3.2.2", "neuralforecast", weight="heavy",
+         yields=("representations",)),
+    Spec("darts", "u8darts", "0.41.0", "darts", yields=("representations",)),
+    Spec("kats", "kats", "0.2.0", "kats", yields=("representations", "candidates")),
+    Spec("merlion", "salesforce-merlion", "2.0.4", "merlion", yields=("representations",)),
+    Spec("aeon", "aeon", "1.6.0", "aeon", yields=("representations", "candidates")),
+    Spec("idtxl", "", "", "idtxl", yields=("mechanisms",),
+         note="git-only (pwollstadt/IDTxl); JIDT estimators need a JVM"),
+    Spec("tpot", "TPOT", "0.12.2", "tpot", yields=("research_methods",)),
+    Spec("openspiel", "open_spiel", "2.0.2", "pyspiel", yields=("research_methods",)),
+    Spec("pyg_temporal", "torch-geometric-temporal", "0.56.2", "torch_geometric_temporal",
+         weight="heavy", yields=("representations",)),
+    Spec("ripser", "ripser", "0.6.15", "ripser", yields=("representations", "candidates")),
+    Spec("ray", "ray", "2.58.0", "ray", weight="heavy", yields=("candidates",)),
+    Spec("easytpp", "easy-tpp", "0.3.0", "easy_tpp", weight="heavy", yields=("datasets",)),
+    Spec("reservoirpy", "reservoirpy", "0.4.2", "reservoirpy", yields=("representations",)),
+    Spec("kymatio", "kymatio", "0.3.0", "kymatio", yields=("representations",)),
+    Spec("sbi", "sbi", "0.27.0", "sbi", weight="heavy", yields=("representations",)),
+    Spec("openevolve", "openevolve", "0.3.2", "openevolve", yields=("research_methods",),
+         note="LLM-driven upstream; the research path carries no LLM, so the loop is REBUILT"),
+    Spec("darwin_godel_machine", "", "", "dgm", yields=("research_methods",),
+         note="REBUILT by the roster: no upstream code runs here"),
+    Spec("ai_scientist", "", "", "ai_scientist", yields=("research_methods",),
+         note="LLM-driven upstream; REBUILT route"),
+    Spec("pyribs", "ribs", "0.12.0", "ribs", yields=("candidates",)),
+    Spec("dspy", "dspy", "3.3.1", "dspy", yields=("research_methods",),
+         note="prompt optimisation needs an LLM; the research path carries none"),
+    Spec("quantifact", "", "", "quantifact", yields=("research_methods",)),
+    Spec("bridgewater_pat_aia", "", "", "", yields=("research_methods",),
+         note="REBUILT: public architecture only, nothing to install"),
+    Spec("alpha_search", "", "", "alpha_search", yields=("research_methods",)),
+    Spec("quantrocket", "quantrocket-client", "2.11.0.0", "quantrocket",
+         yields=("research_methods",),
+         note="WRAPPED: a licensed installation reached by API only"),
+    Spec("quantconnect_cloud", "lean", "1.0.229", "lean", yields=("datasets", "research_methods"),
+         note="WRAPPED: LEAN core is Apache-2.0; the platform is reached by API"),
+    Spec("numerai_method", "", "", "", yields=("research_methods", "candidates"),
+         note="REBUILT: the method on the desk's own PIT data, numpy only"),
+)})
+
+#: The capability family each adapter's packet routes under (CAPABILITY_FAMILIES) and the
+#: licence its upstream PUBLISHES. `licence_expected` is what a maintainer wrote in the project
+#: metadata as this desk last read it; it is NOT the licence of record -- only
+#: `libs.research.licence_reader` produces that, at a pin, and the runner refuses DIRECT
+#: execution until it has (LAWS 5h). The expected id exists so a reading that disagrees is
+#: visible as a disagreement rather than silently accepted.
+FAMILY_OF: dict[str, str] = {
+    "ruptures": "change_point", "stumpy": "time_series_mining", "pysindy": "dynamical_systems",
+    "pydmd": "dynamical_systems", "tsfresh": "feature_synthesis",
+    "riskfolio": "portfolio_optimization", "pymoo": "multiobjective_search",
+    "nevergrad": "evolutionary_search", "botorch": "bayesian_optimization",
+    "river": "online_learning", "mapie": "conformal_uncertainty", "tensorly": "tensor_methods",
+    "pyrqa": "recurrence_analysis", "pgmpy": "graphical_models", "pyextremes": "extreme_value",
+    "scikit_mine": "pattern_mining", "tslearn": "time_series_mining",
+    "pyvinecopulib": "copula_dependence", "roughpy": "rough_paths",
+    "alphagen": "evolutionary_search", "dso": "symbolic_regression",
+    "pysr": "symbolic_regression", "tigramite": "causal_discovery",
+    "causal_learn": "causal_discovery", "dowhy": "causal_discovery",
+    "chronos2": "foundation_model", "timesfm": "foundation_model",
+    "moment": "foundation_model", "abides": "market_simulation",
+    "featuretools": "feature_synthesis", "cvxportfolio": "portfolio_optimization",
+    "pymc": "probabilistic_programming", "neuralforecast": "forecast_zoo",
+    "darts": "forecast_zoo", "kats": "change_point", "merlion": "anomaly_detection",
+    "aeon": "time_series_mining", "idtxl": "information_theory", "tpot": "program_evolution",
+    "openspiel": "game_theory", "pyg_temporal": "graph_learning", "ripser": "topology",
+    "ray": "distributed_compute", "easytpp": "point_process",
+    "reservoirpy": "reservoir_computing", "kymatio": "signal_scattering",
+    "sbi": "simulation_based_inference", "openevolve": "program_evolution",
+    "darwin_godel_machine": "agent_evolution", "ai_scientist": "automated_science",
+    "pyribs": "quality_diversity", "dspy": "prompt_optimization",
+    "quantifact": "research_reliability", "bridgewater_pat_aia": "institutional_capability",
+    "alpha_search": "multi_agent_debate", "quantrocket": "data_tooling",
+    "quantconnect_cloud": "research_reliability", "numerai_method": "portfolio_research",
+}
+LICENCE_EXPECTED: dict[str, str] = {
+    "ruptures": "BSD-2-Clause", "stumpy": "BSD-3-Clause", "pysindy": "MIT", "pydmd": "MIT",
+    "tsfresh": "MIT", "riskfolio": "BSD-3-Clause", "pymoo": "Apache-2.0", "nevergrad": "MIT",
+    "botorch": "MIT", "river": "BSD-3-Clause", "mapie": "BSD-3-Clause",
+    "tensorly": "BSD-3-Clause", "pyrqa": "GPL-3.0", "pgmpy": "MIT", "pyextremes": "MIT",
+    "scikit_mine": "BSD-3-Clause", "tslearn": "BSD-2-Clause", "pyvinecopulib": "MIT",
+    "roughpy": "BSD-3-Clause", "alphagen": "MIT", "dso": "BSD-3-Clause", "pysr": "Apache-2.0",
+    "tigramite": "GPL-3.0", "causal_learn": "MIT", "dowhy": "MIT", "chronos2": "Apache-2.0",
+    "timesfm": "Apache-2.0", "moment": "MIT", "abides": "BSD-3-Clause",
+    "featuretools": "BSD-3-Clause", "cvxportfolio": "Apache-2.0", "pymc": "Apache-2.0",
+    "neuralforecast": "Apache-2.0", "darts": "Apache-2.0", "kats": "MIT",
+    "merlion": "BSD-3-Clause", "aeon": "BSD-3-Clause", "idtxl": "GPL-3.0", "tpot": "LGPL-3.0",
+    "openspiel": "Apache-2.0", "pyg_temporal": "MIT", "ripser": "MIT", "ray": "Apache-2.0",
+    "easytpp": "Apache-2.0", "reservoirpy": "MIT", "kymatio": "BSD-3-Clause",
+    "sbi": "Apache-2.0", "openevolve": "Apache-2.0", "darwin_godel_machine": "Apache-2.0",
+    "ai_scientist": "Apache-2.0", "pyribs": "MIT", "dspy": "MIT", "quantifact": "UNVERIFIED",
+    "bridgewater_pat_aia": "N/A (no code)", "alpha_search": "UNVERIFIED",
+    "quantrocket": "Proprietary", "quantconnect_cloud": "Apache-2.0",
+    "numerai_method": "N/A (method only)",
+}
+#: Packets from the desk's own sandboxed research cells (desks/mt5/research/sandboxes/) carry
+#: this prefix on their system_id: they are REBUILT mechanisms in the desk's own code, so their
+#: commit is the desk tree's HEAD rather than a PyPI pin.
+CELL_PREFIX = "cell:"
+
+
+def describe(module: Any, licences: Mapping[str, str] | None = None) -> dict[str, Any]:
+    """THE ADAPTER CONTRACT, as a record: name, licence (of record when the runner passes the
+    ledger's readings; otherwise UNVERIFIED with the expected id beside it), capability family,
+    the pinned requirement, whether the upstream imports HERE, and the run callable."""
+    name = str(getattr(module, "SYSTEM", "") or getattr(module, "NAME", ""))
+    spec = SPECS.get(name)
+    family = str(getattr(module, "CAPABILITY_FAMILY", "") or FAMILY_OF.get(name, ""))
+    expected = str(getattr(module, "LICENCE_EXPECTED", "") or LICENCE_EXPECTED.get(name,
+                                                                                 "UNVERIFIED"))
+    read = (licences or {}).get(name, "")
+    licence = read if read and read not in ("UNVERIFIED", "UNMEASURED") \
+        else f"UNVERIFIED (expected {expected}; read it with licence_reader)"
+    available = bool(spec and spec.module and library(spec.module) is not None)
+    return {"name": name, "licence": licence, "licence_expected": expected,
+            "capability_family": family, "distribution": spec.distribution if spec else "",
+            "requirement": spec.requirement if spec else "", "version": spec.version if spec
+            else "", "module": spec.module if spec else "", "weight": spec.weight if spec
+            else "light", "yields": list(spec.yields) if spec else [],
+            "runs_without_library": bool(getattr(module, "RUNS_WITHOUT_LIBRARY", False)),
+            "available_here": available, "run": getattr(module, "run", None)}
+
+
+def _git_head() -> str:
+    """The desk tree's HEAD, read from .git without running git (stdlib, sandbox-safe)."""
+    try:
+        root = Path(__file__).resolve().parents[3]
+        head = (root / ".git" / "HEAD").read_text(encoding="utf-8").strip()
+        if not head.startswith("ref:"):
+            return head[:12]
+        ref_name = head.split(" ", 1)[1].strip()
+        ref = root / ".git" / ref_name
+        if ref.exists():
+            return ref.read_text(encoding="utf-8").strip()[:12]
+        packed = root / ".git" / "packed-refs"
+        if packed.exists():
+            for line in packed.read_text(encoding="utf-8").splitlines():
+                if line.endswith(" " + ref_name):
+                    return line.split(" ", 1)[0][:12]
+        return "UNMEASURED"
+    except OSError:
+        return "UNMEASURED"
+
 
 # ------------------------------------------------------------------------------- the bundle
 
@@ -335,9 +507,13 @@ def library(name: str) -> Any | None:
 
 def commit_of(system_id: str) -> str:
     """The exact upstream revision this environment runs: `pypi:<dist>==<installed version>`."""
+    if system_id.startswith(CELL_PREFIX):
+        return f"desk:{_git_head()}"
     spec = SPECS.get(system_id)
     if spec is None:
         return "UNMEASURED"
+    if not spec.distribution:
+        return f"desk:{_git_head()}"
     try:
         return f"pypi:{spec.distribution}=={importlib.metadata.version(spec.distribution)}"
     except importlib.metadata.PackageNotFoundError:
@@ -492,3 +668,41 @@ def ma_cross_objective(frame: BarFrame, fast: int, slow: int, cost_pts: float,
     dd = float(np.max(np.maximum.accumulate(eq) - eq)) if eq.size else 0.0
     return {"objective_return": float(eq[-1]) if eq.size else 0.0, "objective_drawdown": dd,
             "n_trades": float(flips.sum())}
+
+
+#: The shared design matrix: three lagged returns and the trailing realised vol.
+LAGGED_FEATURE_NAMES: tuple[str, ...] = ("r_1", "r_2", "r_3", "vol_24")
+
+
+def lagged_design(frame: BarFrame, *, lags: int = 3, window: int = 24, target_bars: int = 1,
+                  era_bars: int = 0) -> tuple[Any, Any, Any]:
+    """(X, y, era): lagged log returns and realised vol at t-1 against the return over the next
+    `target_bars` bars, aligned so nothing in X is later than the bar y starts at. `era` numbers
+    rows in blocks of `era_bars` (0 -> one era) for per-era scoring. Numpy only."""
+    import numpy as np
+    r = frame.log_returns()
+    vol = realised_vol(r, window)
+    idx = np.arange(window + lags, r.shape[0] - target_bars + 1)
+    if idx.shape[0] <= 0:
+        return np.zeros((0, lags + 1)), np.zeros(0), np.zeros(0, dtype=int)
+    cols = [r[idx - k] for k in range(1, lags + 1)] + [vol[idx - 1]]
+    X = np.column_stack(cols)
+    if target_bars == 1:
+        y = r[idx]
+    else:
+        c = np.cumsum(np.insert(r, 0, 0.0))
+        y = c[idx + target_bars] - c[idx]
+    ok = np.isfinite(X).all(axis=1) & np.isfinite(y)
+    era = (np.arange(idx.shape[0]) // era_bars) if era_bars > 0 else np.zeros(idx.shape[0],
+                                                                                dtype=int)
+    return X[ok], y[ok], era[ok]
+
+
+def api_probe(system_id: str, lib: Any, names: Sequence[str]) -> dict[str, Any]:
+    """What an importable-but-not-driven upstream exposes: the measured API surface, so the
+    ledger records "imported, these names present" rather than a guess."""
+    present = [n for n in names if hasattr(lib, n)]
+    return {"kind": "api_surface", "system": system_id,
+            "version": str(getattr(lib, "__version__", "") or "UNMEASURED"),
+            "expected_names": list(names), "present": present,
+            "public_names": sorted(n for n in dir(lib) if not n.startswith("_"))[:40]}

@@ -421,6 +421,53 @@ def measure_ruin_guard(r, alloc: dict, _fv: dict) -> dict[str, Any]:
     return {"verdict": NOT_BINDING, "value_logw_per_day": 0.0, "sample": True, "note": note}
 
 
+def measure_causal_invariance(r: Any, _alloc: dict[str, Any],
+                              _fv: dict[str, Any]) -> dict[str, Any]:
+    """What the invariance gate's DEPRIORITISATION costs, in candidates delayed (Tier-1 B16).
+
+    THE RAIL, PRECISELY. `research/causal_invariance.py` judges whether a cell's effect survives
+    a change of session, year and volatility regime; `miner_candidate_compiler.expand_axes` sorts
+    a NON_INVARIANT mechanism's cells one step later in the queue and DROPS NOTHING. So this rail
+    cannot destroy a candidate, and the only thing it can cost is time-to-verdict.
+
+    NOT_BINDING IS A REAL ZERO HERE, and it is the common case: a pass where no judged mechanism
+    came back NON_INVARIANT reordered nothing and cost nothing.
+
+    WHAT IT WOULD TAKE TO PRICE THE DELAY IN LOG-WEALTH, said rather than invented. The value is
+    (probability a delayed cell would have certified) x (dE[log W] it would have carried) x (the
+    delay in days), and the desk has the first two only after the delayed cells have been judged:
+    the registry must carry certification outcomes tagged with the invariance verdict they were
+    deprioritised under. Until that population exists this is UNMEASURED with the count of what
+    was delayed, because an invented number here would make a rail that reorders the whole
+    research queue look free.
+
+    THE OTHER SIDE IS ALSO MEASURED, and it is the reason the rail is expected to EARN its place:
+    the same artifact carries how many judged cells were INVARIANT, and those are the cells the
+    reordering moves forward. A rail that only ever delayed would be a brake.
+    """
+    doc = _json(BASE / "reports" / "CAUSAL_INVARIANCE.json") or {}
+    if not doc:
+        return {"verdict": UNMEASURED,
+                "why": ("no reports/CAUSAL_INVARIANCE.json on this host: the causal organ has "
+                        "not judged a cell, so nothing has been deprioritised")}
+    _c = doc.get("counts")
+    counts: dict[str, Any] = dict(_c) if isinstance(_c, dict) else {}
+    delayed = int(counts.get("NON_INVARIANT") or 0)
+    advanced = int(counts.get("INVARIANT") or 0)
+    if not delayed:
+        return {"verdict": NOT_BINDING, "value_logw_per_day": 0.0, "sample": True,
+                "n_judged": int(doc.get("n_cells") or 0), "n_advanced": advanced,
+                "why": (f"{doc.get('n_cells')} cell(s) judged and none came back NON_INVARIANT: "
+                        f"the queue was not reordered this pass")}
+    return {"verdict": UNMEASURED, "n_delayed": delayed, "n_advanced": advanced,
+            "n_judged": int(doc.get("n_cells") or 0),
+            "why": (f"{delayed} mechanism(s) sort one step later and {advanced} sort earlier; "
+                    f"pricing the delay needs certification outcomes tagged with the invariance "
+                    f"verdict the cell was queued under (registry field "
+                    f"`causal_invariance.verdict` on a judged candidate), which no cell carries "
+                    f"yet. No candidate was refused: the rail can only cost queue position.")}
+
+
 MEASURES = {name: fn for name, fn in globals().items() if name.startswith("measure_")}
 
 

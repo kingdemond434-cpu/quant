@@ -305,9 +305,14 @@ class EventGraph:
                 for n in ids}
 
     def contagion(self, seeds: Mapping[str, float], *, decay: float = 0.6,
-                  hops: int = 4) -> dict[str, float]:
+                  hops: int = 6) -> dict[str, float]:
         """How far a shock at `seeds` reaches: value x edge weight x decay per hop, the MAX over
-        routes kept per node (a node reached twice is reached, not doubly reached)."""
+        routes kept per node (a node reached twice is reached, not doubly reached).
+
+        SIX HOPS BY DEFAULT, because the textbook chain this graph exists to walk -- event ->
+        shipping -> commodity -> country -> currency -> asset -- is five edges long, and a
+        four-hop default stopped exactly one node short of the asset (measured 2026-09-22:
+        `asset:usdclp` absent from the reach of a planted port closure)."""
         level: dict[str, float] = {n: float(v) for n, v in seeds.items() if n in self.nodes}
         frontier = dict(level)
         for _ in range(max(0, hops)):
