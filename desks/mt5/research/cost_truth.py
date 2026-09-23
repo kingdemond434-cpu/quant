@@ -350,6 +350,27 @@ def quoted_reading(info: dict[str, Any] | None, spreads: list[tuple[int, float]]
 # --------------------------------------------------------------------------- what was realised
 
 
+def position_direction(row: dict[str, Any]) -> int:
+    """+1 long, -1 short, from POSITIVE evidence: the row's own bracket.
+
+    `live_ledger.side` records the CLOSING deal's type, not the position's, and the desk has no
+    field that says so. Measured over the ledger 2026-09-23: of the 147 rows whose stop and
+    target bracket the entry, all 112 with `side == 0` are SHORT (stop above, target below) and
+    all 35 with `side == 1` are LONG. The bracket is read first because it cannot be ambiguous;
+    `side` is the fallback, with the measured convention. Getting this backwards turns every
+    adverse fill into a favourable one and publishes a cheaper book than the desk traded.
+    """
+    entry, sl, tp = _f(row.get("entry_price")), _f(row.get("sl")), _f(row.get("tp"))
+    if entry is not None and sl and tp:
+        if sl < entry < tp:
+            return 1
+        if tp < entry < sl:
+            return -1
+    if entry is not None and sl:
+        return 1 if sl < entry else -1
+    return -1 if _f(row.get("side")) == 0 else 1
+
+
 def realised_reading(symbol: str, deals: list[dict[str, Any]], ledger: list[dict[str, Any]],
                      intents_by_ticket: dict[int, dict[str, Any]],
                      meta: dict[str, Any] | None,
@@ -403,8 +424,8 @@ def realised_reading(symbol: str, deals: list[dict[str, Any]], ledger: list[dict
     for row in ledger:
         if row.get("symbol") != symbol:
             continue
-        direction = 1 if _f(row.get("side")) == 0 else -1
         entry_px = _f(row.get("entry_price"))
+        direction = position_direction(row)
         fill_px = _f(row.get("fill_price"))
         vol = _f(row.get("volume")) or 0.0
         sl = _f(row.get("sl"))
@@ -429,8 +450,10 @@ def realised_reading(symbol: str, deals: list[dict[str, Any]], ledger: list[dict
             if want is not None:
                 slip_entry.append((entry_px - want) * direction / point)
                 if stop_px:
-                    # lot size and tick value cancel: slip in R is slip over the stop
-                    cost_rs.append(abs(entry_px - want) / stop_px)
+                    # SIGNED, and the lot size and tick value cancel: slip in R is slip over the
+                    # stop. Positive is adverse. abs() here would charge a FAVOURABLE fill as a
+                    # cost, which is the overcharge this organ exists to find.
+                    cost_rs.append((entry_px - want) * direction / stop_px)
         # the exit reference is the recorded stop or target it was sent to
         if point > 0 and fill_px is not None:
             for level_key in ("sl", "tp"):
@@ -502,6 +525,11 @@ def compare(charged: dict[str, Any], quoted: dict[str, Any],
     out["quoted_at_fills_p50_pts"] = fill_p50
     reference = fill_p50 if fill_p50 is not None else quoted_p50
     out["reference_pts"] = reference
+    #: THE PLAIN MEDIAN, kept separate from the verdict's reference below. The verdict may fall
+    #: back to a p90 when the median reads 0 at the venue's point resolution -- that is right for
+    #: judging whether a charge is fair and WRONG as a cost basis, which the brief pins to the
+    #: realised median with the distribution published beside it.
+    out["median_reference_pts"] = reference
     out["reference_basis"] = ("quoted spread at the desk's own fill minutes" if fill_p50
                               is not None else "pooled M1 median over the window")
     if ch is None or reference is None:
@@ -553,8 +581,8 @@ def compare(charged: dict[str, Any], quoted: dict[str, Any],
 # --------------------------------------------------------------------------------- re-judging
 
 
-def rejudge(net_edge_doc: Any, ranks_doc: Any,
-            by_symbol: dict[str, dict[str, Any]]) -> dict[str, Any]:
+def rejudge(net_edge_doc: Any, ranks_doc: Any, by_symbol: dict[str, dict[str, Any]],
+            measured: dict[str, float] | None = None) -> dict[str, Any]:
     """Re-price the spine's OWN published rows with the corrected commission and spread.
 
     Nothing here edits the spine or its artifact: its published `terms` block carries every
@@ -562,6 +590,7 @@ def rejudge(net_edge_doc: Any, ranks_doc: Any,
     published and the difference is the answer to "how many refusals survive honest costs".
     """
     rows: list[dict[str, Any]] = []
+    measured = dict(measured or {})
     doc = net_edge_doc if isinstance(net_edge_doc, dict) else {}
     cells = (ranks_doc or {}).get("by_cell") if isinstance(ranks_doc, dict) else {}
     pool: list[tuple[str, dict[str, Any]]] = []
@@ -587,10 +616,19 @@ def rejudge(net_edge_doc: Any, ranks_doc: Any,
         over_c = _f(corr.get("commission_total_overcharge")) or 1.0
         over_s = _f(corr.get("spread_charged_over_quoted"))
         comm_fixed = comm / over_c if over_c > 0 else comm
-        spread_fixed = spread / over_s if (over_s and over_s > 1.0) else spread
+        # TWO-SIDED, and it has to be: the measured execution cost is HIGHER than the modelled
+        # one on EURCHF (real slippage the model never charged) and lower on gold. A re-judge
+        # that only ever lowered the bill would be an argument, not a measurement.
+        measured_spread = measured.get(sym)
+        if measured_spread is not None:
+            spread_fixed, spread_basis = float(measured_spread), "realised execution surface"
+        elif over_s and over_s > 1.0:
+            spread_fixed, spread_basis = spread / over_s, "quoted spread at this symbol's fills"
+        else:
+            spread_fixed, spread_basis = spread, "unchanged: no measured spread for this symbol"
         delta = (comm - comm_fixed) + (spread - spread_fixed)
         net_fixed = net + delta
-        if delta <= 0:
+        if delta == 0:
             continue
         flipped_back = net < 0 <= net_fixed
         if flipped_back:
@@ -603,10 +641,14 @@ def rejudge(net_edge_doc: Any, ranks_doc: Any,
                      "commission_charged": round(comm, 8),
                      "commission_measured": round(comm_fixed, 8),
                      "spread_charged": round(spread, 8), "spread_measured": round(spread_fixed, 8),
+                     "spread_basis": spread_basis,
                      "overcharge_removed_r": round(delta, 8),
                      "restored_to_queue": flipped_back,
                      "why": ("refused on a cost the broker does not charge" if flipped_back
-                             else "still negative on measured costs: the refusal earns its place")})
+                             else "net rose on measured costs but stays negative: the refusal "
+                                  "earns its place" if delta > 0 else
+                                  "the measured cost is HIGHER than the model charged: the "
+                                  "refusal is confirmed and then some")})
     rows.sort(key=lambda r: -float(r["overcharge_removed_r"]))
     return {"n_rows_repriced": len(rows), "n_positive_on_measured_cost": survived,
             "n_restored_to_queue": restored, "rows": rows[:120],
@@ -642,13 +684,21 @@ def execution_surface(symbols: list[dict[str, Any]]) -> dict[str, Any]:
     """The realised surface in the SHAPE `net_edge_spine.exec_cell_index` already reads.
 
     cost_r here is the desk's realised EXECUTION cost -- the broker's quoted spread at the
-    desk's own fill minutes, crossed once, over the cell's own risk, plus measured adverse entry
-    slippage where the intent join exists. It deliberately EXCLUDES commission and swap: the
-    spine charges those as their own terms, and `cost_surface.deal_costs` builds a cost_r that
-    is commission + swap ONLY, so feeding that number into the spine's spread slot charges
+    desk's own fill minutes, crossed once, over the cell's own risk, plus the SIGNED median
+    entry slippage where the intent join exists. It deliberately EXCLUDES commission and swap:
+    the spine charges those as their own terms, and `cost_surface.deal_costs` builds a cost_r
+    that is commission + swap ONLY, so feeding that number into the spine's spread slot charges
     commission twice. This one is a spread/slippage reading and says so in every row.
+
+    A CELL IS PUBLISHED ONLY WHERE BOTH HALVES ARE MEASURED. The consumer marks whatever it
+    finds here as MEASURED and stops asking, so a cell whose slippage is unmeasured -- where
+    cost_r would land on the quoted spread alone, and on this venue that is often exactly 0.0 --
+    is DEFERRED rather than published. A zero in the spread slot is the number this desk's own
+    cost modules name as the one that manufactures survivors; the spine's modelled fallback is
+    the correct behaviour there, and the deferral is published with its reason.
     """
     rows: list[dict[str, Any]] = []
+    deferred: list[dict[str, Any]] = []
     for sym in symbols:
         realised = sym.get("realised") or {}
         cmp_ = sym.get("compare") or {}
@@ -661,7 +711,7 @@ def execution_surface(symbols: list[dict[str, Any]]) -> dict[str, Any]:
             own = realised.get("stop_pts_realised") or {}
             stop_pts = _f(own.get("p50")) if own.get("status") == MEASURED else None
             stop_basis = "median stop distance of this symbol's own live trades"
-        ref = _f(cmp_.get("reference_pts"))
+        ref = _f(cmp_.get("median_reference_pts"))
         if stop_pts is None or stop_pts <= 0 or ref is None:
             continue
         slip = (realised.get("entry_slip_r") or {})
@@ -671,30 +721,44 @@ def execution_surface(symbols: list[dict[str, Any]]) -> dict[str, Any]:
         # the published cost is a LOWER BOUND -- which `net_edge` already models as a bound.
         slip_r = (_f(slip.get("p50")) if slip.get("status") == MEASURED
                   and int(slip.get("n") or 0) >= MIN_DEALS else None)
-        cost_r = ref / stop_pts + (slip_r or 0.0)
+        spread_r = ref / stop_pts
+        if slip_r is None:
+            deferred.append({"asset": sym["symbol"], "spread_r_at_fills": round(spread_r, 8),
+                             "slippage_n": int(slip.get("n") or 0),
+                             "status": UNMEASURED,
+                             "why": (f"entry slippage has {int(slip.get('n') or 0)} joinable "
+                                     f"intent(s), under MIN_DEALS={MIN_DEALS}; publishing the "
+                                     "quoted spread alone would hand the consumer a MEASURED "
+                                     f"{round(spread_r, 5)}R and stop it asking, so the cell is "
+                                     "deferred and the modelled fallback stands")})
+            continue
+        # FLOORED AT ZERO, and the floor is named: a favourable median fill is a real reading
+        # and is published as `slip_r_median`, but a NEGATIVE crossing cost is an artifact of
+        # the decision reference (a stop order's trigger is not a quote), not a rebate the book
+        # can bank, and the consumer would subtract it from every other cost term.
+        cost_r = max(spread_r + slip_r, 0.0)
         rows.append({"asset": sym["symbol"], "cost_basis": MEASURED,
                      "cost_r": round(float(cost_r), 8),
                      "cost_n": int(realised.get("n_deals") or 0),
                      "cost_resolved_at": _now(),
-                     "cost_terms": ["quoted_spread_at_fill_minutes",
-                                    "measured_entry_slippage" if slip_r is not None
-                                    else "entry_slippage_UNMEASURED"],
+                     "cost_terms": ["quoted_spread_at_fill_minutes", "measured_entry_slippage"],
+                     "spread_r_at_fills": round(spread_r, 8),
+                     "slip_r_median": round(float(slip_r), 8),
                      "excludes": ["commission", "swap", "market_impact"],
-                     "slippage_status": MEASURED if slip_r is not None else UNMEASURED,
-                     "slippage_n": int(slip.get("n") or 0),
-                     "cost_r_is_bound": slip_r is None,
+                     "slippage_status": MEASURED, "slippage_n": int(slip.get("n") or 0),
+                     "cost_r_is_bound": True,
                      "stop_pts": round(float(stop_pts), 4), "stop_basis": stop_basis,
                      "why": (f"{ref} pts quoted at this symbol's own fill minutes over a "
-                             f"{stop_pts} pt stop ({stop_basis})"
-                             + (f", plus a measured {slip_r:+.5f}R entry slip" if slip_r
-                                is not None else "; entry slippage is UNMEASURED and is not "
-                                "replaced by a default"))})
+                             f"{stop_pts} pt stop ({stop_basis}), plus a measured "
+                             f"{slip_r:+.5f}R median entry slip over "
+                             f"{int(slip.get('n') or 0)} joined intents")})
     return {"at": _now(), "producer": "desks/mt5/research/cost_truth.py",
             "unit": "R per round trip, spread and slippage only",
             "n_cells": len(rows), "net_alpha": rows,
+            "n_deferred": len(deferred), "deferred": deferred,
             "rule": ("the realised execution surface the spine reads. Commission and swap are "
                      "NOT in cost_r: the spine prices them as their own terms. Market impact is "
-                     "UNMEASURED and makes net a BOUND rather than a zero.")}
+                     "UNMEASURED and makes every net that uses this a BOUND, never a zero.")}
 
 
 # ------------------------------------------------------------------------------- the terminal
@@ -828,7 +892,9 @@ def build(universe: dict[str, Any], fusion: Any, cost_to_edge: Any, snapshot: di
             or (_f(r["compare"].get("commission_total_overcharge")) or 0) > OVERCHARGE_TOL]
     over.sort(key=lambda r: -((_f(r.get("spread_charged_over_quoted")) or 0.0)
                               + (_f(r.get("commission_total_overcharge")) or 0.0)))
-    judged = rejudge(net_edge_doc, ranks_doc, by_symbol_cmp)
+    surface = execution_surface(rows)
+    judged = rejudge(net_edge_doc, ranks_doc, by_symbol_cmp,
+                     {r["asset"]: float(r["cost_r"]) for r in surface["net_alpha"]})
     model_c, model_src = model_commission_per_side()
     realised_c = [r["realised"]["commission_per_lot_per_side"]["p50"] for r in rows
                   if (r["realised"].get("commission_per_lot_per_side") or {}).get("status")
@@ -861,6 +927,7 @@ def build(universe: dict[str, Any], fusion: Any, cost_to_edge: Any, snapshot: di
         "consumer_defects": consumer_defects(mult),
         "overcharged": over, "n_overcharged": len(over),
         "rejudge": judged,
+        "execution_surface": surface,
         "impact": {"status": UNMEASURED,
                    "why": "matched_fills is 0: market impact is unpriced, so every net that "
                           "needs it is a BOUND and the verdict says so"},
@@ -881,6 +948,18 @@ def consumer_defects(mult: float) -> list[dict[str, Any]]:
     patched, so the correction is a decision with evidence and not a silent re-pricing.
     """
     return [
+        {"where": "data/universe/universe.json:median_spread_pts (the scalar every gate divides "
+                  "by) -- CORRECTION ALREADY COMPUTED AND NEVER APPLIED",
+         "defect": "136 of 251 symbols carry a spread the desk's own repair tool already "
+                   "recomputed on 2026-09-16 (reports/SPREAD_PROVENANCE.json, "
+                   "apply_mode=report_only, applied=false). GBPCHF is stamped "
+                   "source=realized_fills at 165.0 pts on a symbol this account has NEVER "
+                   "traded, against a bar median of 3.0 and a terminal quoting 0.0/1.0 today; "
+                   "CADCHF 98.0 against 3.0; AUDCHF 110.5 against a live 2.0",
+         "charged_over_true": 55.0,
+         "fix": "python desks/mt5/scripts/repair_universe_spreads.py --apply  # its own "
+                "fills_overridden block already names GBPCHF 55.0x and CADCHF 32.7x",
+         "owner": "spread_provenance leg / repair_universe_spreads.py", "status": "REPORTED"},
         {"where": "desks/mt5/research/net_edge_spine.py:commission_term",
          "defect": "ratio = zero / (raw - zero) treats the RAW regime's "
                    f"{mult}x spread as the whole spread",
@@ -1070,11 +1149,18 @@ def main(argv: list[str] | None = None) -> int:
     lines = missed_lines(rep.get("rejudge") or {}, (net_edge_doc or {}).get("at")
                          if isinstance(net_edge_doc, dict) else None)
     rep["missed_growth_lines"] = lines[:60]
-    if lines:
+    # ONE LINE PER CELL PER DAY. This is an hourly leg and the bill is a DAILY sample: appending
+    # the same refusal 24 times would let one cell outvote 23 others in every verdict the
+    # missed-growth ledger computes from these rows.
+    already = {(str(r.get("day")), str(r.get("cell"))) for r in _jsonl(MISSED)
+               if r.get("rail") == "cost_truth_overcharge"}
+    fresh = [r for r in lines if (str(r.get("day")), str(r.get("cell"))) not in already]
+    rep["missed_growth_appended"] = len(fresh)
+    if fresh:
         try:
             MISSED.parent.mkdir(parents=True, exist_ok=True)
             with MISSED.open("a", encoding="utf-8") as fh:
-                for row in lines:
+                for row in fresh:
                     fh.write(json.dumps(row) + "\n")
         except OSError as exc:
             rep["missed_growth_write"] = f"NOT written: {exc}"
@@ -1083,7 +1169,7 @@ def main(argv: list[str] | None = None) -> int:
     args.out.write_text(json.dumps(rep, indent=1, sort_keys=True, default=str) + "\n", "utf-8")
     args.md.parent.mkdir(parents=True, exist_ok=True)
     args.md.write_text(render_md(rep), "utf-8")
-    surface = execution_surface(rep.get("symbols") or [])
+    surface = rep.get("execution_surface") or execution_surface(rep.get("symbols") or [])
     EXEC_SURFACE.write_text(json.dumps(surface, indent=1, sort_keys=True) + "\n", "utf-8")
 
     try:

@@ -210,6 +210,15 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("check_excitation.py", ()),               # L1.45 -- no absorbing set, no dead experiment
     ("check_clock_provenance.py", ()),         # L1.46 -- the tape declares which clock stamped it
     ("check_heat_floor_wiring.py", ()),        # growth governance -- the 20% floor is DEPLOYED
+    # GROWTH GOVERNANCE Rule 1, THE COST DIRECTION WITH NO ALARM (principal 2026-09-23, "just in
+    # case we dismissed edges net based on overcharged false costs"). An UNDERCHARGED cell
+    # manufactures a survivor and every gate here exists to catch it; an OVERCHARGED cell dies in
+    # the gauntlet silently and leaves no artifact anywhere. This fence compares what the model
+    # CHARGES against what the broker QUOTES and what the account has PAID, fails on a NEW
+    # overcharged symbol or a RISING commission overcharge, and lowers its own declaration when
+    # the debt shrinks. A STATE fence: the measurement needs the terminal, so a box without one
+    # reads UNMEASURED, which is a real answer and not a pass by silence.
+    ("check_cost_truth.py", ()),
     # THE STATE HALF of the enrolment law: no certificate clockless past one cycle. An absent
     # FORWARD_ENROLMENT.json is UNMEASURED, which is a real answer on a clean checkout.
     ("check_forward_enrolment.py", ("--state-only",)),

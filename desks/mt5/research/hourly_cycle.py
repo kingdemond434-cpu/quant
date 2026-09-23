@@ -820,7 +820,7 @@ LEG_DEPARTMENT: dict[str, str] = {
     **dict.fromkeys(("execution_twin", "entry_timing", "cost_to_edge", "exit_study",
                      "execution_resolver", "netting_report", "execution_alpha",
                      "latency_lab", "feed_clock_lab", "impact_lab", "digital_twin",
-                     "net_edge"),
+                     "net_edge", "cost_truth"),
                     "execution"),
     # forward: forward evidence, promotion and the allocator
     **dict.fromkeys(("enrol_clocks", "pf_allocator", "daily", "hunt12_forward", "regime_router",
@@ -1259,6 +1259,10 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # The net-edge spine stops itself at --budget-s 600 and writes NET_EDGE.json plus the
     # intake join file; the cap sits above it so the hour is never cut at the same prefix.
     "net_edge": 700,
+    # Cost truth stops itself at --budget-s 600 (80% of it inside the terminal walk, which is
+    # where the M1 pulls are) and resumes from its own cursor next hour, so a cut hour costs
+    # coverage and never the artifact. The cap sits above its budget.
+    "cost_truth": 700,
     # The conversion maximiser stops itself at --budget-s 900 and writes CONVERSION_MAXIMISER.json
     # plus its ratchet; the cap sits above its own budget for the reason `enrol_clocks` was
     # raised -- a cap below an organ's budget truncates it at the same prefix every hour.
@@ -3339,6 +3343,16 @@ def main() -> None:
     nee = _costed("net_edge", lambda: _producer("net_edge",
                                                 "research/net_edge_spine.py",
                                                 "--once", "--budget-s", "600"))
+    # COST TRUTH (principal 2026-09-23, "double check if the costs are actually Fusion costs ...
+    # just in case we dismissed edges net based on overcharged false costs"). Three readings per
+    # symbol -- what the model CHARGES, what the broker QUOTES on this account over the whole
+    # session, what the account has actually PAID -- from the terminal and the desk's own deals.
+    # It publishes COST_TRUTH.json, the rendered page, and EXECUTION_COST_SURFACE.json, which is
+    # the artifact the spine above already reads and which NOTHING on this desk wrote. A box with
+    # no terminal reads UNMEASURED rather than failing. Fence: scripts/check_cost_truth.py.
+    ctr = _costed("cost_truth", lambda: _producer("cost_truth",
+                                                  "research/cost_truth.py",
+                                                  "--once", "--budget-s", "600"))
     # THE OPEN-SOURCE RESEARCH FEDERATION (LAWS 5h): every public research system disposed,
     # ledgered, delta-watched and budgeted, and every sandbox packet drained into the one
     # canonical gauntlet. It never fetches or executes third-party code -- provisioning is
@@ -3984,6 +3998,7 @@ def main() -> None:
                     "prediction_markets": pmk, "dislocation_lab": dsl,
                     "shadow_institutional": shi, "latent_actors": lat, "latency_lab": lab,
                     "feed_clock_lab": fcl, "impact_lab": imp, "net_edge": nee,
+                    "cost_truth": ctr,
                     "macro_department": mcd, **forests_out,
                     "probation": prb, "standing_questions": sqs, "exposure_decomposition": exd,
                     "auto_legs": auto,
