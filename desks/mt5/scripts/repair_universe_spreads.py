@@ -116,7 +116,29 @@ def measured_spread(sym: str) -> tuple[float | None, str, dict[str, Any]]:
     }
 
 
-def run(apply: bool = False, write: bool = True) -> dict[str, Any]:
+def _verified(path: Path | None) -> set[str] | None:
+    """The symbols whose correction was SHOWN to move the charge toward the broker's own
+    quote, from `desks/mt5/research/cost_truth.py`. None means "no gate asked for".
+
+    NOTHING ON THE CAPITAL PATH MAY READ A SPREAD NOBODY JUST VERIFIED. These corrections
+    were computed 2026-09-16 and sat in report_only for a week; applying 136 of them at
+    once on the strength of the same bars that produced them would be a re-pricing by
+    argument. `cost_truth` compares each one to the LIVE terminal's own quote and writes
+    only the improvements here. An unreadable file yields an EMPTY set, not None: a gate
+    that cannot be read must block, never wave through.
+    """
+    if path is None:
+        return None
+    try:
+        doc = json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        return set()
+    syms = doc.get("verified_symbols") if isinstance(doc, dict) else None
+    return {str(s) for s in syms} if isinstance(syms, list) else set()
+
+
+def run(apply: bool = False, write: bool = True,
+        widening_only: bool = False, only_verified: Path | None = None) -> dict[str, Any]:
     try:
         doc = json.loads(REGISTRY.read_text("utf-8"))
     except (OSError, ValueError) as exc:
@@ -128,6 +150,7 @@ def run(apply: bool = False, write: bool = True) -> dict[str, Any]:
     corrected: list[dict[str, Any]] = []
     stamped_same: list[str] = []
     cheaper: list[dict[str, Any]] = []
+    applied_syms: list[str] = []
     suspect: list[dict[str, Any]] = []
     kept_better: list[str] = []
     #: `realized_fills` rows overridden because the fills value is implausible against its own
@@ -135,6 +158,9 @@ def run(apply: bool = False, write: bool = True) -> dict[str, Any]:
     #: measurement with an inference, and a reviewer must be able to find every instance.
     fills_overridden: list[dict[str, Any]] = []
     unmeasured: dict[str, str] = {}
+    #: Corrections refused because no live quote verified them. Named, never silent.
+    skipped_unverified: list[str] = []
+    verified = _verified(only_verified)
     now = datetime.now(tz=UTC).isoformat(timespec="seconds")
 
     for sym in sorted(rows):
@@ -190,16 +216,51 @@ def run(apply: bool = False, write: bool = True) -> dict[str, Any]:
                 cheaper.append(entry)
             if old_f is not None and old_f > 0 and max(got / old_f, old_f / got) > SUSPECT_RATIO:
                 suspect.append(entry)
-        if apply:
+        # THE TWO DIRECTIONS ARE NOT THE SAME DECISION, and `--apply` treated them as one.
+        #
+        # A correction that WIDENS a spread can only make the desk charge itself more: every
+        # certificate priced against the old number was too generous, and re-pricing can only
+        # retire claims, never mint them. Measured 2026-09-14: 74 of 191 re-measured symbols
+        # carry a registry spread of ZERO -- USDRUB 0 -> 2582.5, EURRUB 0 -> 250, NOKSEK 0 -> 39
+        # -- and 26.3% of the judged docket (1,803 of 6,854 cells) was evaluated at zero spread
+        # cost because of it. Nothing on the live book is affected; the exposure is research
+        # pricing, which is where claims are minted.
+        #
+        # A correction that NARROWS one is the opposite act: it makes previously-uneconomic
+        # cells look tradeable, which is the shape of a desk talking itself into an edge. Those
+        # are exactly the rows whose medians are zero-inflated -- GBPCHF prices 46% of its
+        # full-session bars, so its median lands in the near-zero cluster while its p75 is 150.
+        #
+        # `--apply-widening-only` lets the conservative half be taken WITHOUT the half that needs
+        # a person to look at each row. It is not a lesser `--apply`; it is the half whose
+        # direction of error is knowable in advance.
+        # ONLY A PENDING CORRECTION CAN BE SKIPPED. A symbol whose stored value already
+        # equals the measurement has nothing to apply, and counting it here would report
+        # a refusal that never happened.
+        if verified is not None and sym not in verified:
+            if old_f is None or abs(old_f - got) >= 1e-9:
+                skipped_unverified.append(sym)
+            continue
+        if apply and (not widening_only or old_f is None or got > old_f):
             row["median_spread_pts"] = got
             prov = row.setdefault("_provenance", {})
-            prov["median_spread_pts"] = {"at": now, "source": SOURCE, "was": old_f}
+            prov["median_spread_pts"] = {"at": now, "source": SOURCE, "was": old_f,
+                                         "mode": "widening_only" if widening_only else "full"}
+            applied_syms.append(sym)
 
     if apply and write:
         REGISTRY.write_text(json.dumps(doc, indent=1, sort_keys=True) + "\n", "utf-8")
 
     out = {
         "status": "MEASURED", "generated_utc": now, "applied": bool(apply),
+        "apply_mode": ("widening_only" if (apply and widening_only) else
+                       "full" if apply else "report_only"),
+        "n_applied": len(applied_syms),
+        "verified_gate": None if verified is None else sorted(verified),
+        "n_skipped_unverified": len(skipped_unverified),
+        "skipped_unverified": sorted(skipped_unverified)[:60],
+        "n_zero_registry_spread": sum(
+            1 for e in corrected if (e.get("old") or 0) == 0),
         "n_symbols": len(rows),
         "n_corrected": len(corrected), "n_already_correct": len(stamped_same),
         "n_kept_realized_fills": len(kept_better), "n_unmeasured": len(unmeasured),
@@ -210,6 +271,24 @@ def run(apply: bool = False, write: bool = True) -> dict[str, Any]:
         "suspect": suspect[:40],
         "corrected": corrected[:60],
         "unmeasured": dict(sorted(unmeasured.items())[:40]),
+        # THE COMPLETE MAP, BECAUSE A TRUNCATED LIST IS READ AS AN ABSENCE BY MACHINES.
+        #
+        # The three lists above are a READER'S sample -- `corrected[:60]` of 191 is the right
+        # length for a person and the wrong length for anything that consumes this file.
+        # Measured 2026-09-14: `factor_residual_engine` now refuses to propose a cell whose
+        # target's spread was re-derived materially wider than the registry value it priced
+        # against, and it reads this artifact to find out. Eleven of its sixteen proposals --
+        # ZARJPY, GBPHUF, NZDHUF, NOKSEK, SEKJPY, NOKJPY, CHFNOK, EURRUB, GBPMXN, USDRUB,
+        # EURILS -- were re-measured and sat in the 131 rows the truncation dropped, so the
+        # fence classified every one of them as UNMEASURED and let them through. A sampled
+        # artifact does not report a smaller set; it reports a DIFFERENT ANSWER, and the caller
+        # cannot tell. The same shape as the NOAA rename: absence indistinguishable from a
+        # quiet world.
+        #
+        # This is one small object per symbol over 251 symbols. There is no reason to sample it.
+        "by_symbol": {r["symbol"]: {"old": r.get("old"), "new": r.get("new"),
+                                    "bucket": r.get("_bucket", "corrected")}
+                      for r in corrected},
         "kept_realized_fills": sorted(kept_better),
         "n_fills_overridden": len(fills_overridden),
         "fills_overridden": fills_overridden,
@@ -228,11 +307,23 @@ def run(apply: bool = False, write: bool = True) -> dict[str, Any]:
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    ap.add_argument("--apply-widening-only", action="store_true",
+                    help="apply ONLY the corrections that make a symbol more expensive. The "
+                         "direction of error is knowable in advance for these: a wider spread "
+                         "can only retire claims, never mint them. The narrowing half needs a "
+                         "person to look at each row and is left alone.")
     ap.add_argument("--apply", action="store_true",
                     help="write the registry (default: report only)")
     ap.add_argument("--no-write", action="store_true", help="do not write the report either")
+    ap.add_argument("--only-verified", type=Path, default=None,
+                    help="apply ONLY the symbols listed in this file's verified_symbols "
+                         "(desks/mt5/data/spread_repair_verified.json, written by "
+                         "research/cost_truth.py after comparing each correction to the "
+                         "live terminal's own quote). Every other correction is skipped "
+                         "and named. An unreadable file applies NOTHING.")
     a = ap.parse_args(argv)
-    r = run(apply=a.apply, write=not a.no_write)
+    r = run(apply=a.apply or a.apply_widening_only, write=not a.no_write,
+            widening_only=a.apply_widening_only, only_verified=a.only_verified)
     if r.get("status") != "MEASURED":
         print(f"REFUSED: {r.get('why')}")
         return 1
@@ -253,8 +344,14 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  CORRECTED: {r['n_corrected']}")
         for c in r["corrected"][:12]:
             print(f"    {c['symbol']:12s} {c['old']} -> {c['new']}  ({c['n_priced']} priced bars)")
-    if not a.apply:
-        print("  REPORT ONLY -- nothing written to the registry. Re-run with --apply to repair.")
+    if not (a.apply or a.apply_widening_only):
+        print(f"  {r['n_zero_registry_spread']} symbol(s) carry a registry spread of ZERO and are "
+              f"therefore priced at no cost at all.")
+        print("  REPORT ONLY -- nothing written to the registry.")
+        print("    --apply-widening-only   take the conservative half (charges MORE, never less)")
+        print("    --apply                 take both halves; the narrowing half needs review")
+    else:
+        print(f"  APPLIED {r['n_applied']} symbol(s) in mode {r['apply_mode']}")
     return 0
 
 

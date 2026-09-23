@@ -26,10 +26,12 @@ from mt5desk import families  # noqa: E402
 from mt5desk.engine import Costs, run_backtest  # noqa: E402
 from research.run_hunt12 import day_states  # noqa: E402
 
-#: Fusion Zero's published contract, USD per lot PER SIDE ($4.50 round turn). Mirrors
-#: `libs.portfolio.fusion_cost.COMMISSION_PER_LOT_PER_SIDE`; the 3.50 this replaced was a
-#: round-turn figure sitting in a per-side field, billing $7.00 a round trip against $4.50.
-FUSION_COMMISSION_PER_SIDE = 2.25
+#: MEASURED, not published: 2.00 in ACCOUNT CURRENCY per lot per side, over all 433
+#: deals account 495044 has ever done (reports/COST_TRUTH.json, 2026-09-23, p10=p50=p90).
+#: Mirrors `libs.portfolio.fusion_cost.COMMISSION_PER_LOT_PER_SIDE`. The 2.25 this
+#: replaced was the brochure's USD figure fed to a field `Costs.from_symbol` converts as
+#: ACCOUNT currency -- a 1.125x overcharge on the term that is ~98% of this book's cost.
+FUSION_COMMISSION_PER_SIDE = 2.00
 
 BASE = Path(__file__).resolve().parent.parent
 UNI = BASE / "data" / "universe"

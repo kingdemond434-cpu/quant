@@ -91,12 +91,26 @@ if ($adopting) {
 # grant). Two minutes covers a full sync pass; a writer that cannot get the lock in that time
 # yields exactly as the task check above yields, and the next slot is fifteen minutes away.
 . (Join-Path $PSScriptRoot "GitWriterMutex.ps1")
-$script:GitWriterMutex = (Open-GitWriterMutex).Mutex
+# THE WHOLE HANDLE, NOT JUST `.Mutex` (2026-09-23). Taking `.Mutex` drops the LEGACY name the
+# helper also acquires, so a writer still running pre-2026-09-23 code was not coordinated with at
+# all; and when the helper cannot open ANY name, `.Mutex` is $null, `$null.WaitOne()` fails
+# non-terminating under `Continue`, `$gotLock` stays $false and this pass yields blaming a writer
+# nobody measured. That exact confusion -- a refusal with an invented reason -- is what kept the
+# adoption from running for four days.
+$script:GitWriterHandle = Open-GitWriterMutex
+$script:GitWriterMutex = $script:GitWriterHandle.Mutex
+if ($null -eq $script:GitWriterMutex) {
+    Write-SyncLog ("SKIP: could not OPEN the git-writer lock (" + $script:GitWriterHandle.Why +
+                   ") -- this is not evidence that another writer holds it; the lock could not " +
+                   "be examined at all")
+    exit 0
+}
 $gotLock = $false
 try { $gotLock = $script:GitWriterMutex.WaitOne(120000) }
 catch [System.Threading.AbandonedMutexException] { $gotLock = $true }
 if (-not $gotLock) {
-    Write-SyncLog "SKIP: another git writer holds Local\MT5-GitWriter after 2 min; this pass yields"
+    Write-SyncLog ("SKIP: another git writer held " + $script:GitWriterHandle.Name +
+                   " for the full 2 min; this pass yields")
     exit 0
 }
 

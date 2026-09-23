@@ -68,7 +68,9 @@ BUDGET_S = 900.0
 #: is reached across passes (LAWS 2: a count is never a ceiling).
 MAX_PER_PASS = 16
 MIN_BARS = 300
-COMMISSION_PER_LOT_PER_SIDE = 2.25          # Fusion Zero's published contract, per side
+# MEASURED over 433 deals (reports/COST_TRUTH.json 2026-09-23): 2.00 in ACCOUNT CURRENCY
+# per lot per side. Mirrors libs.portfolio.fusion_cost.COMMISSION_PER_LOT_PER_SIDE.
+COMMISSION_PER_LOT_PER_SIDE = 2.00
 #: MATERIAL DISAGREEMENT, written down. A Sharpe of the other sign (when the recorded one is
 #: not itself noise), or outside half-to-double of the recorded one; forward fills off by more
 #: than half, fewer than half the ledger's trades matched, a matched trade's R off by more than

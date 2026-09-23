@@ -10,6 +10,12 @@ from libs.research import adapters as A
 from libs.research.external_federation import ExternalResearchPacket
 
 SYSTEM = "kymatio"
+#: WHAT MUST IMPORT for this adapter to run, which is not the same as what pip installed:
+#: `import kymatio` succeeds and `import kymatio.numpy` does not, because kymatio 0.3.0
+#: reaches for `scipy.special.sph_harm`, removed in the scipy this desk runs. The
+#: provisioner verifies THIS name, so the install ledger records the truth the adapter
+#: meets rather than the truth pip reports.
+IMPORT_TARGET = "kymatio.numpy"
 CAPABILITY_FAMILY = "signal_scattering"
 LICENCE_EXPECTED = "BSD-3-Clause"
 MAX_SYMBOLS = 4
@@ -19,7 +25,7 @@ Q = 8
 
 
 def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
-    km = A.library("kymatio.numpy")
+    km = A.library(IMPORT_TARGET)
     if km is None:
         return A.unmeasured(SYSTEM, bundle, "kymatio is not importable here (pip install "
                                             "kymatio==0.3.0)")

@@ -51,6 +51,11 @@ KINDS = (
     # The 24/7 maximiser's verdict: which of the four standing bottlenecks bound this hour, and
     # by how much its owning department's compute was raised.
     "BOTTLENECK_BOUND",
+    # What the desk charges itself against what the broker quotes and what the account paid
+    # (principal 2026-09-23). Carries the overcharged-symbol count and how many refusals the
+    # measured cost restored, so "the cost model was re-measured" is a transition with a time
+    # on it and not a file that quietly changed.
+    "COST_TRUTH_MEASURED",
 )
 
 #: Legs whose completion IS a domain transition. Every other leg emits only LEG_DONE.

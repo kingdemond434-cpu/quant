@@ -41,13 +41,32 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
         return A.packet(SYSTEM, bundle, trials=trials, research_methods=[
             {"kind": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"[:200]}])
     mechs: list[dict[str, Any]] = []
+    undirected: list[dict[str, str]] = []
     for i in range(len(names)):
         for j in range(len(names)):
             if g[j, i] == 1 and g[i, j] == -1:
                 mechs.append({"kind": "directed_edge", "cause": names[i], "effect": names[j],
                               "method": "PC/fisherz", "alpha": ALPHA,
                               "mechanism": f"{names[i]} -> {names[j]} in the PC skeleton"})
-    return A.packet(SYSTEM, bundle, trials=trials, mechanisms=mechs)
+            elif j > i and (g[i, j] != 0 or g[j, i] != 0):
+                undirected.append({"a": names[i], "b": names[j]})
+    # THE SKELETON IS THE MEASUREMENT, ORIENTED OR NOT (2026-09-23). PC oriented nothing on the
+    # pass that found this: `mechanisms` came back empty, the packet carried no row at all, and
+    # the runner recorded the whole system UNMEASURED -- a search over 28 conditional-independence
+    # tests reported as if it had never run. An UNORIENTED adjacency is a measured dependence
+    # structure and a real donation; the count of tests and of edges is what the next pass needs
+    # to know whether the alpha or the window is what is empty.
+    representation = {"kind": "causal_skeleton", "method": "PC/fisherz", "alpha": ALPHA,
+                      "variables": names, "n_tests": trials,
+                      "n_directed": len(mechs), "n_undirected": len(undirected),
+                      "undirected_edges": undirected,
+                      "representation": ("the PC skeleton over contemporaneous and one-lag log "
+                                         "returns; an edge is a conditional dependence the "
+                                         "search could not explain away, never a verdict")}
+    return A.packet(SYSTEM, bundle, trials=trials, mechanisms=mechs,
+                    representations=[representation],
+                    note=f"{len(mechs)} directed, {len(undirected)} undirected over "
+                         f"{len(names)} variables")
 
 
 if __name__ == "__main__":

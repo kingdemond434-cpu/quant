@@ -161,13 +161,57 @@ if (-not $gotLock) {
 }
 
 # ---------------------------------------------------------------- 1. adopt the branch's tree
-$adoptScript = Join-Path $desk "scripts\Adopt-Release.ps1"
+# NEXT TO THIS SCRIPT FIRST, then the repository's copy. The two ship together and the mutex
+# helper is already dotted from $PSScriptRoot, so resolving one of the three from $RepoRoot and
+# the other two from beside the file was an inconsistency waiting to bite. It also makes the
+# pair RUNNABLE FROM OUTSIDE THE TREE (`-RepoRoot C:\opt\quant` from a staging directory), which
+# is the only way to test a change to the adoption against the live repository without first
+# committing that change into the very repository the adoption is about to overwrite.
+$adoptScript = Join-Path $PSScriptRoot "Adopt-Release.ps1"
+if (-not (Test-Path $adoptScript)) { $adoptScript = Join-Path $desk "scripts\Adopt-Release.ps1" }
 if (-not (Test-Path $adoptScript)) { Log "Adopt-Release.ps1 missing at $adoptScript"; exit 2 }
-& powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $adoptScript `
-    -RepoRoot $RepoRoot -Branch $Branch
+# THE CONSOLE IS KEPT, BECAUSE THE ONE LINE BELOW IS NOT A DIAGNOSIS (2026-09-23). For four days
+# this log said "Adopt-Release exited 1 -- partial adoption" once an hour and named nothing; the
+# paths, the index.lock fatals and the chunk retries all went to a scheduled task's stdout, which
+# is discarded. A deployment path that cannot say WHY it failed is the same defect this desk keeps
+# finding one level up: activity reported, outcome withheld. An unwritable console log is a lost
+# diagnostic, never a reason to stop delivering code, so the tee is best-effort.
+$adoptConsole = Join-Path $desk "logs\adopt_release_console.log"
+# TEE, NOT COLLECT-THEN-WRITE. Buffering the whole console and writing it at the end gives an
+# operator nothing while the pass runs -- and a pass that HANGS (five hours of one, measured
+# 2026-09-23) would then write nothing at all, which is the exact failure this capture exists to
+# end. Tee-Object writes each line as it arrives AND passes it down the pipeline, so the array
+# below still holds everything for the log excerpt.
+try {
+    Set-Content -Path $adoptConsole -Encoding utf8 -ErrorAction Stop `
+        -Value ("{0} Adopt-Release start branch={1}" -f (Get-Date).ToUniversalTime().ToString('o'), $Branch)
+} catch { $adoptConsole = $null }
+if ($adoptConsole) {
+    $adoptOut = @(& powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $adoptScript `
+        -RepoRoot $RepoRoot -Branch $Branch 2>&1 |
+        ForEach-Object { "$_" } | Tee-Object -FilePath $adoptConsole -Append)
+} else {
+    $adoptOut = @(& powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $adoptScript `
+        -RepoRoot $RepoRoot -Branch $Branch 2>&1 | ForEach-Object { "$_" })
+}
 $adoptExit = $LASTEXITCODE
 if ($adoptExit -ne 0) {
     Log "Adopt-Release exited $adoptExit -- partial adoption; NOT sealing a tree that only half-matches the branch"
+    # THE PATHS, IN THIS LOG, NOW. `desks/mt5/reports/ADOPTION_STATE.json` carries the full list
+    # for plumbing_watchdog; the operator reading this file gets the first dozen without having
+    # to know the artifact exists.
+    # FROM THE REFUSAL ONWARD, not every indented line in the console. The console also lists
+    # the state paths that are explicitly NOT blocking, and a filter that swept those in put
+    # twelve harmless ledger names into the log under a line about a failed adoption -- evidence
+    # that points away from the cause is worse than none.
+    $refusalAt = [Array]::FindIndex([string[]]$adoptOut, [Predicate[string]] {
+        param($l) $l -match 'REFUSING to record|could not be written or unlinked' })
+    $excerpt = if ($refusalAt -ge 0) { @($adoptOut[$refusalAt..($adoptOut.Count - 1)]) }
+               else { @($adoptOut | Where-Object { $_ -match '\[FAIL\]|index\.lock|did not stage' }) }
+    foreach ($line in @($excerpt | Where-Object { $_ -match '\S' } | Select-Object -First 16)) {
+        Log ("    " + $line.Trim())
+    }
+    Log "full console: desks/mt5/logs/adopt_release_console.log; paths: desks/mt5/reports/ADOPTION_STATE.json"
     exit $adoptExit
 }
 

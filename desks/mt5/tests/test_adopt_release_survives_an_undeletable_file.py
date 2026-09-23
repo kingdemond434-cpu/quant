@@ -398,7 +398,11 @@ def test_the_script_keeps_before_it_deletes_and_verifies_outside_the_kept_set() 
     # up by the next push, or an input its own organ has since rewritten. So the gate is scoped to
     # code, state drift is counted and named rather than hidden, and the refusal message says
     # CODE path(s) so nobody reads it as the old rule.
-    assert "$stateDrift = @($allDiff | Where-Object { Test-StatePath $_ })" in code
+    # 2026-09-23: the discovery corpus was split out of the state bucket (it is MT5-IntelShip's
+    # to land, not this script's), so the state line now carries that exclusion. The PROPERTY
+    # this pins is unchanged -- every state path is measured and none of them blocks.
+    assert ("$stateDrift = @($allDiff | Where-Object "
+            "{ (Test-StatePath $_) -and -not (Test-ShippedByOwnOrgan $_) })") in code
     assert "$drift      = @($allDiff | Where-Object { -not (Test-StatePath $_) })" in code
     assert "CODE path(s) still differ" in code, (
         "the refusal must say which kind of path blocked it, or the next reader re-widens the gate")

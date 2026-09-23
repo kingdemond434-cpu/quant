@@ -104,6 +104,18 @@ FUSION_COST = REPORTS / "FUSION_COST.json"
 COST_TO_EDGE = REPORTS / "COST_TO_EDGE.json"
 NET_EDGE = REPORTS / "NET_EDGE.json"
 RANKS = DATA / "net_edge_ranks.json"
+#: The VENUE-cost surface (commission and swap per asset x time x size x state x order),
+#: written by `cost_surface.py` under the MT5-CostState task. It is READ here and never
+#: forwarded to the spine's spread slot: its terms are commission and swap, which the
+#: spine already prices separately. Declared as an edge in libs/ops/control_plane/edges.py
+#: so the plumbing watchdog fails if either end stops naming this path.
+VENUE_SURFACE = REPORTS / "COST_SURFACE.json"
+#: The registry repair the desk computed on 2026-09-16 and left in report_only. Its
+#: corrections are VERIFIED here against the broker's own quote before anything on the
+#: capital path is allowed to read them: `repair_universe_spreads.py --only-verified`
+#: applies a symbol only when this file says its correction moves TOWARD the quote.
+SPREAD_PROVENANCE = REPORTS / "SPREAD_PROVENANCE.json"
+VERIFIED = DATA / "spread_repair_verified.json"
 LIVE_LEDGER = DATA / "live_ledger.jsonl"
 INTENTS = DATA / "order_intents.jsonl"
 
@@ -284,13 +296,20 @@ def charged_reading(symbol: str, meta: dict[str, Any] | None, fusion_row: dict[s
     raw, zero, wide = _f(rt.get("RAW")), _f(rt.get("ZERO")), _f(rt.get("WIDE"))
     out["round_trip_per_lot"] = {"RAW": raw, "ZERO": zero, "WIDE": wide}
     if raw is not None and zero is not None and raw > zero:
-        spine = zero / (raw - zero)
-        out["spine_commission_ratio"] = round(spine, 4)
-        out["true_commission_ratio"] = round(spine * mult, 4)
-        out["commission_ratio_overcharge"] = round(1.0 / mult, 4)
+        # THE CORRECTED ARITHMETIC, and the one it replaced, both published. RAW - ZERO is the
+        # RAW regime's 0.2x of the spread, so the ratio against a one-way spread_r carries the
+        # multiplier back out. `net_edge_spine.commission_term` was fixed to this on 2026-09-23
+        # (desks/mt5/tests/test_net_edge_spine.py pins both numbers), so the overcharge is now
+        # 1.0 and the fence's job is to keep it there rather than to re-discover it.
+        true = mult * zero / (raw - zero)
+        out["spine_commission_ratio"] = round(true, 4)
+        out["true_commission_ratio"] = round(true, 4)
+        out["ratio_before_fix"] = round(zero / (raw - zero), 4)
+        out["commission_ratio_overcharge"] = 1.0
     else:
         out["spine_commission_ratio"] = None
         out["true_commission_ratio"] = None
+        out["ratio_before_fix"] = None
         out["commission_ratio_overcharge"] = None
     if isinstance(cost_row, dict):
         out["spread_r"] = _f(cost_row.get("spread_r"))
@@ -851,7 +870,8 @@ def terminal_snapshot(symbols: list[str], budget_s: float, bars_cap: int,
 
 def build(universe: dict[str, Any], fusion: Any, cost_to_edge: Any, snapshot: dict[str, Any],
           ledger: list[dict[str, Any]], intents: list[dict[str, Any]],
-          net_edge_doc: Any, ranks_doc: Any, symbols: list[str]) -> dict[str, Any]:
+          net_edge_doc: Any, ranks_doc: Any, symbols: list[str],
+          venue: Any = None, prov: Any = None) -> dict[str, Any]:
     """The whole report: charged vs quoted vs realised per symbol, then the re-judge."""
     fusion_rows = {str(r.get("symbol")): r for r in ((fusion or {}).get("symbols") or [])
                    if isinstance(r, dict) and r.get("symbol")}
@@ -917,13 +937,17 @@ def build(universe: dict[str, Any], fusion: Any, cost_to_edge: Any, snapshot: di
             "rate_overcharge": (round(model_c / statistics.fmean(realised_c), 4)
                                 if realised_c else None),
             "regime_multiplier": mult, "regime_source": mult_src,
-            "ratio_overcharge": round(1.0 / mult, 4) if mult else None,
-            "total_overcharge": (round((model_c / statistics.fmean(realised_c)) / mult, 4)
-                                 if realised_c and mult else None),
-            "why": ("the spine derives commission/spread as zero/(raw-zero), but raw is the "
-                    f"{mult}x regime, so raw-zero is {mult} of the spread and the ratio is "
-                    f"{round(1.0 / mult, 2) if mult else '?'}x too large; the rate itself is "
-                    "charged in account currency at a figure documented as USD")},
+            "ratio_overcharge": 1.0,
+            "ratio_overcharge_before_fix": round(1.0 / mult, 4) if mult else None,
+            "total_overcharge": (round(model_c / statistics.fmean(realised_c), 4)
+                                 if realised_c else None),
+            "why": ("BOTH HALVES FIXED 2026-09-23. The spine derived commission over "
+                    "spread as zero/(raw-zero), but raw is the 0.2x regime, so the "
+                    "ratio was 5x too large; it now carries the multiplier. And the "
+                    "rate was the brochure USD 2.25 applied as ACCOUNT currency "
+                    "against a measured 2.00. This reading holds them there.")},
+        "venue_cost_surface": venue_surface_block(venue),
+        "spread_repair": repair_verification(prov, rows),
         "consumer_defects": consumer_defects(mult),
         "overcharged": over, "n_overcharged": len(over),
         "rejudge": judged,
@@ -938,6 +962,106 @@ def build(universe: dict[str, Any], fusion: Any, cost_to_edge: Any, snapshot: di
                  "unmeasured term stays UNMEASURED and makes net a bound. Nothing here vetoes, "
                  "sizes or promotes."),
     }
+
+
+def repair_verification(prov: Any, rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Every pending registry correction, judged against the broker's own quote.
+
+    NOTHING ON THE CAPITAL PATH MAY READ A SPREAD NOBODY JUST VERIFIED. The repair tool
+    computed 136 corrections on 2026-09-16 and has sat in report_only ever since, so the
+    registry still charges GBPCHF 165.0 points. The corrections are almost certainly
+    right -- but "almost certainly" is how a capital-path number gets changed by an
+    argument instead of a measurement. Each one is compared to THIS broker's quote:
+
+      TOWARD      |new - quoted| < |old - quoted|: the correction is an improvement
+      NEUTRAL     the two are equally far from the quote
+      AWAY        the correction moves the charge further from what the venue quotes
+      UNVERIFIED  no measured quote for this symbol on this box yet: it is NOT applied
+
+    Only TOWARD symbols are written to `spread_repair_verified.json`, which is the whole
+    input `--only-verified` accepts. An AWAY row is reported and refused.
+    """
+    doc = prov if isinstance(prov, dict) else {}
+    quotes: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        cmp_ = row.get("compare") or {}
+        ref = _f(cmp_.get("median_reference_pts"))
+        if ref is None or ref <= 0:
+            ref = _f(cmp_.get("quoted_p90_pts")) or _f(cmp_.get("quoted_live_pts"))
+        if ref is not None:
+            quotes[str(row["symbol"])] = {
+                "ref": float(ref), "p50": _f(cmp_.get("quoted_p50_pts")),
+                "p90": _f(cmp_.get("quoted_p90_pts")),
+                "live": _f(cmp_.get("quoted_live_pts"))}
+    out: list[dict[str, Any]] = []
+    # THE COMPLETE MAP, not the report's `corrected` list: that one is truncated to 60 rows
+    # and a truncated list is read as an absence by machines (the report says so itself).
+    raw_map = doc.get("by_symbol")
+    by_sym: dict[str, Any] = raw_map if isinstance(raw_map, dict) else {}
+    pending = ([{"symbol": s, **v} for s, v in sorted(by_sym.items())
+                if isinstance(v, dict) and v.get("bucket") == "corrected"]
+               or [r for r in (doc.get("corrected") or []) if isinstance(r, dict)])
+    for row in pending:
+        if not isinstance(row, dict) or not row.get("symbol"):
+            continue
+        sym = str(row["symbol"])
+        old_pts, new_pts = _f(row.get("old")), _f(row.get("new"))
+        q = quotes.get(sym)
+        if old_pts is None or new_pts is None or q is None:
+            out.append({"symbol": sym, "old": old_pts, "new": new_pts,
+                        "quoted": None if q is None else q["ref"],
+                        "verdict": "UNVERIFIED",
+                        "why": "no measured quote for this symbol on this box yet; the "
+                               "correction is NOT applied"})
+            continue
+        d_old, d_new = abs(old_pts - q["ref"]), abs(new_pts - q["ref"])
+        verdict = ("TOWARD" if d_new < d_old else
+                   "AWAY" if d_new > d_old else "NEUTRAL")
+        out.append({"symbol": sym, "old": old_pts, "new": new_pts, "quoted": q["ref"],
+                    "quoted_p50": q["p50"], "quoted_p90": q["p90"], "live": q["live"],
+                    "err_before": round(d_old, 4), "err_after": round(d_new, 4),
+                    "verdict": verdict,
+                    "why": (f"charged {old_pts} -> {new_pts} against a quoted {q['ref']}: "
+                            f"error {round(d_old, 2)} -> {round(d_new, 2)}")})
+    out.sort(key=lambda r: -(_f(r.get("err_before")) or 0.0))
+    toward = [r["symbol"] for r in out if r["verdict"] == "TOWARD"]
+    away = [r["symbol"] for r in out if r["verdict"] == "AWAY"]
+    return {"at": _now(), "source": "reports/SPREAD_PROVENANCE.json",
+            "applied_upstream": bool(doc.get("applied")),
+            "n_applied_upstream": doc.get("n_applied"),
+            "apply_mode": doc.get("apply_mode"),
+            "n_pending": len(out), "n_toward": len(toward), "n_away": len(away),
+            "n_unverified": sum(1 for r in out if r["verdict"] == "UNVERIFIED"),
+            "n_neutral": sum(1 for r in out if r["verdict"] == "NEUTRAL"),
+            "verified_symbols": sorted(toward), "away_symbols": sorted(away),
+            "rows": out[:200],
+            "rule": ("a registry correction reaches the capital path only when THIS "
+                     "broker's own quote says it moves the charge toward the truth; an "
+                     "unverified or AWAY correction is refused, not deferred")}
+
+
+def venue_surface_block(doc: Any) -> dict[str, Any]:
+    """What `cost_surface.py` measured about COMMISSION AND SWAP, read and stated here.
+
+    It is a different measurement from this organ's, not a rival one: that surface prices
+    the terms the venue charges per (asset, time, size, state, order) and carries the
+    hierarchy and shrinkage; this organ prices the CROSSING. Reading it is what stops it
+    being an artifact nothing consumes, and publishing its terms here is what stops the
+    next reader wiring it into a spread slot that already charges commission.
+    """
+    if not isinstance(doc, dict):
+        return {"status": UNMEASURED,
+                "why": "reports/COST_SURFACE.json is absent on this box: the venue-cost "
+                       "surface has not been built here (task MT5-CostState)"}
+    cells = [c for c in (doc.get("cells") or []) if isinstance(c, dict)]
+    return {"status": MEASURED, "built_at": doc.get("built_at"),
+            "cost_terms": doc.get("cost_terms") or ["commission", "swap"],
+            "excludes": doc.get("excludes") or ["spread", "slippage", "market_impact"],
+            "n_deals_priced": doc.get("n_deals_priced"), "n_cells": len(cells),
+            "unmeasured": (doc.get("unmeasured") or [])[:4],
+            "why": ("commission and swap per asset x time x size x state x order. NOT the "
+                    "crossing: it must never be fed to the spine's spread term, which "
+                    "charges commission as its own")}
 
 
 def consumer_defects(mult: float) -> list[dict[str, Any]]:
@@ -965,28 +1089,39 @@ def consumer_defects(mult: float) -> list[dict[str, Any]]:
                    f"{mult}x spread as the whole spread",
          "charged_over_true": round(1.0 / mult, 4) if mult else None,
          "fix": f"ratio = {mult} * zero / (raw - zero)  # the RAW regime multiplier, divided out",
-         "owner": "net-edge builder", "status": "REPORTED"},
+         "owner": "net-edge builder", "status": "FIXED",
+         "fixed_at": "net_edge_spine.commission_term + raw_regime_mult, 2026-09-23; pinned by "
+                     "desks/mt5/tests/test_net_edge_spine.py"},
         {"where": "libs/portfolio/fusion_cost.py:COMMISSION_PER_LOT_PER_SIDE",
          "defect": "2.25 is documented as USD and applied as account currency; the account pays "
                    "2.00 EUR per lot per side, measured over every deal it has ever done",
          "charged_over_true": 1.125,
          "fix": "set it from the measured per-side commission published here, or state the "
                 "currency and convert",
-         "owner": "money path", "status": "REPORTED"},
+         "owner": "money path", "status": "FIXED",
+         "fixed_at": "fusion_cost.COMMISSION_PER_LOT_PER_SIDE = 2.00 with COMMISSION_UNIT = "
+                     "'account currency per lot per side', 2026-09-23; the five mirrors and "
+                     "the engine default moved with it and their tests were re-pinned"},
         {"where": "desks/mt5/research/cost_surface.py:_EXEC_OUT",
          "defect": "writes reports/COST_SURFACE.json while net_edge_spine reads "
                    "reports/EXECUTION_COST_SURFACE.json, so the realised surface never reached "
                    "the consumer and every spread term fell back to the modelled scalar",
          "charged_over_true": None,
-         "fix": "this organ now writes EXECUTION_COST_SURFACE.json; the two producers must be "
-                "reconciled to one name",
-         "owner": "cost-surface builder", "status": "BRIDGED"},
+         "fix": "this organ writes EXECUTION_COST_SURFACE.json (one writer, one reader) and "
+                "reads COST_SURFACE.json; both pairs are declared in "
+                "libs/ops/control_plane/edges.py and checked by plumbing_watchdog",
+         "owner": "cost-surface builder", "status": "FIXED",
+         "fixed_at": "edges.py cost->net and venue-cost->cost-truth, 2026-09-23"},
         {"where": "desks/mt5/research/cost_surface.py:deal_costs",
          "defect": "cost_r there is (commission + swap)/risk, and the spine feeds cost_r into "
                    "its SPREAD term and then adds commission again",
          "charged_over_true": None,
          "fix": "keep cost_r to spread and slippage, as the surface written here does",
-         "owner": "cost-surface builder", "status": "REPORTED"},
+         "owner": "cost-surface builder", "status": "FIXED",
+         "fixed_at": "cost_surface.deal_costs now divides by the deal's OWN stop distance "
+                     "through tick_value (85 of 151 deals had a risk_quote disagreeing by "
+                     ">10x) and every row declares cost_terms=[commission, swap] and "
+                     "excludes=[spread, slippage, market_impact], 2026-09-23"},
     ]
 
 
@@ -1057,6 +1192,27 @@ def render_md(rep: dict[str, Any]) -> str:
         add(f"  - `{row.get('cell')}` net {row.get('net_as_charged')} -> "
             f"{row.get('net_on_measured_cost')} ({row.get('why')})")
     add("")
+    rep_block = rep.get("spread_repair") or {}
+    if rep_block.get("n_pending"):
+        add("## Registry corrections, verified against the broker's own quote")
+        add("")
+        add(f"- **{rep_block.get('n_applied_upstream')}** corrections already APPLIED to "
+            f"the registry through `repair_universe_spreads.py --only-verified` "
+            f"(mode {rep_block.get('apply_mode')}).")
+        add(f"- {rep_block.get('n_pending')} still pending; "
+            f"**{rep_block.get('n_toward')}** move the charge TOWARD the quote and are "
+            f"applied, {rep_block.get('n_away')} move AWAY and are refused, "
+            f"{rep_block.get('n_unverified')} have no measured quote here yet and are "
+            "not applied, "
+            f"{rep_block.get('n_neutral')} are neutral.")
+        add("")
+        add("| symbol | charged | corrected to | broker quotes | error before | after |")
+        add("|---|---:|---:|---:|---:|---:|")
+        for row in (rep_block.get("rows") or [])[:30]:
+            add(f"| {row.get('symbol')} | {row.get('old')} | {row.get('new')} | "
+                f"{row.get('quoted')} | {row.get('err_before')} | "
+                f"{row.get('err_after')} ({row.get('verdict')}) |")
+        add("")
     add("## Named defects in code this organ does not own")
     add("")
     for row in rep.get("consumer_defects") or []:
@@ -1071,8 +1227,11 @@ def render_md(rep: dict[str, Any]) -> str:
 # -------------------------------------------------------------------------------------- main
 
 
-def symbol_universe(ranks_doc: Any, cost_to_edge: Any, ledger: list[dict[str, Any]]) -> list[str]:
-    """Every symbol the desk trades or tests, from the three places it says so."""
+def symbol_universe(ranks_doc: Any, cost_to_edge: Any, ledger: list[dict[str, Any]],
+                    prov: Any = None) -> list[str]:
+    """Every symbol the desk trades or tests, from the places it says so -- PLUS every symbol
+    whose registry spread has a pending correction, because a correction cannot be verified
+    against a quote this organ never took."""
     syms: set[str] = set()
     for key in ((ranks_doc or {}).get("by_cell") or {}):
         syms.add(str(key).split("|")[0])
@@ -1082,6 +1241,10 @@ def symbol_universe(ranks_doc: Any, cost_to_edge: Any, ledger: list[dict[str, An
     for row in ledger:
         if row.get("symbol"):
             syms.add(str(row["symbol"]))
+    by_sym = (prov or {}).get("by_symbol") if isinstance(prov, dict) else None
+    for sym, row in (by_sym if isinstance(by_sym, dict) else {}).items():
+        if isinstance(row, dict) and row.get("bucket") == "corrected":
+            syms.add(str(sym))
     return sorted(s for s in syms if s)
 
 
@@ -1100,10 +1263,12 @@ def main(argv: list[str] | None = None) -> int:
     fusion = _json(FUSION_COST)
     cost_to_edge = _json(COST_TO_EDGE)
     net_edge_doc = _json(NET_EDGE)
+    venue = _json(VENUE_SURFACE)
+    prov = _json(SPREAD_PROVENANCE)
     ranks_doc = _json(RANKS)
     ledger = _jsonl(LIVE_LEDGER)
     intents = _jsonl(INTENTS)
-    symbols = symbol_universe(ranks_doc, cost_to_edge, ledger)
+    symbols = symbol_universe(ranks_doc, cost_to_edge, ledger, prov)
 
     cursor = _json(CURSOR) or {}
     cached = _json(QUOTES) or {}
@@ -1140,7 +1305,7 @@ def main(argv: list[str] | None = None) -> int:
                     "cached_at": cached.get("at")}
 
     rep = build(universe, fusion, cost_to_edge, snapshot, ledger, intents,
-                net_edge_doc, ranks_doc, symbols)
+                net_edge_doc, ranks_doc, symbols, venue, prov)
     rep["bars_cap"] = cap
     rep["bars_cap_why"] = cap_why
     rep["elapsed_s"] = round(time.monotonic() - started, 2)
@@ -1169,6 +1334,16 @@ def main(argv: list[str] | None = None) -> int:
     args.out.write_text(json.dumps(rep, indent=1, sort_keys=True, default=str) + "\n", "utf-8")
     args.md.parent.mkdir(parents=True, exist_ok=True)
     args.md.write_text(render_md(rep), "utf-8")
+    repair = rep.get("spread_repair") or {}
+    VERIFIED.write_text(json.dumps(
+        {"at": _now(), "source": "desks/mt5/research/cost_truth.py",
+         "verified_symbols": repair.get("verified_symbols") or [],
+         "away_symbols": repair.get("away_symbols") or [],
+         "n_pending": repair.get("n_pending"),
+         "rule": ("only these symbols' registry corrections were shown to move the "
+                  "charged spread TOWARD this broker's own quote; "
+                  "repair_universe_spreads.py --only-verified applies no other")},
+        indent=1, sort_keys=True) + "\n", "utf-8")
     surface = rep.get("execution_surface") or execution_surface(rep.get("symbols") or [])
     EXEC_SURFACE.write_text(json.dumps(surface, indent=1, sort_keys=True) + "\n", "utf-8")
 

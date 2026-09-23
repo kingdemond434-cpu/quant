@@ -70,6 +70,10 @@ from libs.ops.control_plane import lease  # noqa: E402
 from libs.ops.control_plane import watermarks as wm  # noqa: E402
 
 REPORT = DESK / "reports" / "PLUMBING_WATCHDOG.json"
+#: What `Adopt-Release.ps1` writes on EVERY pass, refusal or not: the paths that still differ
+#: from the branch tip, named. Before it existed the only record of a partial adoption was one
+#: line an hour in adopt_and_seal.log that named nothing.
+ADOPTION_STATE = DESK / "reports" / "ADOPTION_STATE.json"
 DEFECT_STATE = DESK / "data" / "plumbing_defects.json"
 ALERTS = ROOT / "docs" / "research" / "PLUMBING_ALERTS.md"
 COMPONENT = "leg:plumbing_watchdog"
@@ -91,6 +95,7 @@ ESCALATION_S: dict[str, int] = {
     "watchdog_artifact": 2 * 3600,
     "adoption_task": 3 * 3600,
     "adoption_lag": 6 * 3600,
+    "adoption_partial": 3 * 3600,
     "git_writer_lock": 2 * 3600,
     "orphan_workers": 2 * 3600,
     "commit_headroom": 2 * 3600,
@@ -351,6 +356,132 @@ def check_adoption_lag(root: Path | None = None,
                            "powershell desks/mt5/scripts/Adopt-And-Seal.ps1 -- and if it refuses, "
                            "the refusal is the defect: read desks/mt5/scripts/GitWriterMutex.ps1",
                            severity="CRITICAL"))
+    return rows, facts
+
+
+# -------------------------------------------- 2b. the adoption that RUNS and still lands nothing
+#: What `Adopt-And-Seal.ps1` writes, one line per hour. A trailing run of "partial adoption"
+#: lines is the exact shape of the 2026-09-23 outage: the clock healthy, the lock taken, the
+#: adoption running, and the tree still behind the branch every hour.
+ADOPT_LOG = DESK / "logs" / "adopt_and_seal.log"
+
+_PARTIAL = "partial adoption"
+#: A line that means the pass REACHED an outcome: sealed, or already the sealed release.
+_SEALED_MARKS = ("sealed ", "nothing to seal", "nothing to do")
+
+
+def adoption_partial_run(log_path: Path | None = None,
+                         now: datetime | None = None) -> dict[str, Any]:
+    """How long has the adoption been ending PARTIAL, without interruption?
+
+    A pass that fails is an incident. A pass that fails every hour for four days is the desk
+    silently running unshipped code, and the only way to tell them apart is to count the
+    consecutive tail. Returns `{"consecutive": int, "since": iso|UNMEASURED, "hours": float}`;
+    an unreadable or absent log is UNMEASURED, never zero (L1.28a) -- "the adoption is fine" and
+    "nobody wrote the log" must not render identically.
+    """
+    path = log_path or ADOPT_LOG
+    out: dict[str, Any] = {"consecutive": UNMEASURED, "since": UNMEASURED, "hours": UNMEASURED}
+    try:
+        lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        out["why"] = f"{path.name} is not readable on this host"
+        return out
+    consecutive = 0
+    since: str | None = None
+    for line in reversed(lines):
+        if not line.strip():
+            continue
+        # A CONTINUATION IS NOT AN OUTCOME. Adopt-And-Seal writes the offending paths into this
+        # same log, one per line, as `<stamp> adopt-and-seal:     <path>` -- the body indented
+        # under the status line it belongs to. Read as outcomes they would END the run they are
+        # evidence FOR, and the four-day outage would have counted as two hours.
+        body = line.split(" adopt-and-seal:", 1)[-1]
+        if body.startswith(("  ", "\t")):
+            continue
+        text = line.strip()
+        if any(mark in text for mark in _SEALED_MARKS):
+            break
+        if _PARTIAL in text:
+            consecutive += 1
+            since = text.split(" adopt-and-seal:", 1)[0].strip() or since
+            continue
+        # Any other outcome (a refused lock, a missing script) ends the partial run: the
+        # question this answers is specifically "adoption ran and landed nothing", and a pass
+        # that never reached Adopt-Release is a different defect with a different repair.
+        break
+    out["consecutive"] = consecutive
+    out["since"] = since or UNMEASURED
+    # `2026-09-23 03:50:18Z` -- fromisoformat takes the space separator, _parse_iso the Z.
+    started = _parse_iso(since) if since else None
+    if started is not None:
+        out["hours"] = round(((now or _now()) - started).total_seconds() / 3600.0, 2)
+    return out
+
+
+def check_adoption_partial(root: Path | None = None, now: datetime | None = None,
+                           state_path: Path | None = None,
+                           log_path: Path | None = None,
+                           ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """THE ADOPTION RAN, TOOK THE LOCK, AND STILL DID NOT LAND THE BRANCH.
+
+    `check_adoption_task` catches a clock that stopped and `check_adoption_lag` catches a tree
+    that is behind. Neither catches the state this box was actually in for four days: the task
+    "Ready", the mutex taken, `Adopt-Release` running to completion every hour -- and exiting 1
+    on a handful of paths it could not write, so `Adopt-And-Seal` refused to seal and the
+    gateway kept running yesterday's code.
+
+    The repair always depended on knowing WHICH paths, and that was the one thing nobody had:
+    the console went to a scheduled task's discarded stdout. `Adopt-Release` now publishes
+    `desks/mt5/reports/ADOPTION_STATE.json` on every pass, so this check names them.
+    """
+    base = root or ROOT
+    art = state_path or (base / "desks" / "mt5" / "reports" / "ADOPTION_STATE.json")
+    log = log_path or (base / "desks" / "mt5" / "logs" / "adopt_and_seal.log")
+    run_facts = adoption_partial_run(log, now)
+    facts: dict[str, Any] = {"artifact": str(art.relative_to(base)) if art.is_relative_to(base)
+                             else str(art), **{f"partial_{k}": v for k, v in run_facts.items()}}
+    rows: list[dict[str, Any]] = []
+    doc = _read_json(art)
+    if not isinstance(doc, dict):
+        facts["state"] = UNMEASURED
+        # NOT a defect on its own. The artifact lands with the next adoption, and a box that has
+        # not adopted since this shipped is already covered by adoption_lag. Publishing
+        # UNMEASURED is the honest verdict; inventing a defect from an absent file is not.
+        return rows, facts
+    facts["state"] = "ok" if doc.get("ok") else "partial"
+    facts["measured_at"] = doc.get("measured_at", UNMEASURED)
+    drift = [str(p) for p in (doc.get("code_drift") or [])]
+    unwritable = [str(p) for p in (doc.get("unwritable") or [])]
+    facts["code_drift"] = len(drift)
+    facts["unwritable"] = len(unwritable)
+    facts["code_drift_paths"] = drift[:40]
+    facts["counts"] = doc.get("counts", {})
+    if doc.get("ok") and not drift:
+        return rows, facts
+    consecutive = run_facts.get("consecutive")
+    hours = run_facts.get("hours")
+    how_long = (f"{consecutive} consecutive hourly pass(es)"
+                if isinstance(consecutive, int) and consecutive > 0 else
+                "the last recorded pass")
+    if isinstance(hours, float):
+        how_long += f", running {hours:.1f}h"
+    named = ", ".join(drift[:8]) + (f" ... and {len(drift) - 8} more" if len(drift) > 8 else "")
+    why_each = ""
+    if unwritable:
+        why_each = (f" {len(unwritable)} of them could not be written or unlinked at all "
+                    f"({', '.join(unwritable[:4])}) -- an open handle or the known corrupt NTFS "
+                    f"entry.")
+    rows.append(defect(
+        "adoption_partial", ADOPT_TASK,
+        f"the adoption RAN and landed a tree that still differs from the branch on "
+        f"{len(drift)} CODE path(s), for {how_long}: {named}.{why_each} The task reads Ready "
+        f"and the log reads healthy; the gateway is running code that is not the shipped code.",
+        "read desks/mt5/reports/ADOPTION_STATE.json and desks/mt5/logs/adopt_release_console.log "
+        "-- each named path is an open handle, a corrupt NTFS entry (chkdsk C: /F, then reboot), "
+        "or a foreign writer holding .git/index.lock; then re-run "
+        "desks/mt5/scripts/Adopt-And-Seal.ps1",
+        severity="CRITICAL"))
     return rows, facts
 
 
@@ -931,6 +1062,7 @@ def run(*, budget_s: float = 180.0, apply: bool = False, root: Path | None = Non
         ("watchdog_task", lambda: check_task(WATCHDOG_TASK, max_next_run_s=1800,
                                              check="scheduled_task", now=t)),
         ("adoption_lag", lambda: check_adoption_lag(base)),
+        ("adoption_partial", lambda: check_adoption_partial(base, t)),
         ("git_writer_lock", lambda: check_git_writer_lock(base)),
         ("processes", check_processes),
         ("declared_tasks", check_declared_tasks),

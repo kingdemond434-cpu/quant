@@ -312,6 +312,17 @@ _LIVE_LEDGER = _DESK / "data" / "live_ledger.jsonl"
 _FILL_CORPUS = _DESK / "data" / "fill_corpus.jsonl"
 _SURVIVORS = _DESK / "data" / "UNIVERSAL_SURVIVORS.canon.json"
 _POSTERIOR_ALPHA = _DESK / "reports" / "POSTERIOR_ALPHA.json"
+#: THE VENUE-COST SURFACE, AND IT IS NOT THE ONE THE NET-EDGE SPINE READS. That one is
+#: `reports/EXECUTION_COST_SURFACE.json`, whose single writer is
+#: `desks/mt5/research/cost_truth.py` -- it measures the CROSSING (the broker's quoted
+#: spread at the desk's own fill minutes plus the measured slip) which is what the spine's
+#: spread slot means. This file carries COMMISSION AND SWAP per (asset, time, size, state,
+#: order), which the spine prices as its own separate term: wiring this path into that slot
+#: would charge commission twice. The two artifacts are declared as separate edges in
+#: `libs/ops/control_plane/edges.py` and `plumbing_watchdog.check_edge_paths` fails when
+#: either producer and consumer stop naming the same path -- which is how this file sat
+#: unread for weeks while the spine reported EXECUTION_COST_SURFACE.json as absent and 212
+#: of 273 rows were priced with no spread at all.
 _EXEC_OUT = _DESK / "reports" / "COST_SURFACE.json"
 
 #: The five dimensions, in the order the item names them. The hierarchy drops them from the
@@ -375,14 +386,49 @@ def _num(v: object) -> float | None:
     return f if np.isfinite(f) else None
 
 
-def deal_costs(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[str]]:
-    """One row per recorded deal: its realised execution cost in R, and its five coordinates.
+def risk_account(row: dict[str, Any], meta: dict[str, Any]) -> float | None:
+    """The deal's risk in ACCOUNT currency: its own stop distance x tick value x lots.
+
+    POSITIVE EVIDENCE ONLY. Without an entry, a stop and a tick value there is no
+    conversion, and the row is counted as unpriceable rather than divided by a field
+    whose unit is not known (see `deal_costs`).
+    """
+    entry, sl = _num(row.get("entry_price")), _num(row.get("sl"))
+    vol = _num(row.get("volume"))
+    if entry is None or not sl or not vol or vol <= 0:
+        return None
+    sym = str(row.get("symbol") or "")
+    m = meta.get(sym) or {}
+    ts, tv = _num(m.get("tick_size")), _num(m.get("tick_value"))
+    if not ts or not tv or ts <= 0 or tv <= 0:
+        return None
+    return abs(entry - sl) / ts * tv * vol
+
+
+def deal_costs(rows: list[dict[str, Any]], meta: dict[str, Any] | None = None,
+               ) -> tuple[list[dict[str, Any]], list[str]]:
+    """One row per recorded deal: its realised VENUE cost in R, and its five coordinates.
 
     THE COST IS IN R AND NOT IN QUOTE, because R is the unit the edge is quoted in and a cost
-    in dollars cannot be subtracted from an edge in R. `risk_quote` is the deal's own recorded
-    risk (stop distance x contract size x volume), so commission + swap over |risk_quote| is
-    exactly the share of one unit of risk the venue took. A deal with no recorded risk cannot
-    be expressed in R and is COUNTED as unpriceable rather than dropped silently.
+    in dollars cannot be subtracted from an edge in R. A deal with no expressible risk is
+    COUNTED as unpriceable rather than dropped silently.
+
+    `risk_quote` IS NOT THE DENOMINATOR ANY MORE, AND THE REASON IS MEASURED (2026-09-23,
+    reports/COST_TRUTH.json). That field holds a stop distance in PRICE units on some rows
+    (EURCHF 0.00034, XAUUSD 2.06) and a money amount on others (EURGBP 5.67), and `r_multiple`
+    is 0.0 on every row of the four symbols sampled. Dividing a EUR commission by a price
+    distance produced a 45R commission on EURCHF -- a cost that would refuse any cell on the
+    symbol forever. The denominator is now the row's OWN stop distance carried into account
+    currency through `tick_value` (`universe.json`), which is the same currency the ledger keeps
+    commission and swap in; `risk_quote` is used only when it agrees with that within 10x, and
+    the disagreement is counted and published.
+
+    WHAT IS IN `cost_r`: COMMISSION AND SWAP, and the row says so in `cost_terms`. It is NOT the
+    spread/slippage term, and it must never be fed to a consumer that then charges commission
+    again -- which is exactly what `net_edge_spine.spread_term` would do with it. The artifact
+    the spine reads is `reports/EXECUTION_COST_SURFACE.json`, written by
+    `desks/mt5/research/cost_truth.py`, which measures the crossing itself from the broker's
+    quoted spread at the desk's own fill minutes. See `_EXEC_OUT` below.
     """
     out: list[dict[str, Any]] = []
     notes: list[str] = []
@@ -390,12 +436,16 @@ def deal_costs(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[s
     vols = [v for v in (_num(r.get("volume")) for r in rows) if v and v > 0]
     edges = (np.quantile(vols, [1 / 3, 2 / 3]).tolist() if len(vols) >= 3 * N_SIZE_BUCKETS
              else [])
+    n_risk_disagreed = 0
     for r in rows:
-        risk = _num(r.get("risk_quote"))
         vol = _num(r.get("volume"))
+        risk = risk_account(r, meta or {})
         if risk is None or abs(risk) <= 0 or vol is None or vol <= 0:
             n_norisk += 1
             continue
+        stated = _num(r.get("risk_quote"))
+        if stated and abs(stated) > 0 and not (0.1 <= abs(stated) / abs(risk) <= 10.0):
+            n_risk_disagreed += 1
         comm = abs(_num(r.get("commission")) or 0.0)
         swap = -(_num(r.get("swap")) or 0.0)          # a swap CREDIT lowers the cost
         cost_r = (comm + swap) / abs(risk)
@@ -418,12 +468,18 @@ def deal_costs(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[s
             "order": "UNMEASURED",                    # filled in from the fill corpus below
             "sleeve": str(r.get("sleeve") or ""),
             "cost_r": round(float(cost_r), 8),
+            "cost_terms": ["commission", "swap"],
+            "excludes": ["spread", "slippage", "market_impact"],
             "commission_quote": round(comm, 4),
             "swap_quote": round(float(swap), 4),
         })
     if n_norisk:
-        notes.append(f"{n_norisk} deal(s) carry no recorded risk_quote and cannot be expressed "
-                     f"in R; they are counted, never assumed free")
+        notes.append(f"{n_norisk} deal(s) carry no entry/stop/tick_value and cannot be "
+                     f"expressed in R; they are counted, never assumed free")
+    if n_risk_disagreed:
+        notes.append(f"{n_risk_disagreed} deal(s) whose recorded risk_quote disagrees with "
+                     f"their own stop distance by more than 10x -- the unit defect measured "
+                     f"in reports/COST_TRUTH.json; the stop distance is used")
     if not edges and out:
         notes.append(f"fewer than {3 * N_SIZE_BUCKETS} sized deals: the size dimension is "
                      f"UNMEASURED and every cell falls back to its (asset, time) parent")
@@ -631,7 +687,12 @@ def build_execution_surface(spread: dict[str, Any], *, ledger: Path | None = Non
     corpus_rows = _jsonl(cp)
     inputs = {lp.name: "present" if deals else "absent",
               cp.name: "present" if corpus_rows else "absent"}
-    rows, notes = deal_costs(deals)
+    reg_path = _UNIVERSE / "universe.json"
+    try:
+        meta = json.loads(reg_path.read_text("utf-8"))
+    except (OSError, ValueError):
+        meta = {}
+    rows, notes = deal_costs(deals, meta if isinstance(meta, dict) else {})
     kinds = order_types(corpus_rows)
     for row in rows:
         row["state"] = state_of(spread, row["asset"], int(row["hour"]))
@@ -647,6 +708,11 @@ def build_execution_surface(spread: dict[str, Any], *, ledger: Path | None = Non
     return {
         "schema": "execution-cost-surface-1",
         "built_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+        "cost_terms": ["commission", "swap"],
+        "excludes": ["spread", "slippage", "market_impact"],
+        "canonical_execution_surface": "desks/mt5/reports/EXECUTION_COST_SURFACE.json",
+        "canonical_writer": "desks/mt5/research/cost_truth.py",
+        "consumer": "desks/mt5/research/cost_truth.py (venue_cost_surface block)",
         "dimensions": list(DIMENSIONS),
         "k_shrink": K_SHRINK,
         "inputs": inputs,

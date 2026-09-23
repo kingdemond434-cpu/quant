@@ -32,6 +32,7 @@ moved in a week with no install task moving is a fence failure).
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import os
 import re
@@ -94,7 +95,26 @@ _FINAL_PATTERNS: tuple[tuple[str, str], ...] = (
      "the wheel is source-only and this host has no C toolchain"),
     (r"metadata-generation-failed|failed building wheel|error: subprocess-exited-with-error",
      "the source build failed on this host"),
+    (r"failed to build '[^']+' when getting requirements|impimporter",
+     "a build-time dependency is source-only and does not build on this interpreter"),
+    (r"backendunavailable|cannot import 'setuptools\.build_meta'|cannot import 'mesonpy'",
+     "the distribution's build backend does not run on this interpreter -- a source-only "
+     "dependency pinned to a numpy this Python has no wheel for"),
     (r"only-binary|no binary distribution", "no binary distribution is published"),
+    #: MEASURED 2026-09-23 ON THIS HOST, and every one of these is about this machine's binaries,
+    #: never about the project: torch's `c10.dll` refuses to initialise (WinError 1114) so every
+    #: torch-dependent system is unhostable here, and `osqp` takes the interpreter down with an
+    #: access violation, which takes cvxpy, riskfolio and cvxportfolio with it. A crash is as
+    #: final as a missing wheel, and retrying it hourly forever would change nothing.
+    (r"winerror 1114|initialization routine failed",
+     "a native dependency's DLL refuses to initialise on this host"),
+    (r"winerror 126|the specified module could not be found",
+     "a native dependency's DLL is missing on this host"),
+    (r"interpreter crashed|access violation / sigsegv",
+     "importing the module crashes the interpreter on this host"),
+    (r"cannot import name '[^']+' from ",
+     "the distribution calls an API the desk's own scientific core has removed (measured on "
+     "kymatio 0.3.0 -> scipy.special.sph_harm); a pinned release cannot grow that name back"),
 )
 _RETRY_PATTERNS = re.compile(
     r"read timed out|connection|temporary failure|timed out|proxy|ssl|network|503|502|429",
@@ -173,7 +193,20 @@ def ensure_shared(root: Path, *, timeout_s: int = 300) -> tuple[Path, str]:
         return py, f"venv creation failed: {type(exc).__name__}: {exc}"
     if made.returncode != 0 or not py.exists():
         return py, f"venv creation failed: {(made.stderr or made.stdout)[-200:]}"
-    return py, "shared venv created with --system-site-packages"
+    #: `setuptools` is a RUNTIME prerequisite here, not a build convenience: a venv on 3.12+
+    #: ships without it, and `pkg_resources` is imported at module scope by woodwork
+    #: (featuretools) and stopit (TPOT). Measured 2026-09-23: both read "ModuleNotFoundError: No
+    #: module named 'pkg_resources'" and would have been recorded unhostable over a thirty-second
+    #: install. `wheel` rides along for the same reason -- a source-only distribution cannot
+    #: build its own metadata without it. The `<81` is not a preference: setuptools 81 DELETED
+    #: `pkg_resources`, and 84.0.0 resolved here first, so the prerequisite arrived without the
+    #: one module it was installed for. The pin is the measurement, taken on this host.
+    with contextlib.suppress(subprocess.SubprocessError, OSError):
+        subprocess.run([str(py), "-m", "pip", "install", "--no-input", "--quiet",
+                        "--disable-pip-version-check", "setuptools<81", "wheel"],
+                       env=SB.scrub_env(), capture_output=True, text=True, timeout=300,
+                       check=False, cwd=str(base))
+    return py, "shared venv created with --system-site-packages, setuptools and wheel"
 
 
 def verify(py: Path, module: str, *, timeout_s: int = 180) -> tuple[bool, str, str]:
@@ -192,8 +225,17 @@ def verify(py: Path, module: str, *, timeout_s: int = 180) -> tuple[bool, str, s
     out = (proc.stdout or "").strip()
     if proc.returncode == 0 and out.startswith("OK"):
         return True, out[3:].strip(), ""
-    tail = (proc.stderr or proc.stdout or "").strip().splitlines()[-3:]
-    return False, "", " | ".join(t[:200] for t in tail)[:400]
+    tail = (proc.stderr or proc.stdout or "").strip().splitlines()[-6:]
+    body = " | ".join(t[:200] for t in tail)[:500]
+    #: A CRASH PRINTS NOTHING. Measured 2026-09-23: `import cvxportfolio`, `import riskfolio`
+    #: and `import pyspiel` each ended with an access violation and an EMPTY stderr, so an error
+    #: string alone would have recorded "" as the evidence for a terminal verdict. The return
+    #: code IS the evidence when there is no other, and it is always carried.
+    crash = proc.returncode in (-1073741819, -11, 139, 3221225477)
+    label = (f"the interpreter CRASHED loading this module (returncode {proc.returncode}, "
+             f"access violation / SIGSEGV)" if crash
+             else f"import failed with returncode {proc.returncode}")
+    return False, "", (f"{label}: {body}" if body else label)[:600]
 
 
 def pip_install(py: Path, requirement: str, *, timeout_s: int) -> tuple[bool, str, float]:
@@ -211,9 +253,33 @@ def pip_install(py: Path, requirement: str, *, timeout_s: int) -> tuple[bool, st
     seconds = round(time.monotonic() - t0, 1)
     if proc.returncode == 0:
         return True, "installed", seconds
-    body = (proc.stderr or "") + "\n" + (proc.stdout or "")
-    tail = [ln for ln in body.strip().splitlines() if ln.strip()][-6:]
-    return False, " | ".join(t[:200] for t in tail)[:800], seconds
+    #: STDOUT FIRST, STDERR LAST. pip narrates the resolver on stdout and prints the one line
+    #: that says WHY on stderr, so a tail taken over stderr-then-stdout records "Requirement
+    #: already satisfied" twelve times and loses the cause (measured on merlion).
+    body = (proc.stdout or "") + "\n" + (proc.stderr or "")
+    #: TWELVE lines, not six: pip prints the resolver's narrative before the one line that says
+    #: WHY, so a short tail records "finished with status 'error'" and loses the cause.
+    tail = [ln for ln in body.strip().splitlines() if ln.strip()][-12:]
+    return False, " | ".join(t[:200] for t in tail)[:1500], seconds
+
+
+def import_target(sid: str) -> str:
+    """WHAT MUST IMPORT for this adapter to run, which is not always what pip installed.
+
+    Measured 2026-09-23: `import kymatio` succeeds and `import kymatio.numpy` -- the name the
+    adapter actually reaches for -- raises, because kymatio 0.3.0 calls a scipy function this
+    desk's scipy removed. Verifying the distribution's top-level package would have written
+    INSTALLED into the ledger for a system that can never run, and the liveness fence would then
+    have read that row as an answer. An adapter may therefore declare `IMPORT_TARGET`; the spec's
+    module is the default.
+    """
+    spec = A.SPECS.get(sid)
+    try:
+        module = __import__(f"libs.research.adapters.{sid}", fromlist=["run"])
+    except Exception:
+        module = None
+    declared = str(getattr(module, "IMPORT_TARGET", "") or "") if module is not None else ""
+    return declared or (spec.module if spec else "")
 
 
 def cover_of(sid: str) -> str:
@@ -351,7 +417,9 @@ def provision_pass(*, budget_s: float = 900.0, root: Path | None = None,
             rec.update({"status": "PLANNED", "why": "dry run"})
             attempted.append(rec)
             continue
-        ok_already, version_already, _ = verify(Path(py), spec.module, timeout_s=60)
+        target = import_target(sid)
+        rec["import_target"] = target
+        ok_already, version_already, _ = verify(Path(py), target, timeout_s=60)
         if ok_already and not force:
             rec.update({"status": INSTALLED, "why": "already importable in the shared venv",
                         "version": version_already, "seconds": 0.0})
@@ -363,7 +431,7 @@ def provision_pass(*, budget_s: float = 900.0, root: Path | None = None,
                 rec.update({"status": status, "why": reason, "error": why, "seconds": seconds,
                             "cover": cover_of(sid)})
             else:
-                imported, version, err = verify(Path(py), spec.module)
+                imported, version, err = verify(Path(py), target)
                 if imported:
                     rec.update({"status": INSTALLED, "why": "installed and imported",
                                 "version": version, "seconds": seconds})

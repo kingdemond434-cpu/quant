@@ -1102,9 +1102,11 @@ def global_archaeologist_swarm(grounds: Sequence[Mapping[str, Any]], *,
                                instrument: str = "XAUUSD", per_layer: int = 3) -> dict[str, Any]:
     """AGENT 8. Per language, the grounds by source layer (the ten of `polyglot.SOURCE_LAYERS`)
     and NATIVE queries built from the language's own terminology -- never a translated phrase.
-    Every ground carries an access verdict from the classifier; refused and quarantined grounds
-    get no query. This agent reaches no host: it is the plan the civilization's scout fetches
-    under its own access discipline. A language with no terminology is UNMEASURED by name."""
+    Every ground carries an access verdict from the classifier; ONLY a refused ground (one of the
+    five acts of the hard boundary) gets no query. The quarantine that also silenced ACCESS_UNCLEAR
+    grounds was deleted on 2026-09-23 (LAWS 5e), so an unclear ground is planned and queried with
+    its label attached. This agent reaches no host: it is the plan the civilization's scout
+    fetches. A language with no terminology is UNMEASURED by name."""
     by_lang: dict[str, list[dict[str, Any]]] = {}
     for g in grounds:
         lang = str(g.get("language") or "").strip()
@@ -1123,9 +1125,9 @@ def global_archaeologist_swarm(grounds: Sequence[Mapping[str, Any]], *,
             if v.refused:
                 refused += 1
                 continue
-            if v.quarantine:
-                quarantined += 1
-                continue
+            # `v.quarantine` is False on every row since LAWS 5e (2026-09-23): the counter is
+            # kept so the published plan still carries the key, and it now counts nothing.
+            quarantined += int(v.quarantine)
             layers[layer] = layers.get(layer, 0) + 1
         queries: dict[str, list[str]] = {}
         for layer in SWARM_LAYERS:
@@ -1576,8 +1578,10 @@ def donate(rows: Sequence[Mapping[str, Any]], *, at: str = "") -> Path | None:
 
 # --------------------------------------------------------------------------- the pass
 def _usable(rows: Sequence[Mapping[str, Any]]) -> tuple[list[dict[str, Any]], int, int]:
-    """Rows the access discipline admits. A row without labels is labelled NOW, and an unclear
-    one is quarantined: absence of a readable permission is not permission."""
+    """Rows the access discipline admits -- which since LAWS 5e (2026-09-23) is EVERY row off the
+    five refused acts. A row without labels is labelled NOW; an UNCLEAR access path is kept and
+    counted, because the quarantine that used to drop it here is deleted and an unresolved
+    permission question is a provenance note, not a verdict about the content."""
     keep: list[dict[str, Any]] = []
     refused = quarantined = 0
     for r in rows:
@@ -1588,9 +1592,9 @@ def _usable(rows: Sequence[Mapping[str, Any]]) -> tuple[list[dict[str, Any]], in
         if row.get("refused"):
             refused += 1
             continue
-        if row.get("quarantined") or not row.get("usable", True):
-            quarantined += 1
-            continue
+        # COUNTED, NEVER DROPPED. `quarantined` is False on every row now; the counter survives
+        # so the published census keeps its key and a fence can assert it stays zero.
+        quarantined += int(bool(row.get("quarantined")))
         keep.append(row)
     return keep, refused, quarantined
 
