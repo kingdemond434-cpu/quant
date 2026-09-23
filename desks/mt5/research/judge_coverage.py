@@ -365,8 +365,15 @@ def learn_priors(ledger: Path | None = None, *, since: str = "",
         passed = row.get("passed")
         survived = passed is True or str(passed).lower() == "true"
         gate = str(row.get("terminal_gate") or "")
+        # AN UNMEASURED CELL IS NOT EVIDENCE AGAINST THE FAMILY, and charging it as one is the
+        # exact mistake `record_outcome` documents: "charging it as a Beta failure would teach the
+        # allocator that the thing does not work when what happened is that nobody looked."
+        # `UNKNOWN` is the sealed judge's unmeasured path (see `unknown_breakdown`), so it is
+        # recorded in the Dirichlet as `unmeasured` and moves no pass probability at all.
+        outcome = ("survived" if survived
+                   else ("unmeasured" if gate in ("", "UNKNOWN") else "REJECTED"))
         try:
-            record_outcome("survived" if survived else "REJECTED", family=fam,
+            record_outcome(outcome, family=fam,
                            rejection_reason=gate, failure_class=gate, state=state,
                            state_dir=state_dir, persist=False)
         except Exception:
@@ -382,6 +389,176 @@ def learn_priors(ledger: Path | None = None, *, since: str = "",
     out["families"] = len(seen_fams)
     out["cursor"] = high
     return out
+
+
+#: The sealed judge's own artifact, read (never written) for the census below.
+GATES_REPORT = REPORTS / "universal_gates_external.json"
+
+
+def unknown_breakdown(path: Path | None = None) -> dict[str, Any]:
+    """WHAT `terminal_gate: UNKNOWN` ACTUALLY IS -- measured, not assumed.
+
+    MEASURED ON THE BOX across 60,000 verdicts (2026-09-22T22:46 -> 2026-09-23T05:42): UNKNOWN
+    44,432 (74%), in_sample_screen 13,915 (23%), deflated_sharpe 1,641 (2.7%), PASSED 4. So the
+    multiple-testing charge everyone blames kills under 3%, and three quarters of the judge
+    returned no named gate at all.
+
+    IT IS NOT A MISSING GATE AND IT IS NOT MISSING BARS. `external_gauntlet._append_gate_ledger`
+    writes `str(v.get("terminal_gate") or ("PASSED" if v.get("passed") else "UNKNOWN"))`, and
+    exactly one verdict path omits `terminal_gate`: the UNMEASURED branch, which emits
+    `{"passed": False, "unmeasured": True, "stages": {"observations": ...}}` for a cell whose
+    signals produced fewer than the 60 daily observations CPCV needs. UNKNOWN IS THAT BRANCH.
+
+    MEASURED ON THIS TREE, 748 unmeasured of 6,787 verdicts: 615 of them (82%) have days == 0 --
+    the cell fired NOT ONCE -- and EVERY ONE of those symbols has its H1 parquet present, so the
+    cause is not absent bars and nothing needs converting. They are specs that never fire,
+    concentrated in four families (session_range_breakout 336, carry 140, discovered 79,
+    event_reaction 56). The remaining 133 fire between 1 and 59 days: too rare to judge, which is
+    a fact about the SEARCH that proposed them and not evidence against any edge.
+
+    So the route is UPSTREAM, to whatever mints these specs, and this census is what it needs:
+    per family, how many of its cells never fired at all. Nothing here removes a cell -- a
+    never-firing spec on a short history can fire on a longer one, and an order is not a ban.
+    """
+    doc = _read(path or GATES_REPORT)
+    out: dict[str, Any] = {"status": "UNMEASURED", "source": str(path or GATES_REPORT)}
+    verdicts = (doc or {}).get("verdicts") if isinstance(doc, dict) else None
+    if not isinstance(verdicts, list) or not verdicts:
+        out["why"] = "the sealed judge has written no verdicts here"
+        return out
+    never: dict[str, int] = {}
+    too_rare: dict[str, int] = {}
+    n_unmeasured = 0
+    for v in verdicts:
+        if not isinstance(v, dict) or not v.get("unmeasured"):
+            continue
+        n_unmeasured += 1
+        fam = str(v.get("family") or "")
+        if int(v.get("days") or 0) == 0:
+            never[fam] = never.get(fam, 0) + 1
+        else:
+            too_rare[fam] = too_rare.get(fam, 0) + 1
+    named = name_unknowns(path)
+    by_reason: dict[str, int] = {}
+    for row in named.values():
+        r = str(row.get("reason") or "unnamed")
+        by_reason[r] = by_reason.get(r, 0) + 1
+    total = len(verdicts)
+    out.update({
+        "by_reason": by_reason,
+        "named_cells": len(named),
+        "status": "OK",
+        "verdicts": total,
+        "unknown_total": n_unmeasured,
+        "unknown_share": round(n_unmeasured / max(total, 1), 6),
+        "causes": {
+            "never_fires_days_0": {
+                "cells": sum(never.values()),
+                "by_family": dict(sorted(never.items(), key=lambda kv: -kv[1])),
+                "route": ("the spec never fired on bars that ARE present -- upstream, to the "
+                          "compiler that mints it; nothing to convert, no bars are missing"),
+            },
+            "too_rare_1_to_59_days": {
+                "cells": sum(too_rare.values()),
+                "by_family": dict(sorted(too_rare.items(), key=lambda kv: -kv[1])[:20]),
+                "route": ("fires too rarely for CPCV's 60 observations -- a fact about the "
+                          "search, recorded as `unmeasured` in the priors so it moves no pass "
+                          "probability (nobody looked; that is not evidence against the edge)"),
+            },
+        },
+        "why_unknown": ("external_gauntlet emits no `terminal_gate` on its UNMEASURED branch and "
+                        "_append_gate_ledger defaults that to UNKNOWN; the judge is sealed, so "
+                        "this is named here rather than fixed there"),
+    })
+    return out
+
+
+#: The bank of cells the judge PROVED it cannot rule on, with the named reason and the bar file
+#: size at the moment they were parked. Kept forever, never deleted, and re-admitted the moment
+#: the symbol's bars grow -- a spec that never fired on a short history can fire on a longer one,
+#: so this is a filter with a measured re-open condition, never a ban.
+UNRUNNABLE_BANK = HYP / "unrunnable_specs.json"
+UNIVERSE = BASE / "data" / "universe"
+
+
+def _bar_bytes(sym: str) -> int:
+    """The symbol's H1 bar file size -- the cheap monotone proxy for "the history grew"."""
+    try:
+        return (UNIVERSE / f"{sym}_H1.parquet").stat().st_size
+    except OSError:
+        return 0
+
+
+def name_unknowns(path: Path | None = None) -> dict[str, dict[str, Any]]:
+    """EVERY UNKNOWN GETS A NAMED REASON. The class stops existing as a category.
+
+    An unnamed terminal state is the defect, whatever the cause turns out to be -- so this joins
+    the sealed judge's own verdict rows to a reason per CELL, and the residue that cannot be
+    joined is named too (`no_verdict_row`) rather than left inside a bucket. A new cause appears
+    as its own name the day it appears.
+    """
+    doc = _read(path or GATES_REPORT)
+    out: dict[str, dict[str, Any]] = {}
+    verdicts = (doc or {}).get("verdicts") if isinstance(doc, dict) else None
+    if not isinstance(verdicts, list):
+        return out
+    for v in verdicts:
+        if not isinstance(v, dict) or not v.get("unmeasured"):
+            continue
+        cell = str(v.get("cell") or "")
+        if not cell:
+            continue
+        sym = str(v.get("sym") or "")
+        days = int(v.get("days") or 0)
+        why = str((((v.get("stages") or {}).get("observations")) or {}).get("why") or "")
+        bars = _bar_bytes(sym)
+        if days == 0 and bars == 0:
+            reason, route = "missing_bars", ("no H1 bar file for this symbol: the conversion "
+                                             "organ's bar supply (research/local_converter.py) "
+                                             "owns it")
+        elif days == 0:
+            reason, route = "never_fires", ("the spec produced not one daily observation on bars "
+                                            "that ARE present: an unrunnable spec, filtered at "
+                                            "intake so it never reaches the docket again until "
+                                            "this symbol's history grows")
+        else:
+            reason, route = "too_rare", (f"fires on {days} days, under the 60 CPCV needs: a fact "
+                                         "about the search, re-admitted when the history grows")
+        out[cell] = {"reason": reason, "route": route, "sym": sym, "family": v.get("family"),
+                     "days": days, "bar_bytes": bars, "why": why[:200]}
+    return out
+
+
+def unrunnable_bank(path: Path | None = None) -> dict[str, dict[str, Any]]:
+    doc = _read(path or UNRUNNABLE_BANK)
+    if not isinstance(doc, dict):
+        return {}
+    return {str(k): v for k, v in doc.items() if isinstance(v, dict)}
+
+
+def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
+                           path: Path | None = None) -> dict[str, Any]:
+    """Park every newly-named unrunnable cell, and RE-ADMIT any whose bars have since grown."""
+    target = path or UNRUNNABLE_BANK
+    bank = unrunnable_bank(target)
+    readmitted = [cell for cell, row in bank.items()
+                  if _bar_bytes(str(row.get("sym") or "")) > int(row.get("bar_bytes") or 0)]
+    for cell in readmitted:
+        bank.pop(cell, None)
+    added = 0
+    for cell, row in named.items():
+        if row.get("reason") == "missing_bars":
+            continue                       # owned by the conversion organ, not filtered here
+        if cell not in bank:
+            added += 1
+        bank[cell] = {**row, "parked_at": at}
+    try:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(json.dumps(bank, indent=1, default=str), "utf-8")
+    except OSError:
+        pass
+    return {"parked_this_pass": added, "readmitted_on_bar_growth": len(readmitted),
+            "bank_size": len(bank), "path": str(target)}
 
 
 def family_value(path: Path | None = None) -> tuple[dict[str, float], float]:
@@ -647,6 +824,9 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
     # TEACH THE PRIOR BEFORE SPENDING IT: every verdict since the last reading updates its
     # family's posterior, so the ranking below is spending a number this desk actually learned.
     learned = learn_priors(ledger, since=str((prior or {}).get("priors_cursor") or ""))
+    unknown = unknown_breakdown()
+    named_unknowns = name_unknowns()
+    unrunnable = update_unrunnable_bank(named_unknowns, at=at.isoformat(timespec="seconds"))
     ranking = rank_by_value(backlog, rows, capacity)
     quota = allocate(backlog, capacity, ranking=ranking)
     judgeable = [r for r in rows if str(r.get("family") or "") not in banned]
@@ -724,6 +904,10 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
     # `mined: 0` until a miner reaches it, which is a measurement of the miners and not of this
     # organ. It is published, never failed on: intake allocates the judge, it does not mine.
     unmined = sorted(f for f in live_families() if f and table.get(f, {}).get("mined", 0) == 0)
+    # THE PREVIOUS READING'S UNKNOWN SHARE, so the fence can ratchet it: this quantity is a
+    # SHARE and not a count, because a count rises with throughput and throughput rising is the
+    # desk working. The share falls only when fewer never-firing specs reach the judge.
+    prior_unknown_share = prior.get("unknown_share") if isinstance(prior, dict) else None
     # THE OPPORTUNITY COST, which is the number that makes this ROI rather than bookkeeping.
     # `value_at_risk` is the expected value sitting unjudged right now; `value_deferred` is the
     # part of it this hour cannot reach; `value_forgone_per_hour` is that deferred value spread
@@ -781,6 +965,18 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
         "value_forgone_per_hour": forgone_per_hour,
         "hours_to_drain": round(hours_to_drain, 3) if hours_to_drain else None,
         "capacity_short": bool(hours_to_drain and hours_to_drain > 1.0),
+        # THE LARGEST SINGLE WASTE IN THE DESK, named and ratcheted: the share of the judge's own
+        # verdicts that return no gate at all. Driven DOWN by the compiler that stops minting
+        # never-firing specs, never by judging less.
+        "unknown_share": unknown.get("unknown_share"),
+        "unknown_total": unknown.get("unknown_total"),
+        "prior_unknown_share": prior_unknown_share,
+        "never_fires_cells": ((unknown.get("causes") or {}).get("never_fires_days_0")
+                              or {}).get("cells"),
+        "unknown_unnamed": max(0, int(unknown.get("unknown_total") or 0)
+                               - int(unknown.get("named_cells") or 0)),
+        "unrunnable_parked": unrunnable.get("parked_this_pass"),
+        "unrunnable_bank": unrunnable.get("bank_size"),
         "oldest_unjudged_age_h": (round(max(v for v in oldest.values() if v is not None), 2)
                                   if any(v is not None for v in oldest.values()) else None),
     }
@@ -804,6 +1000,8 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
         # the remainder actually followed it, which is what stops a future session quietly
         # reverting this to round-robin.
         "priors_learned": learned,
+        "unknown_reasons": unknown,
+        "unrunnable": unrunnable,
         "value_ranking": ranking,
         "value_rule": ("remainder after every family's floor goes down expected value per "
                        "judge-second: p_optimistic (upper credible bound of the desk's own Beta "
@@ -849,9 +1047,20 @@ def order_docket(rows: list[dict[str, Any]], *, publish: bool = True,
             cid = row.get("_cell") or _cell_id(row)
             if cid and cid not in judged_cells:
                 ids.add(str(cid))
+        # THE UNRUNNABLE FILTER, at the one funnel every producer flows through (the principal,
+        # 2026-09-23: "unrunnable specs back to the compiler's filter so they never reach the
+        # docket again"). A cell the judge PROVED it cannot rule on is not re-submitted while
+        # its symbol's history is unchanged; the moment those bars grow it is re-admitted
+        # automatically. Nothing is deleted -- the bank keeps every row with its named reason.
+        bank = unrunnable_bank()
+        blocked = [r for r in rows if str(r.get("_cell") or "") in bank]
+        rows = [r for r in rows if str(r.get("_cell") or "") not in bank]
         judgeable = [r for r in rows if str(r.get("family") or "") not in banned]
         study = [r for r in rows if str(r.get("family") or "") in banned]
         ordered = coverage_order(judgeable, quota, ids) + study
+        doc["unrunnable_filtered_from_docket"] = len(blocked)
+        for _b in blocked:
+            _b.pop("_cell", None)
         for row in ordered:
             row.pop("_cell", None)
         if publish:
@@ -875,6 +1084,7 @@ def write(doc: dict[str, Any], *, report: Path | None = None,
                          "oldest_unjudged_age_h": r.get("oldest_unjudged_age_h")}
                      for f, r in fams.items()},
         "unjudged_total": (doc.get("totals") or {}).get("unjudged_total"),
+        "unknown_share": (doc.get("totals") or {}).get("unknown_share"),
         "priors_cursor": (doc.get("priors_learned") or {}).get("cursor") or "",
         "why": ("the baseline the carried-cohort ratchet is measured against: rows already in "
                 "this backlog and still unjudged at the next reading were STARVED, because a "
@@ -891,6 +1101,12 @@ def render(doc: dict[str, Any]) -> list[str]:
              f"  families mined {t.get('families_mined')} / with backlog "
              f"{t.get('families_with_backlog')} / queued this hour {t.get('families_queued')}; "
              f"unjudged {t.get('unjudged_total')} on capacity {t.get('capacity_measured')}"]
+    if t.get("unknown_share") is not None:
+        _u = doc.get("unknown_reasons") or {}
+        lines.append(f"  UNKNOWN {t.get('unknown_total')} of {_u.get('verdicts')} verdicts "
+                     f"({float(t.get('unknown_share') or 0):.1%}), of which "
+                     f"{t.get('never_fires_cells')} never fired at all; parked "
+                     f"{(doc.get('unrunnable') or {}).get('parked_this_pass')}")
     lines.append(f"  value at risk {t.get('value_at_risk'):.3e} of which "
                  f"{t.get('value_deferred'):.3e} deferred; forgone "
                  f"{t.get('value_forgone_per_hour'):.3e}/h; drain "
@@ -928,10 +1144,29 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-__all__ = ["allocate", "banned_from_capital", "build", "coverage_order", "family_breadth",
-           "family_priors", "family_value", "judge_seconds_per_cell", "judged_index",
-           "learn_priors", "live_families", "main", "measured_capacity", "order_docket",
-           "rank_by_value", "render", "write"]
+__all__ = [
+    "allocate",
+    "banned_from_capital",
+    "build",
+    "coverage_order",
+    "family_breadth",
+    "family_priors",
+    "family_value",
+    "judge_seconds_per_cell",
+    "judged_index",
+    "learn_priors",
+    "live_families",
+    "main",
+    "measured_capacity",
+    "name_unknowns",
+    "order_docket",
+    "rank_by_value",
+    "render",
+    "unknown_breakdown",
+    "unrunnable_bank",
+    "update_unrunnable_bank",
+    "write",
+]
 
 
 if __name__ == "__main__":                                              # pragma: no cover

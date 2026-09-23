@@ -69,7 +69,7 @@ class RegistryUnreadable(RuntimeError):
     """
 
 
-def _read(path: Path) -> dict:
+def _read(path: Path) -> dict[str, Any]:
     """ABSENCE AND UNREADABILITY ARE DIFFERENT ANSWERS, and only one of them is safe.
 
     This returned `{}` for both, and `freeze()` treats an empty registry as "no clock has ever
@@ -110,7 +110,7 @@ def _read(path: Path) -> dict:
     return value
 
 
-def _write(reg: dict) -> None:
+def _write(reg: dict[str, Any]) -> None:
     """Atomic replace -- a half-written registry is exactly the input `_read` must never see.
 
     `write_text` truncates first, so every write opened a window in which a concurrent reader
@@ -204,8 +204,8 @@ def cost_hash(costs: Any) -> str:
 
 def identity(*, family: str, symbol: str, direction: str = "LONG", timeframe: str = "H1",
              selector: str = "", condition: str | None = None,
-             params: dict | None = None, code: str = "", cost: str = "",
-             data_venue: str = "", behaviour: str = "") -> dict:
+             params: dict[str, Any] | None = None, code: str = "", cost: str = "",
+             data_venue: str = "", behaviour: str = "") -> dict[str, Any]:
     """Build the canonical identity dict plus its stable id.
 
     `behaviour` is the OPTIONAL bytecode hash from `behaviour_hash`. It is recorded on the row
@@ -214,11 +214,11 @@ def identity(*, family: str, symbol: str, direction: str = "LONG", timeframe: st
     difference is a real behaviour change or only edited prose -- which is what stopped 15 clocks
     dead on 2026-09-03 for a source-text edit that changed no logic.
     """
-    ident = {
+    ident: dict[str, Any] = {
         "family": str(family), "symbol": str(symbol), "direction": str(direction).upper(),
         "timeframe": str(timeframe), "selector": str(selector),
         "condition": condition or None,
-        "params": {k: params[k] for k in sorted(params or {})},
+        "params": {k: (params or {})[k] for k in sorted(params or {})},
         "code_hash": code, "cost_hash": cost, "data_venue": data_venue,
     }
     if behaviour:
@@ -235,8 +235,8 @@ def identity(*, family: str, symbol: str, direction: str = "LONG", timeframe: st
     return ident
 
 
-def freeze(key: str, ident: dict, *, forward_start: str | None = None,
-           cost_fields: dict | None = None) -> dict:
+def freeze(key: str, ident: dict[str, Any], *, forward_start: str | None = None,
+           cost_fields: dict[str, Any] | None = None) -> dict[str, Any]:
     """Record the identity for `key` if absent; return the FROZEN identity (never the new one).
 
     Idempotent by construction: a second freeze on a live key returns what was already frozen, so
@@ -271,14 +271,28 @@ def freeze(key: str, ident: dict, *, forward_start: str | None = None,
                 timespec="seconds")
             reg["updated_at"] = rows[key]["forward_start_backfilled_at"]
             _write(reg)
-        return rows[key]["identity"]
-    rows[key] = {
+        return dict(rows[key]["identity"])
+    # STAMPED AT BIRTH, NEVER BACKFILLED (2026-09-23, the principal). A clock that is born
+    # without the canonical identity can only be joined by a later sweep that re-parses its key,
+    # and 0 of 862 registry clocks joined the canon that way. `certificate_truth.parts()` is the
+    # ONE implementation -- imported, never a second parse -- so a row is joinable from the
+    # instant it exists and the backfill becomes a one-time repair rather than a standing chore.
+    born = {
         "identity": ident,
         "identity_schema": IDENTITY_SCHEMA,
         "frozen_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
         "forward_start": forward_start,
         "status": "LIVE",
     }
+    from certificate_truth import (  # type: ignore[import-not-found]
+        IDENTITY_RULE,
+        canonical_identity,
+    )
+    stamped = canonical_identity("sleeve_registry", key, born)
+    if stamped:
+        born["canonical_identity"] = stamped
+        born["canonical_identity_rule"] = IDENTITY_RULE
+    rows[key] = born
     if cost_fields:
         rows[key]["cost_fields"] = {k: round(float(v), 6) for k, v in cost_fields.items()
                                     if isinstance(v, (int, float)) and not isinstance(v, bool)}
@@ -287,14 +301,14 @@ def freeze(key: str, ident: dict, *, forward_start: str | None = None,
     return ident
 
 
-def frozen_cost_fields(key: str) -> dict | None:
+def frozen_cost_fields(key: str) -> dict[str, Any] | None:
     """The numeric cost basis `key` froze with, or None for rows frozen before it was stored."""
     row = _read(REGISTRY).get("sleeves", {}).get(key) or {}
     fields = row.get("cost_fields")
     return dict(fields) if isinstance(fields, dict) and fields else None
 
 
-def verify(key: str, ident: dict) -> list[str]:
+def verify(key: str, ident: dict[str, Any]) -> list[str]:
     """Return the identity fields that have DRIFTED since freezing. Empty list means intact."""
     row = _read(REGISTRY).get("sleeves", {}).get(key)
     if not row or not row.get("identity"):
@@ -328,7 +342,7 @@ def mark(key: str, status: str, why: str) -> None:
     _write(reg)
 
 
-def reconcile(key: str, ident: dict, *, replayed: bool = False) -> str | None:
+def reconcile(key: str, ident: dict[str, Any], *, replayed: bool = False) -> str | None:
     """Clear a stopped clock when the identity that stopped it is provably back and unspliced.
 
     A STATUS THAT ONLY EVER GOES ONE WAY IS NOT A MEASUREMENT (the same argument this engine
@@ -387,7 +401,7 @@ def reconcile(key: str, ident: dict, *, replayed: bool = False) -> str | None:
     return why
 
 
-def rebase_cost(key: str, ident: dict, cost_fields: dict) -> str | None:
+def rebase_cost(key: str, ident: dict[str, Any], cost_fields: dict[str, Any]) -> str | None:
     """Re-freeze a clock's COST after the desk corrects its own cost model. Nothing else moves.
 
     THE HOLE `reconcile()` CANNOT FILL. That function clears IDENTITY_BROKEN when the identity
@@ -430,7 +444,7 @@ def rebase_cost(key: str, ident: dict, cost_fields: dict) -> str | None:
     if not new:
         return None                     # an unmeasured new cost is not a correction (L1.28a)
 
-    def _charge(cf: dict) -> float:
+    def _charge(cf: dict[str, Any]) -> float:
         try:
             qpa = float(cf.get("quote_per_account") or 1.0) or 1.0
             return (float(cf.get("spread_per_lot") or 0.0)
@@ -460,7 +474,7 @@ def rebase_cost(key: str, ident: dict, cost_fields: dict) -> str | None:
     return why
 
 
-def rebase_code(key: str, ident: dict) -> str | None:
+def rebase_code(key: str, ident: dict[str, Any]) -> str | None:
     """Restart a clock whose frozen code identity can never be reached again. RESETS the window.
 
     THE HOLE NEITHER `reconcile()` NOR `rebase_cost()` FILLS. `reconcile` clears IDENTITY_BROKEN
@@ -573,7 +587,7 @@ def live_keys() -> set[str]:
     return marked - gateway_retired_keys()
 
 
-def snapshot() -> dict:
+def snapshot() -> dict[str, Any]:
     """Registry summary for dashboards and health, so they stop counting rows for themselves."""
     rows = _read(REGISTRY).get("sleeves", {})
     blocked = gateway_retired_keys()
