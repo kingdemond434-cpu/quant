@@ -470,6 +470,10 @@ LEG_LAYER: dict[str, str] = {
     # bottlenecks is binding this hour and moves compute toward it. They are the machine looking
     # at the machine, which is what `meta` means here.
     "plumbing_watchdog": "meta", "bottleneck_attack": "meta",
+    # the joined document the 24/7 dashboard renders: the machine reporting on itself, in one
+    # place, with every value's source and age attached. It measures nothing new and trades
+    # nothing, which is exactly what `meta` covers.
+    "desk_dashboard_state": "meta",
     "session_capital": "portfolio",
 }
 
