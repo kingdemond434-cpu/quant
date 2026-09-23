@@ -81,9 +81,12 @@ RATCHET = ROOT / "docs" / "research" / "producer_yield_ratchet.json"
 #: emitted nothing for a day is the failure being looked for.
 YIELD_WINDOW_HOURS = 24.0
 
-#: Below this, "consumed compute" is a costed import or an interrupted leg, not a shift of work.
-#: Same figure as the sibling fence, for the same reason: a fence that fires on a hundredth of an
-#: hour trains its readers to ignore it.
+#: Below this, a LEDGER hour is a costed import or an interrupted leg, not a shift of work. Same
+#: figure as the sibling fence, for the same reason: a fence that fires on a hundredth of a ledger
+#: hour trains its readers to ignore it. It does NOT apply to registry-attributed compute, which
+#: is seconds a generator recorded for a pass it actually ran -- there, any positive number is a
+#: pass that happened, and holding it to a ledger-sized floor is how this fence went blind on a
+#: host whose compute ledger keys on leg names that name no roster producer.
 MIN_COMPUTE_HOURS = 0.25
 
 #: How far throughput may fall below its own best before the fence calls it a regression. It is a
@@ -138,6 +141,15 @@ REPLACEMENTS: dict[str, str] = {
 }
 
 
+def _rel(p: Path) -> str:
+    """A repo-relative path for a message, never an exception. A fence that crashes while
+    explaining a breach reports nothing at all, which is worse than the breach."""
+    try:
+        return str(p.relative_to(ROOT))
+    except ValueError:
+        return str(p)
+
+
 def _read(p: Path, default: Any = None) -> Any:
     try:
         return json.loads(p.read_text(encoding="utf-8"))
@@ -152,7 +164,7 @@ def _seat_output(window_days: float) -> dict[str, int]:
     thing being looked for, and a stale row's internal timestamp would report it as alive.
     """
     cutoff = time.time() - window_days * 86400.0
-    out: Counter = Counter()
+    out: Counter[str] = Counter()
     for root in (DESK / "data" / "intelligence", ROOT / "data" / "intelligence"):
         for pat in ("*/*.json", "*/*.jsonl"):
             for f in glob.glob(str(root / pat)):
@@ -275,13 +287,17 @@ def _declarations() -> dict[str, dict[str, Any]]:
     return out
 
 
-def _window_cells(window_hours: float, db: Path = REGISTRY_DB) -> dict[str, Any]:
+def _window_cells(window_hours: float, db: Path | None = None) -> dict[str, Any]:
     """Per-producer cells inside the window, and the cell identities breadth is measured on.
 
     Read from the registry rather than from the census's funnel because the funnel is ALL-TIME:
     a producer that died a week ago still carries its lifetime cells there, and this fence is
     about the hour. An unreadable registry is UNMEASURED with the reason, never zero (L1.28a).
     """
+    # Resolved at CALL time, never bound as a default: a default argument freezes the path at
+    # import and quietly ignores every later reconfiguration, which is how a fence comes to read
+    # one desk's registry while reporting on another's.
+    db = db if db is not None else REGISTRY_DB
     out: dict[str, Any] = {"available": False, "why": "", "per": {}, "cells": {},
                            "window_hours": window_hours}
     if not db.exists():
@@ -301,28 +317,44 @@ def _window_cells(window_hours: float, db: Path = REGISTRY_DB) -> dict[str, Any]
         return out
     try:
         cur = con.cursor()
-        gen = "lower(coalesce(nullif(generator,''),'_unattributed_generator'))"
-        cell = ("lower(coalesce(nullif(family,''),'?'))||'|'||"
-                "lower(coalesce(nullif(symbol,''),'?'))||'|'||"
-                "lower(coalesce(nullif(horizon,''),'?'))")
+        # CREDIT THE PRODUCER THAT CAUSED THE CELL, NOT THE COMPILER THAT STAMPED IT. Measured
+        # 2026-09-17 and documented in `desks/mt5/research/japan/dashboard.py`: cells reach
+        # `research_candidates` through `discovery_compiler`, which writes its OWN generator, so
+        # `generator LIKE 'japan:%'` returns zero while the department has 54 cells queued. The
+        # link that survives the compiler is `discovery_id`. Reading the candidate's stamp alone
+        # credits one pass-through with the desk's whole output and reports every real producer
+        # as barren -- the exact false accusation this fence exists to avoid making.
+        gen = ("lower(coalesce(nullif(d.generator,''), nullif(c.generator,''),"
+               "'_unattributed_generator'))")
+        cell = ("lower(coalesce(nullif(c.family,''),'?'))||'|'||"
+                "lower(coalesce(nullif(c.symbol,''),'?'))||'|'||"
+                "lower(coalesce(nullif(c.horizon,''),'?'))")
+        src = ("research_candidates c left join discoveries d "
+               "on d.discovery_id = c.discovery_id")
+        when = when.replace("created_at", "c.created_at")
+        judged = judged.replace("donated_cell", "c.donated_cell").replace("status", "c.status")
         per: dict[str, dict[str, int]] = {}
         for key, raw, uniq, sent in cur.execute(
                 f"select {gen}, count(*), "  # noqa: S608 -- fragments are literals above
-                f"count(distinct coalesce(nullif(grid_cell,''), content_hash)), "
+                f"count(distinct coalesce(nullif(c.grid_cell,''), c.content_hash)), "
                 f"sum(case when {judged} then 1 else 0 end) "
-                f"from research_candidates where {when} group by 1", (cutoff,)):
+                f"from {src} where {when} group by 1", (cutoff,)):
             per[str(key)] = {"cells_emitted": int(raw or 0), "unique_cells": int(uniq or 0),
                              "cells_to_judge": int(sent or 0)}
         cells: dict[str, list[str]] = {}
         for key, ident in cur.execute(
-                f"select distinct {gen}, {cell} from research_candidates "  # noqa: S608
+                f"select distinct {gen}, {cell} from {src} "  # noqa: S608
                 f"where {when} and {judged}", (cutoff,)):
             cells.setdefault(str(key), []).append(str(ident))
-        out.update({"available": True, "per": per,
+        # A window in which NOTHING was created is UNMEASURED, never a verdict on any one
+        # producer: if the whole registry is silent the failure is the desk's, and convicting
+        # every organ on it would be the fence accusing everybody of one organ's outage (L1.28a).
+        out.update({"available": bool(per), "per": per,
                     "cells": {k: sorted(v)[:MAX_CELLS_PER_PRODUCER] for k, v in cells.items()}})
         if not per:
             out["why"] = (f"UNMEASURED: no research_candidates row was created in the last "
-                          f"{window_hours:g}h on this host")
+                          f"{window_hours:g}h on this host, so no producer can be judged barren "
+                          f"against it")
     except sqlite3.Error as exc:
         out["why"] = f"UNMEASURED: registry query failed ({type(exc).__name__}: {exc})"
     finally:
@@ -374,6 +406,7 @@ def yield_audit(window_hours: float = YIELD_WINDOW_HOURS) -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
     owing: list[dict[str, Any]] = []
     exempted: list[dict[str, Any]] = []
+    unattributed: list[str] = []
     census_rows = census.get("producers") if isinstance(census.get("producers"), list) else []
     seen: set[str] = set()
     for src in list(census_rows) + [{"producer": k, "key": k} for k in per]:
@@ -386,6 +419,16 @@ def yield_audit(window_hours: float = YIELD_WINDOW_HOURS) -> dict[str, Any]:
         m = per.get(key) or {}
         hours = src.get("compute_hours")
         hours = float(hours) if isinstance(hours, (int, float)) else None
+        led = src.get("compute_hours_ledger")
+        led = float(led) if isinstance(led, (int, float)) else 0.0
+        reg_h = src.get("compute_hours_registry")
+        reg_h = float(reg_h) if isinstance(reg_h, (int, float)) else 0.0
+        # TWO SOURCES OF "IT RAN", TWO FLOORS. A ledger hour is a leg's wall clock and needs the
+        # floor; a registry second is a generator recording a pass it actually made, so any
+        # positive value is that pass. Neither is inferred from a clock existing: an organ whose
+        # compute nothing measured is UNMEASURED here and is counted in `compute_unattributed`
+        # rather than accused (L1.28a).
+        spent = (led >= MIN_COMPUTE_HOURS) or (reg_h > 0.0)
         row = {
             "producer": src.get("producer") or key,
             "key": key,
@@ -406,12 +449,14 @@ def yield_audit(window_hours: float = YIELD_WINDOW_HOURS) -> dict[str, Any]:
         # has not said why. Not "low" -- zero. Low is a budget question and is never a failure
         # here, because cutting the tail of the search distribution is the one reduction in
         # aggressiveness this desk refuses.
-        if (hours is not None and hours >= MIN_COMPUTE_HOURS
-                and m.get("unique_cells", 0) == 0 and win.get("available")):
+        if spent and m.get("unique_cells", 0) == 0 and win.get("available"):
             if decl:
                 exempted.append(row)
             else:
                 owing.append(row)
+        elif (not spent and str(src.get("clock") or "")
+                and not str(src.get("clock")).startswith(("invoked:", "import:"))):
+            unattributed.append(key)
         rows.append(row)
 
     n_judge = sum(int(v.get("cells_to_judge", 0)) for v in per.values())
@@ -438,7 +483,7 @@ def yield_audit(window_hours: float = YIELD_WINDOW_HOURS) -> dict[str, Any]:
             f"{len(owing)} producer(s) owe cells against a ratchet of {owing_max:g}: the count "
             "of producers burning compute with no unique cell, no declared exemption and no "
             "named blocker may only FALL. Make them produce, declare what they make instead and "
-            f"who reads it in {BLOCKERS.relative_to(ROOT)}, or retire them with a reason -- "
+            f"who reads it in {_rel(BLOCKERS)}, or retire them with a reason -- "
             "never throttle a producing one. Owing: "
             + ", ".join(str(r["producer"]) for r in owing[:12]))
     if (isinstance(best_judge, (int, float)) and win.get("available")
@@ -446,7 +491,7 @@ def yield_audit(window_hours: float = YIELD_WINDOW_HOURS) -> dict[str, Any]:
         failures.append(
             f"cells reaching the judge fell to {to_judge_per_h:g}/h against a best of "
             f"{best_judge:g}/h (floor {THROUGHPUT_FLOOR_FRACTION:g}x) with no stated reason: set "
-            f"`regression_reason` in {RATCHET.relative_to(ROOT)} or find the lane that stopped")
+            f"`regression_reason` in {_rel(RATCHET)} or find the lane that stopped")
     if (isinstance(best_ortho, (int, float)) and isinstance(ortho_per_h, float)
             and ortho_per_h < best_ortho * THROUGHPUT_FLOOR_FRACTION and not reason):
         failures.append(
@@ -469,6 +514,16 @@ def yield_audit(window_hours: float = YIELD_WINDOW_HOURS) -> dict[str, Any]:
         "n_producers": len(rows),
         "n_owing": len(owing),
         "n_declared": len(exempted),
+        # THE MEASUREMENT GAP, NAMED RATHER THAN SILENT. These carry a self-turning clock and no
+        # measured compute at all, so this fence cannot say whether they owe. That is UNMEASURED,
+        # which is a verdict about the measurement (L1.28a) -- and the remedy is to make the
+        # compute ledger key on producers, not to accuse or excuse them here.
+        "compute_unattributed": len(unattributed),
+        "compute_unattributed_why": (
+            "producers with a declared self-turning clock and no ledger hour and no registry "
+            "second: `cost_by_run` keys on the LEG name, and a leg that runs many producers "
+            "prices none of them individually"),
+        "compute_unattributed_sample": sorted(unattributed)[:20],
         "cells_to_judge_per_hour": to_judge_per_h,
         "orthogonal_cells_to_judge_per_hour": ortho_per_h,
         "orthogonality_weight": None if weight is None else round(weight, 4),
@@ -519,6 +574,13 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--yield-window-hours", type=float, default=YIELD_WINDOW_HOURS)
     ap.add_argument("--no-ratchet", action="store_true",
                     help="measure and report without tightening the ratchet on disk")
+    # THE TWO HALVES KEEP THEIR OWN VERDICTS. The seat half (EVERY PRODUCER PRODUCES, 2026-09-15)
+    # is fatal on a dead producer with no named inheritor and rides the fence battery, where that
+    # backlog is the worklist. The law gate enforces the CELLS half, so a debt one half is still
+    # working through cannot silence the other -- one exit code for two different laws is how a
+    # gate comes to be disabled wholesale.
+    ap.add_argument("--cells-only", action="store_true",
+                    help="judge only EVERY PRODUCER OWES CELLS (the law-gate half)")
     args = ap.parse_args(argv)
 
     doc = audit(window_days=args.window_days)
@@ -533,8 +595,9 @@ def main(argv: list[str] | None = None) -> int:
             RATCHET.write_text(json.dumps(moved, indent=1) + "\n", encoding="utf-8")
 
     print(f"producer yield: {doc['n_producers']} producer(s) over {args.window_days:g}d -> "
-          f"{doc['census']}   (median {doc['median_rows']} rows)")
-    for v in ("DEAD", "STARVED", "UNMEASURED"):
+          f"{doc['census']}   (median {doc['median_rows']} rows)"
+          + ("   [seat half REPORTED ONLY under --cells-only]" if args.cells_only else ""))
+    for v in ((), ("DEAD", "STARVED", "UNMEASURED"))[not args.cells_only]:
         rs = [r for r in doc["producers"] if r["verdict"] == v]
         if not rs:
             continue
@@ -563,7 +626,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"  -> {OUT}")
     # A dead producer with NO declared alternative is the fatal state: the law says replace, and
     # there is nothing to replace it with. The second half is fatal on its own ratchets.
-    return 1 if (doc["dead_without_a_declared_replacement"] or yld["failures"]) else 0
+    seat_half = [] if args.cells_only else doc["dead_without_a_declared_replacement"]
+    return 1 if (seat_half or yld["failures"]) else 0
 
 
 if __name__ == "__main__":

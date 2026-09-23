@@ -1,0 +1,51 @@
+{
+ "law": "LAWS 7 -- EVERY PRODUCER OWES CELLS. A producer that consumes compute and puts no cell in front of the judge inside its own window is a defect with an owner. It passes its fence only by DECLARING itself here: a BLOCKER (`why` of 20+ chars and an `owner`) says the production is broken and who owns the fix; an EXEMPTION (`exempt: true` with `produces` and `consumer`) says the organ makes something other than cells by design, names what it makes, and names who reads it. Silence is neither, and silence is what the fence fails on.",
+ "read_by": [
+  "scripts/check_producer_yield.py (EVERY PRODUCER OWES CELLS)",
+  "scripts/check_productivity_census.py (the freshness and silent-zero half)"
+ ],
+ "note": "A blocker is a debt, not an excuse. Every row here is expected to disappear by being fixed, and the fence's owing ratchet falls only, so a row that stays becomes visible as a number that stopped falling.",
+ "blockers": {
+  "math:symbolic_regression": {
+   "why": "math_lab mints its objects as DISCOVERIES and `record_registry` calls set_discovery_state(did, 'QUEUED' if obj.passed else 'UNPROCESSED') at desks/mt5/research/math_lab.py:922. Measured 2026-09-23: all 236 math_lab discoveries created in the last 24h sit in state UNPROCESSED, so discovery_compiler never sees one and 23 traditions show generator_yield compute with zero cells. This tradition additionally recorded generated=0 against 56.4 compute-seconds, so it proposed nothing at all -- the conversion gate is the blocker for the family, and an empty mint is this row's own.",
+   "owner": "math_lab (desks/mt5/research/math_lab.py, hourly leg `math_lab`)",
+   "remedy": "the UNPROCESSED->QUEUED bar belongs to the judge, not to the minting organ: math_lab decides on its own `obj.passed` what the gauntlet is allowed to see. Route the un-passed objects to the compiler as exploration-floor cells and let the one judge reject them."
+  },
+  "math:rough_path_signatures": {
+   "why": "same conversion gate as math:symbolic_regression: 24 objects generated against 52.8 compute-seconds, donated=0, every discovery left UNPROCESSED so discovery_compiler never converted one into a cell. This is the largest genuinely-minting tradition that reaches no cell, so it is the best single measurement of what the gate costs.",
+   "owner": "math_lab (desks/mt5/research/math_lab.py, hourly leg `math_lab`)",
+   "remedy": "as above -- the objects exist; only the QUEUED transition is missing."
+  },
+  "math:matrix_profile": {
+   "why": "8 objects generated against 46.0 compute-seconds, donated=0, discoveries UNPROCESSED. Same conversion gate at math_lab.py:922.",
+   "owner": "math_lab (desks/mt5/research/math_lab.py, hourly leg `math_lab`)",
+   "remedy": "as above."
+  },
+  "math:reservoir_computing": {
+   "why": "8 objects generated against 43.5 compute-seconds, donated=0, discoveries UNPROCESSED. Same conversion gate at math_lab.py:922.",
+   "owner": "math_lab (desks/mt5/research/math_lab.py, hourly leg `math_lab`)",
+   "remedy": "as above."
+  },
+  "math:combinatorics": {
+   "why": "21.9 compute-seconds with generated=0 in generator_yield: unlike the three above, this tradition minted nothing to convert. An empty mint is a different defect from an unconverted one and must not be repaired by the same change, or the fix will be reported as working while this stays barren.",
+   "owner": "math_lab (desks/mt5/research/math_lab.py, hourly leg `math_lab`)",
+   "remedy": "measure why the proposer returns zero objects for this tradition before touching the conversion gate."
+  },
+  "japan:japandatascout": {
+   "why": "A MAPPING DEFECT, NOT A BARREN PRODUCER (LAWS 7: a producer the mapping cannot resolve is a defect IN THE MAPPING). `generator_yield` is written with the miner CLASS name (japan:JapanDataScout -> normalised japan:japandatascout) while `discoveries` and `research_candidates` carry the miner's SHORT name (japan:data_scout). The two keys never join, so the yield roster shows twelve japan miners with compute and no cells while the same miners hold 135 gotobi and 20 data_scout discoveries. The identical defect covers japan:japanacademicscout, japan:japanbojminer, japan:japancrossassetminer, japan:japanfiscalcalendarminer, japan:japanfixingminer, japan:japangotobiminer, japan:japanholidayminer, japan:japannativewebscout, japan:japanresidualminer, japan:japansqminer and japan:japantransferminer.",
+   "owner": "japan department (desks/mt5/research/japan/, hourly legs `japan_*`)",
+   "remedy": "write generator_yield under the same `japan:<miner>` short name the lineage already uses (desks/mt5/research/japan/intelligence.py:872 is the canonical stamp), so one organ has one key."
+  },
+  "japan:japanacademicscout": {"why": "see japan:japandatascout -- class-name vs short-name key mismatch between generator_yield and the discovery lineage; the miner produces under japan:academic_scout.", "owner": "japan department (desks/mt5/research/japan/)"},
+  "japan:japanbojminer": {"why": "see japan:japandatascout -- class-name vs short-name key mismatch between generator_yield and the discovery lineage.", "owner": "japan department (desks/mt5/research/japan/)"},
+  "japan:japancrossassetminer": {"why": "see japan:japandatascout -- class-name vs short-name key mismatch between generator_yield and the discovery lineage.", "owner": "japan department (desks/mt5/research/japan/)"},
+  "japan:japanfiscalcalendarminer": {"why": "see japan:japandatascout -- class-name vs short-name key mismatch; the miner produces under japan:fiscal_calendar.", "owner": "japan department (desks/mt5/research/japan/)"},
+  "japan:japanfixingminer": {"why": "see japan:japandatascout -- class-name vs short-name key mismatch between generator_yield and the discovery lineage.", "owner": "japan department (desks/mt5/research/japan/)"},
+  "japan:japangotobiminer": {"why": "see japan:japandatascout -- class-name vs short-name key mismatch; the miner produces under japan:gotobi, which holds 135 discoveries.", "owner": "japan department (desks/mt5/research/japan/)"},
+  "japan:japanholidayminer": {"why": "see japan:japandatascout -- class-name vs short-name key mismatch; the miner produces under japan:holiday.", "owner": "japan department (desks/mt5/research/japan/)"},
+  "japan:japannativewebscout": {"why": "see japan:japandatascout -- class-name vs short-name key mismatch; the miner produces under japan:native_web.", "owner": "japan department (desks/mt5/research/japan/)"},
+  "japan:japanresidualminer": {"why": "see japan:japandatascout -- class-name vs short-name key mismatch between generator_yield and the discovery lineage.", "owner": "japan department (desks/mt5/research/japan/)"},
+  "japan:japansqminer": {"why": "see japan:japandatascout -- class-name vs short-name key mismatch between generator_yield and the discovery lineage.", "owner": "japan department (desks/mt5/research/japan/)"},
+  "japan:japantransferminer": {"why": "see japan:japandatascout -- class-name vs short-name key mismatch between generator_yield and the discovery lineage.", "owner": "japan department (desks/mt5/research/japan/)"}
+ }
+}
