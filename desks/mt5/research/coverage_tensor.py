@@ -204,6 +204,7 @@ def _tok(value: Any) -> str:
     return text.replace(" ", "_")
 
 
+
 def _read_json(path: Path) -> Any:
     try:
         return json.loads(Path(path).read_text(encoding="utf-8-sig"))
@@ -588,7 +589,21 @@ def observe_world(world: CV.Tensor, conn: Any, absent: Absent,
                               "ORDER BY seq DESC LIMIT ?", (MAX_REGISTRY_ROWS,)).fetchall()
     except Exception:                                                        # noqa: BLE001
         trials = []
-    verdicts: list[Mapping[str, Any]] = list(trials)
+    # THE TWO VERDICT SOURCES ARE NOT THE SAME SHAPE, and the loop below reads them as if they
+    # were. `libs/moat/registry` sets `conn.row_factory = sqlite3.Row`, so `trials` arrives as
+    # sqlite3.Row -- which indexes and has .keys() but has NO .get() -- while `_jsonl` returns
+    # plain dicts. Line-for-line the reader calls `row.get("symbol")`, so every pass with a
+    # non-empty trials ledger died on the first trial row:
+    #
+    #     AttributeError: 'sqlite3.Row' object has no attribute 'get'
+    #
+    # Measured 2026-09-23: 18 of 18 ledger rows in 26h were exit_code=1 and COVERAGE_TENSOR.json
+    # had never been written on this box -- the whole coverage grid absent, reported as an organ
+    # with nothing to say rather than an organ that crashed. Normalising at the JOIN is the fix:
+    # both sources become dicts here, the declared Mapping type becomes true rather than
+    # aspirational, and `row.get("sym")` on a column the SELECT does not name returns None
+    # instead of raising.
+    verdicts: list[Mapping[str, Any]] = [dict(r) for r in trials]
     if GATE_LEDGER.exists():
         verdicts.extend(_jsonl(GATE_LEDGER, MAX_GATE_LINES))
     else:
