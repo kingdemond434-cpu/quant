@@ -22,10 +22,81 @@ import json
 import os
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 BASE = Path(__file__).resolve().parent.parent
 HYP = BASE / "data" / "hypotheses"
 TARGET = HYP / "external_survivors.json"
+
+#: THE STUDY BANK. Rows of a family that is BANNED FROM LIVE CAPITAL keep existing here -- they
+#: are not deleted and the miners keep producing them -- but they are not put in front of the
+#: judge, because a cell that cannot reach the book cannot repay a gate-second however it scores.
+STUDY_BANK = HYP / "study_bank.json"
+
+#: The gate ledger, read ONLY to count how much of the judge each family has already consumed.
+GATE_LEDGER = HYP / "gate_verdict_ledger.jsonl"
+GATE_LEDGER_TAIL = 200_000
+
+
+def live_banned_families() -> frozenset[str]:
+    """Families the desk has already forbidden from live capital.
+
+    READ FROM THE LIVE POLICY ITSELF (`mt5desk.live_policy.DEFAULT_BANNED_FAMILIES`), never
+    copied here: a second list is a second truth, and the day the policy changes the docket must
+    change with it in the same commit. An unreadable policy falls back to the measured ban so a
+    broken import cannot quietly re-open 18% of the judge to a family that passed zero of 22,009.
+    """
+    try:
+        from mt5desk.live_policy import DEFAULT_BANNED_FAMILIES
+        return frozenset(str(f) for f in DEFAULT_BANNED_FAMILIES)
+    except Exception:                                                    # pragma: no cover
+        return frozenset({"discovered"})
+
+
+def judged_by_family(path: Path | None = None, tail: int = GATE_LEDGER_TAIL) -> dict[str, int]:
+    """How many judgements each family has already consumed, from the gate ledger's tail."""
+    out: dict[str, int] = {}
+    try:
+        with (path or GATE_LEDGER).open("r", encoding="utf-8", errors="replace") as fh:
+            lines = fh.readlines()[-tail:]
+    except OSError:
+        return out
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            fam = str(json.loads(line).get("family") or "")
+        except ValueError:
+            continue
+        if fam:
+            out[fam] = out.get(fam, 0) + 1
+    return out
+
+
+def breadth_order(rows: list[dict], judged: dict[str, int]) -> list[dict]:
+    """ORDER THE DOCKET SO UNTESTED FAMILIES REACH THE GATES.
+
+    MEASURED 2026-09-23: the docket's largest families -- cross_asset_residual 55,190,
+    overnight_drift 26,721, clock_transition 20,081, execution_state 13,660 -- barely appear
+    among judged cells, while a handful are re-judged every hour. The gauntlet takes the docket
+    in order under a bar budget, so the ORDER IS THE SELECTION: a family at the tail is not
+    "lower priority", it is never judged at all.
+
+    The key is judgements ALREADY SPENT PER DOCKET ROW of that family. A family with a large
+    docket and no verdicts sorts first; one that has been judged ten times per row sorts last.
+    Within a family the existing order is preserved, so this re-orders families and never rows.
+    """
+    docket: dict[str, int] = {}
+    for row in rows:
+        fam = str(row.get("family") or "")
+        docket[fam] = docket.get(fam, 0) + 1
+
+    def spend(fam: str) -> float:
+        return judged.get(fam, 0) / max(docket.get(fam, 1), 1)
+
+    order = {fam: i for i, fam in enumerate(sorted(docket, key=lambda f: (spend(f), f)))}
+    return sorted(rows, key=lambda r: order.get(str(r.get("family") or ""), len(order)))
 
 #: Every producer, and how to reach the rows inside it. Adding a producer means adding a line
 #: here -- and the job manifest will report the target STALE if this stops running, so a new
@@ -330,7 +401,39 @@ def main() -> int:
         print("   universe registry unreadable: NOTHING filtered by tradeability this run "
               "(UNMEASURED, not clean -- the docket may carry symbols the desk cannot trade)")
 
-    rows_out = list(merged.values())
+    # THE JUDGE IS SCARCE AND A BANNED FAMILY CANNOT REPAY IT (principal 2026-09-23). Measured on
+    # the box from 120,000 gate verdicts: `discovered` consumed 22,009 judgements (~18% of recent
+    # capacity) and passed ZERO -- and it is refused at BOTH live doors by
+    # `mt5desk/live_policy.py`, so every one of those gate-seconds bought an outcome the desk has
+    # already forbidden. The rows are NOT deleted and the miners are NOT restrained: they move to
+    # the STUDY BANK with the ban as the recorded reason, and what stops is the spending.
+    banned_families = live_banned_families()
+    rows_out: list[dict[str, Any]] = []
+    study: list[dict[str, Any]] = []
+    for row in merged.values():
+        (study if str(row.get("family") or "") in banned_families else rows_out).append(row)
+    if study:
+        stamp = now.isoformat(timespec="seconds")
+        for row in study:
+            row["judging_status"] = "STUDY_ONLY"
+            row["judging_reason"] = (
+                f"family {row.get('family')!r} is banned from live capital by the principal's "
+                "order and refused at both live doors (mt5desk/live_policy.py "
+                "DEFAULT_BANNED_FAMILIES); it cannot reach the book even if it passes, so the "
+                "scarce judge is not spent on it. Mining is unrestricted and the rows stay here "
+                "for study")
+            row["routed_to_study_at"] = stamp
+        STUDY_BANK.parent.mkdir(parents=True, exist_ok=True)
+        STUDY_BANK.write_text(json.dumps(study, indent=1, default=str), "utf-8")
+        print(f"   study bank: {len(study)} row(s) of banned families "
+              f"{sorted(banned_families)} routed OUT of the judging docket (kept, never "
+              f"deleted) -> {STUDY_BANK.name}")
+
+    # ORDER IS SELECTION: least-judged families first, so what the desk mines is what the judge
+    # actually tests. See `breadth_order`.
+    judged = judged_by_family()
+    if judged:
+        rows_out = breadth_order(rows_out, judged)
     TARGET.parent.mkdir(parents=True, exist_ok=True)
     # NEVER SHRINK THE DOCKET TO NOTHING. The freshness contract makes every source STALE_SKIPPED
     # on any run where producers have not written yet, and this merge then emitted an EMPTY file
@@ -352,8 +455,17 @@ def main() -> int:
         "per_source": per_source, "source_state": source_state, "total": len(rows_out),
         "families": {f: sum(1 for r in rows_out if r.get("family") == f)
                      for f in sorted({str(r.get("family")) for r in rows_out})},
-        "note": ("no threshold applied here (L1.60) -- every discovered candidate reaches the "
-                 "ten-gate gauntlet, which is the only arbiter"),
+        "study_bank": {"rows": len(study), "families": sorted(banned_families),
+                       "path": str(STUDY_BANK),
+                       "why": "banned from live capital, so a gate-second spent here buys an "
+                              "outcome the desk has already forbidden; kept for study"},
+        "judge_order": {"basis": "judgements already spent per docket row, least first",
+                        "families_ordered": len({str(r.get("family")) for r in rows_out}),
+                        "applied": bool(judged)},
+        "note": ("no threshold applied here (L1.60) -- every candidate of a family that CAN "
+                 "reach live capital reaches the ten-gate gauntlet, which is the only arbiter; "
+                 "a live-banned family is routed to the study bank, never judged and never "
+                 "deleted"),
     }, indent=1), "utf-8")
 
     print(f"merged hypotheses: {len(rows_out)} unique candidate(s) -> {TARGET.name}")

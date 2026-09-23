@@ -704,7 +704,8 @@ RELEASE_CLASSES: tuple[dict[str, Any], ...] = (
      "actual_series": "GW:preco_referencia_caju", "expected_series": "n/a",
      "notes": "the single most consequential annual economic act in the country: it sets the "
               "farmgate price of roughly nine tenths of its export earnings"},
-    {"name": "IMB Piracy Reporting Centre quarterly and annual piracy report", "cadence": "quarterly",
+    {"name": "IMB Piracy Reporting Centre quarterly and annual piracy report",
+     "cadence": "quarterly",
      "time_utc": "10:00", "source": "ICC International Maritime Bureau",
      "actual_series": "IMB:gog_incidents", "expected_series": "n/a",
      "notes": "incidents, kidnappings and locations for the Gulf of Guinea; the series that "
@@ -1271,7 +1272,7 @@ POSITIONING_SOURCES: tuple[dict[str, Any], ...] = (
 #:
 #: The minor grounds are carried in their own orthographies rather than transliterated: EWE and
 #: KABIYE (Togo), FON and YORUBA (Benin), MANDINKA and WOLOF (The Gambia) and the two CRIOULOS.
-#: Those orthographies use Latin-Extended letters -- ɖ ƒ ŋ ɔ ɛ ʋ ɣ ẹ ọ ṣ ɓ ɗ -- which is a
+#: Those orthographies use Latin-Extended letters no English or French string contains, which
 #: codepoint test a crawl can actually run, and `has_african_script` is that test.
 FRENCH_MARKERS: tuple[str, ...] = (
     "banque centrale", "taux de change", "campagne cotonniere", "prix plancher", "egrenage",
@@ -4677,7 +4678,8 @@ def mine_campaign_prices(pack: Any = None, ctx: Any = None) -> dict[str, Any]:
 
 def mine_redenomination_boundary(pack: Any = None, ctx: Any = None) -> dict[str, Any]:
     """SC-O and SC-U: the 1000:1 unit change of 2022-07-01 and the ratio that must survive it."""
-    rows = [{"kind": "hypothesis", "pack": CODE, "domain": "SC-O", "jurisdiction": "sl",
+    rows: list[dict[str, Any]] = [
+            {"kind": "hypothesis", "pack": CODE, "domain": "SC-O", "jurisdiction": "sl",
              "at": LEONE_REDENOMINATION.isoformat(),
              "what": "a 1000:1 redenomination that is a UNIT change and not a price move; the "
                      "auction-minus-bureau SPREAD is a ratio and must be continuous across it",

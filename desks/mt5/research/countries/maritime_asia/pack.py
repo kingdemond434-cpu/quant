@@ -1892,7 +1892,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         roots=("http://stats.customs.gov.cn", "https://www.pbs.gov.pk",
                "https://www.irica.ir", "https://stat.uz", "https://npp.gov.in"),
         queries=("گمرک صادرات افغانستان", "زغال سنگ پاکستان", "ډبره سکاره", "حیرتان",
-                 "LNG imports by origin", "Velana aircraft movements", "gloG ཆུ་གློག export"),
+                 "LNG imports by origin", "Velana aircraft movements", "ཆུ་གློག export India"),
         languages=("fa-AF", "ps", "en", "zh"), access_label="OPEN_DATA",
         credibility="AUTHORITATIVE", predictive_state="UNTESTED", licence="free, public",
         notes="THE MOST IMPORTANT LAYER IN THIS PACK. A partner's customs table is a published "
@@ -2808,4 +2808,1242 @@ ACTORS: tuple[dict[str, Any], ...] = (
                   "pack's organising claim while leaving all five mechanisms intact"},
 )
 
-# ---8<--- APPEND HERE
+# --------------------------------------------------------------- the pack's own mechanisms
+#: The Maldivian band, as arithmetic. April 2011: the MMA moved from a fixed 12.85 to a band of
+#: plus or minus twenty per cent, and the rate went straight to the weak edge and stayed.
+MVR_BAND_CENTRE = 12.85
+MVR_BAND_WIDTH_PCT = 0.20
+MVR_BAND: tuple[float, float] = (MVR_BAND_CENTRE * (1.0 - MVR_BAND_WIDTH_PCT),
+                                 MVR_BAND_CENTRE * (1.0 + MVR_BAND_WIDTH_PCT))
+#: Timor-Leste's statutory withdrawal rule: the Estimated Sustainable Income is three per cent of
+#: petroleum wealth, and the budget may exceed it with a justification it has repeatedly given.
+TL_ESI_RATE = 0.03
+#: Bhutan's monsoon: high flow June-September, shoulder months either side, and a winter in which
+#: the country IMPORTS. The months are the mechanism and they repeat every year.
+BT_HIGH_FLOW_MONTHS: tuple[int, ...] = (6, 7, 8, 9)
+BT_IMPORT_MONTHS: tuple[int, ...] = (12, 1, 2)
+
+
+def par_expression(jurisdiction: str, quote: float) -> dict[str, Any]:
+    """THE PACK'S FIRST MECHANISM, AND IT IS ARITHMETIC RATHER THAN ESTIMATION.
+
+    Given USDSGD, Brunei's external value IS that number, because the Brunei dollar and the
+    Singapore dollar have been interchangeable at 1:1 by agreement since 12 June 1967. Given
+    USDINR, Bhutan's external value IS that number, because the ngultrum has been held at 1:1 to
+    the rupee since 1974. `basis_risk` is therefore ZERO and `is_exact` is True -- which is a
+    different and much stronger claim than a proxy, and the reason these two jurisdictions carry
+    the pack's only genuinely executable FX cells.
+    """
+    key = str(jurisdiction).lower()
+    row = CURRENCIES.get(key)
+    if row is None:
+        raise ValueError(f"{jurisdiction!r} is not one of {list(JURISDICTIONS)}")
+    exact = str(row.get("exact_expression") or "")
+    par = float(row.get("par_rate") or 0.0)
+    is_exact = bool(exact) and par == 1.0 and key in ("bn", "bt")
+    return {"jurisdiction": key, "iso": str(row["iso"]), "symbol": exact,
+            "quote": float(quote), "local_per_usd": float(quote) * par if is_exact else 0.0,
+            "par_with": str(row.get("par_with") or ""), "par_rate": par,
+            "is_exact": is_exact, "basis_risk": 0.0 if is_exact else float("nan"),
+            "since": str(row.get("since") or ""),
+            "why": "EXACT EXPRESSION, not a proxy: a treaty or statutory par at 1:1" if is_exact
+                   else "NOT a par link; see TRANSMISSION_TARGETS for this currency's regime"}
+
+
+def rufiyaa_band(rate: float) -> dict[str, float]:
+    """The Maldivian band's state, computed. `band_position` is 0.0 at the strong edge (10.28)
+    and 1.0 at the weak edge (15.42), where the rate has sat since the band opened in 2011.
+
+    THE INFORMATIVE COORDINATE IS NOT THE PRICE. A currency pinned on one edge of its own band
+    has no price left to give, so the adjustment happens in the QUEUE for dollars rather than in
+    the quote -- which is why the parallel premium, not the rate, is what a cell conditions on.
+    """
+    lo, hi = MVR_BAND
+    rate = float(rate)
+    return {"rate": rate, "band_low": lo, "band_high": hi, "centre": MVR_BAND_CENTRE,
+            "band_position": (rate - lo) / (hi - lo),
+            "distance_to_weak_pct": (hi - rate) / hi * 100.0,
+            "distance_to_strong_pct": (rate - lo) / lo * 100.0,
+            "pinned_on_weak_edge": 1.0 if rate >= hi - 1e-9 else 0.0}
+
+
+def parallel_premium(official: float, parallel: float) -> float:
+    """The parallel-market premium in per cent. Reported in the Dhivehi press and in Kabul's
+    money-changer quotes, and published by neither central bank."""
+    official = float(official)
+    if official <= 0:
+        raise ValueError("the official rate must be positive")
+    return (float(parallel) - official) / official * 100.0
+
+
+def fund_depletion_path(capital: float, *, annual_withdrawal: float, real_return: float = 0.03,
+                        receipts: float = 0.0, years: int = 30) -> list[dict[str, float]]:
+    """TIMOR-LESTE'S DEPLETION PATH, COMPUTED FROM THE FUND'S OWN PUBLISHED RULE.
+
+    A sovereign wealth fund whose INFLOW HAS STOPPED while its statutory withdrawal continues is
+    not a forecast: it is arithmetic on three published numbers. Bayu-Undan ceased production in
+    2023 on a dated schedule, so `receipts` defaults to zero; the Estimated Sustainable Income is
+    three per cent of petroleum wealth by statute; and the budget has repeatedly withdrawn ABOVE
+    it. The path below is what that does, year by year, and `exhausted_in` is the year the
+    capital reaches zero at the given withdrawal.
+    """
+    rows: list[dict[str, float]] = []
+    balance = float(capital)
+    for year in range(1, int(years) + 1):
+        opening = balance
+        balance = opening * (1.0 + float(real_return)) + float(receipts) - float(annual_withdrawal)
+        balance = max(balance, 0.0)
+        rows.append({"year": float(year), "opening": opening, "closing": balance,
+                     "withdrawal": float(annual_withdrawal),
+                     "esi": opening * TL_ESI_RATE,
+                     "excess_over_esi": float(annual_withdrawal) - opening * TL_ESI_RATE})
+        if balance <= 0.0:
+            break
+    return rows
+
+
+def years_to_exhaustion(capital: float, *, annual_withdrawal: float,
+                        real_return: float = 0.03, receipts: float = 0.0) -> int | None:
+    """The year the Fund reaches zero at a constant withdrawal, or None when it never does."""
+    rows = fund_depletion_path(capital, annual_withdrawal=annual_withdrawal,
+                               real_return=real_return, receipts=receipts, years=200)
+    for row in rows:
+        if row["closing"] <= 0.0:
+            return int(row["year"])
+    return None
+
+
+def hydro_season(month: int) -> dict[str, Any]:
+    """BHUTAN'S SEASONAL STATE, COMPUTED. The monsoon fills the run-of-river plants from June to
+    September and empties them in winter, so Bhutan EXPORTS in summer and IMPORTS in December,
+    January and February -- every year, on a schedule, with the sign of the trade flow flipping
+    twice. A study sampled on summer months only never sees the import half and reports a
+    one-sided exporter."""
+    month = int(month)
+    if not 1 <= month <= 12:
+        raise ValueError("month must be 1-12")
+    if month in BT_HIGH_FLOW_MONTHS:
+        state, sign = "high_flow_export", 1
+    elif month in BT_IMPORT_MONTHS:
+        state, sign = "low_flow_import", -1
+    else:
+        state, sign = "shoulder", 0
+    return {"month": month, "state": state, "net_export_sign": sign,
+            "is_monsoon": month in BT_HIGH_FLOW_MONTHS,
+            "why": "run-of-river plants with little storage follow rainfall rather than demand"}
+
+
+def hydro_year(year: int) -> tuple[dict[str, Any], ...]:
+    """The twelve monthly states of one Bhutanese hydro year, as the condition a cell uses."""
+    return tuple(dict(hydro_season(m), year=year) for m in range(1, 13))
+
+
+def single_factor_map() -> dict[str, dict[str, str]]:
+    """THE PACK'S THESIS, AS DATA. One dominant exposure per jurisdiction, the published series
+    that measures it, and the executable leg -- so the claim can be read by a miner rather than
+    only by a human reading the docstring."""
+    return {
+        "bn": {"factor": "LNG and crude exports", "series": "ENERGY:lng_exports",
+               "leg": "XNGUSD/XBRUSD via the buyers' customs, and USDSGD for external value"},
+        "tl": {"factor": "one sovereign fund with no inflow",
+               "series": "BCTL:petroleum_fund_quarterly", "leg": "US500/NAS100 and USDIDR"},
+        "mv": {"factor": "tourist arrivals against a pegged currency",
+               "series": "MOT:daily_arrivals", "leg": "USDINR, XBRUSD and US500"},
+        "bt": {"factor": "monsoon hydro sold to India", "series": "DGPC:generation_gwh",
+               "leg": "USDINR at par, plus XALUSD"},
+        "af": {"factor": "border trade and aid, counted by neighbours",
+               "series": "MIRROR:af_trade", "leg": "XCUUSD, XALUSD and XAUUSD"},
+    }
+
+
+# --------------------------------------------------------------------------- domains
+DOMAINS: tuple[dict[str, Any], ...] = (
+    {"id": "MAR-A", "title": "Brunei's par link: USDSGD as the EXACT expression of BND",
+     "jurisdictions": ("bn",),
+     "objects": ("the 1967 Currency Interchangeability Agreement and its 1:1 par",
+                 "USDSGD's own tick as Brunei's external value, with zero basis",
+                 "the MAS S$NEER stance as Brunei's transmitted monetary policy",
+                 "BDCB's currency-in-circulation and its backing"),
+     "conditions": ("the MAS policy-statement window and its stance change",
+                    "the S$NEER band position bucket at the Singapore end",
+                    "whether a Brunei fiscal or energy event falls inside the same window"),
+     "instruments": ("USDSGD", "SGDJPY", "EURSGD"),
+     "controls": ("the SAME window with no Brunei event at all -- the null for a state variable "
+                  "borrowed wholesale from another jurisdiction",
+                  "the `sg` pack's own S$NEER study over the identical window, which a Brunei "
+                  "claim must beat before it is Brunei's rather than Singapore's",
+                  "a block-permuted USDSGD series"),
+     "notes": "THE HONEST PRIOR IS THAT THIS DOMAIN FINDS NOTHING BRUNEIAN. The par makes the "
+              "price identical and therefore makes Brunei's external value perfectly executable "
+              "-- it does NOT put Brunei information into it. A positive result here would be "
+              "the surprise, and the domain exists to measure that rather than assume it"},
+    {"id": "MAR-B", "title": "Brunei's LNG and product export factor",
+     "jurisdictions": ("bn",),
+     "objects": ("Lumut production and export volumes", "the Japanese and Korean import mirror",
+                 "the Hengyi product export line beginning 2019",
+                 "the oil-indexed long-term contract repricing clock"),
+     "conditions": ("the buyer-side import volume surprise against its own seasonality",
+                    "the era: pre-2019 crude exporter versus post-2019 product exporter",
+                    "a quarterly contract repricing window"),
+     "instruments": ("XNGUSD", "XBRUSD", "JPN225"),
+     "controls": ("total Japanese and Korean LNG imports from ALL origins over the same months, "
+                  "so a Brunei effect is not a regional LNG effect",
+                  "the global gas and freight complex",
+                  "a matched-month null drawn from the same seasonal window"),
+     "notes": "THE ROUTE IS DECLARED WEAK IN NO_EXECUTABLE_LEG and the null is that XNGUSD "
+              "carries nothing about Brunei at a daily horizon"},
+    {"id": "MAR-C", "title": "The Timor-Leste Petroleum Fund's dated depletion path",
+     "jurisdictions": ("tl",),
+     "objects": ("the quarterly audited capital, receipts and TRANSFERS TO STATE",
+                 "the Estimated Sustainable Income rule at three per cent of petroleum wealth",
+                 "the 2023 Bayu-Undan cessation, after which receipts are essentially zero",
+                 "the excess of withdrawals over ESI, year by year"),
+     "conditions": ("the withdrawal's excess over ESI in the budget just passed",
+                    "the era: pre-cessation, post-cessation, post-Sunrise-decision",
+                    "the Fund's own quarterly return bucket, which is mostly US index return"),
+     "instruments": ("US500", "NAS100", "XBRUSD"),
+     "controls": ("the Fund's published benchmark weights over the same quarters -- a Fund "
+                  "result that is just the index IS the index and must be removed first",
+                  "other small oil funds' withdrawal behaviour over the same years",
+                  "the budget cycle itself as a calendar null"),
+     "notes": "THE DIRECTION RUNS BACKWARDS and the domain says so: US index returns move the "
+              "Fund. The interesting object is the discretionary WITHDRAWAL on top"},
+    {"id": "MAR-D", "title": "Dollarisation: Timor-Leste's monetary policy is the Fed's",
+     "jurisdictions": ("tl",),
+     "objects": ("the US dollar as legal tender since 2000",
+                 "the real exchange rate against Indonesia, the dominant import source",
+                 "domestic CPI as imported inflation by construction",
+                 "BCTL's payment system in a currency it cannot issue"),
+     "conditions": ("the FOMC window and its surprise, owned by the `us` pack",
+                    "the USDIDR move bucket, which is Timor-Leste's competitiveness",
+                    "whether a Fund transfer landed in the same quarter"),
+     "instruments": ("USDIDR", "US500", "USDSGD"),
+     "controls": ("the same FOMC windows with no Timorese event, which is the null for an "
+                  "entirely borrowed policy clock",
+                  "Indonesia's own inflation and policy over the same months, so a divergence is "
+                  "Timorese and not Indonesian",
+                  "a randomised-date null drawn from the same quarter"),
+     "notes": "A COUNTRY WITH NO MONETARY POLICY IS A CLEAN EXPERIMENT: every monetary shock it "
+              "receives is exogenous by construction, which is rarer than it sounds"},
+    {"id": "MAR-E", "title": "Maldivian DAILY arrivals as a high-frequency real-activity print",
+     "jurisdictions": ("mv",),
+     "objects": ("the daily arrivals count by nationality",
+                 "the resort-versus-guesthouse split", "bed-nights and occupancy monthly",
+                 "the 2020 tourism stop as a natural experiment"),
+     "conditions": ("the arrivals surprise against the pack's own seasonal-and-trend baseline",
+                    "the source-market mix bucket: Indian, Chinese, European, other",
+                    "the era: pre-2020, the stop, the recovery"),
+     "instruments": ("USDINR", "XBRUSD", "US500"),
+     "controls": ("regional outbound travel from the same source markets over the same days, so "
+                  "an arrivals effect is not a source-economy effect",
+                  "the global risk complex on the same days -- an effect that fires with world "
+                  "risk IS world risk",
+                  "a day-of-week and week-of-year matched null"),
+     "notes": "NO PUBLISHED CONSENSUS EXISTS, so every surprise here is measured against a "
+              "baseline this pack builds, and a cell on an unvalidated baseline is a hypothesis"},
+    {"id": "MAR-F", "title": "The rufiyaa band, the reserve and the dated maturity wall",
+     "jurisdictions": ("mv",),
+     "objects": ("the 10.28-15.42 band and the rate's permanent residence on its weak edge",
+                 "gross versus USABLE reserves", "the parallel premium reported in the press",
+                 "the dated external maturities including the 2026 sukuk"),
+     "conditions": ("the parallel-premium bucket",
+                    "reserve coverage of the next twelve months of maturities",
+                    "proximity to a dated maturity, in months"),
+     "instruments": ("USDINR", "XAUUSD", "US500"),
+     "controls": ("other frontier pegged currencies' premia over the same months, so a Maldivian "
+                  "premium move is not a global frontier-risk move",
+                  "the oil price, which drives both the import bill and the airfare",
+                  "a pre-band placebo window before April 2011, where the mechanism cannot exist"),
+     "notes": "THE PRICE CARRIES NOTHING AND THE DEFENCE CARRIES EVERYTHING; the premium and the "
+              "reserve path are the conditioning variables, not the quote"},
+    {"id": "MAR-G", "title": "Bhutan's 1:1 rupee par and the RUPEE reserve that actually binds",
+     "jurisdictions": ("bt",),
+     "objects": ("the 1974 parity and USDINR as the exact expression",
+                 "the RMA's rupee reserve reported apart from convertible reserves",
+                 "credit growth funding Indian imports",
+                 "the 2012-13 rupee crunch as the worked historical case"),
+     "conditions": ("the rupee-reserve coverage bucket in months of essential imports",
+                    "the credit-growth bucket",
+                    "whether a large hydro project is in its construction-import phase"),
+     "instruments": ("USDINR", "XAUUSD"),
+     "controls": ("the same USDINR windows with no Bhutanese event, the null for a borrowed "
+                  "price", "the `ind` pack's own rupee study over the identical window",
+                  "India's own reserve and credit cycle over the same months"),
+     "notes": "THE PARITY NEVER MOVES, so the adjustment shows up as a RUPEE SHORTAGE inside an "
+              "adequate total reserve -- an object with no price and a real economic cost, which "
+              "is exactly the kind of thing a price-only screen never finds"},
+    {"id": "MAR-H", "title": "The monsoon: Bhutan exports in summer and IMPORTS in winter",
+     "jurisdictions": ("bt",),
+     "objects": ("monthly generation and export volumes by plant",
+                 "the winter import line, which is the same series with the sign flipped",
+                 "plant commissioning dates as dated capacity steps",
+                 "the Indian grid's own monsoon-driven hydro"),
+     "conditions": ("the seasonal state from `hydro_season`: high flow, shoulder, or import",
+                    "the monsoon's departure from normal rainfall",
+                    "whether a new plant commissioned inside the window"),
+     "instruments": ("USDINR", "XALUSD", "XCUUSD"),
+     "controls": ("all-India monsoon rainfall departure and Indian national power demand over "
+                  "the same months -- a monsoon that fills Bhutan's rivers fills India's too",
+                  "the pre-commissioning window for each dated capacity step",
+                  "a month-of-year matched null"),
+     "notes": "DECLARED WEAK IN NO_EXECUTABLE_LEG: Bhutan is a small share of the Indian grid, "
+              "so an effect on USDINR would be surprising and the honest prior is no effect"},
+    {"id": "MAR-I", "title": "Afghanistan's auction-managed afghani and its frozen stock",
+     "jurisdictions": ("af",),
+     "objects": ("DAB's published auction sizes, allotments and cut-offs",
+                 "the Sarai Shahzada money-changer quotes reported in the press",
+                 "the UN's disclosed US-dollar cash shipments",
+                 "the reserves frozen abroad since August 2021"),
+     "conditions": ("the auction size bucket relative to its own trailing median",
+                    "the money-changer premium over the DAB reference rate",
+                    "whether a disclosed cash shipment landed in the same fortnight"),
+     "instruments": ("XAUUSD", "USDINR", "XCUUSD"),
+     "controls": ("regional gold demand and the Pakistani rupee over the same weeks, so an "
+                  "afghani move is not a regional dollar-shortage move",
+                  "weeks with no auction at all, which are the built-in placebo",
+                  "a block-permuted premium series"),
+     "notes": "READ, NEVER TRANSACTED IN. Every input is a published statistic or a published "
+              "press report and the executable leg is gold, the rupee and the metals"},
+    {"id": "MAR-J", "title": "Afghan trade read through four neighbours' mirror customs",
+     "jurisdictions": ("af",),
+     "objects": ("Pakistani, Iranian, Chinese and Uzbek monthly imports from Afghanistan",
+                 "the post-2021 coal export growth visible only in those tables",
+                 "border closure announcements at Torkham, Chaman, Hairatan and Islam Qala",
+                 "the four reporters' disagreement with each other"),
+     "conditions": ("the mirror-total surprise against its own seasonality",
+                    "whether a crossing was closed for part of the month",
+                    "the inter-reporter disagreement bucket, which flags a disputed month"),
+     "instruments": ("XCUUSD", "XALUSD", "XTIUSD"),
+     "controls": ("the partners' total imports from ALL origins over the same months, so an "
+                  "Afghan effect is not a partner-demand effect",
+                  "the partners' own tariff and closure decisions as the confound",
+                  "a pre-2021 window in which the mechanism is different by construction"),
+     "notes": "THE PACK'S CLEAREST WORKED SUBSTITUTION and the same technique the "
+              "`caucasus_central_asia` pack uses for Turkmen gas"},
+    {"id": "MAR-K", "title": "The 2022 opium ban as a dated rural-income shock with NO "
+                             "executable leg",
+     "jurisdictions": ("af",),
+     "objects": ("UNODC cultivation area and farm-gate price, surveyed annually",
+                 "the measured fall of more than ninety-five per cent between 2022 and 2023",
+                 "WFP food-security assessments over the same seasons",
+                 "regional wheat prices as the substitution crop's economics"),
+     "conditions": ("the survey-publication window",
+                    "the regional wheat-price bucket in the same season",
+                    "whether a drought year overlaps the ban's first seasons"),
+     "instruments": ("XAUUSD", "USDINR"),
+     "controls": ("regional rural income proxies -- Pakistani and Iranian agricultural output -- "
+                  "over the same seasons",
+                  "the 2023 wheat-price shock, which moved the same households for an unrelated "
+                  "reason and is the built-in confound",
+                  "pre-ban survey publications as the placebo windows"),
+     "notes": "RECORDED AS AN ECONOMIC OBSERVABLE WITH NO EXECUTABLE LEG. The desk will never "
+              "trade this commodity; the lawful, testable content is a large dated income shock "
+              "and the expected result is a small, slow, probably undetectable response. Saying "
+              "that up front is worth more than inventing a symbol for it"},
+    {"id": "MAR-L", "title": "The single-factor property itself, tested cross-sectionally",
+     "jurisdictions": ("bn", "tl", "mv", "bt", "af"),
+     "objects": ("the five dominant series named in `single_factor_map`",
+                 "their cross-correlation, which the pack expects to be low",
+                 "each one's explanatory power over its own economy",
+                 "a diversified comparator economy as the benchmark"),
+     "conditions": ("the number of the five whose dominant series is in a tail month",
+                    "the global risk state, which is the obvious common cause to remove",
+                    "the commodity-versus-services split of the five factors"),
+     "instruments": ("USDSGD", "USDINR", "XBRUSD"),
+     "controls": ("a diversified comparator economy's dominant-sector series over the same "
+                  "quarters, which is the whole comparison",
+                  "the global risk factor, removed first -- a common response across five "
+                  "unrelated economies is a global factor, not this property",
+                  "a five-country random-country placebo drawn from the roster"),
+     "notes": "FIVE JURISDICTIONS IS A TINY CROSS-SECTION AND THE PACK SAYS SO. The honest prior "
+              "is that this has very little executable content; the domain exists so the pack's "
+              "organising claim is tested rather than assumed, and it is falsifiable"},
+    {"id": "MAR-M", "title": "Four calendar systems and the closure-breadth state",
+     "jurisdictions": ("bn", "tl", "mv", "bt", "af"),
+     "objects": ("the resolved closure table across five jurisdictions and four calendars",
+                 "`closure_breadth(day)`: how many of the five are shut",
+                 "the 2026 Eid-and-Nowruz collision in Afghanistan",
+                 "the three divergent Islamic sighting authorities"),
+     "conditions": ("the closure-breadth bucket: one, two, three or more of five",
+                    "which calendar system produced the closure",
+                    "whether the closure coincides with a fiscal-year boundary"),
+     "instruments": ("USDSGD", "USDINR", "XAUUSD"),
+     "controls": ("the same weekday with no closure anywhere in the five",
+                  "the carrier instrument's OWN calendar, which is not any of these five -- a "
+                  "closure here does not close the thing the cell trades and that weakens the "
+                  "mechanism by construction",
+                  "a matched week-of-year null"),
+     "notes": "THE MECHANISM IS DELIBERATELY WEAK AND IS STATED AS SUCH: none of the five has a "
+              "tradable domestic venue, so a closure removes reporting and physical activity "
+              "rather than liquidity in the executed instrument"},
+    {"id": "MAR-N", "title": "The measurement-quality gradient, from daily to mirror-only",
+     "jurisdictions": ("mv", "tl", "bn", "bt", "af"),
+     "objects": ("the publication frequency of each jurisdiction's dominant series: daily for "
+                 "the Maldives, quarterly for Timor-Leste, monthly for Brunei and Bhutan, and "
+                 "mirror-only for Afghanistan",
+                 "the NO_LAWFUL_GROUND count per jurisdiction",
+                 "the lag from event to first public print",
+                 "the share of each jurisdiction's layers that are declared absent"),
+     "conditions": ("the jurisdiction's publication-frequency bucket",
+                    "the number of declared-absent layers it carries",
+                    "whether the dominant series was read from the subject or from a mirror"),
+     "instruments": ("US500", "NAS100", "XAUUSD"),
+     "controls": ("the same tests on a fully-published comparator economy",
+                  "the pack's own coverage numbers, which are the input and must not also be "
+                  "the outcome",
+                  "a permutation of the frequency labels across the five"),
+     "notes": "THE NULL THIS PACK MUST NOT SKIP: does publication frequency predict anything at "
+              "all, or is a daily series merely a noisier monthly one? If the answer is no, that "
+              "is a genuinely useful measurement about the desk's own data-acquisition priorities"},
+)
+
+# --------------------------------------------------------------------------- cells
+DOMAIN_CELL_SPEC: dict[str, tuple[str, str]] = {
+    "MAR-A": ("par_link", "0 to 5 sessions"),
+    "MAR-B": ("commodity_pass_through", "1 to 3 months"),
+    "MAR-C": ("sovereign_flow", "1 to 4 quarters"),
+    "MAR-D": ("imported_policy", "0 to 10 sessions"),
+    "MAR-E": ("high_frequency_proxy", "0 to 10 sessions"),
+    "MAR-F": ("reserve_stress", "1 to 3 months"),
+    "MAR-G": ("par_defence", "1 to 2 quarters"),
+    "MAR-H": ("seasonality", "1 to 3 months"),
+    "MAR-I": ("auction", "0 to 10 sessions"),
+    "MAR-J": ("mirror_statistic", "1 to 3 months"),
+    "MAR-K": ("rural_income", "1 to 4 quarters"),
+    "MAR-L": ("cross_sectional", "1 to 4 quarters"),
+    "MAR-M": ("calendar_event", "0 to 3 sessions"),
+    "MAR-N": ("measurement_quality", "1 to 4 quarters"),
+}
+
+
+def cells() -> tuple[dict[str, Any], ...]:
+    """THE TESTABLE CELLS THIS PACK MINTS, for the one gauntlet.
+
+    The cross product of each domain's own conditions with each domain's own EXECUTABLE
+    instruments. It is a product and not a blow-up because both factors are already measured
+    claims: a condition is a state this pack's data plane can evaluate, and an instrument is a
+    symbol the broker registry carries.
+    """
+    execs = set(EXECUTABLE_INSTRUMENTS)
+    out: list[dict[str, Any]] = []
+    for dom in DOMAINS:
+        did = str(dom["id"])
+        family, horizon = DOMAIN_CELL_SPEC.get(did, ("mechanism", "1 to 10 sessions"))
+        controls = tuple(dom["controls"])
+        for symbol in dom["instruments"]:
+            if symbol not in execs:
+                continue
+            for i, condition in enumerate(dom["conditions"]):
+                out.append({
+                    "cell_id": f"{did}:{symbol}:C{i + 1}",
+                    "domain": did, "symbol": symbol, "condition": condition,
+                    "mechanism_family": family, "horizon": horizon,
+                    "control": controls[i % len(controls)],
+                    "jurisdictions": tuple(dom.get("jurisdictions", ())),
+                    "why": str(dom["title"]),
+                })
+    return tuple(out)
+
+
+CELLS: tuple[dict[str, Any], ...] = cells()
+
+# --------------------------------------------------------------------------- interactions
+INTERACTIONS: tuple[dict[str, Any], ...] = (
+    {"with": "sg",
+     "mechanism": "THE PAR LINK, AND IT IS THIS PACK'S DEFINING INTERACTION. The Brunei dollar "
+                  "and the Singapore dollar are interchangeable at 1:1 under the Currency "
+                  "Interchangeability Agreement of 12 June 1967, so Brunei's external value IS "
+                  "Singapore's. The `sg` pack owns the S$NEER band, the MAS policy clock and "
+                  "Singapore's own mechanics; this pack names the par, computes Brunei's "
+                  "expression from it, and re-derives nothing",
+     "observable": "USDSGD's own tick, the MAS policy-statement stance, and BDCB's "
+                   "currency-in-circulation against the backing",
+     "targets": ("USDSGD", "SGDJPY", "EURSGD", "AUDSGD"),
+     "control": "the `sg` pack's own study over the identical window -- a Brunei claim must beat "
+                "Singapore's own measurement of its own currency before it is Brunei's"},
+    {"with": "ind",
+     "mechanism": "INDIA IS THE COUNTERPARTY OF TWO OF THE FIVE. Bhutan's ngultrum is pegged "
+                  "1:1 to the rupee and its power is sold into the Indian grid; the Maldives' "
+                  "largest tourist source market is India and its bilateral credit lines are "
+                  "Indian. The `ind` pack owns the rupee's fixing and India's mechanics, and "
+                  "this pack reads them",
+     "observable": "USDINR's level and the RBI reference rate, Indian outbound travel, and "
+                   "Indian grid imports from Bhutan",
+     "targets": ("USDINR", "XAUUSD", "US500"),
+     "control": "the `ind` pack's own rupee study over the identical window, plus Indian "
+                "outbound travel to other destinations, so a Maldives effect is not an Indian one"},
+    {"with": "caucasus_central_asia",
+     "mechanism": "THE SAME METHOD ON THE SAME BORDER. Afghanistan's northern trade runs through "
+                  "Uzbekistan at Hairatan and its gas and electricity imports come from the same "
+                  "corridor; more importantly, both packs read an unreadable jurisdiction "
+                  "through MIRROR CUSTOMS -- that pack reads Turkmen gas in Chinese customs "
+                  "data, this one reads Afghan coal in Pakistani, Iranian, Chinese and Uzbek "
+                  "data. The technique is shared and so are two of the reporters",
+     "observable": "Uzbek and Chinese customs tables covering both Afghanistan and Central Asia, "
+                   "and the Termez/Hairatan corridor volumes",
+     "targets": ("XCUUSD", "XALUSD", "XAUUSD"),
+     "control": "the partners' total imports from all origins over the same months, so a "
+                "corridor effect is not a partner-demand effect; and the other pack's own "
+                "measurement of the same reporters' revision behaviour"},
+    {"with": "pk",
+     "mechanism": "PAKISTAN IS AFGHANISTAN'S LARGEST MIRROR REPORTER AND ITS BORDER DECIDES THE "
+                  "FLOW. Torkham and Chaman close and reopen on Pakistani decisions at short "
+                  "notice, Pakistani coal demand is what grew the post-2021 export line, and "
+                  "Pakistani duty changes reprice the whole trade",
+     "observable": "Pakistan Bureau of Statistics and FBR monthly imports from Afghanistan, the "
+                   "crossing closure announcements, and Pakistani coal demand",
+     "targets": ("XCUUSD", "XTIUSD", "XAUUSD"),
+     "control": "Pakistan's total coal imports from all origins over the same months, and the "
+                "crossings' own closure calendar as the confound"},
+    {"with": "idn",
+     "mechanism": "INDONESIA IS TIMOR-LESTE'S DOMINANT IMPORT SOURCE AND ITS PRICE LEVEL. A "
+                  "dollarised economy importing overwhelmingly from Indonesia has its real "
+                  "exchange rate set by USDIDR, so Timor-Leste's competitiveness and imported "
+                  "inflation are an Indonesian question with a dollar numeraire",
+     "observable": "USDIDR against Timorese CPI and the Indonesian border-trade volumes",
+     "targets": ("USDIDR", "US500", "USDSGD"),
+     "control": "Indonesia's own inflation and policy over the same months, so a Timorese "
+                "divergence is Timorese; and the `idn` pack's own rupiah study"},
+    {"with": "lk",
+     "mechanism": "THE SIBLING INDIAN OCEAN TOURISM-AND-DEBT CASE, and the pack's most useful "
+                  "placebo. Sri Lanka is the other South Asian tourism economy that ran a "
+                  "pegged-ish currency into a reserve crisis with dated external maturities, "
+                  "and it actually defaulted. A Maldivian stress mechanism that also fires in Sri "
+                  "Lanka is an Indian Ocean frontier mechanism and not a Maldivian one",
+     "observable": "Sri Lankan arrivals, reserves and spread against the Maldivian equivalents "
+                   "over the same months",
+     "targets": ("USDINR", "XAUUSD", "US500"),
+     "control": "the 2022 Sri Lankan default window, in which the Maldives did NOT default -- if "
+                "a mechanism fires in both, it is regional; if only in one, it may be its own"},
+    {"with": "kr",
+     "mechanism": "KOREA AND JAPAN ARE THE OTHER END OF BRUNEI'S LNG CONTRACTS. The offtakers' "
+                  "own customs imports by origin are the mirror statistic for Lumut's cargoes, "
+                  "and their demand cycle is what the long-term contracts were written against",
+     "observable": "Korean and Japanese LNG imports by origin, monthly, against Brunei's own "
+                   "reported export volumes",
+     "targets": ("USDKRW", "JPN225", "XNGUSD", "USDJPY"),
+     "control": "the buyers' total LNG imports from all origins, so a Brunei effect is not a "
+                "Northeast Asian gas-demand effect"},
+)
+
+# --------------------------------------------------------------------------- transmission
+TRANSMISSION_EDGES_SEED: tuple[dict[str, Any], ...] = (
+    {"id": "MAR-T1",
+     "source": "USDSGD's own tick, which IS Brunei's external value at par since 1967",
+     "target": "USDSGD", "targets": ("USDSGD", "SGDJPY", "EURSGD"), "to_country": "sg",
+     "sign": "+",
+     "mechanism": "THE EXACT EXPRESSION, NOT A PROXY. The Currency Interchangeability Agreement "
+                  "holds BND and SGD at 1:1, so USDBND is USDSGD to the last decimal by treaty "
+                  "and every Brunei external-value cell is executable today with zero basis",
+     "horizon": "0 to 5 sessions", "horizon_class": "intraday", "lag_days": 0.0,
+     "actor": "BDCB as a currency board with a treaty par",
+     "constraint": "a par that has not moved in fifty-eight years",
+     "flow": "treaty par into an executable quote",
+     "condition": "the MAS policy window and the S$NEER band-position bucket",
+     "control": "the `sg` pack's own study over the identical window; the same window with no "
+                "Brunei event at all",
+     "falsifier": "no Brunei-specific information is present in USDSGD beyond what Singapore's "
+                  "own policy and the dollar already carry -- THE EXPECTED RESULT, and the point "
+                  "of the edge is that the EXECUTION is exact even if the information is nil",
+     "evidence": "HYPOTHESIS"},
+    {"id": "MAR-T2",
+     "source": "USDINR, which IS Bhutan's external value at the 1974 1:1 par",
+     "target": "USDINR", "targets": ("USDINR", "XAUUSD"), "to_country": "ind", "sign": "+",
+     "mechanism": "the same shape as MAR-T1: a statutory par makes USDBTN equal to USDINR, so "
+                  "Bhutan's external value is executable with zero basis. What is NOT executable "
+                  "is the rupee-RESERVE constraint, which is the mechanism that actually binds",
+     "horizon": "1 to 2 quarters", "horizon_class": "multi_day", "lag_days": 30.0,
+     "actor": "the Royal Monetary Authority defending a par it cannot devalue",
+     "constraint": "an open border that makes capital controls partly notional",
+     "flow": "rupee-reserve stress into import rationing",
+     "condition": "the rupee-reserve coverage bucket in months of essential imports",
+     "control": "the `ind` pack's own rupee study; India's own reserve and credit cycle",
+     "falsifier": "rupee-reserve stress episodes produce no measurable change in Bhutanese "
+                  "imports or credit, making the constraint notional",
+     "evidence": "HYPOTHESIS"},
+    {"id": "MAR-T3",
+     "source": "Maldivian daily tourist arrivals by nationality",
+     "target": "USDINR", "targets": ("USDINR", "XBRUSD", "US500"), "to_country": "ind",
+     "sign": "+",
+     "mechanism": "a daily physical count of discretionary travel, split by the economy that "
+                  "paid for it; the executable content is about the SOURCE markets' demand and "
+                  "about the oil price through airfare, because the Maldives itself has no "
+                  "instrument",
+     "horizon": "0 to 10 sessions", "horizon_class": "intraday", "lag_days": 1.0,
+     "actor": "the Ministry of Tourism as a daily publisher",
+     "constraint": "a single airport gateway and a fixed bed inventory",
+     "flow": "discretionary travel demand into source-market and travel-cost legs",
+     "condition": "the arrivals surprise against the pack's own seasonal baseline",
+     "control": "regional outbound travel from the same source markets; the global risk complex",
+     "falsifier": "the daily series carries nothing beyond its own seasonality and the source "
+                  "markets' risk appetite",
+     "evidence": "HYPOTHESIS"},
+    {"id": "MAR-T4",
+     "source": "The Maldivian parallel-market premium and the usable-reserve path",
+     "target": "XAUUSD", "targets": ("XAUUSD", "USDINR", "US500"), "to_country": "mv",
+     "sign": "+",
+     "mechanism": "a currency pinned on the weak edge of its band adjusts through the QUEUE for "
+                  "dollars rather than the quote, so the premium and the reserve path are the "
+                  "stress variables; gold is the population's store of value and the executable "
+                  "leg",
+     "horizon": "1 to 3 months", "horizon_class": "multi_day", "lag_days": 30.0,
+     "actor": "the MMA defending a band from its weak edge",
+     "constraint": "one pool of dollars serving both the peg's defence and a dated maturity wall",
+     "flow": "reserve stress into dollar rationing and a parallel premium",
+     "condition": "the parallel-premium bucket and reserve coverage of the next twelve months",
+     "control": "other frontier pegged currencies' premia; the oil price; a pre-2011 placebo",
+     "falsifier": "the premium carries no information about the sovereign's offshore spread once "
+                  "global risk and the oil price are controlled for",
+     "evidence": "HYPOTHESIS"},
+    {"id": "MAR-T5",
+     "source": "The Timor-Leste Petroleum Fund's withdrawal in excess of its statutory ESI",
+     "target": "US500", "targets": ("US500", "NAS100", "XBRUSD"), "to_country": "us",
+     "sign": "-",
+     "mechanism": "a fund whose inflow stopped in 2023 while its withdrawal rule continued is a "
+                  "computable depletion path; the excess over the three-per-cent ESI is the "
+                  "discretionary part and it is disclosed quarterly and audited",
+     "horizon": "1 to 4 quarters", "horizon_class": "multi_day", "lag_days": 45.0,
+     "actor": "the Petroleum Fund as the whole state's balance sheet",
+     "constraint": "petroleum receipts essentially zero since Bayu-Undan ceased",
+     "flow": "statutory withdrawal into portfolio liquidation",
+     "condition": "the withdrawal's excess over ESI in the budget just passed",
+     "control": "the Fund's published benchmark weights over the same quarters -- a Fund result "
+                "that is just the index IS the index and must be removed first",
+     "falsifier": "the withdrawal series is fully explained by the ESI rule and the budget "
+                  "cycle, leaving no discretionary component at all",
+     "evidence": "HYPOTHESIS"},
+    {"id": "MAR-T6",
+     "source": "USDIDR as Timor-Leste's real exchange rate under dollarisation",
+     "target": "USDIDR", "targets": ("USDIDR", "US500"), "to_country": "idn", "sign": "+",
+     "mechanism": "a dollarised economy importing overwhelmingly from Indonesia has its "
+                  "competitiveness and its imported inflation set by USDIDR, with no domestic "
+                  "monetary instrument of any kind to offset it",
+     "horizon": "1 to 3 months", "horizon_class": "multi_day", "lag_days": 30.0,
+     "actor": "the Government of Timor-Leste as a dollarised fiscal authority",
+     "constraint": "no monetary policy at all; the policy rate is the FOMC's",
+     "flow": "the dollar's level against Indonesia into Timorese prices",
+     "condition": "the USDIDR move bucket and whether a Fund transfer landed in the same quarter",
+     "control": "Indonesia's own inflation and policy; the `idn` pack's own rupiah study",
+     "falsifier": "Timorese CPI shows no relationship to USDIDR once Indonesian inflation is "
+                  "controlled for",
+     "evidence": "HYPOTHESIS"},
+    {"id": "MAR-T7",
+     "source": "Brunei LNG export volumes, read in the Japanese and Korean import mirror",
+     "target": "XNGUSD", "targets": ("XNGUSD", "JPN225", "USDKRW"), "to_country": "kr",
+     "sign": "+",
+     "mechanism": "the buyer's customs table is the mirror statistic for Lumut's cargoes; the "
+                  "contracts are oil-indexed and long-term, so the transmission to a gas screen "
+                  "is DECLARED WEAK and the null is that there is none",
+     "horizon": "1 to 3 months", "horizon_class": "multi_day", "lag_days": 40.0,
+     "actor": "Brunei LNG Sdn Bhd and the Lumut plant",
+     "constraint": "a mature field base and contracts that fix the price mechanism for years",
+     "flow": "contracted cargoes into the buyers' import statistics",
+     "condition": "the buyer-side import volume surprise against its own seasonality",
+     "control": "the buyers' total LNG imports from ALL origins over the same months",
+     "falsifier": "Brunei's volume adds nothing to a regional LNG model that already has the "
+                  "buyers' totals -- THE EXPECTED RESULT and the reason the route is WEAK",
+     "evidence": "HYPOTHESIS"},
+    {"id": "MAR-T8",
+     "source": "Brunei's refined-product export line, which begins with Hengyi in 2019",
+     "target": "XBRUSD", "targets": ("XBRUSD", "XTIUSD", "USDCNH"), "to_country": "cn",
+     "sign": "+",
+     "mechanism": "a Chinese-owned refinery turned a crude exporter into a product exporter on a "
+                  "dated timetable; Brunei's trade statistics BREAK in 2019 and a series spliced "
+                  "across that date measures a refinery rather than an economy",
+     "horizon": "1 to 2 quarters", "horizon_class": "multi_day", "lag_days": 60.0,
+     "actor": "Hengyi Industries at Pulau Muara Besar",
+     "constraint": "Asian refining margins it does not set and a single-site operation",
+     "flow": "refining margin into throughput into the product export line",
+     "condition": "the era: pre-2019 crude exporter versus post-2019 product exporter",
+     "control": "Asian refining margins and regional product exports over the same quarters",
+     "falsifier": "the product line shows no relationship to refining margins once throughput is "
+                  "controlled for, making it accounting rather than a flow",
+     "evidence": "HYPOTHESIS"},
+    {"id": "MAR-T9",
+     "source": "Bhutanese generation and the summer-export / winter-import reversal",
+     "target": "USDINR", "targets": ("USDINR", "XALUSD"), "to_country": "ind", "sign": "-",
+     "mechanism": "run-of-river plants with little storage follow the monsoon, so Bhutan's trade "
+                  "balance with India flips sign twice a year on a schedule; DECLARED WEAK "
+                  "because Bhutan is a small share of the Indian grid",
+     "horizon": "1 to 3 months", "horizon_class": "multi_day", "lag_days": 45.0,
+     "actor": "Druk Green Power Corporation as a monsoon-driven exporter",
+     "constraint": "tariffs fixed by bilateral agreement and a single buyer country",
+     "flow": "rainfall into generation into the bilateral trade balance",
+     "condition": "the seasonal state from `hydro_season` and the monsoon rainfall departure",
+     "control": "all-India rainfall departure and Indian national power demand over the same "
+                "months -- a monsoon that fills Bhutan's rivers fills India's too",
+     "falsifier": "the seasonal reversal carries nothing about USDINR once Indian monsoon "
+                  "rainfall is controlled for",
+     "evidence": "HYPOTHESIS"},
+    {"id": "MAR-T10",
+     "source": "Afghan coal and mineral exports as counted by four neighbours' customs",
+     "target": "XCUUSD", "targets": ("XCUUSD", "XALUSD", "XTIUSD"), "to_country": "pk",
+     "sign": "+",
+     "mechanism": "Afghanistan publishes no usable trade statistics, so the flow is read in the "
+                  "PARTNERS' published tables; the post-2021 coal growth is visible there and "
+                  "nowhere else, and the four reporters' disagreement flags the disputed months",
+     "horizon": "1 to 3 months", "horizon_class": "multi_day", "lag_days": 35.0,
+     "actor": "the Afghan coal and mineral exporter counted only by its neighbours",
+     "constraint": "border closures decided by the other side, repeatedly and at short notice",
+     "flow": "cross-border volume into the partners' import statistics",
+     "condition": "the mirror-total surprise and the inter-reporter disagreement bucket",
+     "control": "the partners' total imports from ALL origins; their own tariff and closure "
+                "decisions as the confound",
+     "falsifier": "the four mirror tables disagree by more than their own revision histories can "
+                  "explain, which would make the substitute unusable and is worth knowing",
+     "evidence": "HYPOTHESIS"},
+    {"id": "MAR-T11",
+     "source": "Da Afghanistan Bank's published FX auction sizes and the money-changer premium",
+     "target": "XAUUSD", "targets": ("XAUUSD", "USDINR"), "to_country": "af", "sign": "+",
+     "mechanism": "with reserves frozen abroad the authority manages a FLOW; the auction size it "
+                  "offers is the size it believes it must, and the premium of the Sarai Shahzada "
+                  "quote over the reference rate is the public measure of dollar scarcity",
+     "horizon": "0 to 10 sessions", "horizon_class": "intraday", "lag_days": 0.0,
+     "actor": "Da Afghanistan Bank managing a flow with a frozen stock",
+     "constraint": "severed correspondent banking and a cash economy",
+     "flow": "auction supply into the money-changer price",
+     "condition": "the auction size bucket and the money-changer premium",
+     "control": "regional gold demand and the Pakistani rupee; weeks with no auction at all",
+     "falsifier": "auction outcomes carry no information about the money-changer rate, which "
+                  "would mean the official channel is not the marginal one",
+     "evidence": "HYPOTHESIS"},
+    {"id": "MAR-T12",
+     "source": "The UNODC-measured collapse in Afghan opium cultivation after the 2022 ban",
+     "target": "XAUUSD", "targets": ("XAUUSD", "USDINR"), "to_country": "af", "sign": "-",
+     "mechanism": "AN ECONOMIC OBSERVABLE WITH NO EXECUTABLE LEG. A dated, quantified fall of "
+                  "more than ninety-five per cent in cultivation is a large rural income shock; "
+                  "its only lawful executable expression is the regional store-of-value and "
+                  "trade channel and the expected effect is small and slow",
+     "horizon": "1 to 4 quarters", "horizon_class": "multi_day", "lag_days": 90.0,
+     "actor": "the Afghan rural household after the 2022 opium ban",
+     "constraint": "no credit system to smooth the transition and a regionally-set wheat price",
+     "flow": "rural cash income into regional demand for a store of value",
+     "condition": "the survey-publication window and the regional wheat-price bucket",
+     "control": "regional rural income proxies; the 2023 wheat-price shock as the built-in "
+                "confound; pre-ban survey publications as placebo windows",
+     "falsifier": "no measurable regional response around the dated survey publications -- THE "
+                  "EXPECTED RESULT, recorded as a measurement rather than dressed up",
+     "evidence": "HYPOTHESIS"},
+    {"id": "MAR-T13",
+     "source": "The closure-breadth state across five jurisdictions and four calendar systems",
+     "target": "USDINR", "targets": ("USDINR", "USDSGD", "XAUUSD"), "to_country": "ind",
+     "sign": "+",
+     "mechanism": "four calendars produce closures that do not coincide; `closure_breadth` says "
+                  "how many of the five are shut. DECLARED WEAK BY CONSTRUCTION: none of the "
+                  "five has a tradable venue, so a closure removes reporting and physical "
+                  "activity rather than liquidity in the executed instrument",
+     "horizon": "0 to 3 sessions", "horizon_class": "intraday", "lag_days": 0.0,
+     "actor": "the five national calendar authorities",
+     "constraint": "no weekend substitution rule is shared across the five",
+     "flow": "regional closure into reporting and physical-activity gaps",
+     "condition": "the closure-breadth bucket and which calendar produced it",
+     "control": "the same weekday with no closure anywhere; the carrier's OWN calendar",
+     "falsifier": "closure breadth carries nothing about the carriers, which is the expected "
+                  "result and would retire MAR-M without touching the other thirteen domains",
+     "evidence": "HYPOTHESIS"},
+)
+
+# --------------------------------------------------------------------------- eras
+POLICY_ERAS: tuple[dict[str, Any], ...] = (
+    {"name": "the Currency Interchangeability Agreement", "start": "1967-06-12", "end": None,
+     "regime": "Brunei, Singapore and Malaysia agree their currencies are interchangeable at "
+               "par; Malaysia leaves in 1973 and the Brunei-Singapore par has held ever since",
+     "markers": ("1967-06-12 the agreement", "1973 Malaysia withdraws"),
+     "why_it_matters": "it is why USDSGD is Brunei's EXACT external value and not a proxy; any "
+                       "study of Brunei's external position that predates it is a different "
+                       "monetary regime",
+     "status": "OPEN"},
+    {"name": "Bhutan's 1:1 rupee parity", "start": "1974-04-01", "end": None,
+     "regime": "the ngultrum is introduced at par with the Indian rupee and the parity has never "
+               "been altered; the rupee continues to circulate in Bhutan in practice",
+     "markers": ("1974 the ngultrum introduced at par",),
+     "why_it_matters": "the parity makes USDINR Bhutan's exact external value and moves the "
+                       "entire adjustment burden onto the RUPEE RESERVE, which is not a price",
+     "status": "OPEN"},
+    {"name": "Timor-Leste's dollarisation and independence", "start": "2000-01-24",
+     "end": "2005-08-31",
+     "regime": "the US dollar is adopted as legal tender under the transitional administration "
+               "in 2000 and independence is restored on 2002-05-20; there is no domestic "
+               "currency and no monetary policy from the first day",
+     "markers": ("2000-01-24 dollarisation", "2002-05-20 restoration of independence"),
+     "why_it_matters": "every Timorese monetary shock after this date is exogenous by "
+                       "construction, and no study of the country may model an exchange rate",
+     "status": "SETTLED"},
+    {"name": "the Timor-Leste Petroleum Fund Law and the ESI rule", "start": "2005-09-01",
+     "end": "2023-12-31",
+     "regime": "the Fund is established with a statutory Estimated Sustainable Income of three "
+               "per cent of petroleum wealth; Bayu-Undan fills it through the 2010s and the "
+               "budget repeatedly withdraws above the ESI",
+     "markers": ("2005 the Petroleum Fund Law", "2013 the peak receipt years",
+                 "2023 Bayu-Undan ceases production"),
+     "why_it_matters": "THE INFLOW ERA. A depletion study that pools these years with the years "
+                       "after 2023 is averaging a fund that was filling with one that is not",
+     "status": "SETTLED"},
+    {"name": "the Maldivian band replaces the fixed peg", "start": "2011-04-10", "end": None,
+     "regime": "the MMA abandons the fixed 12.85 rate for a band of plus or minus twenty per "
+               "cent (10.28-15.42); the rate moves immediately to the weak edge and stays there",
+     "markers": ("2011-04-10 the band announced", "2011-04 the rate reaches 15.42"),
+     "why_it_matters": "a pre-2011 sample has a different exchange-rate regime entirely, and "
+                       "everything MAR-F conditions on -- premium, rationing, band position -- "
+                       "cannot exist before this date; it is the domain's natural placebo window",
+     "status": "OPEN"},
+    {"name": "Brunei becomes a refined-product exporter", "start": "2019-11-01", "end": None,
+     "regime": "the Hengyi refinery at Pulau Muara Besar starts up and Brunei's export mix "
+               "changes from crude and LNG to crude, LNG and refined products",
+     "markers": ("2019 Hengyi phase one start-up",),
+     "why_it_matters": "Brunei's trade statistics BREAK here; a series spliced across the date "
+                       "measures a refinery's throughput and calls it an economy",
+     "status": "OPEN"},
+    {"name": "the tourism stop", "start": "2020-03-27", "end": "2021-12-31",
+     "regime": "the Maldives closes its borders and arrivals go to approximately zero, then "
+               "recover on dated reopening steps; Bhutan, Brunei and Timor-Leste close too",
+     "markers": ("2020-03-27 the Maldives closes", "2020-07-15 the Maldives reopens",
+                 "2021 the vaccinated-travel recovery"),
+     "why_it_matters": "THE NATURAL EXPERIMENT OF THE WHOLE PACK: an economy's single input goes "
+                       "to zero and back on published, dated borders. It is also the built-in "
+                       "placebo for every mechanism that must NOT fire for a pandemic reason",
+     "status": "SETTLED"},
+    {"name": "Afghanistan: the freeze and the statistical narrowing", "start": "2021-08-15",
+     "end": None,
+     "regime": "the de facto authorities take power, central-bank reserves are frozen abroad, "
+               "correspondent banking is largely severed, statistical publication narrows "
+               "severely, and part of the reserves is transferred to a Swiss-based fund in 2022",
+     "markers": ("2021-08-15 the takeover", "2021-09 the reserve freeze",
+                 "2022-09 the Fund for the Afghan People", "2021-12 the first UN cash shipments"),
+     "why_it_matters": "EVERY AFGHAN SOURCE LAYER CHANGES AT THIS DATE. A series spanning it is "
+                       "spanning a change in who measures it, not only in what happened, and the "
+                       "mirror-customs substitution begins here",
+     "status": "OPEN"},
+    {"name": "the Afghan opium ban and the measured collapse", "start": "2022-04-03",
+     "end": None,
+     "regime": "cultivation is banned by decree; UNODC's surveys measure a fall of more than "
+               "ninety-five per cent in cultivated area between the 2022 and 2023 seasons",
+     "markers": ("2022-04-03 the decree", "2023 the UNODC survey measuring the collapse"),
+     "why_it_matters": "a dated, quantified supply event in a commodity the desk will never "
+                       "trade, whose lawful testable content is a rural income shock; it also "
+                       "coincides with a wheat-price shock, which is the confound MAR-K names",
+     "status": "OPEN"},
+    {"name": "Timor-Leste after Bayu-Undan: the depletion era", "start": "2024-01-01",
+     "end": None,
+     "regime": "petroleum receipts are essentially zero while the statutory withdrawal rule "
+               "continues; the Greater Sunrise decision remains deferred",
+     "markers": ("2023 Bayu-Undan ceases", "2024 the first full year with no material receipt"),
+     "why_it_matters": "THE ERA THE DEPLETION PATH IS ABOUT. It is two years old, which bounds "
+                       "every cell fitted inside it, and the pack reports that rather than "
+                       "pooling backwards to manufacture a sample",
+     "status": "OPEN"},
+    {"name": "the Maldivian reserve stress and the 2026 maturity", "start": "2024-01-01",
+     "end": None,
+     "regime": "usable reserves approach critical levels repeatedly, bilateral support is "
+               "sought, and a dated external maturity in 2026 concentrates the market's attention",
+     "markers": ("2024 the usable-reserve lows", "2026 the sukuk maturity"),
+     "why_it_matters": "the nearest dated stress point in the pack and the one an event study "
+                       "can actually align on; it is also the era in which MAR-F's mechanism is "
+                       "live rather than historical",
+     "status": "OPEN"},
+)
+
+# --------------------------------------------------------------------------- lawfulness
+ACCESS_CONSTRAINTS: tuple[dict[str, Any], ...] = (
+    {"constraint": "AFGHANISTAN IS SUBJECT TO EXTENSIVE INTERNATIONAL MEASURES and its de facto "
+                   "authorities are not recognised by most states",
+     "measured": "central-bank reserves frozen abroad since August 2021; correspondent banking "
+                 "largely severed; targeted measures in force under several regimes",
+     "consequence": "SANCTIONS CONSTRAIN TRANSACTIONS, NOT THE READING OF PUBLISHED STATISTICS. "
+                    "This pack reads published national statistics, published central-bank "
+                    "auction results, UN agency publications, World Bank and UNODC reports and "
+                    "public press. It transacts in nothing Afghan, holds nothing Afghan and "
+                    "routes no payment anywhere near the jurisdiction. THE DESK EXECUTES ONLY "
+                    "BROKER SYMBOLS -- never an instrument of any of these five"},
+    {"constraint": "NOTHING HERE TOUCHES ANY ENTITY'S PRIVATE SYSTEMS OR BYPASSES AN ACCESS "
+                   "CONTROL",
+     "measured": "every root in SOURCE_CLASSES is a public website, a public portal or a public "
+                 "document repository; no credential, no login, no paywall circumvention and no "
+                 "rate-limit evasion appears anywhere in this pack",
+     "consequence": "a source whose terms forbid machine extraction is registered with "
+                    "machine_use_allowed=false and is NEVER scraped -- the LNG price-reporting "
+                    "agencies are the worked example, and the free IEA and EIA volumes stand in"},
+    {"constraint": "NO PERSONAL DATA ABOUT ANY INDIVIDUAL IS COLLECTED ANYWHERE IN THIS PACK",
+     "measured": "every series named is an aggregate: arrivals counts by nationality, customs "
+                 "totals, fund balances, generation volumes, auction sizes and cultivation area",
+     "consequence": "the arrivals series is a COUNT and is never resolved to a traveller; the "
+                    "money-changer quotes are a published price and never a transaction record"},
+    {"constraint": "NONE OF THE FIVE LOCAL CURRENCIES IS QUOTED BY THIS BROKER",
+     "measured": "data/universe/universe.json holds no BND, MVR, BTN or AFN symbol, and "
+                 "Timor-Leste has no currency of its own at all",
+     "consequence": "BND and BTN are EXACT EXPRESSIONS of USDSGD and USDINR by treaty and "
+                    "statute, so those two are executable with zero basis; MVR and AFN are "
+                    "TRANSMISSION TARGETS routed through gold, the rupee and the risk complex; "
+                    "and Timor-Leste IS the dollar"},
+    {"constraint": "NONE OF THE FIVE HAS A TRADABLE DOMESTIC SECURITIES VENUE",
+     "measured": "Brunei, Timor-Leste and Afghanistan have NO exchange at all; Bhutan's RSEB and "
+                 "the Maldives Stock Exchange are session-traded with a couple of dozen mostly "
+                 "state-linked issuers between them and no usable tape",
+     "consequence": "there is no order book, no expiry clock, no short interest and no retail "
+                    "margin series anywhere in these five. The generic expiry and positioning "
+                    "miners correctly report UNMEASURED, every listed name here is EVENT LANE "
+                    "under the two-lane order (2026-09-06), and the equity leg of every "
+                    "mechanism is another jurisdiction's index"},
+    {"constraint": "THE BRUNEI INVESTMENT AGENCY PUBLISHES NO HOLDINGS AT ALL",
+     "measured": "no size, no allocation, no return and no annual report; the Tabung Amanah "
+                 "Pekerja provident fund is equally undisclosed",
+     "consequence": "the opacity is recorded as a NO_LAWFUL_GROUND row with the IMF Article IV "
+                    "external-asset aggregate named as the lawful substitute -- a MEASUREMENT, "
+                    "not a gap in this pack's reading (L1.28a)"},
+    {"constraint": "AFGHAN OFFICIAL PUBLICATION HAS NARROWED SEVERELY AND SOME OF IT IS GONE",
+     "measured": "six NO_LAWFUL_GROUND rows for af -- official, institutional, academic, "
+                 "app_ecosystem and physical_economy -- each with a named lawful substitute",
+     "consequence": "the substitutes are the World Bank Afghanistan Economic Monitor, UN agency "
+                    "reporting and disclosed cash shipments, UNODC's surveys, DAB's published "
+                    "auctions, and MIRROR CUSTOMS from Pakistan, Iran, China and Uzbekistan. An "
+                    "unread auction or an unpublished month is UNMEASURED, never zero"},
+    {"constraint": "THE OPIUM SERIES HAS NO EXECUTABLE LEG AND THE PACK REFUSES TO INVENT ONE",
+     "measured": "no broker symbol expresses it and none ever will; NO_EXECUTABLE_LEG records it "
+                 "with strength NONE_DIRECT",
+     "consequence": "it is carried as an ECONOMIC OBSERVABLE -- a dated, quantified rural income "
+                    "shock -- routed to the regional gold and trade channel with its confound "
+                    "named, and MAR-K states up front that the expected effect is small, slow "
+                    "and possibly undetectable"},
+    {"constraint": "THE MALDIVES PUBLISHES NO CONSENSUS FOR ITS DAILY SERIES",
+     "measured": "no forecaster publishes an expected arrivals number at any frequency",
+     "consequence": "every MAR-E surprise is measured against a baseline this pack builds "
+                    "itself, so each such cell is a HYPOTHESIS until the baseline is separately "
+                    "validated; the pack says so rather than borrowing a consensus that does "
+                    "not exist"},
+    {"constraint": "FIVE JURISDICTIONS IS A TINY CROSS-SECTION",
+     "measured": "MAR-L tests the pack's own organising claim across five economies",
+     "consequence": "the pack reports the sample size rather than pooling unrelated economies "
+                    "to manufacture power; the honest prior on MAR-L is that it finds very "
+                    "little, and it is written so that finding nothing retires the claim without "
+                    "touching any of the five underlying mechanisms"},
+)
+
+INSTITUTIONAL_FLOW_SOURCES: tuple[str, ...] = (
+    "Timor-Leste Petroleum Fund quarterly transfers to the state",
+    "Maldives Monetary Authority gross and usable reserves",
+    "Royal Monetary Authority of Bhutan rupee reserves",
+    "Da Afghanistan Bank FX auction allotments",
+    "UN disclosed US-dollar cash shipments to Afghanistan",
+    "Brunei Darussalam Central Bank currency in circulation and backing",
+    "Druk Holding and Investments dividends to the Bhutanese budget")
+
+SERIES: dict[str, str] = {
+    "MAR_BN_LNG": "ENERGY:lng_exports", "MAR_BN_GDP": "DEPS:gdp_oil_gas",
+    "MAR_BN_CIC": "BDCB:currency_in_circulation", "MAR_BN_PAR": "computed:par_expression(bn)",
+    "MAR_TL_FUND": "BCTL:petroleum_fund_quarterly", "MAR_TL_ESI": "MOF:esi_estimate",
+    "MAR_TL_TRANSFER": "BCTL:transfers_to_state", "MAR_TL_OIL": "ANPM:production",
+    "MAR_MV_ARRIVALS": "MOT:daily_arrivals", "MAR_MV_RESERVES": "MMA:gross_reserves",
+    "MAR_MV_USABLE": "MMA:usable_reserves", "MAR_MV_DEBT": "MOF:external_debt_profile",
+    "MAR_BT_GEN": "DGPC:generation_gwh", "MAR_BT_RUPEE": "RMA:rupee_reserves",
+    "MAR_BT_PAR": "computed:par_expression(bt)",
+    "MAR_AF_AUCTION": "DAB:fx_auction_result", "MAR_AF_MIRROR": "MIRROR:af_trade",
+    "MAR_AF_OPIUM": "UNODC:opium_cultivation_ha", "MAR_AF_CASH": "UNAMA:cash_shipments",
+    "MAR_CLOSURE": "computed:closure_breadth", "MAR_NOWRUZ": "computed:nowruz",
+}
+
+# --------------------------------------------------------------------------- the pack's miners
+CUSTOM_MINERS: tuple[dict[str, Any], ...] = (
+    {"name": "mar_par_links", "domain_ids": ("MAR-A", "MAR-G"), "kind": "macro",
+     "cadence_s": 86400.0, "steerable": True, "wired": False,
+     "entry": "countries.maritime_asia.pack:mine_par_links",
+     "needs": ("USDSGD and USDINR D1 bars", "par_expression", "CURRENCIES"),
+     "notes": "the two EXACT expressions, with zero basis risk stated rather than estimated"},
+    {"name": "mar_calendar_systems", "domain_ids": ("MAR-M",), "kind": "calendar",
+     "cadence_s": 86400.0, "steerable": True, "wired": False,
+     "entry": "countries.maritime_asia.pack:mine_calendar_systems",
+     "needs": ("HOLIDAYS_RULE", "closure_breadth", "nowruz", "easter"),
+     "notes": "four calendar systems, the derived half computed and the typed half labelled "
+              "with its authority, plus the 2026 Eid-and-Nowruz collision"},
+    {"name": "mar_depletion_path", "domain_ids": ("MAR-C",), "kind": "macro",
+     "cadence_s": 604800.0, "steerable": True, "wired": False,
+     "entry": "countries.maritime_asia.pack:mine_depletion_path",
+     "needs": ("fund_depletion_path", "the Petroleum Fund quarterly report"),
+     "notes": "the withdrawal-versus-ESI arithmetic under the post-2023 zero-receipt regime"},
+    {"name": "mar_stress_states", "domain_ids": ("MAR-F", "MAR-H", "MAR-I"), "kind": "macro",
+     "cadence_s": 86400.0, "steerable": True, "wired": False,
+     "entry": "countries.maritime_asia.pack:mine_stress_states",
+     "needs": ("rufiyaa_band", "hydro_season", "parallel_premium"),
+     "notes": "the band buckets, the monsoon states and the premium arithmetic a cell conditions "
+              "on; no data is fetched, the states are functions of published numbers"},
+    {"name": "mar_absence_register", "domain_ids": ("MAR-N", "MAR-J", "MAR-K"), "kind": "audit",
+     "cadence_s": 604800.0, "steerable": False, "wired": False,
+     "entry": "countries.maritime_asia.pack:mine_absence_register",
+     "needs": ("NO_LAWFUL_GROUND", "NO_EXECUTABLE_LEG", "jurisdiction_coverage"),
+     "notes": "THE PACK'S MOST VALUABLE OUTPUT FOR AFGHANISTAN: every absent layer by name, with "
+              "its lawful substitute, per jurisdiction"},
+    {"name": "mar_transmission_seeds",
+     "domain_ids": ("MAR-B", "MAR-D", "MAR-E", "MAR-L"), "kind": "transfer",
+     "cadence_s": 604800.0, "steerable": True, "wired": False,
+     "entry": "countries.maritime_asia.pack:mine_transmission_seeds",
+     "needs": ("TRANSMISSION_EDGES_SEED", "INTERACTIONS", "single_factor_map"),
+     "notes": "the pack's map and its sibling interactions as HYPOTHESIS discoveries"},
+)
+
+MINER_DOMAINS: dict[str, tuple[str, ...]] = {
+    "central_bank_surprise": ("MAR-A", "MAR-D"),
+    "release_surprise": ("MAR-E", "MAR-C", "MAR-B"),
+    "calendar_settlement": ("MAR-M",), "holiday_liquidity": ("MAR-M",),
+    "positioning": ("MAR-F", "MAR-G"), "carry_funding": ("MAR-A", "MAR-D"),
+    "corporate_flow": ("MAR-B", "MAR-H"), "institutional_flow": ("MAR-C", "MAR-I"),
+    "equity_mechanics": ("MAR-C",), "derivatives_expiry": (),
+    "failure": ("MAR-F", "MAR-K"), "residual": ("MAR-N",),
+    "transfer": ("MAR-J", "MAR-L"), "scouts": ("MAR-J", "MAR-N"),
+    "session_microstructure": ("MAR-A", "MAR-E"),
+}
+
+# --------------------------------------------------------------------------- assembly
+_PACK_FIELDS: tuple[str, ...] = (
+    "code", "name", "region_command", "currency", "executable_instruments", "central_bank",
+    "fixing_conventions", "settlement_conventions", "exchanges", "holidays_rule",
+    "fiscal_year_end", "positioning_sources", "native_languages", "terminology", "source_classes",
+    "datasets", "actors", "domains", "custom_miners", "transmission_edges_seed", "policy_eras")
+
+
+def as_dict() -> dict[str, Any]:
+    """The pack as a plain mapping: the framework fields plus everything the framework has no
+    slot for, carried beside them so nothing is silently dropped."""
+    return {
+        "code": CODE, "name": NAME, "region_command": REGION_COMMAND, "currency": CURRENCY,
+        "jurisdictions": JURISDICTIONS, "roster_jurisdictions": ROSTER_JURISDICTIONS,
+        "beyond_roster": BEYOND_ROSTER, "currencies": CURRENCIES,
+        "executable_instruments": EXECUTABLE_INSTRUMENTS, "central_bank": CENTRAL_BANK,
+        "central_banks": CENTRAL_BANKS, "fixing_conventions": FIXING_CONVENTIONS,
+        "settlement_conventions": SETTLEMENT_CONVENTIONS, "exchanges": EXCHANGES,
+        "release_classes": RELEASE_CLASSES, "session_windows": SESSION_WINDOWS,
+        "holidays_rule": HOLIDAYS_RULE, "fiscal_year_end": FISCAL_YEAR_END,
+        "fiscal_years": FISCAL_YEARS, "positioning_sources": POSITIONING_SOURCES,
+        "native_languages": NATIVE_LANGUAGES, "terminology": TERMINOLOGY,
+        "source_classes": SOURCE_CLASSES, "source_layers": SOURCE_LAYERS,
+        "layer_absences": LAYER_ABSENCES, "no_lawful_ground": NO_LAWFUL_GROUND,
+        "layer_terms": layer_terms(), "source_layer_coverage": source_layer_coverage(),
+        "jurisdiction_coverage": jurisdiction_coverage(), "query_territories": QUERY_TERRITORIES,
+        "datasets": DATASETS, "actors": ACTORS, "domains": DOMAINS,
+        "cells": CELLS, "interactions": INTERACTIONS,
+        "custom_miners": CUSTOM_MINERS, "miner_domains": MINER_DOMAINS,
+        "transmission_edges_seed": TRANSMISSION_EDGES_SEED, "policy_eras": POLICY_ERAS,
+        "transmission_targets": TRANSMISSION_TARGETS, "no_executable_leg": NO_EXECUTABLE_LEG,
+        "access_constraints": ACCESS_CONSTRAINTS, "contested_observance": CONTESTED_OBSERVANCE,
+        "region_desk": REGION_DESK, "forest": FOREST, "cot_currency": COT_CURRENCY,
+        "export_economy": EXPORT_ECONOMY, "retail_leverage_regime": RETAIL_LEVERAGE_REGIME,
+        "institutional_flow_sources": INSTITUTIONAL_FLOW_SOURCES, "series": SERIES,
+        "mission": MISSION, "single_factor_map": single_factor_map(),
+        "languages_present": languages_present(),
+    }
+
+
+def _source_line(sc: Mapping[str, Any]) -> str:
+    return (f"{sc['id']} :: layer={sc['layer']} :: {sc['label']} :: "
+            f"roots={'; '.join(sc['roots']) or 'NONE'} :: "
+            f"queries={'; '.join(sc['queries']) or 'NONE'} :: "
+            f"languages={','.join(sc['languages']) or 'NONE'} :: access={sc['access_label']} :: "
+            f"credibility={sc['credibility']} :: predictive={sc['predictive_state']} :: "
+            f"machine_use_allowed={sc['machine_use_allowed']} :: licence={sc['licence']}")
+
+
+def _source_row(sc: Mapping[str, Any]) -> dict[str, Any]:
+    return {"id": sc["id"], "layer": sc["layer"], "label": sc["label"], "roots": sc["roots"],
+            "languages": sc["languages"], "licence": sc["licence"], "verified": False,
+            "query_terms": sc["queries"],
+            "notes": (f"access_label={sc['access_label']} | credibility={sc['credibility']} | "
+                      f"predictive_state={sc['predictive_state']} | "
+                      f"machine_use_allowed={sc['machine_use_allowed']} | "
+                      f"jurisdictions={','.join(sc.get('jurisdictions', ())) or 'regional'} | "
+                      f"{sc['notes']}")}
+
+
+def _holiday_rule_row() -> dict[str, Any]:
+    """The framework's HolidayRule shape: every closed weekday the rule produces for 2024-2026."""
+    dates = sorted({d.isoformat() for y in HOLIDAYS_RULE["years"] for d in market_holidays(y)})
+    fixed = sorted({f"{m:02d}-{d:02d}"
+                    for rows in FIXED_NATIONAL.values() for m, d, _n in rows})
+    return {"dates": tuple(dates), "fixed_md": tuple(fixed), "weekly_closed": (5, 6),
+            "notes": HOLIDAYS_RULE["authority"]}
+
+
+def lab_kwargs() -> dict[str, Any]:
+    """The keyword set `country_lab.CountryPack` is built from, in the shapes its coercion reads
+    best: sources as rows AND as tagged lines, positioning and miners as strings, the holiday
+    rule as dates, absent layers as a mapping."""
+    data = as_dict()
+    real = [s for s in SOURCE_CLASSES if not str(s["id"]).startswith("absent_")]
+    data.update({
+        "code": CODE.lower(),
+        "positioning_sources": tuple(str(p["name"]) for p in POSITIONING_SOURCES),
+        "custom_miners": tuple(str(m["entry"]) for m in CUSTOM_MINERS),
+        "source_classes": tuple(_source_line(s) for s in real),
+        "sources": tuple(_source_row(s) for s in real),
+        "absent_layers": dict(LAYER_ABSENCES),
+        "holidays_rule": _holiday_rule_row(),
+    })
+    return data
+
+
+def pack() -> Any:
+    """`country_lab.CountryPack` when the framework is present, else the mapping. Imported
+    lazily so this department stays importable on a tree where the framework is not."""
+    data = lab_kwargs()
+    try:
+        from libs.research import country_lab
+    except ImportError:
+        return data
+    cls = getattr(country_lab, "CountryPack", None)
+    if cls is None:
+        return data
+    try:
+        import dataclasses
+        names = {f.name for f in dataclasses.fields(cls)}
+    except Exception:
+        names = set(_PACK_FIELDS)
+    try:
+        return cls(**{k: v for k, v in data.items() if k in names})
+    except (TypeError, ValueError):
+        return data
+
+
+# --------------------------------------------------------------- the department's own miners
+def mine_par_links(pack_obj: Any = None, ctx: Any = None) -> dict[str, Any]:
+    """MAR-A / MAR-G: the two EXACT expressions, as the arithmetic they are."""
+    rows = [dict(par_expression("bn", q), bucket=f"sgd_{i}")
+            for i, q in enumerate((1.28, 1.32, 1.36))]
+    rows += [dict(par_expression("bt", q), bucket=f"inr_{i}")
+             for i, q in enumerate((82.0, 85.0, 88.0))]
+    return {"miner": "mar_par_links", "domain_ids": ("MAR-A", "MAR-G"), "rows": tuple(rows),
+            "n": len(rows), "symbols": ("USDSGD", "USDINR"),
+            "prior": "the par makes the PRICE exact and does not put Brunei or Bhutan "
+                     "information into it; a positive result would be the surprise",
+            "control": "the `sg` and `ind` packs' own studies over the identical windows"}
+
+
+def mine_calendar_systems(pack_obj: Any = None, ctx: Any = None) -> dict[str, Any]:
+    """MAR-M: four calendar systems side by side, each closure tagged with the system that
+    produced it, whether it was derived or typed, and how many of the five it shuts."""
+    rows: list[dict[str, Any]] = []
+    for year in HOLIDAYS_RULE["years"]:
+        y = int(year)
+        catholic = {d.isoformat() for d in catholic_movable(y)}
+        equinox = nowruz(y).isoformat()
+        tibetan = {d.isoformat() for d, _n, _s in TIBETAN_LUNISOLAR.get(y, ())}
+        islamic = {d.isoformat() for d, _n, _s, _w in ISLAMIC_FEASTS.get(y, ())}
+        for day, where in regional_holidays(y).items():
+            iso = day.isoformat()
+            system = ("gregorian_catholic_movable" if iso in catholic else
+                      "solar_hijri" if iso == equinox else
+                      "tibetan_lunisolar" if iso in tibetan else
+                      "islamic_lunar" if iso in islamic else "gregorian_civil")
+            rows.append({"date": iso, "calendar": system, "jurisdictions": where,
+                         "breadth": len(where), "costs_a_session": day.weekday() < 5,
+                         "derived": system in ("gregorian_catholic_movable", "solar_hijri")})
+    return {"miner": "mar_calendar_systems", "domain_ids": ("MAR-M",), "rows": tuple(rows),
+            "n": len(rows), "symbols": ("USDSGD", "USDINR", "XAUUSD"),
+            "collision_years": collision_years(),
+            "control": "the carrier instrument's OWN calendar, which is none of these five"}
+
+
+def mine_depletion_path(pack_obj: Any = None, ctx: Any = None) -> dict[str, Any]:
+    """MAR-C: the depletion arithmetic under the post-2023 zero-receipt regime, at three
+    withdrawal levels. Nothing is fetched: the path is a function of a published rule."""
+    rows: list[dict[str, Any]] = []
+    for draw in (0.9, 1.2, 1.5):
+        withdrawal = draw
+        exhausted = years_to_exhaustion(18.0, annual_withdrawal=withdrawal)
+        rows.append({"annual_withdrawal_bn": withdrawal, "capital_bn": 18.0,
+                     "esi_bn": 18.0 * TL_ESI_RATE,
+                     "excess_over_esi_bn": withdrawal - 18.0 * TL_ESI_RATE,
+                     "exhausted_in_years": exhausted if exhausted is not None else -1})
+    return {"miner": "mar_depletion_path", "domain_ids": ("MAR-C",), "rows": tuple(rows),
+            "n": len(rows), "symbols": ("US500", "NAS100"),
+            "note": "ILLUSTRATIVE SCALES, not a forecast: the published quarterly capital and "
+                    "the budget's authorised transfer replace both inputs when read",
+            "control": "the Fund's published benchmark weights over the same quarters"}
+
+
+def mine_stress_states(pack_obj: Any = None, ctx: Any = None) -> dict[str, Any]:
+    """MAR-F / MAR-H / MAR-I: the band buckets, the monsoon states and the premium arithmetic
+    a cell conditions on."""
+    rows: list[dict[str, Any]] = [dict(rufiyaa_band(r), kind="mvr_band")
+                                  for r in (12.85, 14.00, 15.42)]
+    rows += [dict(hydro_season(m), kind="bt_hydro") for m in (1, 4, 7, 10)]
+    rows += [{"kind": "premium", "official": 15.42, "parallel": p,
+              "premium_pct": parallel_premium(15.42, p)} for p in (16.0, 17.5, 19.0)]
+    return {"miner": "mar_stress_states", "domain_ids": ("MAR-F", "MAR-H", "MAR-I"),
+            "rows": tuple(rows), "n": len(rows), "symbols": ("USDINR", "XAUUSD", "XALUSD"),
+            "control": "other frontier pegged currencies' premia; all-India rainfall departure"}
+
+
+def mine_absence_register(pack_obj: Any = None, ctx: Any = None) -> dict[str, Any]:
+    """MAR-N / MAR-J / MAR-K: THE MEASURED REFUSAL. Every absent layer by name, per
+    jurisdiction, with the lawful substitute -- and every observable with no executable leg."""
+    rows = [{"jurisdiction": str(r["jurisdiction"]), "layer": str(r["layer"]),
+             "reason": str(r["reason"]), "substitute": str(r["substitute"]),
+             "substitute_root": str(r["substitute_root"])} for r in NO_LAWFUL_GROUND]
+    rows += [{"jurisdiction": str(r["jurisdiction"]), "layer": "no_executable_leg",
+              "reason": str(r["observable"]), "substitute": str(r["why"]),
+              "substitute_root": "|".join(r["route"])} for r in NO_EXECUTABLE_LEG]
+    return {"miner": "mar_absence_register", "domain_ids": ("MAR-N", "MAR-J", "MAR-K"),
+            "rows": tuple(rows), "n": len(rows),
+            "coverage": jurisdiction_coverage(),
+            "control": "a measured NO_LAWFUL_GROUND row with a named substitute is worth more "
+                       "than a padded source list, and for Afghanistan it is the main output"}
+
+
+def mine_transmission_seeds(pack_obj: Any = None, ctx: Any = None) -> dict[str, Any]:
+    """The pack's own map and its sibling interactions, as HYPOTHESIS rows the registry
+    deduplicates. Nothing here is a measurement and every row says so."""
+    rows = [{"id": str(e["id"]), "targets": tuple(e["targets"]), "evidence": str(e["evidence"]),
+             "falsifier": str(e["falsifier"]), "control": str(e["control"])}
+            for e in TRANSMISSION_EDGES_SEED]
+    rows += [{"id": f"MAR-X:{r['with']}", "targets": tuple(r["targets"]),
+              "evidence": "HYPOTHESIS", "falsifier": str(r["control"]),
+              "control": str(r["control"])} for r in INTERACTIONS]
+    return {"miner": "mar_transmission_seeds",
+            "domain_ids": ("MAR-B", "MAR-D", "MAR-E", "MAR-L"),
+            "rows": tuple(rows), "n": len(rows),
+            "single_factor_map": single_factor_map(),
+            "control": "every row is HYPOTHESIS until the gauntlet says otherwise"}
+
+
+#: name -> callable, so the two registrations (CUSTOM_MINERS and this) are ONE set and a test
+#: can assert it rather than trusting it.
+MINERS: dict[str, Any] = {
+    "mine_par_links": mine_par_links,
+    "mine_calendar_systems": mine_calendar_systems,
+    "mine_depletion_path": mine_depletion_path,
+    "mine_stress_states": mine_stress_states,
+    "mine_absence_register": mine_absence_register,
+    "mine_transmission_seeds": mine_transmission_seeds,
+}
+
+
+def mine(ctx: Any = None) -> dict[str, Any]:
+    """THE DEPARTMENT ENTRY. Runs this pack's own miners over its own tables and returns the
+    report; when a department Ctx is given it emits each row through `ctx.record` as well.
+
+    Pure Python: no network, no LLM, no heavy import. `unmeasured` is a first-class part of the
+    answer -- a thing this pack knows it cannot see is a measurement, never a blank (L1.28a).
+    """
+    rows: list[dict[str, Any]] = []
+    for name, fn in MINERS.items():
+        got = fn(None, ctx)
+        rows.append({"miner": name, "n": int(got.get("n", 0)),
+                     "domain_ids": tuple(got.get("domain_ids", ()))})
+        record = getattr(ctx, "record", None) if ctx is not None else None
+        if callable(record):
+            record(got)
+    unmeasured = [str(c["constraint"]) for c in ACCESS_CONSTRAINTS]
+    unmeasured += [f"{r['jurisdiction']}:{r['layer']} -> {r['substitute_root']}"
+                   for r in NO_LAWFUL_GROUND]
+    return {"code": CODE, "name": NAME, "at": datetime.now(tz=UTC).date().isoformat(),
+            "jurisdictions": tuple(JURISDICTIONS),
+            "roster_jurisdictions": tuple(ROSTER_JURISDICTIONS),
+            "beyond_roster": tuple(sorted(BEYOND_ROSTER)),
+            "emitted": len(rows), "cells_emitted": len(cells()), "rows": tuple(rows),
+            "datasets": len(DATASETS), "actors": len(ACTORS), "domains": len(DOMAINS),
+            "edges": len(TRANSMISSION_EDGES_SEED),
+            "sources": len([s for s in SOURCE_CLASSES
+                            if not str(s["id"]).startswith("absent_")]),
+            "unmeasured": tuple(unmeasured),
+            "layers": source_layer_coverage()["n_layers_covered"],
+            "no_lawful_ground": len(NO_LAWFUL_GROUND),
+            "interactions": tuple(str(r["with"]) for r in INTERACTIONS),
+            "note": "pure-python department pass over this pack's own tables; every row is a "
+                    "HYPOTHESIS for the one gauntlet and nothing here is a measurement"}

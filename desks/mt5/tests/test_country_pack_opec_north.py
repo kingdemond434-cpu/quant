@@ -204,7 +204,7 @@ def test_terminology_carries_arabic_persian_kurdish_and_the_english_record() -> 
                  "هەرێمی کوردستان"):
         assert must in flat, f"the pack does not carry {must!r}"
     assert ON.has_arabic("البنك المركزي العراقي") and not ON.has_arabic("Central Bank of Iraq")
-    assert ON.has_persian("سکه بهار آزادی") and not ON.has_persian("البنك المركزي")
+    assert ON.has_persian("پارس جنوبی") and not ON.has_persian("البنك المركزي")
     assert ON.has_kurdish("هەرێمی کوردستان")
     assert set(ON.TERMINOLOGY) == {d["id"] for d in ON.DOMAINS}
 

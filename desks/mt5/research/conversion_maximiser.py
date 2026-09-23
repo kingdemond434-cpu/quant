@@ -183,6 +183,32 @@ REFUSAL_POLICY = {
 ROUTED = "routed"
 RETIRED = "retired"
 
+#: STUDY, not judged. A family banned from live capital is still mined and still stored -- what
+#: stops is spending the scarce judge on it, because it cannot reach the book even if it passes.
+STUDY = "study"
+STUDY_REASON = ("family {family!r} is banned from live capital (mt5desk/live_policy.py "
+                "DEFAULT_BANNED_FAMILIES) and refused at both live doors, so it cannot reach the "
+                "book even if it passes; kept for study, never judged, never deleted, and mining "
+                "it stays unrestricted")
+
+
+def live_banned_families() -> frozenset[str]:
+    """Families the desk has already forbidden from live capital, read from the live policy.
+
+    ONE TRUTH, NOT A COPY. `merge_hypotheses.live_banned_families` reads the same policy for the
+    docket; this door reads it for the queue, so the two can never disagree about which family
+    the judge is not spending on.
+    """
+    try:
+        from research.merge_hypotheses import live_banned_families as _f
+        return _f()
+    except Exception:                                                    # pragma: no cover
+        try:
+            from mt5desk.live_policy import DEFAULT_BANNED_FAMILIES
+            return frozenset(str(f) for f in DEFAULT_BANNED_FAMILIES)
+        except Exception:
+            return frozenset({"discovered"})
+
 #: Which organ owns each blocker class. Published every pass so the bottleneck has an address.
 DEFECT_OWNER: dict[str, str] = {
     "NO_FALSIFIER": "desks/mt5/research/experiment_spine.py (enrich: the standing re-judgement "
@@ -802,6 +828,70 @@ def oldest_unconverted(conn: sqlite3.Connection) -> dict[str, Any]:
                     "backlog is being re-counted instead of drained"}
 
 
+def judged_vs_docket(*, limit: int = 40) -> dict[str, Any]:
+    """WHAT THE DESK MINES VERSUS WHAT THE JUDGE TESTS, per family, and the capacity a
+    live-banned family was consuming.
+
+    MEASURED ON THE BOX 2026-09-23 from 120,000 gate verdicts. The family `discovered` -- banned
+    from live capital by the principal's order and refused at BOTH live doors by
+    `mt5desk/live_policy.py` -- had taken 22,009 judgements, about 18% of recent capacity, and
+    passed ZERO. It cannot reach the book even if it passes, so that whole share bought an
+    outcome the desk had already forbidden. Meanwhile the docket's largest families
+    (cross_asset_residual 55,190, overnight_drift 26,721, clock_transition 20,081,
+    execution_state 13,660) barely appeared among judged cells at all.
+
+    The imbalance was invisible because nobody divided one number by the other. This publishes
+    `judged / docket` for every family every hour, so it can never hide again. The ROUTING lives
+    in `merge_hypotheses` (the study bank and the least-judged-first docket order); this is the
+    measurement that makes the routing auditable.
+    """
+    try:
+        from research.merge_hypotheses import (
+            STUDY_BANK,
+            TARGET,
+            judged_by_family,
+            live_banned_families,
+        )
+    except Exception as exc:                                             # pragma: no cover
+        return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
+    judged = judged_by_family()
+    docket_rows = _read_json(TARGET)
+    study_rows = _read_json(STUDY_BANK)
+    if not isinstance(docket_rows, list):
+        return {"status": UNMEASURED,
+                "why": f"the docket at {TARGET} is unreadable, so no ratio can be formed"}
+    docket: dict[str, int] = {}
+    for row in docket_rows:
+        if isinstance(row, Mapping):
+            fam = str(row.get("family") or "unknown")
+            docket[fam] = docket.get(fam, 0) + 1
+    banned = live_banned_families()
+    total_judged = sum(judged.values()) or 1
+    table = {
+        fam: {"docket": n, "judged": judged.get(fam, 0),
+              "judged_per_docket_row": round(judged.get(fam, 0) / max(n, 1), 4),
+              "share_of_judge": round(judged.get(fam, 0) / total_judged, 4)}
+        for fam, n in docket.items()}
+    # The worst rows are the biggest dockets the judge has touched least: that product is the
+    # untested opportunity, in cells.
+    worst = sorted(table.items(), key=lambda kv: (kv[1]["judged_per_docket_row"],
+                                                  -kv[1]["docket"]))[:limit]
+    freed = {fam: judged.get(fam, 0) for fam in sorted(banned)}
+    return {"status": "MEASURED", "families": len(table),
+            "docket_rows": len(docket_rows),
+            "judged_rows_counted": sum(judged.values()),
+            "least_judged_first": dict(worst),
+            "banned_from_live": sorted(banned),
+            "judge_capacity_freed": {"judgements": sum(freed.values()),
+                                     "share_of_judge": round(
+                                         sum(freed.values()) / total_judged, 4),
+                                     "per_family": freed,
+                                     "study_bank_rows": len(study_rows)
+                                     if isinstance(study_rows, list) else None},
+            "rule": "a family that cannot reach live capital is never judged and never deleted; "
+                    "order is selection, so the least-judged family goes to the gates first"}
+
+
 def _read_carry(path: Path | None = None) -> list[str]:
     doc = _read_json(path or CARRY)
     ids = doc.get("ids") if isinstance(doc, Mapping) else None
@@ -986,7 +1076,9 @@ def run(*, budget: Budget, conn: sqlite3.Connection, max_rows: int, dry_run: boo
     histogram: dict[str, int] = {}
     per_source: dict[str, dict[str, int]] = {}
     per_class: dict[str, dict[str, Any]] = {}
+    banned_families = live_banned_families()
     repaired: list[dict[str, Any]] = []
+    studied: list[dict[str, Any]] = []
     refusals: list[dict[str, Any]] = []
     parked: list[dict[str, Any]] = []
     naming: list[dict[str, Any]] = []
@@ -1075,6 +1167,17 @@ def run(*, budget: Budget, conn: sqlite3.Connection, max_rows: int, dry_run: boo
             if isinstance(spec_or_defect, XS.CompileDefect):             # pragma: no cover
                 continue
             spec = spec_or_defect
+        if spec.family in banned_families:
+            # REPAIRED, AND STILL NOT PUT IN FRONT OF THE JUDGE. The row is complete and stays --
+            # mining is unrestricted -- but its family is refused at both live doors, so a
+            # gate-second spent on it buys an outcome the desk has already forbidden.
+            studied.append({"id": cid, "family": spec.family, "reason": reason,
+                            "detail": STUDY_REASON.format(family=spec.family)})
+            stat["studied"] = stat.get("studied", 0) + 1
+            cls["studied"] = int(cls.get("studied") or 0) + 1
+            if not dry_run:
+                _park(conn, cid, STUDY, STUDY_REASON.format(family=spec.family))
+            continue
         repaired.append({"id": cid, "reason": reason, "actions": actions,
                          "family": spec.family, "symbol": spec.symbols[0] if spec.symbols else "",
                          "grid_cell_before": str(row.get("grid_cell") or ""), "age_days": age})
@@ -1131,9 +1234,12 @@ def run(*, budget: Budget, conn: sqlite3.Connection, max_rows: int, dry_run: boo
         "per_blocker_class": _class_table(per_class),
         "repaired": len(repaired), "enqueued": enqueued, "new_cells": created,
         "refused": len(refusals), "still_blocked": len(parked),
+        "routed_to_study": len(studied), "study_rows": studied[:40],
+        "banned_from_live": sorted(banned_families),
         "repairs": repaired[:60], "refusals": refusals[:60], "still_blocked_rows": parked[:60],
         "bar_coverage": coverage,
         "refusal_policy": REFUSAL_POLICY,
+        "judged_vs_docket": judged_vs_docket(),
         "oldest_unconverted": oldest_unconverted(conn),
         "carried_in": len(carried), "carried_out": len(leftover),
         "carry_rule": "no queues: this pass's leftover is the FIRST work of the next pass, and "
@@ -1324,9 +1430,10 @@ def _conversion_rates(doc: Mapping[str, Any]) -> dict[str, Any]:
         "enqueued": int(doc.get("enqueued") or 0),
         "refused_with_reason": int(doc.get("refused") or 0),
         "still_blocked_with_owner": int(doc.get("still_blocked") or 0),
+        "routed_to_study": int(doc.get("routed_to_study") or 0),
     }
     disposed = (stages["repaired"] + stages["refused_with_reason"]
-                + stages["still_blocked_with_owner"])
+                + stages["still_blocked_with_owner"] + stages["routed_to_study"])
     return {"per_stage": stages, "per_source": per_source,
             "disposition_rate": round(disposed / examined, 4) if examined else None,
             "conversion_rate": round(stages["repaired"] / examined, 4) if examined else None,

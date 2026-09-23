@@ -449,6 +449,54 @@ def test_no_licence_or_access_label_is_ever_a_blocker(desk) -> None:
     assert any("licence" in s for s in policy["never_a_refusal"])
 
 
+# ------------------------------------------------- the judge is scarce and the docket is broad
+def test_a_live_banned_family_is_kept_for_study_and_never_judged(desk) -> None:
+    """`discovered` took 22,009 judgements and passed zero; it cannot reach the book at all."""
+    cid = _plant(desk["conn"], "c_banned", family="discovered", symbol="TESTFX",
+                 mechanism="mean reversion after an overnight gap",
+                 required_data="universe/TESTFX_H1.parquet")
+    out = _run(desk)
+    assert out["routed_to_study"] == 1
+    assert "discovered" in out["banned_from_live"]
+    row = desk["conn"].execute("SELECT status, rejection_reason FROM research_candidates "
+                               "WHERE id=?", (cid,)).fetchone()
+    assert row is not None, "the row must be kept: mining stays unrestricted"
+    assert row["status"] == cm.STUDY
+    assert "banned from live capital" in str(row["rejection_reason"])
+    assert cid not in {r["id"] for r in out["repairs"]}, "it must not reach the judging queue"
+    assert out["conversion_rate"]["silent_drops"] == 0
+
+
+def test_the_docket_order_sends_the_least_judged_family_to_the_gates_first() -> None:
+    from research.merge_hypotheses import breadth_order
+    rows = ([{"family": "carry", "i": i} for i in range(3)]
+            + [{"family": "cross_asset_residual", "i": i} for i in range(5)])
+    judged = {"carry": 900, "cross_asset_residual": 0}
+    ordered = breadth_order(rows, judged)
+    assert ordered[0]["family"] == "cross_asset_residual", (
+        "the gauntlet takes the docket in order under a bar budget, so order IS selection")
+    assert [r["i"] for r in ordered[:5]] == [0, 1, 2, 3, 4], "row order within a family is kept"
+    assert len(ordered) == len(rows), "ordering may never drop a row"
+
+
+def test_the_judged_versus_docket_ratio_is_published(desk, monkeypatch) -> None:
+    from research import merge_hypotheses as mh
+    docket = desk["root"] / "docket.json"
+    docket.write_text(json.dumps(
+        [{"family": "cross_asset_residual"}] * 50 + [{"family": "carry"}] * 2), encoding="utf-8")
+    monkeypatch.setattr(mh, "TARGET", docket)
+    monkeypatch.setattr(mh, "STUDY_BANK", desk["root"] / "study.json")
+    monkeypatch.setattr(mh, "judged_by_family", lambda *a, **k: {"carry": 800, "discovered": 200})
+    table = cm.judged_vs_docket()
+    assert table["status"] == "MEASURED"
+    worst = next(iter(table["least_judged_first"]))
+    assert worst == "cross_asset_residual", table["least_judged_first"]
+    assert table["least_judged_first"]["carry"]["judged_per_docket_row"] == 400.0
+    freed = table["judge_capacity_freed"]
+    assert freed["judgements"] == 200
+    assert freed["share_of_judge"] == pytest.approx(0.2)
+
+
 def test_the_pass_cap_is_derived_from_measured_memory_not_a_machine_size(monkeypatch) -> None:
     monkeypatch.setattr(cm, "_free_bytes", lambda: None)
     assert cm.max_rows_per_pass() == cm.MAX_ROWS_FLOOR
