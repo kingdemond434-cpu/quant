@@ -292,3 +292,85 @@ def test_the_inline_log_rolls_up_per_factory(
     census = ps._inline_census()
     assert census["math_lab"]["accepted"] == 1
     assert census["math_lab"]["calls"] == 1
+
+
+# ------------------------------------------------- 7. the shared entry point (widened scope)
+def test_ask_is_the_one_call_and_every_kind_has_a_neutral_dark_value(dark: None) -> None:
+    """A consumer writes `ask(...)` with no branch; dark must return what it already had."""
+    opts = ["a", "b", "c"]
+    for kind in ps.KINDS:
+        reply = ps.ask("world_crawler", kind, options=opts, records=[{"key": "k"}])
+        assert reply.verdict == ps.UNMEASURED
+        assert reply.ordered == opts
+        assert reply.terms == [] and reply.items == [] and reply.names == {}
+        assert reply.trials_charged == 0.0
+        assert reply.measured is False
+
+
+def test_ask_refuses_an_unregistered_organ_and_says_how_to_register(dark: None) -> None:
+    reply = ps.ask("not_an_organ", "terms")
+    assert reply.verdict == ps.UNMEASURED
+    assert "ORGANS" in reply.why
+
+
+def test_ask_refuses_an_unknown_kind(lit: None) -> None:
+    reply = ps.ask("world_crawler", "verdict", options=["a"])
+    assert reply.verdict == ps.UNMEASURED
+    assert reply.ordered == ["a"]
+    assert "unknown kind" in reply.why
+
+
+def test_the_seat_reply_judges_the_call_and_never_a_candidate() -> None:
+    """`verdict` on a SeatReply is the CALL's status, and it is the only allowed collision.
+
+    RAN / UNMEASURED / NO_HINT / ORDERED describe whether the seat answered. None of them is an
+    opinion about a candidate, and no OTHER verdict-shaped name may appear -- a `score`, a
+    `rank` or a `confidence` here would put a judgement on the reply the consumer reads.
+    """
+    names = {f.name.lower() for f in dataclasses.fields(ps.SeatReply)}
+    judgement = sorted((names & ps.VERDICT_KEYS) - {"verdict"})
+    assert not judgement, f"SeatReply carries a judgement field: {judgement}"
+    empty = ps.SeatReply("world_crawler", "terms", ps.UNMEASURED)
+    assert empty.verdict in ("RAN", ps.UNMEASURED, "NO_HINT", "ORDERED", "EMPTY")
+
+
+@pytest.mark.parametrize("bad", ["https://example.com/x", "www.example.cn",
+                                 "example.com", "some/path/here"])
+def test_a_proposed_term_that_looks_like_an_address_is_discarded(
+        lit: None, monkeypatch: pytest.MonkeyPatch, tmp_path: Path, bad: str) -> None:
+    """A term is a search string. A model must not be able to route a crawler by typing a host."""
+    monkeypatch.setattr(ps, "QUEUE_DIR", tmp_path / "q")
+    monkeypatch.setattr(ps, "INLINE_LOG", tmp_path / "q" / "inline.jsonl")
+    _reply(monkeypatch, json.dumps({"term": bad, "why": "because"}))
+    reply = ps.ask("world_crawler", "terms")
+    assert reply.terms == []
+    assert reply.discarded == 1
+    assert any("address" in r or "search string" in r for r in reply.reasons)
+
+
+def test_a_plain_term_survives_and_is_charged(
+        lit: None, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.setattr(ps, "QUEUE_DIR", tmp_path / "q")
+    monkeypatch.setattr(ps, "INLINE_LOG", tmp_path / "q" / "inline.jsonl")
+    _reply(monkeypatch, json.dumps({"term": "期货日报实盘大赛 滑点", "why": "practitioner slang"}))
+    reply = ps.ask("forest_runner", "terms")
+    assert reply.terms == ["期货日报实盘大赛 滑点"]
+    assert reply.trials_charged > 0.0
+
+
+def test_every_registered_organ_is_reported_even_with_no_proposals(
+        dark: None, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """"Is it everywhere?" must be answerable by reading the artifact."""
+    monkeypatch.setattr(ps, "REPORT", tmp_path / "PROPOSER_SEAT.json")
+    monkeypatch.setattr(ps, "QUEUE_DIR", tmp_path / "queue")
+    doc = ps.run(budget_s=1.0)
+    organs = doc["organs"]
+    assert organs["n_registered"] == len(ps.ORGANS)
+    assert set(organs["by_organ"]) == set(ps.ORGANS)
+    assert all(r["verdict"] == ps.UNMEASURED for r in organs["by_organ"].values())
+    assert all(r["consumes"] for r in organs["by_organ"].values()), \
+        "every organ must say what a proposal MEANS to it"
+
+
+def test_the_factories_are_a_subset_of_the_organs() -> None:
+    assert set(ps.FACTORIES) <= set(ps.ORGANS)

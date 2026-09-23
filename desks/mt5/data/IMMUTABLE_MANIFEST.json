@@ -1,25 +1,1394 @@
 {
- "signed_utc": "2026-09-09T01:59:10.508919+00:00",
- "signed_by": "principal",
+ "signed_utc": "2026-09-12T10:13:28.568958+00:00",
+ "signed_by": "principal (explicit permission, 2026-09-12)",
  "files": {
-  "desks/mt5/scripts/external_gauntlet.py": "f317044dffb4c077",
+  "desks/mt5/scripts/external_gauntlet.py": "fd098d9435d15591",
   "desks/mt5/research/universal_gate.py": "6e23b92e9ea7ed81",
   "desks/mt5/research/multiplicity.py": "fc91833570cd8ded",
-  "desks/mt5/research/gate_policy.py": "830723c7f399411c",
+  "desks/mt5/research/gate_policy.py": "33e44f96c6c76ae5",
   "desks/mt5/research/heat_policy.py": "b31c396980f9971e",
-  "desks/mt5/research/promoter.py": "b74260353e989b59",
+  "desks/mt5/research/promoter.py": "8e1f39e3f4a6905f",
   "desks/mt5/mt5desk/gateway_config_fallback.py": "0ce1dd51f98b6c23",
-  "libs/portfolio/allocator_proof.py": "ab3cdbd00048bb78",
+  "libs/portfolio/allocator_proof.py": "2cb94a90674765ed",
   "libs/portfolio/rails.py": "0e7fe8a57939fb77",
-  "libs/portfolio/capital_modifiers.py": "71d70e73ef3ed693",
+  "libs/portfolio/capital_modifiers.py": "7a0bf62e50804809",
   "libs/validation/redteam.py": "bf1c019bfeee360e",
   "libs/validation/replay2.py": "81abc1b46a04b694",
-  "libs/validation/calibration.py": "39b1af6276bb31bf",
+  "libs/validation/calibration.py": "ccd77ae2a28a7fbd",
   "libs/regime/state_admission.py": "761fa65a898e5818",
   "scripts/check_growth_governance.py": "0ea2336e08cd14a9",
   "scripts/check_heat_floor_wiring.py": "e5b3ff5a58848e00",
-  "scripts/check_immutable_evaluator.py": "15095e24bb8a1b45",
+  "scripts/check_immutable_evaluator.py": "c019261c302bf71d",
   "scripts/run_deadman_switch.py": "799db26dadc9c8e3"
  },
- "rule": "these files judge hypotheses; a change must arrive with a re-signed manifest -- research organs may change the hypothesis, never the judge"
+ "rule": "these files judge hypotheses; a change must arrive with a re-signed manifest -- research organs may change the hypothesis, never the judge",
+ "append_only": {
+  "desks/mt5/data/live_ledger.jsonl": {
+   "records": 151,
+   "prefix_sha": "889d4da1d61ba909",
+   "half": 75,
+   "half_sha": "35bba0d14f469397",
+   "mode": "lines"
+  },
+  "desks/mt5/data/research_artifacts.jsonl": {
+   "records": 714,
+   "prefix_sha": "6d0c2855d2f49b49",
+   "half": 357,
+   "half_sha": "ec828d75d462d083",
+   "mode": "lines"
+  },
+  "desks/mt5/reports/shadow/ledger_AUDCAD_discovered_asia.json": {
+   "records": 45,
+   "prefix_sha": "a702adc282477b0f",
+   "half": 22,
+   "half_sha": "bcebd2b24340d5a5",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_AUDCAD_overnight_gap_decay_continuous.json": {
+   "records": 5,
+   "prefix_sha": "a9a616b9b80930db",
+   "half": 2,
+   "half_sha": "90c7c995444dfc81",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_AUDCAD_pca_residual_continuous.json": {
+   "records": 0,
+   "prefix_sha": "e3b0c44298fc1c14",
+   "half": 0,
+   "half_sha": "e3b0c44298fc1c14",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_AUDCHF_overnight_gap_decay_asia.json": {
+   "records": 14,
+   "prefix_sha": "65380954957ddda9",
+   "half": 7,
+   "half_sha": "b9e651165b2375e4",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_AUDJPY_overnight_gap_decay_continuous.json": {
+   "records": 4,
+   "prefix_sha": "e02cc1830fbd3617",
+   "half": 2,
+   "half_sha": "8b72ffcabb6a254d",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_AUDJPY_pca_residual_continuous.json": {
+   "records": 0,
+   "prefix_sha": "e3b0c44298fc1c14",
+   "half": 0,
+   "half_sha": "e3b0c44298fc1c14",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_AUDJPY_turn_of_month_continuous.json": {
+   "records": 14,
+   "prefix_sha": "1cd1c0f1840129fa",
+   "half": 7,
+   "half_sha": "123c1e2f27c8726f",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_AUDNZD_discovered_asia.json": {
+   "records": 22,
+   "prefix_sha": "e2fc7f309492e864",
+   "half": 11,
+   "half_sha": "5b745ecce5e94c5f",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_AUDSGD_overnight_gap_decay_continuous.json": {
+   "records": 13,
+   "prefix_sha": "4d099f998b80bc50",
+   "half": 6,
+   "half_sha": "c69af62d49d0b1b2",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_AUDSGD_vol_transition_continuous.json": {
+   "records": 3,
+   "prefix_sha": "6d361d2af427ec9d",
+   "half": 1,
+   "half_sha": "296e30e3be133edc",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_AUDUSD_asia.json": {
+   "records": 21,
+   "prefix_sha": "b6e95131ecdf7931",
+   "half": 10,
+   "half_sha": "5e831d6b5a1eae6c",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_AUDUSD_discovered_asia.json": {
+   "records": 18,
+   "prefix_sha": "dba1348762476805",
+   "half": 9,
+   "half_sha": "a49b7a3f07075a87",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_AUDUSD_overnight_gap_decay_continuous.json": {
+   "records": 3,
+   "prefix_sha": "c853fe55ad7e7837",
+   "half": 1,
+   "half_sha": "71a6911ed6c71260",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_AUDUSD_pca_residual_continuous.json": {
+   "records": 0,
+   "prefix_sha": "e3b0c44298fc1c14",
+   "half": 0,
+   "half_sha": "e3b0c44298fc1c14",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_AUDUSD_turn_of_month_continuous.json": {
+   "records": 7,
+   "prefix_sha": "434254d7d75b93ba",
+   "half": 3,
+   "half_sha": "d43bb0f79a986b2f",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_BTCUSD_correlation_regime_continuous.json": {
+   "records": 7,
+   "prefix_sha": "307678ce75d261cd",
+   "half": 3,
+   "half_sha": "bd998daca241eb92",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_CADCHF_overnight_gap_decay_asia.json": {
+   "records": 13,
+   "prefix_sha": "edefc51fed4c9a4c",
+   "half": 6,
+   "half_sha": "edd2039d84687d0f",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_CADJPY_asia.json": {
+   "records": 21,
+   "prefix_sha": "49de959c6ca63a8f",
+   "half": 10,
+   "half_sha": "b986fbfa1e2d5983",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_CADJPY_overnight_gap_decay_continuous.json": {
+   "records": 3,
+   "prefix_sha": "8273d5fdeabd7162",
+   "half": 1,
+   "half_sha": "9fce1874b5ccb770",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_CADJPY_pca_residual_continuous.json": {
+   "records": 0,
+   "prefix_sha": "e3b0c44298fc1c14",
+   "half": 0,
+   "half_sha": "e3b0c44298fc1c14",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_CADJPY_relative_value_continuous.json": {
+   "records": 11,
+   "prefix_sha": "a1d11ed779173899",
+   "half": 5,
+   "half_sha": "00c49758f0ff10e9",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_CADJPY_vol_transition_continuous.json": {
+   "records": 4,
+   "prefix_sha": "21ca3b3245d2c7de",
+   "half": 2,
+   "half_sha": "bbca06ca39a9ef26",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_CHFDKK_carry_continuous.json": {
+   "records": 22,
+   "prefix_sha": "6c4e13da8fb1b085",
+   "half": 11,
+   "half_sha": "6c1cf35bf3a9861d",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_CHFDKK_overnight_gap_decay_asia.json": {
+   "records": 16,
+   "prefix_sha": "4e472188ca420d7a",
+   "half": 8,
+   "half_sha": "b04f7603916154ec",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_CHFDKK_overnight_gap_decay_continuous.json": {
+   "records": 16,
+   "prefix_sha": "d0a7a6facefe0e4b",
+   "half": 8,
+   "half_sha": "a30d25f1e465e1b5",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_CHFDKK_pca_residual_continuous.json": {
+   "records": 0,
+   "prefix_sha": "e3b0c44298fc1c14",
+   "half": 0,
+   "half_sha": "e3b0c44298fc1c14",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_CHFJPY_asia.json": {
+   "records": 21,
+   "prefix_sha": "7105cb6660feecf8",
+   "half": 10,
+   "half_sha": "cd76af3e3d118725",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_CHFJPY_overnight_gap_decay_continuous.json": {
+   "records": 3,
+   "prefix_sha": "dc749fffe234bfe4",
+   "half": 1,
+   "half_sha": "f1dc4eb91aa3c37c",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_CHFJPY_pca_residual_continuous.json": {
+   "records": 0,
+   "prefix_sha": "e3b0c44298fc1c14",
+   "half": 0,
+   "half_sha": "e3b0c44298fc1c14",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_CHFJPY_relative_value_continuous.json": {
+   "records": 3,
+   "prefix_sha": "41e614c9eabee035",
+   "half": 1,
+   "half_sha": "b2e21b3b983d2eb6",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_CHFNOK_carry_asia.json": {
+   "records": 36,
+   "prefix_sha": "55240c8aa9b3fac3",
+   "half": 18,
+   "half_sha": "ac3565687c6a51db",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_CHFNOK_carry_continuous.json": {
+   "records": 36,
+   "prefix_sha": "2ebfd59a683a491a",
+   "half": 18,
+   "half_sha": "b69a6a927b9b8e8a",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_CHFNOK_overnight_gap_decay_continuous.json": {
+   "records": 21,
+   "prefix_sha": "a57e66acf84a5be2",
+   "half": 10,
+   "half_sha": "7fad991838a09378",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_CHFNOK_pca_residual_continuous.json": {
+   "records": 0,
+   "prefix_sha": "e3b0c44298fc1c14",
+   "half": 0,
+   "half_sha": "e3b0c44298fc1c14",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_CHFNOK_relative_value_continuous.json": {
+   "records": 10,
+   "prefix_sha": "74d4ea4baefb533c",
+   "half": 5,
+   "half_sha": "5e90a67a9e3ab9a0",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_CHFSEK_carry_continuous.json": {
+   "records": 18,
+   "prefix_sha": "dd19e3c9440e3040",
+   "half": 9,
+   "half_sha": "797a512ac21d0f1b",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_CHFSEK_overnight_gap_decay_continuous.json": {
+   "records": 17,
+   "prefix_sha": "a84f6b105e388e4b",
+   "half": 8,
+   "half_sha": "41d37eff13acc0c7",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_CHFSEK_pca_residual_continuous.json": {
+   "records": 0,
+   "prefix_sha": "e3b0c44298fc1c14",
+   "half": 0,
+   "half_sha": "e3b0c44298fc1c14",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_CHFSEK_relative_value_continuous.json": {
+   "records": 10,
+   "prefix_sha": "b21ac915c8de85e0",
+   "half": 5,
+   "half_sha": "dc8ec8889d2502ad",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_CHFSGD_carry_continuous.json": {
+   "records": 22,
+   "prefix_sha": "886f95a48c0523cc",
+   "half": 11,
+   "half_sha": "0e7df7c767bcdb89",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_CHFSGD_overnight_gap_decay_continuous.json": {
+   "records": 1,
+   "prefix_sha": "f46922a1dcd12184",
+   "half": 0,
+   "half_sha": "e3b0c44298fc1c14",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_CHFSGD_pca_residual_continuous.json": {
+   "records": 0,
+   "prefix_sha": "e3b0c44298fc1c14",
+   "half": 0,
+   "half_sha": "e3b0c44298fc1c14",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_E35_correlation_regime_continuous.json": {
+   "records": 0,
+   "prefix_sha": "e3b0c44298fc1c14",
+   "half": 0,
+   "half_sha": "e3b0c44298fc1c14",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_E35_relative_value_continuous.json": {
+   "records": 3,
+   "prefix_sha": "4e97825fc91a208f",
+   "half": 1,
+   "half_sha": "bb308458afbd3cc7",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_EURAUD_asia.json": {
+   "records": 22,
+   "prefix_sha": "031d4ce445233feb",
+   "half": 11,
+   "half_sha": "253873e94946d3f5",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_EURAUD_carry_continuous.json": {
+   "records": 20,
+   "prefix_sha": "2ba47d93dd935062",
+   "half": 10,
+   "half_sha": "8e78194210be88d9",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_EURAUD_cross_asset_residual_continuous.json": {
+   "records": 0,
+   "prefix_sha": "e3b0c44298fc1c14",
+   "half": 0,
+   "half_sha": "e3b0c44298fc1c14",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_EURAUD_discovered_continuous.json": {
+   "records": 22,
+   "prefix_sha": "905d0409e26a129f",
+   "half": 11,
+   "half_sha": "1079e269cfc337d8",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_EURAUD_relative_value_continuous.json": {
+   "records": 13,
+   "prefix_sha": "dd7277165bbe64b9",
+   "half": 6,
+   "half_sha": "f1e9e9dc0a1f3350",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_EURAUD_vol_mean_reversion_continuous.json": {
+   "records": 13,
+   "prefix_sha": "f62176794c7c7c94",
+   "half": 6,
+   "half_sha": "0b2c619cf03846ca",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_EURCAD_overnight_gap_decay_continuous.json": {
+   "records": 1,
+   "prefix_sha": "e7df5def4a0b9a5c",
+   "half": 0,
+   "half_sha": "e3b0c44298fc1c14",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_EURCHF_discovered_asia.json": {
+   "records": 29,
+   "prefix_sha": "2e0a26e30f4a7da2",
+   "half": 14,
+   "half_sha": "dfb549582e05b1e1",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_EURCHF_overnight_gap_decay_continuous.json": {
+   "records": 19,
+   "prefix_sha": "f77e3c776542a631",
+   "half": 9,
+   "half_sha": "8e372071c45429d5",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_EURGBP_carry_continuous.json": {
+   "records": 26,
+   "prefix_sha": "3028977e0686e6e4",
+   "half": 13,
+   "half_sha": "57fb0da5a8ea8512",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_EURGBP_cross_asset_residual_continuous.json": {
+   "records": 0,
+   "prefix_sha": "e3b0c44298fc1c14",
+   "half": 0,
+   "half_sha": "e3b0c44298fc1c14",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_EURGBP_discovered_asia.json": {
+   "records": 46,
+   "prefix_sha": "91c212aa6c6c372a",
+   "half": 23,
+   "half_sha": "7bf4b13917afc57d",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_EURGBP_discovered_continuous.json": {
+   "records": 24,
+   "prefix_sha": "bb8ae2353ec74a7e",
+   "half": 12,
+   "half_sha": "dd8f91184c4c9faf",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_EURHKD_overnight_gap_decay_continuous.json": {
+   "records": 3,
+   "prefix_sha": "377dd6c642a5b52f",
+   "half": 1,
+   "half_sha": "c7c3429b99266dd0",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_EURHKD_relative_value_continuous.json": {
+   "records": 12,
+   "prefix_sha": "d6d6f7d594e6050f",
+   "half": 6,
+   "half_sha": "26944248bd388bb1",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_EURHKD_turn_of_month_continuous.json": {
+   "records": 9,
+   "prefix_sha": "1ce7d0391e97dcc1",
+   "half": 4,
+   "half_sha": "8a92e5d0e7ef7826",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_EURILS_relative_value_continuous.json": {
+   "records": 8,
+   "prefix_sha": "cda00d773bdfe12f",
+   "half": 4,
+   "half_sha": "d87cad9b30eeee00",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_EURJPY_asia.json": {
+   "records": 20,
+   "prefix_sha": "c5900a5f437797da",
+   "half": 10,
+   "half_sha": "3bd88d3927dd91db",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_EURJPY_carry_continuous.json": {
+   "records": 13,
+   "prefix_sha": "9ae2eb0e06d9c741",
+   "half": 6,
+   "half_sha": "9b256ae30401ab72",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_EURJPY_overnight_gap_decay_continuous.json": {
+   "records": 8,
+   "prefix_sha": "f4424ccdaa645767",
+   "half": 4,
+   "half_sha": "019d6f87dcd4507e",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_EURJPY_turn_of_month_continuous.json": {
+   "records": 13,
+   "prefix_sha": "3c5652700b427325",
+   "half": 6,
+   "half_sha": "027933e13fe74137",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_EURJPY_vol_mean_reversion_continuous.json": {
+   "records": 9,
+   "prefix_sha": "5d9cef00316865d5",
+   "half": 4,
+   "half_sha": "aeb1560f3e0b4ecd",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_EURMXN_carry_continuous.json": {
+   "records": 24,
+   "prefix_sha": "e2ac83e1c536b0c9",
+   "half": 12,
+   "half_sha": "2c53363b16d7babd",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_EURMXN_overnight_gap_decay_continuous.json": {
+   "records": 22,
+   "prefix_sha": "f9c59cd1e81f0edd",
+   "half": 11,
+   "half_sha": "e83b9a187774033a",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_EURMXN_relative_value_continuous.json": {
+   "records": 18,
+   "prefix_sha": "6f1261874c8c3a1c",
+   "half": 9,
+   "half_sha": "9bd424504cb62115",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_EURNOK_carry_continuous.json": {
+   "records": 24,
+   "prefix_sha": "9aea56199037a552",
+   "half": 12,
+   "half_sha": "d58d2642a60bba79",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_EURNOK_overnight_gap_decay_asia.json": {
+   "records": 17,
+   "prefix_sha": "f37e45f9dd75dd00",
+   "half": 8,
+   "half_sha": "c06323b44cf47ea7",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_EURNOK_overnight_gap_decay_continuous.json": {
+   "records": 17,
+   "prefix_sha": "f472207fabed7710",
+   "half": 8,
+   "half_sha": "f71bc99e4cb99f35",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_EURNOK_relative_value_continuous.json": {
+   "records": 12,
+   "prefix_sha": "a9d5ce86488c17ab",
+   "half": 6,
+   "half_sha": "7d97c4d67edfc6bd",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_EURNZD_overnight_gap_decay_continuous.json": {
+   "records": 4,
+   "prefix_sha": "4ff43488690333d9",
+   "half": 2,
+   "half_sha": "59f2631a7d86650b",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_EURNZD_relative_value_continuous.json": {
+   "records": 12,
+   "prefix_sha": "016424838e1f4b96",
+   "half": 6,
+   "half_sha": "5edc8ec500cbb15d",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_EURNZD_vol_mean_reversion_continuous.json": {
+   "records": 6,
+   "prefix_sha": "a739a04affa7f6d4",
+   "half": 3,
+   "half_sha": "d562ffec5598d6b9",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_EURNZD_vol_transition_continuous.json": {
+   "records": 3,
+   "prefix_sha": "e24497c91236b7f6",
+   "half": 1,
+   "half_sha": "071d69b8e55cdd44",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_EURSEK_overnight_gap_decay_continuous.json": {
+   "records": 19,
+   "prefix_sha": "e9fac33c539157c8",
+   "half": 9,
+   "half_sha": "2c4f8d0cbdbe2563",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_EURSGD_overnight_gap_decay_continuous.json": {
+   "records": 11,
+   "prefix_sha": "bad14d12d298c423",
+   "half": 5,
+   "half_sha": "d963588ce6ee9080",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_EURUSD_asia.json": {
+   "records": 23,
+   "prefix_sha": "67a820126a54c9c1",
+   "half": 11,
+   "half_sha": "c8a60fd2b0ebcd9a",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_EURUSD_carry_continuous.json": {
+   "records": 21,
+   "prefix_sha": "f24169ffbd817eae",
+   "half": 10,
+   "half_sha": "adb3f575a7db942e",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_EURUSD_clock_transition_continuous.json": {
+   "records": 0,
+   "prefix_sha": "e3b0c44298fc1c14",
+   "half": 0,
+   "half_sha": "e3b0c44298fc1c14",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_EURUSD_correlation_regime_continuous.json": {
+   "records": 0,
+   "prefix_sha": "e3b0c44298fc1c14",
+   "half": 0,
+   "half_sha": "e3b0c44298fc1c14",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_EURUSD_cot_positioning_continuous.json": {
+   "records": 2,
+   "prefix_sha": "54fbeba9c26c09f9",
+   "half": 1,
+   "half_sha": "4be56f4abf2d536e",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_EURUSD_cross_asset_residual_continuous.json": {
+   "records": 0,
+   "prefix_sha": "e3b0c44298fc1c14",
+   "half": 0,
+   "half_sha": "e3b0c44298fc1c14",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_EURUSD_discovered_asia.json": {
+   "records": 10,
+   "prefix_sha": "bd2d905401f93894",
+   "half": 5,
+   "half_sha": "f23578e07db7f69c",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_EURUSD_discovered_continuous.json": {
+   "records": 257,
+   "prefix_sha": "9478a3a67f9984af",
+   "half": 128,
+   "half_sha": "21b553a9909c3f50",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_EURZAR_overnight_gap_decay_asia.json": {
+   "records": 16,
+   "prefix_sha": "9a9dbc343185bf83",
+   "half": 8,
+   "half_sha": "50dde4b864808654",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_EURZAR_overnight_gap_decay_continuous.json": {
+   "records": 16,
+   "prefix_sha": "de8dd1c0e7e4e1f2",
+   "half": 8,
+   "half_sha": "7b3a661fb6150e8d",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_EURZAR_pca_residual_continuous.json": {
+   "records": 0,
+   "prefix_sha": "e3b0c44298fc1c14",
+   "half": 0,
+   "half_sha": "e3b0c44298fc1c14",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_FRA40_turn_of_month_continuous.json": {
+   "records": 5,
+   "prefix_sha": "e49ce19a54ab5fe2",
+   "half": 2,
+   "half_sha": "ee3ad53128eced4a",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_GBPAUD_asia.json": {
+   "records": 20,
+   "prefix_sha": "fd278372275f11a9",
+   "half": 10,
+   "half_sha": "2bb018b082c4ed58",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_GBPAUD_overnight_gap_decay_continuous.json": {
+   "records": 3,
+   "prefix_sha": "7e3b81137cab6953",
+   "half": 1,
+   "half_sha": "cff973f94617bfc4",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_GBPAUD_relative_value_continuous.json": {
+   "records": 12,
+   "prefix_sha": "57db4c670eba47cc",
+   "half": 6,
+   "half_sha": "5f98f2b395b621a1",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_GBPAUD_vol_mean_reversion_continuous.json": {
+   "records": 15,
+   "prefix_sha": "9dd7c4c82893e908",
+   "half": 7,
+   "half_sha": "5cc675ae3072d984",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_GBPCAD_overnight_gap_decay_continuous.json": {
+   "records": 4,
+   "prefix_sha": "a119b1d6bf0e00ae",
+   "half": 2,
+   "half_sha": "0f8209f143b3e741",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_GBPCAD_pca_residual_continuous.json": {
+   "records": 0,
+   "prefix_sha": "e3b0c44298fc1c14",
+   "half": 0,
+   "half_sha": "e3b0c44298fc1c14",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_GBPCAD_turn_of_month_continuous.json": {
+   "records": 14,
+   "prefix_sha": "383ca661f224d3f3",
+   "half": 7,
+   "half_sha": "a34783dc469ac45d",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_GBPCHF_overnight_gap_decay_asia.json": {
+   "records": 6,
+   "prefix_sha": "003e9cc617851aff",
+   "half": 3,
+   "half_sha": "393131d1f5152458",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_GBPDKK_overnight_gap_decay_continuous.json": {
+   "records": 5,
+   "prefix_sha": "e3dbff093bbb816d",
+   "half": 2,
+   "half_sha": "2c9b10467233a0bb",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_GBPHUF_pca_residual_continuous.json": {
+   "records": 0,
+   "prefix_sha": "e3b0c44298fc1c14",
+   "half": 0,
+   "half_sha": "e3b0c44298fc1c14",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_GBPJPY_asia.json": {
+   "records": 21,
+   "prefix_sha": "1638fbb19645133b",
+   "half": 10,
+   "half_sha": "a702add6909b8f4e",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_GBPJPY_overnight_gap_decay_continuous.json": {
+   "records": 2,
+   "prefix_sha": "15588fa8845b9837",
+   "half": 1,
+   "half_sha": "c57d8cedaf52dc09",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_GBPJPY_relative_value_continuous.json": {
+   "records": 14,
+   "prefix_sha": "2d5966510f4647b9",
+   "half": 7,
+   "half_sha": "0b96ca3a149616e7",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_GBPJPY_turn_of_month_continuous.json": {
+   "records": 14,
+   "prefix_sha": "dc4cbd839127bb61",
+   "half": 7,
+   "half_sha": "f4c760a5d2817ed8",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_GBPMXN_carry_continuous.json": {
+   "records": 25,
+   "prefix_sha": "47879f89f9f80f5c",
+   "half": 12,
+   "half_sha": "9c12bac6ad21ff0b",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_GBPMXN_overnight_gap_decay_asia.json": {
+   "records": 22,
+   "prefix_sha": "b12d002a01d6e071",
+   "half": 11,
+   "half_sha": "e16565c66cbb06b4",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_GBPMXN_pca_residual_continuous.json": {
+   "records": 0,
+   "prefix_sha": "e3b0c44298fc1c14",
+   "half": 0,
+   "half_sha": "e3b0c44298fc1c14",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_GBPNOK_carry_continuous.json": {
+   "records": 39,
+   "prefix_sha": "16b515d99de26d78",
+   "half": 19,
+   "half_sha": "8a2ff14a567e36a7",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_GBPNOK_overnight_gap_decay_asia.json": {
+   "records": 20,
+   "prefix_sha": "68e5615846d8ffd0",
+   "half": 10,
+   "half_sha": "fc72b566a68f73e2",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_GBPNOK_overnight_gap_decay_continuous.json": {
+   "records": 20,
+   "prefix_sha": "573ff6f49039cf27",
+   "half": 10,
+   "half_sha": "bbcf6bd0cef42cf3",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_GBPNOK_pca_residual_continuous.json": {
+   "records": 0,
+   "prefix_sha": "e3b0c44298fc1c14",
+   "half": 0,
+   "half_sha": "e3b0c44298fc1c14",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_GBPNZD_overnight_gap_decay_continuous.json": {
+   "records": 2,
+   "prefix_sha": "c5251a008b679bb2",
+   "half": 1,
+   "half_sha": "43158acd179e2cb9",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_GBPNZD_pca_residual_continuous.json": {
+   "records": 0,
+   "prefix_sha": "e3b0c44298fc1c14",
+   "half": 0,
+   "half_sha": "e3b0c44298fc1c14",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_GBPPLN_pca_residual_continuous.json": {
+   "records": 0,
+   "prefix_sha": "e3b0c44298fc1c14",
+   "half": 0,
+   "half_sha": "e3b0c44298fc1c14",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_GBPSEK_overnight_gap_decay_asia.json": {
+   "records": 19,
+   "prefix_sha": "05ed05ea847e2691",
+   "half": 9,
+   "half_sha": "bd6daf5daabc38d5",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_GBPSEK_overnight_gap_decay_continuous.json": {
+   "records": 19,
+   "prefix_sha": "6ff316954a0fd304",
+   "half": 9,
+   "half_sha": "516267323f176817",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_GBPSEK_pca_residual_continuous.json": {
+   "records": 0,
+   "prefix_sha": "e3b0c44298fc1c14",
+   "half": 0,
+   "half_sha": "e3b0c44298fc1c14",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_GBPSGD_overnight_gap_decay_continuous.json": {
+   "records": 10,
+   "prefix_sha": "4b651783f0ffa776",
+   "half": 5,
+   "half_sha": "c74fe6fe733d0b6d",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_GBPSGD_pca_residual_continuous.json": {
+   "records": 0,
+   "prefix_sha": "e3b0c44298fc1c14",
+   "half": 0,
+   "half_sha": "e3b0c44298fc1c14",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_GBPUSD_asia.json": {
+   "records": 23,
+   "prefix_sha": "edacc9b360856722",
+   "half": 11,
+   "half_sha": "87a1fa7a4adab5c1",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_GBPUSD_clock_transition_continuous.json": {
+   "records": 0,
+   "prefix_sha": "e3b0c44298fc1c14",
+   "half": 0,
+   "half_sha": "e3b0c44298fc1c14",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_GBPUSD_correlation_regime_continuous.json": {
+   "records": 0,
+   "prefix_sha": "e3b0c44298fc1c14",
+   "half": 0,
+   "half_sha": "e3b0c44298fc1c14",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_GBPUSD_london_am.json": {
+   "records": 20,
+   "prefix_sha": "25781b64ecd21d4d",
+   "half": 10,
+   "half_sha": "693fa1e14349018f",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_GBPUSD_overnight_gap_decay_continuous.json": {
+   "records": 2,
+   "prefix_sha": "e8222dfe26ac0059",
+   "half": 1,
+   "half_sha": "9c3eb0ca798ffb6b",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_GBPUSD_relative_value_continuous.json": {
+   "records": 10,
+   "prefix_sha": "8c14fc3b77fae2e8",
+   "half": 5,
+   "half_sha": "7d5af08cb14e3df2",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_GBPZAR_carry_continuous.json": {
+   "records": 28,
+   "prefix_sha": "95138d0ce152c0b7",
+   "half": 14,
+   "half_sha": "fbc78a3deef14c0f",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_GBPZAR_overnight_gap_decay_asia.json": {
+   "records": 20,
+   "prefix_sha": "da4295324f1ec7cb",
+   "half": 10,
+   "half_sha": "ce45c1fdbe66c9bb",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_GBPZAR_overnight_gap_decay_continuous.json": {
+   "records": 20,
+   "prefix_sha": "447a522c18ef01d8",
+   "half": 10,
+   "half_sha": "d56e15ef511a1635",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_GBPZAR_pca_residual_continuous.json": {
+   "records": 0,
+   "prefix_sha": "e3b0c44298fc1c14",
+   "half": 0,
+   "half_sha": "e3b0c44298fc1c14",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_GER40_correlation_regime_continuous.json": {
+   "records": 2,
+   "prefix_sha": "2956ac24bc781fd5",
+   "half": 1,
+   "half_sha": "6cf3abebbd1c2590",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_GER40_relative_value_continuous.json": {
+   "records": 6,
+   "prefix_sha": "b343448523d22b4d",
+   "half": 3,
+   "half_sha": "5de539ace0330109",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_GER40_turn_of_month_continuous.json": {
+   "records": 7,
+   "prefix_sha": "29af6f82789eb409",
+   "half": 3,
+   "half_sha": "5b421c62cfe0454e",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_GER40_vol_mean_reversion_continuous.json": {
+   "records": 4,
+   "prefix_sha": "e6827bcdc2493a6a",
+   "half": 2,
+   "half_sha": "3ad615cebf70bec0",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_NAS100_asia.json": {
+   "records": 21,
+   "prefix_sha": "301fb9848b809b11",
+   "half": 10,
+   "half_sha": "14d57159ccf64316",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_NAS100_turn_of_month_continuous.json": {
+   "records": 6,
+   "prefix_sha": "805a0b80431dc8d4",
+   "half": 3,
+   "half_sha": "c60d754d4277de21",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_NAS100_vol_mean_reversion_continuous.json": {
+   "records": 11,
+   "prefix_sha": "f064d8e51acedbeb",
+   "half": 5,
+   "half_sha": "4db19105a7421c87",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_NZDCAD_discovered_asia.json": {
+   "records": 22,
+   "prefix_sha": "2891031cb82cf72c",
+   "half": 11,
+   "half_sha": "39eb32b50ac06f79",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_NZDCHF_overnight_gap_decay_continuous.json": {
+   "records": 12,
+   "prefix_sha": "307e6c279a19123d",
+   "half": 6,
+   "half_sha": "d6b5c79509402100",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_NZDCHF_pca_residual_continuous.json": {
+   "records": 0,
+   "prefix_sha": "e3b0c44298fc1c14",
+   "half": 0,
+   "half_sha": "e3b0c44298fc1c14",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_NZDHUF_carry_continuous.json": {
+   "records": 18,
+   "prefix_sha": "ed123a53c310eddc",
+   "half": 9,
+   "half_sha": "20dda7703339082b",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_NZDSGD_overnight_gap_decay_continuous.json": {
+   "records": 10,
+   "prefix_sha": "74f6b43782fba3c7",
+   "half": 5,
+   "half_sha": "d057a1ad26f2ea0f",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_NZDUSD_asia.json": {
+   "records": 21,
+   "prefix_sha": "30cdfaa817bde70c",
+   "half": 10,
+   "half_sha": "805ab73b5cadd168",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_NZDUSD_overnight_gap_decay_continuous.json": {
+   "records": 5,
+   "prefix_sha": "b5f0780d5fc5cfba",
+   "half": 2,
+   "half_sha": "fc19b3e7b991cee2",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_NZDUSD_turn_of_month_continuous.json": {
+   "records": 8,
+   "prefix_sha": "a40fb7d857eabbda",
+   "half": 4,
+   "half_sha": "8590859f6fc1b52d",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_SGDJPY_overnight_gap_decay_continuous.json": {
+   "records": 6,
+   "prefix_sha": "c4e76b377d422ea4",
+   "half": 3,
+   "half_sha": "439b756594a032d3",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_SGDJPY_vol_transition_continuous.json": {
+   "records": 4,
+   "prefix_sha": "7c686a0adbcc7eeb",
+   "half": 2,
+   "half_sha": "96f478017dc7b6e6",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_UK100_pca_residual_continuous.json": {
+   "records": 0,
+   "prefix_sha": "e3b0c44298fc1c14",
+   "half": 0,
+   "half_sha": "e3b0c44298fc1c14",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_UK100_turn_of_month_continuous.json": {
+   "records": 7,
+   "prefix_sha": "33eb82ff33f68ee6",
+   "half": 3,
+   "half_sha": "8af0b999d6c8a31e",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_US30_correlation_regime_continuous.json": {
+   "records": 4,
+   "prefix_sha": "376f90824d121a2c",
+   "half": 2,
+   "half_sha": "a87e467f923450fd",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_US30_turn_of_month_continuous.json": {
+   "records": 10,
+   "prefix_sha": "137950782ab5d3dc",
+   "half": 5,
+   "half_sha": "893f32c21fe4561e",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_US30_vol_transition_continuous.json": {
+   "records": 3,
+   "prefix_sha": "5a349be66abc8d59",
+   "half": 1,
+   "half_sha": "104d630d42bc45d2",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_USDCAD_asia.json": {
+   "records": 23,
+   "prefix_sha": "2dcec0ca46f34660",
+   "half": 11,
+   "half_sha": "e249b29b16e07961",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_USDCAD_correlation_regime_continuous.json": {
+   "records": 0,
+   "prefix_sha": "e3b0c44298fc1c14",
+   "half": 0,
+   "half_sha": "e3b0c44298fc1c14",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_USDCAD_discovered_asia.json": {
+   "records": 13,
+   "prefix_sha": "bb518050474b6be7",
+   "half": 6,
+   "half_sha": "c54872ebb9ba1c47",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_USDCAD_overnight_gap_decay_continuous.json": {
+   "records": 1,
+   "prefix_sha": "d259fc40d2bf2bd3",
+   "half": 0,
+   "half_sha": "e3b0c44298fc1c14",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_USDCAD_turn_of_month_continuous.json": {
+   "records": 17,
+   "prefix_sha": "7c4848f8cf0d81d5",
+   "half": 8,
+   "half_sha": "96ac19a58c5637f9",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_USDCHF_discovered_asia.json": {
+   "records": 21,
+   "prefix_sha": "9f8e06cec128acac",
+   "half": 10,
+   "half_sha": "97be852f2962f4b5",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_USDCHF_overnight_gap_decay_continuous.json": {
+   "records": 5,
+   "prefix_sha": "c26357cca5782d4b",
+   "half": 2,
+   "half_sha": "010bd0019448cdd4",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_USDCNH_overnight_gap_decay_continuous.json": {
+   "records": 10,
+   "prefix_sha": "810f2516ff39b660",
+   "half": 5,
+   "half_sha": "8d406a0ffee4d3cb",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_USDDKK_vol_mean_reversion_continuous.json": {
+   "records": 14,
+   "prefix_sha": "cff488b1215697b1",
+   "half": 7,
+   "half_sha": "510754782f5e25da",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_USDHUF_pca_residual_continuous.json": {
+   "records": 0,
+   "prefix_sha": "e3b0c44298fc1c14",
+   "half": 0,
+   "half_sha": "e3b0c44298fc1c14",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_USDJPY_asia.json": {
+   "records": 23,
+   "prefix_sha": "f248834b0384fee6",
+   "half": 11,
+   "half_sha": "52bcbd3a8604622e",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_USDJPY_vol_mean_reversion_continuous.json": {
+   "records": 14,
+   "prefix_sha": "376c646fd2ba315e",
+   "half": 7,
+   "half_sha": "d7fff4289c3bbf55",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_USDMXN_overnight_gap_decay_asia.json": {
+   "records": 17,
+   "prefix_sha": "934fb9ef4752c87c",
+   "half": 8,
+   "half_sha": "6c1b05fa82bfaee3",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_USDMXN_pca_residual_continuous.json": {
+   "records": 0,
+   "prefix_sha": "e3b0c44298fc1c14",
+   "half": 0,
+   "half_sha": "e3b0c44298fc1c14",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_USDNOK_carry_continuous.json": {
+   "records": 23,
+   "prefix_sha": "56f21619e415359c",
+   "half": 11,
+   "half_sha": "973d14b7dce24de4",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_USDNOK_correlation_regime_continuous.json": {
+   "records": 5,
+   "prefix_sha": "8f59f286ca5afab5",
+   "half": 2,
+   "half_sha": "4f812d0d7e90ab7f",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_USDNOK_overnight_gap_decay_continuous.json": {
+   "records": 20,
+   "prefix_sha": "08caac0a78443698",
+   "half": 10,
+   "half_sha": "05ec13c7a6e66150",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_USDNOK_vol_mean_reversion_continuous.json": {
+   "records": 8,
+   "prefix_sha": "6e9790edbcd9616c",
+   "half": 4,
+   "half_sha": "f64222a3a9e7c7ac",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_USDSEK_overnight_gap_decay_continuous.json": {
+   "records": 11,
+   "prefix_sha": "ffd9a29611cd4ddb",
+   "half": 5,
+   "half_sha": "f7418cb20b5bca6c",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_USDSGD_overnight_gap_decay_continuous.json": {
+   "records": 12,
+   "prefix_sha": "eebae3e56bfc3dbd",
+   "half": 6,
+   "half_sha": "7fdf257e4596a8d3",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_USDZAR_overnight_gap_decay_asia.json": {
+   "records": 17,
+   "prefix_sha": "ee317cc0f2e3eb2e",
+   "half": 8,
+   "half_sha": "bf35a15c00c0a810",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_USDZAR_overnight_gap_decay_continuous.json": {
+   "records": 17,
+   "prefix_sha": "1e987a28493e0922",
+   "half": 8,
+   "half_sha": "8b025e0ca4d88350",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_USDZAR_pca_residual_continuous.json": {
+   "records": 0,
+   "prefix_sha": "e3b0c44298fc1c14",
+   "half": 0,
+   "half_sha": "e3b0c44298fc1c14",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_XAGEUR_turn_of_month_continuous.json": {
+   "records": 6,
+   "prefix_sha": "6e237964104bfe8d",
+   "half": 3,
+   "half_sha": "8a33da5f250b8c70",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_XAUAUD_correlation_regime_continuous.json": {
+   "records": 0,
+   "prefix_sha": "e3b0c44298fc1c14",
+   "half": 0,
+   "half_sha": "e3b0c44298fc1c14",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_XAUAUD_turn_of_month_continuous.json": {
+   "records": 9,
+   "prefix_sha": "44b5217bfd08ce90",
+   "half": 4,
+   "half_sha": "56f0ca5e0761255f",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_XAUEUR_correlation_regime_continuous.json": {
+   "records": 0,
+   "prefix_sha": "e3b0c44298fc1c14",
+   "half": 0,
+   "half_sha": "e3b0c44298fc1c14",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_XAUEUR_turn_of_month_continuous.json": {
+   "records": 10,
+   "prefix_sha": "f0c57a287294d207",
+   "half": 5,
+   "half_sha": "69f83cc64ba6d6c7",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_XAUUSD_asia.json": {
+   "records": 22,
+   "prefix_sha": "761ef93c056abb73",
+   "half": 11,
+   "half_sha": "40427ee5c469c103",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_XAUUSD_clock_transition_continuous.json": {
+   "records": 0,
+   "prefix_sha": "e3b0c44298fc1c14",
+   "half": 0,
+   "half_sha": "e3b0c44298fc1c14",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_XAUUSD_ny_open.json": {
+   "records": 22,
+   "prefix_sha": "91b4e6fd8de3aff6",
+   "half": 11,
+   "half_sha": "e5191066d484f0da",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_XAUUSD_trend_ma_cross_continuous.json": {
+   "records": 10,
+   "prefix_sha": "94fcff60d5ab1a27",
+   "half": 5,
+   "half_sha": "fa50535c053ffc42",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_XAUUSD_turn_of_month_continuous.json": {
+   "records": 10,
+   "prefix_sha": "f66171f62567a0b3",
+   "half": 5,
+   "half_sha": "f9003e3802b61de3",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_XBRUSD_vol_mean_reversion_continuous.json": {
+   "records": 11,
+   "prefix_sha": "4d46f718ec87ac00",
+   "half": 5,
+   "half_sha": "8baf1debc5cf781b",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_XTIUSD_vol_mean_reversion_continuous.json": {
+   "records": 10,
+   "prefix_sha": "c49866c21a81a3ed",
+   "half": 5,
+   "half_sha": "471f6dd8d89fe265",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_qquant.hunt16.json.AUDNZD_dav_range_filter_adx_SHORT_afternoon_NORMAL_DAY.json": {
+   "records": 3,
+   "prefix_sha": "79e8a352e42f50f3",
+   "half": 1,
+   "half_sha": "31162bd77866a84b",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_xau_m15_anti_breakout.json": {
+   "records": 94,
+   "prefix_sha": "3bc5ce51e51a8479",
+   "half": 47,
+   "half_sha": "32365f9e521f7a6f",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_xau_m15_anti_momentum.json": {
+   "records": 175,
+   "prefix_sha": "6429ab3522e8d788",
+   "half": 87,
+   "half_sha": "8f209aed627c4b36",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_xau_m5_anti_breakout_overlap.json": {
+   "records": 53,
+   "prefix_sha": "743807717ba55027",
+   "half": 26,
+   "half_sha": "e7ce516e126eecd0",
+   "mode": "rows"
+  },
+  "desks/mt5/reports/shadow/ledger_xau_m5_anti_momentum_ny.json": {
+   "records": 97,
+   "prefix_sha": "1bfdca92dbdfdf8d",
+   "half": 48,
+   "half_sha": "1087b0ac1341e3d5",
+   "mode": "rows"
+  }
+ },
+ "vintage": {
+  "desks/mt5/data/cost_surface.json": {
+   "field": "built_at",
+   "stamp": "2026-08-29T02:41:43+00:00"
+  }
+ },
+ "records_sealed_utc": "2026-09-23T01:17:54.224533+00:00",
+ "records_sealed_by": "tier1 W19 builder",
+ "record_rule": "the ledgers, the live fills, the cost surface and the lineage chain are RECORDS: the sealed prefix may never change, only grow, and a measured cost surface may be rebuilt, never back-dated"
 }

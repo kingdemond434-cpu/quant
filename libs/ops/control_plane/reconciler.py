@@ -505,6 +505,7 @@ def reconcile(*, registry: Registry | None = None, root: Path | None = None,
               now: datetime | None = None, locks: Path | None = None,
               watermark_root: Path | None = None, lineage: Path | None = None,
               runner: Any = None, sleeper: Any = None, clock: Any = None,
+              reaper: Any = None,
               census: Mapping[str, Any] | None = None) -> dict[str, Any]:
     """One full reconciliation pass. Returns the document written to CONTROL_PLANE.json."""
     t = now or now_utc()
@@ -521,14 +522,18 @@ def reconcile(*, registry: Registry | None = None, root: Path | None = None,
     # apply pass that reaped LAST, or reaped somewhere in the middle of the plan, would spend its
     # budget watching every other actuator fail for a reason none of them could name. Freeing the
     # commit limit is the precondition of every repair, which is why it is not one of them.
+    # IN-PROCESS, not through the script actuator, for two reasons that both matter. It must not
+    # consume the injected runner a caller uses to judge the PLAN's repairs, and an orphan reap
+    # proves itself directly -- it reports the pids it killed and the commit it freed -- where a
+    # script actuator can only prove that a file changed.
     pre_pass: list[dict[str, Any]] = []
     if apply:
-        reaper = act.desk_actuators().get("reap_orphans")
-        if reaper is not None:
-            rec = act.run_actuator(reaper, {"component_id": "component:control_plane"},
-                                   apply=True, runner=runner, sleeper=sleeper, clock=clock)
-            pre_pass.append({"actuator": "reap_orphans", "result": rec.get("result"),
-                             "repaired": rec.get("repaired"), "why": rec.get("why")})
+        try:
+            from libs.ops import proctree
+            rec = (reaper or proctree.reap_orphaned_workers)(apply=True)
+        except Exception as exc:  # a reaper that raises may never take the pass with it
+            rec = {"measured": False, "why": f"{type(exc).__name__}: {exc}"}
+        pre_pass.append({"actuator": "reap_orphans", **dict(rec)})
     obs = [observe(s, now=t, root=base, locks=locks, watermark_root=watermark_root,
                    quarantine=q, lineage=lineage) for s in reg.all()]
     work = plan(obs, reg)

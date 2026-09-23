@@ -1480,7 +1480,7 @@
       "hunt": "external_discoveries",
       "cell": "CHFNOK.carry.p=98d776f3e210d3e2",
       "sym": "CHFNOK",
-      "days": 1120,
+      "days": 1126,
       "gates": {
         "economic_prior": {
           "passed": true,
@@ -1489,20 +1489,20 @@
         },
         "in_sample_screen": {
           "passed": true,
-          "sharpe": 0.4434
+          "sharpe": 0.4337
         },
         "deflated_sharpe": {
           "passed": true,
-          "dsr": 0.9744,
+          "dsr": 0.9517,
           "sr0": 0.3786,
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 2.021346
+          "variance_measured_this_sweep": 0.384081
         },
         "pbo": {
           "passed": true,
-          "pbo": 0.0
+          "pbo": 0.0001
         },
         "reality_check_spa": {
           "passed": true,
@@ -1510,28 +1510,36 @@
         },
         "cpcv": {
           "passed": true,
-          "mean_oos_sharpe": 0.456,
+          "mean_oos_sharpe": 0.4475,
           "folds": 15
         },
         "walk_forward": {
           "passed": true,
-          "oos_sharpe": 0.5931,
+          "oos_sharpe": 0.5937,
           "stability": 1.0
         },
         "stress_costs": {
           "passed": true,
-          "exp_x3": 0.4261
+          "exp_x3": 0.3747
         },
         "lockbox": {
           "passed": true,
-          "lockbox_sharpe": 0.5931
+          "lockbox_sharpe": 0.5937
         },
         "expected_value": {
           "passed": true,
-          "ev": 0.5484
+          "ev": 0.5332
+        },
+        "swap_cost": {
+          "passed": true,
+          "measured": true,
+          "total_cost_r": 0.1312,
+          "swap_r": 0.0544,
+          "holds_overnight": true,
+          "why": "cost within the bar"
         }
       },
-      "gated_at": "2026-09-02T23:37:32.828935+00:00",
+      "gated_at": "2026-09-16T15:07:12.305984+00:00",
       "shadow_spec": {
         "symbol": "CHFNOK",
         "selector": "asia",
@@ -1541,6 +1549,95 @@
         "condition": null,
         "params": {
           "input_symbol": "CHFNOK"
+        }
+      },
+      "release_id": "d3624c6a6799",
+      "canon_sha256": "745e17d4cbe4e2c2ab33e335a91f27cd85d13a64d0cca847af34b0e5f0030ea0",
+      "release_basis": {
+        "source": "desks/mt5/data/RELEASE.json via libs.ops.release.load (sealed record)",
+        "sealed": true,
+        "code_sha": "1eba97937191820024aec61b296fb37413ef77d2",
+        "running_sha": "b794c18abb6171ea87a5b630b461e1cb7a7e9605",
+        "canon_note": "canon_sha256 is the digest of UNIVERSAL_SURVIVORS.canon.json the release names -- the canon this certificate was minted UNDER, not the one it joins",
+        "why": null
+      },
+      "p_forward_success": {
+        "status": "RECORDED_PREDICTION",
+        "family": "carry",
+        "p": 0.0027112939416604337,
+        "beta": [
+          0.0108,
+          3.9892
+        ],
+        "stage": "forward_survived",
+        "denominator_known": false,
+        "counts": {
+          "candidates": 250,
+          "certified": 1,
+          "forward_enrolled": 0,
+          "forward_survived": 0,
+          "live": 0
+        },
+        "p_certified_stage": {
+          "p": 0.003979705416404101,
+          "beta": [
+            1.0108,
+            252.9892
+          ]
+        },
+        "basis": "libs.research.funnel_census Beta posterior (empirical-Bayes prior fitted to the desk's own yield, plus this family's funnel counts), taken at certificate time before this sweep's certificates joined the canon. A prediction to be scored against the forward outcome; not a gate"
+      },
+      "replay2_agreement": {
+        "status": "MEASURED",
+        "max_abs_r_gap": 0.404119,
+        "n_trades_both": 1864,
+        "n_engine": 1864,
+        "n_replay": 1864,
+        "n_disagree": 788,
+        "agree_within_tolerance": false,
+        "why": "788 trades differ by more than 0.02R",
+        "cost_price_units": 0.00161554,
+        "signals_outside_replay2_contract": 0,
+        "n_signals": 19085,
+        "contract_note": "replay2 models next-open fills, intrabar stop/target with stop first, TTL exits and one position at a time; trigger/bank/trail/pyramid signals are outside that contract and a gap on them is expected"
+      },
+      "complexity": {
+        "status": "MEASURED",
+        "n_params": 0,
+        "n_conditions": 0,
+        "condition_keys": [],
+        "basis": "free params = params minus input/chart identity keys (family_inputs.IDENTITY_KEYS); conditions = free params outside TRADE_SHAPE_KEYS ['hold_bars', 'horizon', 'rr', 'side', 'stop_atr', 'target_atr', 'ttl_bars', 'wait_bars']",
+        "expression_nodes": null,
+        "expression_nodes_why": "no grammar expression on params (a feature name is a leaf, not an expression)",
+        "turnover_per_day": 0.852309,
+        "turnover_basis": "1864 engine trades over 2187 calendar days (rebuilt cell)"
+      },
+      "baselines": {
+        "status": "MEASURED",
+        "symbol": "CHFNOK",
+        "n_days": 1555,
+        "buy_and_hold": {
+          "strategy_sharpe": 0.3598,
+          "buy_hold_sharpe": 0.017,
+          "beats_buy_hold_sharpe": true,
+          "units": "calendar-day Sharpe; strategy in daily R (0 when flat), buy-and-hold in daily fractional close-to-close; total-return excess omitted as incommensurable"
+        },
+        "monkey": {
+          "beat_rate": 1.0,
+          "p_value": 0.001996007984031936,
+          "n_baselines": 500,
+          "real_statistic": 0.018867379434413734,
+          "baseline_median": -0.016583372194038867,
+          "clears_target": true,
+          "target": 0.9,
+          "reading": "BEATS RANDOM: 100.0% of exposure-matched monkeys did worse. The rule's edge is in WHEN it is positioned, not in how often -- an equally-exposed coin flip does not reproduce it.",
+          "unmeasurable": null,
+          "positions_basis": "net side of engine trades open on each day (rebuilt cell)"
+        },
+        "exposure_timing": {
+          "exposure_share": -0.889975088804967,
+          "timing_share": 1.8899750888049671,
+          "time_in_market": 0.9118971061093247
         }
       }
     },
@@ -1878,7 +1975,7 @@
       "hunt": "external_discoveries",
       "cell": "GBPMXN.overnight_gap_decay.p=44136fa355b3678a",
       "sym": "GBPMXN",
-      "days": 680,
+      "days": 727,
       "gates": {
         "economic_prior": {
           "passed": true,
@@ -1887,16 +1984,16 @@
         },
         "in_sample_screen": {
           "passed": true,
-          "sharpe": 0.601
+          "sharpe": 0.4859
         },
         "deflated_sharpe": {
           "passed": true,
-          "dsr": 1.0,
+          "dsr": 0.9983,
           "sr0": 0.3786,
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 2.021346
+          "variance_measured_this_sweep": 1.443246
         },
         "pbo": {
           "passed": true,
@@ -1908,28 +2005,28 @@
         },
         "cpcv": {
           "passed": true,
-          "mean_oos_sharpe": 0.6313,
+          "mean_oos_sharpe": 0.4944,
           "folds": 15
         },
         "walk_forward": {
           "passed": true,
-          "oos_sharpe": 0.7795,
+          "oos_sharpe": 0.6241,
           "stability": 1.0
         },
         "stress_costs": {
           "passed": true,
-          "exp_x3": 0.2837
+          "exp_x3": 0.2665
         },
         "lockbox": {
           "passed": true,
-          "lockbox_sharpe": 0.7795
+          "lockbox_sharpe": 0.6241
         },
         "expected_value": {
           "passed": true,
-          "ev": 0.3652
+          "ev": 0.2833
         }
       },
-      "gated_at": "2026-09-02T23:37:32.826905+00:00",
+      "gated_at": "2026-09-10T09:10:40.338674+00:00",
       "shadow_spec": {
         "symbol": "GBPMXN",
         "selector": "asia",
@@ -2142,7 +2239,7 @@
       "hunt": "external_discoveries",
       "cell": "USDMXN.overnight_gap_decay.p=44136fa355b3678a",
       "sym": "USDMXN",
-      "days": 459,
+      "days": 464,
       "gates": {
         "economic_prior": {
           "passed": true,
@@ -2151,20 +2248,20 @@
         },
         "in_sample_screen": {
           "passed": true,
-          "sharpe": 0.5719
+          "sharpe": 0.5093
         },
         "deflated_sharpe": {
           "passed": true,
-          "dsr": 0.9999,
+          "dsr": 0.9968,
           "sr0": 0.3786,
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.656287
+          "variance_measured_this_sweep": 0.726579
         },
         "pbo": {
           "passed": true,
-          "pbo": 0.0004
+          "pbo": 0.0
         },
         "reality_check_spa": {
           "passed": true,
@@ -2172,28 +2269,36 @@
         },
         "cpcv": {
           "passed": true,
-          "mean_oos_sharpe": 0.5758,
+          "mean_oos_sharpe": 0.5113,
           "folds": 15
         },
         "walk_forward": {
           "passed": true,
-          "oos_sharpe": 0.6334,
+          "oos_sharpe": 0.5668,
           "stability": 1.0
         },
         "stress_costs": {
           "passed": true,
-          "exp_x3": 0.1947
+          "exp_x3": 0.2084
         },
         "lockbox": {
           "passed": true,
-          "lockbox_sharpe": 0.6334
+          "lockbox_sharpe": 0.5668
         },
         "expected_value": {
           "passed": true,
-          "ev": 0.2587
+          "ev": 0.229
+        },
+        "swap_cost": {
+          "passed": true,
+          "measured": true,
+          "total_cost_r": 0.1023,
+          "swap_r": 0.0503,
+          "holds_overnight": true,
+          "why": "cost within the bar"
         }
       },
-      "gated_at": "2026-09-02T02:29:50.591182+00:00",
+      "gated_at": "2026-09-15T06:18:23.232890+00:00",
       "shadow_spec": {
         "symbol": "USDMXN",
         "selector": "asia",
@@ -2202,6 +2307,95 @@
         "hunt": "external_discoveries",
         "condition": null,
         "params": {}
+      },
+      "release_id": "63f8c56724bd",
+      "canon_sha256": "745e17d4cbe4e2c2ab33e335a91f27cd85d13a64d0cca847af34b0e5f0030ea0",
+      "release_basis": {
+        "source": "desks/mt5/data/RELEASE.json via libs.ops.release.load (sealed record)",
+        "sealed": true,
+        "code_sha": "0f54177e639398af8ffc254e6b1db77c5f811179",
+        "running_sha": "dc915738801d5aae17b374014559017981135a63",
+        "canon_note": "canon_sha256 is the digest of UNIVERSAL_SURVIVORS.canon.json the release names -- the canon this certificate was minted UNDER, not the one it joins",
+        "why": null
+      },
+      "p_forward_success": {
+        "status": "RECORDED_PREDICTION",
+        "family": "overnight_gap_decay",
+        "p": 0.0028598195355258615,
+        "beta": [
+          0.0114,
+          3.9886
+        ],
+        "stage": "forward_survived",
+        "denominator_known": false,
+        "counts": {
+          "candidates": 196,
+          "certified": 12,
+          "forward_enrolled": 0,
+          "forward_survived": 0,
+          "live": 0
+        },
+        "p_certified_stage": {
+          "p": 0.06005719639071052,
+          "beta": [
+            12.0114,
+            187.9886
+          ]
+        },
+        "basis": "libs.research.funnel_census Beta posterior (empirical-Bayes prior fitted to the desk's own yield, plus this family's funnel counts), taken at certificate time before this sweep's certificates joined the canon. A prediction to be scored against the forward outcome; not a gate"
+      },
+      "replay2_agreement": {
+        "status": "MEASURED",
+        "max_abs_r_gap": 0.088156,
+        "n_trades_both": 464,
+        "n_engine": 464,
+        "n_replay": 464,
+        "n_disagree": 1,
+        "agree_within_tolerance": false,
+        "why": "1 trades differ by more than 0.02R",
+        "cost_price_units": 0.00497584,
+        "signals_outside_replay2_contract": 0,
+        "n_signals": 464,
+        "contract_note": "replay2 models next-open fills, intrabar stop/target with stop first, TTL exits and one position at a time; trigger/bank/trail/pyramid signals are outside that contract and a gap on them is expected"
+      },
+      "complexity": {
+        "status": "MEASURED",
+        "n_params": 0,
+        "n_conditions": 0,
+        "condition_keys": [],
+        "basis": "free params = params minus input/chart identity keys (family_inputs.IDENTITY_KEYS); conditions = free params outside TRADE_SHAPE_KEYS ['hold_bars', 'horizon', 'rr', 'side', 'stop_atr', 'target_atr', 'ttl_bars', 'wait_bars']",
+        "expression_nodes": null,
+        "expression_nodes_why": "no grammar expression on params (a feature name is a leaf, not an expression)",
+        "turnover_per_day": 0.212649,
+        "turnover_basis": "464 engine trades over 2182 calendar days (rebuilt cell)"
+      },
+      "baselines": {
+        "status": "MEASURED",
+        "symbol": "USDMXN",
+        "n_days": 1554,
+        "buy_and_hold": {
+          "strategy_sharpe": 0.2561,
+          "buy_hold_sharpe": -0.0173,
+          "beats_buy_hold_sharpe": true,
+          "units": "calendar-day Sharpe; strategy in daily R (0 when flat), buy-and-hold in daily fractional close-to-close; total-return excess omitted as incommensurable"
+        },
+        "monkey": {
+          "beat_rate": 0.024,
+          "p_value": 0.9760479041916168,
+          "n_baselines": 500,
+          "real_statistic": -0.04920788331996472,
+          "baseline_median": -0.009251295544230494,
+          "clears_target": false,
+          "target": 0.9,
+          "reading": "NO TIMING EDGE: 2.4% of exposure-matched monkeys did worse -- a coin flip with the same time-in-market does as well or better. Whatever this rule earns comes from BEING in the market, not from choosing when.",
+          "unmeasurable": null,
+          "positions_basis": "net side of engine trades open on each day (rebuilt cell)"
+        },
+        "exposure_timing": {
+          "exposure_share": 0.17639701871653413,
+          "timing_share": 0.8236029812834657,
+          "time_in_market": 0.2979407979407979
+        }
       }
     },
     "external.EURCHF.discovered.p=6c7943b997558157": {
@@ -2374,7 +2568,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.134904
+          "variance_measured_this_sweep": 0.28113
         },
         "pbo": {
           "passed": true,
@@ -2407,7 +2601,7 @@
           "ev": 0.2175
         }
       },
-      "gated_at": "2026-09-09T14:41:01.623916+00:00",
+      "gated_at": "2026-09-10T10:06:37.311547+00:00",
       "shadow_spec": {
         "symbol": "EURCHF",
         "selector": "asia",
@@ -2596,7 +2790,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.134904
+          "variance_measured_this_sweep": 1.443246
         },
         "pbo": {
           "passed": true,
@@ -2629,7 +2823,7 @@
           "ev": 0.4162
         }
       },
-      "gated_at": "2026-09-09T14:41:01.623951+00:00",
+      "gated_at": "2026-09-10T09:10:40.338283+00:00",
       "shadow_spec": {
         "symbol": "EURCHF",
         "selector": "asia",
@@ -2670,7 +2864,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.134904
+          "variance_measured_this_sweep": 1.443246
         },
         "pbo": {
           "passed": true,
@@ -2703,7 +2897,7 @@
           "ev": 0.4764
         }
       },
-      "gated_at": "2026-09-09T14:41:01.623972+00:00",
+      "gated_at": "2026-09-10T09:10:40.338306+00:00",
       "shadow_spec": {
         "symbol": "EURCHF",
         "selector": "asia",
@@ -2744,7 +2938,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.134904
+          "variance_measured_this_sweep": 1.443246
         },
         "pbo": {
           "passed": true,
@@ -2777,7 +2971,7 @@
           "ev": 0.2831
         }
       },
-      "gated_at": "2026-09-09T14:41:01.624009+00:00",
+      "gated_at": "2026-09-10T09:10:40.338614+00:00",
       "shadow_spec": {
         "symbol": "EURGBP",
         "selector": "asia",
@@ -2818,7 +3012,7 @@
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.134904
+          "variance_measured_this_sweep": 0.28113
         },
         "pbo": {
           "passed": true,
@@ -2851,7 +3045,7 @@
           "ev": 0.2281
         }
       },
-      "gated_at": "2026-09-09T14:41:01.623788+00:00",
+      "gated_at": "2026-09-10T10:06:37.311456+00:00",
       "shadow_spec": {
         "symbol": "EURCHF",
         "selector": "asia",
@@ -3688,7 +3882,7 @@
       "hunt": "external_discoveries",
       "cell": "USDCHF.discovered.p=19dd11ec392fa005",
       "sym": "USDCHF",
-      "days": 390,
+      "days": 485,
       "gates": {
         "economic_prior": {
           "passed": true,
@@ -3697,16 +3891,16 @@
         },
         "in_sample_screen": {
           "passed": true,
-          "sharpe": 0.5483
+          "sharpe": 0.4758
         },
         "deflated_sharpe": {
           "passed": true,
-          "dsr": 0.9999,
+          "dsr": 0.9906,
           "sr0": 0.3786,
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.668748
+          "variance_measured_this_sweep": 1.443246
         },
         "pbo": {
           "passed": true,
@@ -3718,28 +3912,28 @@
         },
         "cpcv": {
           "passed": true,
-          "mean_oos_sharpe": 0.5511,
+          "mean_oos_sharpe": 0.4769,
           "folds": 15
         },
         "walk_forward": {
           "passed": true,
-          "oos_sharpe": 0.5847,
+          "oos_sharpe": 0.5033,
           "stability": 1.0
         },
         "stress_costs": {
           "passed": true,
-          "exp_x3": 0.2872
+          "exp_x3": 0.3135
         },
         "lockbox": {
           "passed": true,
-          "lockbox_sharpe": 0.5847
+          "lockbox_sharpe": 0.5033
         },
         "expected_value": {
           "passed": true,
-          "ev": 0.2872
+          "ev": 0.2558
         }
       },
-      "gated_at": "2026-09-03T11:06:39.719050+00:00",
+      "gated_at": "2026-09-10T09:10:40.338374+00:00",
       "shadow_spec": {
         "symbol": "USDCHF",
         "selector": "asia",
@@ -3762,7 +3956,7 @@
       "hunt": "external_discoveries",
       "cell": "USDCAD.discovered.p=56aadf0a3018c790",
       "sym": "USDCAD",
-      "days": 410,
+      "days": 413,
       "gates": {
         "economic_prior": {
           "passed": true,
@@ -3771,16 +3965,16 @@
         },
         "in_sample_screen": {
           "passed": true,
-          "sharpe": 0.5167
+          "sharpe": 0.4649
         },
         "deflated_sharpe": {
           "passed": true,
-          "dsr": 0.9974,
+          "dsr": 0.9605,
           "sr0": 0.3786,
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.668748
+          "variance_measured_this_sweep": 1.443246
         },
         "pbo": {
           "passed": true,
@@ -3792,28 +3986,28 @@
         },
         "cpcv": {
           "passed": true,
-          "mean_oos_sharpe": 0.5164,
+          "mean_oos_sharpe": 0.4647,
           "folds": 15
         },
         "walk_forward": {
           "passed": true,
-          "oos_sharpe": 0.5548,
+          "oos_sharpe": 0.495,
           "stability": 1.0
         },
         "stress_costs": {
           "passed": true,
-          "exp_x3": 0.351
+          "exp_x3": 0.3518
         },
         "lockbox": {
           "passed": true,
-          "lockbox_sharpe": 0.5548
+          "lockbox_sharpe": 0.495
         },
         "expected_value": {
           "passed": true,
-          "ev": 0.351
+          "ev": 0.315
         }
       },
-      "gated_at": "2026-09-03T11:06:39.718163+00:00",
+      "gated_at": "2026-09-10T09:10:40.339404+00:00",
       "shadow_spec": {
         "symbol": "USDCAD",
         "selector": "asia",
@@ -3836,7 +4030,7 @@
       "hunt": "external_discoveries",
       "cell": "USDCAD.discovered.p=193aadf2caba3698",
       "sym": "USDCAD",
-      "days": 356,
+      "days": 359,
       "gates": {
         "economic_prior": {
           "passed": true,
@@ -3845,16 +4039,16 @@
         },
         "in_sample_screen": {
           "passed": true,
-          "sharpe": 0.4737
+          "sharpe": 0.4704
         },
         "deflated_sharpe": {
           "passed": true,
-          "dsr": 0.9601,
+          "dsr": 0.956,
           "sr0": 0.3786,
           "n_trials": 597,
           "variance_of_sharpes": 0.014863,
           "variance_basis": "fixed_variance_of_sharpes(0.014863)",
-          "variance_measured_this_sweep": 1.668748
+          "variance_measured_this_sweep": 1.443246
         },
         "pbo": {
           "passed": true,
@@ -3866,28 +4060,28 @@
         },
         "cpcv": {
           "passed": true,
-          "mean_oos_sharpe": 0.4733,
+          "mean_oos_sharpe": 0.4706,
           "folds": 15
         },
         "walk_forward": {
           "passed": true,
-          "oos_sharpe": 0.4655,
+          "oos_sharpe": 0.4832,
           "stability": 1.0
         },
         "stress_costs": {
           "passed": true,
-          "exp_x3": 0.2574
+          "exp_x3": 0.3635
         },
         "lockbox": {
           "passed": true,
-          "lockbox_sharpe": 0.4655
+          "lockbox_sharpe": 0.4832
         },
         "expected_value": {
           "passed": true,
-          "ev": 0.3324
+          "ev": 0.326
         }
       },
-      "gated_at": "2026-09-03T11:06:39.719003+00:00",
+      "gated_at": "2026-09-10T09:10:40.339434+00:00",
       "shadow_spec": {
         "symbol": "USDCAD",
         "selector": "asia",
@@ -4012,5 +4206,5 @@
     "expected_value_min_exclusive": 0.0
   },
   "note": "UNIVERSAL 10-GATE PASS ONLY.",
-  "swept_at": "2026-09-09T14:50:47.556022+00:00"
+  "swept_at": "2026-09-16T15:07:26.349367+00:00"
 }

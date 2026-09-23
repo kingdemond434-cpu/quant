@@ -898,12 +898,19 @@ def _raise_through_control_plane(rows: Sequence[Mapping[str, Any]], *, apply: bo
             out["fingerprints"] += 1
     if not apply:
         return out
-    from libs.ops.control_plane import actuators as act
-    a = act.desk_actuators().get("reap_orphans")
-    if a is not None:
+    try:
+        from libs.ops.control_plane import actuators as act
+        a = act.desk_actuators().get("reap_orphans")
+        if a is None:
+            out["actuators"].append({"name": "reap_orphans", "result": "ABSENT",
+                                     "why": "the control plane declares no reap_orphans actuator"})
+            return out
         rec = act.run_actuator(a, {"component_id": COMPONENT}, apply=True, runner=runner)
         out["actuators"].append({"name": "reap_orphans", **{k: rec.get(k) for k in
                                                             ("result", "repaired", "why")}})
+    except Exception as exc:  # a repair that cannot run may never take the watchdog with it
+        out["actuators"].append({"name": "reap_orphans", "result": "FAILED",
+                                 "why": f"{type(exc).__name__}: {exc}"})
     return out
 
 

@@ -368,9 +368,15 @@ def provision_pass(*, budget_s: float = 900.0, root: Path | None = None,
                     rec.update({"status": INSTALLED, "why": "installed and imported",
                                 "version": version, "seconds": seconds})
                 else:
-                    rec.update({"status": PERMANENT, "seconds": seconds, "error": err,
-                                "why": "the wheel installed but the module does not import on "
-                                       "this host", "cover": cover_of(sid)})
+                    #: The wheel landed and the module does not import. WHY decides whether that
+                    #: is final: a missing DLL or an interpreter incompatibility is, an import
+                    #: that timed out fetching its own runtime (pysr pulling Julia) is not --
+                    #: so the same classifier reads the import error as reads pip's, and a
+                    #: retryable one comes back on the backoff instead of being buried.
+                    status, reason = classify(err)
+                    rec.update({"status": status, "seconds": seconds, "error": err,
+                                "why": f"the wheel installed but the module does not import on "
+                                       f"this host: {reason}", "cover": cover_of(sid)})
         if rec["status"] == INSTALLED:
             licence_reads.append(read_licence(sid, fed_rows, root))
         attempted.append(rec)

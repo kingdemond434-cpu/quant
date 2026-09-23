@@ -710,6 +710,28 @@ def run_and_save() -> dict:
     except (OSError, ValueError):
         latest = {}
     latest.update(results)
+    # THE PROPOSER SEAT, OPTIONAL: source NAMES the fleet does not already mine.
+    # A name is not a ground. It is written into the fleet's own state as a CANDIDATE for the
+    # source registry to vet -- nothing here fetches it, no MINERS entry is created, and the
+    # seat's validator refuses anything shaped like an address, so a model cannot point this
+    # fleet at a page by naming it. No panel, no call, and the fleet mines exactly as today.
+    try:
+        from libs.research import proposer_seat as _ps
+        _reply = _ps.ask(
+            "seed_miners", "terms",
+            task=("Name public communities, journals, regulators or statistics publishers that "
+                  "discuss FX, metals, energy or index-future mechanics and are not in the list "
+                  "below. Names only, no addresses."),
+            context=[f"already mined: {n}" for n in sorted(MINERS)],
+            n=8)
+        st["proposer_seat"] = {"at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+                               "candidate_source_names": _reply.terms,
+                               "verdict": _reply.verdict,
+                               "discipline": ("candidate NAMES for the source registry to vet; "
+                                              "nothing here fetches them")}
+        STATE.write_text(json.dumps(st, indent=0), "utf-8")
+    except Exception as _exc:                             # pragma: no cover - optional seat
+        print(f"  proposer_seat: UNMEASURED ({type(_exc).__name__}: {_exc})")
     latest_p.write_text(json.dumps(latest, indent=1, default=str), "utf-8")
     print(f"seed miners: {summary['total']} rows across {len(MINERS)} sources "
           f"(ok={summary['ok']} raw={summary['raw_only']} "

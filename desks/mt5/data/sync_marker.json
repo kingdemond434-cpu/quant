@@ -1,20 +1,687 @@
 {
- "last_cycle": "2026-08-17T04:33:01.121643+00:00",
+ "last_cycle": "2026-09-16T13:53:37.442653+00:00",
  "health": {
   "hunt12": {
    "alive": false,
-   "restarted": true
+   "restarted": false,
+   "restart_failed": true
   },
   "hunt16": {
-   "alive": true
+   "alive": false,
+   "restarted": true
   },
   "gateway_cmd": {
-   "alive": true
+   "alive": false
   }
+ },
+ "tape": {
+  "at": "2026-09-16T10:11:48+00:00",
+  "tape_exit_code": 0,
+  "triangle_exit_code": 0,
+  "exit_code": 0
+ },
+ "state_vector": {
+  "exit_code": null,
+  "status": "TIMEOUT",
+  "timeout_s": 45.0,
+  "at": "2026-09-16T10:21:15+00:00"
+ },
+ "daily": {
+  "exit_code": null,
+  "status": "TIMEOUT",
+  "timeout_s": 900.0,
+  "at": "2026-09-16T10:36:20+00:00"
+ },
+ "regime_monitor": {
+  "exit_code": 0,
+  "tail": "",
+  "budget_s": 720,
+  "at": "2026-09-16T10:21:19.113208+00:00"
+ },
+ "deepening": {
+  "exit_code": 0,
+  "at": "2026-09-16T11:43:39+00:00"
+ },
+ "heal_clocks": {
+  "exit_code": 0,
+  "tail": [
+   "identity healer: no IDENTITY_BROKEN clocks"
+  ],
+  "at": "2026-09-16T10:36:25+00:00"
  },
  "mine": {
   "sources_tried": 2,
   "new_seeds": 0,
   "inbox": 0
+ },
+ "search": {
+  "exit_code": null,
+  "timeout_s": 720,
+  "note": "edge_search exceeded its cycle budget and was stopped; its partial work is whatever it had already written",
+  "at": "2026-09-16T11:19:23.292050+00:00"
+ },
+ "sweep": {
+  "exit_code": null,
+  "timeout_s": 720,
+  "note": "orthogonal_sweep exceeded its cycle budget and was stopped; its partial work is whatever it had already written",
+  "at": "2026-09-16T11:31:24.110000+00:00"
+ },
+ "compile": {
+  "exit_code": null,
+  "timeout_s": 720,
+  "note": "miner_candidate_compiler exceeded its cycle budget and was stopped; its partial work is whatever it had already written",
+  "at": "2026-09-16T11:43:25.463019+00:00"
+ },
+ "execution_twin": {
+  "exit_code": 0,
+  "tail": "ases=92 (outcome-joined 0, deal-joined 0, rejected 34) verdicts={\"CALIBRATED\": 0, \"SIM_TOO_OPTIMISTIC\": 0, \"SIM_TOO_PESSIMISTIC\": 0, \"UNMEASURED\": 9} appended=57 gaps=3 -> C:\\opt\\quant\\desks\\mt5\\reports\\EXECUTION_TWIN.json\nYIELD {\"cases_joined\": 92, \"symbols_calibrated\": 0, \"symbols_unmeasured\": 9}\n",
+  "budget_s": 720,
+  "at": "2026-09-16T12:32:47.125216+00:00"
+ },
+ "causal_graph": {
+  "exit_code": 0,
+  "tail": "ted=164 unmeasured=25 multiplicity=876 chains seeded/measured/admitted=14/5/0  spent=256.1s\nwritten: C:\\opt\\quant\\desks\\mt5\\data\\world_causal_graph.json\nwritten: C:\\opt\\quant\\desks\\mt5\\reports\\WORLD_CAUSAL_GRAPH.json\nYIELD {\"edges_measured\": 60, \"edges_admitted\": 0, \"paths_new\": 0, \"discovered\": 0}\n",
+  "budget_s": 720,
+  "at": "2026-09-16T12:37:14.610208+00:00"
+ },
+ "alpha_rl": {
+  "exit_code": 0,
+  "tail": "27, 'symbol_family': 1}\n   +0.000000  layer 4  ('gap_atr', 0.375)\n   +0.000000  layer 3  ('timeframe', 'H1')\n   +0.000000  layer 2  ('session', 'any')\n   +0.000000  layer 1  ('symbol', 'XALUSD')\n   +0.000000  layer 0  ('family', 'overnight_gap_decay')\n-> C:\\opt\\quant\\desks\\mt5\\reports\\ALPHA_RL.json\n",
+  "budget_s": 720,
+  "at": "2026-09-16T12:37:30.624510+00:00"
+ },
+ "research_exchange_score": {
+  "exit_code": 0,
+  "tail": "ce\n    2026-07-17. Every allocation between sources so far was made on reputation.\n\n  ledger EMPTY -- 0 external proposals have ever been ingested.\n  That is the honest state: there is nothing to score yet, and a scoreboard that\n  reported numbers here would be fabricating them. Run `intake` first.\n",
+  "budget_s": 720,
+  "at": "2026-09-16T12:37:31.315971+00:00"
+ },
+ "lake_promote": {
+  "exit_code": 0,
+  "tail": "lake_promote: 18079 bronze -> 0 silver (0.0%), 18079 refused\n    18079  no resolvable event_time (none of event_time, event_date, date, datetime, timestamp, published_at); \n-> C:\\opt\\quant\\desks\\mt5\\reports\\LAKE_PROMOTION.json\n",
+  "budget_s": 720,
+  "at": "2026-09-16T12:39:06.590969+00:00"
+ },
+ "orthogonality": {
+  "exit_code": 0,
+  "tail": "3  tail lift 2.593x\n     gold_asia USDJPY_asia_FAILED_BREAK pearson -0.034  tail lift 2.222x\n     gold_ny_open USDJPY_asia_FAILED_BREAK pearson +0.004  tail lift 2.222x\n     gold_afternoon CADJPY_asia_FAILED_BREAK pearson +0.081  tail lift 2.222x\n-> C:\\opt\\quant\\desks\\mt5\\reports\\ORTHOGONALITY.json\n",
+  "budget_s": 720,
+  "at": "2026-09-16T12:39:22.163050+00:00"
+ },
+ "session_allocation": {
+  "exit_code": 0,
+  "tail": "\nlondon_am             10      46   0.1649  0.1474       0.0%\ncontinuous            86      37   0.2020  0.1644       0.0%\nafternoon              2       7   0.0183  0.3780       0.0%\noverlap                0       0 UNMEASURED               0.9%\n\nidle UTC hours (7/24): [17, 18, 19, 20, 21, 22, 23]\n",
+  "budget_s": 720,
+  "at": "2026-09-16T12:39:22.929224+00:00"
+ },
+ "session_chart_expansion": {
+  "exit_code": 0,
+  "tail": "e(s) from 58 certificate(s)\n  families with a session parameter: ['clock_transition', 'comex_settlement', 'level_breakout', 'opening_range', 'overnight_drift', 'session_range_breakout']\n  idle hours targeted first: [17, 18, 19, 20, 21, 22, 23]\n  by variant: {}\n  appended; docket is now 21391 row(s)\n",
+  "budget_s": 720,
+  "at": "2026-09-16T12:39:29.259796+00:00"
+ },
+ "stamp_freshness": {
+  "exit_code": 1,
+  "tail": "rated_at   stamp    115.9h  file   3.7h  lag    112.2h\n\n  2 artifact(s) carry a DATE and no timestamp:\n    desks/mt5/data/lake/series/riksbank_series.json      ['date']\n    data/retest66-20260907/data/lake/series/riksbank_series.json ['date']\n  -> C:\\opt\\quant\\desks\\mt5\\reports\\STAMP_FRESHNESS.json\n",
+  "budget_s": 720,
+  "at": "2026-09-16T12:39:49.932935+00:00"
+ },
+ "fill_attribution": {
+  "exit_code": 1,
+  "tail": "0016 Invalid stops                  18\n    attributable to: {'operator': 4, 'desk': 22}\n  NOTE: order_intents.jsonl carries no intent_id and fill_corpus.jsonl carries no retcode; the only shared field is ticket, which is 0 on every rejection\n  -> C:\\opt\\quant\\desks\\mt5\\reports\\FILL_ATTRIBUTION.json\n",
+  "budget_s": 720,
+  "at": "2026-09-16T12:39:52.529304+00:00"
+ },
+ "cost_to_edge": {
+  "exit_code": 0,
+  "tail": "   0.000    0.000    0.000\naudcad_discovered_asia_p_a7324e7affe1f80a        0.000    0.000    0.000\naudusd_discovered_asia_p_8e61ea22743f15b7        0.000    0.000    0.000\naudusd_discovered_asia_p_a5bbf78b5c8595c0        0.000    0.000    0.000\n  -> C:\\opt\\quant\\desks\\mt5\\reports\\COST_TO_EDGE.json\n",
+  "budget_s": 720,
+  "at": "2026-09-16T12:39:54.918699+00:00"
+ },
+ "swap_rejudge": {
+  "exit_code": 0,
+  "tail": "swap re-judge: 58 certificate(s) re-priced -> {'SURVIVES': 55, 'AT_RISK': 3}\n  -> C:\\opt\\quant\\desks\\mt5\\reports\\SWAP_REJUDGE.json\n",
+  "budget_s": 720,
+  "at": "2026-09-16T12:39:59.153176+00:00"
+ },
+ "asia_plane": {
+  "exit_code": 0,
+  "tail": "}\n  venue            {'MEASURABLE_NOW': 30}\n  expression kinds: {'flow': 72, 'handoff': 375, 'event': 123, 'state': 123, 'crowd': 81}\n  37 instrument(s) touched\n  donated -> C:\\opt\\quant\\desks\\mt5\\data\\intelligence\\asia\\asia_plane_20260916T12.json\n  -> C:\\opt\\quant\\desks\\mt5\\reports\\ASIA_PLANE.json\n",
+  "budget_s": 720,
+  "at": "2026-09-16T12:40:00.142408+00:00"
+ },
+ "sge_premium": {
+  "exit_code": 0,
+  "tail": "SGE Au99.99 + Au(T+D)...\nhistory: 3 day(s) recorded -> C:\\opt\\quant\\desks\\mt5\\data\\lake\\sge_daily.parquet\nXAUUSD 07:00Z leg (desk feed) + USDCNY (ECB, FRED fallback)...\n\n1 premium day(s) 2026-09-15 -> 2026-09-15\nlatest premium -38.43 USD/oz (-0.89%)\n",
+  "budget_s": 720,
+  "at": "2026-09-16T12:40:07.727678+00:00"
+ },
+ "asia_collector": {
+  "exit_code": 1,
+  "tail": "/download' does not match declare\n  HTTP_ERROR 1:\n    stocktwits_macro         HTTP 403: authentication or access control, not a route ch\n  UNCONFIGURED 1:\n    myfxbook_outlook         declares key access and MYFXBOOK_SESSION is not set. A nam\n  -> C:\\opt\\quant\\desks\\mt5\\reports\\ASIA_COLLECTOR.json\n",
+  "budget_s": 720,
+  "at": "2026-09-16T12:40:11.749168+00:00"
+ },
+ "asia_parser": {
+  "exit_code": 0,
+  "tail": "alueError: No tables found matching regex '.+'\n    cbr_series__ep10d7dabc   ValueError: No tables found matching regex '.+'\n    cbr_series__ep167c140d   ValueError: No tables found matching regex '.+'\n  27 endpoint(s) handed back to the collector\n  -> C:\\opt\\quant\\desks\\mt5\\reports\\ASIA_PARSER.json\n",
+  "budget_s": 720,
+  "at": "2026-09-16T12:40:32.041482+00:00"
+ },
+ "source_fixer": {
+  "exit_code": 0,
+  "tail": "source fixer: 1 failed source(s), 0 repaired, 0 dead -> C:\\opt\\quant\\desks\\mt5\\reports\\SOURCE_FIXER.json\n",
+  "budget_s": 720,
+  "at": "2026-09-16T12:40:33.202027+00:00"
+ },
+ "universe_integrity": {
+  "exit_code": 0,
+  "tail": "universe integrity: 803 files, 1 corrupt (quarantined), 68 stale >7d {'unregistered': 53, 'equities': 3, 'crypto': 3, 'forex exotics': 3, 'bonds': 6} -> C:\\opt\\quant\\desks\\mt5\\reports\\UNIVERSE_INTEGRITY.json\n",
+  "budget_s": 720,
+  "at": "2026-09-16T12:40:46.437665+00:00"
+ },
+ "source_routes": {
+  "exit_code": 0,
+  "tail": "\n  http  dukascopy_datafeed     HTTP 503\n  unrch sge_quotations         URLError: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate \n  http  gld_holdings           HTTP 404\n  ok    yahoo_chart            application/json;charset=utf-8\n  -> C:\\opt\\quant\\desks\\mt5\\reports\\SOURCE_ROUTES.json\n",
+  "budget_s": 720,
+  "at": "2026-09-16T12:41:18.245093+00:00"
+ },
+ "strategy_paths": {
+  "exit_code": 0,
+  "tail": "strategy paths: 24 sleeve(s) on a common 1D clock, 17 period(s) 2026-08-31 -> 2026-09-16\n  24 carry a non-zero return; forward trades only, min 3 per sleeve\n  -> C:\\opt\\quant\\desks\\mt5\\data\\strategy_paths.json\n",
+  "budget_s": 720,
+  "at": "2026-09-16T12:41:19.107072+00:00"
+ },
+ "weak_signals": {
+  "exit_code": 0,
+  "tail": "n never traded\n  skipped GBPJPY: members could not be built or combination never traded\n  skipped AUDUSD: members could not be built or combination never traded\n  skipped USDCAD: members could not be built or combination never traded\nwritten: C:\\opt\\quant\\desks\\mt5\\reports\\weak_signal_compiler.json\n",
+  "budget_s": 2700,
+  "at": "2026-09-16T13:12:43.249740+00:00"
+ },
+ "residual_factors": {
+  "exit_code": 0,
+  "tail": "_residual              revert       24   3.0    72    0.012276     2.34\n   USDRUB.book_residual              revert       24   2.5   141    0.006800     2.03\n\n16 cell(s) proposed -> C:\\opt\\quant\\desks\\mt5\\data\\intelligence\\factor_residual\nwritten: C:\\opt\\quant\\desks\\mt5\\reports\\factor_residual.json\n",
+  "budget_s": 1800,
+  "at": "2026-09-16T13:15:53.108469+00:00"
+ },
+ "markout": {
+  "exit_code": 0,
+  "tail": "FILTER VALUE  282 decisions, 275 not taken, 1 replayed, 0 never triggered\n  broker_rejected              n=   1 value=   +1.00R t=None  UNDETERMINED\nwritten: C:\\opt\\quant\\desks\\mt5\\reports\\FILTER_VALUE.json\n",
+  "budget_s": 720,
+  "at": "2026-09-16T13:15:57.397485+00:00"
+ },
+ "exogenous_search": {
+  "exit_code": 0,
+  "tail": "is desk records?\n   unexplained_move   what mechanism moved XAUUSD -1.57% in one hour with no macro event within 3h that this desk records?\n   unexplained_move   what mechanism moved XAUUSD +1.54% in one hour with no macro event within 3h that this desk records?\n  --apply not given; nothing written\n",
+  "budget_s": 1200,
+  "at": "2026-09-16T13:16:02.756871+00:00"
+ },
+ "stop_reverse": {
+  "exit_code": 0,
+  "tail": "  SPIKE   2026-09-04T15:30+00:00 XAUUSD SELL @ 4420.25 55.9x median -> net +17.58\n    SPIKE   2026-09-11T15:30+00:00 XAUUSD SELL @ 4298.87 34.9x median -> net -72.24\n  verdict: ANECDOTE: too few to justify an execution rule; L0330 applies\n  -> C:\\opt\\quant\\desks\\mt5\\reports\\STOP_REVERSE_CENSUS.json\n",
+  "budget_s": 720,
+  "at": "2026-09-16T13:16:13.249601+00:00"
+ },
+ "forward_reconcile": {
+  "exit_code": 0,
+  "tail": "forward reconcile: 4 action(s) {'AUTHORITY_REVOKED': 4}\n  CEILING: UNMEASURED -- no certificate report was readable, which is not the same as nothing being blocked\n",
+  "budget_s": 720,
+  "at": "2026-09-16T13:16:24.691447+00:00"
+ },
+ "model_skill": {
+  "exit_code": 2,
+  "tail": "nd cannot be known to be wrong -- this is the absence of evidence, not evidence of accuracy (L1.28a).\n  PROBLEM 1 predictor(s) LOSE to their own baseline: [('research_forecast', -0.17489)]. The desk is paying compute to be worse than a constant. Retire the model or fix it; do not keep reporting it.\n",
+  "budget_s": 720,
+  "at": "2026-09-16T13:16:29.700378+00:00"
+ },
+ "frontier": {
+  "scouted": 4299,
+  "new": 992,
+  "queued": 6,
+  "missing_capabilities": 6,
+  "at": "2026-09-16T13:19:22.413872+00:00"
+ },
+ "refresh_bars": {
+  "exit_code": 0,
+  "tail": "PY_H4               error:[Errno 13] Permission denied: 'C:\\\\opt\\\\quant\\\\desks\\\\mt5\\\\data\\\\universe\\\\ZARJPY_H4.parquet'\n\n248/803 (symbol, timeframe) series refreshed across 248 symbol(s)\n\nderived 29 series from finer bars (book (UNIVERSAL_SURVIVORS.canon.json))\nBroker info saved: FusionMarkets-Live\n",
+  "budget_s": 720,
+  "at": "2026-09-16T10:10:42.509426+00:00"
+ },
+ "deep_forest": {
+  "exit_code": 0,
+  "tail": "1 ['bing: bing returned no parseable results (121940 bytes -- an anti-bot shell or a layout change, not an empty forest)', 'bing: bing returned no parseable results (120788 bytes -- an anti-bot shell or a layout change, not an empty forest)']\nwritten: C:\\opt\\quant\\desks\\mt5\\reports\\DEEP_FOREST.json\n",
+  "budget_s": 720,
+  "at": "2026-09-16T13:19:53.522916+00:00"
+ },
+ "maintain_miners": {
+  "exit_code": 2,
+  "tail": "an abandoned one, an\n  LEFT_ALONE    orthogonal_sweep.json -- older than the stale timer but its owner is UNKNOWABLE -- a long job is not an abandoned one, an\n  LEFT_ALONE    warm_gauntlet_cache.json -- older than the stale timer but its owner is UNKNOWABLE -- a long job is not an abandoned one, an\n",
+  "budget_s": 720,
+  "at": "2026-09-16T13:22:49.724849+00:00"
+ },
+ "publish_survivors": {
+  "exit_code": 0,
+  "tail": "",
+  "budget_s": 720,
+  "at": "2026-09-16T13:26:10.511529+00:00"
+ },
+ "forecast_contract": {
+  "exit_code": 0,
+  "tail": "forecast contract: 0 belief(s) from 0 model(s)\n",
+  "budget_s": 720,
+  "at": "2026-09-16T13:16:30.508527+00:00"
+ },
+ "model_league": {
+  "exit_code": 0,
+  "tail": " the shared window -- nothing entered, so the delta is against an empty entrant, not a measured zero (delta +0 survivor(s))\n   NO FORECASTER ENTRANTS -- no model has published a scoreable result into the skill track; only the generator league has entrants. This is a gap, not a clean bill of health.\n",
+  "budget_s": 720,
+  "at": "2026-09-16T13:16:33.725262+00:00"
+ },
+ "adversaries": {
+  "exit_code": 0,
+  "tail": "AIL lockbox: {'passed': False, 'lockbox_sharpe': -0.0498}\n         FAIL expected_value: {'passed': False, 'ev': -0.0032}\ncanaries: 5/5 rejected (injected: external_gauntlet.run_gauntlet)\nsilent-defect shapes: 1190 hit(s) {'exit_zero_no_artifact': 800, 'bare_except_pass': 326, 'absence_as_pass': 64}\n",
+  "budget_s": 720,
+  "at": "2026-09-16T13:17:27.449989+00:00"
+ },
+ "publish_dashboard": {
+  "exit_code": 0,
+  "tail": "ZENTECH state: C:\\opt\\quant\\web\\desk_state.json\n",
+  "budget_s": 720,
+  "at": "2026-09-16T13:26:14.530624+00:00"
+ },
+ "opportunity_gap": {
+  "exit_code": 0,
+  "tail": "n that window is real,\n   BINDING  LATENCY             60   60 of 60 miners produced rows and no survivor in the window. Compute spent o\n\n   FIRST BINDING: EXECUTION -> record fills against decisions until markout is usable\n   quant intelligence score: 57.1/100 (reporting only; capital_input=False)\n",
+  "budget_s": 720,
+  "at": "2026-09-16T13:43:13.128134+00:00"
+ },
+ "experiment_cache": {
+  "exit_code": 0,
+  "tail": " rows             runs=0    span=0.0   INSUFFICIENT\n   params           runs=0    span=0.0   INSUFFICIENT\n   compute_seconds  runs=0    span=0.0   INSUFFICIENT\n   EMPTY -- no experiment has been recorded, so nothing can be replayed and no scaling law can be fitted. This is a gap, not a clean cache.\n",
+  "budget_s": 720,
+  "at": "2026-09-16T13:43:12.247742+00:00"
+ },
+ "ml_layer": {
+  "exit_code": 0,
+  "tail": "          rep=FITTED       var=0.7459  moe=refuse distil=ADMIT\n   A_H1                   rep=FITTED       var=0.7393  moe=refuse distil=ADMIT\n   AA_H1                  rep=FITTED       var=0.7662  moe=refuse distil=ADMIT\n   AAL_H1                 rep=FITTED       var=0.7676  moe=refuse distil=ADMIT\n",
+  "budget_s": 720,
+  "at": "2026-09-16T13:43:10.858568+00:00"
+ },
+ "market_intel": {
+  "exit_code": 0,
+  "tail": "        +0.83 sigma\n   3M_D1                    +0.82 sigma\n   AALB_H1                  -0.34 sigma\n   AA_H1                    +0.26 sigma\n   A_H1                     -0.23 sigma\n   AALG_H1                  +0.13 sigma\n   AAL_H1                   +0.09 sigma\n   3M_H1                    -0.06 sigma\n",
+  "budget_s": 720,
+  "at": "2026-09-16T13:38:38.111763+00:00"
+ },
+ "experiment_design": {
+  "exit_code": 0,
+  "tail": "22.0s each (cited: ~22s per uncached cell, external_gauntlet.py:66-67 an); EVSI head shares 20/20 cells with the rotation head\n   cheapest falsifier: gauntlet_cell:EURRUB.carry.p=537a5b63a6098fb8\n   at our capital (750): MOAT -- viable at our size and capacity-limited well below institutional size,\n",
+  "budget_s": 720,
+  "at": "2026-09-16T13:38:24.340430+00:00"
+ },
+ "research_org": {
+  "exit_code": 0,
+  "tail": "putation 0.75  (proposal 0.667, skeptic 0.833)\n   newcomer             UNRATED -- 2 resolved claim(s), below the 8 a rating needs; a single lucky ca\n   conflicted review: REFUSED -- agent_a holds ADVOCATE and VALIDATOR on the same claim -- anyone asked to gra\n   implementer on red canaries: BLOCKED\n",
+  "budget_s": 720,
+  "at": "2026-09-16T13:38:22.463737+00:00"
+ },
+ "edge_confidence": {
+  "exit_code": 0,
+  "tail": "       point +0.3000R -> size on +0.0000R  [INSUFFICIENT]\n   three_sleeves_quiet    k_eff 2.31 -> 1.15 under stress, giving up 29% of heat\n   five_sleeves_quiet     k_eff 3.57 -> 1.19 under stress, giving up 42% of heat\n   already_correlated     k_eff 1.14 -> 1.14 under stress, giving up 0% of heat\n",
+  "budget_s": 720,
+  "at": "2026-09-16T13:38:21.097612+00:00"
+ },
+ "rebalance_trigger": {
+  "exit_code": 0,
+  "tail": "0.00200 vs hurdle 0.01400\n   hold      real_but_unprofitable    dElog +0.00300 vs hurdle 0.00410\n   REBALANCE worth_doing              dElog +0.05000 vs hurdle 0.00800\n   execution RL: REFUSED -- markout_usable=False over 0 matched fill(s); the twin's error against \n   exit domains: WIRED (3 named)\n",
+  "budget_s": 720,
+  "at": "2026-09-16T13:38:19.534588+00:00"
+ },
+ "queue_compact": {
+  "exit_code": 0,
+  "tail": "17749\n   GAUNTLET_REJECTED      2374\n   PENDING                124\n   BLOCKED_CANONICAL_DOCKET_MISSING 19\n   DONE                   10\n   compact: NO_QUEUE -- C:\\opt\\quant\\desks\\mt5\\data\\research_queue.jsonl does not exist\n   STILL ON THE LEGACY JSON -- every read costs a full parse. Run --migrate.\n",
+  "budget_s": 720,
+  "at": "2026-09-16T13:38:18.107224+00:00"
+ },
+ "issue_board": {
+  "exit_code": null,
+  "timeout_s": 720,
+  "note": "issue_board exceeded its cycle budget and was stopped; its partial work is whatever it had already written",
+  "at": "2026-09-16T13:38:15.412156+00:00"
+ },
+ "execution_resolver": {
+  "exit_code": 0,
+  "tail": "630 net=-0.100R slip=0.250R overlap=0.90 [UNMEASURED]\n   CHFJPY   logG=-0.000633 net=-0.102R slip=0.250R overlap=0.90 [UNMEASURED]\n   NZDJPY   logG=-0.001213 net=-0.325R slip=-0.000R overlap=0.90 [measured]\n  BEST: USDJPY -- not necessarily the symbol the hypothesis named, which is the entire point\n",
+  "budget_s": 720,
+  "at": "2026-09-16T13:43:17.599696+00:00"
+ },
+ "counterfactual_world": {
+  "exit_code": 0,
+  "tail": "",
+  "budget_s": 720,
+  "at": "2026-09-16T13:43:18.504744+00:00"
+ },
+ "ensemble_optimizer": {
+  "exit_code": 0,
+  "tail": "",
+  "budget_s": 720,
+  "at": "2026-09-16T13:43:25.633219+00:00"
+ },
+ "frontier_unknowns": {
+  "exit_code": 1,
+  "tail": "Traceback (most recent call last):\n  File \"C:\\opt\\quant\\desks\\mt5\\frontier_intel\\unknowns.py\", line 42, in <module>\n    from . import ontology, registry\nImportError: attempted relative import with no known parent package\n",
+  "budget_s": 720,
+  "at": "2026-09-16T13:43:26.507415+00:00"
+ },
+ "frontier_ontology": {
+  "exit_code": 0,
+  "tail": "",
+  "budget_s": 720,
+  "at": "2026-09-16T13:43:27.238011+00:00"
+ },
+ "exit_study": {
+  "exit_code": 0,
+  "tail": "XAUUSD_afternoon             trail+0.5R  1576  -0.110  0.54  -179.8\nAUDCAD_asia_TREND_DAY        ttl          153  +0.135  1.43    -5.1\nAUDCAD_asia_TREND_DAY        trail+1R     153  +0.076  1.26    -5.2\nAUDCAD_asia_TREND_DAY        trail+0.5R   153  -0.023  0.90    -9.9\n\n-> reports/exit_study.json\n",
+  "budget_s": 720,
+  "at": "2026-09-16T13:44:06.901532+00:00"
+ },
+ "graveyard_model": {
+  "exit_code": 0,
+  "tail": "",
+  "budget_s": 720,
+  "at": "2026-09-16T13:44:07.795656+00:00"
+ },
+ "world_crawler": {
+  "exit_code": 0,
+  "tail": "veries_20260916_1349.json (78 row(s))\n[13:49:16] crawled 150/150 in 308.0s | 78 lead(s) | +560 new source(s) | frontier 22956 across 996 host(s) | langs {'en': 63, 'en-US': 29, '??': 13, 'th': 2, 'zh-hk': 1, 'fr': 1}\n[13:49:16] failures: {'URLError': 27, 'HTTP 404': 8, 'HTTP 400': 2, 'HTTP 403': 2}\n",
+  "budget_s": 720,
+  "at": "2026-09-16T13:49:17.731210+00:00"
+ },
+ "release_identity": {
+  "exit_code": 1,
+  "tail": "olio/allocator_proof.py\",\n  \"libs/portfolio/capital_modifiers.py\"\n ],\n \"report\": [],\n \"at\": \"2026-09-16T13:49:22+00:00\",\n \"tested_sha\": \"UNMEASURED\",\n \"tested_gates\": \"UNMEASURED\",\n \"allocator_certificate\": \"UNMEASURED\",\n \"ci_run_id\": \"UNMEASURED\",\n \"allows_new_risk\": false,\n \"verdict\": \"REFUSED\"\n}\n",
+  "budget_s": 720,
+  "at": "2026-09-16T13:49:27.905381+00:00"
+ },
+ "burn_in": {
+  "exit_code": 0,
+  "tail": "burn-in: PAUSED | streak 0 pass(es), 0.00 of 30 days, 0 fill(s) | head b794c18abb61 sealed 1eba97937191 | deals 24h 113 attributed None\n",
+  "budget_s": 720,
+  "at": "2026-09-16T13:49:31.802118+00:00"
+ },
+ "layer_census": {
+  "exit_code": 0,
+  "tail": "layer census: 8.7335h over 119 legs; starved ['portfolio']; unassigned ['allocator_join']\n",
+  "budget_s": 720,
+  "at": "2026-09-16T13:49:34.409369+00:00"
+ },
+ "opportunity_cost": {
+  "exit_code": 1,
+  "tail": "Python314\\Lib\\pathlib\\__init__.py\", line 771, in open\n    return io.open(self, mode, buffering, encoding, errors, newline)\n           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nPermissionError: [Errno 13] Permission denied: 'C:\\\\opt\\\\quant\\\\desks\\\\mt5\\\\reports\\\\opportunity_cost.json'\n",
+  "budget_s": 720,
+  "at": "2026-09-16T13:49:38.594459+00:00"
+ },
+ "acceptance": {
+  "exit_code": 1,
+  "tail": "n314\\Lib\\pathlib\\__init__.py\", line 771, in open\n    return io.open(self, mode, buffering, encoding, errors, newline)\n           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nPermissionError: [Errno 13] Permission denied: 'C:\\\\opt\\\\quant\\\\desks\\\\mt5\\\\reports\\\\acceptance_properties.json'\n",
+  "budget_s": 720,
+  "at": "2026-09-16T13:49:42.002377+00:00"
+ },
+ "opportunity_forecast": {
+  "exit_code": 0,
+  "tail": "opportunity forecast: MEASURED over 2340 cells; top [CHFDKK.overnight_gap_decay=0.598415, CHFNOK.carry=0.598415, EURNOK.overnight_gap_decay=0.598415]; 95 unexplored, 0 stale burials\n",
+  "budget_s": 720,
+  "at": "2026-09-16T13:49:44.504184+00:00"
+ },
+ "edge_reliability": {
+  "exit_code": 0,
+  "tail": "e reliability: MEASURED; 10/651 sleeves measured; top [{'sleeve': 'xau_m15_anti_breakout', 'p_works_now': 0.9889}, {'sleeve': 'CHFNOK.carry.asia#input_symbol=CHFNOK', 'p_works_now': 0.9799}, {'sleeve': 'EURGBP.discovered.asia#band=[0.1, 0.25]_feature=ru_24_horizon=3_side=1', 'p_works_now': 0.7938}]\n",
+  "budget_s": 720,
+  "at": "2026-09-16T13:49:45.234619+00:00"
+ },
+ "arena": {
+  "exit_code": 1,
+  "tail": "history(HISTORY))\n  File \"C:\\opt\\quant\\libs\\research\\arena.py\", line 161, in build\n    verdicts = judge(arms)\n  File \"C:\\opt\\quant\\libs\\research\\arena.py\", line 81, in judge\n    born = int((a or {}).get(\"born\") or 0)\n               ^^^^^^^^^^^^^\nAttributeError: 'float' object has no attribute 'get'\n",
+  "budget_s": 720,
+  "at": "2026-09-16T13:49:45.950169+00:00"
+ },
+ "session_capital": {
+  "exit_code": 0,
+  "tail": "session capital: held 0.2000 of target 0.2000; underspent none; dark ['00-04', '08-12', '12-16', '20-24']\n",
+  "budget_s": 720,
+  "at": "2026-09-16T13:51:30.012265+00:00"
+ },
+ "prosecutor": {
+  "exit_code": 0,
+  "tail": "ULED 46, DARK 6; stacks {'other': 37, 'ten_gates': 8, 'none': 6, 'autodiscovery': 16}\n  DARK (no production caller): libs.validation.brain_calibration, libs.validation.calibration, libs.validation.lookahead_audit, libs.validation.near_miss, libs.validation.reject_rescore, libs.validation.shift_leak\n",
+  "budget_s": 720,
+  "at": "2026-09-16T13:50:14.015869+00:00"
+ },
+ "scaling_laws": {
+  "exit_code": 1,
+  "tail": "hon\\Python314\\Lib\\pathlib\\__init__.py\", line 771, in open\n    return io.open(self, mode, buffering, encoding, errors, newline)\n           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nPermissionError: [Errno 13] Permission denied: 'C:\\\\opt\\\\quant\\\\desks\\\\mt5\\\\reports\\\\scaling_laws.json'\n",
+  "budget_s": 720,
+  "at": "2026-09-16T13:50:16.732963+00:00"
+ },
+ "dead_architecture": {
+  "exit_code": 0,
+  "tail": "  BURNING (on a clock, no reader found): desks/mt5/research/exit_study.py, desks/mt5/research/fetch_sge_premium.py, desks/mt5/research/run_edges_macro_fusion_sweep.py\n  CONTESTED artifacts: 18; first ('QQUANT_GATES.json', ['desks/mt5/research/merge_qquant.py', 'desks/mt5/research/qquant_gates.py'])\n",
+  "budget_s": 720,
+  "at": "2026-09-16T13:51:16.948837+00:00"
+ },
+ "input_identity": {
+  "exit_code": 0,
+  "tail": "input identity: 802 file(s), rollup 4961ed6c3612320a (head_tail); changed 724, added 0, removed 1\n",
+  "budget_s": 720,
+  "at": "2026-09-16T13:51:24.494243+00:00"
+ },
+ "publish_state": {
+  "exit_code": 0,
+  "tail": [
+   "2026-09-16T15:53:36.6379684+02:00 SKIP: another git writer holds Local\\MT5-GitWriter after 2 min; this pass yields"
+  ],
+  "at": "2026-09-16T13:53:36+00:00"
+ },
+ "enrol_clocks": {
+  "exit_code": 0,
+  "tail": "TIVE]\nXTIUSD [H1]: 1249 bars from MT5:FusionMarkets-Live -- MT5:FusionMarkets-Live covers the window (1249 bars to 2026-09-16T12:00:00+00:00)\nXTIUSD.vol_mean_reversion.continuous: shadow n=0 cumR=+0.00 exp=+0.000R maxDD=0.0R days=0 [ACTIVE]\nshadow state saved (171 sleeves, 171 certificate-enrolled)\n",
+  "budget_s": 720,
+  "at": "2026-09-16T12:26:14.520442+00:00"
+ },
+ "requeue_unrunnable": {
+  "exit_code": 0,
+  "tail": "6 unexecutable certificate(s); requeued 1\n  reason: `shadow_spec.params` is absent -- the parameterisation that passed the gauntlet was never recorded, and enroll\n",
+  "budget_s": 720,
+  "at": "2026-09-16T11:01:35.435687+00:00"
+ },
+ "reclaim_disk": {
+  "exit_code": 0,
+  "tail": " 1,184 exact duplicates\n   amarkets                    9,297 rows,      345 exact duplicates\n   forexfactory                1,031 rows,      310 exact duplicates\n   youtube                       528 rows,      249 exact duplicates\n   aaii                           51 rows,       48 exact duplicates\n",
+  "budget_s": 720,
+  "at": "2026-09-16T11:04:12.654656+00:00"
+ },
+ "miner_conversion": {
+  "exit_code": 0,
+  "tail": "ries from the tick tape\n   REACHABLE    event_reaction         needs: dated events carrying the moment the market could know (libs/research/form4 clusters, calendars)\n   REACHABLE    cot_positioning        needs: COT net positioning\n   REACHABLE    macro_conditional      needs: a macro state series\n",
+  "budget_s": 720,
+  "at": "2026-09-16T13:25:42.327863+00:00"
+ },
+ "moat_miner": {
+  "exit_code": 0,
+  "tail": "\n0 candidate(s) from 245 symbol(s) with tape (0 skipped)\nwritten: C:\\opt\\quant\\desks\\mt5\\data\\hypotheses\\moat_candidates.json\n",
+  "budget_s": 720,
+  "at": "2026-09-16T11:07:18.438046+00:00"
+ },
+ "archive_tape": {
+  "exit_code": 0,
+  "tail": "tick tape        2.685 GB\noutside 45d      0 partitions, 0.0 GB\nstaying resident 2761 partitions\nfree here        15.438 GB\nnothing outside the retention window -- nothing to move\n",
+  "budget_s": 720,
+  "at": "2026-09-16T13:22:58.351467+00:00"
+ },
+ "external_gauntlet": {
+  "exit_code": 4294967295,
+  "tail": "mean_reversion_bollinger        1/1      yield/1k    10.20  share 0.025\n    pullback_entry                  1/1      yield/1k    10.20  share 0.025\n    retail_overlap_reversal         1/1      yield/1k    10.20  share 0.025\n    ict_fvg                         2/2      yield/1k    10.10  share 0.025\n",
+  "budget_s": 720,
+  "at": "2026-09-16T12:10:23.811606+00:00"
+ },
+ "falsifier_run": {
+  "exit_code": null,
+  "timeout_s": 720,
+  "note": "falsifier_run exceeded its cycle budget and was stopped; its partial work is whatever it had already written",
+  "at": "2026-09-16T12:22:26.522813+00:00"
+ },
+ "merge_docket": {
+  "exit_code": 0,
+  "tail": ": 220, 'pca_residual': 228, 'session_handoff': 17, 'fx_fixing_reversal': 15, 'generic': 9, 'turn_of_month': 145, 'correlation_regime': 250, 'vol_transition': 102, 'relative_value': 340, 'drawdown_conditional': 10, 'liquidity_gamma_reversal': 17, 'vol_mean_reversion': 126, 'dav_range_filter_adx': 4}\n",
+  "budget_s": 720,
+  "at": "2026-09-16T11:43:43.796120+00:00"
+ },
+ "backtest": {
+  "exit_code": null,
+  "timeout_s": 720,
+  "note": "run_external_backtest exceeded its cycle budget and was stopped; its partial work is whatever it had already written",
+  "at": "2026-09-16T12:07:13.245627+00:00"
+ },
+ "wiring_audit": {
+  "exit_code": 0,
+  "tail": "RE    libs.alpha_factory.research_attribution         300L  no_importer\n  WIRE    libs.research.alpha_schema                      295L  no_importer\n  WIRE    libs.research.cross_frequency                   295L  no_importer\n  WIRE    libs.research.index_reconstitution              271L  no_importer\n",
+  "budget_s": 720,
+  "at": "2026-09-16T10:38:20.406639+00:00"
+ },
+ "brain_ab": {
+  "exit_code": 0,
+  "tail": "             UNDERPOWERED\n    forward_enrolled         control=0/0  mutation=0/0                UNDERPOWERED\n    cost_survived            control=0/0  mutation=0/0                UNDERPOWERED\n    attributable_measured    control=0/0  mutation=0/0                UNDERPOWERED\n\n  -> data\\brain_ab.json\n",
+  "budget_s": 720,
+  "at": "2026-09-16T10:38:22.853591+00:00"
+ },
+ "alpha_breadth": {
+  "exit_code": 0,
+  "tail": "against a full-sample 9.79. The regime is defined on the WHOLE panel, so a high-volatility window can belong to one instrument rather than to the book; this reading did not bind and is not evidence that the book diversifies under stress\nwritten: C:\\opt\\quant\\desks\\mt5\\reports\\EFFECTIVE_BREADTH.json\n",
+  "budget_s": 720,
+  "at": "2026-09-16T10:39:14.131087+00:00"
+ },
+ "alpha_evolution": {
+  "exit_code": 0,
+  "tail": "esks\\mt5\\reports\\alpha_evolution.json\nYIELD {\"cells_proposed\": 1, \"candidates\": 1, \"tests_run\": 40, \"pop:bayesian\": 2, \"pop:causal_derived\": 0, \"pop:claims_derived\": 0, \"pop:gflownet\": 11, \"pop:gp\": 10, \"pop:graveyard_derived\": 0, \"pop:program_synthesis\": 2, \"pop:symreg\": 11, \"pop:zoo_mutation\": 2}\n",
+  "budget_s": 720,
+  "at": "2026-09-16T10:46:37.625500+00:00"
+ },
+ "closed_loop": {
+  "exit_code": 0,
+  "tail": "rward.identity_reconciliation\n   open: forward.clock_reconciliation\n   open: research.frontier_scheduler_authoritative\n   open: research.evig_controller_authoritative\n   open: research.delayed_truth_credit_live\n   open: meta.controller_completed_epoch\n   open: meta.capital_reallocated_from_outcomes\n",
+  "budget_s": 720,
+  "at": "2026-09-16T10:46:39.219248+00:00"
+ },
+ "alpha_periodic_table": {
+  "exit_code": 0,
+  "tail": "d calendar, quarterly/monthly\n  mechanical_rebalance \u00d7 positioning: front-running rebalance flows\n  mechanical_rebalance \u00d7 macro: index methodology changes\n  mechanical_rebalance \u00d7 microstructure: quote behavior pre-post rebalance\n\nResearch Priorities:\n\nMatrix shape: (63, 9)\nEmpty: 0\nDiscovered: 63\n",
+  "budget_s": 720,
+  "at": "2026-09-16T10:53:09.055920+00:00"
+ },
+ "queue_cycle": {
+  "exit_code": 0,
+  "tail": "queue: 78 tasks {'READY': 78, 'LEASED': 0, 'DONE': 0, 'DEAD': 0} expired_leases=0\n  wiring_campaign: queued 0, skipped 65\n  coverage_governor: queued 0, skipped 8\n  cost_evidence: queued 0, skipped 0\nwrote C:\\opt\\quant\\desks\\mt5\\reports\\QUEUE.json\n",
+  "budget_s": 720,
+  "at": "2026-09-16T11:01:27.237339+00:00"
+ },
+ "microstructure_census": {
+  "exit_code": 0,
+  "tail": " (desks/mt5/data/{intents,deals}.jsonl)\n    fill_markout_curve               input absent: own_fills (desks/mt5/data/{intents,deals}.jsonl)\n    fill_probability                 input absent: own_fills (desks/mt5/data/{intents,deals}.jsonl)\nwritten: C:\\opt\\quant\\desks\\mt5\\reports\\MICROSTRUCTURE.json\n",
+  "budget_s": 720,
+  "at": "2026-09-16T10:53:17.238532+00:00"
+ },
+ "entry_timing": {
+  "exit_code": 0,
+  "tail": "st/cheapest hour INSIDE the entry window: median 1.067x, worst 53.333x\n    CHARGED ZERO SPREAD: AUDJPY, AUDSGD, AUDUSD, Broadcom, EURAUD, EURCAD, EURGBP, EURUSD, GBPCAD, GBPUSD, HKDJPY, NZDCAD, NZDUSD, USDCAD, USDCHF, USDHKD, USDJPY, Walmart\nwritten: C:\\opt\\quant\\desks\\mt5\\reports\\ENTRY_TIMING.json\n",
+  "budget_s": 720,
+  "at": "2026-09-16T10:58:48.208234+00:00"
+ },
+ "spread_provenance": {
+  "exit_code": 0,
+  "tail": " 19 symbol(s) carry a registry spread of ZERO and are therefore priced at no cost at all.\n  REPORT ONLY -- nothing written to the registry.\n    --apply-widening-only   take the conservative half (charges MORE, never less)\n    --apply                 take both halves; the narrowing half needs review\n",
+  "budget_s": 720,
+  "at": "2026-09-16T10:53:52.926497+00:00"
+ },
+ "tape_features": {
+  "exit_code": 1,
+  "tail": "tape_features: no tape at C:\\mt5tape -- nothing to build. This is UNMEASURED, not a clean build: start recorders/tick_recorder.py first.\n",
+  "budget_s": 720,
+  "at": "2026-09-16T10:53:56.827434+00:00"
+ },
+ "futures_lead_lag": {
+  "exit_code": 0,
+  "tail": "1:+0.0133    2:-0.0305    3:+0.0133\n      LEAD: best -0.03931 at -2 bars -- no measurable lead at H1; the two price the metal in the same hour\n  CL=F   -> USOUSD   UNMEASURED  USOUSD has no H1 parquet in this tree\nwritten: desks/mt5/reports/FUTURES_LEAD_LAG.json and desks/mt5/reports/BAR_CLOCK.json\n",
+  "budget_s": 720,
+  "at": "2026-09-16T10:54:07.024167+00:00"
+ },
+ "time_joins": {
+  "exit_code": 0,
+  "tail": "t5\\research\\scalp_reverse_engineering.py:176  simulate() via .searchsorted()\n  (undeclared is a site to read, not a bug: see `rule`)\n  COT: ANSWERED 2026-09-10 and it was real: the zcache is indexed on the TUESDAY report date with no releas...\nwritten: C:\\opt\\quant\\desks\\mt5\\reports\\TIME_JOINS.json\n",
+  "budget_s": 720,
+  "at": "2026-09-16T10:54:34.831154+00:00"
+ },
+ "allocator_join": {
+  "exit_code": 0,
+  "tail": "allocator join: OK -- dynamic: 9/40 live rows joined; fallback: 8/40 live rows joined\n   dynamic   entries= 20 joined=  9 (by raw name alone: 2)\n   fallback  entries= 13 joined=  8 (by raw name alone: 1)\n",
+  "budget_s": 720,
+  "at": "2026-09-16T10:54:35.645842+00:00"
+ },
+ "fred_macro": {
+  "exit_code": 0,
+  "tail": "fred-macro: 7/7 series, 15153 obs -> data\\fred_macro.json; 0 new-or-revised values -> C:\\opt\\quant\\data\\vintages\n",
+  "budget_s": 720,
+  "at": "2026-09-16T10:54:41.058932+00:00",
+  "age_h_before": 8.06,
+  "macro_view": "rebuilt"
+ },
+ "fusion_cost": {
+  "exit_code": 0,
+  "tail": "bars    13.0  [no provenance]\n  UNDER  USDHKD       charged     0.0 vs bars     5.0  [no provenance]\n  UNDER  USDJPY       charged     0.0 vs bars    13.0  [no provenance]\n  UNDER  Walmart      charged     0.0 vs bars     5.0  [no provenance]\nwritten: C:\\opt\\quant\\desks\\mt5\\reports\\FUSION_COST.json\n",
+  "budget_s": 720,
+  "at": "2026-09-16T10:54:46.846893+00:00"
+ },
+ "cost_construction": {
+  "exit_code": 0,
+  "tail": "ONSTRUCTION  110 sites: 64 via from_symbol, 2 derived, 2 unreadable, 40 fixtures, 0 stress a contractual commission, 2 hand-rolled and missing a conversion\n  ON A CLOCK: 0  (missing quote_per_account 0, round-turn-in-per-side 0, both 2)\nwritten: C:\\opt\\quant\\desks\\mt5\\reports\\COST_CONSTRUCTION.json\n",
+  "budget_s": 720,
+  "at": "2026-09-16T10:55:45.706664+00:00"
+ },
+ "edges_macro_fusion_sweep": {
+  "exit_code": 0,
+  "tail": "XAGUSD   session_range_breakout   ZERO  plain  n= 2024 t=  3.68 exp=+0.0936R\n  XAGUSD   session_range_breakout   RAW   plain  n= 2024 t=  3.50 exp=+0.0890R\n  GBPUSD   level_breakout           WIDE  plain  n= 1755 t=  3.47 exp=+0.0500R\n\n-> C:\\opt\\quant\\desks\\mt5\\reports\\edges_macro_fusion_sweep.json\n",
+  "budget_s": 720,
+  "at": "2026-09-16T10:58:47.215217+00:00"
+ },
+ "recertify_canon": {
+  "status": "STOOD_DOWN",
+  "why": "no READY 'recertify' task -- nothing to do, which is the point",
+  "note": "not a failure: the queue is the schedule now, and an empty queue means no window is UNCOVERED. Running anyway would spend the hour proving it"
+ },
+ "hunt12": {
+  "status": "SKIPPED",
+  "why": "complete and 120h old",
+  "at": "2026-09-16T12:26:15.395768+00:00"
+ },
+ "pf_allocator": {
+  "exit_code": 0,
+  "tail": "elly: f_eff=0.0 (deployed 0.0 of full-Kelly 3.928471) -- MEASURED\n[12:32:29] forecast log NOT written ([Errno 13] Permission denied: 'C:\\\\opt\\\\quant\\\\desks\\\\mt5\\\\data\\\\pf_forecast_log.jsonl') -- this pass cannot be scored later\n[12:32:29] -> desks\\mt5\\reports\\pf_allocation.json  [REBALANCE]  343.9s\n",
+  "budget_s": 720,
+  "at": "2026-09-16T12:32:33.792208+00:00"
+ },
+ "promoter": {
+  "exit_code": 0,
+  "tail": "1914e1a2', 'eurusd_discovered_asia_p_f8bd412f38e33d20', 'nzdcad_discovered_asia_p_0ffb1e19a04f260e', 'usdcad_discovered_asia_p_193aadf2caba3698', 'usdcad_discovered_asia_p_56aadf0a3018c790', 'usdchf_discovered_asia_p_19dd11ec392fa005', 'audnzd_dav_range_filter_adx_afternoon_audnzd_dav_range_filte']\n",
+  "budget_s": 720,
+  "at": "2026-09-16T12:32:40.343497+00:00"
+ },
+ "frontier_implementer": {
+  "exit_code": 0,
+  "tail": "implementer: no candidate in a buildable state\n",
+  "budget_s": 720,
+  "at": "2026-09-16T13:26:09.139135+00:00"
+ },
+ "smoke_release": {
+  "rc": 1,
+  "tail": "ach(es): desks/mt5/scripts/external_gauntlet.py: changed since signing (fd098d9435d15591 -> bf075c870c09702a); desks/mt5/research/promoter.py: changed since signing (8e1f39e3f4a6905f -> f79d2f8c821d2646); libs/portfolio/allocator_proof.py: changed since signing (2cb94a90674765ed -> bdeee2653c0a858f); libs/portfolio/capital_modifiers.py: changed since signing (7a0bf62e50804809 -> 2eea08620615509c)\n"
  }
 }

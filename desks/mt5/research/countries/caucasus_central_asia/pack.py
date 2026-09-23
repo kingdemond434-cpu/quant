@@ -99,8 +99,18 @@ COMPLEMENT, and `INTERACTIONS` names all four by code with the observable that j
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
-from datetime import date, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
+
+# ruff: noqa: RUF001
+# RUF001/RUF002 flag Armenian and Cyrillic characters that look like Latin ones. They exist
+# to catch homoglyph attacks in IDENTIFIERS; this file deliberately carries Armenian, Uzbek
+# (in BOTH scripts), Kyrgyz, Tajik, Turkmen, Russian and Chinese terminology as DATA, because
+# a text screen that cannot match դրամական փոխանցումներ or қайта экспорт cannot find the
+# release it is looking for. Suppressed file-wide and explained here rather than scattered
+# as per-line noqa, and no
+# identifier in this module is non-ASCII. This is the same decision `countries/ru/pack.py`
+# took for the same reason.
 
 # --------------------------------------------------------------------------- identity
 CODE = "CAUCASUS_CENTRAL_ASIA"
@@ -3015,7 +3025,7 @@ CUSTOM_MINERS: tuple[dict[str, Any], ...] = (
      "entry": "countries.caucasus_central_asia.miners:transmission_seeds",
      "needs": ("TRANSMISSION_EDGES_SEED",),
      "notes": "the pack's map as HYPOTHESIS discoveries, deduplicated by the registry"},
-    {"name": "cca_cells", "domain_ids": tuple(),
+    {"name": "cca_cells", "domain_ids": (),
      "kind": "scouts", "cadence_s": 3600.0, "steerable": True, "wired": False,
      "entry": "countries.caucasus_central_asia.miners:emit_cells",
      "needs": ("CELLS",),
@@ -3803,7 +3813,7 @@ def mine(ctx: Any = None) -> dict[str, Any]:
     knows it CANNOT measure on this box is returned by name in `unmeasured`, because an absence
     that is not named reads as a zero (L1.28a).
     """
-    at = date.today().isoformat()
+    at = datetime.now(UTC).date().isoformat()
     rows: list[dict[str, Any]] = []
     for e in TRANSMISSION_EDGES_SEED:
         rows.append({"kind": "transmission_seed", "id": str(e["id"]),

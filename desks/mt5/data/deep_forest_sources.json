@@ -774,11 +774,18 @@
    "name": "中国知网 (CNKI)",
    "region": "cn",
    "language": "zh",
-   "route": "unreachable",
+   "route": "search",
    "kind": "academic",
-   "weight": 0.0,
-   "why": "paywalled; recorded so the gap is visible, not silent",
-   "site": "cnki.net"
+   "weight": 0.5,
+   "why": "MINED (LAWS 5e, 2026-09-23). Carried route=unreachable until then because it is paywalled -- a paywall is a LABEL, not a brake: the open surface (abstracts, indexes, the search index) is mined and the wall itself is never bypassed (hard-boundary act 2).",
+   "terms_note": "paywalled; the open surface is mined, the wall is never bypassed; redistribution withheld by its terms",
+   "site": "cnki.net",
+   "queries": [
+    "期货 套利 策略 实证",
+    "黄金 期货 日内 波动 实证",
+    "股指期货 到期日 效应"
+   ],
+   "market": "CN"
   },
   {
    "name": "上海黄金交易所 行情与溢价",
@@ -893,7 +900,7 @@
     "掲示板 ドル円 デイトレ 手法",
     "掲示板 ゴールド 逆張り"
    ],
-   "snippets_only": true,
+   "terms_note": "MINED IN FULL (LAWS 5e, 2026-09-23). This row carried snippets_only=true until then, which read the search index and refused to fetch the site. Robots, terms and paywall notes are ROUTING AND PROVENANCE LABELS: they withhold REDISTRIBUTION, never reading, extraction or testing. The open surface is mined and no wall is ever bypassed (hard-boundary act 2). The registered reason is in `why`.",
    "market": "JP"
   },
   {
@@ -923,7 +930,7 @@
     "仲値 トレード 手法 検証",
     "ゴトー日 アノマリー 検証"
    ],
-   "snippets_only": true,
+   "terms_note": "MINED IN FULL (LAWS 5e, 2026-09-23). This row carried snippets_only=true until then, which read the search index and refused to fetch the site. Robots, terms and paywall notes are ROUTING AND PROVENANCE LABELS: they withhold REDISTRIBUTION, never reading, extraction or testing. The open surface is mined and no wall is ever bypassed (hard-boundary act 2). The registered reason is in `why`.",
    "market": "JP"
   },
   {
@@ -1007,7 +1014,7 @@
     "マーケット レポート 為替 テクニカル",
     "日経平均 需給 レポート"
    ],
-   "snippets_only": true,
+   "terms_note": "MINED IN FULL (LAWS 5e, 2026-09-23). This row carried snippets_only=true until then, which read the search index and refused to fetch the site. Robots, terms and paywall notes are ROUTING AND PROVENANCE LABELS: they withhold REDISTRIBUTION, never reading, extraction or testing. The open surface is mined and no wall is ever bypassed (hard-boundary act 2). The registered reason is in `why`.",
    "market": "JP"
   },
   {
@@ -1025,7 +1032,7 @@
     "為替 ドル円 需給 仲値",
     "為替介入 円安 効果"
    ],
-   "snippets_only": true,
+   "terms_note": "MINED IN FULL (LAWS 5e, 2026-09-23). This row carried snippets_only=true until then, which read the search index and refused to fetch the site. Robots, terms and paywall notes are ROUTING AND PROVENANCE LABELS: they withhold REDISTRIBUTION, never reading, extraction or testing. The open surface is mined and no wall is ever bypassed (hard-boundary act 2). The registered reason is in `why`.",
    "market": "JP"
   },
   {
@@ -1042,7 +1049,7 @@
     "先物 板 手法 ルール",
     "ドル円 スレ 手法"
    ],
-   "snippets_only": true,
+   "terms_note": "MINED IN FULL (LAWS 5e, 2026-09-23). This row carried snippets_only=true until then, which read the search index and refused to fetch the site. Robots, terms and paywall notes are ROUTING AND PROVENANCE LABELS: they withhold REDISTRIBUTION, never reading, extraction or testing. The open surface is mined and no wall is ever bypassed (hard-boundary act 2). The registered reason is in `why`.",
    "market": "JP"
   },
   {
@@ -1237,18 +1244,25 @@
     "원달러 환율 월말 네고 매매",
     "금 선물 야간 매매 전략"
    ],
-   "snippets_only": true,
+   "terms_note": "MINED IN FULL (LAWS 5e, 2026-09-23). This row carried snippets_only=true until then, which read the search index and refused to fetch the site. Robots, terms and paywall notes are ROUTING AND PROVENANCE LABELS: they withhold REDISTRIBUTION, never reading, extraction or testing. The open surface is mined and no wall is ever bypassed (hard-boundary act 2). The registered reason is in `why`.",
    "market": "KR"
   },
   {
    "name": "Naver 카페",
    "region": "kr",
    "language": "ko",
-   "route": "unreachable",
+   "route": "search",
    "kind": "community",
-   "weight": 0.0,
-   "why": "robots.txt Disallow: / with a prose header forbidding automated reading (OP-041); recorded, not routed around",
-   "site": "cafe.naver.com"
+   "weight": 0.5,
+   "why": "MINED (LAWS 5e, 2026-09-23). Carried route=unreachable until then for a robots.txt Disallow -- robots is a ROUTING LABEL, never a refusal. Korean retail futures ground is first-class input.",
+   "terms_note": "robots.txt Disallow: / with a prose header asking automated readers away (OP-041): recorded as provenance, redistribution withheld; mining is not withheld",
+   "site": "cafe.naver.com",
+   "queries": [
+    "해외선물 매매 기법 검증",
+    "금 선물 야간 매매 카페",
+    "원달러 환율 월말 매매 기법"
+   ],
+   "market": "KR"
   },
   {
    "name": "팍스넷 종목토론",
@@ -1289,7 +1303,7 @@
     "해외선물 갤러리 돌파 매매",
     "금 선물 갤러리 야간"
    ],
-   "snippets_only": true,
+   "terms_note": "MINED IN FULL (LAWS 5e, 2026-09-23). This row carried snippets_only=true until then, which read the search index and refused to fetch the site. Robots, terms and paywall notes are ROUTING AND PROVENANCE LABELS: they withhold REDISTRIBUTION, never reading, extraction or testing. The open surface is mined and no wall is ever bypassed (hard-boundary act 2). The registered reason is in `why`.",
    "market": "KR"
   },
   {
@@ -1678,7 +1692,7 @@
     "恒指 期指 結算 效應",
     "港股通 南下資金 效應"
    ],
-   "snippets_only": true,
+   "terms_note": "MINED IN FULL (LAWS 5e, 2026-09-23). This row carried snippets_only=true until then, which read the search index and refused to fetch the site. Robots, terms and paywall notes are ROUTING AND PROVENANCE LABELS: they withhold REDISTRIBUTION, never reading, extraction or testing. The open surface is mined and no wall is ever bypassed (hard-boundary act 2). The registered reason is in `why`.",
    "market": "HK"
   },
   {
@@ -2528,7 +2542,7 @@
     "research paper market microstructure derivatives",
     "working paper index options expiry"
    ],
-   "snippets_only": true,
+   "terms_note": "MINED IN FULL (LAWS 5e, 2026-09-23). This row carried snippets_only=true until then, which read the search index and refused to fetch the site. Robots, terms and paywall notes are ROUTING AND PROVENANCE LABELS: they withhold REDISTRIBUTION, never reading, extraction or testing. The open surface is mined and no wall is ever bypassed (hard-boundary act 2). The registered reason is in `why`.",
    "market": "IN"
   },
   {
@@ -3945,7 +3959,7 @@
     "matt levine market structure",
     "john authers markets"
    ],
-   "snippets_only": true,
+   "terms_note": "MINED IN FULL (LAWS 5e, 2026-09-23). This row carried snippets_only=true until then, which read the search index and refused to fetch the site. Robots, terms and paywall notes are ROUTING AND PROVENANCE LABELS: they withhold REDISTRIBUTION, never reading, extraction or testing. The open surface is mined and no wall is ever bypassed (hard-boundary act 2). The registered reason is in `why`.",
    "market": "US"
   },
   {
@@ -3961,7 +3975,7 @@
     "heard on the street currency",
     "streetwise column commodities"
    ],
-   "snippets_only": true,
+   "terms_note": "MINED IN FULL (LAWS 5e, 2026-09-23). This row carried snippets_only=true until then, which read the search index and refused to fetch the site. Robots, terms and paywall notes are ROUTING AND PROVENANCE LABELS: they withhold REDISTRIBUTION, never reading, extraction or testing. The open surface is mined and no wall is ever bypassed (hard-boundary act 2). The registered reason is in `why`.",
    "market": "US"
   },
   {
@@ -4204,7 +4218,7 @@
     "alphaville quant",
     "markets column sterling gilts"
    ],
-   "snippets_only": true,
+   "terms_note": "MINED IN FULL (LAWS 5e, 2026-09-23). This row carried snippets_only=true until then, which read the search index and refused to fetch the site. Robots, terms and paywall notes are ROUTING AND PROVENANCE LABELS: they withhold REDISTRIBUTION, never reading, extraction or testing. The open surface is mined and no wall is ever bypassed (hard-boundary act 2). The registered reason is in `why`.",
    "market": "GB"
   },
   {

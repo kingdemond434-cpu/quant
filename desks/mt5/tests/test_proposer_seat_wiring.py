@@ -39,6 +39,40 @@ CALL_SITES: dict[str, str] = {
     "research/physics_lab.py": "names_for",
     "research/factor_model_coevolution.py": "order_hint",
     "research/model_search.py": "order_hint",
+    # THE WIDENED SCOPE (principal 2026-09-23): every research process, not only the factories.
+    # Each of these reaches the seat through the SAME shared entry point, `ask`.
+    "research/deep_forest_miner.py": "_ps.ask(",
+    "research/forest_runner.py": "_ps.ask(",
+    "research/sandbox_runner.py": "_ps.ask(",
+    "research/understanding_seat.py": "_ps.ask(",
+    "research/residual_hunt.py": "ps.ask(",
+    "research/data_acquisition_scientist.py": "ps.ask(",
+    "research/meta_controller.py": "_ps.ask(",
+    "research/standing_questions.py": "ps.ask(",
+    "research/archaeology/sares.py": "ps.ask(",
+    "side_channels/world_crawler.py": "_ps.ask(",
+    "side_channels/seed_miners.py": "_ps.ask(",
+}
+
+#: Every organ the registry claims, and the file that must contain its call.
+ORGAN_FILE: dict[str, str] = {
+    "expression_factory": "research/expression_factory.py",
+    "math_lab": "research/math_lab.py",
+    "physics_lab": "research/physics_lab.py",
+    "factor_model_coevolution": "research/factor_model_coevolution.py",
+    "model_search": "research/model_search.py",
+    "mechanism_naming_queue": "",          # the leg itself owns this one
+    "forest_runner": "research/forest_runner.py",
+    "seed_miners": "side_channels/seed_miners.py",
+    "world_crawler": "side_channels/world_crawler.py",
+    "deep_forest_miner": "research/deep_forest_miner.py",
+    "sandbox_runner": "research/sandbox_runner.py",
+    "archaeology": "research/archaeology/sares.py",
+    "understanding_seat": "research/understanding_seat.py",
+    "residual_hunt": "research/residual_hunt.py",
+    "data_acquisition_scientist": "research/data_acquisition_scientist.py",
+    "meta_controller": "research/meta_controller.py",
+    "standing_questions": "research/standing_questions.py",
 }
 
 
@@ -176,3 +210,49 @@ def test_no_factory_lets_the_seat_add_an_option() -> None:
         src = _src(rel)
         assert "order_hint(" in src
         assert "+ seat" not in src and "seat_extra" not in src
+
+
+# ------------------------------------------------- the widened scope: every research process
+def test_every_registered_organ_has_a_declared_file_and_calls_the_seat() -> None:
+    """An organ in ORGANS with no call site is a registry entry that lies about being wired."""
+    assert set(ORGAN_FILE) == set(ps.ORGANS), (
+        "ORGANS and this test's file map have drifted: "
+        f"{sorted(set(ps.ORGANS) ^ set(ORGAN_FILE))}")
+    for organ, rel in ORGAN_FILE.items():
+        if not rel:
+            continue
+        src = _src(rel)
+        assert "from libs.research import proposer_seat" in src, f"{rel} never reaches the seat"
+        assert f'"{organ}"' in src, f"{rel} does not name itself to the seat as {organ!r}"
+
+
+def test_the_mechanism_naming_queue_is_owned_by_the_leg_itself() -> None:
+    src = Path(ps.__file__).read_text("utf-8")
+    assert '"mechanism_naming_queue"' in src
+    assert "_naming_pass" in src
+
+
+def test_every_widened_call_site_is_guarded_too() -> None:
+    for rel in ORGAN_FILE.values():
+        if not rel:
+            continue
+        tree = ast.parse(_src(rel))
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.ImportFrom):
+                continue
+            if node.module != "libs.research" or not any(
+                    a.name == "proposer_seat" for a in node.names):
+                continue
+            assert any(isinstance(p, ast.Try) and _contains(p.body, node)
+                       for p in ast.walk(tree)), f"{rel} imports the seat outside a try/except"
+
+
+def test_the_seat_reaches_more_than_the_factories() -> None:
+    """The principal's widening, as a property: the registry is not just the four factories."""
+    assert len(ps.ORGANS) > len(ps.FACTORIES) + 4
+    assert {"world_crawler", "seed_miners", "sandbox_runner", "forest_runner"} <= set(ps.ORGANS)
+
+
+def test_no_organ_can_reach_the_seat_without_being_registered() -> None:
+    reply = ps.ask("some_new_miner", "terms")
+    assert reply.verdict == ps.UNMEASURED and "ORGANS" in reply.why

@@ -2,3 +2,12 @@
 {"at": "2026-09-05T17:29:11.288808+00:00", "n_nominal": 31, "effective_breadth": 1.324, "binding_reading": "exposure_systematic", "n_clusters_occupied": 4, "n_clusters_empty": 11}
 {"at": "2026-09-05T17:29:56.959339+00:00", "n_nominal": 31, "effective_breadth": 1.324, "binding_reading": "exposure_systematic", "n_clusters_occupied": 4, "n_clusters_empty": 11}
 {"at": "2026-09-05T17:30:30.907990+00:00", "n_nominal": 31, "effective_breadth": 1.324, "binding_reading": "exposure_systematic", "n_clusters_occupied": 4, "n_clusters_empty": 11}
+{"at": "2026-09-11T00:46:28.630118+00:00", "n_nominal": 50, "effective_breadth": 3.967, "binding_reading": "exposure_full_sample", "n_clusters_occupied": 4, "n_clusters_empty": 11, "n_eff_time": 8.308}
+{"at": "2026-09-15T10:41:23.206960+00:00", "n_nominal": 121, "effective_breadth": 1.891, "binding_reading": "realised_returns", "n_clusters_occupied": 6, "n_clusters_empty": 9, "n_eff_time": 10.869}
+{"at": "2026-09-15T15:40:09.450763+00:00", "n_nominal": 141, "effective_breadth": 1.981, "binding_reading": "realised_returns", "n_clusters_occupied": 7, "n_clusters_empty": 8, "n_eff_time": 10.846}
+{"at": "2026-09-15T18:35:14.213113+00:00", "n_nominal": 141, "effective_breadth": 1.998, "binding_reading": "realised_returns", "n_clusters_occupied": 7, "n_clusters_empty": 8, "n_eff_time": 10.827}
+{"at": "2026-09-15T22:38:41.528142+00:00", "n_nominal": 141, "effective_breadth": 2.023, "binding_reading": "realised_returns", "n_clusters_occupied": 7, "n_clusters_empty": 8, "n_eff_time": 10.909}
+{"at": "2026-09-16T03:50:20.748774+00:00", "n_nominal": 142, "effective_breadth": 1.972, "binding_reading": "realised_returns", "n_clusters_occupied": 7, "n_clusters_empty": 8, "n_eff_time": 10.922}
+{"at": "2026-09-16T06:15:34.729494+00:00", "n_nominal": 141, "effective_breadth": 1.973, "binding_reading": "realised_returns", "n_clusters_occupied": 7, "n_clusters_empty": 8, "n_eff_time": 10.979}
+{"at": "2026-09-16T10:39:11.853659+00:00", "n_nominal": 141, "effective_breadth": 2.095, "binding_reading": "realised_returns", "n_clusters_occupied": 7, "n_clusters_empty": 8, "n_eff_time": 10.876}
+{"at": "2026-09-16T14:26:51.741873+00:00", "n_nominal": 160, "effective_breadth": 2.057, "binding_reading": "realised_returns", "n_clusters_occupied": 8, "n_clusters_empty": 7, "n_eff_time": 10.669}
