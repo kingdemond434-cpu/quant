@@ -2722,28 +2722,29 @@
    "status": "LANDED",
    "gate": "none",
    "evidence": [
-    "desks/mt5/research/source_evig.py:168 (price: EVIG = U x novelty x P(usable) x exp(-lag/30) / measured cost, per source)",
-    "desks/mt5/research/source_evig.py:226 (fetch_order: the collector's door; an unpriced id keeps its place, never dropped)",
+    "desks/mt5/research/source_evig.py:168 (price: EVIG per source, measured terms only)",
     "desks/mt5/research/asia_collector.py:482 (the due list is fetched in EVIG order)",
-    "desks/mt5/research/source_drain.py:114 (chain_for: collected -> ingested -> represented -> cells_emitted -> cells_judged, per source, with the stage it stops at named)",
-    "desks/mt5/research/source_drain.py:191 (drain: the top of the ranking handed to asia_collector --id every pass until the backlog is empty)",
-    "desks/mt5/research/source_drain.py:217 (_tasks: a REBUILD or RETIRE task per collected-but-unconverted source, appended to data/source_rebuild_tasks.jsonl)",
-    "scripts/check_source_drain.py:40 (the two ratchets and the oldest-source window; registered in scripts/run_law_gate.py:226 _STATE_FENCES)",
-    "desks/mt5/tests/test_closed_loop_organs.py:317 (the chain names the stage a source stops at; an unreached source is recorded; the ratchets fail only on a RISE)"
+    "desks/mt5/research/source_drain.py:160 (chain_for: collected -> ingested -> represented -> cells_emitted -> cells_judged, with ingestion and PIT stamping measured separately)",
+    "desks/mt5/research/source_drain.py:250 (drain: half the batch by EVIG, half by staleness, so the tail cannot starve)",
+    "desks/mt5/research/source_drain.py:287 (repair: bytes go to the desk's own asia_parser dispatch; a represented source with no cell is enqueued through libs.moat.registry.record_discovery)",
+    "desks/mt5/research/source_drain.py:131 (_registry_cells: cells counted from the canonical registry, so a repair is visible the same pass)",
+    "desks/mt5/research/source_drain.py:354 (chain_state: the per-source door the birth fence reads instead of re-deriving it)",
+    "scripts/check_source_drain.py:48 (three ratchets, each with the moment it last fell; registered in scripts/run_law_gate.py:226 _STATE_FENCES)",
+    "desks/mt5/tests/test_closed_loop_organs.py:317 (the chain names the stage a source stops at; an unreached source is recorded; the ratchets fail only on a RISE or a STALL; the organ repairs rather than filing a task; a source registered tomorrow inherits the whole chain)"
    ],
    "scheduled_by": "hourly_cycle:source_evig + hourly_cycle:source_drain",
-   "artifact": "desks/mt5/reports/SOURCE_EVIG.json + desks/mt5/reports/SOURCE_DRAIN.json",
-   "consumer": "asia_collector (the order sources are collected in AND the ids requested each pass) + scripts/check_source_drain.py (the two ratchets, in the law gate) + data/source_rebuild_tasks.jsonl (one named task per unconverted source)",
+   "artifact": "desks/mt5/reports/SOURCE_DRAIN.json + desks/mt5/reports/SOURCE_EVIG.json + desks/mt5/data/source_chain_state.json",
+   "consumer": "asia_collector (order + the ids requested each pass) + asia_parser (the repair's reader) + libs/moat/registry (discoveries the one gauntlet judges) + scripts/check_source_drain.py (three ratchets, in the law gate) + data/source_chain_state.json (the birth fence's door)",
    "gap": "",
-   "next_step": "drive the unconverted ratchet down: 45 collected sources have zero judged cells, every one carrying a REBUILD task naming the stage it stops at (39 at bytes, 5 represented with no cell)",
+   "next_step": "drive cells_judged above zero: 5 sources now hold a discovery in the canonical registry and the gauntlet judges them on its own clock; 14 rows genuinely need new reader code and that count is itself a falling ratchet",
    "landed": [
-    "expected-information-gain priced BEFORE a fetch, from prior uncertainty on the instruments a source declares, the share no collected source already covers, its own usable rate and its publication lag, over its measured cost",
-    "A DRAIN GUARANTEE, not just a ranking: the top of the EVIG queue is handed to the collector every pass until the backlog is empty; first real pass drained 1 and recorded 6 NOT_REACHED with the url tried and the status that answered (HTTP_ERROR, UNCONFIGURED) -- uncollected 41 -> 40",
-    "THE WHOLE CHAIN PER SOURCE, not the fetch: collected -> ingested (series + PIT vintage) -> represented (rows) -> cells emitted -> cells judged. First census: 40 never collected, 39 stop at bytes, 1 ingested, 5 represented, 0 with a judged cell",
-    "TWO RATCHETS THAT ONLY FALL (data/source_drain_ratchet.json), fenced by scripts/check_source_drain.py in the law gate: uncollected and collected-but-unconverted, plus the oldest never-collected source against its own cadence window",
-    "NEVER A QUIET ZERO: 45 collected-but-unconverted sources each got a named REBUILD task with the stage it stops at; retirement is the task only where there is nothing to represent",
-    "the vault counts as a collection in BOTH organs, after the two disagreed about the word and mis-ranked the backlog (155 priced, 110 never collected by the ranking, 41 of the 89 REGISTERED sources by the chain)",
-    "only ever causes MORE collection: no source is throttled or refused, and the fence fails on a RISING backlog, never on a large one being worked"
+    "EVIG prices what to fetch next; the drain GUARANTEES it is fetched: half the batch by price and half by staleness, every pass, until the backlog is empty (uncollected 41 -> 39 across the first passes, every unreachable source recorded with the url tried and the status that answered)",
+    "IT REPAIRS RATHER THAN FILING TASKS (LAWS 7, a report is not a remedy): bytes with no series go to the desk's own asia_parser dispatch, highest-EVIG-at-zero-cells first; a represented source with no cell is enqueued through the canonical registry door. First repairing pass: 8 re-parsed and 5 discoveries created (cffex_daily, nationalbanken_dkk, hkma_open_api, cfets_fixing, abs_trade) -- the first sources ever to emit a cell from the asia plane",
+    "THREE RATCHETS, each carrying the moment it last fell: uncollected, collected-but-unconverted NET of sources collected since the last best, and needs_code. The fence fails on a rise, on a non-zero count that has not fallen inside a 168h stall window, or when the oldest never-collected source ages past its own cadence window",
+    "the unconverted ratchet is NET of new collections on purpose: a source collected today is born unconverted, and a fence that called that a breach would be an argument for collecting less",
+    "FOREVER, NOT NOW: the census is derived from data/asia_sources.json every pass, so a source registered tomorrow inherits the whole chain obligation with no list to maintain; desks/mt5/data/source_chain_state.json publishes the per-source stage for the birth fence to read rather than duplicate",
+    "cells are counted from the CANONICAL registry, not only the source-registry credit report, so a repair is visible on the pass that made it; cells_judged per source is published every pass and is the number the organ works to raise",
+    "measured after the repairing pass: 39 never collected, 40 stopped at bytes, 1 ingested, 5 at cells_emitted, 0 judged -- judging is the one gauntlet's clock and this organ never judges anything"
    ]
   },
   {
@@ -4261,14 +4262,16 @@
     "desks/mt5/research/semantic_memory.py:773 distil() -> data/experience_memory.json; :835 experience() is the retrieval side",
     "desks/mt5/research/deepening_worker.py:282 _experience_lines -- both halves retrieved BEFORE generation",
     "desks/mt5/research/daily_cycle.py:275 negative_knowledge joins survivor_distiller on the daily proposer plan",
-    "desks/mt5/research/negative_knowledge.py:516 run() -- the daily-cycle entry point it previously lacked"
+    "desks/mt5/research/negative_knowledge.py:516 run() -- the daily-cycle entry point it previously lacked",
+    "desks/mt5/tests/test_experience_memory_counts_the_same_vault.py -- fails if build and distil ever disagree about how much of the vault was collected"
    ],
    "scheduled_by": "hourly_cycle:semantic_memory, hourly_cycle:graveyard_model, hourly_cycle:daily",
    "artifact": "desks/mt5/data/experience_memory.json (written on every `semantic_memory build`) and desks/mt5/reports/NEGATIVE_KNOWLEDGE.json",
    "consumer": "deepening_worker (retrieve -> generate); novelty_gate",
    "landed": [
     "2026-09-23 the corpus is split into POSITIVE (survivors, passed verdicts, certified hypotheses, sleeves with positive live R) and NEGATIVE (failed verdicts, buried hypotheses, the lesson corpus, sleeves with negative R), classed by the gate each cell died at, and distilled on every build",
-    "negative_knowledge ran on NO clock at all and now runs daily; survivor_distiller was already on that list"
+    "negative_knowledge ran on NO clock at all and now runs daily; survivor_distiller was already on that list",
+    "ONE WORD, ONE MEANING: build and distil both count the vault and both say 2,155 documents on this box (58 positive / 850 negative); a test now fails the moment the two definitions diverge, and pins the partition so no document is counted in both classes."
    ]
   },
   {
@@ -4875,7 +4878,8 @@
    "consumer": "the departments (claims) -> data/intelligence/moat_factory/ -> miner_candidate_compiler -> the docket -> external_gauntlet (SEALED: reached through the intake, never edited)",
    "landed": [
     "2026-09-23 first real pass: 23 departments bid, 138 candidates claimed and donated to data/intelligence/moat_factory/discoveries_20260923_1054.json",
-    "claim_candidates had zero callers outside tests (queue_census recorded exactly that); the exchange could be bid into and nobody bid"
+    "claim_candidates had zero callers outside tests (queue_census recorded exactly that); the exchange could be bid into and nobody bid",
+    "THE WHOLE CHAIN IS MEASURED, not asserted: the 138 claims compiled to 608 executable candidates and 3 deepening tasks (miner_candidates.json per_source.moat_factory = {rows 138, candidates 608, deepening 3}); merge_hypotheses carried them into the docket, which went from 3,811 to 23,563 cells; and a gauntlet reproduction on one of the claimed families matched 228 docket cells, advanced all 228 past gate 0 and returned terminal-gate verdicts (+4 first-judged that sweep, 156 skipped for a missing parquet). A bid now becomes a judged cell."
    ]
   },
   {
@@ -4923,7 +4927,7 @@
    "consumer": "registry.claim_candidates (READY_PRIORITY order) and, through the intake, external_gauntlet",
    "landed": [
     "2026-09-23 measured before the build: 8,949 queued candidates, 8,741 with NO novelty measurement, every one scoring on PRIOR=0.5 for novelty AND independence -- a priority queue ordered on a constant",
-    "the first two passes priced 3,120 of them; READY_PRIORITY now sorts by measured novelty and independence"
+    "FINISHED, not sampled: unpriced 8,741 -> 0 in four passes. The queue carried ONE distinct score before and carries 23 after; the head is now the 474 rows measured as novel against both the canon and the graveyard and independent of the book, and the top ten cells are entirely different rows from the FIFO head it had before."
    ]
   },
   {
@@ -5420,14 +5424,17 @@
     "desks/mt5/research/countries/kr/agents.py:2341 AGENTS -- the twelve, each with its own native query territory",
     "desks/mt5/research/countries/kr/lattice.py:282 evig -- the candidate lattice chosen by prior x EVIG, never the Cartesian product",
     "desks/mt5/research/countries/kr/moat.py:66 the five moat stores; :609 the KR x JP x CN interaction miner; :792 delayed source credit",
-    "desks/mt5/research/countries/kr/miners.py:70 the SIXTEEN miners the country lab runs, including moat_stores"
+    "desks/mt5/research/countries/kr/miners.py:70 the SIXTEEN miners the country lab runs, including moat_stores",
+    "desks/mt5/research/countries/_data_plane_miner.py -- the shared adapter for a country data plane",
+    "desks/mt5/research/countries/ae/miners.py, desks/mt5/research/countries/il/miners.py, desks/mt5/research/countries/sa/miners.py"
    ],
    "scheduled_by": "hourly_cycle:global_research_os",
    "artifact": "desks/mt5/data/countries/kr/moat.json",
    "consumer": "the compiler (discoveries recorded through libs/moat/registry); the registry",
    "landed": [
     "VERIFIED 2026-09-23: agents.py 2,408 lines, lattice.py 742, moat.py 972 -- the builder finished and the row was stale",
-    "ONE REAL DEFECT FOUND AND FIXED: interaction_miner and credit_survivors ran on the lab's clock but moat.build -- the function that WRITES the five stores -- ran nowhere, so the department's own artifact never existed. moat_stores is now the sixteenth miner and MINERS | MISSING == NAMES still holds at 16/16 resolved."
+    "ONE REAL DEFECT FOUND AND FIXED: interaction_miner and credit_survivors ran on the lab's clock but moat.build -- the function that WRITES the five stores -- ran nowhere, so the department's own artifact never existed. moat_stores is now the sixteenth miner (16/16 resolve, MINERS | MISSING == NAMES holds) and data/countries/kr/moat.json now exists at 13,976 bytes with all five stores (data, semantic, failure, source, interaction) populated.",
+    "THE CLASS, NOT THE INSTANCE: a sweep of all 71 country packages found three more writers with no clock -- ae, il and sa each hold a data_plane.py with run() and a REPORT path and held NO miners.py, which is the only file global_research_os reads to find a country's own miners. All three are now clocked through countries/_data_plane_miner.py and AE_DATA_PLANE.json, IL_DATA_PLANE.json and SA_DATA_PLANE.json exist for the first time."
    ]
   },
   {
