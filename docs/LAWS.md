@@ -1028,6 +1028,18 @@ packs name has no resident, no discovery in its trailing window, or no candidate
   RAM was free, and every new leg died of STATUS_COMMITMENT_LIMIT. When legs die with RAM free,
   measure COMMIT, never RAM.
 
+- **NOTHING IS RETIRED ON AN ABSENCE (2026-09-23, measured the hard way).** No organ may retire,
+  purge, demote, delete or refuse anything on the authority of a reference store that is EMPTY,
+  STALE BEYOND ITS LEASE, or UNREADABLE. Such a store is UNMEASURED, and UNMEASURED is a verdict
+  about the measurement, never a statement about the world (L1.28a). A destructive pass must first
+  prove its reference is fresh and non-empty, and stand down with that reason when it is not.
+  MEASURED: `certificate_truth --apply` was run against `UNIVERSAL_SURVIVORS.canon.json` holding
+  n=0 and 46.7 hours old. It retired 837 rows the empty canon "did not back" -- correct arithmetic
+  on a reference that said nothing -- and the sweep that ran three hours earlier had just written
+  `UNIVERSAL_SURVIVORS.json: 7 total (+7)` with 114 ledger claims and 1,240 cells cleared to
+  gather forward evidence. An empty file retired the judge's fresh work. The rule is general: it
+  binds every purge, every reconciliation, every fence that removes rather than reports.
+
 - **A REPORT IS NOT A REMEDY (2026-09-23, principal's standing order: "don't just report").** An
   organ that CAN close a gap must close it on its own clock: the conversion organ repairs the row
   rather than classifying it, the watchdog raises a repair through the reconciler rather than
