@@ -13,14 +13,18 @@ WHAT ONE PASS DOES:
     CAPTURE METADATA  url, source class, obtained path, licence note, robots verdict, terms
     LEGAL/ACCESS      access_classifier.classify -> one of the eleven labels
     EVIDENCE CLASS    credibility and predictive_state, INDEPENDENTLY of the access label
-    RESEARCH          the row is written back, labelled, and the quarantine and refusal ledgers
-                      are rebuilt from what this pass saw
+    RESEARCH          the row is written back, labelled, and the refusal ledger is rebuilt from
+                      what this pass saw
 
 THREE COLUMNS, NOT ONE SCORE. `access_label`, `credibility` and `predictive_state` land as
 separate columns through `registry.EXTENSIONS` (ADD COLUMN; the CANON DDL is never touched), so
-nothing downstream can accidentally read "unreliable" as "unlawful". `quarantine` is the fourth
-and it is the anti-timid one: an ACCESS_UNCLEAR source keeps its metadata row forever and its
-content is simply not consumed until somebody resolves the right.
+nothing downstream can accidentally read "unreliable" as "unlawful".
+
+NO QUARANTINE (LAWS 5e, rewritten 2026-09-23). An ACCESS_UNCLEAR source used to keep its metadata
+row and have its content left unread until somebody resolved the right; nobody ever did, which is
+what a quarantine actually means. It is deleted: an unclear row is MINED AND TESTED with its
+label attached. The `quarantine` column stays at 0 on every row so old readers do not break, and
+`data/evidence_quarantine.json` is now an empty list with that fact written in it.
 
 IDEMPOTENT BY CONSTRUCTION. A source already carrying a label and a `routed_at` is skipped unless
 its metadata hash changed or `--recheck` is passed, so the hourly pass costs the NEW rows only and
@@ -106,8 +110,10 @@ KIND_CLASS: dict[str, str] = {
     "interview": "practitioner", "web": "media", "archive": "archive",
 }
 
-RULE = ("mine aggressively; classify precisely; restrict only the specific use that is actually "
-        "prohibited -- five stages on every source, three independent labels, nothing discarded")
+RULE = ("the desk mines and tests everything it can see on the open internet; licence, robots, "
+        "source class and credibility route REDISTRIBUTION and WEIGHT and never stop discovery, "
+        "ingestion, representation or testing -- five stages on every source, three independent "
+        "labels, no quarantine, nothing discarded")
 
 
 def _now() -> str:
@@ -195,7 +201,9 @@ def intel_rows(budget_s: float, t0: float) -> tuple[dict[str, dict[str, Any]], d
     registry has never seen are exactly the sources nobody has ever classified.
     """
     found: dict[str, dict[str, Any]] = {}
-    stats = {"files_read": 0, "files_deferred": 0, "rows_read": 0, "roots": []}
+    # Annotated because the literal infers dict[str, object] and every counter below then fails
+    # mypy (pre-existing, four errors, unrelated to the access law).
+    stats: dict[str, Any] = {"files_read": 0, "files_deferred": 0, "rows_read": 0, "roots": []}
     for root in INTEL_ROOTS:
         if not root.is_dir():
             continue
@@ -263,9 +271,15 @@ def route_source(meta: dict[str, Any]) -> dict[str, Any]:
         # A SOURCE has not been tested; a CLAIM is. UNTESTED is the honest reading and it is a
         # verdict, not a zero -- research_roi is what later moves a source to PREDICTIVE.
         "predictive_state": "UNTESTED",
+        # ALWAYS 0 SINCE 2026-09-23 (LAWS 5e): the ACCESS_UNCLEAR quarantine was deleted and the
+        # column is kept so an old reader finds a 0 rather than a missing field.
         "quarantine": 1 if v.quarantine else 0,
         "refused": v.refused,
+        # TRUE for every label but the refused three: the terms fact lives below, in
+        # `redistribute_allowed` and `terms_note`, where it routes publication and not mining.
         "machine_use_allowed": v.machine_use_allowed,
+        "redistribute_allowed": v.redistribute_allowed,
+        "terms_note": v.terms_note,
         "allowed_uses": list(v.allowed_uses),
         "evidence_weight_cap": v.evidence_weight_cap,
         "stage": routed.stage,
@@ -365,8 +379,13 @@ def run(*, budget_s: float = BUDGET_S, dry_run: bool = False, recheck: bool = Fa
 
         counts: Counter[str] = Counter()
         by_class: Counter[str] = Counter()
+        # `quarantined` STAYS EMPTY BY CONSTRUCTION since 2026-09-23: every verdict carries
+        # quarantine=False. The list and its counter are kept so the artifact's shape does not
+        # change under readers that already parse it, and a non-empty list would now be a bug.
         quarantined: list[dict[str, Any]] = []
         refused: list[dict[str, Any]] = []
+        #: Every row this pass labelled, for the redistribution census below.
+        routed_rows: list[dict[str, Any]] = []
         routed = skipped = created = 0
         budget_hit = False
 
@@ -381,6 +400,7 @@ def run(*, budget_s: float = BUDGET_S, dry_run: bool = False, recheck: bool = Fa
             v = route_source(meta)
             counts[v["access_label"]] += 1
             by_class[v["source_class"]] += 1
+            routed_rows.append(v)
             if v["quarantine"]:
                 quarantined.append(v)
             if v["refused"]:
@@ -400,6 +420,7 @@ def run(*, budget_s: float = BUDGET_S, dry_run: bool = False, recheck: bool = Fa
             v = route_source(_merge(row, discovered[sid]))
             counts[v["access_label"]] += 1
             by_class[v["source_class"]] += 1
+            routed_rows.append(v)
             if v["quarantine"]:
                 quarantined.append(v)
             if v["refused"]:
@@ -438,8 +459,11 @@ def run(*, budget_s: float = BUDGET_S, dry_run: bool = False, recheck: bool = Fa
                     coverage_err or "counts by label and by source class written to research "
                                     "memory for the coverage tensor's accessibility axis"),
         },
-        "machine_use_restricted": sorted(
-            v["source_id"] for v in (*quarantined, *refused) if not v["machine_use_allowed"]),
+        # REDISTRIBUTION-RESTRICTED, NOT MINING-RESTRICTED (LAWS 5e, 2026-09-23). This list was
+        # `machine_use_restricted` -- the sources the desk registered and never scraped. Every one
+        # of them is mined now; what the list names is what the desk may not REPUBLISH.
+        "redistribution_restricted": sorted(
+            v["source_id"] for v in routed_rows if not v.get("redistribute_allowed", False)),
         "intelligence_scan": intel_stats,
         "budget_s": budget_s, "budget_hit": budget_hit,
         "elapsed_s": round(time.monotonic() - t0, 2),
@@ -451,10 +475,14 @@ def run(*, budget_s: float = BUDGET_S, dry_run: bool = False, recheck: bool = Fa
     }
     quarantine_doc = {
         "at": doc["at"],
-        "rule": ("ACCESS_UNCLEAR is QUARANTINED -- metadata kept, content not consumed, until "
-                 "access rights are resolved. PRIVATE, CONFIDENTIAL_MNPI and STOLEN_UNAUTHORIZED "
-                 "are REFUSED with the reason and never become an alpha input. Nothing is "
-                 "discarded."),
+        "rule": ("THE ACCESS QUARANTINE WAS DELETED (LAWS 5e, 2026-09-23). An ACCESS_UNCLEAR row "
+                 "is MINED AND TESTED with its label attached, so `quarantined` is empty by "
+                 "construction and a non-empty list here is a bug. PRIVATE, CONFIDENTIAL_MNPI "
+                 "and STOLEN_UNAUTHORIZED remain REFUSED with the reason -- those three carry "
+                 "the five acts (no credential theft or logging in as someone else; no "
+                 "bypassing an access control or a paywall; no material non-public information; "
+                 "no stolen or leaked private data; no personal data harvesting or doxxing). "
+                 "Nothing is discarded."),
         "n_quarantined": len(quarantined), "n_refused": len(refused),
         "quarantined": sorted(quarantined, key=lambda r: str(r["source_id"])),
         "refused": sorted(refused, key=lambda r: str(r["source_id"])),

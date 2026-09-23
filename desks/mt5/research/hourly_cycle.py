@@ -708,9 +708,11 @@ HOURLY_PLAN = str(os.environ.get("HOURLY_PLAN", "all") or "all").strip().lower()
 CORE_LEGS: frozenset[str] = frozenset({
     "smoke_release", "health", "release_identity", "input_identity", "burn_in", "record_tape",
     "regime_monitor", "state_vector", "heal_clocks", "wiring_audit", "promoter",
-    "forward_reconcile", "closed_loop", "acceptance", "candidate_conservation", "pit_canaries",
+    "forward_reconcile", "clock_liveness",
+    "closed_loop", "acceptance", "candidate_conservation", "pit_canaries",
     "mutation_yield", "credit_assignment", "publish_survivors", "publish_dashboard",
     "stamp_freshness", "time_joins", "layer_census", "opportunity_cost", "dead_architecture",
+    "producer_census",
     "cycle_pricing", "causal_invariance",
     "prosecutor", "scaling_laws", "arena", "session_capital", "session_allocation",
     "allocator_join", "rebalance_trigger", "edge_reliability", "edge_confidence", "capacity",
@@ -726,7 +728,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     "wiring_ceo", "live_system_state", "hazard_engine", "posterior_alpha", "semantic_memory",
     "model_role_benchmark", "research_departments", "qd_frontier", "value_of_data",
     "research_api_status", "artifact_chain", "residual_queue", "unseen_frontier",
-    "source_registry",
+    "source_registry", "queue_census",
     # THE CANONICAL REGISTRY BRIDGE (2026-09-17): every pass pours the desk's record in.
     "registry_sync",
     # THE CONVERSION AND RESEARCH DEBT LEDGERS (M7): cheap registry reads, every pass.
@@ -775,7 +777,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "spread_provenance", "microstructure_census", "fusion_cost",
                      "cost_construction", "swap_rejudge", "sge_premium", "moat_series",
                      "unused_information", "ingestion_ledger", "representation_forge",
-                     "feature_compiler", "data_acquisition_scientist"), "data"),
+                     "feature_compiler", "data_acquisition_scientist", "coverage_drain"), "data"),
     # intel: the global intelligence agency -- crawlers, forests, frontier scouts
     **dict.fromkeys(("world_crawler", "deep_forest", "moat_miner", "market_intel", "mine",
                      "exogenous_search", "standing_questions", "frontier", "frontier_report",
@@ -826,7 +828,8 @@ LEG_DEPARTMENT: dict[str, str] = {
     **dict.fromkeys(("enrol_clocks", "pf_allocator", "daily", "hunt12_forward", "regime_router",
                      "forward_slot_ranker", "forward_exploitation", "shadow_discovery",
                      "missed_trade_archaeologist", "portfolio_bounty",
-                     "drawdown_alpha_miner", "trade_autopsy", "counterfactual_attribution"),
+                     "drawdown_alpha_miner", "trade_autopsy", "counterfactual_attribution",
+                     "clock_liveness"),
                     "forward"),
     # meta: the machine that runs the machine (the heavy part of it)
     **dict.fromkeys(("issue_board", "publish_state", "model_league", "ml_layer_meta",
@@ -840,7 +843,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "ingestion_exploitation", "coverage_tensor", "research_evolution",
                      "compute_economics", "control_plane", "attribution_reconcile",
                      "fence_battery", "organ_battery", "research_artifacts", "engine_registry",
-                     "search_paradigm_census"), "meta"),
+                     "search_paradigm_census", "producer_census"), "meta"),
     # japan: the Japan research division (the principal's 47-section mandate, hourly)
     **dict.fromkeys(("japan_department",), "japan"),
     # mathlab: the AI mathematics research civilization -- twenty-eight mathematical traditions
@@ -1256,6 +1259,12 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "replication_civilization": 1_000,
     # The dislocation lab stops itself at --budget-s 900 and writes; the cap sits above it.
     "dislocation_lab": 1_000,
+    # The coverage drain stops itself at --budget-s 900 -- and it scales that DOWN further off
+    # measured free memory, because its cost is network wait on the box that also holds the
+    # terminal. The cap sits above its own budget for the reason `enrol_clocks` was raised: a
+    # cap below an organ's budget truncates it at the same prefix every hour, and for a drain
+    # that would mean the same rows at the head of the queue never being reached.
+    "coverage_drain": 1_000,
     # The net-edge spine stops itself at --budget-s 600 and writes NET_EDGE.json plus the
     # intake join file; the cap sits above it so the hour is never cut at the same prefix.
     "net_edge": 700,
@@ -1267,6 +1276,10 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # plus its ratchet; the cap sits above its own budget for the reason `enrol_clocks` was
     # raised -- a cap below an organ's budget truncates it at the same prefix every hour.
     "conversion_maximiser": 1_000,
+    # The producer census relights at most six dark producers at 240s each and re-measures after
+    # every repair; the cap sits above 6*240 so a pass is never cut inside a repair it has
+    # already started, which would leave a producer half-run and the census judging the stub.
+    "producer_census": 1_600,
     # The sandbox runner stops itself at --budget-s 900 (each system inside its ROI share) and
     # writes SANDBOX_RUNNER.json; the cap sits above it so it is never cut at the same prefix.
     "sandbox_runner": 1_000,
@@ -1293,6 +1306,11 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # the registry and the artifacts only -- measured 2.3 s on the box -- so the budget is head-
     # room for a busy sqlite, never a size it expects to use.
     "loop_liveness": 300,
+    # The clock-liveness organ stops itself at --budget-s 300 and spends most of it inside the
+    # re-enrolment actuator, which fetches bars for the frozen identities; the cap sits above it
+    # so the repair is never cut at the same prefix every hour -- the failure `enrol_clocks` was
+    # raised for, and the one this organ exists to catch.
+    "clock_liveness": 420,
     # The expression factory stops itself at --budget-s 600 and writes; the cap sits above it.
     "expression_factory": 720,
     # The closed co-evolution stops itself at --budget-s 900 (breeding, then the islands) and
@@ -2722,6 +2740,10 @@ def main() -> None:
                                                           "research/live_system_state.py"))
     t1s = _costed("tier1_scorecard", lambda: _producer("tier1_scorecard",
                                                         "research/tier1_scorecard.py"))
+    # NOTHING IS PARKED (principal 2026-09-23): every queue in the desk, its depth, its oldest
+    # row's age and its measured drain rate, in one artifact. scripts/check_no_queues.py fences it.
+    qcn = _costed("queue_census", lambda: _producer("queue_census", "research/queue_census.py",
+                                                    "--once", "--budget-s", "120"))
     # THE RESOURCE EXCHANGE: every department's measured yield per compute-hour and the
     # elastic factor research_budget multiplies into its legs' seconds; its clock is its floor.
     rdp = _costed("research_departments", lambda: _producer("research_departments",
@@ -3061,6 +3083,18 @@ def main() -> None:
     cov = _costed("coverage_tensor", lambda: _producer("coverage_tensor",
                                                         "research/coverage_tensor.py",
                                                         "--once", "--budget-s", "900"))
+    # THE COVERAGE DRAIN (principal 2026-09-23). The tensor above says WHICH INPUTS EXIST; this
+    # leg makes the ones the desk already owns and has never read actually fall. It registers
+    # every root the country packs declare and every ground in `deep_forest_sources.json`,
+    # resolves the rows the evidence router minted with no url, refuses only the five ACTS of
+    # LAWS 5e, crawls the rest through `moat_collectors`, verifies each pack's ten layers against
+    # a registry row that was actually fetched, and publishes the day's single largest
+    # information gap by expected value. `scripts/check_coverage_drain.py` ratchets the overdue
+    # backlog DOWN. It was written because `loop_liveness` called the `sources_ingested` stage
+    # STALLED -- 148 uncrawled, the oldest waiting 134 hours -- and nothing owned the number.
+    cdr = _costed("coverage_drain", lambda: _producer("coverage_drain",
+                                                       "research/coverage_drain.py",
+                                                       "--once", "--budget-s", "900"))
     # GAUNTLET BACKPRESSURE (M23) and MINER SPECIALISATION (M24): the gauntlet talks back and
     # the organisation routes work by measured value per miner per domain. Meta.
     gbp = _costed("gauntlet_backpressure", lambda: _producer("gauntlet_backpressure",
@@ -3302,6 +3336,16 @@ def main() -> None:
     # naming the organ and its last costed run. Validate department, meta layer. Reads only.
     llv = _costed("loop_liveness", lambda: _producer(
         "loop_liveness", "research/loop_liveness.py", "--once", "--budget-s", "240"))
+    # THE CLOCK-LIVENESS ORGAN, one arrow further in and one law stricter. `loop_liveness` can
+    # only say the `clocks_accruing` ARROW is alive; it cannot say WHICH clock stopped, and on
+    # this box the way a clock stops is silent -- the identity leaves the certificate canon, the
+    # ledger row is never pruned, and `shadow_forward` simply stops visiting a key that still
+    # reads ACTIVE (measured 2026-09-23: 364 of 483 rows off a 119-key roster). This leg counts
+    # each clock's lag in ITS OWN venue's bars (weekends and holidays out, from the market
+    # constitution), and then REPAIRS every FROZEN one in the same pass through the control
+    # plane's actuators -- A REPORT IS NOT A REMEDY (LAWS 7). Forward department, meta layer.
+    clk = _costed("clock_liveness", lambda: _producer(
+        "clock_liveness", "research/clock_liveness.py", "--once", "--budget-s", "300"))
     # THE FREE SHADOW-INSTITUTIONAL STACK: public proxies for the institutional capabilities
     # the desk cannot buy, each latent fused from at least two sensors or named UNMEASURED.
     shi = _costed("shadow_institutional", lambda: _producer("shadow_institutional",
@@ -3913,6 +3957,12 @@ def main() -> None:
     # disabled, masked or deleted -- organs are retired by a person, on this evidence.
     dac = _costed("dead_architecture", lambda: _producer(
         "dead_architecture", "scripts/check_dead_architecture.py"))
+    # NO PRODUCER IS DARK (LAWS 7). Every seat, miner and organ the component registry knows,
+    # with its clock, its last production and its verdict -- and the RELIGHT of every dark row
+    # in the same pass, judged by the producer's own output moving, never by a zero exit code.
+    pcn = _costed("producer_census", lambda: _producer(
+        "producer_census", "scripts/check_seat_health.py",
+        "--census", "--relight", "--budget-s", "240", "--max-repairs", "6"))
     # THE BARS THE VERDICTS WERE MEASURED ON (Tier-1 item V16). The release seal pins the code a
     # verdict came from; this pins its inputs, so a re-run can tell a code change from a data one.
     iid = _costed("input_identity", lambda: _producer(
@@ -3939,6 +3989,7 @@ def main() -> None:
                     "novelty_gate": ngt, "hazard_engine": hze, "posterior_alpha": pal,
                     "semantic_memory": smm, "model_role_benchmark": mrb,
                     "live_system_state": lss, "tier1_scorecard": t1s, "wiring_ceo": wce,
+                    "queue_census": qcn,
                     "research_departments": rdp, "qd_frontier": qdf, "blind_reviewer": bvr,
                     "evaluator_lab": evl, "synthetic_regimes": syr, "value_of_data": vod,
                     "research_api_status": rap,
@@ -3970,7 +4021,7 @@ def main() -> None:
                     "macro_intelligence": mci, "market_constitution": mcc,
                     "mining_objective": mob, "research_gap_map": rgm,
                     "evidence_router": evr, "research_roi": rroi,
-                    "coverage_tensor": cov,
+                    "coverage_tensor": cov, "coverage_drain": cdr,
                     "gauntlet_backpressure": gbp, "miner_specialisation": msp,
                     "portfolio_bounty": pbt, "research_auction": rau,
                     "bottleneck_law": btl, "drawdown_alpha_miner": dam,
@@ -3990,7 +4041,7 @@ def main() -> None:
                     "math_lab": mlb, "expression_factory": xpf, "physics_lab": phl,
                     "coevolution": cev, "model_search": mds,
                     "external_federation": xfd, "archaeology": arch, "sares": srs,
-                    "certificate_truth": ctt, "loop_liveness": llv,
+                    "certificate_truth": ctt, "loop_liveness": llv, "clock_liveness": clk,
                     "fence_battery": fbt, "organ_battery": obt,
                     "federation_ops": fops, "sandbox_runner": sbr,
                     "sandbox_provision": sbp, "sandbox_roster": sbo,
@@ -4047,7 +4098,7 @@ def main() -> None:
                     "cycle_pricing": cyp, "causal_invariance": civ,
                     "edge_reliability": erl, "arena": ar, "session_capital": scap,
                     "prosecutor": pc, "scaling_laws": slw,
-                    "dead_architecture": dac, "input_identity": iid,
+                    "dead_architecture": dac, "producer_census": pcn, "input_identity": iid,
                     "publish_state": pub,
                     "enrol_clocks": ecl, "requeue_unrunnable": rq, "reclaim_disk": dd,
                     "miner_conversion": mc, "moat_miner": mo, "archive_tape": ta,

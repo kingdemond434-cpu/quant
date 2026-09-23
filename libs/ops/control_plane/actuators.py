@@ -161,6 +161,50 @@ def _pc_output_changed(ctx: Mapping[str, Any]) -> tuple[bool | None, str]:
     return False, f"{p.name} is byte-identical to before the repair ({after})"
 
 
+def newest_production(paths: Sequence[Path]) -> float:
+    """The newest mtime under these paths, one level into a directory. 0.0 = never produced."""
+    newest = 0.0
+    for p in paths:
+        try:
+            if p.is_dir():
+                for f in p.iterdir():
+                    if f.is_file():
+                        newest = max(newest, f.stat().st_mtime)
+            elif p.is_file():
+                newest = max(newest, p.stat().st_mtime)
+        except OSError:
+            continue
+    return newest
+
+
+def _pc_production_resumed(ctx: Mapping[str, Any]) -> tuple[bool | None, str]:
+    """THE DARK-PRODUCER PROOF: this producer's own output is NEWER than before the repair.
+
+    Not `output_changed`, which hashes ONE declared file: a seat produces into a DIRECTORY, a
+    miner writes a new `discoveries_<ts>.json` beside the old ones, and a hash of a path that
+    does not exist proves nothing either way. Relighting is judged the only way it can be --
+    something the producer owns moved -- because a healer that exits 0 and produces nothing is
+    exactly the failure the census exists to catch (LAWS 7: a report is not a remedy).
+    """
+    raw = ctx.get("production_paths")
+    paths = [Path(x) for x in raw] if isinstance(raw, (list, tuple)) else []
+    if not paths:
+        return None, ("the producer declares no production path, so nothing here can prove it "
+                      "resumed")
+    after = newest_production(paths)
+    before = ctx.get("production_before")
+    if after <= 0:
+        return False, "the producer still has no output at all after the repair"
+    if before is None:
+        return True, "the producer now has output where it had none measured"
+    if after > float(before):
+        return True, (f"production resumed: newest output moved "
+                      f"{datetime.fromtimestamp(float(before), UTC).isoformat(timespec='seconds')}"
+                      f" -> {datetime.fromtimestamp(after, UTC).isoformat(timespec='seconds')}")
+    return False, ("the repair ran and the producer's newest output did not move: a clean exit "
+                   "is not production")
+
+
 def _pc_clock_accruing(ctx: Mapping[str, Any]) -> tuple[bool | None, str]:
     """The heal-forward-clock postcondition: the SAME certified identity now has an accruing
     immutable clock. Counted from the wiring census's own certificate reading, before and after,
@@ -186,6 +230,7 @@ NEW_LIVE_LOCK_HOLDER = Postcondition("new_live_lock_holder", _pc_new_live_lock_h
 WATERMARK_ADVANCED = Postcondition("watermark_advanced", _pc_watermark_advanced)
 OUTPUT_CHANGED = Postcondition("output_changed", _pc_output_changed)
 CLOCK_ACCRUING = Postcondition("clock_accruing", _pc_clock_accruing)
+PRODUCTION_RESUMED = Postcondition("production_resumed", _pc_production_resumed)
 
 
 # --------------------------------------------------------------------------------- actuators
@@ -235,6 +280,26 @@ def script_actuator(name: str, script: Path | str, args: Sequence[str] = (), *,
         window_s=window_s, timeout_s=timeout_s, output=output, component_id=component_id,
         postconditions=tuple(postconditions if postconditions is not None else (OUTPUT_CHANGED,)),
         cwd=str(DESK))
+
+
+def producer_actuator(component_id: str, argv: Sequence[str], production_paths: Sequence[str],
+                      *, name: str | None = None, window_s: int = 60,
+                      timeout_s: int = 360, cwd: str | None = None) -> Actuator:
+    """Relight one dark producer: run it, and prove it by its own output moving.
+
+    The census plans these (`libs.ops.producer_census.plan_relight`) so the repair for a dark
+    seat, a stalled leg or an unprovisioned sandbox system goes through the SAME actuator
+    machinery, with the same proof discipline, as every other repair this desk performs.
+    """
+    return Actuator(
+        name=name or f"relight:{component_id}",
+        argv=tuple(str(a) for a in argv),
+        window_s=window_s, timeout_s=timeout_s, component_id=component_id,
+        postconditions=(PRODUCTION_RESUMED,),
+        cwd=cwd or str(ROOT),
+        context={"production_paths": [str(p) for p in production_paths]},
+        notes=("proof is the producer's newest output being strictly newer than before the "
+               "repair; rc=0 with nothing produced is UNPROVEN, by design"))
 
 
 def desk_actuators(desk: Path | None = None) -> dict[str, Actuator]:

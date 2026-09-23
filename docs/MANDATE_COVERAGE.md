@@ -31,6 +31,17 @@ resolve unchanged), carry a SUPERSEDED banner, and remain vault-indexed for unab
 | docs/research/TTL1 ratchet JSONs (CONSTITUTION_RATCHET, COVERAGE_RATCHET, PROMPT_RATCHET, LAW_COVERAGE, next_law_number) | — | KEPT OPERATIVE (machine artifacts; ratchets only rise — LAWS §6) |
 | docs/DIGGING/frontier prompts (ops/*_prompt.txt) | — | OPERATIVE, updated to lead with RESEARCH.md; regional prompts already MT5-mandated |
 
+**§13 was REWRITTEN, not retired (2026-09-23, principal's order).** The ID still resolves and now
+addresses the ACCESS ROUTER rather than a legitimacy gate: LAWS §5e and RESEARCH §13 both say the
+desk mines and tests everything it can see on the open internet, that licence/robots/source
+class/credibility are routing and provenance labels on the row (what may be REDISTRIBUTED, and how
+much weight the evidence carries), and that they never stop discovery, ingestion, representation or
+testing. There is no ACCESS_UNCLEAR quarantine and no "public/licensed sources only" pre-filter
+anywhere in the corpus. Five ACTS remain refused — no credential theft or logging in as someone
+else; no bypassing an access control or a paywall; no material non-public information; no stolen or
+leaked private data; no personal data harvesting or doxxing — and nothing else is a brake. Any
+older annex sentence implying a broader refusal is SUPERSEDED by §5e and is not to be re-derived.
+
 **Law-ID accounting:** every ID L1.0–L1.57, L1.11a, L1.16a, L1.18a, L1.21a, L1.25a, L1.28a–c,
 L2.0–L2.10, L2.8a, L4, §13, §32–§42, III.16, P26, R-series and WS-series identifiers remain
 valid addresses. IDs are the permanent addressing scheme: prose was compacted, no ID was

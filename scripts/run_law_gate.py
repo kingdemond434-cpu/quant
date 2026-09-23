@@ -161,6 +161,14 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # fence fails on any divergence. Without desk state it reads UNMEASURED and passes; the
     # state half below requires the state.
     ("check_certificate_truth.py", ()),
+    # NOTHING IS RETIRED ON AN ABSENCE (LAWS 7, 2026-09-23). Every pass in this tree that REMOVES
+    # rather than reports is inventoried with the reference it judges against, every guarded one
+    # is proved from the AST to call `libs/ops/reference_freshness.require_live_reference`, every
+    # guarded reference has a lease or a recorded cadence derivation, and the unguarded count
+    # ratchets DOWN only. Measured cause: `certificate_truth --apply` retired 837 rows against a
+    # canon holding n=0 and 46.7h stale. Portable: it reads the tree and one tracked module, so a
+    # fresh clone and the box get the same answer; no desk state required.
+    ("check_no_retirement_on_absence.py", ()),
     # REGIONAL PARITY (LAWS 5n, principal 2026-09-19). No region absent: every regional forest
     # resolves a country pack or runs a dedicated region package. Depth, coverage debt and the
     # Priority = P(useful) x Orthogonality x InformationGain x CoverageDebt / (Compute +
@@ -175,6 +183,15 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # the ratchet are tracked, so both halves mean the same in CI, a fresh clone and on the box.
     # The STALENESS half is state and rides in _STATE_FENCES with --require-state.
     ("check_recommendation_flow.py", ()),
+    # THE UNCRAWLED SET MUST FALL (principal 2026-09-23). `research/coverage_drain.py` measures
+    # the gap between the ground the desk could lawfully hold and the ground it has actually
+    # fetched, and this ratchets it: the OVERDUE backlog and the oldest wait may fall and never
+    # rise, the cumulative drained count may rise and never fall. The headline uncrawled count
+    # may rise ONLY in a pass that registered new lawful ground -- seeding what the registry had
+    # never heard of is the organ's first duty and a fence that punished it would teach the next
+    # session to stop. Portable: without the report it reads UNMEASURED and passes, and the
+    # box half rides in _STATE_FENCES with --require-state.
+    ("check_coverage_drain.py", ()),
 )
 
 #: STATE FENCES -- box-only. They measure LIVE STATE (artifacts, ledgers, organ freshness) that
@@ -184,6 +201,13 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
 #: They run in the hourly box gate, where their verdict is real.
 _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("check_conversion.py", ()),               # L1.28b -- FLATLINE fails
+    # NOTHING IS PARKED (principal 2026-09-23, "nothing should be queued in the research system,
+    # all immediate tested"). Fails when any queue's oldest row is older than ONE CYCLE of the
+    # organ that owns it, when a queue has open rows and no drainer at all, or when rows carry no
+    # enqueue timestamp so their age cannot be measured (L1.28a). It ships RED on purpose: the
+    # first census measured 63,110 rows waiting and a 654 h oldest row, and a fence tuned to pass
+    # on today's backlog would pin that backlog in place (L1.43).
+    ("check_no_queues.py", ()),
     ("check_universe_integrity.py", ()),       # bars: corrupt is quarantined, stale named
     ("check_external_federation.py", ("--require-state",)),   # LAWS 5h -- the live half
     # LAWS 5h / L1.32 -- the SANDBOX half: no runnable federated system goes a rotation window
@@ -232,6 +256,15 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # THE STATE HALF of the enrolment law: no certificate clockless past one cycle. An absent
     # FORWARD_ENROLMENT.json is UNMEASURED, which is a real answer on a clean checkout.
     ("check_forward_enrolment.py", ("--state-only",)),
+    # NO FORWARD CLOCK IS EVER FROZEN OR STALE (principal 2026-09-23). The enrolment fence above
+    # asks whether a certificate HAS a clock; this one asks whether that clock is still MOVING --
+    # a different defect and the silent one, because a clock stops when its identity leaves the
+    # certificate canon while its ledger row survives reading ACTIVE, and nothing raises. It
+    # fails while any clock is FROZEN past its OWN window (counted in the venue's open bars, so
+    # a weekend is not a freeze), while the frozen count sits above its ratchet floor, or while
+    # CLOCK_LIVENESS.json is stale. A STATE fence: off the trading box the report is absent and
+    # the verdict is UNMEASURED, which is a real answer about the host and not a pass.
+    ("check_clock_liveness.py", ()),
     # LAWS 5c -- everything ingested is exploited; the exploitation floor ratchets UP, the
     # DATA STRANDING count ratchets DOWN, and no qualified datum sits in storage without a
     # defined downstream state. A STATE fence: on a clean checkout the ingestion artifact is
@@ -263,6 +296,11 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # ledger past its own cadence means the drain has stopped rather than "this machine has no
     # desk state" -- which is exactly the 281.7-hour silence this fence was built for.
     ("check_recommendation_flow.py", ("--require-state",)),
+    # the live half of the coverage drain: on the box the `coverage_drain` leg runs hourly, so an
+    # absent or stale COVERAGE_DRAIN.json means the drain stopped -- which is the state the
+    # `sources_ingested` stage was already in when this organ was written (148 uncrawled, oldest
+    # waiting 134 hours, and nothing owning the number).
+    ("check_coverage_drain.py", ("--require-state",)),
     # THE PLUMBING MAY NOT STOP SILENTLY (principal 2026-09-23). The `plumbing_watchdog` leg
     # proves by OBSERVATION every fifteen minutes that the adoption clock exists and is enabled
     # with a next run inside the hour, that HEAD descends from the branch tip it should have

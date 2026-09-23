@@ -8,9 +8,11 @@ all live under `tmp_path`.
 
 THE THREE LOAD-BEARING TESTS.
 
-`test_a_forbidden_or_unknown_ground_never_reaches_the_fetch_door` is the access boundary, asserted
-at the door rather than in a comment: only a platform whose `machine_use_allowed` is `allowed` may
-be fetched, and `unknown` resolves to NOT FETCHED.
+`test_only_an_access_control_never_reaches_the_fetch_door` is the access boundary, asserted at the
+door rather than in a comment. IT NARROWED ON 2026-09-23 (LAWS 5e): it used to admit only
+`allowed`, with `unknown` resolving to NOT FETCHED; now a `forbidden` or `unknown` POLICY is a
+label the row carries and the ground is mined, and only a host the desk would have to break into
+-- a login, a paywall, an antibot challenge -- is refused.
 
 `test_the_budget_follows_measured_roi_and_still_explores` asserts the hour is not spent evenly: a
 ground with measured independent survivors outranks one with none, and a ground nobody has
@@ -178,13 +180,23 @@ def test_the_archive_layer_and_the_three_labels_reach_the_report(desk):
 
 
 # --------------------------------------------------------------------------- the access boundary
-def test_a_forbidden_or_unknown_ground_never_reaches_the_fetch_door(desk):
+def test_only_an_access_control_never_reaches_the_fetch_door(desk):
+    """LAWS 5e (2026-09-23). This asserted that NOTHING but `allowed` reached the door, so a
+    robots note and an unread policy both silenced a ground. The door is five acts wide now: a
+    `forbidden` or `unknown` POLICY is a label and the ground is fetched; a host fronted by an
+    antibot challenge, a login or a paywall still is not."""
     civ.run(budget_s=60.0, fetch=True, conn=desk["conn"], at="2026-09-01")
-    walled = {p.host for p in snap.PLATFORMS if snap.machine_use(p)[0] != snap.ALLOWED}
+    walled = {p.host for p in snap.PLATFORMS if not snap.may_fetch(p)[0]}
+    labelled = {p.host for p in snap.PLATFORMS
+                if snap.machine_use(p)[0] != snap.ALLOWED and snap.may_fetch(p)[0]}
+    assert walled, "the hard boundary must still name at least one host"
+    assert labelled, "a merely-labelled host must exist, or this test proves nothing"
     for url in desk["calls"]:
         host = url.split("/")[2] if "//" in url else ""
-        assert host not in walled, f"{url} reached the fetch door on a walled ground"
+        assert host not in walled, f"{url} reached the fetch door past an access control"
     assert any("mql5.com" in u for u in desk["calls"]), "an ALLOWED ground was still fetched"
+    assert any(h in u for u in desk["calls"] for h in labelled), (
+        "a ground carrying only a policy LABEL must now be fetched")
 
 
 def test_the_pass_reports_every_platform_it_did_not_read(desk):
@@ -228,18 +240,24 @@ def test_the_scout_registers_candidates_with_their_access_verdict(desk):
     fine = by_id[civ.source_id_of("mql5_signals")]
     assert fine["machine_use_allowed"] == snap.ALLOWED and fine["fetchable"] is True
     walled = by_id[civ.source_id_of("myfxbook")]
-    assert walled["fetchable"] is False
+    assert walled["fetchable"] is False, "an antibot challenge is hard-boundary act 2"
+    assert walled["hard_boundary"] in snap.BOUNDARY_MARKERS
     assert walled["costs"]["legal_access_cost"] == 1.0
     assert walled["v_s"] < fine["v_s"], "a refusal is priced, not filtered"
     assert civ.source_id_of("myfxbook") in got["never_fetched"]
-    # The registry now carries every candidate with its verdict on the row.
+    # The registry now carries every candidate with its verdict on the row. LAWS 5e
+    # (2026-09-23): collective2's policy is merely UNREAD, which used to make it a
+    # never-fetched `candidate` with a NOT FETCHED licence note. It is ACTIVE and mined now,
+    # and the unread policy travels as a terms note.
     rows = sf.sources(conn=c)
     assert civ.source_id_of("collective2") in rows
     meta = json.loads(rows[civ.source_id_of("collective2")]["meta_json"])
     assert meta["machine_use_allowed"] == snap.UNKNOWN
-    assert rows[civ.source_id_of("collective2")]["status"] == "candidate"
-    assert "NOT FETCHED" in rows[civ.source_id_of("collective2")]["licence_note"]
+    assert meta["terms_note"], "the unread policy is recorded, not forgotten"
+    assert rows[civ.source_id_of("collective2")]["status"] == "active"
+    assert "NOT FETCHED" not in rows[civ.source_id_of("collective2")]["licence_note"]
     assert rows[civ.source_id_of("mql5_signals")]["status"] == "active"
+    assert "hard boundary" in rows[civ.source_id_of("myfxbook")]["licence_note"].lower()
 
 
 def test_v_s_names_every_factor_and_every_cost(desk):
@@ -260,9 +278,13 @@ def test_v_s_names_every_factor_and_every_cost(desk):
     assert paid["v_s"] > got["v_s"] and "measured" in paid["p_useful_basis"]
 
 
-def test_an_unread_policy_is_unknown_and_therefore_not_fetched(desk):
+def test_an_unread_policy_is_unknown_and_the_ground_is_mined_anyway(desk):
+    """LAWS 5e (2026-09-23): the verdict still says UNKNOWN -- that is honest -- but the reason
+    no longer says "not fetched". An unread policy is UNMEASURED, and UNMEASURED is not a
+    prohibition."""
     verdict, why = civ._machine_use_from_robots("https://example.org/x", fetch=False)
-    assert verdict == snap.UNKNOWN and "not fetched" in why
+    assert verdict == snap.UNKNOWN
+    assert "mined all the same" in why and "not fetched" not in why
     assert desk["calls"] == [], "--no-fetch must not read even a robots.txt"
     ok, _why = civ._machine_use_from_robots("https://example.org/x", fetch=True)
     assert ok == snap.ALLOWED

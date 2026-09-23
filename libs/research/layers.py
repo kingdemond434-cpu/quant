@@ -71,6 +71,7 @@ LEG_LAYER: dict[str, str] = {
     "edges_macro_fusion_sweep": "prediction", "alpha_breadth": "prediction",
     "alpha_periodic_table": "prediction", "regime_coverage": "prediction",
     "arena": "meta", "prosecutor": "meta", "scaling_laws": "meta", "dead_architecture": "meta",
+    "producer_census": "meta",
     # timing: when a claim becomes a trade
     "enrol_clocks": "timing", "heal_clocks": "timing", "promoter": "timing",
     "rebalance_trigger": "timing", "entry_timing": "timing",
@@ -173,6 +174,9 @@ LEG_LAYER: dict[str, str] = {
     "posterior_alpha": "sizing", "exposure_decomposition": "portfolio",
     "hazard_engine": "exit",
     "breadth_ladder": "meta", "tier1_scorecard": "meta", "wiring_ceo": "meta",
+    # The queue census measures the machine's own backlog, not any strategy's: meta by
+    # construction (principal 2026-09-23, "nothing should be queued").
+    "queue_census": "meta",
     "probation": "meta", "live_system_state": "meta", "semantic_memory": "meta",
     "model_role_benchmark": "meta", "research_departments": "meta",
     "qd_frontier": "information", "blind_reviewer": "meta",
@@ -253,6 +257,14 @@ LEG_LAYER: dict[str, str] = {
     # the same question `source_routes`, `value_of_data` and `unseen_frontier` are information for
     # -- even though the frontier rows it writes become research work downstream. LAWS 5f.
     "coverage_tensor": "information",
+    # THE COVERAGE DRAIN. The tensor above says which inputs EXIST; this leg spends its hour
+    # turning ground the desk already owns and has never read into ground it has actually
+    # fetched -- registering every root the country packs declare, resolving the rows that were
+    # minted with no url, crawling them through the existing collectors, and verifying each
+    # pack's ten source layers against a registry row that carries a real stamp. Every minute of
+    # it buys INPUT and none of it buys a claim about returns, so it is information by the same
+    # reading that puts `world_crawler` and `deep_forest` there.
+    "coverage_drain": "information",
     "gauntlet_backpressure": "meta", "miner_specialisation": "meta",
     # THE TIER-5 RESIDUALS (mandate 90, 110, 131/132, 133, 134, 136, 97/98, 162). The bounty
     # board and the drawdown-alpha miner are PORTFOLIO: both ask what the BOOK lacks -- a payoff
@@ -331,6 +343,11 @@ LEG_LAYER: dict[str, str] = {
     # the machine watching the machine, which is meta by the definition at the top of this file.
     # It predicts nothing, times nothing and sizes nothing; it names the stalled arrow's organ.
     "loop_liveness": "meta",
+    # CLOCK LIVENESS is the same kind of organ one arrow further in: it measures whether each
+    # FORWARD CLOCK is advancing against its venue's own bars and repairs the ones that are not.
+    # It predicts nothing and sizes nothing -- it keeps the evidence plumbing honest, which is
+    # meta by the definition at the top of this file.
+    "clock_liveness": "meta",
     # THE EXPERIMENT SPINE is the machine's account of its own research: one canonical experiment
     # object, the memory graph over it, credit back along ancestry, the priors the next allocation
     # draws from, and the funnel that divides survivors by what they cost. It proposes nothing and

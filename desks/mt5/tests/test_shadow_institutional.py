@@ -4,10 +4,12 @@ Nothing here reads the box. The axis store, the universe, the fixtures and the r
 `tmp_path`, and the canonical registry is a fresh sqlite file whose backup points at a path that
 does not exist, so `connect()` builds an empty schema rather than restoring the moat copy.
 
-The tests that matter most are the REFUSALS. A guard that fetches a source whose terms forbid
-machine use is not a bug the next session finds in a report -- it is the desk breaking a promise
-it made in writing, so `test_forbidden_endpoint_is_never_fetched` monkeypatches `urlopen` to a
-function that FAILS THE TEST IF IT IS CALLED.
+THE REFUSAL TESTS CHANGED SIDES ON 2026-09-23 (LAWS 5e). They used to pin a guard that refused
+any sensor whose terms restricted machine use -- one declared refusal, `cboe_delayed_surface`,
+with `urlopen` monkeypatched to fail the test if it was called. That was a DISCOVERY BRAKE: the
+terms bound what the desk may REDISTRIBUTE, never what it may read. So the assertions now pin the
+new rule from both sides -- a terms note goes to the wire carrying its label, and a declared
+hard-boundary act (a login, an access control, a paywall) still never opens a socket.
 """
 from __future__ import annotations
 
@@ -88,31 +90,58 @@ def test_every_crypto_sensor_names_mt5_consumers() -> None:
     assert any("not MT5 targets" in p for p in problems)
 
 
-def test_terms_refusal_is_declared_and_cannot_be_a_fetch_class() -> None:
-    refused = [s for s in si.CRYPTO_SENSORS if not s.machine_use_allowed]
-    assert [s.sensor_id for s in refused] == ["cboe_delayed_surface"]
-    assert refused[0].fetch_class == si.UNMEASURED
-    assert refused[0].licence
+def test_a_terms_note_is_a_label_and_no_sensor_is_refused_for_terms() -> None:
+    """LAWS 5e (2026-09-23). `cboe_delayed_surface` was the desk's ONE terms refusal and this
+    test pinned it: `machine_use_allowed=False`, guard refuses by identity. That was a discovery
+    brake -- Cboe's terms restrict REDISTRIBUTION of the delayed tables, not reading them -- so
+    the flag is True now and the fact rides in `licence` and `terms_note`. What is missing on
+    that row is a written route, which is why `fetch_class` is still UNMEASURED."""
+    assert [s.sensor_id for s in si.CRYPTO_SENSORS if not s.machine_use_allowed] == []
+    cboe = next(s for s in si.CRYPTO_SENSORS if s.sensor_id == "cboe_delayed_surface")
+    assert cboe.machine_use_allowed is True
+    assert cboe.fetch_class == si.UNMEASURED
+    assert cboe.licence and "redistribution" in cboe.licence.lower()
+    assert "REGISTERED AND MINED" in cboe.terms_note
+    # A row that DOES claim a hard-boundary refusal must name the act in its licence line.
     bad = si.Sensor(sensor_id="bad", latent="global_risk_appetite", what="x",
                     fetch_class="public_endpoint", source="x", cadence="daily", pit_lag_days=0.0,
-                    machine_use_allowed=False, licence="terms forbid it", sign=1,
+                    machine_use_allowed=False, licence="", sign=1,
                     consumers=("US500",), url="https://example.invalid/x")
-    assert any("may not be a fetch class" in p for p in si.check_sensors([bad]))
+    assert any("is not a decision" in p for p in si.check_sensors([bad]))
 
 
-def test_forbidden_endpoint_is_never_fetched(tree: dict[str, Path],
-                                             monkeypatch: pytest.MonkeyPatch) -> None:
-    def _boom(*_a: Any, **_k: Any) -> Any:
-        raise AssertionError("the guard opened a socket for a source whose terms forbid it")
+def test_a_labelled_endpoint_is_fetched_and_only_the_hard_boundary_refuses(
+        tree: dict[str, Path], monkeypatch: pytest.MonkeyPatch) -> None:
+    """The guard's door is five acts wide. A sensor whose licence restricts redistribution goes
+    to the wire; a sensor that declares a hard-boundary refusal never does, and says so."""
+    opened: list[str] = []
 
-    monkeypatch.setattr(si.urllib.request, "urlopen", _boom)
+    def _spy(req: Any, **_k: Any) -> Any:
+        # Record that the door OPENED, then fail the way an offline box fails, so the guard's
+        # own error handling runs instead of the test's exception escaping through it.
+        opened.append(str(getattr(req, "full_url", req)))
+        raise si.urllib.error.URLError("no network in this test")
+
+    monkeypatch.setattr(si.urllib.request, "urlopen", _spy)
     guard = si.Guard(budget_s=5.0, no_fetch=False, fixtures=tree["fixtures"])
-    cboe = next(s for s in si.CRYPTO_SENSORS if not s.machine_use_allowed)
-    payload, why = guard.get(cboe)
-    assert payload is None
-    assert why.startswith("REFUSED by terms")
-    assert guard.refused == [{"sensor": cboe.sensor_id, "why": why}]
-    assert guard.calls == 0
+    labelled = si.Sensor(sensor_id="labelled", latent="global_risk_appetite", what="x",
+                         fetch_class="public_endpoint", source="x", cadence="daily",
+                         pit_lag_days=0.0, machine_use_allowed=True,
+                         licence="terms restrict redistribution", sign=1, consumers=("US500",),
+                         url="https://example.invalid/x", terms_note="redistribution withheld")
+    guard.get(labelled)
+    assert opened == ["https://example.invalid/x"], "a terms note must not stop the wire"
+    assert guard.refused == []
+
+    walled = si.Sensor(sensor_id="walled", latent="global_risk_appetite", what="x",
+                       fetch_class=si.UNMEASURED, source="x", cadence="daily", pit_lag_days=0.0,
+                       machine_use_allowed=False,
+                       licence="behind a login: reading it would defeat an access control",
+                       sign=1, consumers=("US500",), url="https://example.invalid/y")
+    payload, why = guard.get(walled)
+    assert payload is None and why.startswith("REFUSED on the hard boundary")
+    assert guard.refused == [{"sensor": "walled", "why": why}]
+    assert opened == ["https://example.invalid/x"]
 
 
 def test_guard_reads_a_fixture_in_no_fetch_mode(tree: dict[str, Path]) -> None:
@@ -312,7 +341,9 @@ def test_gap_map_has_a_measured_status_on_every_row(tmp_path: Path) -> None:
     assert by["decades of clean history"]["status"] == si.UNMEASURED   # empty tmp tree
     options = by["options surface (vendor)"]
     assert options["detail"]["deribit_sensors_declared"] >= 5
-    assert "cboe_delayed_surface" in options["detail"]["refused_for_terms"]
+    # LAWS 5e (2026-09-23): Cboe is no longer refused for terms -- it is LABELLED and mined.
+    assert options["detail"]["refused_for_terms"] == []
+    assert "cboe_delayed_surface" in options["detail"]["terms_labelled"]
     # every row that is not fully shadowed NAMES what is missing
     for r in rows:
         if r["status"] in (si.UNMEASURED, "PARTIAL", "DECLARED_ONLY"):

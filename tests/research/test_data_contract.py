@@ -91,13 +91,20 @@ def test_refused_labels_quarantine_and_incomplete_contracts_are_inadmissible() -
     assert DC.provenance_from_verdict(refused=False, quarantine=False) == "CLEAR"
 
 
-def test_machine_extraction_needs_explicit_permission_and_the_lease_is_measured() -> None:
+def test_machine_extraction_is_permitted_by_the_declared_uses_and_the_lease_is_measured() -> None:
+    """REWRITTEN 2026-09-23 (LAWS 5e). `may()` demanded `machine_use_allowed is True`, so an
+    UNMEASURED flag read as a refusal and a dataset nobody had classified was never extracted.
+    That veto is deleted: the contract's declared `permitted_uses` is the whole answer, and the
+    flag survives as provenance about REDISTRIBUTION."""
     c = complete(permitted_uses=("research", "machine_extract"))
-    assert c.may("research") and not c.may("machine_extract")      # None is not permission
+    assert c.machine_use_allowed is None          # UNMEASURED is not a prohibition any more
+    assert c.may("research") and c.may("machine_extract")
     assert complete(permitted_uses=("machine_extract",), machine_use_allowed=True).may(
         "machine_extract")
-    assert not complete(permitted_uses=("machine_extract",), machine_use_allowed=False).may(
+    assert complete(permitted_uses=("machine_extract",), machine_use_allowed=False).may(
         "machine_extract")
+    # A use the contract never declared is still out of scope -- that is scope, not a brake.
+    assert not complete(permitted_uses=("research",)).may("machine_extract")
     assert c.fresh(AT) is None                                       # no lease: UNMEASURED
     leased = complete(freshness_lease_s=3600.0, last_available="2026-09-22T00:30:00+00:00")
     assert leased.fresh("2026-09-22T01:00:00+00:00") is True

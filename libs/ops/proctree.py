@@ -24,6 +24,8 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
 
+from libs.ops.reference_freshness import require_live_rows, stand_down
+
 #: Substrings that identify a pool worker on every platform Python supports.
 WORKER_MARKERS: tuple[str, ...] = (
     "multiprocessing.spawn", "spawn_main", "multiprocessing.forkserver",
@@ -152,7 +154,20 @@ def reap_orphaned_workers(*, apply: bool = True, table: Iterable[ProcInfo] | Non
                           killer: Any = None) -> dict[str, Any]:
     """Kill every orphaned pool worker; report count, commit freed and whether it was applied."""
     rows = list(table) if table is not None else _live_table()
-    orphans = find_orphaned_workers(rows)
+    # NOTHING IS RETIRED ON AN ABSENCE (LAWS 7). "Orphan" here means "parent pid not in the
+    # table", so a table that is EMPTY or PARTIAL (psutil absent, or a scan that could not see
+    # processes it lacks rights to) manufactures orphans out of perfectly parented workers and
+    # this function KILLS them. The positive proof that the table is complete enough to judge by
+    # is that it contains a process we know for certain exists: this one. Without that, the table
+    # is UNMEASURED and nothing is killed.
+    seen_self = any(r.pid == os.getpid() for r in rows)
+    ref = require_live_rows(
+        "proctree live process table", rows, actor="proctree.reap_orphaned_workers",
+        action="kill pool workers whose parent pid is absent from the table",
+        measured=bool(rows) and (seen_self or table is not None),
+        source=("caller-supplied table" if table is not None
+                else f"psutil scan, own pid {'present' if seen_self else 'ABSENT'}"))
+    orphans = find_orphaned_workers(rows) if ref.live else []
     kill = killer if killer is not None else (lambda pid: kill_tree(pid))
     killed: list[int] = []
     if apply:
@@ -160,10 +175,13 @@ def reap_orphaned_workers(*, apply: bool = True, table: Iterable[ProcInfo] | Non
             res = kill(o.pid)
             if not isinstance(res, dict) or res.get("killed", 1):
                 killed.append(o.pid)
-    unmeasured = table is None and psutil is None
+    unmeasured = (table is None and psutil is None) or not ref.live
     return {
         "at": datetime.now(UTC).isoformat(timespec="seconds"),
         "measured": not unmeasured,
+        "table_verdict": ref.verdict,
+        "stood_down": (None if ref.live else stand_down(
+            ref, actor="proctree.reap_orphaned_workers", action="kill orphaned pool workers")),
         "workers_total": sum(1 for r in rows if is_worker(r.cmdline)),
         "orphans": len(orphans),
         "orphan_commit_mb": int(sum(o.commit_mb for o in orphans)),

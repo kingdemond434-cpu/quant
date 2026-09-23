@@ -8039,6 +8039,68 @@
     "measured on the trading box 2026-09-23: canon n=0 -> 28, divergences 14 -> 6, fatal 1 -> 0, 32 banned rows left retired, seal healed to 28, fence --require-state exit 0"
    ],
    "notes": "Two findings published rather than acted on. (1) The six remaining divergences are all LIVE_BOOK_UNBACKED_CLOCK on XAUUSD -- the principal's gold windows, protected by LAWS 5j, non-fatal by design and never retired here; changing what the live book trades is reserved to the principal. (2) The gauntlet printed 'Updated UNIVERSAL_SURVIVORS.json: 7 total (+7)' on 2026-09-23 05:43 for seven rows that FAIL all_ten_pass; the writer is sealed, so the rows are correctly refused by the lane's own test and the misleading print is reported, not patched."
+  },
+  {
+   "id": "CLK1",
+   "domain": "CLK",
+   "phase": "D",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "Forward-clock accrual measured against the VENUE'S session calendar: for every clock, the bars its own instrument and timeframe should have printed since its last advance, the bars it actually accrued, the lag and a verdict ACCRUING / BEHIND / FROZEN / DORMANT_BY_SESSION / RETIRED / UNMEASURED with the organ that owns it",
+   "evidence": [
+    "desks/mt5/research/clock_liveness.py:1 -- the organ; SessionCalendar.open_span counts venue-open bars from libs/research/market_constitution.py venue_fusion() (weekends, holidays, the metals break and the share-CFD cash session removed), so a weekend gap is DORMANT_BY_SESSION and never a freeze (MEASURED)",
+    "desks/mt5/research/clock_liveness.py:470 -- judge_clock: cadence from the lane that advances the clock, tolerance two cadences, freeze window the instrument's own venue day (MEASURED)",
+    "MEASURED on the trading box vmi3571445 2026-09-23: 489 clocks across four lanes -- 92 ACCRUING, 57 BEHIND, 0 FROZEN, 339 RETIRED, 1 UNMEASURED; before the pass 39 were FROZEN",
+    "desks/mt5/tests/test_clock_liveness.py:1 -- 20 tests: a planted frozen clock is detected with its cause, a weekend gap reads DORMANT_BY_SESSION, a terminal row reads RETIRED, and off the trading box every clock reads UNMEASURED (MEASURED)"
+   ],
+   "scheduled_by": "hourly_cycle:clock_liveness, MT5-Dept-Forward",
+   "artifact": "desks/mt5/reports/CLOCK_LIVENESS.json, docs/research/CLOCK_LIVENESS.md",
+   "consumer": "scripts/check_clock_liveness.py (registered in scripts/run_law_gate.py _STATE_FENCES), docs/research/CLOCK_LIVENESS.md",
+   "gap": "",
+   "next_step": "The 57 BEHIND rows are the main lane not reaching all 483 ledger rows every hour; the next measurement is whether shadow_cycle's per-pass coverage, not its cadence, is the binding constraint.",
+   "landed": []
+  },
+  {
+   "id": "CLK2",
+   "domain": "CLK",
+   "phase": "D",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "A FROZEN clock is REPAIRED in the same pass, not reported: re-enrol the identity into shadow_forward's own engine, boot the bar supply and run the lane, or retire a clock whose instrument the broker no longer lists -- each through the control plane's actuators with the clock's OWN stamp moving as the postcondition",
+   "evidence": [
+    "desks/mt5/research/clock_liveness.py:700 -- repair(): causes off_roster / engine_stopped / no_bars / instrument_gone, each an actuator from libs/ops/control_plane/actuators.py with clock_advanced_postcondition, never a return code",
+    "desks/mt5/research/clock_reenrol.py:1 -- reconstructs a frozen identity EXACTLY from data/sleeve_registry.json and hands it to shadow_forward.main(rows=...); anything that does not re-derive its sleeve_key byte for byte is refused UNRECONSTRUCTIBLE, never guessed",
+    "MEASURED on the trading box 2026-09-23: 35 of 35 frozen main-lane identities reconstructed, the actuator ran, the postcondition proved REPAIRED, and the frozen count fell 39 -> 4 in one pass and 4 -> 0 in the next",
+    "libs/ops/control_plane/actuators.py:291 -- run_actuator is the proof harness this organ reuses rather than re-implementing",
+    "desks/mt5/tests/test_clock_liveness.py:144 -- an actuator that exits 0 and moves nothing is UNPROVEN; one that moves the stamp is REPAIRED (MEASURED)"
+   ],
+   "scheduled_by": "hourly_cycle:clock_liveness, MT5-Dept-Forward",
+   "artifact": "desks/mt5/reports/CLOCK_LIVENESS.json, desks/mt5/reports/CLOCK_REENROL.json",
+   "consumer": "scripts/check_clock_liveness.py (a FAILED repair is a fence finding), desks/mt5/reports/shadow/shadow_state.json (the clocks the repair advances)",
+   "gap": "",
+   "next_step": "The qquant lane's engine refuses every certificate for want of an exact gate-policy attestation; when the certificate canon is restored the lane's clocks should be re-enrolled by the same path.",
+   "landed": []
+  },
+  {
+   "id": "CLK3",
+   "domain": "CLK",
+   "phase": "D",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "24/7 enforced rather than hoped: every task that advances a forward clock is audited each pass and a disabled one is enabled and run, a once-a-day one is put on a repetition covering the day; a fence fails while any clock is FROZEN past its own window, when the frozen count rises above its ratchet, or when the report is stale",
+   "evidence": [
+    "desks/mt5/research/clock_liveness.py:620 -- CLOCK_TASKS and ensure_24x7(): the five tasks that advance clocks, audited and repaired on every pass whether or not a clock has frozen yet",
+    "MEASURED on the trading box 2026-09-23: MT5-ForwardReconcile fired on a Daily 04:00 trigger with NO repetition -- the standalone forward reconciler ran in one window a day -- and was put on a 60-minute repetition for 24 hours; its next run moved from tomorrow 04:00 to the same hour",
+    "scripts/check_clock_liveness.py:1 -- the fence; registered in scripts/run_law_gate.py as a STATE fence, UNMEASURED off the trading box and a DEFECT on it under --require-state",
+    "desks/mt5/research/clock_liveness.py:880 -- ratchet_write: the enforced ceiling is the lowest frozen count ever measured on this box and may fall and never rise; MEASURED floor on the box is 0",
+    "desks/mt5/tests/test_clock_liveness.py:230 -- a disabled clock task is enabled AND run, a once-a-day lane is put on a repetition, a repeating task is left alone (MEASURED)"
+   ],
+   "scheduled_by": "hourly_cycle:clock_liveness, MT5-Dept-Forward",
+   "artifact": "desks/mt5/reports/CLOCK_LIVENESS.json",
+   "consumer": "scripts/run_law_gate.py, scripts/check_clock_liveness.py, docs/research/CLOCK_LIVENESS.md",
+   "gap": "",
+   "next_step": "MT5-Shadow and MT5-QQuantShadow both exit 1 every pass for reasons upstream of the clocks (a stale bar-source error and the missing gate-policy attestation); the exit codes are carried in the report but are not yet a fence.",
+   "landed": []
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."

@@ -106,19 +106,21 @@ def test_credibility_is_independent_of_the_access_label(organ) -> None:
 
 
 # ------------------------------------------------------------------------------- quarantine --
-def test_access_unclear_is_quarantined_and_keeps_its_row(organ) -> None:
-    # No url, and a `kind` the desk has no class for: nothing says what this is or how it was
-    # reached. That is a QUESTION, and the row is kept so it can be answered later.
+def test_access_unclear_is_mined_and_never_quarantined(organ) -> None:
+    """REWRITTEN 2026-09-23 (LAWS 5e). No url and a `kind` the desk has no class for: nothing
+    says what this is or how it was reached. That used to QUARANTINE the row -- metadata kept,
+    content never consumed, and nobody ever came back to resolve it. The label stays; the
+    quarantine is deleted, and the ledger is empty by construction."""
     _source("s_unclear", url="", kind="mystery")
     doc = er.run(budget_s=30)
     row = _rows()["s_unclear"]
-    assert row["access_label"] == "ACCESS_UNCLEAR" and row["quarantine"] == 1
-    assert row["source_id"] == "s_unclear", "the metadata row survives quarantine"
+    assert row["access_label"] == "ACCESS_UNCLEAR"
+    assert row["quarantine"] == 0, "the ACCESS_UNCLEAR quarantine was deleted on 2026-09-23"
+    assert row["source_id"] == "s_unclear", "the metadata row survives, as it always did"
     ledger = json.loads(er.QUARANTINE.read_text(encoding="utf-8"))
-    assert ledger["n_quarantined"] == 1
-    assert ledger["quarantined"][0]["source_id"] == "s_unclear"
-    assert ledger["quarantined"][0]["reason"].strip()
-    assert doc["n_quarantined"] == 1
+    assert ledger["n_quarantined"] == 0 and ledger["quarantined"] == []
+    assert "DELETED" in ledger["rule"]
+    assert doc["n_quarantined"] == 0
 
 
 # --------------------------------------------------------------------- refusal with a reason --
@@ -144,15 +146,18 @@ def test_the_three_prohibited_labels_are_refused_with_their_reason(organ) -> Non
     assert set(rows) == {"s_priv", "s_mnpi", "s_dump"}
 
 
-def test_a_machine_restricted_source_is_registered_never_omitted(organ) -> None:
+def test_a_terms_restricted_source_is_mined_and_labelled_for_redistribution(organ) -> None:
+    """REWRITTEN 2026-09-23 (LAWS 5e). `machine_use_allowed=false` was "registered, never
+    scraped". It is a REDISTRIBUTION label now: the source is mined and tested in full and the
+    census that names it is about what the desk may republish."""
     _source("s_terms", url="https://example.com/data",
             meta={"machine_use_allowed": False, "source_class": "media"})
     doc = er.run(budget_s=30)
     row = _rows()["s_terms"]
     assert row["access_label"] == "PUBLIC_WITH_TERMS"
     assert row["quarantine"] == 0, "restricted terms are not a quarantine"
-    assert "s_terms" not in doc["machine_use_restricted"], \
-        "it is neither quarantined nor refused: it is reachable by API or manual review"
+    assert "s_terms" in doc["redistribution_restricted"], \
+        "the terms fact is kept -- as a publication label, not as a refusal to mine"
     assert doc["by_label"]["PUBLIC_WITH_TERMS"] == 1
 
 
@@ -239,8 +244,9 @@ def test_the_report_carries_the_principle_the_boundary_and_the_counts(organ) -> 
     _source("s1", url="https://example.com/a")
     er.run(budget_s=30)
     doc = json.loads(er.REPORT.read_text(encoding="utf-8"))
-    assert doc["principle"].startswith("Mine aggressively")
-    assert "no material nonpublic information used for trading" in doc["hard_boundary"]
+    assert doc["principle"].startswith("The desk mines and tests everything")
+    assert "no material non-public information" in doc["hard_boundary"]
+    assert len(doc["hard_boundary"]) == 5, "the boundary is five ACTS and must not grow"
     assert doc["stages"] == ["DISCOVER", "CAPTURE_METADATA", "LEGAL_ACCESS", "EVIDENCE_CLASS",
                              "RESEARCH"]
     # EVERY label is a key, including the ones with no rows: a zero that is present is a

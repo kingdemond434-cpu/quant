@@ -173,8 +173,9 @@ NEXT_MOVE: dict[str, dict[str, str]] = {
                   "country's own script, and register every root found",
         "SOURCE_HUNT": "fetch a registered root so the source becomes DISCOVERED rather than a "
                        "typed wish",
-        "DISCOVERED": "verify the source: fetch it, classify its access label, and record "
-                      "machine_use_allowed per LAWS 5e",
+        "DISCOVERED": "verify the source: FETCH IT (every label off the five refused acts is "
+                      "mined -- LAWS 5e, 2026-09-23), classify its access label, and record the "
+                      "terms note that routes its redistribution",
         "VERIFIED": "ingest this source's series/documents with PIT stamps",
         "INGESTED": "build representations over what this source serves",
         "REPRESENTED": "compile candidates from this source's mechanism into the executable "
