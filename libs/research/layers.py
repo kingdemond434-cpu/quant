@@ -37,6 +37,10 @@ LAYERS = ("information", "prediction", "timing", "sizing", "portfolio", "executi
 LEG_LAYER: dict[str, str] = {
     # information: what the desk knows before it predicts anything
     "mine": "information", "moat_miner": "information", "world_crawler": "information",
+    # The proposer seat and the kimi hunter both buy the desk a PRIOR it did not have -- which
+    # skeleton, which mechanism name, which territory -- before any claim about returns is made.
+    # That is information, not prediction: neither one scores anything.
+    "proposer_seat": "information", "kimi_hunt": "information",
     "deep_forest": "information", "market_intel": "information", "record_tape": "information",
     "archive_tape": "information", "refresh_bars": "information",
     "timeframe_coverage": "information", "frontier": "information",
@@ -175,6 +179,14 @@ LEG_LAYER: dict[str, str] = {
     "evaluator_lab": "meta", "value_of_data": "information", "research_api_status": "meta",
     "artifact_chain": "meta", "residual_queue": "information", "unseen_frontier": "information",
     "attribution_reconcile": "meta",
+    "macro_state_engine": "information",
+    "research_artifacts": "meta",
+    "engine_registry": "meta",
+    "counterfactual_attribution": "meta",
+    "trend_core": "prediction",
+    "event_surprise": "information",
+    "counterexample_agent": "meta",
+    "search_paradigm_census": "meta",
     "source_registry": "information", "synthetic_regimes": "meta",
     "event_response_atlas": "information", "causal_lab": "information", "world_lab": "prediction",
     # THE MARKET CONSTITUTION: which rule the price was formed under, as a PIT column, and
@@ -211,16 +223,30 @@ LEG_LAYER: dict[str, str] = {
     "trajectory_evolution": "prediction", "research_os_archive": "meta", "regime_router": "sizing",
     "moat_series": "information", "scout_roster": "information",
     "descendants": "prediction", "forward_slot_ranker": "portfolio",
+    # META, both of them, and deliberately: neither buys the desk a prediction. One sizes the
+    # JUDGE (how many cells reach a verdict an hour, from measured cores/memory/commit) and the
+    # other guarantees every certificate gets a forward clock the moment it is minted. They are
+    # the machine that runs the machine -- throughput and evidence plumbing, not edge.
+    "judging_throughput": "meta", "forward_enrolment": "meta",
     "analyst_pipeline": "information", "knowledge_graph": "information",
     "card_explosion": "prediction", "alpha_lineage": "prediction",
     "graveyard_resurrection": "prediction", "shadow_discovery": "information",
     "forward_exploitation": "information", "alpha_recombination": "prediction",
     "unused_information": "information", "discovery_compiler": "prediction",
+    # The conversion maximiser turns registry rows that are NOT yet claims about returns into
+    # claims about returns -- it binds the family, the instrument, the falsifier and the data
+    # snapshot. That is the prediction layer's own work, done on the backlog instead of on
+    # arrivals, so it sits beside the compiler that does it on arrivals.
+    "conversion_maximiser": "prediction",
     # WHICH SOURCES THE DESK MAY LAWFULLY CONSUME is a property of its INPUTS, decided before any
     # signal is derived from them -- the same reading that puts `source_routes` and `data_scout`
     # in information. The ROI reallocator is the machine spending on itself: meta.
     "evidence_router": "information", "research_roi": "meta",
     "research_debt": "meta", "mining_objective": "meta", "research_gap_map": "meta",
+    # THE IMPLEMENTER. Meta, not governance: it spends the hour deciding what the desk's own
+    # recommendations become, which is the machine acting on the machine. An hour here buys no
+    # new hypothesis and is not meant to -- it buys the removal of open rows that name no owner.
+    "implementer": "meta",
     # WHAT THE DESK KNOWS AND COULD KNOW ABOUT THE WORLD, per country x sector x information type
     # x mechanism x representation x asset x session x regime x horizon x execution, plus the deep
     # forest's own tensor. It decides WHICH INPUTS EXIST before any signal is derived from them --
@@ -314,6 +340,11 @@ LEG_LAYER: dict[str, str] = {
     # market is worth at the instant it decides, and what its own orders do to the price. Both
     # are about how an order reaches the venue and what it meets there -- execution.
     "feed_clock_lab": "execution", "impact_lab": "execution",
+    # THE NET-EDGE SPINE (principal 2026-09-23): gross minus spread/slippage, impact, financing,
+    # commission and the multiplicity charge already owed -- the cost of reaching the venue and
+    # of having searched for the cell at all, charged at the cell's own size and state. It ranks
+    # and it attributes; it places nothing, so execution is its layer and not sizing.
+    "net_edge": "execution",
     # THE INGESTION-EXPLOITATION CONTRACT (LAWS 5c, 2026-09-17). The ledger inventories the
     # desk's information estate and gives every ingested datum a downstream state: information.
     # The fusion turns that estate into regime posteriors and nowcasts: prediction. The gate

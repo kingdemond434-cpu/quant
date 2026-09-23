@@ -175,12 +175,24 @@ def test_the_systemd_units_the_vps_manifest_declares_own_their_scripts() -> None
         assert s.schedule.startswith("quant-") or s.schedule.endswith((".timer", ".service"))
 
 
-def test_the_unclocked_ratchet_holds_and_names_what_is_left() -> None:
+def test_the_ratchet_may_never_rise_and_no_rostered_or_retired_file_is_unclocked() -> None:
+    """The DURABLE half of the sweep. The LIVE count is the fence's job
+    (`scripts/check_component_registry.py`, law gate): a dozen builders work this tree at once and
+    an organ can land minutes before the leg that clocks it, so asserting the live number here
+    would fail on somebody else's in-flight file rather than on this sweep's own work.
+    """
     import importlib.util
     spec = importlib.util.spec_from_file_location(
         "cr_check", ROOT / "scripts" / "check_component_registry.py")
     assert spec and spec.loader
     mod: Any = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
-    unclocked = C.census()["unclocked"]
-    assert len(unclocked) <= mod.MAX_UNCLOCKED, f"the ratchet may only fall: {unclocked}"
+    assert mod.MAX_UNCLOCKED <= 2, "the ratchet may only fall (700 -> 2 on 2026-09-23)"
+    unclocked = set(C.census()["unclocked"])
+    rostered = {e.path for entries in B.ROSTERS.values() for e in entries}
+    assert not (rostered & unclocked), "a rostered organ the census still reads as unclocked"
+    retired = {json.loads(ln)["path"]
+               for ln in (ROOT / "docs" / "research" / "retirements.jsonl")
+               .read_text("utf-8").splitlines() if ln.strip()}
+    assert not (retired & unclocked), "a retired file is still being walked as an executable"
+    assert not (retired & rostered), "a file cannot be both retired and rostered"

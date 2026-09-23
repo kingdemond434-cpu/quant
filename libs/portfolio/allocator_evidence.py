@@ -113,11 +113,20 @@ TERM_SPECS: tuple[TermSpec, ...] = (
     TermSpec("factor_tier", "deduction", False,
              "reports/EXPOSURE_DECOMPOSITION.json (cosine with the book's factor exposure)",
              consumed_as="heat-neutral tilt: a sleeve repeating the book's direction moves down"),
+    # DOOR (c) OF THE NET-EDGE SPINE (2026-09-23). Every other term above prices the sleeve's
+    # GROSS behaviour; this one prices what is left after the spread, the impact, the financing,
+    # the commission and the multiplicity charge the desk already owes. It is a heat-neutral
+    # TILT -- it moves the book toward the sleeves that survive their own costs and it cannot
+    # change the total, which is what makes it legal under GROWTH GOVERNANCE rule 1.
+    TermSpec("net_of_cost", "factor", False,
+             "reports/NET_EDGE.json (net = gross - spread/slippage - impact - financing - "
+             "commission - multiplicity), with the sleeve's capacity beside it",
+             consumed_as="heat-neutral tilt by net-of-cost edge relative to the book's mean"),
 )
 SPEC_BY_NAME: dict[str, TermSpec] = {s.name: s for s in TERM_SPECS}
 CONSUMED_TILT_TERMS: tuple[str, ...] = ("research_roi", "lineage_concentration",
                                         "forward_posterior_prior", "marginal_breadth",
-                                        "factor_tier")
+                                        "factor_tier", "net_of_cost")
 
 
 @dataclass(frozen=True)
@@ -464,6 +473,88 @@ def factor_tier_factors(doc: Mapping[str, Any] | None) -> tuple[dict[str, Term],
                      f"{len(names)} factor(s)")
              for n in cos},
             f"EXPOSURE_DECOMPOSITION.json read: {len(cos)} sleeve(s) over {len(names)} factors")
+
+
+def net_of_cost_factors(doc: Mapping[str, Any] | None
+                        ) -> tuple[dict[str, Term], str]:
+    """DOOR (c): the sleeve's edge AFTER every cost it pays, as a heat-neutral tilt.
+
+    `desks/mt5/research/net_edge_spine.py` publishes `capacity_by_sleeve` in NET_EDGE.json: net,
+    gross, the verdict, and the CAPACITY (the size at which net decays to zero). The tilt is
+    each sleeve's net relative to the book's mean net, made heat-neutral by `_heat_neutral` so
+    the product over the funded book is exactly 1.0 -- this reorders the book and can never
+    shrink it (GROWTH GOVERNANCE rule 1; the missed-growth line for every COST_DEAD refusal is
+    in the spine's own report).
+
+    A sleeve the spine could not price is NEUTRAL WITH THE REASON, never a factor of 1.0 that
+    silently claims it trades for free.
+    """
+    rows = (doc.get("capacity_by_sleeve") if isinstance(doc, Mapping) else None) or {}
+    nets: dict[str, float] = {}
+    why_by: dict[str, str] = {}
+    for name, row in rows.items() if isinstance(rows, Mapping) else []:
+        if not isinstance(row, Mapping):
+            continue
+        value = row.get("net")
+        if isinstance(value, (int, float)) and math.isfinite(float(value)):
+            nets[str(name)] = float(value)
+        else:
+            why_by[str(name)] = str(row.get("verdict") or UNMEASURED)
+    if len(nets) < 2:
+        return {}, (f"NET_EDGE.json prices {len(nets)} sleeve net-of-cost edge(s): a tilt needs "
+                    "two, so every sleeve reads neutral and nothing is re-weighted")
+    mean = sum(nets.values()) / len(nets)
+    if mean > 0:
+        raw = {n: min(TILT_HI, max(TILT_LO, v / mean)) for n, v in nets.items()}
+        basis = "ratio to the book's mean net"
+    else:
+        # A BOOK WHOSE MEAN NET IS AT OR BELOW ZERO CANNOT BE TILTED BY A RATIO -- the sign of
+        # the denominator would invert the order and hand the WORST sleeve the largest factor.
+        # The percentile rank of the net answers the same question without a denominator, is
+        # two-sided by construction, and still moves capital toward the sleeves that survive
+        # their own costs. It is never a neutral 1.0 for everyone: a book paying more than it
+        # earns is exactly the book this term exists to reorder.
+        order = sorted(nets, key=lambda k: nets[k])
+        last = max(len(order) - 1, 1)
+        raw = {name: TILT_LO + (TILT_HI - TILT_LO) * (i / last)
+               for i, name in enumerate(order)}
+        basis = "percentile rank of the net (the book's mean net is at or below zero)"
+    tilts = _heat_neutral(raw)
+    out: dict[str, Term] = {}
+    for name, value in nets.items():
+        cap = (rows.get(name) or {}).get("capacity") or {}
+        lots, cap_status = cap.get("lots"), cap.get("status", UNMEASURED)
+        out[name] = Term("net_of_cost", value, MEASURED, tilts[name], "reports/NET_EDGE.json",
+                         f"net {value:+.6f} vs book mean {mean:+.6f}; capacity "
+                         + (f"{lots} lots ({cap_status})" if lots is not None
+                            else f"{cap_status}: {str(cap.get('why') or '')[:120]}"))
+    for name, verdict in why_by.items():
+        out[name] = neutral("net_of_cost",
+                            f"NET_EDGE.json carries no net for this sleeve ({verdict})")
+    return out, (f"NET_EDGE.json read: {len(nets)} sleeve(s) priced net of cost, book mean net "
+                 f"{mean:+.6f}; tilt basis {basis}; heat-neutral, so it reallocates only")
+
+
+def net_capacity_rows(doc: Mapping[str, Any] | None) -> dict[str, dict[str, Any]]:
+    """Per-sleeve CAPACITY -- the size at which net edge decays to zero -- for the bundle.
+
+    The allocator sizes on what the book can actually CARRY, not on what the edge would be at
+    an unreachable size. An UNMEASURED capacity is published with its reason and is never read
+    as unlimited: that reading is the one a book gets margin-called for.
+    """
+    rows = (doc.get("capacity_by_sleeve") if isinstance(doc, Mapping) else None) or {}
+    out: dict[str, dict[str, Any]] = {}
+    for name, row in rows.items() if isinstance(rows, Mapping) else []:
+        if not isinstance(row, Mapping):
+            continue
+        cap = row.get("capacity") or {}
+        out[str(name)] = {"lots": cap.get("lots") if isinstance(cap, Mapping) else None,
+                          "status": (cap.get("status") if isinstance(cap, Mapping)
+                                     else UNMEASURED),
+                          "why": cap.get("why") if isinstance(cap, Mapping) else "",
+                          "net": row.get("net"), "gross": row.get("gross"),
+                          "verdict": row.get("verdict")}
+    return out
 
 
 def financing_term(cost_r_per_trade: float | None, trades_per_day: float | None,

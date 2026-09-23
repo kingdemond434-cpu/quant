@@ -393,6 +393,10 @@ def evidence_vectors(sleeve_rows: list[dict[str, Any]], book: dict[str, float],
         for r in capacity["rows"]:
             if isinstance(r, dict) and r.get("sleeve"):
                 cap_rows[str(r["sleeve"])] = r
+    # DOOR (c) OF THE NET-EDGE SPINE (2026-09-23): the sleeve's edge AFTER every cost it
+    # pays, and the size at which that net decays to zero. Heat-neutral by construction, so it
+    # reorders the book and can never shrink it (GROWTH GOVERNANCE rule 1).
+    net_terms, net_why = AE.net_of_cost_factors(_read_json(REPORTS / "NET_EDGE.json"))
     lineage_of: dict[str, str] = {}
     meta: dict[str, dict[str, Any]] = {}
     for name in roster:
@@ -457,13 +461,20 @@ def evidence_vectors(sleeve_rows: list[dict[str, Any]], book: dict[str, float],
         if cr is not None and _f(cr.get("headroom_multiple")) is not None:
             desc["capacity"] = AE.descriptive("capacity", float(cr["headroom_multiple"]),
                                               "reports/CAPACITY.json headroom_multiple")
+        nt = net_terms.get(name)
+        if nt is not None:
+            desc["net_of_cost"] = nt
         vectors.append(AE.build_vector(
             name, family=m["family"], symbol=m["symbol"], lineage=lineage_of[name],
             lineage_term=lin_terms.get(name), roi_term=roi_t, financing=fin_t,
             financing_charged_in_replay=charged, descriptive_terms=desc))
     return vectors, {"roi": roi_why, "n_roster": len(roster), "n_in_book": len(book),
                      "n_financing_measured": n_fin, "n_roi_measured": n_roi,
-                     "n_rejudge_records": len(index)}
+                     "n_rejudge_records": len(index), "net_of_cost": net_why,
+                     "n_net_of_cost_measured": sum(
+                         1 for n in roster
+                         if (net_terms.get(n) or AE.neutral("net_of_cost", "")).status
+                         == MEASURED)}
 
 
 # ------------------------------------------------------------------------------------ pass

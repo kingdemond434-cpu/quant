@@ -166,20 +166,45 @@ def _load() -> dict[str, Any]:
 _LOCK = ROOT / "data/.recommendation_ledger.lock"
 
 
+def _flock_exclusive(fh: Any) -> None:
+    """Take the exclusive lock on `fh`, on BOTH operating systems, raising OSError if held.
+
+    THIS FILE WAS UNRUNNABLE ON THE TRADING BOX (measured 2026-09-23). `import fcntl` lives in the
+    POSIX-only stdlib, so every MUTATING subcommand -- add, dispose, correct, repoint, claim --
+    died with `ModuleNotFoundError: No module named 'fcntl'` on Windows, while `report` and
+    `verify` (which skip the lock) worked perfectly. The ledger therefore looked healthy from the
+    box and could not be written from it: no row raised, no row disposed, for as long as the only
+    other writer -- a VPS cron invoking an LLM (`ops/run_recommendation_worker.sh`) -- was down.
+    The ledger last moved 2026-09-06 and the box had no way to move it.
+
+    A portability fault in a LOCK is the worst place for one, because the lock is the thing a
+    caller reaches for when it is about to be careful. msvcrt.locking gives Windows the same
+    semantics that matter here: mandatory, exclusive, non-blocking (LK_NBLCK raises OSError when
+    another process holds it), and released by the kernel when the handle closes -- which is what
+    the flock path relies on so there is no stale-lock state to clean up.
+    """
+    try:
+        import fcntl
+    except ModuleNotFoundError:
+        import msvcrt
+        msvcrt.locking(fh.fileno(), msvcrt.LK_NBLCK, 1)
+        return
+    fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+
+
 def _locked(timeout_s: float = 10.0) -> Any:
     """Blocking-with-a-deadline exclusive lock; refuses LOUDLY rather than hanging or skipping.
 
     Ledger mutations are milliseconds, so 10s of contention means a wedged holder -- and the
     refusal path names it (L1.41: no silent swallow; a skipped lock would just re-open the race).
     """
-    import fcntl
     import time as _t
     _LOCK.parent.mkdir(parents=True, exist_ok=True)
     fh = _LOCK.open("w")
     deadline = _t.monotonic() + timeout_s
     while True:
         try:
-            fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            _flock_exclusive(fh)
             return fh
         except OSError:
             if _t.monotonic() > deadline:

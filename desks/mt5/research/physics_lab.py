@@ -315,6 +315,30 @@ def run(*, budget_s: float = 600.0, dry_run: bool = False, max_targets: int = MA
                             "passed": len(passed_here), "per_tradition": rows}
     replicated_across = set.intersection(*passed_by_civ.values()) if passed_by_civ else set()
 
+    # ---- THE PROPOSER SEAT, OPTIONAL: candidate mechanism names for uninterpreted cards.
+    # A card whose mechanism still reads "uninterpreted:" carries a measured relation with no
+    # named cause, which the desk's own rule says may not trade. The seat proposes a CAUSE to
+    # test; it never sets a status, never clears a gate and never supplies a number -- the
+    # proposal lands in `notes`, which no gate reads, and the card is judged exactly as before.
+    # Returns {} on a box with no panel, so this whole block is a no-op there.
+    seat_named = 0
+    try:
+        from libs.research import proposer_seat as _ps
+        _unnamed = [c for c in cards if str(c.mechanism).startswith("uninterpreted")][:12]
+        _names = _ps.names_for("physics_lab",
+                               [{"key": c.card_id, "claim": c.claim[:200],
+                                 "tradition": c.tradition, "target": c.target} for c in _unnamed])
+        for _c in _unnamed:
+            _hit = _names.get(_c.card_id)
+            if _hit:
+                _c.notes.append(f"proposer_seat CANDIDATE mechanism (untested, not an "
+                                f"interpretation): {_hit['mechanism']} | falsifier: "
+                                f"{_hit['falsifier']} | by {_hit['by'].get('model')}")
+                seat_named += 1
+    except Exception as _exc:                             # pragma: no cover - optional seat
+        seat_named = 0
+        del _exc
+
     # ---- the institution's work on the cards
     first = working[0]
     labels = I.state_discovery(first)
@@ -439,6 +463,10 @@ def run(*, budget_s: float = 600.0, dry_run: bool = False, max_targets: int = MA
         unmeasured.append(f"budget: {unreviewed} cards did not reach the reviewers this pass "
                           f"(review deadline {0.90 * budget_s:.0f}s); a card that misses review "
                           f"stays PROPOSED and cannot be FORWARD")
+    if not seat_named:
+        unmeasured.append("proposer_seat: no candidate mechanism name was proposed this pass "
+                          "(no panel resolves, or no card was uninterpreted) -- UNMEASURED, and "
+                          "every card was judged exactly as it is without the seat")
     lockbox = [box.verify(panel) for box, panel in zip(boxes, full_panels, strict=False)]
     wiring = I.wiring_proof(scientists_ran, engines, list(pops["A"]), list(E.ENGINE_NAMES))
     report = _report(started, dry_run, panel_status, memory_status, unmeasured, lockbox=lockbox,

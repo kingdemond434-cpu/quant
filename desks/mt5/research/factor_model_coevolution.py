@@ -107,6 +107,43 @@ BUDGET_S = 900.0
 TOP = 3
 
 
+#: Which heavy backend each ZOO model reaches for, so the health probe in
+#: `libs.research.model_families` can speak for the zoo too. The zoo is not this organ's file
+#: and is not edited; what this organ controls is which models it ASKS the zoo to run.
+_ZOO_BACKEND = {"hist_gb": "boosting", "mlp": "neural", "logistic": "linear",
+                "ridge_sign": "linear"}
+
+
+def healthy_zoo_models(models: tuple[str, ...] | None = None
+                       ) -> tuple[tuple[str, ...], dict[str, str]]:
+    """The zoo models whose backend RETURNS on this box, and why each other was set aside.
+
+    MEASURED 2026-09-22 on the build box: `sklearn.ensemble.HistGradientBoostingClassifier.fit`
+    on a 700 x 4 matrix never returns, and `libs.models.zoo.compete` runs every model in TAX on
+    every pairing -- so one `hist_gb` pairing consumed the organ's whole budget and the leg died
+    at the cycle's prefix with no artifact. A hang inside a C extension cannot be interrupted
+    from Python, so the only defence is not to call it. The family is not declared dead: it is
+    UNMEASURED here, it is published as UNMEASURED, and it comes back automatically the day the
+    probe says the backend returns.
+    """
+    want = tuple(models) if models else tuple(TAX)
+    try:
+        avail = MF.availability()
+    except Exception as exc:
+        return want, {"*": f"health probe unavailable ({type(exc).__name__}); nothing set aside"}
+    keep: list[str] = []
+    aside: dict[str, str] = {}
+    for m in want:
+        fam = _ZOO_BACKEND.get(m)
+        row = avail.get(fam or "", {})
+        if fam and row.get("probe_state") == "started":
+            aside[m] = (f"its backend ({fam}) imports but did not RETURN inside the probe; "
+                        "calling it would consume the whole leg budget -- UNMEASURED, not dead")
+            continue
+        keep.append(m)
+    return tuple(keep) or want[:1], aside
+
+
 def _book_symbols() -> list[str]:
     try:
         from research.state_vector_build import book_symbols
@@ -178,7 +215,23 @@ def run(symbols: list[str] | None = None, budget_s: float = BUDGET_S, seed: int 
         pop: int = POP, gens: int = GENS, models: tuple[str, ...] | None = None,
         write_queue: bool = True) -> dict[str, Any]:
     todo, chosen = _symbols(symbols)
-    models = tuple(models) if models else tuple(TAX)
+    models, models_aside = healthy_zoo_models(models)
+    # THE PROPOSER SEAT, OPTIONAL: it may REORDER the zoo and may never widen it. The option set
+    # is what `healthy_zoo_models` measured as callable on THIS box, so a family the model names
+    # that is not in it -- including one it invented -- is discarded with a reason and cannot be
+    # smuggled into a pairing. Nothing here re-admits a family the health probe set aside. On a
+    # box with no panel this returns `models` unchanged and the hint reads UNMEASURED.
+    seat_hint: dict[str, Any] = {"verdict": "UNMEASURED"}
+    try:
+        from libs.research import proposer_seat as _ps
+        _ordered, seat_hint = _ps.order_hint(
+            "factor_model_coevolution", models,
+            question=("Order these model families by which is most likely to explain the "
+                      "residual of an hourly FX/metals factor model. Return the full list, "
+                      "best first."))
+        models = tuple(_ordered)
+    except Exception as _exc:                             # pragma: no cover - optional seat
+        seat_hint = {"verdict": "UNMEASURED", "why": f"{type(_exc).__name__}: {_exc}"}
     per_sym = budget_s / max(1, len(todo))
     store = fs.FeatureStore(FEATURE_ROOT)
     per_symbol: dict[str, dict[str, Any]] = {}
@@ -228,7 +281,9 @@ def run(symbols: list[str] | None = None, budget_s: float = BUDGET_S, seed: int 
            "symbols": {**chosen, "n": len(todo)}, "tests_run": tests_run,
            "per_symbol": per_symbol, "skipped": skipped, "n_tasks": len(tasks),
            "tasks": [{k: t[k] for k in ("title", "symbols", "params")} for t in tasks],
-           "budget_s": budget_s, "models": list(models), "vocabulary": len(VOCAB),
+           "budget_s": budget_s, "models": list(models),
+           "models_set_aside": models_aside, "proposer_seat": seat_hint,
+           "vocabulary": len(VOCAB),
            "bars_per_symbol": N_BARS, "pop": pop, "gens": gens, "horizon": HORIZON,
            "positive_verdict": POSITIVE, "feature_store": census,
            "trial_ledger": {"path": str(TRIALS), "rows_appended": len(trial_rows),
@@ -397,6 +452,18 @@ def _feature_for(axis: str, vocab: tuple[tuple[str, dict[str, Any]], ...],
     return None
 
 
+def _fam_ok(name: str) -> bool:
+    """A family whose heavy backend HANGS here is not called at all (see `healthy_zoo_models`).
+
+    Only a hang disqualifies: an absent or erroring backend still runs on the pure-Python
+    fallback, which is the whole point of the fallback existing.
+    """
+    try:
+        return MF.availability()[name].get("probe_state") != "started"
+    except Exception:
+        return True
+
+
 def _island_pass(island: CL.Island, x: np.ndarray, y: np.ndarray, sym: str, df: Any,
                  rows: np.ndarray, vocab: tuple[tuple[str, dict[str, Any]], ...], *,
                  gens: int, pop: int, budget_s: float, deadline: float, horizon: int,
@@ -408,7 +475,8 @@ def _island_pass(island: CL.Island, x: np.ndarray, y: np.ndarray, sym: str, df: 
         return {"island": island.name, "verdict": CL.UNMEASURED, "pairings": 0,
                 "why": "fewer than two usable feature columns in this island's information subset",
                 "best": None, "results": [], "requests": []}
-    families = [f for f in island.prior_models if f in MF.FAMILIES] or ["linear"]
+    families = [f for f in island.prior_models
+                if f in MF.FAMILIES and _fam_ok(f)] or ["linear"]
 
     def _rand_cols() -> list[int]:
         k = int(rng.integers(2, min(5, len(cols_all)) + 1))

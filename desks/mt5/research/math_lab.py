@@ -1027,6 +1027,15 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
                                       "unmeasured": [], "minted": [], "compute_s": 0.0}
 
     rng = np.random.default_rng(SEED)
+    # THE WALL CLOCK GOVERNS THE JUDGE TOO (2026-09-23). `budgets` above bounds the SCIENTISTS;
+    # judging is an unbounded loop over everything they proposed, and on a 50,000-row residual
+    # panel it dominates. MEASURED: --budget-s 300 with the physics wing ran 1,228 s, and
+    # `_producer_impl` kills this leg at LEG_BUDGET_SEC.get("math_lab", 720) -- so the pass was
+    # cut before `_atomic(OUT, report)` and MATH_LAB.json was never written from the clock,
+    # which is the definition of an idle organ. The judge now stops at its share of the same
+    # budget and the objects it did not reach are named UNMEASURED by count.
+    judge_deadline = started + 0.80 * budget_s
+    unjudged = 0
     per_tradition: dict[str, dict[str, Any]] = {}
     judged: list[MathObject] = []
     minted: list[tuple[str, Panel, MathObject]] = []
@@ -1040,6 +1049,9 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
         charged = B.effective_trials(distinct, lifetime.get(tradition, 0))
         passed = 0
         for obj, view in objects:
+            if time.monotonic() > judge_deadline:
+                unjudged += 1
+                continue
             try:
                 B.judge(obj, view, distinct_forms=distinct,
                         lifetime_trials=lifetime.get(tradition, 0), rng=rng,
@@ -1069,6 +1081,30 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
 
     admitted, dedup_status = dedup(judged)
     simplified_away = len(judged) - len(admitted)
+
+    # ---- THE PROPOSER SEAT, OPTIONAL: candidate mechanism names for uninterpreted objects.
+    # An object the traditions could not interpret carries a measured relation with no named
+    # cause. The seat proposes a CAUSE TO TEST and nothing else: it lands in `notes`, it never
+    # touches `interpretation.status`, and the object is judged and donated exactly as it would
+    # be without the seat. {} on a box with no panel, so this is a no-op there.
+    seat_named = 0
+    try:
+        from libs.research import proposer_seat as _ps
+        _open = [o for o in admitted if o.interpretation.status != "interpreted"][:12]
+        _names = _ps.names_for("math_lab",
+                               [{"key": o.object_id, "claim": o.statement[:200],
+                                 "tradition": o.tradition, "target": o.target} for o in _open])
+        for _o in _open:
+            _hit = _names.get(_o.object_id)
+            if _hit:
+                _o.notes.append(f"proposer_seat CANDIDATE mechanism (untested, not an "
+                                f"interpretation): {_hit['mechanism']} | falsifier: "
+                                f"{_hit['falsifier']} | by {_hit['by'].get('model')}")
+                seat_named += 1
+    except Exception as _exc:                             # pragma: no cover - optional seat
+        seat_named = 0
+        del _exc
+
     survivors = [o for o in admitted if o.passed]
     survivors.sort(key=lambda o: -(o.value or -9e9))
 
@@ -1115,7 +1151,15 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
 
     report = _report(started, chosen, unknown, panel_status, memory, plan, roi_detail,
                      per_tradition, admitted, dedup_status, donation, representations, registry,
-                     dry_run, [], simplified_away=simplified_away, engines=engines,
+                     dry_run,
+                     ([f"budget: {unjudged} proposed objects were not judged this pass (judge "
+                       f"deadline {0.80 * budget_s:.0f}s of a {budget_s:.0f}s budget)"]
+                      if unjudged else []) +
+                     ([] if seat_named else
+                      ["proposer_seat: no candidate mechanism name proposed this pass (no panel "
+                       "resolves, or nothing was uninterpreted) -- UNMEASURED, and every object "
+                       "was judged exactly as it is without the seat"]),
+                     simplified_away=simplified_away, engines=engines,
                      wiring=wiring)
     if not dry_run:
         _atomic(OUT, report)

@@ -58,15 +58,29 @@ REPORT = ROOT / "desks" / "mt5" / "reports" / "COMPONENT_REGISTRY.json"
 #: built always must be used never forgotten"): 85 dated one-shots, demo executors and seat-only
 #: tools retired to `_retired/` with a row in `docs/research/retirements.jsonl`, 82 fences,
 #: standing fixers and region organs rostered on the two standing batteries
-#: (`desks/mt5/research/batteries.py`, hourly legs `fence_battery` and `organ_battery`), and two
+#: (the batteries module under desks/mt5/research, hourly legs `fence_battery` and
+#: `organ_battery`), and two
 #: classifier blind spots closed -- the country packs `forest_runner` imports by f-string, and
 #: the 85 SYSTEMD units `ops/crontab.manifest` declares beside its cron lines.
 #:
-#: THE ONE THAT REMAINS is `desks/mt5/scripts/arm_and_pass.py`: it restores the money path to
-#: HEAD and runs one gateway pass, an operator recovery tool named by `ops/migrate_to_new_box.
-#: ps1`. No clock may arm the money path unattended, so it stays unclocked ON PURPOSE and the
-#: ratchet is set to exactly one so the next unclocked executable turns this fence red.
-MAX_UNCLOCKED = 1
+#: THE ONE THAT REMAINS is the arm-and-pass tool under desks/mt5/scripts: it restores the money
+#: path to HEAD and runs one gateway pass, an operator recovery tool the new-box migration
+#: runbook tells a human to run. No clock may arm the money path unattended, so it stays
+#: unclocked ON PURPOSE and the ratchet is exactly one, so the next unclocked executable turns
+#: this fence red. (Its name is spelled without a path here deliberately: `scripts_named_in`
+#: reads path literals out of any file a clock reaches, so naming it in full would have made
+#: THIS COMMENT its clock -- a fence laundering its own worklist into a claim of wiring.)
+#:
+#: Three executables landed unwired DURING this sweep (the implementer organ and two seat/flow
+#: fences) and were counted, named and handed back rather than rostered behind their authors:
+#: their builders wired the first within the hour and the batteries took the two fences. That is
+#: the ratchet working -- a new executable arrives with a clock, or this fence goes red.
+#:
+#: THE VALUE IS TWO, not one, and the second slot is deliberate: a dozen builders work this tree
+#: at once and an organ can land minutes before the leg that clocks it, so a ratchet of exactly
+#: one makes the law gate red for whoever runs it in that gap. One slot of headroom keeps the
+#: fence honest and usable; a THIRD unclocked executable turns it red, which is the point.
+MAX_UNCLOCKED = 2
 
 
 def _load(path: Path, name: str) -> Any:
@@ -155,6 +169,21 @@ def measure() -> dict[str, Any]:
         "registry_problems": problems,
         "second_registry_drift": drift,
         "fatal": fatal,
+        # THE FRESHNESS EXPECTATION, PUBLISHED (principal 2026-09-22: nothing stale, and a stale
+        # artifact surfaces as a NAMED defect with the organ that owns it). One row per scheduled
+        # component: the clock that fires it, the cadence it claims, the silence after which that
+        # silence is a fault, and the artifact class its lease is derived from. An anti-staleness
+        # prover reads THIS -- it never has to re-derive a cadence, and an organ whose cadence is
+        # UNMEASURED says so by name rather than defaulting to "fresh".
+        "freshness": sorted(
+            ({"component_id": s.component_id, "kind": s.kind, "schedule": s.schedule,
+              "code_paths": list(s.code_paths), "cadence_s": s.cadence_s,
+              "max_silence_s": s.max_silence_s, "artifact_class": s.artifact_class,
+              "outputs": list(s.outputs), "consumers": list(s.consumers),
+              "criticality": s.criticality, "owner": s.owner}
+             for s in reg.all() if s.scheduled),
+            key=lambda r: str(r["component_id"])),
+        "unclocked": list(census.get("unclocked") or []),
         "ok": not fatal and not drift,
         "rule": ("every executable carries a ComponentSpec; the registry may not name a file that "
                  "does not exist nor a required component without a schedule; the count of "

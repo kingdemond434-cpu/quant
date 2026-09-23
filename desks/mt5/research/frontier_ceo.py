@@ -438,7 +438,25 @@ def build() -> dict:
     except (OSError, ValueError):
         pass
     fresh = [p for p in props if p["id"] not in decided]
+    # THE LOOP CLOSES BACK FROM THE IMPLEMENTER (principal 2026-09-23). `ceo_decided.jsonl` only
+    # knows what THIS organ decided; a proposal the desk implemented or reasoned its way out of
+    # through the recommendation ledger came back here every morning as new work. The implementer
+    # owns that ledger, so it owns the answer: a proposal a TERMINAL row already settles is listed
+    # as settled rather than re-proposed. An unreadable ledger leaves `fresh` untouched -- the
+    # docket must still be written, and re-proposing is the safe failure direction.
+    settled: list[dict] = []
+    try:
+        from research.implementer import already_settled
+        still: list[dict] = []
+        for p in fresh:
+            text = f"{p.get('adds') or ''} {p.get('experiment') or ''}"
+            rid = already_settled(text)
+            (settled if rid else still).append({**p, "settled_by": rid} if rid else p)
+        fresh = still
+    except Exception as exc:                      # never fatal: the docket outranks the filter
+        settled = [{"error": f"{type(exc).__name__}: {exc}"}]
     return {
+        "settled_by_implementer": settled[:40],
         "at": now.isoformat(timespec="seconds"),
         "date": now.date().isoformat(),
         "standing_questions": list(STANDING_QUESTIONS),

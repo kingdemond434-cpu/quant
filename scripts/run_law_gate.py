@@ -163,6 +163,11 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # (resident, discovery window, lattice) reads UNMEASURED without the registry rather than
     # failing. `--strict` promotes the live flags and belongs in the hourly box gate, not here.
     ("check_regional_parity.py", ()),
+    # THE RECOMMENDATION LANE MUST DRAIN (principal 2026-09-23). Every OPEN ledger row names an
+    # owner and a next action, and the OPEN backlog ratchets DOWN only. Portable: the ledger and
+    # the ratchet are tracked, so both halves mean the same in CI, a fresh clone and on the box.
+    # The STALENESS half is state and rides in _STATE_FENCES with --require-state.
+    ("check_recommendation_flow.py", ()),
 )
 
 #: STATE FENCES -- box-only. They measure LIVE STATE (artifacts, ledgers, organ freshness) that
@@ -183,6 +188,11 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("check_scheduler_manifest.py", ()),       # L1.28c state half -- live crontab drift (rc=1)
     ("check_mechanism_attribution.py", ()),    # L1.6 -- no survival on unexplained P&L
     ("check_organ_liveness.py", ()),           # L1.28c -- every organ actually produces
+    # L1.28c, THE SEAT HALF -- every configured intelligence seat donates on ITS OWN cadence.
+    # A seat with no clock is UNMEASURED and counted, never a silent pass; a seat clocked on the
+    # other host is UNMEASURED_HERE and named; the overdue debt is DECLARED by seat name and may
+    # only shrink, so a newly dark seat fails this immediately.
+    ("check_seat_health.py", ()),
     ("check_promotion_gate.py", ()),           # L1.6 -- expansion is bought with evidence
     ("check_excitation.py", ()),               # L1.45 -- no absorbing set, no dead experiment
     ("check_clock_provenance.py", ()),         # L1.46 -- the tape declares which clock stamped it
@@ -192,6 +202,12 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # defined downstream state. A STATE fence: on a clean checkout the ingestion artifact is
     # absent and the verdict is UNMEASURED, which is a real answer and not a pass.
     ("check_ingestion_exploitation.py", ()),
+    # LAWS 5b -- every mined row ends as a testable cell or a recorded, reasoned refusal. The
+    # CONVERSION DEBT (rows that are neither) ratchets DOWN and may never be raised, including
+    # by hand: the enforced ceiling is min(ceiling, lowest_ever). A STATE fence for the same
+    # reason as the line above -- a checkout with no registry reads UNMEASURED, which is a real
+    # answer and not a pass.
+    ("check_conversion_debt.py", ()),
     # the live half of ONE CERTIFICATE TRUTH: on the box an absent authority file is a defect
     ("check_certificate_truth.py", ("--require-state",)),
     # the live half of REGIONAL PARITY (LAWS 5n): on the box the registry IS open and the forest
@@ -199,6 +215,29 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # in the lattice" are measured absences and the law calls each one a defect. It still caps no
     # compute -- it fails the gate and publishes the debt; the allocator does the rest.
     ("check_regional_parity.py", ("--strict",)),
+    # NOTHING IS STALE (principal 2026-09-22). Every artifact the desk publishes has an expected
+    # refresh interval -- its lease, else its declared artifact_class, else DERIVED from its
+    # organ's cadence and recorded -- and one past it is a DEFECT named with its organ, its clock
+    # and its last exit. A STATE fence: it reads the live artifact set, and UNMEASURED is a
+    # verdict rather than a pass. Repairs are raised through the EXISTING control-plane
+    # reconciler (observe -> plan -> apply_plan), never by a fixer of the fence's own, and the
+    # per-artifact ratchet is suspended -- and says so -- while every MT5 clock on the box is
+    # disabled, because that is one administrative fact and not 100 separate defects.
+    ("check_no_staleness.py", ()),
+    # the live half of the recommendation lane: on the box the implementer leg runs hourly, so a
+    # ledger past its own cadence means the drain has stopped rather than "this machine has no
+    # desk state" -- which is exactly the 281.7-hour silence this fence was built for.
+    ("check_recommendation_flow.py", ("--require-state",)),
+    # THE PLUMBING MAY NOT STOP SILENTLY (principal 2026-09-23). The `plumbing_watchdog` leg
+    # proves by OBSERVATION every fifteen minutes that the adoption clock exists and is enabled
+    # with a next run inside the hour, that HEAD descends from the branch tip it should have
+    # adopted, that the git-writer lock can be TAKEN right now, that no orphaned pool worker is
+    # holding commit, that every declared task is present, that each producer/consumer pair
+    # agrees about its path, and that every registered fence has run. This gate refuses to pass
+    # while any of those defects is older than its own escalation window -- and an ABSENT
+    # watchdog report is itself such a defect, because a watchdog that stopped is the quietest
+    # failure the desk can have: no defects reported, because nothing looked.
+    ("check_plumbing_watchdog.py", ()),
 )
 
 

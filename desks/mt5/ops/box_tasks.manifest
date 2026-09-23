@@ -74,7 +74,12 @@ TASK name="MT5-TerminalBoot"       trigger="at startup"           runs="terminal
 # THE FIVE THAT `stall_watch` HEALS AND NOTHING HERE INSTALLS. Whether they run hourly -- the
 # standing requirement -- cannot be answered from this repo until these five triggers are read off
 # the box and written down.
-TASK name="MT5-Gauntlet"           trigger="every 10 minutes, at :01" runs="desks/mt5/scripts/external_gauntlet.py"      installer="NONE" lane="research"
+# MT5-Gauntlet now runs through RunGauntlet.cmd, which exports the worker count, memory budget and
+# headroom ceiling that `research/judging_throughput.py` measured off THIS box into the environment
+# the SEALED external_gauntlet.py already reads. The sealed file is never edited; the cadence below
+# is raised to :05 by `judging_throughput.apply_cadence` while the queue is deep and headroom
+# exists, and the manifest records the base trigger.
+TASK name="MT5-Gauntlet"           trigger="every 10 minutes, at :01 (raised to every 5 by judging_throughput while the queue is deep)" runs="desks/mt5/scripts/RunGauntlet.cmd"      installer="NONE" lane="research"
 TASK name="MT5-Shadow"             trigger="every 1 hour, at :55" runs="desks/mt5/research/shadow_cycle.py"          installer="NONE" lane="research"
 TASK name="MT5-UniversalGate"      trigger="every 1 hour, at :07" runs="desks/mt5/research/universal_gate.py"        installer="NONE" lane="research"
 TASK name="MT5-QQuantShadow"       trigger="every 30 minutes, at :25" runs="desks/mt5/research/qquant_shadow.py"         installer="NONE" lane="research"

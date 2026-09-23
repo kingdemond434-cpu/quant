@@ -7021,6 +7021,259 @@
     "anti-staleness fence 2026-09-23"
    ],
    "notes": "Measured cost 212 s, dominated by building the component registry; the law gate allows 600 s per fence. Adds no fixer, no cap and no veto -- it names debt and hands the repair to the plane that already owns repairs."
+  },
+  {
+   "id": "U64",
+   "domain": "U",
+   "phase": "U",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "THE STANDING BATTERIES (principal 2026-09-22: \"hunt all unwired unused unscheduled etc n make all wired used scheduled everything. 100 percent of everything built always must be used never forgotten\"). 200 executables had a main() and no clock. 82 of them -- the fences no law-gate battery runs, the standing fixers, the region organs and the report builders -- are now rostered on two batteries that ROTATE their roster under one hourly budget each, so every rostered organ runs within one rotation and the artifact publishes, per organ, its last verdict, its rc, its output tail and the AGE of that verdict; NEVER_RUN and `failing` are the worklist. Each organ was MEASURED runnable before it was rostered (the probes of 2026-09-22); the budget slice is a share of the pass budget, floored and capped, and a new organ is not started when free physical memory is below a SHARE of what this machine measures (never a megabyte count from another box), with an unreadable counter UNMEASURED and never a stop signal. Two classifier blind spots closed in the same pass: the country packs and data planes the forest runner imports by f-string (invisible to a static walk, so ten official data planes the forests run hourly read as unclocked) and the 85 SYSTEMD units ops/crontab.manifest declares beside its cron lines. The registry build was 216 s after this and is 57 s now: the reach frontier is deduped and re-reading refused, and candidate path resolution is memoised.",
+   "evidence": [
+    "desks/mt5/research/batteries.py:ROSTERS - the two rosters, 36 fences and 46 organs, each entry a path, its production argv and why it is rostered",
+    "desks/mt5/research/batteries.py:run_battery - the rotation: start from the stored cursor, run while the budget affords it, publish every row with its age",
+    "desks/mt5/research/batteries.py:free_memory - measured here, never assumed; the floor is MEM_FLOOR_SHARE of this machine's own total",
+    "desks/mt5/ops/components.py:battery_specs - one spec per rostered organ with its clock, its rotation cadence and its max_silence, so the freshness expectation is readable without importing the battery",
+    "desks/mt5/ops/components.py:dynamic_reach_roots - the f-string imports the forest runner makes, derived from its own source and the forest roster",
+    "desks/mt5/ops/components.py:systemd_manifest_specs - the units the VPS manifest declares, which cron_specs skipped",
+    "desks/mt5/research/hourly_cycle.py:fence_battery - the leg, --battery fences --once --budget-s 600, cap 720",
+    "desks/mt5/research/hourly_cycle.py:organ_battery - the leg, --battery organs --once --budget-s 600, cap 720",
+    "libs/research/layers.py:fence_battery - layer meta, with organ_battery, because a rotation spanning every layer bills to none of them",
+    "desks/mt5/research/wiring_ceo.py:battery_state - the consumer: failing and never-run rostered organs reach the CEO docket",
+    "desks/mt5/tests/test_batteries.py:test_rotation_advances_so_every_rostered_organ_runs_within_one_rotation - 12 tests in tmp_path; the cursor bug that exercised half a roster forever is pinned"
+   ],
+   "scheduled_by": "hourly_cycle:fence_battery and hourly_cycle:organ_battery",
+   "artifact": "desks/mt5/reports/BATTERY_FENCES.json and desks/mt5/reports/BATTERY_ORGANS.json",
+   "consumer": "desks/mt5/research/wiring_ceo.py (battery_state -> the CEO docket); desks/mt5/reports/COMPONENT_REGISTRY.json freshness rows",
+   "landed": "2026-09-23",
+   "notes": "MEASURED on VMI3500897 2026-09-23: first fences pass ran 5 of 36 in 84.5 s at a 30.6 s slice (90 s budget), 3 failing by their own verdict, full rotation 7.2 h; at the leg's 600 s budget the slice is the 150 s cap. Rostered organs are never run with --dry-run: the dry-run trap of 2026-09-17 was an organ that held a clock and donated nothing."
+  },
+  {
+   "id": "U65",
+   "domain": "U",
+   "phase": "U",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "THE UNCLOCKED RATCHET REACHES ONE (principal 2026-09-22). 85 executables were RETIRED to `_retired/` with a row in docs/research/retirements.jsonl naming reason, replacement and date: the dated 2026-08 hunts and one-question studies, the demo and live-executor scripts that were second writers of the money path, the v2/v4 forks of pipelines the cycle already runs, the crypto-era readers left by the MT5 universe mandate, the seat-dependent LLM researchers the box has no seat for, two organs MEASURED BROKEN (admission.py imports a sizing function that no longer exists; alpha_habitat crashes on the current bar store), and precert_shadow and real_survivors, which are a second enrolment path and a second survivor list beside the ONE certificate lane. The money-path coverage ratchet, which ran on no clock at all, is now a step of ops/gates.sh --full. MAX_UNCLOCKED falls 700 -> 2 (one deliberate, one slot of headroom for an organ that lands minutes before its leg in a tree a dozen builders share), the measured count is 1, and the one that remains is the operator's arm-and-pass recovery tool, unclocked on purpose because no clock may arm the money path unattended. The registry also PUBLISHES the freshness expectation of every scheduled component -- clock, cadence, max_silence, artifact class, outputs, consumers -- so the anti-staleness prover reads a row rather than re-deriving a cadence, and 372 components with no declared cadence are named as UNMEASURED instead of counted fresh.",
+   "evidence": [
+    "docs/research/retirements.jsonl:1 - 88 rows, each naming path, retired_to, reason, replacement and date",
+    "scripts/check_component_registry.py:MAX_UNCLOCKED - 2, with the measured history and the reason the last one stays",
+    "scripts/check_component_registry.py:freshness - one row per scheduled component: schedule, cadence_s, max_silence_s, artifact_class, outputs, consumers",
+    "ops/gates.sh:mt5 money-path floor - scripts/check_mt5_coverage_floor.py runs in the full gate; it had no clock at all",
+    "desks/mt5/tests/test_batteries.py:test_the_unclocked_ratchet_holds_and_names_what_is_left - the census against the ratchet",
+    "desks/mt5/tests/test_batteries.py:test_every_rostered_path_exists_in_this_tree - a roster may never name a file the tree does not hold"
+   ],
+   "scheduled_by": "scripts/run_law_gate.py law fences (check_component_registry.py, every law-gate boundary)",
+   "artifact": "desks/mt5/reports/COMPONENT_REGISTRY.json",
+   "consumer": "scripts/run_law_gate.py (rc 2 on a ratchet breach); desks/mt5/research/wiring_ceo.py; the anti-staleness fence reads the freshness rows",
+   "landed": "2026-09-23",
+   "notes": "MEASURED on VMI3500897 2026-09-23: 1214 specs over 875 executables, coverage 1.0, 1 unclocked (ratchet 2), 0 registry problems, 0 second-registry drift. Before the sweep: 200 unclocked over 939 executables. Registry build 216 s -> 57 s (deduped reach frontier, memoised path resolution)."
+  },
+  {
+   "id": "RD2",
+   "item": "FACTOR x MODEL CO-EVOLUTION AS A FIRST-CLASS ORGAN: separate populations of factors and of models, (F_i, M_j) pairings scored on the same folds, which factors work with which model CLASSES learned and published, and BOTH sides mutated from the residual error. Four islands breed feature subsets against model families; after each generation the champion's out-of-sample residual is interrogated and its structure mutates the FACTOR side (a session-structured residual pushes an hour feature into the set, a state-structured one a volatility feature) AND the MODEL side (a structured residual under a linear family promotes its nonlinear challenger). MEASURED 2026-09-22 on the box: 6 book instruments, 73 bred pairings plus 139 island pairings, 4 islands, 5 migrations, 2 survivors, 4,140 residual rows pooled",
+   "evidence": [
+    "desks/mt5/research/factor_model_coevolution.py:450",
+    "desks/mt5/research/factor_model_coevolution.py:595",
+    "desks/mt5/research/factor_model_coevolution.py:820",
+    "libs/research/coevolution_lab.py:368",
+    "desks/mt5/tests/test_model_search_coevolution.py:1"
+   ],
+   "scheduled_by": "hourly_cycle:coevolution",
+   "artifact": "desks/mt5/reports/COEVOLUTION.json",
+   "consumer": "desks/mt5/research/deepening_worker.py through the research queue (model_pairing and the seven typed request kinds); libs/moat/registry.py research_candidates for every survivor that clears self-play",
+   "domain": "RD",
+   "phase": "RD",
+   "status": "LANDED",
+   "gate": "none",
+   "landed": [
+    "RD-Agent co-evolution closure 2026-09-22"
+   ]
+  },
+  {
+   "id": "RD3",
+   "item": "RESIDUAL-DRIVEN RESEARCH: after each model the residual series becomes a NEW RESEARCH DATASET. The champion's out-of-sample residuals are pooled across the swept instruments and asked what explains their structure by state, session, country, macro, participant, asset and horizon; an axis with no label column is UNMEASURED on that pass, never reported flat. Every structured axis automatically raises a typed request -- factor for state/session, data for country/macro/participant, representation for horizon, mechanism for asset -- into the queue the desk's deepening worker already reads. MEASURED 2026-09-22: 4,140 residual rows pooled, five structured axes (session, country, macro, participant, asset)",
+   "evidence": [
+    "libs/research/coevolution_lab.py:130",
+    "libs/research/coevolution_lab.py:158",
+    "libs/research/coevolution_lab.py:199",
+    "desks/mt5/research/factor_model_coevolution.py:414",
+    "tests/research/test_coevolution_lab.py:1"
+   ],
+   "scheduled_by": "hourly_cycle:coevolution",
+   "artifact": "desks/mt5/reports/COEVOLUTION.json",
+   "consumer": "desks/mt5/research/deepening_worker.py (the merged research queue rows carry queue, priority and request_id); the residual_research block of COEVOLUTION.json",
+   "domain": "RD",
+   "phase": "RD",
+   "status": "LANDED",
+   "gate": "none",
+   "landed": [
+    "RD-Agent co-evolution closure 2026-09-22"
+   ]
+  },
+  {
+   "id": "RD6",
+   "item": "MODEL-FAMILY SEARCH AS ITS OWN CIVILIZATION: ten families -- linear, sparse, tree, boosting, neural, state-space, Bayesian, sequence, graph, mixture-of-experts -- each carrying a factor's discipline: lineage (a declared parent family), a novelty key so nothing is re-tested under a new name, a falsifier (its declared tax in nats per prediction, which its out-of-sample gain must clear) and a verdict allowed to be UNMEASURED. EVERY heavy library is a guarded optional accelerator and every family has a pure-Python fallback that always runs. THE GUARD IS NOT IMPORTABILITY BUT RETURN: measured on the box, sklearn imports in 6.7 s and HistGradientBoostingClassifier.fit on a 700x4 matrix never returns, so a probe subprocess fits each heavy-backed family and a family still marked started is served by the fallback with heavy_verdict UNMEASURED -- and the same health reading decides which zoo models the co-evolution organ asks for. MEASURED first run: 180 (R x M) cells, 6 earning, 5/10 families with an UNMEASURED heavy backend",
+   "evidence": [
+    "libs/research/model_families.py:68",
+    "libs/research/model_families.py:229",
+    "libs/research/model_families.py:249",
+    "libs/research/model_families.py:681",
+    "desks/mt5/research/model_search.py:167",
+    "desks/mt5/research/factor_model_coevolution.py:117"
+   ],
+   "scheduled_by": "hourly_cycle:model_search",
+   "artifact": "desks/mt5/reports/MODEL_SEARCH.json",
+   "consumer": "libs/moat/registry.py research_candidates (each earning cell enqueued as a conditioning_model with its family lineage and novelty key); desks/mt5/research/factor_model_coevolution.py reads the same health map to choose which zoo models to run",
+   "domain": "RD",
+   "phase": "RD",
+   "status": "LANDED",
+   "gate": "none",
+   "landed": [
+    "RD-Agent co-evolution closure 2026-09-22"
+   ]
+  },
+  {
+   "id": "RD7",
+   "item": "REPRESENTATION x MODEL COMPATIBILITY SEARCH: a representation is NEVER declared dead after one learner. Six coordinate systems over the same bars and the same target -- raw, z-scored, ranked, volatility-scaled, range/state and path-shape -- are crossed with the ten model families and the whole grid is published as a matrix. A representation is DEAD only when every learner tried on it failed; with fewer than two learners its verdict is UNMEASURED. The same (R, M) key seen on several instruments keeps its BEST cell, not its last -- the bug that made every representation read DEAD while six earning cells sat in the winners list",
+   "evidence": [
+    "desks/mt5/research/model_search.py:84",
+    "libs/research/coevolution_lab.py:301",
+    "libs/research/coevolution_lab.py:336",
+    "desks/mt5/tests/test_model_search_coevolution.py:82"
+   ],
+   "scheduled_by": "hourly_cycle:model_search,hourly_cycle:coevolution",
+   "artifact": "desks/mt5/reports/MODEL_SEARCH.json",
+   "consumer": "the compatibility_matrix and representation_verdicts blocks of MODEL_SEARCH.json and COEVOLUTION.json; a DEAD representation stops being generated, an UNMEASURED one raises its own learner request",
+   "domain": "RD",
+   "phase": "RD",
+   "status": "LANDED",
+   "gate": "none",
+   "landed": [
+    "RD-Agent co-evolution closure 2026-09-22"
+   ]
+  },
+  {
+   "id": "RD10",
+   "item": "FAILURE TO STRUCTURED NEXT ACTION, AUTOMATIC: every failure emits the descendant its KIND implies. weak IC -> a representation change; state-dependent failure -> a conditional model; cost-dead (gross edge survives, net does not) -> lower-turnover descendants; model misspecification (a structured residual) -> a model-family challenger PLUS a falsification request so the challenger cannot quietly become champion; unmeasurable -> a data request. The classification is read off the numbers the fit already produced, in the desk's own order, and a dead cell that emits nothing is itself the defect. MEASURED 2026-09-22: 81 descendants queued from one co-evolution pass, 174 from one model-family sweep",
+   "evidence": [
+    "libs/research/coevolution_lab.py:225",
+    "libs/research/coevolution_lab.py:247",
+    "libs/research/coevolution_lab.py:272",
+    "desks/mt5/research/model_search.py:322",
+    "tests/research/test_coevolution_lab.py:98"
+   ],
+   "scheduled_by": "hourly_cycle:coevolution,hourly_cycle:model_search",
+   "artifact": "desks/mt5/reports/COEVOLUTION.json",
+   "consumer": "desks/mt5/research/deepening_worker.py through the research queue; the queues block of both artifacts names every descendant kind and its parent",
+   "domain": "RD",
+   "phase": "RD",
+   "status": "LANDED",
+   "gate": "none",
+   "landed": [
+    "RD-Agent co-evolution closure 2026-09-22"
+   ]
+  },
+  {
+   "id": "RD13",
+   "item": "ACTIVE EXPERIMENT DESIGN: when two hypotheses compete the desk runs the experiment that maximises expected information gain about WHICH is true, not both blindly. The two leading islands' disagreement is scored per candidate design in expected bits per second -- a design both theories predict identically is worth zero bits however precisely it is measured -- the winner is queued as a falsification request, and the designs not run are counted as trials saved. The prior over which island holds is read from libs/research/research_priors.py when it is reachable and recorded AS uninformative when it is not",
+   "evidence": [
+    "libs/research/coevolution_lab.py:498",
+    "libs/research/coevolution_lab.py:519",
+    "desks/mt5/research/factor_model_coevolution.py:720",
+    "tests/research/test_coevolution_lab.py:196"
+   ],
+   "scheduled_by": "hourly_cycle:coevolution",
+   "artifact": "desks/mt5/reports/COEVOLUTION.json",
+   "consumer": "the active_design block of COEVOLUTION.json; the chosen design is pushed to the falsification queue and reaches the deepening worker",
+   "domain": "RD",
+   "phase": "RD",
+   "status": "LANDED",
+   "gate": "none",
+   "landed": [
+    "RD-Agent co-evolution closure 2026-09-22"
+   ]
+  },
+  {
+   "id": "RD14",
+   "item": "TRULY 24/7 QUEUES: seven INDEPENDENT queues -- data, factor, representation, model, mechanism, falsification and replication -- so a starved model queue is visible AS a starved model queue rather than hidden inside one pooled backlog that looks busy. Requests are de-duplicated by content hash, carry a priority, and idle capacity with high-value queued work is reported as a DEFECT with the queues that hold the work named. MEASURED 2026-09-22: one co-evolution pass left {data 3, factor 2, model 48, mechanism 1, falsification 27} with every slot in use",
+   "evidence": [
+    "libs/research/coevolution_lab.py:53",
+    "libs/research/coevolution_lab.py:83",
+    "libs/research/coevolution_lab.py:110",
+    "tests/research/test_coevolution_lab.py:206"
+   ],
+   "scheduled_by": "hourly_cycle:coevolution,hourly_cycle:model_search",
+   "artifact": "desks/mt5/reports/COEVOLUTION.json",
+   "consumer": "the queues block of COEVOLUTION.json and MODEL_SEARCH.json; every request is merged into the desk's research queue for the deepening worker",
+   "domain": "RD",
+   "phase": "RD",
+   "status": "LANDED",
+   "gate": "none",
+   "landed": [
+    "RD-Agent co-evolution closure 2026-09-22"
+   ]
+  },
+  {
+   "id": "RD15",
+   "item": "MULTI-ISLAND POPULATIONS: four independent islands with DIFFERENT priors over how the world is shaped (linear, nonlinear, state-conditional, sparse) and DIFFERENT slices of the feature vocabulary, evolving apart. Migration moves ONLY strong concepts: a positive net gain that is strictly better than the destination island's own best, capped per island, so migration cannot homogenise the archipelago into one population with extra bookkeeping. A concept that survives on two islands survived on two information sets. MEASURED 2026-09-22: 4 islands, 139 pairings, 5 migrations",
+   "evidence": [
+    "libs/research/coevolution_lab.py:343",
+    "libs/research/coevolution_lab.py:368",
+    "libs/research/coevolution_lab.py:392",
+    "desks/mt5/research/factor_model_coevolution.py:450",
+    "tests/research/test_coevolution_lab.py:129"
+   ],
+   "scheduled_by": "hourly_cycle:coevolution",
+   "artifact": "desks/mt5/reports/COEVOLUTION.json",
+   "consumer": "the islands and migrations blocks of COEVOLUTION.json; a migrated concept seeds the destination island's next generation",
+   "domain": "RD",
+   "phase": "RD",
+   "status": "LANDED",
+   "gate": "none",
+   "landed": [
+    "RD-Agent co-evolution closure 2026-09-22"
+   ]
+  },
+  {
+   "id": "RD17",
+   "item": "RESEARCH SELF-PLAY: four roles on one claim -- proposer, attacker (the candidate's own fold-to-fold spread against its gain), independent re-implementer (a rebuild that disagrees is fatal) and SIMPLIFIER. A candidate must beat the strongest SIMPLER explanation, not only the null: it must clear the best lower-complexity rival by a complexity price per extra parameter, so structure is never free. A rejected champion does not vanish -- it emits its descendants. A role with no evidence records UNMEASURED rather than being credited as a pass",
+   "evidence": [
+    "libs/research/coevolution_lab.py:424",
+    "libs/research/coevolution_lab.py:428",
+    "desks/mt5/research/factor_model_coevolution.py:702",
+    "tests/research/test_coevolution_lab.py:163"
+   ],
+   "scheduled_by": "hourly_cycle:coevolution",
+   "artifact": "desks/mt5/reports/COEVOLUTION.json",
+   "consumer": "desks/mt5/research/factor_model_coevolution.py:542 -- only a champion whose verdict is SURVIVES_SELF_PLAY is written to the registry, and its roles ride along as lineage on the candidate",
+   "domain": "RD",
+   "phase": "RD",
+   "status": "LANDED",
+   "gate": "none",
+   "landed": [
+    "RD-Agent co-evolution closure 2026-09-22"
+   ]
+  },
+  {
+   "id": "RD18",
+   "item": "SYNTHETIC-WORLD BENCHMARK, CONTINUOUS: six worlds with structures the desk PLANTS itself -- additive, interaction, threshold, state-dependent, lagged, and a NULL control with nothing planted -- and the rediscovery score per research method is re-measured every co-evolution pass. The score is structured worlds rediscovered over structured worlds planted; a positive verdict on the null world is a FALSE POSITIVE published beside the score and never netted into it, so a method that fires on everything cannot look perfect. A desk that cannot rediscover a structure it planted has no standing to claim one it did not. MEASURED 2026-09-22: desk score 0.5 across the ten families",
+   "evidence": [
+    "libs/research/coevolution_lab.py:541",
+    "libs/research/coevolution_lab.py:545",
+    "libs/research/coevolution_lab.py:580",
+    "tests/research/test_coevolution_lab.py:19"
+   ],
+   "scheduled_by": "hourly_cycle:coevolution",
+   "artifact": "desks/mt5/reports/COEVOLUTION.json",
+   "consumer": "the synthetic_world block of COEVOLUTION.json -- per-method score, per-world hit and the null world's false positives; a method scoring zero is a research-method defect, not a market finding",
+   "domain": "RD",
+   "phase": "RD",
+   "status": "LANDED",
+   "gate": "none",
+   "landed": [
+    "RD-Agent co-evolution closure 2026-09-22"
+   ]
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."

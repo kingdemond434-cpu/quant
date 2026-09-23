@@ -326,7 +326,11 @@ def test_the_leg_the_layer_the_gate_and_the_lesson_are_wired():
     call = src[src.index('_costed("certificate_truth"'):][:400]
     assert '"research/certificate_truth.py", "--once", "--budget-s", "120"' in call
     assert "--apply" not in call                       # the migration never rides the clock
-    assert '"certificate_truth"), "validate")' in src   # the validate department
+    # The validate department, read as a MEMBERSHIP rather than as the last name before the
+    # closing paren: legs are appended to that tuple every week, and a test that pins a
+    # neighbour fails on somebody else's leg instead of on this one.
+    dept = src[src.index('"external_gauntlet", "backtest"'):]
+    assert '"certificate_truth"' in dept[:dept.index('"validate")') + 1]
     assert '"certificate_truth": ctt' in src
     from libs.research.layers import LEG_LAYER
     assert LEG_LAYER["certificate_truth"] == "meta"

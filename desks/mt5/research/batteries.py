@@ -134,6 +134,13 @@ FENCES: tuple[Entry, ...] = (
     _e("desks/mt5/scripts/check_desk_health.py", "is the desk running, in plain English"),
     _e("desks/mt5/scripts/check_llm_seat.py", "why this box has no seat, without printing a key"),
     _e("desks/mt5/scripts/disk_census.py", "what is on this disk, and what deleting it costs"),
+    # Landed by another builder on 2026-09-23 with no clock of their own; both are read-only and
+    # were measured runnable the same day. If either later joins the law gate, the registry will
+    # show that clock beside this one -- a fence running twice is cheap, a fence running nowhere
+    # is the defect.
+    _e("scripts/check_seat_health.py", "every configured seat donates, or it is named"),
+    _e("scripts/check_recommendation_flow.py", "the lane from recommendation to implementation "
+       "must DRAIN"),
 )
 
 #: THE ORGAN ROSTER -- standing fixers, region organs and report builders. Production mode.
@@ -316,11 +323,14 @@ def run_battery(battery: str, budget_s: float, *, root: Path | None = None,
     t0 = time.time()
     ran: list[str] = []
     skipped: list[dict[str, str]] = []
+    # THE CURSOR IS READ ONCE. Advancing it inside the loop while also indexing from it skips
+    # every second organ, which is how a rotation silently exercises half a roster forever.
+    start = cursor
     for i in range(len(entries)):
         remaining = budget_s - (time.time() - t0)
         if remaining < MIN_SLICE_S:
             break
-        entry = entries[(cursor + i) % len(entries)]
+        entry = entries[(start + i) % len(entries)]
         free_now, _ = free_memory()
         if floor_mb is not None and free_now is not None and free_now < floor_mb:
             skipped.append({"path": entry.path,
@@ -331,7 +341,7 @@ def run_battery(battery: str, budget_s: float, *, root: Path | None = None,
         res = run_one(entry, min(per, remaining), base)
         runs[entry.path] = {**res, "at": _now()}
         ran.append(entry.path)
-        cursor = (cursor + i + 1) % len(entries)
+        cursor = (start + i + 1) % len(entries)
 
     state[battery] = {"cursor": cursor, "runs": runs, "at": _now()}
     _atomic(sp, state)
