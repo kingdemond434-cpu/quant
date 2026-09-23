@@ -192,12 +192,25 @@ _FAILCLOSED_RE = re.compile(r'^(\s*fail_closed_to:\s*")([^"]*)(".*)$', re.M)
 
 
 def apply_to_spec(charged: int, *, variance: float, path: Path | None = None,
-                  dry_run: bool = False) -> dict[str, Any]:
+                  dry_run: bool = False, authorised: bool = False) -> dict[str, Any]:
     """Write the corrected charge into the judge's existing input, preserving the file's text.
 
     An anchored regex edit, NOT a YAML round-trip: every threshold in `gate_spec.yaml` carries the
     measurement that set it in a comment above it, and a `safe_dump` would silently delete the
     entire audit trail this desk's policy is made of.
+
+    THE BAR NEVER MOVES ON ITS OWN (principal's standing order, 2026-09-23): "bars must never move
+    and always be same unless one of us decide or agree to change them." So this function REFUSES
+    to write unless `authorised` is passed explicitly, and the hourly leg never passes it. The
+    organ's job on a clock is to MEASURE the charge and PUBLISH it beside the standing one; moving
+    the wall is a deliberate act by the principal or by a session acting on the principal's
+    decision, recorded in the commit that does it.
+
+    This is not a cap and it does not make the desk more timid: an unauthorised run still reports
+    the full measurement, so a bar that SHOULD come down is visible the hour it is measured rather
+    than discovered later. What it removes is the failure mode where the evidentiary standard a
+    live certificate was issued under drifts hour to hour with the shape of the docket, which
+    would mean no two certificates were ever judged against the same bar.
     """
     target = path or SPEC_PATH
     try:
@@ -215,6 +228,14 @@ def apply_to_spec(charged: int, *, variance: float, path: Path | None = None,
         return {"status": "UNCHANGED", "standing": standing, "charged": charged,
                 "why": f"change {abs(standing - charged) / standing:.4f} below "
                        f"MIN_CHANGE_FRAC {MIN_CHANGE_FRAC}; the bar is policy, not the hour"}
+    # The checks above are MEASUREMENTS and run unauthorised, so an unauthorised pass still says
+    # whether the wall would have moved at all. Authorisation gates only the WRITE.
+    if not authorised:
+        return {"status": "REFUSED_UNAUTHORISED", "standing": standing, "charged": charged,
+                "variance": variance,
+                "why": "the bar never moves on its own (principal 2026-09-23); this pass measured "
+                       f"{charged} against the standing {standing} and published it, and only a "
+                       "deliberate authorised act changes the spec"}
     basis = (f"effective_campaign_trials({charged}) + fixed_variance_of_sharpes({variance}): "
              f"the campaign charge is measured in EFFECTIVE independent tests -- the "
              f"participation ratio of (grid cell, content) identities within each mechanism -- "
@@ -222,9 +243,18 @@ def apply_to_spec(charged: int, *, variance: float, path: Path | None = None,
              f"every cell regardless of how many others share its sweep")
     new = _COUNT_RE.sub(lambda mm: f"{mm.group(1)}{charged}{mm.group(3)}", text, count=1)
     new = _BASIS_RE.sub(lambda mm: f"{mm.group(1)}{basis}{mm.group(3)}", new, count=1)
+    # FAIL-CLOSED MEANS FAIL TOWARDS THE HARDER BAR, AND THIS WROTE THE EASIER ONE.
+    # `fail_closed_to` is the charge the gate uses when the census CANNOT be computed. Writing the
+    # newly-relieved count here meant an unmeasurable census silently handed out relief the desk
+    # had not measured that hour -- the one path where nothing is known is the one path that must
+    # not be generous. NOMINAL_CAMPAIGN_TRIALS is the standing wall the desk's certificates were
+    # issued under, so an unreadable census costs a candidate nothing it was ever promised and
+    # grants it nothing it has not earned.
     new = _FAILCLOSED_RE.sub(
-        lambda mm: f"{mm.group(1)}effective_campaign_trials({charged}){mm.group(3)}", new,
-        count=1)
+        lambda mm: (f"{mm.group(1)}fixed_campaign_trials({NOMINAL_CAMPAIGN_TRIALS}): the charge "
+                    f"when the census cannot be computed is the standing wall, never the "
+                    f"measured relief -- an unmeasurable hour earns nothing{mm.group(3)}"),
+        new, count=1)
     if new == text:
         return {"status": "UNCHANGED", "standing": standing, "charged": charged,
                 "why": "spec text already carries this charge"}
@@ -263,8 +293,15 @@ def judge_reads(expected: int) -> dict[str, Any]:
 
 
 def build(*, docket: Path | None = None, spec: Path | None = None,
-          apply: bool = True, budget_s: float = 120.0) -> dict[str, Any]:
-    """Measure, publish, feed the judge's input, and measure that the judge reads it."""
+          apply: bool = True, authorise: bool = False,
+          budget_s: float = 120.0) -> dict[str, Any]:
+    """Measure, publish, feed the judge's input, and measure that the judge reads it.
+
+    `authorise` defaults False and the hourly leg never sets it, so the scheduled pass MEASURES
+    the charge without moving the wall (principal 2026-09-23: bars never move unless one of us
+    decides). The measurement is published either way, so a bar that should come down is visible
+    the hour it is measured.
+    """
     t0 = time.time()
     rows = read_docket(docket)
     census = measure(rows)
@@ -273,8 +310,11 @@ def build(*, docket: Path | None = None, spec: Path | None = None,
     standing = spec_fixed_trial_count(spec)
     nominal = NOMINAL_CAMPAIGN_TRIALS if standing is None else standing
     charged, basis = charge(census, nominal=NOMINAL_CAMPAIGN_TRIALS)
-    applied = (apply_to_spec(charged, variance=variance, path=spec) if apply
-               else {"status": "SKIPPED", "standing": standing, "charged": charged})
+    # `--apply` alone is no longer enough to move the wall. Passing `authorised` is a deliberate
+    # act, and the hourly leg does not pass it: on a clock this organ measures and publishes,
+    # and the bar a certificate was judged under stays the bar until someone decides otherwise.
+    applied = (apply_to_spec(charged, variance=variance, path=spec, authorised=authorise)
+               if apply else {"status": "SKIPPED", "standing": standing, "charged": charged})
     effective_now = spec_fixed_trial_count(spec)
     proof = judge_reads(effective_now if effective_now is not None else nominal)
     before = sr0(nominal, variance)
@@ -356,9 +396,13 @@ def main(argv: list[str] | None = None) -> int:
                     help="measure and publish, but do not write the spec")
     ap.add_argument("--docket", type=Path, default=None)
     ap.add_argument("--spec", type=Path, default=None)
+    ap.add_argument("--authorise-bar-change", action="store_true",
+                    help="deliberately move the standing multiplicity wall. The scheduled pass "
+                         "NEVER passes this: the bar stays the bar until the principal, or a "
+                         "session acting on the principal's decision, changes it on purpose.")
     args = ap.parse_args(argv)
     doc = build(docket=args.docket, spec=args.spec, apply=not args.no_apply,
-                budget_s=args.budget_s)
+                authorise=args.authorise_bar_change, budget_s=args.budget_s)
     write(doc)
     for line in render(doc):
         print(line)

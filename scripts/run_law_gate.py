@@ -250,6 +250,20 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # and a fence that punished it would be switched off inside a week. Portable: without the
     # report it reads UNMEASURED and passes; the box half rides in _STATE_FENCES.
     ("check_judge_coverage.py", ()),
+    # NO IMPLICIT STASH, IN ANY SCOPE (R0423). The ban on `git stash` was enforced by reading
+    # habits and by nothing else: `merge.autoStash` and `rebase.autoStash` make git stash
+    # IMPLICITLY before a merge or rebase body, so no script names the command and a grep over
+    # the whole tree returns clean on a box where every pull stashes first. On the trading box
+    # that stash covers ~21,884 live paths -- the bars, the corpora and every ledger -- under
+    # the index lock `Adopt-Release.ps1` already contends for: it either costs the adoption
+    # window or parks the desk's state in an entry no organ pops. This fails on either key being
+    # TRUE IN ANY SCOPE (not merely the effective one: a `true` a narrower scope happens to
+    # override is one fresh clone away from winning) and on any stash entry existing at all.
+    # UNSET is git's own default of false, so it passes and is reported UNPINNED rather than
+    # failed -- a gate red on every clean clone is a gate that gets switched off (L1.43).
+    # Portable: it reads git's own config and ref state, so it means the same in CI, a fresh
+    # clone, on the VPS and on the box.
+    ("check_autostash.py", ()),
 )
 
 #: STATE FENCES -- box-only. They measure LIVE STATE (artifacts, ledgers, organ freshness) that
