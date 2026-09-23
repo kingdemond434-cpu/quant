@@ -2,16 +2,16 @@
 
 DERIVED FILE -- rendered from `desks/mt5/reports/IMPLEMENTER.json` by `desks/mt5/research/implementer.py`. Edit the organ or the ledger, never this page.
 
-Measured 2026-09-23T02:50:19.898101+00:00 · leg `hourly_cycle:implementer` · cadence 3h
+Measured 2026-09-23T03:11:45.714455+00:00 · leg `hourly_cycle:implementer` · cadence 3h
 
-- OPEN before this pass: **219** -> after: **216**
-- rows moved: **226** blocked 216, implemented 3, rejected 6, scheduled 1
-- intake: 7 new row(s); 0 proposal(s) NOT re-proposed because the desk already settled them
+- OPEN before this pass: **216** -> after: **216**
+- rows moved: **216** blocked 216
+- intake: 0 new row(s); 0 proposal(s) NOT re-proposed because the desk already settled them
 - open rows with no owner and no next action: **0** (the defect this organ exists to remove; it must be 0)
 - largest blocker class: **needs_specification**
 - OPEN ratchet floor: 216 (0 recorded rise(s))
 
-Oldest OPEN row: **R0495** raised 2026-08-12T17:09:22.730103+00:00 (993.7h) · owner `hourly_cycle:implementer`
+Oldest OPEN row: **R0495** raised 2026-08-12T17:09:22.730103+00:00 (994.0h) · owner `hourly_cycle:implementer`
 
 > THE OWED-WORK WORKER IS HANDED DEFECT LISTS THAT ARE ALREADY STALE, and it cannot tell without re-running the audit. Measured 2026-08-12: of 4 defects handed to
 

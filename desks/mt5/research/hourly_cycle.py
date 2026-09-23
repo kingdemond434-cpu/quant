@@ -785,7 +785,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "understanding_seat", "archaeology", "sares", "shadow_institutional",
                      "source_civilizations", "evidence_watchtower", "prediction_markets",
                      "latent_actors", "residual_hunt", "evidence_router",
-                     "federation_ops", "sandbox_runner", "proposer_seat", "kimi_hunt"),
+                     "federation_ops", "sandbox_runner", "sandbox_provision",
+                     "sandbox_roster", "proposer_seat", "kimi_hunt"),
                     "intel"),
     # discovery: the candidate pipeline, in order, plus the evolutionary generators
     **dict.fromkeys(("search", "sweep", "breadth_sweep", "compile_candidates", "merge_docket",
@@ -1265,6 +1266,10 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # The sandbox runner stops itself at --budget-s 900 (each system inside its ROI share) and
     # writes SANDBOX_RUNNER.json; the cap sits above it so it is never cut at the same prefix.
     "sandbox_runner": 1_000,
+    # The supply line stops itself at --budget-s 600 (one pinned wheel at a time, ROI order) and
+    # the roster generator at 120; both caps sit above their own budgets for the same reason.
+    "sandbox_provision": 700,
+    "sandbox_roster": 200,
     # The physics lab stops itself at --budget-s 600 and writes PHYSICS_LAB.json; the cap sits
     # above it so the institution's pass is never cut at the same prefix every hour.
     "physics_lab": 700,
@@ -3357,6 +3362,19 @@ def main() -> None:
     sbr = _costed("sandbox_runner", lambda: _producer("sandbox_runner",
                                                       "research/sandbox_runner.py",
                                                       "--once", "--budget-s", "900"))
+    # THE SANDBOX SUPPLY LINE (LAWS 5h/5m): installs the pinned requirement of the systems the
+    # runner could only record UNMEASURED, into ONE shared venv over the desk's own interpreter,
+    # proves the module imports, reads the licence at the same pin, and settles what this
+    # interpreter can never host as PERMANENTLY_UNAVAILABLE with its exact error and its cover.
+    sbp = _costed("sandbox_provision", lambda: _producer("sandbox_provision",
+                                                         "research/sandbox_provision.py",
+                                                         "--once", "--budget-s", "600"))
+    # THE ROSTER (LAWS 5h): one GENERATED table naming every roster seed, every adapter and
+    # every rebuilt cell with its disposition, licence, capability family, whether it runs here,
+    # its last run, what it produced and its marginal breadth. Never hand-written.
+    sbo = _costed("sandbox_roster", lambda: _producer("sandbox_roster",
+                                                      "research/sandbox_roster.py",
+                                                      "--once", "--budget-s", "120"))
     # THE MACRO RESEARCH DIVISION as a region instance (the Japan template for global macro):
     # nineteen miners over G10 banks, releases, positioning, rates, auctions, interventions,
     # propagation, fixings, commodity fundamentals, risk regimes; hourly on the macro resident.
@@ -3959,6 +3977,7 @@ def main() -> None:
                     "certificate_truth": ctt, "loop_liveness": llv,
                     "fence_battery": fbt, "organ_battery": obt,
                     "federation_ops": fops, "sandbox_runner": sbr,
+                    "sandbox_provision": sbp, "sandbox_roster": sbo,
                     "source_civilizations": svc, "evidence_watchtower": ewt,
                     "prediction_markets": pmk, "dislocation_lab": dsl,
                     "shadow_institutional": shi, "latent_actors": lat, "latency_lab": lab,

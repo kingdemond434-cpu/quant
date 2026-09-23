@@ -288,6 +288,28 @@ def test_the_bar_coverage_report_drives_the_backfill(desk) -> None:
     assert cov["per_symbol"]["TESTFX"]["M5"] == "fetch"
     assert cov["fetch_requests"] >= 1
     assert cov["owner"]
+    assert {"symbol": "TESTFX", "chart": "H4"} in cov["resampleable"]
+
+
+def test_the_backfill_builds_every_series_the_arithmetic_allows(desk) -> None:
+    cov = cm.bar_coverage(["TESTFX", "TESTXAU"], universe_dir=desk["universe"])
+    out = cm.backfill_bars(cov, budget=cm.Budget(60.0), universe_dir=desk["universe"])
+    assert out["built"] >= 2, "the coverage report is a work list, not a description"
+    for sym in ("TESTFX", "TESTXAU"):
+        assert (desk["universe"] / f"{sym}_H4.parquet").exists()
+        assert not (desk["universe"] / f"{sym}_M1.parquet").exists(), (
+            f"{sym}: a finer bar may never be invented to make a ladder look full")
+    # 1,200 H1 bars make 300 H4 bars but only 50 D1 bars, which is below the minimum a cell can
+    # be judged on. That series is NOT written and the shortfall is named: replacing "no data"
+    # with "data that fails the next gate" is not a conversion.
+    assert not (desk["universe"] / "TESTFX_D1.parquet").exists()
+    assert any(f["chart"] == "D1" and "minimum" in f["why"] for f in out["failures"]), \
+        out["failures"]
+    # Run again: what is already held is not rebuilt, and the same shortfall is named the same way.
+    again = cm.backfill_bars(cm.bar_coverage(["TESTFX"], universe_dir=desk["universe"]),
+                             budget=cm.Budget(60.0), universe_dir=desk["universe"])
+    assert again["built"] == 0
+    assert all("minimum" in f["why"] for f in again["failures"])
 
 
 # ------------------------------------------------------------------------------ the breadth
