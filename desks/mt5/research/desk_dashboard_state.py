@@ -176,6 +176,19 @@ def _age_of_iso(stamp: Any) -> float | None:
     return None
 
 
+def _seconds_until(stamp: Any) -> float | None:
+    """Seconds from now to a stamp, POSITIVE into the future. `_age_of_iso` clamps at zero, which
+    is right for an artifact's age and wrong for a release that has not happened yet."""
+    if not isinstance(stamp, str) or not stamp.strip():
+        return None
+    with contextlib.suppress(ValueError):
+        parsed = datetime.fromisoformat(stamp.strip().replace("Z", "+00:00"))
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=UTC)
+        return (parsed - _now()).total_seconds()
+    return None
+
+
 def _tail_rows(path: Path, nbytes: int, limit: int) -> list[dict[str, Any]]:
     """The last rows of a JSONL file without reading the whole file -- news_captures is 50 MB."""
     rows: list[dict[str, Any]] = []
@@ -268,10 +281,18 @@ def _canon(deadline: float) -> dict[str, Any]:
                 "sleeve": row.get("name"), "status": row.get("status"),
                 "symbol": row.get("symbol"), "timeframe": row.get("timeframe")}
 
+    # THE STORE IS WRITTEN IN TWO SHAPES and both are live on this desk: a list of certificate
+    # keys, and a dict of key -> the judged row. Reading only one of them is how a dashboard
+    # shows an empty canon while the desk holds 28 certificates.
     survivors = _dig(us.doc, "survivors", default=[])
+    pairs: list[tuple[str, dict[str, Any]]] = []
+    if isinstance(survivors, dict):
+        pairs = [(str(k), v if isinstance(v, dict) else {}) for k, v in survivors.items()]
+    elif isinstance(survivors, list):
+        pairs = [(str(k), {}) for k in survivors]
     rows: list[dict[str, Any]] = []
-    if isinstance(survivors, list):
-        for key in survivors:
+    if pairs:
+        for key, cert in pairs:
             if time.time() > deadline:
                 break
             ident = row_identity("UNIVERSAL_SURVIVORS", str(key), {})
@@ -292,6 +313,7 @@ def _canon(deadline: float) -> dict[str, Any]:
                               if backing else UNMEASURED),
                 "clock_why": ("" if backing else
                               "no row in data/sleeve_registry.json joins this identity"),
+                "days": cert.get("days"),
                 "live": bool(live), "live_sleeve": (live or {}).get("sleeve")})
 
     n_backed = sum(1 for r in rows if r["clocks"])
@@ -304,8 +326,9 @@ def _canon(deadline: float) -> dict[str, Any]:
         "canon_status": ct.field(canon_block.get("status")),
         "canon_store": ct.field(canon_block.get("source")),
         "scalp_n": ct.field(canon_block.get("scalp_n")),
-        "retired": us.field(len(_dig(us.doc, "retired_certificates", default=[]) or [])
-                            if isinstance(_dig(us.doc, "retired_certificates"), list) else None),
+        "retired": us.field(len(_dig(us.doc, "retired_certificates") or [])
+                            if isinstance(_dig(us.doc, "retired_certificates"), (list, dict))
+                            else None),
         "swept_at": us.field(_dig(us.doc, "swept_at")),
         "n_backed_by_clock": us.field(n_backed if rows else None,
                                       "no survivor rows to join"),
@@ -674,7 +697,8 @@ def _macro(deadline: float) -> dict[str, Any]:
                 "window_end_utc": ev.get("window_end_utc"),
                 "instruments": instruments[:8],
                 "n_instruments": len(instruments),
-                "in_s": _age_of_iso(ev.get("window_start_utc")),
+                "in_s": _seconds_until(ev.get("window_start_utc")),
+                "in": _human_age(_seconds_until(ev.get("window_start_utc"))),
                 "desk": (f"WAITING: {len(hit)} live sleeve symbol(s) in this window ("
                          + ", ".join(hit[:4]) + ")") if hit else
                         "NO LIVE SLEEVE trades an instrument in this window",
@@ -789,7 +813,7 @@ def _macro(deadline: float) -> dict[str, Any]:
 
 # ---------------------------------------------------------------------------------- HEADLINE
 def _headline(sections: dict[str, Any]) -> dict[str, Any]:
-    """The six numbers checked at a glance. Each keeps the provenance of the section it came from."""
+    """The six numbers checked at a glance, each keeping the provenance of its own section."""
     ii = Src("desks/mt5/reports/INDEPENDENCE_INTAKE.json", 7200,
              "desks/mt5/research/independence_intake.py")
     per_hour = _find_key(ii.doc, "per", "hour")
@@ -921,8 +945,8 @@ def main(argv: list[str] | None = None) -> int:
         for key in ("equity", "day_pnl", "certificates", "defects_open", "cells_per_hour",
                     "clocks_accruing", "binding_bottleneck"):
             cell = head.get(key, {})
-            print(f"  {key:<24} {str(cell.get('value')):<18} {cell.get('status')!s:<10} "
-                  f"{str(cell.get('age') or ''):<8} {str(cell.get('why') or '')[:70]}")
+            print(f"  {key:<24} {cell.get('value')!s:<18} {cell.get('status')!s:<10} "
+                  f"{cell.get('age') or ''!s:<8} {str(cell.get('why') or '')[:70]}")
         print(f"  unmeasured rows: {doc['n_unmeasured']}; degraded: {doc['degraded_sections']}")
         print(f"  written: {doc.get('written')}")
     return 0
