@@ -450,6 +450,8 @@ class _Evaluator:
         #: What `evolve_recipe` changed for each finalist: the rest of the genome, and by how
         #: much its marginal dE[log W] moved (Tier-1 B5).
         self.recipe_evolution: list[dict] = []
+        #: Recipe variants that could not be screened, by name. Reported, never silent.
+        self.recipe_failures: list[str] = []
         self.sharpes: list[float] = []                     # for the multiplicity charge
 
     @staticmethod
@@ -728,7 +730,14 @@ class _Evaluator:
                     if abs(val - trial[param]) < 1e-9:
                         continue
                     trial[param] = val
-                    got = self._score_recipe(expr, side_mode, z, trial, row, k)
+                    try:
+                        got = self._score_recipe(expr, side_mode, z, trial, row, k)
+                    except Exception as exc:
+                        # ONE VARIANT MAY FAIL WITHOUT COSTING THE SEARCH THAT FOUND IT. The
+                        # expression population is already evaluated by the time this stage runs;
+                        # a screen that raises on one hold length must not discard it.
+                        self.recipe_failures.append(f"{k}|{param}={val}: {type(exc).__name__}")
+                        continue
                     if got is None:
                         continue
                     best["n_variants"] = int(best["n_variants"]) + 1
@@ -916,7 +925,10 @@ def evolve(sym: str, d: pd.DataFrame, cost: float, drivers: dict[str, pd.DataFra
     # directions. Bounded by whatever is left of this instrument's budget, and skipped entirely
     # when there is none -- a joint search that overran its clock would cost the cycle the legs
     # after it, which is the failure mode `_producer`'s timeout exists to contain.
-    ev.evolve_recipe(deadline=started + budget_s)
+    try:
+        ev.evolve_recipe(deadline=started + budget_s)
+    except Exception as exc:
+        ev.recipe_failures.append(f"evolve_recipe: {type(exc).__name__}: {exc}")
     return ev
 
 

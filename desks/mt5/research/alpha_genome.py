@@ -34,6 +34,7 @@ import sys
 from collections import defaultdict
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 BASE = Path(__file__).resolve().parent.parent
 ROOT = BASE.parent.parent
@@ -41,6 +42,7 @@ for p in (str(BASE), str(BASE / "research"), str(ROOT)):
     if p not in sys.path:
         sys.path.insert(0, p)
 
+from libs.research import mechanism_genome as mg  # noqa: E402
 from libs.research.strategy_artifact import feature_ids_of  # noqa: E402
 
 CANON = BASE / "data" / "UNIVERSAL_SURVIVORS.canon.json"
@@ -137,8 +139,47 @@ def genome(meta: dict) -> dict[str, dict]:
                     "status": str(cert.get("status") or "PASS"),
                     # VARIABLE-LEVEL DESCENT: the same ids `strategy_artifact.from_certificate`
                     # stamps, so the genome and the artifact registry name one vocabulary.
-                    "feature_ids": feature_ids_of(params)}
+                    "feature_ids": feature_ids_of(params),
+                    # THE ECONOMIC CLAIM, ELEVEN SLOTS WIDE (C5). Everything above is STRUCTURE
+                    # -- what the cell is made of. This is what it CLAIMS: an actor under a
+                    # constraint, the observable that reveals it, the trigger, the catalyst, the
+                    # transmission channel, entry, exit, holding, capacity and decay risk.
+                    # Declared per family in libs/research/mechanism_genome.py, never inferred
+                    # from the family's name, so an undeclared family reads UNDECLARED here
+                    # rather than being given an actor it was never measured against.
+                    "mechanism_genome": mg.from_family(fam, params).as_dict()}
     return out
+
+
+def recombinations(active: dict[str, dict[str, Any]], *,
+                   limit: int = 60) -> list[dict[str, Any]]:
+    """Slot-level crosses of the canon's declared genomes that are internally coherent. C5.
+
+    RECOMBINATION AT THE LEVEL OF THE ECONOMICS, which is the half of C5 the grammar search
+    cannot reach: `alpha_evolution` crosses operators and parameters, and two alphas with
+    identical grammar can make opposite claims about who is on the other side. Each child here
+    differs from its parent in ONE slot, so a verdict on it is attributable to that slot.
+
+    INCOHERENT CHILDREN ARE NOT MINTED. The compatibility tables refuse a transmission that
+    cannot carry its trigger and a holding period that cannot admit its exit -- not to gate
+    research, but because the trial budget is SHARED: a cell that cannot be true still charges
+    the deflated-Sharpe and SPA budget every other cell must clear.
+    """
+    seen: dict[str, mg.Genome] = {}
+    for row in active.values():
+        fam = str(row.get("family") or "")
+        if fam and fam not in seen:
+            g = mg.from_family(fam)
+            if g.declared:
+                seen[fam] = g
+    out: list[dict[str, Any]] = []
+    fams = sorted(seen)
+    for i, a in enumerate(fams):
+        for b in fams[i + 1:]:
+            out.extend(mg.recombine(seen[a], seen[b]))
+            if len(out) >= limit:
+                return out[:limit]
+    return out[:limit]
 
 
 def feature_genealogy(g: dict[str, dict]) -> dict[str, dict]:
@@ -183,8 +224,9 @@ def cluster(g: dict[str, dict]) -> dict[str, list[str]]:
     named = {}
     for root, members in clusters.items():
         g0 = g[root]
-        name = f"{g0['mechanism']}/{g0['direction_bias']}/{g0['clock']}/" \
-               f"{'+'.join(sorted(set(functools.reduce(operator.iadd, (g[m]['legs'] for m in members), []))))[:40]}"
+        legs = functools.reduce(operator.iadd, (g[m]["legs"] for m in members), [])
+        name = (f"{g0['mechanism']}/{g0['direction_bias']}/{g0['clock']}/"
+                f"{'+'.join(sorted(set(legs)))[:40]}")
         named[name] = sorted(members)
     return named
 
@@ -221,6 +263,47 @@ def run() -> dict:
                                         for fid, r in list(fg.items())[:8]],
            "sleeves_without_feature_ids": without,
            "clusters": cl, "genome": active}
+    # ---------------------------------------------------------------- C5: the mechanism genome
+    try:
+        from mt5desk.families import FAMILY_REGISTRY
+        fam_names = list(FAMILY_REGISTRY)
+    except Exception:                                       # pragma: no cover - import env
+        fam_names = sorted({str(v.get("family") or "") for v in active.values()} - {""})
+    crosses = recombinations(active)
+    mg_block: dict[str, Any] = {
+        "slots": list(mg.SLOTS),
+        "census": mg.census(fam_names),
+        "n_recombinations": len(crosses),
+        "recombinations": crosses,
+        "rule": ("one slot crossed per child, so a verdict is attributable to that slot; "
+                 "incoherent children are not minted, because the trial budget is shared"),
+        "authority": ("PUBLISHES AND DONATES. It refuses no existing alpha, caps nothing and "
+                      "shrinks nothing; the sealed gauntlet judges every child it mints like "
+                      "any other candidate"),
+    }
+    doc["mechanism_genome"] = mg_block
+    # DONATED THROUGH THE ONE INTAKE, so a slot-level child is judged by the same ten gates as
+    # every other candidate. A child carries its parents and the crossed slot in `evidence`, so
+    # `mutation_yield` can join the verdict back to the slot that produced it.
+    try:
+        from research import proposer_common as pc
+        cands = [pc.candidate(
+            "mechanism_genome", str(v.get("symbol") or ""), str(v.get("family") or ""),
+            {"mechanism_genome": c["genome"], "crossed_slot": c["slot"]},
+            mechanism=(f"{c['from_family']} with {c['slot']}={c['took']} taken from "
+                       f"{c['to_family']}"),
+            title=f"{c['from_family']}+{c['to_family']} :: {c['slot']}",
+            evidence={"crossed_slot": c["slot"], "took": c["took"], "replaced": c["replaced"],
+                      "parents": [c["from_family"], c["to_family"]],
+                      "coherence": c["coherence"], "generator": "mechanism_genome"})
+            for c in crosses
+            for v in [next((r for r in active.values()
+                            if str(r.get("family")) == c["from_family"]), None)] if v]
+        if cands:
+            mg_block["donated"] = str(pc.donate("mechanism_genome", cands, len(crosses)))
+            mg_block["donation_counts"] = pc.donation_counts()
+    except Exception as exc:                                # a donation never costs the report
+        mg_block["donated"] = f"UNMEASURED: {type(exc).__name__}: {str(exc)[:120]}"
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(doc, indent=1), "utf-8")
     return doc

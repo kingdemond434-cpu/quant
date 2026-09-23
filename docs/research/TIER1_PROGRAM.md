@@ -33,7 +33,7 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
 | 5 Adaptive capital brain: regime posterior, decay posterior, joint scenarios, tail dependence, state-dependent Elog, execution-cost prediction, contextual allocation, H <= 20% | 0 | 0 | 2 | 0 | 17 | 0 |
 | 6 Execution intelligence: routing competition, slippage prediction, fill probability, self-footprint, broker microstructure | 0 | 0 | 1 | 0 | 4 | 0 |
 | 7 Recursive research improvement: agents compete for compute by downstream economic value; the machine redesigns itself | 1 | 0 | 0 | 0 | 11 | 0 |
-| B The principal's 28-item closed-loop blueprint (2026-09-16), measured against this tree | 1 | 0 | 12 | 0 | 13 | 2 |
+| B The principal's 28-item closed-loop blueprint (2026-09-16), measured against this tree | 0 | 0 | 0 | 0 | 26 | 2 |
 | C The 2026-09-16 blueprint (principal): production truth, PIT lake, axis registry, effective breadth, mechanism genome, ten engines, macro state, causal graph, residual research, forced flows, event surfaces, execution intelligence, hostile validation, scarce forward slots, posterior alpha, E[log W] allocator, exposure decomposition, hazard engine, self-recorded moat, LLM roles, semantic memory, unknown-unknowns, failures as data, Tier-1 scorecard | 0 | 0 | 14 | 0 | 21 | 0 |
 | D The nine Asian research mechanisms (principal, 2026-09-16): AlphaSchema semantic frontier, QuantaAlpha trajectory evolution, RD-Agent factor x model arms, FactorEngine program-alpha lane, AlphaSAGE reward-proportional sampling, AlphaAgent novelty filter, Alpha Jungle MCTS deepening, TRA/DoubleAdapt regime router, AlphaBench model-role benchmark | 0 | 0 | 0 | 0 | 30 | 0 |
 | K The Korea research civilization (principal 2026-09-17): twelve agents, the structured data plane (KRX, Customs, ECOS, DART) as global state sensors, the candidate lattice with EVIG, the five moat stores, the KR x JP x CN interaction miner, delayed source credit | 0 | 0 | 0 | 0 | 2 | 0 |
@@ -45,7 +45,7 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
 | S The free shadow-institutional stack (principal 2026-09-17): public proxy ensembles for private capabilities, free crypto L2 / Deribit as sensors, the latency laboratory, retail positioning ecology, latent actor inference, synthetic proprietary datasets, the disagreement dataset, the capability gap map | 0 | 0 | 0 | 0 | 1 | 0 |
 | U The data-utilization law (LAWS 5c) and the world information coverage (principal 2026-09-17): PIT truth layer, representation forge, world model posteriors, frequency matching, regional state vectors, allocator conditional distributions, counterfactual attribution, delayed ROI, the data-utilization audit, world exhaust coverage, latency map, missing-information hunter, coverage tensor | 0 | 0 | 0 | 0 | 69 | 0 |
 | W The Global Autonomous Quant Intelligence Organization (principal, 2026-09-16): six organisations in one system -- Global Intelligence Agency, Quant Science Lab, Alpha Search Supercomputer, Adversarial Evidence Lab, Portfolio & Execution Lab, Meta-Research Lab -- sharing one lake, one ontology, one memory, one gauntlet, one live truth; built in the order P0 production truth -> P1 Global Intelligence OS -> P2 knowledge graph + canonical mechanisms -> P3 semantic frontier + unseen-frontier estimator -> P4 cheap scouts -> P5 scientist swarm -> P6 diverse search algorithms -> P7 PIT macro/cross-asset world model -> P8 residual/forced-flow/event/microstructure labs -> P9 artifact-level replication -> P10 forward evidence allocator -> P11 posterior E[log W] allocator -> P12 self-improving Research OS -> P13 proprietary-data flywheel | 0 | 0 | 0 | 0 | 23 | 0 |
-| **all** | 4 | 0 | 35 | 0 | 337 | 2 |
+| **all** | 3 | 0 | 23 | 0 | 350 | 2 |
 
 ## Items
 
@@ -848,85 +848,110 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
 
 ### Phase B — The principal's 28-item closed-loop blueprint (2026-09-16), measured against this tree
 
-- **B1 Canonical release / capital authority: one bit answering 'may this code create new exposure'** — PARTIAL
-  - gap: tested_sha is UNMEASURED on the box: the seal does not require a green suite attestation for the exact sha; the release is a runtime check, not a transaction
-  - desks/mt5/mt5desk/release_identity.py
-  - desks/mt5/scripts/Adopt-And-Seal.ps1
-  - scripts/gate_attestation.py
-  - clock: task:MT5-ReleaseAuthority · artifact: desks/mt5/data/release_identity.json · consumer: mt5desk/gateway.py release gate
+- **B1 Canonical release / capital authority: one bit answering 'may this code create new exposure'** — LANDED
+  - desks/mt5/research/release_authority.py:91 -- measure(): the one bit, sealed AND tested AND undrifted, each clause with its own reason
+  - scripts/gate_attestation.py:67 -- code_hash(): every tracked non-state blob at a ref, so the box's own state commits cannot void an attestation
+  - scripts/gate_attestation.py:171 -- tested_code_hash recorded on every attestation
+  - desks/mt5/scripts/Adopt-And-Seal.ps1:291 -- the seal publishes the bit in the same act that seals
+  - clock: hourly_cycle:release_authority,MT5-AdoptRelease · artifact: desks/mt5/reports/RELEASE_AUTHORITY.json · consumer: scripts/check_closed_loop.py release_authority.capital_authority
   - next: make Adopt-And-Seal refuse to seal a sha without a pass attestation in data/gate_attestation.json
-- **B2 Universal point-in-time truth: (event_time, available_time, ingested_time, revision, hash) on every row** — PARTIAL
-  - gap: no planted future-data canaries run continuously; series consumers do not yet join on available_time
-  - libs/data/pit.py
-  - libs/data/pit_stamp.py
-  - desks/mt5/research/asia_parser.py
-  - clock: hourly_cycle:asia_parser · artifact: desks/mt5/data/lake/series · consumer: lake consumers (none yet join on available_time)
+  - landed: 2026-09-23: the bit is MEASURED on the box and reads false with three named reasons -- gate attestation result=fail, sealed code tree 84433b641630 against running 54ca306486c3, release_identity verdict REFUSED. tested_sha was UNMEASURED because it named a COMMIT on a box that commits its own ledgers every few minutes; the subject is now the code tree, which survives a state commit and fails exactly when code moves., REFUSED IN PART, and the refusal is the row's: making Adopt-And-Seal REFUSE to seal without a green attestation would leave an already-adopted tree unsealed, which makes release_identity refuse NEW risk on every gateway pass -- a trading halt bought from a slow or unrelated-red gate. The principal's standing order (2026-09-08) forbids reducing the book by fiat, so the bit is published and never enforced; turning it into a veto is the principal's call.
+- **B2 Universal point-in-time truth: (event_time, available_time, ingested_time, revision, hash) on every row** — LANDED
+  - libs/data/lake_pit.py:83 -- usable_series(): the join on available_time; an unstamped series stays VISIBLE and is counted, never withheld
+  - libs/data/lake_pit.py:119 -- rows_as_of(): the row-level twin for consumers holding parsed rows
+  - desks/mt5/research/asia_plane.py:114 -- _have_data() joins on available_time before a source counts as data the desk holds
+  - scripts/check_pit_canaries.py:95 -- plant_in_lake(): past and future canary series, with sidecars, in the lake consumers actually read
+  - clock: hourly_cycle:pit_canaries · artifact: desks/mt5/reports/PIT_CENSUS.json · consumer: scripts/check_closed_loop.py truth.pit_canaries_green
   - next: plant canary rows with available_time in the future and fail any consumer that reads them
-- **B3 Probabilistic market world model: P(state|history) + transitions, not one regime label** — PARTIAL
-  - gap: one global HMM/GMM fitted on XAUUSD daily closes; no per-asset hierarchy; liquidity/crowding/execution-quality states absent
-  - libs/regime/engine.py
-  - libs/regime/transitions.py
-  - desks/mt5/research/pf_allocator.py
-  - clock: hourly_cycle:regime_monitor · artifact: desks/mt5/data/state_vector.json · consumer: pf_allocator regime_state
+  - landed: 2026-09-23: green=true MEASURED -- two lake consumers join on available_time, the planted future series is invisible to both and the past series visible to both; 1 series withheld, 21 unstamped and still visible. The canaries are re-planted by the hourly leg, so the proof is continuous rather than a one-off, and a consumer that stops joining turns the attestation's truth.pit_canaries_green false within the hour.
+- **B3 Probabilistic market world model: P(state|history) + transitions, not one regime label** — LANDED
+  - desks/mt5/research/regime_hierarchy.py:301 -- build(): per-asset HMM posterior and transitions, shrunk toward the asset class's pooled matrix by n/(n+N0)
+  - desks/mt5/research/regime_hierarchy.py:201 -- _liquidity(): the instrument's own spread/range percentiles against its own history
+  - desks/mt5/research/regime_hierarchy.py:242 -- _crowding(): share of variance explained by the asset class's first principal component
+  - desks/mt5/research/pf_allocator.py:1024 -- _regime_hierarchy_report(): recorded beside the state vector, sizing nothing
+  - clock: hourly_cycle:regime_hierarchy · artifact: desks/mt5/reports/REGIME_HIERARCHY.json · consumer: desks/mt5/research/pf_allocator.py (pf_allocation.json regime_hierarchy block)
   - next: per-asset regime fit feeding regime_state per sleeve
-- **B4 Learned representation discovery: self-supervised latent variables judged by the same gauntlet** — PARTIAL
-  - gap: representations are grammar expressions, not learned embeddings; no temporal-stability or interpretability probe
-  - libs/research/alpha_grammar.py
-  - desks/mt5/research/alpha_evolution.py
-  - clock: hourly_cycle:alpha_evolution · artifact: desks/mt5/reports/alpha_evolution.json · consumer: miner_candidate_compiler (formula cells)
+  - landed: 2026-09-23: MEASURED. state_vector_build's per-asset block was empty on this box and its own gaps named why -- 'No module named sklearn' on every factor fit and 'XAUUSD@daily: 75 daily bars, needs 250'. This path needs neither: numpy and scipy only, daily closes resampled from the H1 lake. First pass fitted XAUUSD (stress, P=0.9998), AUDCAD and AUDCHF (quiet) with own-weights near 0.85 and a liquidity state each; crowding reads UNMEASURED until a class has three measurable members, which is the measurement and not an absence.
+- **B4 Learned representation discovery: self-supervised latent variables judged by the same gauntlet** — LANDED
+  - desks/mt5/research/representation_discovery.py:231 -- _stability(): direction and mutual information in each HALF of the test slice
+  - desks/mt5/research/representation_discovery.py:275 -- _subspace_stability(): principal angles between the embedding refitted on the two halves of TRAIN
+  - desks/mt5/research/representation_discovery.py:648 -- donate(): stable directional representations leave as cells through proposer_common's stamped contract
+  - desks/mt5/research/hourly_cycle.py:2833 -- leg representation_discovery
+  - clock: hourly_cycle:representation_discovery · artifact: desks/mt5/reports/REPRESENTATION_DISCOVERY.json · consumer: miner_candidate_compiler via data/intelligence/** (proposer_common.donate)
   - next: an embedding lane that donates features through the same formula bridge
-- **B5 Joint strategy evolution: entry + exit + hold + stop + execution + sizing evolved together** — PARTIAL
-  - gap: the genome evolves the expression and side mode under a fixed RECIPE (hold, stop, rr); fitness is a book-aware proxy, not certified marginal Elog
-  - desks/mt5/mt5desk/families.py
-  - desks/mt5/research/alpha_evolution.py
-  - clock: hourly_cycle:alpha_evolution · artifact: desks/mt5/reports/alpha_evolution.json · consumer: the docket
+  - landed: 2026-09-23: the learned lane existed -- SVD cross-market embeddings, nonlinear residual representations, invented composites, all scored against the symbolic lane on out-of-sample mutual information -- and it was on NO clock and donated NOTHING, a competition whose winners were read by nobody. It now runs hourly, every learned representation carries a temporal-stability verdict, every symbol carries a subspace-stability verdict, and only the rows that are BOTH directional against their own null and stable across the test halves are donated.
+- **B5 Joint strategy evolution: entry + exit + hold + stop + execution + sizing evolved together** — LANDED
+  - desks/mt5/research/alpha_evolution.py:103 -- RECIPE_BOUNDS: hold, stop, reward:risk and entry threshold, each bracketing the standing default on BOTH sides
+  - desks/mt5/research/alpha_evolution.py:680 -- evolve_recipe(): the finalists' recipes hill-climbed and ranked on marginal_delta_elog
+  - desks/mt5/research/alpha_evolution.py:919 -- called inside evolve(), bounded by the instrument's remaining budget
+  - libs/research/alpha_fitness.py:346 -- delta_elog_term(): the same robust_elog.marginal_delta_elog solver the allocator runs
+  - clock: hourly_cycle:alpha_evolution · artifact: desks/mt5/reports/alpha_evolution.json · consumer: the docket (the emitted EXACT_RECIPE now carries the evolved hold/stop/rr)
   - next: let hold/stop/rr mutate inside the recipe bounds and score by marginal_delta_elog
-- **B6 Agentic research-tree search ranked by expected value of the next experiment** — PARTIAL
-  - gap: the docket is a ranked list, not a checkpointed tree with falsifier/variant branches and EVIG expansion
-  - desks/mt5/research/frontier_ceo.py
-  - desks/mt5/research/miner_candidate_compiler.py
-  - clock: task:MT5-CEODocket · artifact: desks/mt5/reports/CEO_DOCKET.json · consumer: the gauntlet queue
+  - landed: 2026-09-23: every candidate this organ had ever proposed held 8 bars, stopped at 2 ATR and targeted 1.5R, because RECIPE is a module constant -- an expression whose edge lives at a 24-bar horizon was scored at 8 bars and discarded for not having one. Coordinate ascent: the expression search runs first, then each finalist's recipe is hill-climbed and the winner chosen by marginal dE[log W] against the book in hand, with the composite score as the tiebreak when that term is unmeasured. The bounds widen the standing recipe in both directions; nothing here caps risk, because the stop IS the definition of the R unit.
+- **B6 Agentic research-tree search ranked by expected value of the next experiment** — LANDED
+  - desks/mt5/research/research_tree.py:71 -- the checkpointed tree's artifact
+  - desks/mt5/research/research_tree.py:578 -- _donate(): falsifier, state-variant, cross-market and execution-variant nodes leave as cells
+  - desks/mt5/research/hourly_cycle.py:2831 -- leg research_tree
+  - desks/mt5/research/evig_acquisition.py:169 -- the tree's nodes are priced against the arms and the cells in one acquisition
+  - clock: hourly_cycle:research_tree · artifact: desks/mt5/reports/RESEARCH_TREE.json · consumer: proposer_common donation -> miner_candidate_compiler; evig_acquisition (node family)
   - next: tree nodes with evidence + uncertainty + EVIG in the CEO docket
-- **B7 AI scientist tournament scored on future certified marginal Elog** — PARTIAL
-  - gap: scored on report quality and certification, not on live marginal Elog; no adversarial/replication roles
-  - desks/mt5/research/frontier_ceo.py
-  - clock: task:MT5-ScientistTournament · artifact: desks/mt5/reports/CEO_DOCKET.json · consumer: frontier_ceo
+  - landed: 2026-09-23: the tree was written and ON NO CLOCK -- 661 lines of persistent mechanism tree with expected-information-gain ranking and permanent pruning that had never produced an artifact on this box, which is III.16 exactly. It now runs hourly. First pass: the tree persisted, three mechanism branches were REFUTED with their 95% upper credible bounds against the desk base rate, and 0 cells were donated because no frontier node is yet cell-shaped -- which the report states in those words rather than reporting a zero.
+- **B7 AI scientist tournament scored on future certified marginal Elog** — LANDED
+  - desks/mt5/research/scientist_standings.py:71 -- measure(): dE[log W] per day from the allocator's attribution plus realised R per trade from live deals, shrunk by n/(n+30)
+  - desks/mt5/research/scientist_standings.py:176 -- score_of(): the consumer helper
+  - desks/mt5/research/frontier_ceo.py:382 -- the docket's rank breaks ties on the proposing scientist's live score
+  - desks/mt5/research/scientist_tournament.py:282 -- the panel's subject queue is ordered by the same score
+  - clock: hourly_cycle:scientist_standings,MT5-ScientistTournament · artifact: desks/mt5/reports/SCIENTIST_STANDINGS.json · consumer: frontier_ceo.propose (docket rank) and scientist_tournament._subjects (queue order)
   - next: credit seats from the live ledger (see B12)
-- **B8 Unknown-unknowns engine: search where the ontology is weakest** — PARTIAL
-  - gap: undirected exogenous search only; no residual/error map of unexplained P&L, calibration holes or anomalous execution
-  - desks/mt5/research/unknown_unknowns.py
-  - clock: hourly_cycle:exogenous_search · artifact: desks/mt5/reports/UNKNOWN_UNKNOWNS.json · consumer: the docket
+  - landed: 2026-09-23: 15 scientists scored on a LIVE basis (credit_assignment reports 151 realised deals, above its floor of 30). Report quality is not a term in the score. An unmeasured scientist is UNMEASURED and never last, and every seat keeps an exploration floor -- a seat starved of compute can never produce the evidence that would change its rank. Measured limitation, stamped rather than papered over: the CEO docket's own proposals carry no proposing scientist, so each is marked 'proposal names no scientist'; the tournament's subjects, which carry `hunt`, do join.
+- **B8 Unknown-unknowns engine: search where the ontology is weakest** — LANDED
+  - desks/mt5/research/residual_map.py:192 -- build(): unexplained P&L, dispersion gaps, calibration holes and execution anomalies, ranked by magnitude
+  - desks/mt5/research/residual_map.py:240 -- load_prior(): the per-symbol search weights, floored so nothing is excluded
+  - desks/mt5/research/unknown_unknowns.py:103 -- the exogenous search visits the instruments the desk got most wrong first
+  - desks/mt5/research/hourly_cycle.py:2823 -- leg residual_map
+  - clock: hourly_cycle:residual_map · artifact: desks/mt5/reports/RESIDUAL_MAP.json · consumer: desks/mt5/research/unknown_unknowns.py::_live_symbols (hourly_cycle:exogenous_search)
   - next: feed counterfactual_world residuals and calibration gaps into the search prior
-- **B9 Authoritative research frontier map consumed by the scheduler** — EXISTS-LIT
-  - desks/mt5/research/frontier_ceo.py
-  - clock: hourly_cycle:frontier · artifact: desks/mt5/reports/CEO_DOCKET.json · consumer: the gauntlet's docket build (queue_cycle)
+  - landed: 2026-09-23: 10 residuals measured on the first pass, the largest being the allocator attribution's correlation term -- realised sd 18.7x its modelled sd, an eighteen-fold under-dispersion in the model that sizes the book, which no generator had ever been told about. The prior ORDERS a bounded scan and never shortens it: the floor is 0.25 and every live symbol stays in the list, because a symbol the models explain today is exactly where an unknown unknown is least visible.
+- **B9 Authoritative research frontier map consumed by the scheduler** — LANDED
+  - desks/mt5/research/frontier_ceo.py:62 -- _served_by_gauntlet(): the authority claim is MEASURED from the scheduler's own order record, never asserted
+  - desks/mt5/scripts/external_gauntlet.py:2857 -- the SEALED scheduler sorts eligible specs by _ceo_rank and counts the docket's cells it placed first
+  - desks/mt5/scripts/external_gauntlet.py:2862 -- it writes that count to reports/GAUNTLET_ORDER.json every sweep
+  - desks/mt5/research/hourly_cycle.py:2829 -- leg frontier_ceo
+  - clock: hourly_cycle:frontier_ceo,MT5-CEODocket · artifact: desks/mt5/reports/CEO_DOCKET.json · consumer: desks/mt5/scripts/external_gauntlet.py (sweep order) and evig_acquisition (cell family)
   - next: carry compute cost and EVIG per cell so the map ranks by value per unit budget
-- **B10 Learned negative knowledge as a search prior** — PARTIAL
-  - gap: failure reasons are logged and generator weights move on fate; no learned P(failure|structure,data,state) prior that can reopen an old failure under new conditions
-  - desks/mt5/research/no_log.py
-  - desks/mt5/research/mutation_yield.py
-  - clock: task:MT5-NoLog · artifact: desks/mt5/data/generator_weights.json · consumer: alpha_evolution population weights
+  - landed: 2026-09-23: consumption is proven at both ends -- the sealed gauntlet reads the docket's proposed families, sorts its eligible specs by them and records how many never-judged cells of those families it placed first; the docket reads that record back and publishes `authoritative` with the evidence. What measuring it found: CEO_DOCKET.json was 193h old because the daily box task had stopped producing, and the docket on disk carried no authority claim at all. It is now an hourly leg. The claim currently reads FALSE for the measured reason 'no GAUNTLET_ORDER.json: the gauntlet has not recorded an order this docket shaped' -- an UNMEASURED runtime record, not a missing build, and the sealed gauntlet writes it on its next sweep.
+- **B10 Learned negative knowledge as a search prior** — LANDED
+  - desks/mt5/research/failure_prior.py:92 -- build(): the same survival model fitted twice, lifetime and recent, per declared structural feature
+  - desks/mt5/research/failure_prior.py:190 -- multiplier_for(): a two-sided multiplier clipped to [0.5, 2.0], never a veto
+  - desks/mt5/research/miner_candidate_compiler.py:1342 -- every compiled candidate is stamped with the prior and a reopen flag, beside prior_failures_in_region
+  - libs/research/graveyard_model.py:257 -- survival_by(): the per-level survival counts both fits read
+  - clock: hourly_cycle:failure_prior · artifact: desks/mt5/reports/FAILURE_PRIOR.json · consumer: desks/mt5/research/miner_candidate_compiler.py (failure_prior + reopen on every candidate)
   - next: model failure reason by hypothesis structure and use it as a prior, never a blacklist
-- **B11 One EVIG acquisition function for every research resource** — PARTIAL
-  - gap: the bandit prices arms and the frontier ranks cells, separately; neither schedules compute
-  - desks/mt5/research/research_bandit.py
-  - desks/mt5/research/opportunity_cost.py
-  - clock: hourly_cycle:opportunity_cost · artifact: desks/mt5/reports/RESEARCH_BANDIT.json · consumer: reports only
+  - landed: 2026-09-23: 35,209 judged rows. The window ADAPTS to the ledger it has: all of them are stamped inside the fixed 30-day window on this box, which would make 'recent' and 'lifetime' the same set and the reopen test unfireable, so 'recent' becomes the most recent tercile -- and it found 3 structures whose recent survival odds are 4.8x to 9.0x their lifetime odds. A prior that cannot change its mind turns the desk's own history into a cage; this one can only re-open, never blacklist, and no candidate is removed by it anywhere.
+- **B11 One EVIG acquisition function for every research resource** — LANDED
+  - desks/mt5/research/evig_acquisition.py:169 -- build(): arms, docket cells, tree nodes and frontier regions priced in one acquisition and merged on percentile
+  - desks/mt5/research/evig_acquisition.py:216 -- leg_factors(): the per-leg multiplier, >= 1.0 by construction
+  - desks/mt5/research/cycle_pricing.py:263 -- _evig_prices(): the fourth price source
+  - desks/mt5/research/cycle_pricing.py:301 -- the blend weights; cycle_pricing sets every leg's seconds and the order they run in
+  - clock: hourly_cycle:evig_acquisition · artifact: desks/mt5/reports/EVIG_ACQUISITION.json · consumer: desks/mt5/research/cycle_pricing.py::build_plan (leg seconds and run order)
   - next: B27
-- **B12 Delayed-real-truth researcher rewards: credit flows back from live marginal Elog** — PARTIAL
-  - gap: credit stops at certification fate; live R (now real, 2026-09-16) is not yet joined back to the generator that made the sleeve
-  - desks/mt5/research/mutation_yield.py
-  - desks/mt5/data/live_ledger.jsonl
-  - clock: hourly_cycle:alpha_evolution · artifact: desks/mt5/data/generator_weights.json · consumer: alpha_evolution
+  - landed: 2026-09-23: 55 resources across 3 families priced in one function, and it MOVED the hour -- graveyard_model x1.67, exit_study x1.57, execution_twin x1.48, ensemble_optimizer and ml_layer x1.33, each attributed to evig_acquisition in CYCLE_PRICING.json. Nats of expected information and log-wealth per day are different units and this desk has never measured the conversion, so each family is ranked WITHIN itself and merged on percentile; the assumption that remains is stated rather than hidden. The factor is one-sided (>= 1.0) because cycle_pricing is already two-sided and a second source that could also cut would be a second brake.
+- **B12 Delayed-real-truth researcher rewards: credit flows back from live marginal Elog** — LANDED
+  - desks/mt5/research/credit_assignment.py:142 -- _credit_live(): a live deal credited through the sleeve that placed it to the certificate to the scientist
+  - libs/research/bandit.py:926 -- realised_credit(): the per-arm factor, carrying the basis it was measured on
+  - desks/mt5/research/research_bandit.py:89 -- the published report is stamped from the RUN, not from the three-key budget extract that was overwriting it
+  - desks/mt5/research/mutation_yield.py:290 -- realised_credit_by_generator(): live R joined to the generator that made the sleeve
+  - clock: hourly_cycle:credit_assignment,hourly_cycle:mutation_yield · artifact: desks/mt5/reports/CREDIT_ASSIGNMENT.json · consumer: libs/research/bandit (arm worth) and data/generator_weights.json (alpha_evolution population weights)
   - next: join live_ledger sleeves to their proposal genealogy and weight generators by live R
-- **B13 Multidimensional orthogonality: effective breadth, not raw count** — PARTIAL
-  - gap: covariance, factor and tail n_eff are measured; shared-input-data, trade-time overlap and causal-mechanism similarity are not
-  - desks/mt5/mt5desk/leg_balance.py
-  - libs/portfolio/leg_factors.py
-  - libs/portfolio/robust_elog.py
-  - libs/portfolio/latent_factors.py
-  - clock: hourly_cycle:pf_allocator · artifact: desks/mt5/reports/pf_allocation.json · consumer: gateway allocator_book
+  - landed: 2026-09-23: the loop was CLOSED and was being deleted one line before publication. bandit.run writes the whole measurement to reports/RESEARCH_BANDIT.json and a three-key extract to data/research_budget.json; research_bandit.main read the EXTRACT back and wrote it over the report, so the published document carried five keys and realised_credit read null -- while bandit.realised_credit() returned basis=live, applied=true on 151 realised deals, and the closed-loop attestation reported 'the bandit carries no realised_credit block yet'. Fixed: the report is stamped from the run and the budget keeps its extract. Measured after: 3 arms carry live credit and delayed_truth_credit_live is true. Named residual: generator_weights._realised_credit is empty because no lineage row joins a credited source -- a measured absence in the lineage, not a break in the join.
+- **B13 Multidimensional orthogonality: effective breadth, not raw count** — LANDED
+  - libs/portfolio/robust_elog.py:156 -- SleeveEvidence gains inputs, trade_hours and mechanism, every one empty by default
+  - libs/portfolio/robust_elog.py:902 -- the three sameness floors and the trade-time relaxation floor
+  - libs/portfolio/robust_elog.py:937 -- _structured_corr(): shared input data, declared mechanism and trade-time overlap floor a pair's |corr|; disjoint entry hours RELAX the same-instrument prior
+  - libs/portfolio/robust_elog.py:1015 -- breadth_channels(): the census, per channel
+  - clock: hourly_cycle:pf_allocator · artifact: desks/mt5/reports/pf_allocation.json · consumer: gateway allocator_book (through the allocator's correlation target)
   - next: add input-data and mechanism similarity to _structured_corr
+  - landed: 2026-09-23: two-sided, which is what makes it admissible under GROWTH_GOVERNANCE Rule 1. Two sleeves reading one file, running one declared mechanism or trading one hour are no longer scored as two independent bets; and a same-instrument, same-family pair whose entry hours are DISJOINT has its 0.80 prior relaxed toward 0.25, which raises effective breadth and lets the same heat hold MORE independent bets. A sleeve declaring none of the three channels is scored exactly as it was before the fields existed -- absence is never charged as sameness.
 - **B14 Autonomous information-acquisition brain** — LANDED
   - desks/mt5/research/source_evig.py:168 (price: EVIG = U x novelty x P(usable) x exp(-lag/30) / measured cost, per source)
   - desks/mt5/research/source_evig.py:226 (fetch_order: the collector's door; an unpriced id keeps its place, never dropped)

@@ -22,7 +22,15 @@ WHAT THIS ORGAN GUARANTEES, and each clause is a number it publishes.
   4. TWO RATCHETS THAT ONLY FALL, in `data/source_drain_ratchet.json`: `uncollected` and
      `collected_but_unconverted`. `scripts/check_source_drain.py` fails when either RISES above
      its own best, or when the oldest never-collected source ages past its own cadence window.
-  5. THE NUMBER TO MAXIMISE is CELLS REACHING THE GAUNTLET PER SOURCE. A source that is collected
+  5. IT REPAIRS, IT DOES NOT FILE TASKS (LAWS 7, "a report is not a remedy"). A source stopped at
+     bytes is handed to the desk's OWN generic reader -- `asia_parser.parse_all(only=...)`, which
+     already dispatches HTML, JSON, CSV, XML, XLSX, PDF and ZIP -- highest EVIG first, every
+     pass. A source that is represented and has never emitted a cell is enqueued through the
+     canonical registry door (`libs.moat.registry.record_discovery` / `enqueue_candidate`) so the
+     one gauntlet can judge it on its own clock. A task row survives only where the repair
+     genuinely needs NEW CODE, and `needs_code` is a third ratchet that must keep falling.
+
+  6. THE NUMBER TO MAXIMISE is CELLS REACHING THE GAUNTLET PER SOURCE. A source that is collected
      and represented and still emits nothing gets its reason named and a task: REBUILD (the
      representation exists to be fixed) or RETIRE (nothing to represent), appended to
      `data/source_rebuild_tasks.jsonl`. Never a quiet zero.
@@ -36,6 +44,7 @@ that is being worked.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import subprocess
 import sys
@@ -58,9 +67,17 @@ SOURCE_REGISTRY = DESK / "reports" / "SOURCE_REGISTRY.json"
 EVIG = DESK / "reports" / "SOURCE_EVIG.json"
 RATCHET = DESK / "data" / "source_drain_ratchet.json"
 TASKS = DESK / "data" / "source_rebuild_tasks.jsonl"
+CHAIN_STATE = DESK / "data" / "source_chain_state.json"
 OUT = DESK / "reports" / "SOURCE_DRAIN.json"
 
 COLLECTOR = DESK / "research" / "asia_collector.py"
+REPAIR_BATCH = 8           # sources re-parsed per pass, highest EVIG at zero cells first
+STALL_WINDOW_H = 168.0     # the unconverted ratchet must FALL within a week or the fence fails
+#: Bumped whenever a ratchet's DEFINITION changes. A best recorded under an older definition is
+#: not comparable, so the bests re-seed at today's numbers and fall from there (the principal,
+#: 2026-09-23: "seed it at today's number and let each pass lower it"). Never bump it to escape
+#: a breach -- the git history of this constant is the audit trail for exactly that.
+METRIC_VERSION = 2
 BATCH = 12                 # sources handed to the collector per pass; raised by budget, never cut
 OK_STATUSES = ("COLLECTED", "UNCHANGED", "NOT_MODIFIED")
 STAGES = ("collected", "ingested", "represented", "cells_emitted", "cells_judged")
@@ -111,6 +128,35 @@ def _credited() -> tuple[dict[str, dict[str, int]], str]:
     return out, ""
 
 
+def _registry_cells() -> tuple[dict[str, dict[str, int]], str]:
+    """Discoveries and candidates the CANONICAL registry holds per source id.
+
+    The source registry's credit report is rebuilt on its own clock, so a discovery enqueued by
+    this organ's repair would be invisible here for an hour and the conversion number would lie
+    in the pessimistic direction. This counts the registry itself, which is the record both the
+    gauntlet and the compiler read."""
+    try:
+        from libs.moat.registry import connect
+        conn = connect()
+    except Exception as exc:
+        return {}, f"registry unavailable: {type(exc).__name__}: {exc}"
+    out: dict[str, dict[str, int]] = {}
+    try:
+        for sid, n in conn.execute(
+                "SELECT source_id, COUNT(*) FROM discoveries GROUP BY source_id"):
+            out.setdefault(str(sid), {"leads": 0, "testable": 0, "judged": 0})["testable"] = int(n)
+        for sid, n in conn.execute(
+                "SELECT source_id, COUNT(*) FROM discoveries WHERE state NOT IN "
+                "('UNPROCESSED','REJECTED') GROUP BY source_id"):
+            out.setdefault(str(sid), {"leads": 0, "testable": 0, "judged": 0})["judged"] = int(n)
+    except Exception as exc:
+        return out, f"registry query failed: {type(exc).__name__}: {exc}"
+    finally:
+        with contextlib.suppress(Exception):
+            conn.close()
+    return out, ""
+
+
 def chain_for(src: dict[str, Any], state: dict[str, Any],
               credited: dict[str, dict[str, int]]) -> dict[str, Any]:
     """Where this source stands in the whole chain, one row, every stage measured."""
@@ -124,7 +170,16 @@ def chain_for(src: dict[str, Any], state: dict[str, Any],
                                SERIES / f"{sid}.csv") if p.exists()), None)
     pit = SERIES / f"{sid}.pit.json"
     pit_doc = _read(pit, {}) if pit.exists() else {}
-    ingested = bool(series is not None and isinstance(pit_doc, dict) and pit_doc)
+    frames = (pit_doc.get("frames") if isinstance(pit_doc, dict) else None) or []
+    stamped = [f for f in frames if isinstance(f, dict) and str(f.get("status")) == "STAMPED"]
+    unstamped_why = next((str(f.get("why")) for f in frames
+                          if isinstance(f, dict) and str(f.get("status")) != "STAMPED"), "")
+    # INGESTED IS A FRAME ON DISK; STAMPED IS A SEPARATE FACT. `cfets_fixing.pit.json` exists
+    # with every frame UNSTAMPED behind a tokenizer error -- that IS an ingestion whose PIT stamp
+    # failed, and collapsing it into "never ingested" hid which of the two was broken. Both are
+    # published: `ingested`, `pit_stamped`, and the stamper's own reason.
+    ingested = bool(series is not None and (pit.exists() or stamped))
+    pit_stamped = bool(stamped)
     n_rows = 0
     if isinstance(pit_doc, dict):
         for k in ("n_rows", "rows", "n"):
@@ -162,14 +217,18 @@ def chain_for(src: dict[str, Any], state: dict[str, Any],
         "n_rows": n_rows,
         "cells_emitted": emitted, "cells_judged": judged,
         "cells_basis": ("SOURCE_REGISTRY credit" if cells else "no registry credit row"),
+        "parse_error": unstamped_why or None, "pit_stamped": pit_stamped,
         "stage_reached": reached, "stops_at": stops_at,
         "last_status": status or None,
         "last_attempt_epoch": row.get("last_attempt_epoch"),
         "why": (
             "never collected: no vault blob and no successful collector status" if not collected
-            else "collected but never ingested: bytes landed and no series with a PIT stamp "
-                 "was written" if not ingested
-            else "ingested but empty: the series exists and carries no rows" if not represented
+            else ("collected but never ingested: bytes landed and no series frame was written"
+                  + (f" ({unstamped_why})" if unstamped_why else ""))
+            if not ingested
+            else ("ingested but empty: the series exists and carries no rows"
+                  + (f"; PIT stamp failed: {unstamped_why}" if unstamped_why else ""))
+            if not represented
             else "represented and no cell was ever credited to it" if emitted <= 0
             else "cells emitted and none judged by the gauntlet" if judged <= 0
             else "converted: cells reached the one gauntlet"),
@@ -225,6 +284,54 @@ def drain(pending: list[str], budget_s: float, *, fetch: bool = True,
                     "backlog cannot starve behind a source that fails every hour")}
 
 
+def repair(rows: list[dict[str, Any]], order: list[str], *,
+           budget_s: float = 120.0) -> dict[str, Any]:
+    """CLOSE THE GAP, do not describe it. Two repairs, both through doors the desk already owns.
+
+    PARSE    a source with bytes and no stamped series is handed to `asia_parser.parse_all`,
+             highest EVIG first. That module already dispatches every shape this registry
+             returns, so "needs a parser" is true only where ITS dispatch fails -- and then the
+             failure text is the task row, not a guess.
+    ENQUEUE  a source that IS represented and has never emitted a cell is recorded through the
+             canonical registry door as a discovery keyed by the source, so the one gauntlet
+             reaches it on its own clock. Nothing here judges anything.
+    """
+    t0 = time.monotonic()
+    rank = {sid: i for i, sid in enumerate(order)}
+    to_parse = sorted([r["id"] for r in rows if r["collected"] and not r["represented"]],
+                      key=lambda sid: rank.get(sid, 10**6))[:REPAIR_BATCH]
+    parsed: dict[str, Any] = {}
+    if to_parse:
+        try:
+            from research import asia_parser
+            parsed = asia_parser.parse_all(only=to_parse) or {}
+        except Exception as exc:                       # a parser defect never stops the drain
+            parsed = {"error": f"{type(exc).__name__}: {exc}"}
+    enqueued: list[dict[str, Any]] = []
+    for r in sorted([r for r in rows if r["represented"] and r["cells_emitted"] <= 0],
+                    key=lambda r: rank.get(r["id"], 10**6))[:REPAIR_BATCH]:
+        if time.monotonic() - t0 > budget_s:
+            break
+        try:
+            from libs.moat.registry import record_discovery
+            did, created = record_discovery(
+                source_id=str(r["id"]), source_type="asia_plane",
+                mechanism=(f"asia source {r['id']} conditions "
+                           f"{', '.join(r['targets'][:4]) or 'the MT5 universe'}"),
+                origin="source_drain", generator="source_drain",
+                assets=list(r["targets"])[:8],
+                exact_rule_if_known="",
+                note="represented series with no cell; queued for the one gauntlet")
+            enqueued.append({"id": r["id"], "discovery_id": did, "created": bool(created)})
+        except Exception as exc:                       # registry absent on a research container
+            enqueued.append({"id": r["id"], "error": f"{type(exc).__name__}: {exc}"})
+    return {"parsed_attempted": to_parse, "parse_result": parsed,
+            "enqueued": enqueued, "seconds": round(time.monotonic() - t0, 2),
+            "rule": ("repairs run every pass, highest expected-information-gain source at zero "
+                     "cells first; a task row survives only where the desk's own reader failed "
+                     "and the failure text is the task")}
+
+
 def _tasks(rows: list[dict[str, Any]], now: str) -> list[dict[str, Any]]:
     """A named task per collected-but-unconverted source. Never a quiet zero."""
     out: list[dict[str, Any]] = []
@@ -237,9 +344,20 @@ def _tasks(rows: list[dict[str, Any]], now: str) -> list[dict[str, Any]]:
             kind = "REBUILD"          # bytes exist: the parser is what is missing
         if r["represented"] and r["cells_emitted"] <= 0:
             kind = "REBUILD"          # rows exist: a family or a mapping is what is missing
+        needs_code = bool(r["collected"] and not r["represented"] and r.get("parse_error"))
         out.append({"at": now, "id": r["id"], "task": kind, "stops_at": r["stops_at"],
+                    "needs_code": needs_code, "parse_error": r.get("parse_error"),
                     "why": r["why"], "url": r["url"], "targets": r["targets"]})
     return out
+
+
+def chain_state() -> dict[str, Any]:
+    """THE BIRTH FENCE'S DOOR. Per-source chain state keyed by the registry's own ids, so a fence
+    checking that a newly registered source inherits the obligation reads this instead of
+    re-deriving it. Empty when the organ has not run here -- UNMEASURED, never a pass."""
+    doc = _read(CHAIN_STATE, {}) or {}
+    by_source = doc.get("by_source") if isinstance(doc, dict) else None
+    return dict(by_source) if isinstance(by_source, dict) else {}
 
 
 def build(budget_s: float = 300.0, *, fetch: bool = True) -> dict[str, Any]:
@@ -248,6 +366,11 @@ def build(budget_s: float = 300.0, *, fetch: bool = True) -> dict[str, Any]:
     srcs = _sources()
     state = _read(STATE, {}) or {}
     credited, credit_why = _credited()
+    reg_cells, reg_why = _registry_cells()
+    for sid, counts in reg_cells.items():                 # the registry is the live record
+        base = credited.setdefault(sid, {"leads": 0, "testable": 0, "judged": 0})
+        base["testable"] = max(int(base.get("testable") or 0), int(counts.get("testable") or 0))
+        base["judged"] = max(int(base.get("judged") or 0), int(counts.get("judged") or 0))
     rows = [chain_for(s, state if isinstance(state, dict) else {}, credited) for s in srcs]
     by_id = {r["id"]: r for r in rows}
     ratchet = _read(RATCHET, {}) or {}
@@ -279,7 +402,21 @@ def build(budget_s: float = 300.0, *, fetch: bool = True) -> dict[str, Any]:
     result = drain(pending, min(budget_s * 0.7, 180.0), fetch=fetch,
                    oldest_first=oldest_first)
 
+    state_mid = _read(STATE, {}) or {}
+    rows_mid = [chain_for(s, state_mid if isinstance(state_mid, dict) else {}, credited)
+                for s in srcs]
+    # REPAIR, THEN RE-MEASURE. The organ closes what it can close on its own clock (LAWS 7: a
+    # report is not a remedy), so every number below is POST-repair -- what is still broken after
+    # this pass tried, which is the only honest denominator for a ratchet.
+    repairs = repair(rows_mid, _evig_order([r["id"] for r in rows_mid]),
+                     budget_s=min(budget_s * 0.3, 120.0))
     state_after = _read(STATE, {}) or {}
+    credited, credit_why = _credited()
+    reg_after, reg_why = _registry_cells()
+    for sid, counts in reg_after.items():
+        base = credited.setdefault(sid, {"leads": 0, "testable": 0, "judged": 0})
+        base["testable"] = max(int(base.get("testable") or 0), int(counts.get("testable") or 0))
+        base["judged"] = max(int(base.get("judged") or 0), int(counts.get("judged") or 0))
     rows_after = [chain_for(s, state_after if isinstance(state_after, dict) else {}, credited)
                   for s in srcs]
     by_id_after = {r["id"]: r for r in rows_after}
@@ -311,17 +448,69 @@ def build(budget_s: float = 300.0, *, fetch: bool = True) -> dict[str, Any]:
     if len(history) >= 2:
         span = history[0]["uncollected"] - history[-1]["uncollected"]
         rate = round(span / max(len(history) - 1, 1), 3)
+    needs_code = [row_["id"] for row_ in tasks if row_.get("needs_code")]
+    # A NEW COLLECTION IS BORN UNCONVERTED, and punishing that would make the fence an argument
+    # for collecting less -- the exact timidity the principal forbids. So the ratchet is measured
+    # on the backlog NET of sources collected since the last best: `unconverted_net`. Convert one
+    # and the net falls; collect one and it does not rise.
+    drained_now = len(drained)
+    since_best = int(ratchet.get("collected_since_best", 0)) + drained_now
+    net_unconverted = max(len(unconverted) - since_best, 0)
+    if int(ratchet.get("metric_version", 0)) != METRIC_VERSION:
+        ratchet = {"first_seen": first_seen, "history": history,
+                   "reseeded_at": now, "reseeded_why": (
+                       f"metric_version {ratchet.get('metric_version', 0)} -> {METRIC_VERSION}: "
+                       f"the unconverted ratchet is now measured NET of sources collected since "
+                       f"the last best, and a best recorded under the old definition is not "
+                       f"comparable")}
+        since_best = 0
+        net_unconverted = len(unconverted)
+    prev_best_conv = int(ratchet.get("best_unconverted", 10**9))
+    best_conv = min(prev_best_conv, net_unconverted)
+    if best_conv < prev_best_conv:
+        since_best = 0                                    # a new best re-bases the allowance
     best_unc = min(int(ratchet.get("best_uncollected", 10**9)), len(uncollected_after))
-    best_conv = min(int(ratchet.get("best_unconverted", 10**9)), len(unconverted))
-    _write(RATCHET, {"at": now, "best_uncollected": best_unc, "best_unconverted": best_conv,
+    best_code = min(int(ratchet.get("best_needs_code", 10**9)), len(needs_code))
+    # THE STALL CLOCK. A ratchet that only falls says nothing about a count that never moves, so
+    # the moment each count last FELL is recorded and the fence fails when a non-zero count has
+    # not fallen inside STALL_WINDOW_H. Without it a backlog could sit at today's number forever
+    # while every pass reported OK.
+    fell_conv = (now if net_unconverted < int(ratchet.get("unconverted_net", 10**9))
+                 else str(ratchet.get("unconverted_last_fell_at") or now))
+    fell_code = (now if len(needs_code) < int(ratchet.get("needs_code", 10**9))
+                 else str(ratchet.get("needs_code_last_fell_at") or now))
+    _write(RATCHET, {"at": now, "metric_version": METRIC_VERSION,
+                     "reseeded_at": ratchet.get("reseeded_at"),
+                     "reseeded_why": ratchet.get("reseeded_why"),
+                     "best_uncollected": best_unc, "best_unconverted": best_conv,
+                     "best_needs_code": best_code,
                      "uncollected": len(uncollected_after), "unconverted": len(unconverted),
+                     "unconverted_net": net_unconverted,
+                     "collected_since_best": since_best,
+                     "needs_code": len(needs_code),
+                     "unconverted_last_fell_at": fell_conv,
+                     "needs_code_last_fell_at": fell_code,
+                     "stall_window_h": STALL_WINDOW_H,
                      "oldest_never_collected": oldest[0],
                      "oldest_age_h": round(oldest[1], 2),
                      "oldest_window_h": windows.get(str(oldest[0]), 6_480.0),
                      "first_seen": first_seen, "history": history,
-                     "rule": ("both counts are RATCHETS: check_source_drain.py fails when either "
-                              "rises above its own best, or when the oldest never-collected "
-                              "source ages past its own cadence window")})
+                     "rule": ("three counts are RATCHETS and each carries the moment it last "
+                              "fell: check_source_drain.py fails when one rises above its own "
+                              "best, when a non-zero count has not fallen inside the stall "
+                              "window, or when the oldest never-collected source ages past its "
+                              "own cadence window")})
+    # THE CHAIN STATE, FOR ANY FENCE THAT WANTS IT. The birth fence checks the same axis for a
+    # source registered tomorrow, so this publishes the per-source stage rather than making it
+    # re-derive one. The SET is the registry's own rows, read every pass -- a source added to
+    # data/asia_sources.json inherits the whole obligation with no list to maintain anywhere.
+    _write(CHAIN_STATE, {"at": now, "stages": list(STAGES),
+                         "derived_from": "desks/mt5/data/asia_sources.json, read every pass",
+                         "by_source": {r["id"]: {k: r[k] for k in
+                                                 ("stage_reached", "stops_at", "collected",
+                                                  "ingested", "represented", "cells_emitted",
+                                                  "cells_judged", "parse_error", "why")}
+                                       for r in rows_after}})
 
     stages: dict[str, int] = {}
     for r in rows_after:
@@ -347,10 +536,20 @@ def build(budget_s: float = 300.0, *, fetch: bool = True) -> dict[str, Any]:
         "chain": {"stages": STAGES, "census": stages},
         "n_collected": len(collected_after),
         "n_collected_but_unconverted": len(unconverted),
+        "n_unconverted_net_of_new_collections": net_unconverted,
         "n_cells_judged_total": sum(int(r["cells_judged"]) for r in rows_after),
-        "cells_credit_basis": credit_why or "SOURCE_REGISTRY per-source credit",
+        "cells_credit_basis": (credit_why or "SOURCE_REGISTRY per-source credit")
+        + ("; " + reg_why if reg_why else "; canonical registry discovery counts"),
         "highest_evig_at_zero_cells": zero_cell_top,
-        "tasks_appended": len(tasks),
+        "tasks_appended": len(tasks), "n_needs_code": len(needs_code),
+        "needs_code": needs_code[:20],
+        "repairs": repairs,
+        "first_source_with_a_judged_cell": next(
+            (r["id"] for r in sorted(rows_after, key=lambda r: -int(r["cells_judged"]))
+             if int(r["cells_judged"]) > 0), None),
+        "cells_judged_by_source": {r["id"]: int(r["cells_judged"]) for r in rows_after
+                                   if int(r["cells_judged"]) > 0},
+        "chain_state": str(CHAIN_STATE),
         "rows": rows_after,
         "collector": result,
         "consumers": [
@@ -386,6 +585,11 @@ def main(argv: list[str] | None = None) -> int:
     o = doc["oldest_never_collected"]
     print(f"  oldest never collected: {o['id']} at {o['age_h']}h of a {o['window_h']}h window")
     print(f"  chain census: {doc['chain']['census']}")
+    rp = doc["repairs"]
+    print(f"  repaired this pass: {len(rp.get('parsed_attempted') or [])} re-parsed, "
+          f"{len(rp.get('enqueued') or [])} enqueued to the registry; "
+          f"{doc['n_needs_code']} row(s) genuinely need new code")
+    print(f"  first source with a judged cell: {doc['first_source_with_a_judged_cell']}")
     print(f"  collected {doc['n_collected']}, of which {doc['n_collected_but_unconverted']} "
           f"unconverted; {doc['n_cells_judged_total']} cell(s) judged in total; "
           f"{doc['tasks_appended']} task(s) appended")
