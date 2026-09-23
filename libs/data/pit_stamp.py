@@ -91,6 +91,102 @@ def find_period_column(columns: Any) -> str | None:
     return None
 
 
+#: A period written the way the source's own country writes it. MEASURED 2026-09-23: all 23
+#: sources the parser had turned into frames were UNSTAMPED -- 'no column names a period' on the
+#: frames whose header row pandas read as data, and "only 0% of 'Date' parses" on the Chinese and
+#: compact-integer ones. Neither is a missing period; both are a period this function had never
+#: been taught to read. Coercion is tried in this order and the first that parses >= the share
+#: threshold wins. It only ever STAMPS MORE FRAMES -- a frame that stamped before still stamps.
+def _coerce_periods(col: Any) -> Any:
+    """Parse a column of periods written in any shape this desk's sources actually publish.
+
+    Plain ISO first (the common case, and pandas already handles it), then: CJK dates
+    (2026年9月15日 / 2026年9月 / 令和-free), compact integers (20260915, 202609), ISO months
+    (2026-09), quarters (2026Q3 / 2026年第3季度) and Excel day serials. Never raises; a column
+    that parses as nothing comes back all-NaT and the caller reports UNSTAMPED.
+    """
+    import re
+
+    import pandas as pd
+    s = col.astype("string").str.strip()
+    out = pd.to_datetime(s, errors="coerce", utc=True, format="mixed")
+    miss = out.isna()
+    if not bool(miss.any()):
+        return out
+
+    def _try(conv: Any, fmt: str | None = None) -> None:
+        nonlocal out, miss
+        if not bool(miss.any()):
+            return
+        try:
+            got = conv(s[miss])
+        except Exception:
+            return
+        # An explicit format on every fallback: pandas emits a UserWarning when it has to infer
+        # per element, and this desk runs its suite with `filterwarnings = error`, so an inferred
+        # parse here is a test failure rather than a note.
+        got = (pd.to_datetime(got, errors="coerce", utc=True, format=fmt) if fmt
+               else pd.to_datetime(got, errors="coerce", utc=True))
+        out = out.where(~miss, got)
+        miss = out.isna()
+
+    # CJK y/m/d, with or without the day: 2026年9月15日, 2026年9月, 2026年09月15日
+    cjk = re.compile(r"(\d{4})\s*[年/.-]\s*(\d{1,2})(?:\s*[月/.-]\s*(\d{1,2}))?")
+    def _cjk(v: Any) -> Any:
+        ex = v.str.extract(cjk)
+        return (ex[0] + "-" + ex[1].str.zfill(2) + "-" + ex[2].fillna("01").str.zfill(2))
+    _try(_cjk, "%Y-%m-%d")
+    # Quarters: 2026Q3, 2026年第3季度, 2026-Q3
+    quart = re.compile(r"(\d{4})\D{0,3}[Qq季]\D{0,2}(\d)")
+    def _q(v: Any) -> Any:
+        ex = v.str.extract(quart)
+        mon = (ex[1].astype("Float64") * 3).astype("Int64").astype("string").str.zfill(2)
+        return ex[0] + "-" + mon + "-01"
+    _try(_q, "%Y-%m-%d")
+    # Compact integers: 20260915, 202609, 2026
+    def _compact(v: Any) -> Any:
+        d = v.str.replace(r"\D", "", regex=True)
+        return (d.where(d.str.len() == 8).pipe(pd.to_datetime, format="%Y%m%d", errors="coerce")
+                .fillna(d.where(d.str.len() == 6)
+                        .pipe(pd.to_datetime, format="%Y%m", errors="coerce"))
+                .fillna(d.where(d.str.len() == 4)
+                        .pipe(pd.to_datetime, format="%Y", errors="coerce")))
+    _try(_compact)
+    # Excel day serials (1900 epoch): a plain number between 20000 (1954) and 60000 (2064).
+    def _excel(v: Any) -> Any:
+        n = pd.to_numeric(v, errors="coerce")
+        n = n.where((n > 20_000) & (n < 60_000))
+        return pd.to_datetime(n, unit="D", origin="1899-12-30", errors="coerce")
+    _try(_excel)
+    return out
+
+
+def period_column_by_value(df: Any, *, min_share: float = 0.8) -> tuple[str | None, Any]:
+    """The column whose VALUES are periods, when no column NAME says so.
+
+    A table scraped out of an HTML page names its columns 0, 1, 2 or repeats the header text in
+    every cell; the dates are still there. This scans every column, coerces it, and returns the
+    one with the highest parse share at or above `min_share`, preferring the leftmost on a tie
+    because a period column is conventionally first. Returns (name, parsed) or (None, None).
+    """
+    best: tuple[float, str, Any] | None = None
+    for i, name in enumerate(list(df.columns)):
+        try:
+            parsed = _coerce_periods(df[name])
+        except Exception:
+            continue
+        if parsed is None or not len(parsed):
+            continue
+        share = float(parsed.notna().mean())
+        if share >= min_share and (best is None or share > best[0] + 1e-9):
+            best = (share, str(name), parsed)
+        elif best is not None and share >= min_share and abs(share - best[0]) <= 1e-9:
+            _ = i  # leftmost already held; nothing to do
+    if best is None:
+        return None, None
+    return best[1], best[2]
+
+
 #: The full point-in-time envelope every stamped observation carries (blueprint item 2,
 #: 2026-09-16). The three original fields are measured; the four added ones are either aliases
 #: of measured fields (published_time = the modelled publication instant, retrieval_time = the
@@ -119,6 +215,7 @@ def vintage_id_for(source_id: str | None, ingested_time: str | None,
 def stamp_frame(df: Any, *, lag_days: int, observed_at: str | datetime | None,
                 source_id: str | None = None, vintage_id: str | None = None,
                 revision_time: str | datetime | None = None,
+                vintage_fallback: bool = False,
                 ) -> tuple[Any, dict[str, Any]]:
     """Add the point-in-time envelope to a DataFrame when a period column exists.
 
@@ -140,22 +237,35 @@ def stamp_frame(df: Any, *, lag_days: int, observed_at: str | datetime | None,
                              else (str(revision_time) if revision_time else None))
     meta["undeclared"] = [k for k in ("source_id", "vintage_id", "revision_time")
                           if meta.get(k) is None]
+    # THE NAME FIRST, THEN THE VALUES. A named column that parses is the cheapest and most
+    # honest answer; when there is no such name, or the named one does not parse, the periods are
+    # still in the table and `period_column_by_value` finds them. MEASURED 2026-09-23: this is
+    # the whole difference between 0 and N stamped frames on the collected source lake -- every
+    # one of the 23 parsed sources failed here, none of them for want of a date.
     col = find_period_column(df.columns)
-    if col is None:
-        meta.update({"status": "UNSTAMPED", "why": "no column names a period (date/period/...)",
-                     "period_column": None})
+    parsed = None
+    share = 0.0
+    basis = "column name"
+    if col is not None:
+        try:
+            parsed = _coerce_periods(df[col])
+            share = float(parsed.notna().mean()) if len(parsed) else 0.0
+        except Exception:
+            parsed, share = None, 0.0
+    if share < 0.8:
+        alt, alt_parsed = period_column_by_value(df)
+        if alt is not None and alt_parsed is not None:
+            col, parsed, basis = alt, alt_parsed, "column values"
+            share = float(parsed.notna().mean()) if len(parsed) else 0.0
+    if col is None or parsed is None:
+        meta.update({"status": "UNSTAMPED", "why": "no column names a period (date/period/...) "
+                     "and no column's values parse as periods", "period_column": None})
         return df, meta
-    try:
-        parsed = pd.to_datetime(df[col], errors="coerce", utc=True)
-    except Exception as exc:
-        meta.update({"status": "UNSTAMPED", "why": f"{col!r} does not parse as dates: "
-                     f"{type(exc).__name__}", "period_column": col})
-        return df, meta
-    share = float(parsed.notna().mean()) if len(parsed) else 0.0
     if share < 0.8:
         meta.update({"status": "UNSTAMPED", "period_column": col,
                      "why": f"only {share:.0%} of {col!r} parses as a date"})
         return df, meta
+    meta["period_basis"] = basis
     out = df.copy()
     out["event_time"] = parsed
     out["available_time"] = parsed + pd.Timedelta(days=lag_days)

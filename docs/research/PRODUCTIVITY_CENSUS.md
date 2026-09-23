@@ -1,8 +1,8 @@
 # RESEARCH PRODUCTIVITY CENSUS
 
-_Derived by `desks/mt5/research/productivity_census.py` at 2026-09-23T18:06:46+00:00; DO NOT EDIT -- regenerate._
+_Derived by `desks/mt5/research/productivity_census.py` at 2026-09-23T18:14:52+00:00; DO NOT EDIT -- regenerate._
 
-**1573 producers** | productive **87** | compute-with-zero-cells **23** | certificates **58** (unattributed 33) | forward 2 | live 40
+**1589 producers** | productive **87** | compute-with-zero-cells **23** | certificates **58** (unattributed 33) | forward 2 | live 40
 
 **Dedup (three identities, all measured):** 18201 raw cells -> 18201 distinct `content_hash` (1.0x -- the door, 1.00 means it works) -> **2844 distinct `grid_cell` (6.3998x)** -> 583 distinct `mechanism` (31.2196x). The last two are the duplication a reader was asking about; the first cannot show it.
 **UNMEASURED `canonical_mechanisms`:** registry table `mechanisms` holds 0 rows on this host: no organ has written a canonicalised mechanism, so this stage is UNMEASURED and not zero -- the fallback below counts DISTINCT mechanism_id stamped on discoveries instead
@@ -27,7 +27,7 @@ _Derived by `desks/mt5/research/productivity_census.py` at 2026-09-23T18:06:46+0
 | MENA | 10 | 0 | 0 | 14 | 14 | 2 | 0 | 0 | 0.00 | UNMEASURED | UNMEASURED | UNMEASURED |
 | Africa | 8 | 0 | 0 | 38 | 38 | 12 | 0 | 0 | 0.00 | UNMEASURED | UNMEASURED | UNMEASURED |
 | Global/institutional | 2 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0.00 | UNMEASURED | UNMEASURED | UNMEASURED |
-| unattributed | 1498 | 17 | 0 | 18104 | 3558 | 10381 | 0 | 25 | 0.44 | 209.2941 | 0.0 | 56.3317 |
+| unattributed | 1514 | 17 | 0 | 18104 | 3558 | 10381 | 0 | 25 | 0.44 | 209.2941 | 0.0 | 56.3317 |
 
 ## Top producers by certificates
 
