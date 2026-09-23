@@ -3960,7 +3960,7 @@ def main() -> None:
     # NO PRODUCER IS DARK (LAWS 7). Every seat, miner and organ the component registry knows,
     # with its clock, its last production and its verdict -- and the RELIGHT of every dark row
     # in the same pass, judged by the producer's own output moving, never by a zero exit code.
-    pcn = _costed("producer_census", lambda: _producer(
+    prdc = _costed("producer_census", lambda: _producer(
         "producer_census", "scripts/check_seat_health.py",
         "--census", "--relight", "--budget-s", "240", "--max-repairs", "6"))
     # THE BARS THE VERDICTS WERE MEASURED ON (Tier-1 item V16). The release seal pins the code a
@@ -4098,7 +4098,7 @@ def main() -> None:
                     "cycle_pricing": cyp, "causal_invariance": civ,
                     "edge_reliability": erl, "arena": ar, "session_capital": scap,
                     "prosecutor": pc, "scaling_laws": slw,
-                    "dead_architecture": dac, "producer_census": pcn, "input_identity": iid,
+                    "dead_architecture": dac, "producer_census": prdc, "input_identity": iid,
                     "publish_state": pub,
                     "enrol_clocks": ecl, "requeue_unrunnable": rq, "reclaim_disk": dd,
                     "miner_conversion": mc, "moat_miner": mo, "archive_tape": ta,

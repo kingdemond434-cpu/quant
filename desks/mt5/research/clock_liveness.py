@@ -1080,9 +1080,13 @@ def build(budget_s: float = 300.0, *, apply: bool = True) -> dict[str, Any]:
                     ("lane", "key", "symbol", "timeframe", "status", "organ", "last_advance",
                      "expected_bars", "actual_bars", "lag_bars", "freeze_bars", "window_s",
                      "cause", "cause_why", "why")} for c in still[:300]],
+        # EVERY CLOCK CARRIES THE MECHANISM THAT ADVANCES IT AND WHEN IT LAST DID. A reader who
+        # finds one row of this file must not have to join it against anything to know who was
+        # supposed to move this clock and when it last moved (principal 2026-09-23).
         "clocks": [{k: c.get(k) for k in
                     ("lane", "key", "symbol", "timeframe", "instrument_class", "status",
-                     "organ", "last_advance", "expected_bars", "actual_bars", "lag_bars",
+                     "organ", "mechanism", "last_advance", "last_advance_field",
+                     "expected_bars", "actual_bars", "lag_bars",
                      "freeze_bars", "verdict", "on_roster")} for c in after],
         "elapsed_s": round(time.monotonic() - t0, 2),
         "rule": ("accrual is counted in the VENUE'S bars, never the wall clock; a FROZEN clock "
