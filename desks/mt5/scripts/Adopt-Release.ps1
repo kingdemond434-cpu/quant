@@ -1067,7 +1067,11 @@ if ($drift.Count -gt 0) {
 # later `Sync-Pull` sees itself behind, tries to merge, and dies on the same
 # entry again -- an adoption that has to be repeated every hour is not an
 # adoption. `-s ours` touches no file, which is why it survives the corruption.
-Invoke-Git @("merge", "-s", "ours", $target, "-m",
+# The repository enables merge.autoStash for interactive work. Here that launches `git stash
+# create` over the entire dirty live-state tree (bars, ledgers and corpus) even though `-s ours`
+# cannot write any of it. The tree has already been verified above; autostash adds no safety and
+# can exceed the task deadline. Disable it for this bookkeeping-only merge invocation.
+Invoke-Git @("-c", "merge.autoStash=false", "merge", "-s", "ours", $target, "-m",
              "Record the release merge; tree adopted in place by Adopt-Release") | Out-Null
 
 Write-Host ""
