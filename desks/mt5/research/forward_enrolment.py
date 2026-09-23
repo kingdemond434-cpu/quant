@@ -86,6 +86,35 @@ CYCLE_HOURS = 1.0
 #: THE TARGET IS ZERO. Not a threshold to pass: the number the report exists to hold the desk to.
 TARGET_LATENCY_H = 0.0
 
+#: A clock in one of these statuses is WORKING: it has no verdict yet and the next pass will
+#: replay it. An empty status is one of them -- the engine writes `""` for a row it has evaluated
+#: and not ruled on, and reading that as a defect would fail on every healthy clock the desk has.
+ACCRUING_STATUSES = frozenset({"", "ACTIVE", "NONE", UNMEASURED.upper()})
+
+#: A clock in one of these has DONE ITS JOB. The certificate was forward-tested and a verdict was
+#: reached; it stops accruing because the desk decided, not because anything is broken. Reported
+#: separately so a promoted or killed cell is never counted as a wiring defect.
+DECIDED_STATUSES = frozenset({"KILL", "PROMOTED", "DEAD", "REJECTED", "RETIRED",
+                              "PROMOTION CANDIDATE"})
+
+#: EVERYTHING ELSE IS THE DEFECT, and this is the measurement the desk was missing.
+#:
+#: WHY "HAS A CLOCK" WAS NOT THE RIGHT QUESTION, measured on the box 2026-09-23. All 28 ten-gate
+#: certificates had a clock row, so `n_missing` was 0 and this fence passed -- while ZERO of the
+#: 28 were accruing anything: 24 sat at REFUSED_BY_UNIVERSE_POLICY (a lane-vocabulary defect that
+#: made every FX symbol UNCLASSIFIED) and 4 at BLOCKED_NO_BARS. A certificate that cannot accrue
+#: can never mature, so it can never be promoted, so the certificate is inert -- which is exactly
+#: the breach of the AUTOMATIC PROMOTION order that `n_missing` was supposed to catch and could
+#: not see. `scripts/check_enrolment_gap.py` had said so in its own docstring for weeks ("`has a
+#: clock` and `is accruing evidence` are different claims and only one of them is what the desk
+#: needs") and nothing on a clock read it.
+#:
+#: NOT A CAP AND NOT A BRAKE. This measures and reports; it enrols everything exactly as before
+#: and refuses nothing. The only thing it changes is that a stalled clock is LOUD.
+BLOCKED_WHY = ("a clock exists and is accruing NO forward evidence: the certificate can never "
+               "mature, so it can never be promoted. Fix the blocker named in `status`/"
+               "`last_error` -- never the certificate, and never by retiring the clock")
+
 
 def _now(now: datetime | None = None) -> datetime:
     return now or datetime.now(tz=UTC)
@@ -225,6 +254,16 @@ def census(runs: list[dict[str, Any]], clocks: dict[str, dict[str, Any]],
             "enrolled_at": (row or {}).get("enrolled_at", UNMEASURED),
             "latency_h": UNMEASURED,
             "clockless_hours": UNMEASURED,
+            "accruing": UNMEASURED,
+            # THE LAST TICK, PUBLISHED SO LIVENESS IS ONE READ (principal 2026-09-23: no clock
+            # may be "blocked unmeasured stale or broken"). The engine stamps `last_attempt_at`
+            # on EVERY pass that reaches a row, evaluated or blocked, so it is the honest answer
+            # to "is this clock still running". It lives in the lane state files under the
+            # engine's own `sleeve_key`; the registry rows carry `forward_start`/`frozen_at` and
+            # no tick at all, which is why a reader looking there finds nothing and concludes,
+            # wrongly, that liveness is unmeasurable.
+            "last_tick": (row or {}).get("last_attempt_at", UNMEASURED),
+            "n": (row or {}).get("n", UNMEASURED),
         }
         g = _parse_ts(gated)
         if row is not None:
@@ -240,14 +279,48 @@ def census(runs: list[dict[str, Any]], clocks: dict[str, dict[str, Any]],
             if g is not None:
                 entry["clockless_hours"] = round(max(0.0, (t - g).total_seconds() / 3600.0), 4)
             entry["why"] = "NO CLOCK: certified and accruing no forward evidence"
+        # IS THE CLOCK ACTUALLY RUNNING? Asked LAST so the blocker's reason wins over the latency
+        # note above: a row that is both unstamped and blocked is a blocked row, and the reader
+        # needs the blocker.
+        if row is not None:
+            state = str(entry["status"] or "").strip().upper()
+            decided = (state in DECIDED_STATUSES
+                       or state.startswith("QUARANTINED")
+                       or any(state.startswith(name + "_") for name in DECIDED_STATUSES))
+            if state in ACCRUING_STATUSES:
+                entry["accruing"] = True
+            elif decided:
+                # A verdict, not a stall. `shadow_forward._TERMINAL_STATUSES` carries the same
+                # names with the same meaning, and a QUARANTINED_* row is a decision too.
+                entry["accruing"], entry["decided"] = False, True
+            else:
+                entry["accruing"], entry["decided"] = False, False
+                entry["why"] = BLOCKED_WHY
+                entry["blocker"] = str(row.get("last_error") or "")[:400] or state
         seen.append(entry)
     enrolled = [e for e in seen if e["enrolled"]]
     missing = [e for e in seen if not e["enrolled"]]
     overdue = [e for e in missing
                if isinstance(e["clockless_hours"], float) and e["clockless_hours"] > CYCLE_HOURS]
+    # THE POPULATION THE FENCE FAILS ON. Enrolled, not decided, and accruing nothing.
+    blocked = [c for c in enrolled if c["accruing"] is False and not c.get("decided")]
+    accruing = [c for c in enrolled if c["accruing"] is True]
+    by_status: dict[str, int] = {}
+    for c in blocked:
+        name = str(c["status"] or UNMEASURED)
+        by_status[name] = by_status.get(name, 0) + 1
     return {
         "n_certificates": len(seen), "n_enrolled": len(enrolled), "n_missing": len(missing),
         "n_overdue": len(overdue),
+        "n_accruing": len(accruing), "n_blocked": len(blocked),
+        "blocked": blocked, "blocked_by_status": by_status,
+        "accruing_rule": (
+            "ENROLLED IS NOT ACCRUING. A clock whose status is neither working nor decided is "
+            "gathering no evidence, so its certificate can never mature and never be promoted. "
+            f"working={sorted(ACCRUING_STATUSES)} decided={sorted(DECIDED_STATUSES)} plus "
+            "QUARANTINED*; everything else is blocked and named in `blocked`. Measured "
+            "2026-09-23: 28 certificates, 28 enrolled, 0 accruing -- a defect `n_missing` could "
+            "not see."),
         "latency_h": {
             "target": TARGET_LATENCY_H, "n_measured": len(latencies),
             "max": round(max(latencies), 4) if latencies else UNMEASURED,
@@ -345,7 +418,8 @@ def run(write: bool = True, now: datetime | None = None, budget_s: float = 300.0
             from libs.ops.events import leg_events
             leg_events("forward_enrolment", "OK", certificates=payload["n_certificates"],
                        enrolled=payload["n_enrolled"], missing=payload["n_missing"],
-                       overdue=payload["n_overdue"])
+                       overdue=payload["n_overdue"],
+                       accruing=payload.get("n_accruing"), blocked=payload.get("n_blocked"))
         except Exception as exc:
             payload["events"] = f"UNMEASURED: {type(exc).__name__}: {exc}"
     return payload
@@ -356,6 +430,8 @@ def render(payload: dict[str, Any]) -> str:
     lines = [f"FORWARD ENROLMENT  certificates={payload.get('n_certificates')} "
              f"enrolled={payload.get('n_enrolled')} missing={payload.get('n_missing')} "
              f"overdue={payload.get('n_overdue')}",
+             f"  accruing={payload.get('n_accruing')} blocked={payload.get('n_blocked')} "
+             f"by_status={payload.get('blocked_by_status')}",
              f"  latency_h max={lat.get('max')} mean={lat.get('mean')} "
              f"target={lat.get('target')} measured_on={lat.get('n_measured')}",
              f"  repair={(payload.get('repair') or {}).get('status')} "
@@ -363,6 +439,9 @@ def render(payload: dict[str, Any]) -> str:
     for row in (payload.get("missing") or [])[:10]:
         lines.append(f"    NO CLOCK {row.get('key')} clockless_h={row.get('clockless_hours')} "
                      f"-- {row.get('why', '')}")
+    for row in (payload.get("blocked") or [])[:10]:
+        lines.append(f"    NOT ACCRUING {row.get('key')} status={row.get('status')} "
+                     f"-- {row.get('blocker', '')}")
     return "\n".join(lines)
 
 

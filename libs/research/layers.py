@@ -292,6 +292,10 @@ LEG_LAYER: dict[str, str] = {
     # Which families the scarce judge actually spends itself on, measured per family as unjudged
     # backlog. It buys INFORMATION about the mined population, not a signal or a position.
     "judge_coverage": "information",
+    # How much ORTHOGONALITY and how many CERTIFICATES each producer actually returns per hour of
+    # compute. It buys INFORMATION about the producers themselves -- which of them opens ground
+    # nothing else covers, and which of them converts the judge's hour into a certificate.
+    "orthogonality_yield": "information",
     # What the multiplicity budget is charged in: nominal rows vs effective independent tests.
     "effective_trials": "information",
     "gauntlet_backpressure": "meta", "miner_specialisation": "meta",
@@ -440,6 +444,10 @@ LEG_LAYER: dict[str, str] = {
     "publish_state": "meta", "release_identity": "meta", "smoke_release": "meta",
     "burn_in": "meta", "maintain_miners": "meta", "reclaim_disk": "meta", "daily": "meta",
     "layer_census": "meta", "opportunity_cost": "meta", "acceptance": "meta",
+    # PRE-REGISTRATION is meta: it measures whether the desk's own evidence was specified before
+    # it was seen. It predicts nothing and sizes nothing -- it grades the epistemics of every
+    # other layer's output.
+    "preregistration": "meta",
     # CYCLE PRICING is meta for the same reason the control plane is: it decides how much of the
     # hour each of the other layers gets, and predicts, sizes and times nothing itself.
     "cycle_pricing": "meta",
