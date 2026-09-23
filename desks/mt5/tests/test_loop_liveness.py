@@ -9,9 +9,7 @@ from __future__ import annotations
 import json
 import sqlite3
 import sys
-from collections.abc import Sequence
 from pathlib import Path
-from typing import Any
 
 import pytest
 
@@ -30,7 +28,7 @@ def iso(now: float, hours_ago: float) -> str:
 
 
 def plant_registry(root: Path, *, discoveries: list[float], candidates: list[float],
-                   sources: Sequence[tuple[float, bool]] = ()) -> Path:
+                   sources: list[tuple[float, bool]] = ()) -> Path:
     """A minimal alpha_registry with the three tables the prover reads."""
     (root / "data").mkdir(parents=True, exist_ok=True)
     p = root / "data" / "alpha_registry.sqlite"
@@ -228,9 +226,8 @@ def test_publish_writes_both_artifacts_and_the_doc_names_the_defect(tmp_path: Pa
 
 
 def test_timestamp_parser_never_returns_the_epoch_for_junk() -> None:
-    junk: list[Any] = ["", None, "not a date", 0, False, [], {}]
-    for j in junk:
-        assert LL._parse(j) is None
+    for junk in ("", None, "not a date", 0, False, [], {}):
+        assert LL._parse(junk) is None
     assert LL._parse("2026-09-16T15:07:09+00:00") is not None
     assert LL._parse("2026-09-08 01:00:00+00:00") is not None
 

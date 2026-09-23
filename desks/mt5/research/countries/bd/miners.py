@@ -26,7 +26,7 @@ except ImportError:  # loaded by file path: reach the kit beside this package
     sys.modules["countries_miner_kit"] = K
     _spec.loader.exec_module(K)
 
-from libs.research import country_lab as CL
+from libs.research import country_lab as CL  # noqa: E402
 
 SOURCE = "bd:pack"
 

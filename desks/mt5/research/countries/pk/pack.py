@@ -380,22 +380,12 @@ def is_market_holiday(day: date) -> bool:
     return day in market_holidays(day.year)
 
 
-#: The years this pack's holiday tables resolve. Named once so the rule text, the derived
-#: `table` below and `_holiday_rule_row()` cannot disagree about which years exist.
-YEARS: tuple[int, ...] = (2024, 2025, 2026)
-#: Which keys of HOLIDAYS_RULE are PROSE (the derivation a human reads) as opposed to data or
-#: a function. The `rule` string the sibling checker wants is these, joined -- so a rule that
-#: is edited in one place is edited in both views at once.
-_PROSE_KEYS: tuple[str, ...] = (
-    "authority", "weekend", "national_rule", "market_rule", "moon_sighting_rule",
-    "cancellation_rule", "moving_feasts")
-
 HOLIDAYS_RULE: dict[str, Any] = {
     "kind": "computed_from_rules",
     "authority": "the federal Interior Ministry notifies the fixed holidays; the Central "
                  "Ruet-e-Hilal Committee's moon sighting sets Eid, Ashura and Milad the "
                  "EVENING BEFORE; the SBP adds the 1 July bank holiday",
-    "years": YEARS,
+    "years": (2024, 2025, 2026),
     "weekend": "Saturday and Sunday (the banks); the PSX takes a Friday prayer break",
     "national_rule": "Kashmir Day 5 Feb, Pakistan Day 23 Mar, Labour Day 1 May, Independence "
                      "Day 14 Aug, Iqbal Day 9 Nov, Quaid Day 25 Dec; Eid-ul-Fitr (3 days), "
@@ -420,27 +410,16 @@ HOLIDAYS_RULE: dict[str, Any] = {
     # other pack's was checked. Both are DERIVED from the functions above rather than typed,
     # so the two views cannot drift: the rule is this dict's own prose joined, and the table
     # is exactly what `market_holidays` returns for the declared years.
+    "rule": " | ".join(str(v) for v in (_HOLIDAY_PROSE) if v),
+    "table": {y: {d.isoformat(): n for d, n in market_holidays(y).items()} for y in YEARS},
+    "status": "COMPUTED: the table is regenerated from the rule functions on import, so a "
+              "year added to YEARS appears in both views at once",
     "fn": market_holidays,
     "national_fn": national_holidays,
     "bank_fn": bank_holidays,
     "announced_fn": announced_dates,
     "ramadan_fn": ramadan_span,
 }
-
-
-# THE SIBLING SCHEMA, DERIVED (2026-09-23). `research.countries.check_pack` reads a `rule`
-# string and a `table` of resolved years, and this pack is computed from rules and carried
-# neither -- so the parity checker could not read its calendar at all while every other pack's
-# was checked. Both are DERIVED here rather than typed, which is the whole point: the rule is
-# this dict's own prose joined and the table is exactly what `market_holidays` returns, so the
-# two views cannot drift from the functions above them.
-HOLIDAYS_RULE["rule"] = " | ".join(
-    str(HOLIDAYS_RULE[k]) for k in _PROSE_KEYS if HOLIDAYS_RULE.get(k))
-HOLIDAYS_RULE["table"] = {
-    y: {d.isoformat(): n for d, n in market_holidays(y).items()} for y in YEARS}
-HOLIDAYS_RULE["status"] = (
-    "COMPUTED: the table is regenerated from the rule functions on import, so a year added to "
-    "YEARS appears in both views at once")
 
 # --------------------------------------------------------------------------- positioning
 POSITIONING_SOURCES: tuple[dict[str, Any], ...] = (
@@ -657,8 +636,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
     # ---- practitioner
     source_class(
         "pk_practitioner_press", "Profit (Pakistan Today), Business Recorder's Brecorder, "
-                                 "Dawn Business, The Express Tribune business",
-        layer="practitioner",
+                                 "Dawn Business, The Express Tribune business", layer="practitioner",
         roots=("https://profit.pakistantoday.com.pk", "https://www.brecorder.com/business-finance",
                "https://www.dawn.com/business", "https://tribune.com.pk/business"),
         queries=("kerb premium", "dollar shortage", "LC restrictions", "reserves fall",
@@ -895,8 +873,7 @@ DATASETS: tuple[dict[str, Any], ...] = (
      "mechanism_families": ("positioning", "foreign_flow"),
      "how_to_fetch": "nccpl.com.pk market information; posted after the close"},
     {"name": "PBS CPI, SPI and trade summary", "source": "Pakistan Bureau of Statistics",
-     "coverage": "CPI 2008 base to 2016 base; SPI weekly from 2008",
-     "frequency": "monthly / weekly",
+     "coverage": "CPI 2008 base to 2016 base; SPI weekly from 2008", "frequency": "monthly / weekly",
      "publication_lag_days": 1.0, "revisions": "rebasing only", "licence": "free, public",
      "history_from": "2008-07", "pit_feasible": True, "assets": ("XBRUSD", "WHEAT", "SUGAR"),
      "mechanism_families": ("release_surprise",),

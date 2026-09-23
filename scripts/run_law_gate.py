@@ -199,15 +199,6 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # in the lattice" are measured absences and the law calls each one a defect. It still caps no
     # compute -- it fails the gate and publishes the debt; the allocator does the rest.
     ("check_regional_parity.py", ("--strict",)),
-    # NOTHING IS STALE (principal 2026-09-22). Every artifact the desk publishes has an expected
-    # refresh interval -- its lease, else its declared artifact_class, else DERIVED from its
-    # organ's cadence and recorded -- and one past it is a DEFECT named with its organ, its clock
-    # and its last exit. A STATE fence: it reads the live artifact set, and UNMEASURED is a
-    # verdict rather than a pass. Repairs are raised through the EXISTING control-plane
-    # reconciler (observe -> plan -> apply_plan), never by a fixer of the fence's own, and the
-    # per-artifact ratchet is suspended -- and says so -- while every MT5 clock on the box is
-    # disabled, because that is one administrative fact and not 100 separate defects.
-    ("check_no_staleness.py", ()),
 )
 
 

@@ -71,25 +71,7 @@ def main() -> int:
         doc["authoritative"] = bool(ok)
         doc["authority_evidence"] = why
         p.write_text(_json.dumps(doc, indent=1, default=str), encoding="utf-8")
-        # AND PUBLISHED WHERE ITS READERS ACTUALLY LOOK (2026-09-22, Tier-1 B27/B28).
-        #
-        # `bandit.BUDGET` is `data/research_budget.json`. Every consumer on this desk reads
-        # `reports/RESEARCH_BANDIT.json` instead -- `research_budget.BANDIT`,
-        # `research_os_archive.BANDIT`, `cycle_pricing.BANDIT`, `libs/ops/allocators.py`,
-        # `libs/ops/capability_graph.py` and `scripts/check_closed_loop.py` all name that path --
-        # and NOTHING WROTE IT. Measured: the file on this box carried an older schema with no
-        # `shares` key at all, so `research_budget.budget_s` answered "bandit shares unreadable
-        # for these arms; base budget" on every call, the closed-loop attestation read
-        # `evig_controller_authoritative` false, and the bandit's prices reached nothing. The
-        # producer published to a path with no readers and the readers read a path with no
-        # producer, which is the exact shape of an organ that looks wired and is not (LAWS 7).
-        #
-        # One document, two paths, written in the same act so they cannot drift.
-        rep = _DESK / "reports" / "RESEARCH_BANDIT.json"
-        rep.parent.mkdir(parents=True, exist_ok=True)
-        rep.write_text(_json.dumps(doc, indent=1, default=str), encoding="utf-8")
         print(f"  authoritative: {ok} -- {why[:110]}")
-        print(f"  published: {rep}")
     except Exception as exc:
         print(f"  authoritative: unmeasured ({type(exc).__name__}: {exc})")
     print(f"RESEARCH BANDIT  {d['graph_rows']} graph rows, pooled certify rate "
