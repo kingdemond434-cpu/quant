@@ -466,10 +466,20 @@ STATE_PREFIXES: tuple[str, ...] = (
 #: whole desk -- gateway.py, decision_core.py, every family -- as state, which is the identity
 #: fence disarmed rather than corrected. These seven are named individually and a new one has to
 #: be named too, which is the point: the right home for a new state artifact is `data/`.
+#: AND AN EIGHTH, MEASURED 2026-09-23 06:37 UTC, the same failure one file later:
+#:
+#:     adopt-and-seal: refusing to seal: 1 tracked code path(s) differ from HEAD after adoption:
+#:         desks/mt5/swap_exposure.json
+#:
+#: The box computes its swap exposure hourly and writes it beside the code, so an otherwise clean
+#: adoption refused to seal on the box's own evidence -- the exact defect this list exists to
+#: stop, recurring because a later organ chose the same wrong home. Named here rather than
+#: widened into a prefix, for the reason the paragraph above gives.
 STATE_FILES: frozenset[str] = frozenset({
     "desks/mt5/gateway_state.json", "desks/mt5/regime_state.json",
     "desks/mt5/sync_marker.json", "desks/mt5/portfolio_projection.json",
     "desks/mt5/hunt11.json", "desks/mt5/mech_battery.json", "desks/mt5/mech_split.json",
+    "desks/mt5/swap_exposure.json",
 })
 
 
