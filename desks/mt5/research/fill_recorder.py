@@ -559,8 +559,24 @@ def impact_block(rows: list[dict[str, Any]]) -> dict[str, Any]:
     sse = sum(r * r for r in resid)
     sst = sum((y - my) ** 2 for _, y in pts)
     se = ((sse / (n - 2)) / sxx) ** 0.5 if n > 2 and sse > 0 else None
-    return {"status": "MEASURED", "n": n, "distinct_lot_sizes": len(lots),
+    t = (slope / se) if se else None
+    # A SLOPE THAT IS NOT DISTINGUISHABLE FROM ZERO IS A MEASUREMENT, NOT A COST. At |t| < 2 the
+    # reading is MEASURED_NULL: the regression ran, it found nothing, and the point estimate is
+    # published with its error so the next reading can improve on it -- but charging 16 points a
+    # lot on a t of 0.02 would tax every order for an effect the book has not shown, which is a
+    # cost invented out of noise and a smaller book for no evidence (GROWTH_GOVERNANCE Rule 1).
+    # `upper_bound_points_per_lot` is the honest conservative number for anyone who needs one,
+    # and it is a BOUND, never the charge.
+    status = "MEASURED" if (t is not None and abs(t) >= 2.0) else "MEASURED_NULL"
+    return {"status": status, "n": n, "distinct_lot_sizes": len(lots),
             "lot_range": [lots[0], lots[-1]],
+            "charge_impact": status == "MEASURED",
+            "upper_bound_points_per_lot": (round(slope + 2.0 * se, 4) if se else None),
+            "why": ("" if status == "MEASURED" else
+                    f"the slope is {slope:.3f} points/lot with standard error "
+                    f"{(se or 0.0):.3f} (t={t if t is None else round(t, 3)}): impact is not "
+                    f"distinguishable from zero on {n} fills spanning "
+                    f"{lots[0]}-{lots[-1]} lot. Measured, not assumed, and not charged"),
             "slope_points_per_lot": round(slope, 4),
             "intercept_points": round(my - slope * mx, 4),
             "slope_se": (round(se, 4) if se else None),

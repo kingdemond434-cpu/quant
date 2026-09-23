@@ -162,6 +162,83 @@ def targets_of(pack: dict[str, Any]) -> list[str]:
     return [str(t) for t in raw if str(t).strip()][:8]
 
 
+#: A CELL IS JUDGED WHEN A JUDGE RECORDED A VERDICT AGAINST IT, and the desk has three registers
+#: that can carry one: the gauntlet's own `trials_ledger.candidate_id`, and the candidate's own
+#: `judged_at` / `terminal_gate`. This union is the honest measure -- counting only the first one
+#: reported zero for a structural reason (see `judged_registers`) and looked like a slow clock.
+JUDGED_SQL = (
+    "SELECT c.source_id, COUNT(DISTINCT c.id) FROM research_candidates c "
+    "LEFT JOIN trials_ledger t ON t.candidate_id = c.id "
+    "WHERE c.source_id IS NOT NULL AND c.source_id != '' AND ("
+    "t.candidate_id IS NOT NULL OR c.judged_at IS NOT NULL OR "
+    "(c.terminal_gate IS NOT NULL AND c.terminal_gate != '')) GROUP BY c.source_id")
+
+
+def judged_registers() -> dict[str, Any]:
+    """WHY THE END OF THE CHAIN IS OPEN, measured in the three registers that could close it.
+
+    MEASURED 2026-09-23 on this box: `trials_ledger` holds 140 rows and **not one of them carries
+    a candidate_id** -- every row is NULL there -- so the join this organ (and `source_drain`)
+    counts judged cells with can never return a row, whatever the gauntlet does. `judged_at` and
+    `terminal_gate` are NULL on all 26,777 candidates. The 6,676 `retired` rows are not verdicts
+    either: their `rejection_reason` reads "superseded: repaired by conversion_maximiser into
+    cell ...", which is a supersession, not a judgment.
+
+    So cells_judged is zero for a REASON THAT IS NOT THE GAUNTLET'S CLOCK, and no amount of
+    minting moves it. The write that closes it is one field: whatever records a verdict must pass
+    the registry's `candidate_id` when it appends to `trials_ledger` (libs/research/trial_ledger.py
+    already treats candidate_id as an identity key) or set `research_candidates.judged_at` /
+    `terminal_gate` on the row it judged. This organ never writes it: it mints, and it publishes
+    the open end so the next session inherits a named job instead of a mystery.
+    """
+    try:
+        from libs.moat.registry import connect
+        conn = connect()
+    except Exception as exc:
+        return {"status": "UNMEASURED", "why": f"registry unavailable: {type(exc).__name__}: {exc}"}
+    try:
+        def one(sql: str) -> int:
+            try:
+                return int(conn.execute(sql).fetchone()[0])
+            except Exception:
+                return -1
+        n_trials = one("SELECT COUNT(*) FROM trials_ledger")
+        n_with_cand = one("SELECT COUNT(*) FROM trials_ledger WHERE candidate_id IS NOT NULL "
+                          "AND candidate_id != ''")
+        n_joined = one("SELECT COUNT(*) FROM trials_ledger t JOIN research_candidates c "
+                       "ON c.id = t.candidate_id")
+        n_judged_at = one("SELECT COUNT(*) FROM research_candidates WHERE judged_at IS NOT NULL")
+        n_terminal = one("SELECT COUNT(*) FROM research_candidates WHERE terminal_gate IS NOT "
+                         "NULL AND terminal_gate != ''")
+        n_cands = one("SELECT COUNT(*) FROM research_candidates")
+        total = max(n_with_cand, 0) + max(n_judged_at, 0) + max(n_terminal, 0)
+        return {
+            "status": "OPEN" if total <= 0 else "OK",
+            "trials_ledger_rows": n_trials,
+            "trials_ledger_rows_carrying_a_candidate_id": n_with_cand,
+            "trials_ledger_rows_joining_a_registry_candidate": n_joined,
+            "candidates": n_cands,
+            "candidates_with_judged_at": n_judged_at,
+            "candidates_with_a_terminal_gate": n_terminal,
+            "why": ("no judge writes a verdict back against a registry candidate id: "
+                    f"{n_trials} trial rows carry {n_with_cand} candidate ids, and {n_cands} "
+                    f"candidates carry {n_judged_at} judged_at and {n_terminal} terminal_gate "
+                    "values. cells_judged is therefore structurally zero for every source and "
+                    "every region, and minting more cells cannot move it"
+                    if total <= 0 else "verdicts are recorded against candidate ids"),
+            "the_one_write_that_closes_it": (
+                "pass the registry candidate_id when appending to trials_ledger (it is already "
+                "an identity key in libs/research/trial_ledger.py:283), or set "
+                "research_candidates.judged_at + terminal_gate on the judged row. Owner: "
+                "whichever organ records the terminal verdict; desks/mt5/scripts/"
+                "external_gauntlet.py is SEALED, so this is a principal-gated change there and a "
+                "free one in any unsealed judge."),
+        }
+    finally:
+        with contextlib.suppress(Exception):
+            conn.close()
+
+
 def _registry_counts() -> tuple[dict[str, dict[str, int]], str]:
     """Per source id: cells the registry holds, and cells the ONE gauntlet has judged.
 
@@ -179,10 +256,7 @@ def _registry_counts() -> tuple[dict[str, dict[str, int]], str]:
                                    "WHERE source_id IS NOT NULL AND source_id != '' "
                                    "GROUP BY source_id"):
             out.setdefault(str(sid), {"emitted": 0, "judged": 0})["emitted"] = int(n)
-        for sid, n in conn.execute(
-                "SELECT c.source_id, COUNT(DISTINCT t.candidate_id) FROM research_candidates c "
-                "JOIN trials_ledger t ON t.candidate_id = c.id "
-                "WHERE c.source_id IS NOT NULL AND c.source_id != '' GROUP BY c.source_id"):
+        for sid, n in conn.execute(JUDGED_SQL):
             out.setdefault(str(sid), {"emitted": 0, "judged": 0})["judged"] = int(n)
     except Exception as exc:
         return out, f"registry query failed: {type(exc).__name__}: {exc}"
@@ -363,7 +437,7 @@ def named_instruments(texts: list[str]) -> list[str]:
     try:
         from research.universe_policy import may_hypothesise
     except Exception:
-        def may_hypothesise(_sym: str) -> bool:  # noqa: ANN001 - absent router never filters
+        def may_hypothesise(symbol: str) -> bool:   # an absent router never filters
             return True
     hits: list[str] = []
     for sym in sorted(universe_symbols()):
@@ -407,7 +481,8 @@ def resolve_ground(row: dict[str, Any]) -> dict[str, Any]:
     return {"targets": [], "region": "UNMAPPED", "mapped_by": "none",
             "hosts": sorted(set(hosts))[:6], "code": "", "pack": "",
             "reason": (
-                f"no rung resolves it: its documents come from {', '.join(sorted(set(hosts))[:4]) or 'no recorded host'}"
+                "no rung resolves it: its documents come from "
+                + (", ".join(sorted(set(hosts))[:4]) or "no recorded host")
                 + (f"; the country code(s) {', '.join(unknown)} are covered by no pack under "
                    "research/countries/ -- writing one closes it" if unknown else
                    "; those hosts carry a generic top-level domain, and no MT5 symbol is named "
@@ -436,11 +511,7 @@ def world_rows() -> tuple[list[dict[str, Any]], str]:
                 conn.execute("SELECT source_id, COUNT(*) FROM discoveries "
                              "WHERE source_id IS NOT NULL AND source_id != '' "
                              "GROUP BY source_id")}
-        judged = {str(sid): int(n) for sid, n in
-                  conn.execute("SELECT c.source_id, COUNT(DISTINCT t.candidate_id) "
-                               "FROM research_candidates c JOIN trials_ledger t "
-                               "ON t.candidate_id = c.id WHERE c.source_id IS NOT NULL "
-                               "GROUP BY c.source_id")}
+        judged = {str(sid): int(n) for sid, n in conn.execute(JUDGED_SQL)}
         out: list[dict[str, Any]] = []
         for r in conn.execute("SELECT source_id, country, kind, url, status, last_crawled "
                               "FROM sources"):
@@ -520,7 +591,8 @@ def emit_world(row: dict[str, Any], *, dry_run: bool = False,
     targets = list(row.get("targets") or [])
     if not targets:
         return {"id": sid, "emitted": 0, "created": 0, "discoveries": 0,
-                "reason": (f"country {row['country']!r} has no pack under "
+                "reason": (str(row.get("reason") or "")
+                           or f"country {row['country']!r} has no pack under "
                            "research/countries/, so the ground names no MT5 instrument; add "
                            "the pack (EXECUTABLE_INSTRUMENTS) and it converts on the next pass")}
     made = created = n_disc = 0
@@ -620,6 +692,81 @@ def emit_for(pack: dict[str, Any], signals: list[str], targets: list[str], *,
                                       f"{type(exc).__name__}: {str(exc)[:50]}")
     return {"id": pid, "discovery_id": did, "signals_used": take, "emitted": made,
             "created": created, "errors": errors[:5]}
+
+
+def drain_reachability(st: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    """DOES THE DRAIN'S REPAIR PATH REACH WHAT IS STILL AT ZERO, and where not, WHAT SHAPE.
+
+    `source_drain.repair` owns two repairs and this organ neither edits nor duplicates them: bytes
+    with no stamped series go to `asia_parser.parse_all`; a represented source with no cell is
+    enqueued as a discovery. Its reach is therefore exactly:
+
+      never collected            NOT reachable by repair -- it is the COLLECTOR's queue (`drain`),
+                                 and the shape that defeats it is the last collector status
+      collected, not represented REACHABLE: `asia_parser` is handed it every pass, highest EVIG
+                                 first, and the parse error IS the reader job when its dispatch
+                                 fails
+      represented, no cell       REACHABLE by both organs now: the drain enqueues a discovery and
+                                 `pack_cells` mints the cells directly from the stamped frame
+      cells, none judged         NOT reachable by either -- see `judged_registers`
+
+    The shapes are grouped so the next reader is a KNOWN JOB and not a search: one row per
+    distinct failure text, with the sources that share it.
+    """
+    if not st:
+        return {"status": "UNMEASURED",
+                "why": "source_drain has published no chain state on this host"}
+    buckets: dict[str, list[str]] = {}
+    shapes: dict[str, dict[str, Any]] = {}
+    for sid, row in st.items():
+        if not isinstance(row, dict):
+            continue
+        stage = str(row.get("stage_reached") or "none")
+        collected = bool(row.get("collected"))
+        represented = bool(row.get("represented"))
+        emitted = int(row.get("cells_emitted") or 0)
+        if not collected:
+            key = "never_collected"
+            shape = str(row.get("last_status") or "no collector attempt recorded")
+        elif not represented:
+            key = "collected_not_represented"
+            shape = str(row.get("parse_error") or "no parse error recorded: the reader produced "
+                        "no frame and said nothing")
+        elif emitted <= 0:
+            key = "represented_no_cell"
+            shape = str(row.get("why") or stage)
+        else:
+            key = "cells_emitted_none_judged" if int(row.get("cells_judged") or 0) <= 0 \
+                else "converted"
+            shape = ""
+        buckets.setdefault(key, []).append(sid)
+        if shape:
+            s = shapes.setdefault(f"{key}: {shape[:110]}",
+                                  {"bucket": key, "shape": shape[:300], "n": 0, "sources": []})
+            s["n"] += 1
+            if len(s["sources"]) < 8:
+                s["sources"].append(sid)
+    reach = {
+        "never_collected": ("NOT the repair path: these are the COLLECTOR's queue, handed out by "
+                            "source_drain.drain half by EVIG and half by staleness every pass"),
+        "collected_not_represented": ("REACHED: source_drain.repair hands the top 8 by EVIG to "
+                                      "asia_parser.parse_all every pass; a survivor is a reader "
+                                      "job and its parse error is the specification"),
+        "represented_no_cell": ("REACHED TWICE now: source_drain.repair enqueues a discovery and "
+                                "pack_cells mints the cells from the stamped frame the same hour"),
+        "cells_emitted_none_judged": ("NOT reachable by either organ: no judge writes a verdict "
+                                      "back against a candidate id (see judged_registers)"),
+        "converted": "converted: cells reached a judge",
+    }
+    return {
+        "status": "OK",
+        "n_sources": len(st),
+        "counts": {k: len(v) for k, v in sorted(buckets.items())},
+        "reached_by_repair": reach,
+        "defeating_shapes": sorted(shapes.values(), key=lambda s: -int(s["n"]))[:20],
+        "rule": ("grouped by the text that defeated the desk's own reader, so the next reader is "
+                 "a named job with its sources attached and never a search"),
+    }
 
 
 def build(budget_s: float = 240.0, *, dry_run: bool = False) -> dict[str, Any]:
@@ -765,6 +912,39 @@ def build(budget_s: float = 240.0, *, dry_run: bool = False) -> dict[str, Any]:
                     for k in ("grounds", "with_documents", "documents", "grounds_with_cells",
                               "cells_emitted", "cells_judged", "discoveries")}
 
+    # ---- STEP 1 PUBLISHED AS A NUMBER: how each ground got its instruments, by rung.
+    mapped_by: dict[str, int] = {}
+    for w in wrows_after:
+        mapped_by[str(w.get("mapped_by") or "none")] = \
+            mapped_by.get(str(w.get("mapped_by") or "none"), 0) + 1
+    still_unmapped = [{"id": w["id"], "n_documents": w["n_documents"], "kind": w["kind"],
+                       "hosts": w.get("hosts") or [], "reason": w.get("reason") or ""}
+                      for w in sorted(wrows_after, key=lambda x: -x["n_documents"])
+                      if not w.get("targets") and w["n_documents"] > 0]
+    mapping = {
+        "by_rung": dict(sorted(mapped_by.items(), key=lambda kv: -kv[1])),
+        "grounds_with_documents_now_naming_an_instrument": sum(
+            1 for w in wrows_after if w["n_documents"] > 0 and w.get("targets")),
+        "grounds_with_documents": sum(1 for w in wrows_after if w["n_documents"] > 0),
+        "still_unmapped": still_unmapped[:40],
+        "n_still_unmapped": len(still_unmapped),
+        "rungs": ["country_pack (the registry's country column)",
+                  "jurisdiction_of_documents (the ccTLD of the hosts its documents came from, "
+                  "against an index inverted out of the packs' own JURISDICTIONS)",
+                  "instruments_named_in_documents (MT5 symbols named verbatim, routed through "
+                  "universe_policy so a single-name equity is never minted as a hypothesis)"],
+        "rule": ("a rung never narrows the one above it: the ladder only reaches grounds that "
+                 "had no instrument at all, and a ground it cannot resolve carries the hosts it "
+                 "saw and the rung that failed"),
+    }
+
+    # ---- STEP 3 PUBLISHED AS A NUMBER: judged per region, which is the end of the chain.
+    judged_by_region = {k: int(v["cells_judged"]) for k, v in by_region.items()}
+    regions_judged = sorted(k for k, v in judged_by_region.items() if v > 0)
+    regions_none = sorted(k for k, v in judged_by_region.items() if v <= 0)
+    jr = judged_registers()
+    dr = drain_reachability(st)
+
     n_emit = sum(1 for r in rows if r["cells_emitted"] > 0)
     n_judged = sum(1 for r in rows if r["cells_judged"] > 0)
     zero = [{"id": r["id"], "stage": r["stage"], "reason": r.get("reason") or "unexplained"}
@@ -791,6 +971,12 @@ def build(budget_s: float = 240.0, *, dry_run: bool = False) -> dict[str, Any]:
             "why": world_why or "",
             "by_region": dict(sorted(by_region.items(),
                                      key=lambda kv: -kv[1]["documents"])),
+            "mapping": mapping,
+            "judged_by_region": dict(sorted(judged_by_region.items(), key=lambda kv: -kv[1])),
+            "regions_with_a_judged_cell": regions_judged,
+            "regions_with_no_judged_cell": regions_none,
+            "judged_by_source": {w["id"]: int(w["cells_judged"]) for w in wrows_after
+                                 if int(w["cells_judged"]) > 0},
             "europe": {"regions": sorted(europe), **europe_total},
             "remaining_ranked_by_documents_held": remaining,
             "rule": ("ordered by documents ALREADY FETCHED, highest first: a ground the crawler "
@@ -810,6 +996,10 @@ def build(budget_s: float = 240.0, *, dry_run: bool = False) -> dict[str, Any]:
         "cells_created_this_pass": created_this_pass,
         "counts_basis": (counts_why or "research_candidates.source_id for emitted; "
                          "trials_ledger.candidate_id for judged (the one gauntlet's own record)"),
+        "judged_registers": jr,
+        "judged_by_pack": {r["id"]: int(r["cells_judged"]) for r in rows
+                           if int(r["cells_judged"]) > 0},
+        "drain_reachability": dr,
         "packs_at_zero": zero,
         "rows": rows,
         "dry_run": bool(dry_run),
@@ -866,9 +1056,19 @@ def main(argv: list[str] | None = None) -> int:
         for reg, row in list((w.get("by_region") or {}).items())[:8]:
             print(f"    {reg:<18} grounds {row['grounds']:<5} docs {row['documents']:<6} "
                   f"cells {row['cells_emitted']:<6} judged {row['cells_judged']}")
+        m = w.get("mapping") or {}
+        print(f"   MAPPED {m.get('grounds_with_documents_now_naming_an_instrument')}/"
+              f"{m.get('grounds_with_documents')} grounds holding documents name an instrument; "
+              f"by rung {m.get('by_rung')}; still unmapped {m.get('n_still_unmapped')}")
+        print(f"   JUDGED regions with a judged cell {w.get('regions_with_a_judged_cell')}; "
+              f"without {len(w.get('regions_with_no_judged_cell') or [])}")
         for row in (w.get("remaining_ranked_by_documents_held") or [])[:6]:
             print(f"    NEXT {str(row['id'])[:38]:<38} docs {row['n_documents']:<4} "
                   f"{row['region']}")
+    jr = doc.get("judged_registers") or {}
+    print(f"  JUDGED REGISTERS {jr.get('status')}: {str(jr.get('why'))[:150]}")
+    dr = doc.get("drain_reachability") or {}
+    print(f"  DRAIN REACH {dr.get('status')}: {dr.get('counts')}")
     print(f"written: {OUT}")
     return 0
 

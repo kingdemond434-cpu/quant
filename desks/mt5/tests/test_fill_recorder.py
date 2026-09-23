@@ -111,6 +111,10 @@ def test_a_market_order_that_filled_needs_no_closing_deal() -> None:
 def test_absent_ledgers_are_unmeasured_never_zero_matched_fills(monkeypatch: Any,
                                                                 tmp_path: Path) -> None:
     monkeypatch.setattr(fr, "INTENTS", tmp_path / "no_intents.jsonl")
+    # THE PROP BOOK IS A SOURCE TOO. Both accounts place real orders and the recorder reads both;
+    # a test that isolates only the live ledger leaves the real e8 file underneath and measures
+    # the box instead of the fixture.
+    monkeypatch.setattr(fr, "E8_INTENTS", tmp_path / "no_e8.jsonl")
     monkeypatch.setattr(fr, "LEDGER", tmp_path / "no_ledger.jsonl")
     doc = fr.build(dry_run=True)
     assert doc["status"] == "UNMEASURED"
@@ -121,6 +125,7 @@ def test_the_corpus_row_carries_every_field_the_principal_named(tmp_path: Path,
                                                                 monkeypatch: Any) -> None:
     from libs.execution import fill_corpus as fc
     monkeypatch.setattr(fr, "INTENTS", tmp_path / "i.jsonl")
+    monkeypatch.setattr(fr, "E8_INTENTS", tmp_path / "e8.jsonl")
     monkeypatch.setattr(fr, "LEDGER", tmp_path / "l.jsonl")
     monkeypatch.setattr(fr, "DECISIONS", tmp_path / "d.jsonl")
     monkeypatch.setattr(fr, "CORPUS", tmp_path / "corpus.jsonl")

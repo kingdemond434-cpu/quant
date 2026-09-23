@@ -64,6 +64,31 @@ for _p in (str(BASE), str(REPO)):
 from mt5desk import decision_core as core  # noqa: E402
 
 REPORT = BASE / "reports" / "CAPACITY.json"
+#: The fill recorder's measurement of the desk's own executions, read for the ceiling's reason.
+FILL_RECORDER = BASE / "reports" / "FILL_RECORDER.json"
+
+
+def _ceiling_why() -> str:
+    """Why the capacity ceiling is unmeasured, taken from the fill recorder rather than asserted.
+
+    A ceiling needs market impact, impact is a slope of cost against size, and the recorder is
+    the organ that measures it. An absent report is itself the reason and is said so.
+    """
+    try:
+        doc = json.loads(FILL_RECORDER.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return ("market impact needs realised fills and reports/FILL_RECORDER.json is absent or "
+                "unreadable here; a ceiling from an unvalidated cost model would be believed and "
+                "should not be")
+    imp = doc.get("impact") or {}
+    n = doc.get("matched_fills")
+    if imp.get("status") == "MEASURED":
+        return (f"impact is measured at {imp.get('slope_points_per_lot')} points/lot on {n} "
+                "matched fills; the ceiling follows once that slope is carried into the venue's "
+                "own cost surface, and it is not carried yet")
+    return (f"matched_fills is {n} and the impact slope is {imp.get('status', 'UNMEASURED')}: "
+            f"{imp.get('why') or 'no impact verdict published'}. A ceiling needs a slope that is "
+            "distinguishable from zero; inventing one would be believed and should not be")
 
 #: How far realised risk may exceed the policy before it is an issue rather than a rounding edge.
 #: 1.25 = a quarter more risk than chosen. Not a threshold anything is allowed to relax to make a
@@ -345,8 +370,12 @@ def assess(sleeve: dict[str, Any], equity: float) -> dict[str, Any]:
         "headroom_multiple": round(bind_at / equity, 3) if equity > 0 else None,
         "ceiling_eur": None,
         "ceiling_status": "UNMEASURED",
-        "ceiling_why": ("market impact needs realised fills and matched_fills is 0; a ceiling "
-                        "from an unvalidated cost model would be believed and should not be"),
+        # THE REASON IS READ, NOT ASSERTED. This said "matched_fills is 0" as a fixed sentence and
+        # kept saying it after the fill recorder started joining the desk's own executions. The
+        # ceiling is still unmeasured, but for the reason the measurement actually gives -- an
+        # impact slope that is not distinguishable from zero cannot locate a ceiling, which is a
+        # different fact from having no fills at all, and only one of them is fixable by trading.
+        "ceiling_why": _ceiling_why(),
         # P12: what the edge is WORTH at each account size. The ceiling stays unmeasurable; this
         # is the half of the capacity question that is computable from numbers already on disk,
         # and it is the half that binds at EUR 607.
