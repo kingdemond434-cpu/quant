@@ -265,7 +265,49 @@ def task_text(task: dict) -> str:
             lines.append("DESK MEMORY:\n" + ctx)
     except Exception:
         pass
+    # THE TWO EXPERIENCE CLASSES, RETRIEVED BEFORE GENERATION (Tier-1 Q17). `semantic_memory`
+    # distils the corpus into POSITIVE (constructions that survived, per family) and NEGATIVE
+    # (the six classes of mistake, derived from the gate each cell died at) every build. Both
+    # halves ride the prompt: the first says what has worked in this family, the second says what
+    # keeps killing things here. An absent distillation adds nothing and is never fabricated.
+    try:
+        exp = _experience_lines(task)
+        if exp:
+            lines.append("DESK EXPERIENCE:\n" + exp)
+    except Exception:
+        pass
     return "\n".join(lines)
+
+
+def _experience_lines(task: dict, limit_chars: int = 900) -> str:
+    """`data/experience_memory.json` rendered for this task: positive constructions in its family
+    first, then the negative classes by count. Empty when the distillation is UNMEASURED."""
+    import semantic_memory as _sm
+    doc = _sm.experience()
+    if not isinstance(doc, dict) or doc.get("status") != "MEASURED":
+        return ""
+    fam = str(task.get("family") or "").strip()
+    out: list[str] = []
+    pos = doc.get("positive") or {}
+    if isinstance(pos, dict):
+        rows = ([(fam, pos[fam])] if fam and fam in pos else
+                list(pos.items())[:2])
+        for name, slot in rows:
+            if not isinstance(slot, dict):
+                continue
+            out.append(f"[survived] {name}: {slot.get('n')} certified, classes "
+                       f"{sorted(slot.get('asset_classes') or {})}")
+            for c in (slot.get("constructions") or [])[:2]:
+                out.append(f"    + {str(c.get('text') or '')[:160]}")
+    neg = doc.get("negative") or {}
+    if isinstance(neg, dict):
+        ranked = sorted(((k, int(v.get("n") or 0)) for k, v in neg.items()
+                         if isinstance(v, dict)), key=lambda kv: -kv[1])
+        out.append("[killed by] " + ", ".join(f"{k}={n}" for k, n in ranked if n))
+        worst = ranked[0][0] if ranked and ranked[0][1] else ""
+        for e in ((neg.get(worst) or {}).get("examples") or [])[:2]:
+            out.append(f"    - {worst}: {str(e.get('text') or '')[:160]}")
+    return "\n".join(out)[:limit_chars]
 
 
 def _parse(text: str) -> dict | None:
@@ -771,7 +813,7 @@ def _work(argv: list[str] | None = None) -> int:
     try:
         from libs.ops.llm_seat import primary_seat
         retry_seat_blocks = primary_seat() is not None
-    except Exception:                                                   # noqa: BLE001
+    except Exception:
         retry_seat_blocks = False
     done = worked_ids(retry_seat_blocks=retry_seat_blocks)
     costs, cost_basis = task_costs()

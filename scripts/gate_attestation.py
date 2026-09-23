@@ -16,6 +16,7 @@ that overstates itself is worse than none, because it is believed.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import subprocess
 import sys
@@ -61,6 +62,34 @@ def _is_state(rel: str) -> bool:
 def _tracked_py() -> set[str]:
     """Every .py git actually tracks, as posix paths -- the set an untracked file could shadow."""
     return {ln.strip() for ln in _git("ls-files", "*.py").splitlines() if ln.strip()}
+
+
+def code_hash(ref: str = "HEAD") -> str:
+    """The hash of the CODE TREE at `ref`: every tracked non-state blob, by path and blob id.
+
+    WHY THE TREE AND NOT THE COMMIT (Tier-1 B1, 2026-09-23). `tested_sha` names a commit, and on
+    this box the commit moves every few minutes: the desk commits its own ledgers, reports and
+    logs on top of whatever code it is running, so an attestation bound to HEAD is stale before
+    the gate that produced it has finished printing. Measured the same day: the attestation named
+    16eca3ca while the gateway ran b794c18a, so `release_authority.tested_sha_matches` read false
+    on a box whose CODE had not changed at all.
+
+    The subject the gates actually tested is the code tree. Two commits that differ only in state
+    carry the same code hash, so the attestation survives every state commit and fails exactly
+    when a .py, .ps1, .sh or config blob moves -- which is the event it is supposed to catch.
+    """
+    lines = []
+    for ln in _git("ls-tree", "-r", "--full-tree", ref).splitlines():
+        # "<mode> <type> <sha>\t<path>"
+        head, _, rel = ln.partition("\t")
+        parts = head.split()
+        if len(parts) != 3 or parts[1] != "blob" or not rel or _is_state(rel):
+            continue
+        lines.append(f"{parts[2]} {rel}")
+    if not lines:
+        return ""
+    lines.sort()
+    return hashlib.sha256("\n".join(lines).encode("utf-8")).hexdigest()
 
 
 def _shadows_a_real_module(rel: str, tracked: set[str]) -> bool:
@@ -136,6 +165,10 @@ def attest(gates: str, result: str) -> dict[str, object]:
     return {
         "at": datetime.now(UTC).isoformat(timespec="seconds"),
         "tested_sha": sha or None,
+        # THE SUBJECT THAT SURVIVES A STATE COMMIT (Tier-1 B1). `tested_sha` names the commit;
+        # `tested_code_hash` names the code tree, which is what the gates actually executed.
+        # `release_authority` joins on this one.
+        "tested_code_hash": code_hash() or None,
         "gates": gates,
         "result": result,
         "tree_clean": not dirty,

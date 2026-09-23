@@ -118,6 +118,26 @@ def release_authority() -> dict[str, Any]:
     else:
         out["ci_green"] = None
         out["ci_green_why"] = "no gate attestation artifact on this box"
+    # THE ONE BIT, WHERE IT IS COMPUTED (Tier-1 B1, 2026-09-23).
+    # `desks/mt5/research/release_authority.py` joins seal, attestation and runtime drift on the
+    # CODE TREE rather than on the commit -- which is the only join that survives a box that
+    # commits its own ledgers on top of the code it runs. Where it has measured, its clause wins
+    # over the commit comparisons above, for the same reason the control plane's invariants win
+    # below: it reads the subject, these read a proxy for it.
+    ra = _read(DESK / "reports" / "RELEASE_AUTHORITY.json")
+    if isinstance(ra, dict) and ra.get("clauses"):
+        cl = ra["clauses"]
+        out["capital_authority"] = bool(ra.get("may_create_exposure"))
+        out["capital_authority_why"] = str(ra.get("why"))[:300]
+        for flag, clause in (("tested_sha_matches", "tested"), ("sealed_sha_matches", "sealed"),
+                             ("running_sha_matches", "undrifted")):
+            row = cl.get(clause) if isinstance(cl.get(clause), dict) else {}
+            if isinstance(row.get("ok"), bool):
+                out[flag] = bool(row["ok"])
+                out[f"{flag}_basis"] = f"release_authority clause {clause}: {row.get('why')}"
+    else:
+        out["capital_authority"] = None
+        out["capital_authority_why"] = "no RELEASE_AUTHORITY.json: the bit has not been measured"
     return out
 
 

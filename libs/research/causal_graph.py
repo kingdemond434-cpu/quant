@@ -101,6 +101,9 @@ MT5 = "mt5_instrument"
 
 #: Edge statuses. STRUCTURAL is a definition (a proxy or a membership), never a lead-lag claim.
 PLAUSIBLE_UNMEASURED = "PLAUSIBLE_UNMEASURED"
+#: The verdict a per-edge property takes when it could not be computed. A missing reading is a
+#: reading (L1.28a) and must never arrive downstream as a zero.
+_UNMEASURED = "UNMEASURED"
 ADMITTED = "ADMITTED"
 RECORDED_NOT_ADMITTED = "RECORDED_NOT_ADMITTED"
 STRUCTURAL = "STRUCTURAL"
@@ -667,6 +670,96 @@ def lagged_xcorr(x: np.ndarray, y: np.ndarray, *, max_lag: int = MAX_LAG,
             "alpha": alpha}
 
 
+def lag_distribution(xc: dict[str, Any]) -> dict[str, Any]:
+    """Where in the lag profile the relation actually LIVES, not just where it peaks. C8.
+
+    AN EDGE THAT CARRIED ONE LAG CARRIED A DECISION IT COULD NOT JUSTIFY. `measure_edge` takes
+    the argmax |corr| over the charged lags and publishes that lag alone, so an edge whose
+    profile is a broad plateau across six hours and an edge whose whole relation sits at lag 3
+    reach every downstream reader looking identical -- and they are not the same claim. A
+    transmission that is spread across lags is a slow one to trade and a fragile one to time.
+
+    THE MASS IS |corr| NORMALISED, which is a shape and not a probability, and it says so. The
+    honest second reading is `n_significant`: how many lags carry a deflated interval that
+    excludes zero. One significant lag out of twelve is a sharp edge; nine out of twelve is
+    either a very persistent driver or a very autocorrelated pair, and the reader can see which.
+    """
+    rows = [r for r in (xc.get("lags") or []) if isinstance(r, dict)]
+    if not rows:
+        return {"status": _UNMEASURED, "why": "no lag rows in the cross-correlation"}
+    mass_raw = {int(r["lag"]): abs(float(r.get("corr") or 0.0)) for r in rows}
+    total = sum(mass_raw.values())
+    mass = ({k: round(v / total, 6) for k, v in sorted(mass_raw.items())} if total > 0
+            else dict.fromkeys(sorted(mass_raw), 0.0))
+    sig = [int(r["lag"]) for r in rows
+           if isinstance(r.get("ci_deflated"), (list, tuple)) and len(r["ci_deflated"]) == 2
+           and not (float(r["ci_deflated"][0]) <= 0.0 <= float(r["ci_deflated"][1]))]
+    peak = max(mass_raw, key=lambda k: mass_raw[k])
+    # The centre of mass in lag units: a plateau centred late is a different mechanism from a
+    # spike at lag 1 even when the two share a peak.
+    centre = (sum(k * v for k, v in mass_raw.items()) / total) if total > 0 else float(peak)
+    return {"status": "MEASURED", "mass": mass, "peak_lag": int(peak),
+            "concentration": mass.get(int(peak), 0.0),
+            "centre_of_mass_lag": round(centre, 3),
+            "n_lags": len(rows), "n_significant": len(sig), "significant_lags": sorted(sig),
+            "basis": "|corr| per charged lag, normalised; significance is the deflated interval"}
+
+
+def partial_correlation(x: np.ndarray, y: np.ndarray, lag: int,
+                        controls: np.ndarray | None,
+                        control_names: Sequence[str] = ()) -> dict[str, Any]:
+    """corr(X_t, Y_{t+lag}) with a THIRD MARKET projected out of both. C8.
+
+    TWO INSTRUMENTS THAT BOTH LOAD ON THE DOLLAR ARE NOT A TRANSMISSION. Every edge in this
+    graph is measured pairwise, and the most common false edge in a cross-asset panel is two
+    names moving together because a common factor moved both -- which a pairwise correlation
+    cannot see and reports as a lead. Residualising both legs on the controls, contemporaneously
+    with each leg's own timestamp, leaves the part of the relation the common factor does not
+    explain.
+
+    UNMEASURED WITH A REASON when no control series aligns, never a silent zero: "the desk could
+    not control for the dollar here" and "controlling for the dollar leaves nothing" are opposite
+    findings and must never read the same (L1.28a).
+    """
+    if controls is None or controls.size == 0:
+        return {"status": _UNMEASURED, "why": "no control series aligned to this pair"}
+    a = np.asarray(x, dtype="float64")
+    b = np.asarray(y, dtype="float64")
+    c = np.asarray(controls, dtype="float64")
+    if c.ndim == 1:
+        c = c.reshape(-1, 1)
+    if lag < 1 or a.size <= lag or c.shape[0] != a.size:
+        return {"status": _UNMEASURED,
+                "why": f"controls of {c.shape[0]} rows do not align with {a.size} pairs at "
+                       f"lag {lag}"}
+    xa, yb, ca, cb = a[:-lag], b[lag:], c[:-lag], c[lag:]
+    ok = (np.isfinite(xa) & np.isfinite(yb) & np.all(np.isfinite(ca), axis=1)
+          & np.all(np.isfinite(cb), axis=1))
+    xa, yb, ca, cb = xa[ok], yb[ok], ca[ok], cb[ok]
+    if xa.size < MIN_N:
+        return {"status": _UNMEASURED,
+                "why": f"n={xa.size} rows with controls present, below MIN_N={MIN_N}"}
+
+    def _resid(v: np.ndarray, z: np.ndarray) -> np.ndarray:
+        zz = np.column_stack([np.ones(z.shape[0]), z])
+        beta, *_ = np.linalg.lstsq(zz, v, rcond=None)
+        out: np.ndarray = v - zz @ beta
+        return out
+
+    try:
+        rx, ry = _resid(xa, ca), _resid(yb, cb)
+    except np.linalg.LinAlgError as exc:
+        return {"status": _UNMEASURED, "why": f"control regression failed: {exc}"}
+    raw = _corr(xa, yb)
+    par = _corr(rx, ry)
+    return {"status": "MEASURED", "partial_corr": round(float(par), 6),
+            "raw_corr": round(float(raw), 6),
+            "explained_by_controls": round(float(raw) - float(par), 6),
+            "n": int(xa.size), "controls": list(control_names),
+            "basis": "both legs residualised on the controls at their own timestamps, then "
+                     "correlated at the edge's lag"}
+
+
 def incremental_information(x: np.ndarray, y: np.ndarray, lag: int, *, own_lags: int = OWN_LAGS,
                             n_perm: int = N_PERM, seed: int = 0) -> dict[str, Any]:
     """Does X_{t-lag} add to Y's own lags? deltaR2 of the regression of Y_t on
@@ -1045,6 +1138,24 @@ def measure_edge(x: np.ndarray, y: np.ndarray, *, src: str, dst: str, clock: str
     ev["incremental"] = inc
     ev["state"] = sd
     ev["nonlinearity"] = nl
+    # C8: THE THREE PROPERTIES AN EDGE WAS MISSING. `lag_distribution` says whether the relation
+    # is a spike or a plateau; `regime_dependence` states the per-state strengths explicitly
+    # instead of leaving a reader to infer them from one spread scalar; `partial_correlation` is
+    # filled by the caller that HAS the control series (world_causal_graph), and is recorded
+    # UNMEASURED here so the field exists on every edge and never reads as a zero.
+    ev["lag_distribution"] = lag_distribution(xc)
+    ev["regime_dependence"] = {
+        "status": "MEASURED" if len(sd.get("by_state") or {}) >= 2 else _UNMEASURED,
+        "by_state": sd.get("by_state") or {}, "spread": sd.get("spread"),
+        "basis": sd.get("basis"),
+        "why": ("" if len(sd.get("by_state") or {}) >= 2 else
+                "fewer than two regime buckets cleared MIN_STATE_N, so this edge's strength "
+                "cannot be compared across states"),
+    }
+    ev.setdefault("partial_correlation",
+                  {"status": _UNMEASURED,
+                   "why": "no control series was supplied to measure_edge; the caller that "
+                          "holds the panel fills this in"})
     # THE NONLINEAR DIRECTED READING, published beside the linear one and never gating it. See
     # `information_flow`: every other test on this edge assumes a line or a rank, and this book's
     # drivers are full of dependence that neither can see.

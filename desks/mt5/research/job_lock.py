@@ -8,7 +8,7 @@ import socket
 import sys
 import time
 import uuid
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from contextlib import contextmanager, suppress
 from datetime import UTC, datetime
 from pathlib import Path
@@ -111,6 +111,42 @@ def record_spec(name: str, *, mb: int, cpu: int | None = None,
     with contextlib.suppress(OSError, TypeError, ValueError):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(doc, indent=1), encoding="utf-8")
+
+
+def admission_order(names: Iterable[str]) -> list[tuple[str, dict]]:
+    """`names`, most-worth-running first, by what each job DECLARED. I3's consumer.
+
+    THE DECLARATION WAS WRITTEN AND NOTHING READ IT. `record_spec` has carried mb/cpu/deadline_s/
+    evsi since I3's first half, and every caller still ran in source order -- which is the exact
+    defect the ledger row names: "a job's spec carries a memory floor but no CPU count, no
+    deadline and no EVSI, so no scheduler can rank two competing jobs". Four fields nobody sorts
+    on rank nothing.
+
+    THE SORT, and it REFUSES NOTHING. Highest `evsi` first; ties broken by the shorter
+    `deadline_s` (a job that promises to give the box back sooner goes first at equal value),
+    then by the smaller declared `mb`, then by name so the order is stable. A job that declared
+    NOTHING is not penalised into last place -- it sorts at the median of the declared population
+    rather than at zero, because "undeclared" is UNMEASURED and a zero would be a fabricated
+    verdict about its worth (L1.28a). Nothing here starts, stops, caps, delays or vetoes a job:
+    it is an ORDER over jobs that are all going to run, which is the difference between a
+    schedule and a source listing.
+    """
+    rows = [(str(n), declared_spec(str(n))) for n in names]
+    evsis = [float(d["evsi"]) for _, d in rows
+             if isinstance(d.get("evsi"), (int, float))]
+    median_evsi = sorted(evsis)[len(evsis) // 2] if evsis else 0.0
+
+    def _key(row: tuple[str, dict]) -> tuple[float, float, float, str]:
+        name, dec = row
+        evsi = dec.get("evsi")
+        value = float(evsi) if isinstance(evsi, (int, float)) else median_evsi
+        dl = dec.get("deadline_s")
+        deadline = float(dl) if isinstance(dl, (int, float)) and float(dl) > 0 else float("inf")
+        mb = dec.get("mb")
+        need = float(mb) if isinstance(mb, (int, float)) else float("inf")
+        return (-value, deadline, need, name)
+
+    return sorted(rows, key=_key)
 
 
 def declared_spec(name: str) -> dict:
@@ -338,6 +374,11 @@ def exclusive_job(name: str, need_mb: int = 0, *, cpu: int | None = None,
     The refusal is LOUD and names the number, because a silent stand-down is indistinguishable
     from the crash it prevents, and this desk has been burned by exactly that ambiguity.
     """
+    # THE DECLARATION IS RECORDED BEFORE THE DECISION, not after it. I3: a spec that is only
+    # written on success describes the jobs that got in, which is the population a ranker must
+    # not be fitted on. Recording it here means a job that STANDS DOWN still leaves its four
+    # declared fields for `admission_order` to rank next hour.
+    record_spec(name, mb=int(need_mb), cpu=cpu, deadline_s=deadline_s, evsi=evsi)
     if need_mb > 0:
         need_mb, need_why = measured_need_mb(name, need_mb)
         if need_mb > 0:

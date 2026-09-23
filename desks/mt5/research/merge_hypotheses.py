@@ -74,6 +74,49 @@ def judged_by_family(path: Path | None = None, tail: int = GATE_LEDGER_TAIL) -> 
     return out
 
 
+#: The RL agent's own artifact. Read, never written, here.
+ALPHA_RL = BASE / "reports" / "ALPHA_RL.json"
+
+
+def alpha_rl_family_values(path: Path | None = None) -> tuple[dict[str, float], str]:
+    """Per-FAMILY learned value from `reports/ALPHA_RL.json`, and the basis of that reading. G4.
+
+    THE AGENT HAD NO CONSUMER, WHICH IS THE ONLY THING WRONG WITH IT. `libs/research/alpha_rl.py`
+    learns Q(prefix, next decision) over the construction MDP whose first layer is `family`, the
+    runner publishes the ranked table hourly, and its ledger row said in as many words that
+    nothing read it -- "EXISTS-DARK code inside a PARTIAL row". A ranking nobody sorts on is a
+    ranking of nothing.
+
+    WHAT IS READ. Only rows whose prefix is EMPTY -- i.e. the first decision of an episode, whose
+    `decision` is a family name -- because those are the only values that are about a family
+    rather than about a family CONDITIONED on a symbol chosen later. `status` other than MEASURED
+    returns nothing at all: an UNMEASURED table means no episode ran, and ordering the desk's
+    judging docket by an unrun agent's opinions is worse than not ordering it.
+    """
+    p = ALPHA_RL if path is None else path
+    try:
+        doc = json.loads(p.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}, f"{p.name} absent or unreadable"
+    if not isinstance(doc, dict):
+        return {}, f"{p.name} is not an object"
+    if str(doc.get("status") or "") != "MEASURED":
+        return {}, (f"{p.name} status={doc.get('status')!r}: "
+                    f"{str(doc.get('reward_why') or doc.get('why') or 'no episode ran')[:120]}")
+    out: dict[str, float] = {}
+    for row in doc.get("top") or []:
+        # A non-empty prefix is a CONDITIONAL value, not a statement about the family alone.
+        if not isinstance(row, dict) or row.get("prefix"):
+            continue
+        fam, val = str(row.get("decision") or ""), row.get("value")
+        if fam and isinstance(val, (int, float)) and (fam not in out or val > out[fam]):
+            out[fam] = float(val)
+    if not out:
+        return {}, f"{p.name} MEASURED but carries no first-layer (family) decision"
+    best = max(out.items(), key=lambda kv: kv[1])[0]
+    return out, f"{p.name}: {len(out)} family value(s), best {best}"
+
+
 def breadth_order(rows: list[dict], judged: dict[str, int]) -> list[dict]:
     """ORDER THE DOCKET SO UNTESTED FAMILIES REACH THE GATES.
 
@@ -95,7 +138,15 @@ def breadth_order(rows: list[dict], judged: dict[str, int]) -> list[dict]:
     def spend(fam: str) -> float:
         return judged.get(fam, 0) / max(docket.get(fam, 1), 1)
 
-    order = {fam: i for i, fam in enumerate(sorted(docket, key=lambda f: (spend(f), f)))}
+    # G4's CONSUMER. Breadth still decides the TIER -- an unjudged family outranks a re-judged
+    # one, and that ratchet is untouched -- but families that have been spent on equally are no
+    # longer separated by their own spelling. The RL agent's learned value for the family
+    # decision breaks that tie, which is exactly the budget it was built to redirect. A family
+    # the agent has never valued sorts at 0.0, which is the NEUTRAL point of a signed dE[log W]
+    # value, so an unvalued family loses nothing to one the agent dislikes.
+    rl, _rl_why = alpha_rl_family_values()
+    order = {fam: i for i, fam in
+             enumerate(sorted(docket, key=lambda f: (spend(f), -rl.get(f, 0.0), f)))}
     return sorted(rows, key=lambda r: order.get(str(r.get("family") or ""), len(order)))
 
 #: Every producer, and how to reach the rows inside it. Adding a producer means adding a line
@@ -440,6 +491,8 @@ def main() -> int:
     # with backlog. Nothing is dropped; `breadth_order` remains the fallback, and a failure in
     # the allocator can only cost the ORDER, never a row.
     judged = judged_by_family()
+    _rl_fam, _rl_why = alpha_rl_family_values()
+    print(f"   alpha_rl family values: {_rl_why}")
     coverage: dict[str, Any] = {}
     try:
         # Run as `python research/merge_hypotheses.py`, sys.path[0] is the research directory
@@ -475,6 +528,11 @@ def main() -> int:
         "per_source": per_source, "source_state": source_state, "total": len(rows_out),
         "families": {f: sum(1 for r in rows_out if r.get("family") == f)
                      for f in sorted({str(r.get("family")) for r in rows_out})},
+        # G4: what the RL agent's table said about families THIS hour, read whichever ordering
+        # path won, so "the agent's opinion was consulted" is a checkable claim and not a code
+        # path nobody can see from the outside.
+        "alpha_rl": {"values": {k: round(v, 6) for k, v in _rl_fam.items()}, "basis": _rl_why,
+                     "used_by": "breadth_order tie-break within a spend tier"},
         "study_bank": {"rows": len(study), "families": sorted(banned_families),
                        "path": str(STUDY_BANK),
                        "why": "banned from live capital, so a gate-second spent here buys an "

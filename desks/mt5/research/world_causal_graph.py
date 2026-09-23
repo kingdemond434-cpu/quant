@@ -44,6 +44,7 @@ import argparse
 import json
 import sys
 import time
+from contextlib import suppress
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -236,6 +237,49 @@ def _aligned_many(x: pd.Series, y: pd.Series, sx: float, sy: float,
     zc = [c for c in j.columns if c.startswith("z")]
     return (j["x"].to_numpy(dtype=float), j["y"].to_numpy(dtype=float),
             j[zc].to_numpy(dtype=float).reshape(len(j), len(zc)))
+
+
+#: The common factors every cross-asset edge is asked to survive, in preference order. C8.
+#: The dollar and the risk bid are what two unrelated instruments most often share, and an edge
+#: that is only a shared loading on one of them is not a transmission. An edge's OWN legs are
+#: never used as its own control, and at most two controls are taken so the residual regression
+#: cannot eat the sample on a short panel.
+CONTROL_CANDIDATES: tuple[str, ...] = ("EURUSD", "US500", "USDJPY", "US30", "GER40")
+MAX_CONTROLS = 2
+
+
+def _partial_vs_factors(e: cg.Edge, a: tuple[str, str, float], b: tuple[str, str, float],
+                        series: Series, clock: str) -> dict[str, Any]:
+    """The edge's correlation with the dollar and the risk bid projected out of both legs. C8.
+
+    Measured on the SAME inner join and the SAME clock aggregation the pairwise test used
+    (`_aligned_many`), so the partial number and the raw number are about the same bars. It
+    admits and refuses nothing: the reading is published on the edge, and an edge that is
+    entirely explained by a common factor is still whatever the admission rule already made it.
+    """
+    if a[0] == "cot":
+        return {"status": "UNMEASURED",
+                "why": "weekly positioning pairs: the H1 factor panel does not align with them"}
+    xs, ys = series.h1(a[1]), series.h1(b[1])
+    if xs is None or ys is None:
+        return {"status": "UNMEASURED", "why": "leg series vanished before the partial test"}
+    names: list[str] = []
+    cols: list[tuple[pd.Series, float]] = []
+    for sym in CONTROL_CANDIDATES:
+        if len(cols) >= MAX_CONTROLS or sym in (a[1], b[1]):
+            continue
+        s = series.h1(sym)
+        if s is not None and s.size > 0:
+            names.append(sym)
+            cols.append((s, 1.0))
+    if not cols:
+        return {"status": "UNMEASURED",
+                "why": f"none of {list(CONTROL_CANDIDATES)} is readable on this box"}
+    try:
+        x, y, z = _aligned_many(xs, ys, a[2], b[2], cols, clock)
+    except (ValueError, KeyError) as exc:
+        return {"status": "UNMEASURED", "why": f"control join failed: {type(exc).__name__}"}
+    return cg.partial_correlation(x, y, int(e.lag), z, names)
 
 
 def admitted_parents(graph: cg.CausalGraph, e: cg.Edge) -> list[cg.Edge]:
@@ -517,6 +561,12 @@ def measure(graph: cg.CausalGraph, e: cg.Edge, a: tuple[str, str, float],
     # clock, the target's admitted parents in the base regression; the answer is published on
     # the edge and in the report. The admission above is untouched.
     _condition(graph, got, a, b, series, clock)
+    # C8: and conditioned on the COMMON FACTORS, which is a different question from the parents
+    # the graph already admits -- the dollar is not an edge in this graph, it is the reason two
+    # edges look alike. Written onto the edge's own evidence, where every reader of the graph
+    # already looks.
+    with suppress(Exception):
+        got.evidence["partial_correlation"] = _partial_vs_factors(got, a, b, series, clock)
     return got
 
 

@@ -8389,6 +8389,30 @@
    "gap": "",
    "next_step": "",
    "landed": []
+  },
+  {
+   "id": "RA1",
+   "item": "Runtime attestation: one small COMMITTED file proves what ran on the box without committing the reports -- for every organ the component registry declares with an artifact of its own, its clock, last run and exit, and that artifact's age, size, SHA-256 and a declared set of scalar keys the organ itself published; the host, git SHA and release seal it was measured on; MISSING / STALE / NEVER / UNMEASURED as states, never blanks",
+   "domain": "U",
+   "phase": 0,
+   "status": "LANDED",
+   "gate": "none",
+   "evidence": [
+    "THE DEFECT, stated by a reviewer reading this repository from GitHub 2026-09-23: 'GitHub code is not current VPS reality. The runtime reports -- COEVOLUTION.json, EXPERIMENT_SPINE.json, SANDBOX_RUNNER.json and the rest -- are not committed, so I cannot verify from GitHub alone that each organ ran successfully this morning on the box. Comments in the code describe measured runs, but that is not the same as seeing runtime state.' MEASURED: desks/mt5/reports/ holds 329 files, ~50 MB, rewritten hourly -- uncommittable, so the gap could not be closed by committing the bodies",
+    "desks/mt5/research/runtime_attestation.py:1-60 (why a docstring is not evidence and a hash is not the body), :297-320 _summary (only the 26 declared SUMMARY_KEYS, at most 6 per organ, scalars truncated to 48 chars -- never a nested report body), :322-336 _state (MISSING / NEVER decided before any freshness arithmetic, UNMEASURED where the registry declares no cadence)",
+    "desks/mt5/research/runtime_attestation.py:189-232 host_identity -- hostname, platform, git SHA read from .git without a subprocess, release seal, and a role DERIVED from the measured age of gateway_state.json and published with that measurement, so a host not running the live loop says so in its own first line",
+    "desks/mt5/research/runtime_attestation.py:415-432 _trim -- the JSON is held under MAX_JSON_BYTES by construction and the count of trimmed summaries is published, never a silent truncation",
+    "desks/mt5/research/hourly_cycle.py:3393-3404 the leg (--once --budget-s 180), :900-904 LEG_DEPARTMENT meta, :4147 the results row; libs/research/layers.py:340-342 LEG_LAYER meta",
+    "scripts/check_runtime_attestation.py:1-27 the fence: HOST DRIFT fails everywhere because it is a fact about the document's own internals, staleness is judged only on the host the document names (a reader elsewhere holds a report ABOUT that box and cannot re-measure it); scripts/run_law_gate.py:163-169 the portable half, :296-301 the --require-state half the box runs",
+    "IT REACHES GITHUB, verified on this tree: `git check-ignore -v docs/research/runtime_state.json docs/research/RUNTIME_STATE.md` exits 1 (neither is ignored); docs/ is in libs/ops/release.py:438 STATE_PREFIXES so release.seal never refuses on it and desks/mt5/scripts/Adopt-And-Seal.ps1:247-249 mirrors that; desks/mt5/scripts/Adopt-Release.ps1:598-609 stages EVERY dirty tracked path into 'Box state captured before release adoption' before it adopts, so the box's own attestation is committed and pushed on the hourly sync slot",
+    "MEASURED on this host 2026-09-23 10:36 UTC (vmi3500897, non_trading_host: gateway_state.json 168.8h old, so this document attests to no live trading loop): 365 organs attested of 1281 registry components (916 declare no artifact, counted with the reason rather than rendered as blank rows) -- LIVE 111, STALE 95, MISSING 33, NEVER 126, UNMEASURED 0; one pass costs 1.09s, runtime_state.json is 252 KB and RUNTIME_STATE.md 71 KB"
+   ],
+   "scheduled_by": "hourly_cycle:runtime_attestation",
+   "artifact": "docs/research/runtime_state.json",
+   "consumer": "scripts/check_runtime_attestation.py (law gate, both halves), docs/research/RUNTIME_STATE.md (the page a reviewer opens on GitHub without running anything)",
+   "gap": "",
+   "next_step": "",
+   "landed": []
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."
