@@ -66,7 +66,9 @@ class DefectClass:
     repair: str                       # a control-plane actuator, or "" when hands are needed
     fence: str                        # repo-relative check that fails if the class returns
     artifact: str                     # the detector's own artifact, read for evidence
-    window_s: int = 2 * CADENCE_S     # how long the detector may be silent
+    window_s: int = 24 * CADENCE_S    # how long the detector may be silent. A DAY,
+    #: not an hour: several detectors here are law-gate fences, not hourly legs, and a
+    #: window shorter than a detector's own clock reports the clock as the defect.
     counts: tuple[str, ...] = ()      # top-level scalar keys of the artifact worth publishing
     owner: str = "department:meta"
     notes: str = ""
@@ -118,6 +120,7 @@ CLASSES: tuple[DefectClass, ...] = (
         "scripts/check_no_retirement_on_absence.py",
         "desks/mt5/reports/DESTRUCTIVE_PATHS.json",
         counts=("unguarded", "paths", "n"),
+        owner="builder",
         notes="check_birth_obligations' destructive axis stops a NEW unguarded path arriving"),
     DefectClass(
         "queue_ordered_on_unmeasured",
@@ -138,6 +141,7 @@ CLASSES: tuple[DefectClass, ...] = (
         "scripts/check_claim_consistency.py",
         "desks/mt5/reports/CLAIM_CONSISTENCY.json",
         counts=("conflicts", "claims", "n"),
+        owner="builder",
         notes="repair is a rename, which is a code change: detected automatically, closed by "
               "hands, and that is the honest bucket"),
     DefectClass(
@@ -248,9 +252,12 @@ def judge(dc: DefectClass, root: Path, now: float | None = None) -> dict[str, An
         bucket, why = "MANUAL", (f"no detector in this tree ({dc.detector or 'none declared'}): "
                                  f"instances of this class are found by a person")
     elif age_s is None:
-        bucket, why = UNMEASURED, (f"the detector exists but its artifact {dc.artifact} has never "
-                                   f"appeared on this host -- nothing here may call the class "
-                                   f"covered")
+        # NEVER PRODUCED HERE is the MANUAL bucket, not a fence failure: the detector is written
+        # but nothing on this host has ever run it, so instances of this class are still found by
+        # a person. It is counted, and the manual count ratchets down -- which drives it closed
+        # instead of leaving a fence red on the day it was built (L1.43).
+        bucket, why = "MANUAL", (f"the detector exists but its artifact {dc.artifact} has never "
+                                 f"appeared on this host: instances are still found by hand")
     elif not fresh:
         bucket, why = UNMEASURED, (f"the detector last produced {age_s / 3600:.1f}h ago, past its "
                                    f"{dc.window_s / 3600:.1f}h window: a stopped detector is not "

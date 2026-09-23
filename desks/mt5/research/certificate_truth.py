@@ -149,6 +149,7 @@ FATAL_KINDS = frozenset({"BANNED_CERTIFICATE", "BANNED_CLAIM", "BANNED_CLOCK", "
                          "CANON_UNMEASURED_WITH_LIVE_CLOCKS",
                          "CANON_EMPTY_WITH_RESTORABLE_EVIDENCE",
                          "SECOND_CERTIFICATE_STORE", "DERIVED_STORE_WRITTEN_DIRECTLY",
+                         "JOIN_COVERAGE_BREACH",
                          "CLAIM_NOT_SUBMITTED_TO_JUDGE",
                          "RECONCILE_CERTIFIED_CLOCKS_ON_EMPTY_CANON"})
 
@@ -832,6 +833,17 @@ def audit(paths: Paths, now: str | None = None) -> dict[str, Any]:
             f"claim is {age/3600:.1f}h old, older than one judging cycle "
             f"({JUDGING_CYCLE_S/3600:.0f}h), the canon does not hold it and it reached no "
             f"judge: {QUEUE_REASON}", age_s=round(age))
+    # JOIN COVERAGE: a store nobody can join to the one identity is a split, whatever its
+    # name says. Fatal when a store holds rows and NONE of them can declare the identity -- the
+    # exact state measured on 2026-09-23, when the fence read ok=true over a wholly broken join.
+    joins = join_coverage(paths, lane)
+    for name, v in joins["stores"].items():
+        if v["rows"] and not v["joinable"]:
+            add("JOIN_COVERAGE_BREACH", name, IDENTITY_FIELD,
+                f"{name} holds {v['rows']} row(s) and NONE can declare the canonical identity "
+                f"({IDENTITY_RULE}); a store that cannot be joined is a separate lane whatever "
+                f"it is called", rows=v["rows"], joinable=0)
+    census["join"] = joins
     census["queued"] = len(queued)
     census["stale_unjudged"] = len(stale)
 
@@ -882,6 +894,130 @@ def audit(paths: Paths, now: str | None = None) -> dict[str, Any]:
 
 
 # ----------------------------------------------------------------------------- the repair
+#: THE ONE CANONICAL IDENTITY of a judged thing. Not a key -- keys are local and every store
+#: invents its own (`CADJPY.asia`, `external.CADJPY.session_range_breakout.rr=1.5_wb=12`,
+#: `xau_m5_anti_breakout_overlap`, `qquant.hunt16.json.AUDNZD dav ... NORMAL_DAY`). The sealed
+#: gauntlet stamps `shadow_spec` on every certificate it mints, and `promoter.py` admits a row by
+#: matching that spec -- so the identity the desk already runs on is (symbol, family, selector),
+#: lowercased, which `parts()` computes. MEASURED 2026-09-23: 0 of 862 registry clocks joined the
+#: canon BY KEY while the breach organ reported 55 backed BY SPEC; the stores had been unified by
+#: NAME and never by KEY, so every observer got a different number (28 / 152 / 215 / 862) and the
+#: fence read green because it was joining on the spec and nothing checked that anyone else was.
+IDENTITY_FIELD = "canonical_identity"
+IDENTITY_RULE = ("symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet "
+                 "stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> "
+                 "desks/mt5/research/promoter.py); a key is local, this is the join")
+
+
+def declared_identities(paths: Paths) -> dict[str, str]:
+    """name -> canonical identity, from the stores that DECLARE a lane's identity for it.
+
+    The scalp lane's clocks are keyed by a name with no grammar (`xau_m5_anti_breakout_overlap`),
+    so no parse can ever join them -- but their own sleeve row declares symbol and family, and
+    that declaration is the identity. Reading it is how a lane joins instead of being reported
+    unjoinable for ever."""
+    out: dict[str, str] = {}
+    sl = _read(paths.sleeves) or {}
+    for row in (sl.get("sleeves") or []):
+        if not isinstance(row, dict) or not row.get("symbol") or not row.get("family"):
+            continue
+        name = str(row.get("name") or "")
+        if name:
+            out[name] = parts(row["symbol"], row["family"],
+                              row.get("selector") or row.get("window") or row.get("session"))
+    return out
+
+
+def canonical_identity(store: str, key: str, row: dict[str, Any],
+                       declared: dict[str, str] | None = None) -> str | None:
+    """The ONE identity for any row in any store, or None when the row cannot declare one.
+
+    A row that already CARRIES the identity is taken at its word; then the row's own fields and
+    its key; then the declaration another store makes for that name. None is UNMEASURED, not
+    zero: a row whose identity cannot be derived is REPORTED as unjoinable, never joined to
+    something by guesswork (L1.28a)."""
+    carried = row.get(IDENTITY_FIELD)
+    if isinstance(carried, str) and carried.count("|") == 2:
+        return carried
+    ident = row_identity(store, key, row)
+    if not ident.get("symbol") or not ident.get("family"):
+        return (declared or {}).get(str(key))
+    return parts(ident["symbol"], ident["family"], ident.get("selector"))
+
+
+def join_coverage(paths: Paths, lane: dict[str, Any]) -> dict[str, Any]:
+    """Per store: rows, rows that can declare the canonical identity, rows that JOIN the lane.
+
+    This is the clause that makes "ok=true with a broken join" impossible. Counts that agree by
+    coincidence are the split the principal named; counts that agree BY CONSTRUCTION need one
+    identity, carried by every store, and a fence that fails when a store cannot produce it."""
+    out: dict[str, Any] = {"identity": IDENTITY_FIELD, "rule": IDENTITY_RULE, "stores": {}}
+    backed = set(lane["by_parts"]) | set(lane.get("cure_by_parts") or {})
+    declared = declared_identities(paths)
+
+    def measure(name: str, rows: list[tuple[str, dict[str, Any]]]) -> None:
+        joinable = [canonical_identity(name, k, r, declared) for k, r in rows]
+        ids = [i for i in joinable if i]
+        out["stores"][name] = {
+            "rows": len(rows), "joinable": len(ids),
+            "unjoinable": len(rows) - len(ids),
+            "joined_to_lane": sum(1 for i in ids if i in backed),
+            "coverage": round(len(ids) / len(rows), 4) if rows else None}
+
+    certs = lane["certificates"]
+    measure("UNIVERSAL_SURVIVORS", [(k, {"symbol": c.get("symbol"), "family": c.get("family"),
+                                         "selector": c.get("selector")})
+                                    for k, c in certs.items()])
+    out["stores"]["UNIVERSAL_SURVIVORS"]["joined_to_lane"] = len(certs)
+    reg = _read(paths.registry) or {}
+    measure("sleeve_registry", [(k, v) for k, v in (reg.get("sleeves") or {}).items()
+                                if isinstance(v, dict)])
+    for p in (paths.shadow, *paths.lanes):
+        doc = _read(p)
+        if doc is not None:
+            measure(p.stem, _rows_of_state(doc))
+    sl = _read(paths.sleeves) or {}
+    measure("sleeves", [(str(r.get("name") or ""), r) for r in (sl.get("sleeves") or [])
+                        if isinstance(r, dict)])
+    total = sum(v["rows"] for v in out["stores"].values())
+    joinable = sum(v["joinable"] for v in out["stores"].values())
+    out["total_rows"] = total
+    out["total_joinable"] = joinable
+    out["coverage"] = round(joinable / total, 4) if total else None
+    return out
+
+
+def stamp_identity(paths: Paths, stamp: str) -> dict[str, Any]:
+    """CARRY the identity, do not recompute it: every clock row keeps `canonical_identity`
+    alongside whatever local key it needs, so the join is a field lookup and not a parse that
+    each reader reinvents (which is how four observers got four numbers)."""
+    out: dict[str, Any] = {"stamped": 0, "unjoinable": 0,
+                           "store": CANONICAL_CLOCK_STORE}
+    doc = _read(paths.registry)
+    rows = (doc or {}).get("sleeves")
+    if doc is None or not isinstance(rows, dict):
+        return out
+    changed = False
+    declared = declared_identities(paths)
+    for key, row in rows.items():
+        if not isinstance(row, dict):
+            continue
+        ident = canonical_identity("sleeve_registry", str(key), row, declared)
+        if ident is None:
+            out["unjoinable"] += 1
+            continue
+        if row.get(IDENTITY_FIELD) != ident:
+            row[IDENTITY_FIELD] = ident
+            row[IDENTITY_FIELD + "_rule"] = IDENTITY_RULE
+            changed = True
+        out["stamped"] += 1
+    if changed:
+        doc["identity_stamped_at"] = stamp
+        _atomic(paths.registry, doc, indent=2)
+        out["wrote"] = _rel(paths, paths.registry)
+    return out
+
+
 def _stale_claims(paths: Paths, lane: dict[str, Any], queued: set[str],
                   stamp: str) -> list[tuple[str, str, float]]:
     """Claims older than one judging cycle that the canon does not hold and no queue carries."""
@@ -1224,6 +1360,7 @@ def repair(paths: Paths, now: str | None = None) -> dict[str, Any]:
     # ---- 4. every claim the canon does not hold goes to the ONE judge -------------------
     # Not honoured and not discarded: TESTED. This is the act that ends the split -- a
     # store may propose for ever, but only the sealed gauntlet's ten gates admit anything.
+    acts["identity"] = stamp_identity(paths, stamp)
     acts["judge"] = submit_to_judge(paths, canon(paths), stamp)
     acts["canon_n"] = len(a_rows)
     acts["restored_keys"] = acts["restored_keys"][:200]

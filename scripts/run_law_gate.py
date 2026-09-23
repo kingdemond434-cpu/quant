@@ -118,6 +118,11 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # naming the thing that arrived incomplete -- so a thing created next month inherits the
     # obligation instead of waiting for a session to remember it.
     ("check_birth_obligations.py", ()),
+    # FIX THE CLASS, ON A CLOCK, OR IT IS NOT FIXED (LAWS 7, principal 2026-09-23). The twin of
+    # the line above: that one stops a new thing arriving incomplete, this one proves every KNOWN
+    # defect class still carries a detector, a repair, a fence and fresh evidence -- and ratchets
+    # down the count of classes a human still has to find.
+    ("check_self_repair.py", ()),
     # GROWTH GOVERNANCE (principal 2026-09-04): every risk-reduction mechanism proves it raises
     # robust forward E[log W]; every strong opportunity may raise capital above normal; the
     # 20% floor is flat and filled, growth free above it to 30%; the gateway deploys the book.
