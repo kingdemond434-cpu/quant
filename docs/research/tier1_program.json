@@ -7446,13 +7446,14 @@
    "gate": "none",
    "item": "THE IMPLEMENTER: the recommendation lane now DRAINS on a clock, deterministically and with no LLM in the path (principal 2026-09-23). Every pass takes the OPEN rows in priority order (a MEASURED roi_bps outranks a rank ordinal, age breaks every tie) and drives each to a recorded outcome: IMPLEMENTED only when the row's deliverable is a file that did not exist at the ask and git says it was ADDED more than a grace window later, cited by that add-commit; SCHEDULED only when the row waits on an artifact a clocked organ regenerates, with that clock named and its next firing as the due date; REJECTED for the standing order against reducing aggressiveness, retired crypto-exchange ground, or a duplicate of a NAMED terminal row; otherwise BLOCKED with an exactly named blocker, an owner and a next action. BLOCKED IS NOT A FIFTH STATUS: the row stays `open` and visible to check_conversion, check_row_atomicity, ledger_reversion and owed(), and gains owner / next_action / blocker instead, because a new status word no existing fence knows would be a better hiding place than `scheduled` ever was. Where a row asks for code it opens a build task (deterministic BT id) rather than writing speculative code. MEASURED FIRST PASS: 219 OPEN -> 216, 226 rows moved (3 implemented, 6 rejected, 1 scheduled, 216 blocked-with-owner), 0 open rows without an owner, largest blocker class needs_specification at 104.",
    "evidence": [
-    "desks/mt5/research/implementer.py:572 - triage: the ladder, ordered by what it costs to be wrong",
-    "desks/mt5/research/implementer.py:518 - _dispose re-imposes the CLI's own bars (25-char rejection, due date, resolvable commit, `disposed` stamp)",
-    "desks/mt5/research/implementer.py:540 - _block: owner, next_action, blocker on a row that stays OPEN",
-    "desks/mt5/research/implementer.py:874 - run: the pass, its two-phase budget, the artifact and the rendered page",
+    "desks/mt5/research/implementer.py:612 - triage: the ladder, ordered by what it costs to be wrong",
+    "desks/mt5/research/implementer.py:558 - _dispose re-imposes the CLI's own bars (25-char rejection, due date, resolvable commit, `disposed` stamp)",
+    "desks/mt5/research/implementer.py:580 - _block: owner, next_action, blocker on a row that stays OPEN",
+    "desks/mt5/research/implementer.py:914 - run: the pass, its two-phase budget, the artifact and the rendered page",
     "desks/mt5/research/hourly_cycle.py:3147 - the leg",
     "libs/research/layers.py:249 - the layer",
-    "desks/mt5/tests/test_implementer.py:63 - every open row leaves the pass owned"
+    "desks/mt5/tests/test_implementer.py:64 - every open row leaves the pass owned",
+    "desks/mt5/research/implementer.py:478 - ledger_lock: the SAME advisory lock the CLI takes (R0623), rooted under the tree being written, refusing rather than writing around a wedged holder"
    ],
    "scheduled_by": "hourly_cycle:implementer",
    "artifact": "desks/mt5/reports/IMPLEMENTER.json",
@@ -7469,10 +7470,10 @@
    "item": "THE RECOMMENDATION-FLOW FENCE, AND THE LOOP CLOSED BACK TO THE CEO. Three fences already read this ledger -- check_conversion, check_citation_integrity, check_row_atomicity -- and all three were green through 281.7 hours of it not being written at all, because a queue that has STOPPED and a queue that is caught up look identical to a rate. check_recommendation_flow fails on three properties instead: the ledger past its own cadence (state half, --require-state, so a fresh clone is not graded on its last commit's age), any OPEN row with no owner or no next action (portable and fatal), and the OPEN count above its ratchet floor with nothing recorded to explain the rise -- the backlog ratchets DOWN only, and a rise is legal exactly when the pass NAMES what raised it. The loop closes the other way too: intake pulls the CEO docket's undecided proposals and the frontier audit's findings into THIS ledger rather than a second store (absent sources named UNMEASURED, never skipped), and frontier_ceo asks already_settled() before proposing, so a recommendation the desk has implemented or reasoned its way out of is listed as settled instead of arriving again as new work.",
    "evidence": [
     "scripts/check_recommendation_flow.py:85 - build_report: the three properties, each with its own failure mode and its own portability",
-    "scripts/run_law_gate.py:170 - the portable half (owner + ratchet)",
-    "scripts/run_law_gate.py:230 - the state half (--require-state: staleness)",
-    "desks/mt5/research/implementer.py:784 - intake: the docket and the frontier audit into one ledger, skipping what a terminal row already settles",
-    "desks/mt5/research/implementer.py:494 - already_settled: containment, not equality",
+    "scripts/run_law_gate.py:177 - the portable half (owner + ratchet)",
+    "scripts/run_law_gate.py:240 - the state half (--require-state: staleness)",
+    "desks/mt5/research/implementer.py:824 - intake: the docket and the frontier audit into one ledger, skipping what a terminal row already settles",
+    "desks/mt5/research/implementer.py:534 - already_settled: containment, not equality",
     "desks/mt5/research/frontier_ceo.py:459 - settled_by_implementer on the docket itself",
     "tests/scripts/test_check_recommendation_flow.py:56 - a stale ledger fails where the clock runs"
    ],
@@ -7531,6 +7532,147 @@
     "conversion-debt ratchet 2026-09-23"
    ],
    "notes": "Measured cost under 2 s: five COUNT(*) queries and one GROUP BY. It names debt and hands the repair to the organ that already owns it; it caps nothing and refuses nothing."
+  },
+  {
+   "id": "PW1",
+   "domain": "I",
+   "phase": 0,
+   "status": "LANDED",
+   "gate": "none",
+   "item": "THE PLUMBING WATCHDOG (principal 2026-09-23: \"make the plumbing never ever permanently stop silently\"). Every fifteen minutes on the box and every hour in the cycle, seven checks that PROVE BY OBSERVATION rather than by a label: the adoption task is present, Enabled, has a next run inside the hour and did not last exit an error; HEAD descends from the branch tip it should have adopted and the shortfall is counted in commits; the git-writer lock is TAKEN and released right now; no orphaned pool worker holds commit and headroom is above a floor DERIVED from this host's measured commit limit; every task the installer declares is present and Enabled; every producer/consumer pair in libs/ops/control_plane/edges.py agrees about its path; every fence registered in run_law_gate has actually run. Anything false is a DEFECT ROW carrying the organ, the evidence and the repair. MEASURED on its first pass 2026-09-23: 36 defects -- MT5-AdoptRelease Disabled with last result 267014, HEAD 232 commits behind origin/claude/llm-auto-upgrade-verify-gcjac3, 27 declared tasks Disabled, 9 registered fences absent from the last battery, 4 broken pipeline edges.",
+   "evidence": [
+    "desks/mt5/research/plumbing_watchdog.py:214",
+    "desks/mt5/research/plumbing_watchdog.py:296",
+    "desks/mt5/research/plumbing_watchdog.py:359",
+    "desks/mt5/research/plumbing_watchdog.py:596",
+    "desks/mt5/tests/test_plumbing_watchdog.py:44"
+   ],
+   "scheduled_by": "hourly_cycle:plumbing_watchdog, MT5-PlumbingWatchdog",
+   "artifact": "desks/mt5/reports/PLUMBING_WATCHDOG.json",
+   "consumer": "scripts/check_plumbing_watchdog.py (the law-gate fence), scripts/build_zentech_state.py `plumbing` (the dashboard), desks/mt5/research/bottleneck_attack.py (plumbing is one of the four bottlenecks)",
+   "landed": [
+    "plumbing watchdog 2026-09-23"
+   ]
+  },
+  {
+   "id": "PW2",
+   "domain": "I",
+   "phase": 0,
+   "status": "LANDED",
+   "gate": "none",
+   "item": "SILENCE IS IMPOSSIBLE: a plumbing defect that survives one pass escalates to three surfaces a human meets WITHOUT ASKING -- the desk state the dashboard renders, a PLUMBING_DEFECT row in the event log, and docs/research/PLUMBING_ALERTS.md -- and the law gate REFUSES TO PASS while any defect is older than its own per-check escalation window (adoption 3h, lock/orphans/commit 2h, paths/fences 24h). The absence of the watchdog's report is itself such a defect, because a watchdog that stopped reports no defects for the same reason it reports nothing at all. Every failure this closes was ALREADY being logged correctly, once an hour, to a file nobody read.",
+   "evidence": [
+    "scripts/check_plumbing_watchdog.py:62",
+    "scripts/check_plumbing_watchdog.py:105",
+    "desks/mt5/research/plumbing_watchdog.py:90",
+    "tests/scripts/test_check_plumbing_watchdog.py:43",
+    "scripts/run_law_gate.py:220"
+   ],
+   "scheduled_by": "hourly_cycle:plumbing_watchdog, MT5-PlumbingWatchdog",
+   "artifact": "docs/research/PLUMBING_ALERTS.md",
+   "consumer": "the law gate (_STATE_FENCES), the dashboard's `plumbing` block, and desks/mt5/data/events.jsonl",
+   "landed": [
+    "plumbing watchdog 2026-09-23"
+   ]
+  },
+  {
+   "id": "PW3",
+   "domain": "I",
+   "phase": 0,
+   "status": "LANDED",
+   "gate": "none",
+   "item": "THE FIXES ARE PINNED SO A LATER SESSION CANNOT QUIETLY UNDO THEM. Five outages produced five one-line fixes, and a comment saying 'do not remove this' is not a guard. Tests now read the SOURCE and fail if: the launchers stop spawning through libs/ops/proctree.run; the orphan reaper stops running FIRST in the reconciler's apply pass; the adoption task stops being daily-repeating-hourly under SYSTEM; any of the four git writers stops dot-sourcing GitWriterMutex.ps1 and taking MT5-GitWriter-v2; or the live sleeve policy stops banning FX and M15 at both doors.",
+   "evidence": [
+    "desks/mt5/tests/test_plumbing_watchdog.py:284",
+    "desks/mt5/tests/test_plumbing_watchdog.py:296",
+    "desks/mt5/tests/test_plumbing_watchdog.py:306",
+    "desks/mt5/tests/test_plumbing_watchdog.py:326",
+    "libs/ops/control_plane/reconciler.py:518"
+   ],
+   "scheduled_by": "hourly_cycle:plumbing_watchdog",
+   "artifact": "desks/mt5/reports/PLUMBING_WATCHDOG.json",
+   "consumer": "the test suite (the only consumer a regression guard can have)",
+   "landed": [
+    "plumbing watchdog 2026-09-23"
+   ]
+  },
+  {
+   "id": "BA1",
+   "domain": "I",
+   "phase": 7,
+   "status": "LANDED",
+   "gate": "none",
+   "item": "THE 24/7 MAXIMISER (principal 2026-09-23). Every hour it measures the desk's four standing bottlenecks -- conversion debt, judging throughput in hours-of-queue at the measured rate, forward enrolment latency, and plumbing defects -- names the single BINDING one on a common saturating severity, and moves compute toward it through the budget machinery that already exists: `research_auction.build` blends this organ's compute_shift with bottleneck_law's by MAXIMUM, and the auction's factors are what `research_budget.budget_s` multiplies. Plumbing past its escalation window scores 1.0 and binds outright, because every other measurement is then a measurement of a stopped machine. Every shift is >= 1.0: the organ has no instrument for starving a department (growth governance Rule 2). The trend of all four over the last day is published, so 'is it getting better' is answerable every morning. MEASURED first pass 2026-09-23: BINDING = plumbing_defects at severity 0.78, meta raised to x1.783.",
+   "evidence": [
+    "desks/mt5/research/bottleneck_attack.py:86",
+    "desks/mt5/research/bottleneck_attack.py:296",
+    "desks/mt5/research/bottleneck_attack.py:334",
+    "desks/mt5/research/research_auction.py:196",
+    "desks/mt5/tests/test_bottleneck_attack.py:104"
+   ],
+   "scheduled_by": "hourly_cycle:bottleneck_attack",
+   "artifact": "desks/mt5/reports/BOTTLENECK_ATTACK.json",
+   "consumer": "desks/mt5/research/research_auction.py (compute_shift blended into the bids) -> desks/mt5/research/research_budget.py budget_s; the canonical registry's research_memory under memory_key bottleneck_attack:binding",
+   "landed": [
+    "bottleneck attacker 2026-09-23"
+   ]
+  },
+  {
+   "id": "U73",
+   "domain": "U",
+   "phase": "U",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "JUDGING THROUGHPUT TO THE MAXIMUM THE BOX CAN HOLD (principal 2026-09-23: \"we have tons of headroom in our box to increase judging -- give it tons of headroom possible for maximum throughput\"). external_gauntlet.py is SEALED and is never edited; its _worker_count() and _measured_budget_mb() already honour GAUNTLET_WORKERS, GAUNTLET_MEMORY_BUDGET_MB, GAUNTLET_HEADROOM_CAP_MB and GAUNTLET_PER_WORKER_MB from the environment, so the judge is sized from OUTSIDE it. WHAT BOUND IT, measured off the gauntlet's own artifact rather than argued: the sealed budget is max(declared_need, min(0.5 x free, HEADROOM_CAP_MB=8192)), and at PER_WORKER_MB=768 that ceiling alone caps the judge at TEN workers however large the box is -- a ceiling sized for an 8 GB machine and never re-derived when the judge moved to a 98 GB one. The last published sweep ran workers=1 with memory_budget_mb=1984 against 21,391 cells discovered, 1,395 judged and 3,490 deferred on the build budget: a measured queue depth of 19,996 at 101.583 gates/hour. THREE RAILS AND NONE IS A BRAKE: the plan is FLOORED at the sealed baseline so the organ can never throttle the judge; the live terminal always wins and standing down means RETURNING to that floor, never below it; and every number is measured on the machine the code runs on, so a build box writes an EMPTY env rather than handing the 18-core judge its own 4-core figure",
+   "evidence": [
+    "desks/mt5/research/judging_throughput.py:plan - the largest safe worker count from measured cores, free physical memory and free COMMIT, floored at sealed_baseline() and naming the limiting resource",
+    "desks/mt5/research/judging_throughput.py:sealed_baseline - the sealed _worker_count() arithmetic restated, not imported, so 'this organ never lowers the judge' is a checkable property rather than an intention",
+    "desks/mt5/research/judging_throughput.py:measure_queue - queue depth and achieved gates/hour read from GAUNTLET_BACKPRESSURE.json; an absent artifact is UNMEASURED, never an empty queue",
+    "desks/mt5/research/judging_throughput.py:write_env - only a RAISE is ever written, with the measuring box's fingerprint beside it, so one box can never size another",
+    "desks/mt5/research/judging_throughput.py:apply_env - loads the decision into os.environ before the external_gauntlet leg; an operator's own export outranks the organ",
+    "desks/mt5/research/judging_throughput.py:apply_cadence - schtasks /Change /RI on the judging box only: cadence is raised while the queue is deep and headroom exists",
+    "desks/mt5/research/hourly_cycle.py:judging_throughput - the leg runs --once --budget-s 300 immediately BEFORE the external_gauntlet leg it sizes, then apply_env() puts the decision in the environment the gauntlet subprocess inherits",
+    "desks/mt5/scripts/RunGauntlet.cmd - the MT5-Gauntlet launcher that exports the measured env before invoking the sealed script; the task had no launcher at all before this, which is why an env var was unreachable from the repository",
+    "desks/mt5/ops/box_tasks.manifest:MT5-Gauntlet - now runs the launcher rather than the bare sealed script",
+    "libs/research/layers.py:judging_throughput - meta: it sizes the judge, it predicts nothing",
+    "desks/mt5/tests/test_judging_throughput.py - 16 tests: a planted deep queue on an 18-core/98 GB box raises 10 -> 15 workers, the weekend gives all 18, a starved terminal stands down to the baseline AND NO LOWER, the floor holds under every box and queue shape, and a build box writes an empty env"
+   ],
+   "scheduled_by": "leg:judging_throughput (desks/mt5/research/hourly_cycle.py, hourly, immediately before leg:external_gauntlet)",
+   "artifact": "desks/mt5/reports/JUDGING_THROUGHPUT.json",
+   "consumer": "desks/mt5/data/judging_throughput.env.json, read by desks/mt5/scripts/RunGauntlet.cmd (the MT5-Gauntlet launcher) and by desks/mt5/research/hourly_cycle.py through judging_throughput.apply_env() before the external_gauntlet leg; the raise is then VERIFIED rather than asserted by the next GAUNTLET_BACKPRESSURE.json capacity.measured.workers",
+   "landed": [
+    "judging throughput 2026-09-23"
+   ],
+   "notes": "Measured on this build box 2026-09-23: 4 cores, 8,186 MB, queue depth 19,996, 101.583 gates/hour, baseline 1 worker, plan 1 worker, raised_by 0 and an EMPTY env -- which is the cross-box rail working, not the organ failing. On the trading box's measured shape (18 cores, 98 GB) the same code plans 15 workers in session and 18 at the weekend against a sealed baseline of 10, and halves the task period while the queue is deep. No budget is ever reduced: standing down returns to the sealed number, never below it."
+  },
+  {
+   "id": "U74",
+   "domain": "U",
+   "phase": "U",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "NO SCARCITY ON FORWARD EVIDENCE, EVER (principal 2026-09-23: \"make all certis always receive immediate clocks at the same time when certified; and remove the slots being scarce by design permanently ... no quota or scarcity ever on forward evidence slots\"). A forward clock GATHERS EVIDENCE AND DEPLOYS NO CAPITAL -- shadow_forward replays a certified recipe against bars the desk already holds and writes an R series; promotion to LIVE is a separate, certificate-gated act by the sealed promoter. So a cap on ENROLMENT bought no safety at all and cost only hypotheses the desk could never rule on. REMOVED: forward_reconcile.family_budget no longer declares itself an enrolment cap (decides = NOTHING__ENROLMENT_IS_UNCAPPED, gates_enrolment False); its per-family alpha arithmetic stays, published as EVIDENCE that gates nothing. KEPT EXACTLY AS IT WAS: multiplicity, the Holm/BH cohort, the deflated-Sharpe charge and the effective-trial ledger -- more clocks make every clock's bar HARDER, automatically, and that price is paid in full. The immutable floor is never a knob; what was removed is the SLOT QUOTA, not the statistics. forward_slot_ranker.py stays as a REPORT of order and priority and gates nothing, as its own docstring already said",
+   "evidence": [
+    "desks/mt5/research/forward_enrolment.py:certificates - the whole canon from shadow_admission.authorized_runs, with no filter, no cap, no ranking and no head-of-queue slice",
+    "desks/mt5/research/forward_enrolment.py:census - per certificate, does it hold a clock and what was the latency from gated_at to enrolled_at; UNMEASURED where a stamp is absent, never a flattering zero",
+    "desks/mt5/research/forward_enrolment.py:repair - the hourly sweep that re-runs the enrolment engine, bounded by the leg's remaining budget, and only when something is actually clockless",
+    "desks/mt5/research/shadow_forward.py:enrolled_at - the state row is stamped the first time it is written and never re-stamped, which is what makes 'immediately' a measured number rather than an intention",
+    "desks/mt5/research/forward_reconcile.py:family_budget - decides NOTHING__ENROLMENT_IS_UNCAPPED, gates_enrolment False, quota_removed_at 2026-09-23; the alpha arithmetic is unchanged and still published",
+    "scripts/check_forward_enrolment.py:scan_source - AST, not grep: a quota constant, a slice of the certificate roster or a len(enrolled) >= n gate fails the law gate, while the docstrings that record WHY the quota went do not",
+    "scripts/check_forward_enrolment.py:check_state - a certificate clockless for longer than one cycle is a BREACH by name; an absent artifact is UNMEASURED, a real answer on a clean checkout",
+    "scripts/run_law_gate.py:check_forward_enrolment.py - registered twice, the portable --surfaces-only half in the commit battery and the --state-only half in the state fences",
+    "desks/mt5/research/hourly_cycle.py:forward_enrolment - the leg runs --once --budget-s 300 every hour beside the existing enrol_clocks leg",
+    "libs/research/layers.py:forward_enrolment - meta: evidence plumbing, not edge",
+    "desks/mt5/tests/test_forward_enrolment.py - 12 tests: a new certificate enrolled with ZERO latency, 200 certificates producing 200 clocks, a clockless cell named with its reason and age, overdue only after one cycle, and UNMEASURED never reported as zero",
+    "tests/scripts/test_check_forward_enrolment.py - 17 tests: a planted MAX_ENROLMENTS, a planted enrolled[:12] slice and a planted len(enrolled) >= cap gate are each rejected, the fence does not fail on the prose explaining why they are forbidden, and a clockless certificate past one cycle goes RED"
+   ],
+   "scheduled_by": "leg:forward_enrolment (desks/mt5/research/hourly_cycle.py, hourly) beside the existing leg:enrol_clocks",
+   "artifact": "desks/mt5/reports/FORWARD_ENROLMENT.json",
+   "consumer": "scripts/check_forward_enrolment.py, registered in scripts/run_law_gate.py in both the commit battery (--surfaces-only: no cap may come back) and the state fences (--state-only: nothing certified may be clockless past one cycle)",
+   "landed": [
+    "forward enrolment, no quota 2026-09-23"
+   ],
+   "notes": "Measured 2026-09-23: 170 certificates, 170 enrolled, 0 missing, 0 overdue; latency UNMEASURED on the existing roster because enrolled_at did not exist before this pass -- an unstamped clock reports UNMEASURED, never zero -- and every clock written from now carries the stamp the fence reads. Forward clocks deploy no capital, so removing the quota raises evidence throughput without touching risk."
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."

@@ -514,6 +514,35 @@ def ensure_bars(symbol: str, chart: str, *, universe_dir: Path | None = None,
         f"{coarsest_available} and {want} is queued as a bar request")
 
 
+def backfill_bars(coverage: Mapping[str, Any], *, budget: Budget,
+                  universe_dir: Path | None = None, limit: int = 200) -> dict[str, Any]:
+    """BUILD EVERY SERIES THE ARITHMETIC ALLOWS, every hour, until the ladder is full.
+
+    The coverage report is not a description, it is a WORK LIST (principal's addendum
+    2026-09-23: "keep a per-symbol per-timeframe bar-coverage report that drives that backfill
+    every hour until every symbol has every timeframe including intraday"). Everything marked
+    `resampleable` is built here under whatever budget the pass has left; everything marked
+    `fetch` is genuinely finer than anything the desk holds and is named for the fetcher.
+    """
+    built: list[dict[str, str]] = []
+    failed: list[dict[str, str]] = []
+    todo = list(coverage.get("resampleable") or [])[:limit]
+    for job in todo:
+        if not budget.ok("backfill_bars", reserve=3.0):
+            break
+        sym, chart = str(job.get("symbol") or ""), str(job.get("chart") or "")
+        got, action, why = ensure_bars(sym, chart, universe_dir=universe_dir)
+        if got == chart and action.startswith("resampled"):
+            built.append({"symbol": sym, "chart": chart, "detail": why})
+        elif action != "held":
+            failed.append({"symbol": sym, "chart": chart, "why": why or action})
+    return {"attempted": len(todo), "built": len(built), "failed": len(failed),
+            "remaining_resampleable": max(0, len(coverage.get("resampleable") or []) - len(todo)),
+            "examples": built[:20], "failures": failed[:20],
+            "rule": "the coverage report is a work list, not a description: every series the "
+                    "arithmetic allows is built each hour until the ladder is full"}
+
+
 def _resample(symbol: str, src: str, want: str, root: Path) -> tuple[bool, str]:
     """Aggregate `src` bars into `want` bars and write the parquet. Exact, never interpolated."""
     try:
@@ -589,10 +618,13 @@ def bar_coverage(symbols: Sequence[str], *, universe_dir: Path | None = None,
                                      if held else "the desk holds no series for this symbol"})
         rows[sym] = state
     full = sum(1 for s in rows.values() if all(v == "held" for v in s.values()))
+    todo = [{"symbol": sym, "chart": ch} for sym, state in rows.items()
+            for ch in CHART_LADDER if state[ch] == "resampleable"]
     return {"symbols_measured": considered, "charts": list(CHART_LADDER),
             "held_by_chart": by_chart, "symbols_with_full_ladder": full,
             "resampleable_series": resampleable, "fetch_requests": len(fetch),
-            "fetch": fetch[:200], "per_symbol": dict(list(rows.items())[:80]),
+            "resampleable": todo, "fetch": fetch[:200],
+            "per_symbol": dict(list(rows.items())[:80]),
             "rule": "a missing bar is work to do, never a verdict: coarser charts are resampled "
                     "on the spot, finer ones are requested, and the cell is bound to the finest "
                     "series the desk holds meanwhile",
@@ -1083,7 +1115,13 @@ def run(*, budget: Budget, conn: sqlite3.Connection, max_rows: int, dry_run: boo
 
     if not dry_run:
         _write_carry(leftover, carry_path)
-    coverage = bar_coverage(wanted_symbols, universe_dir=universe_dir)
+    # THE WHOLE HYPOTHESIS-LANE UNIVERSE, not only the symbols this pass happened to touch: the
+    # mandate is every symbol at every timeframe, so the coverage that drives the backfill has to
+    # be measured over the registry rather than over the sample.
+    coverage = bar_coverage([*universe_symbols((universe_dir or UNIVERSE_DIR) / "universe.json"),
+                             *wanted_symbols], universe_dir=universe_dir)
+    coverage["backfill"] = ({"skipped": "dry run"} if dry_run else
+                            backfill_bars(coverage, budget=budget, universe_dir=universe_dir))
     debt_after = measure_debt(conn, grace_days=grace_days)
     breadth_after = measure_breadth(conn)
     return {

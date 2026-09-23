@@ -312,6 +312,9 @@ LEG_LAYER: dict[str, str] = {
     # THE SANDBOX RUNNER executes federated engines and rebuilt cells over the desk's bars and
     # donates hypotheses and representations: what the desk can know, so information.
     "sandbox_runner": "information",
+    # THE SUPPLY LINE provisions those engines' libraries and the ROSTER names every one of them
+    # with what it produced: both are about what the desk CAN know next, so information too.
+    "sandbox_provision": "information", "sandbox_roster": "information",
     "source_civilizations": "information", "evidence_watchtower": "information",
     "prediction_markets": "information",
     "archaeology": "information",

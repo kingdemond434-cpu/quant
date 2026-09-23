@@ -186,6 +186,12 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("check_conversion.py", ()),               # L1.28b -- FLATLINE fails
     ("check_universe_integrity.py", ()),       # bars: corrupt is quarantined, stale named
     ("check_external_federation.py", ("--require-state",)),   # LAWS 5h -- the live half
+    # LAWS 5h / L1.32 -- the SANDBOX half: no runnable federated system goes a rotation window
+    # without the hour (the ROI ratchet that starves a frontier), and no UNMEASURED reason sits
+    # unchanged for a week while its install task moves nowhere. A settled
+    # PERMANENTLY_UNAVAILABLE row with its exact error and its named cover is an answer, not a
+    # stall, and passes.
+    ("check_sandbox_liveness.py", ()),
     ("check_exploration.py", ()),              # L1.32 -- no exploration organ gone dark
     ("check_calibration.py", ()),              # L1.29 -- no ungraded past-due forecast
     ("check_strategy_breadth.py", ()),         # L1.32 -- the breadth MEASUREMENT

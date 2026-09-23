@@ -59,6 +59,8 @@ import re
 import subprocess
 import sys
 import time
+from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -488,7 +490,7 @@ def ledger_lock(root: Path, timeout_s: float = 10.0) -> Iterator[None]:
     a wedged holder; writing anyway is the corruption this guards, and skipping silently would
     leave the ledger unwritten while the leg reported success.
     """
-    from recommendations import _flock_exclusive
+    from recommendations import _flock_exclusive  # type: ignore[import-not-found]
     p = root / "data" / ".recommendation_ledger.lock"
     p.parent.mkdir(parents=True, exist_ok=True)
     fh = p.open("w")
@@ -913,51 +915,54 @@ def run(root: Path | None = None, budget_s: float = 600.0,
         do_intake: bool = True) -> dict[str, Any]:
     r = root or ROOT
     started = time.monotonic()
-    d = load_ledger(r)
-    rows = d["recommendations"]
-    open_before = sum(1 for x in rows if x.get("status") == "open")
+    # THE LOCK WRAPS THE WHOLE READ-MODIFY-WRITE, exactly as the CLI's does: acquiring it
+    # after the read would serialize nothing, because the stale read IS the race (R0623).
+    with ledger_lock(r):
+        d = load_ledger(r)
+        rows = d["recommendations"]
+        open_before = sum(1 for x in rows if x.get("status") == "open")
 
-    ink = intake(d, r, INTAKE_PER_PASS) if do_intake else {
-        "added": [], "n_added": 0, "skipped_already_settled": [], "skipped_duplicate": 0,
-        "unmeasured_sources": ["intake disabled for this pass"], "candidates_seen": 0}
+        ink = intake(d, r, INTAKE_PER_PASS) if do_intake else {
+            "added": [], "n_added": 0, "skipped_already_settled": [], "skipped_duplicate": 0,
+            "unmeasured_sources": ["intake disabled for this pass"], "candidates_seen": 0}
 
-    clocks = _clock_index(r)
-    ctx = {"root": r, "clocks": clocks, "rows": rows, "basenames": _basename_index(r),
-           "artifact_clocks": artifact_clock_index(r, clocks)}
-    todo = sorted((x for x in rows if x.get("status") == "open"), key=priority)
-    moved: list[dict[str, Any]] = []
-    build_tasks: list[dict[str, Any]] = []
-    deadline_hit = False
-    for row in todo:
-        elapsed = time.monotonic() - started
-        # TWO PHASES, ONE BUDGET, AND EVERY ROW STILL GETS AN OWNER. Past half the budget the
-        # git-backed proof rung is switched off rather than the pass being abandoned: a row left
-        # untriaged has no owner and no next action, which is precisely the defect this organ
-        # exists to remove -- so a pass that runs out of time must degrade to CHEAP triage, never
-        # to no triage. The proof rung is re-offered next hour and loses nothing.
-        if elapsed > budget_s * 0.5:
-            ctx["git_calls"] = GIT_CALLS_PER_PASS
-            ctx["git_budget_hit"] = True
-        if elapsed > budget_s * 0.97:
-            deadline_hit = True
-            break
-        try:
-            out = triage(row, ctx)
-        except ValueError as exc:
-            # A row this ladder cannot dispose LEGALLY is itself a finding, named rather than
-            # swallowed: the alternative is an illegal row on disk or a silent skip.
-            _block(row, f"triage produced an illegal disposition: {exc}",
-                   "hourly_cycle:implementer",
-                   "fix the ladder rung that produced it", "needs_code")
-            out = {"id": str(row.get("id")), "state": "blocked", "why": str(exc),
-                   "owner": "hourly_cycle:implementer", "blocker_class": "needs_code"}
-        moved.append(out)
-        if out.get("build_task"):
-            build_tasks.append(out["build_task"])
+        clocks = _clock_index(r)
+        ctx = {"root": r, "clocks": clocks, "rows": rows, "basenames": _basename_index(r),
+               "artifact_clocks": artifact_clock_index(r, clocks)}
+        todo = sorted((x for x in rows if x.get("status") == "open"), key=priority)
+        moved: list[dict[str, Any]] = []
+        build_tasks: list[dict[str, Any]] = []
+        deadline_hit = False
+        for row in todo:
+            elapsed = time.monotonic() - started
+            # TWO PHASES, ONE BUDGET, AND EVERY ROW STILL GETS AN OWNER. Past half the budget
+            # the git-backed proof rung is switched off rather than the pass being abandoned: a
+            # row left untriaged has no owner and no next action, which is precisely the defect
+            # this organ exists to remove, so a pass that runs out of time must degrade to CHEAP
+            # triage and never to no triage. The proof rung is re-offered next hour.
+            if elapsed > budget_s * 0.5:
+                ctx["git_calls"] = GIT_CALLS_PER_PASS
+                ctx["git_budget_hit"] = True
+            if elapsed > budget_s * 0.97:
+                deadline_hit = True
+                break
+            try:
+                out = triage(row, ctx)
+            except ValueError as exc:
+                # A row this ladder cannot dispose LEGALLY is itself a finding, named rather than
+                # swallowed: the alternative is an illegal row on disk or a silent skip.
+                _block(row, f"triage produced an illegal disposition: {exc}",
+                       "hourly_cycle:implementer",
+                       "fix the ladder rung that produced it", "needs_code")
+                out = {"id": str(row.get("id")), "state": "blocked", "why": str(exc),
+                       "owner": "hourly_cycle:implementer", "blocker_class": "needs_code"}
+            moved.append(out)
+            if out.get("build_task"):
+                build_tasks.append(out["build_task"])
 
-    d["last_drain_at"] = datetime.now(tz=UTC).isoformat()
-    d["last_drain_by"] = "desks/mt5/research/implementer.py"
-    save_ledger(d, r)
+        d["last_drain_at"] = datetime.now(tz=UTC).isoformat()
+        d["last_drain_by"] = "desks/mt5/research/implementer.py"
+        save_ledger(d, r)
 
     open_after = sum(1 for x in rows if x.get("status") == "open")
     orphans = [x for x in rows if x.get("status") == "open"
