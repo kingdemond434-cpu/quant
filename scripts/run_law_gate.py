@@ -311,6 +311,15 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # watchdog report is itself such a defect, because a watchdog that stopped is the quietest
     # failure the desk can have: no defects reported, because nothing looked.
     ("check_plumbing_watchdog.py", ()),
+    # THE MONEY BRAIN PRODUCED, PROVED AND PUBLISHED THIS CYCLE (principal 2026-09-23). The heat
+    # fence above asks whether the FLOOR is deployed; this one asks whether the allocator RAN at
+    # all, whether its certificate is still alive, whether each input it conditioned on is inside
+    # its own clock, and whether a cycle that could not complete left a NAMED stand-down instead
+    # of nothing. Written because a probe read two absent paths -- `data/pf_allocation.json` and
+    # `desks/mt5/reports/ALLOCATOR_PROOF.json`, neither of which the allocator writes -- and
+    # concluded the allocator was dead while both real artifacts were minutes old. A STATE fence:
+    # a host that has never run the allocator reads UNMEASURED, which is a fact about the host.
+    ("check_allocator_liveness.py", ()),
 )
 
 

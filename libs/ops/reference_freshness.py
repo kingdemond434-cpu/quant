@@ -263,7 +263,7 @@ def count_rows_in(doc: Any, *, rows_key: str | None = None) -> tuple[int | None,
 
 # --------------------------------------------------------------------------- lease resolution
 
-def _registry_rows(registry: str | Path | None = None) -> list[dict[str, Any]]:
+def _registry_rows(registry: str | Path | None = None) -> list[Mapping[str, Any]]:
     p = _abs(registry) if registry is not None else COMPONENT_REGISTRY
     try:
         doc = json.loads(p.read_text(encoding="utf-8-sig"))

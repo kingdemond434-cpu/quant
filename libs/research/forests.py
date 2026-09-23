@@ -227,10 +227,19 @@ REGIONAL_FORESTS: tuple[Forest, ...] = (
        mission="the Indian derivatives ecology and the South Asian trade/energy plane; "
                "Pakistan, Bangladesh and Sri Lanka as remittance, IMF-programme and "
                "textile/tea economies transmitting into USDINR, oil, gold and the US indices"),
-    _f("asean", "ASEAN", "regional", countries=("SG", "VN", "TH", "ID", "MY", "PH"),
-       languages=("en", "vi", "th", "id", "ms", "tl"),
-       packs=("sg", "vn", "th", "idn", "my", "ph"), grounds=("sg", "vn", "th", "id", "my", "ph"),
-       mission="the ASEAN commodity, FX and retail-leverage ecologies in their own languages"),
+    # MYANMAR, CAMBODIA AND LAOS JOIN THE ANSWERED SET (2026-09-23) through the `mekong`
+    # pack, which declares all three in its own JURISDICTIONS tuple. None was on this
+    # roster and none was answered by anything: `th`, `vn`, `my`, `sg`, `ph` and `idn`
+    # carried the region, and not one of them answers for a country whose statistics
+    # office stopped publishing. Three scripts joined with them -- Burmese, Khmer and Lao.
+    _f("asean", "ASEAN", "regional",
+       countries=("SG", "VN", "TH", "ID", "MY", "PH", "MM", "KH", "LA"),
+       languages=("en", "vi", "th", "id", "ms", "tl", "my", "km", "lo"),
+       packs=("sg", "vn", "th", "idn", "my", "ph", "mekong", "maritime_asia"),
+       grounds=("sg", "vn", "th", "id", "my", "ph", "mm", "kh", "la"),
+       mission="the ASEAN commodity, FX and retail-leverage ecologies in their own languages, "
+               "plus the Mekong frontier upstream of them: Myanmar gas and heavy rare earths, "
+               "Cambodian dollarisation and garments, and Lao hydropower and debt"),
     _f("oceania", "Oceania", "regional", countries=("AU", "NZ", "PG", "FJ"),
        languages=("en", "tpi", "fj", "hif"), packs=("au", "nz", "pacific"),
        grounds=("au", "nz", "pg", "fj"),
@@ -264,9 +273,11 @@ REGIONAL_FORESTS: tuple[Forest, ...] = (
                "NOAA, the ports and the regional Feds; the BoC, StatCan, CBSA and the oil sands",
        notes="the `us` and `ca` packs landed 2026-09-22 under the regional-parity law (LAWS 5n)"),
     _f("latam", "Latin America", "regional",
-       countries=("BR", "MX", "CL", "CO", "PE", "AR", "BO", "GY", "TT", "VE", "SR"),
+       countries=("BR", "MX", "CL", "CO", "PE", "AR", "BO", "GY", "TT", "VE", "SR", "PA", "GT",
+                  "HN", "CR", "NI", "SV", "EC"),
        languages=("pt", "es", "qu", "ay", "gn"),
-       packs=("br", "mx", "cl", "co", "ar", "pe", "bo", "atlantic_energy"),
+       packs=("br", "mx", "cl", "co", "ar", "pe", "bo", "atlantic_energy",
+              "central_america", "ec"),
        grounds=("br", "mx", "cl", "co", "pe", "ar", "bo"),
        mission="the Brazilian, Andean and Southern-Cone commodity and FX planes"),
     _f("mena", "Middle East and North Africa", "regional",
@@ -277,9 +288,17 @@ REGIONAL_FORESTS: tuple[Forest, ...] = (
        # not, because the Qatari LNG schedule, the Kuwaiti undisclosed basket, the Omani
        # non-OPEC OPEC+ quota and the Bahraini guaranteed peg are four different mechanisms
        # rather than four copies of the Saudi one.
-       countries=("SA", "AE", "QA", "TR", "IL", "KW", "OM", "BH", "MA"),
-       languages=("ar", "tr", "he", "en", "fr"),
-       packs=("sa", "ae", "il", "tr", "ma", "gulf"),
+       # THE RED SEA JOINS THE ROSTER (2026-09-23) with the `red_sea` pack that answers for YE,
+       # DJ, SD, ER and SO. None of the five was on any forest's roster, and one pack answers
+       # all five because they are the two shores and the hinterland of ONE chokepoint -- Bab
+       # el-Mandeb, through which roughly 12% of world trade moved before November 2023 -- so
+       # splitting them would split the mechanism. `red_sea` is `eg`'s complement: Egypt owns
+       # the Suez end of the same waterway and its canal revenue is the published measure of
+       # what the strait's disruption cost.
+       countries=("SA", "AE", "QA", "TR", "IL", "KW", "OM", "BH", "MA",
+                  "YE", "DJ", "SD", "ER", "SO"),
+       languages=("ar", "tr", "he", "en", "fr", "ti", "so"),
+       packs=("sa", "ae", "il", "tr", "ma", "gulf", "red_sea", "maghreb_energy", "opec_north"),
        grounds=("sa", "ae", "tr", "il", "ma"),
        mission="the Gulf energy plane, the CBRT and the Israeli tech/FX ecology; Morocco "
                "(Bank Al-Maghrib, phosphates, the MRE remittance and tourism planes) as the "
@@ -304,11 +323,21 @@ REGIONAL_FORESTS: tuple[Forest, ...] = (
        # measurable. Cote d'Ivoire is ~40% of world cocoa and sets the Living Income
        # Differential JOINTLY with Ghana, so `west_africa` is `gh`'s complement and not a
        # repeat of it.
+       # SOUTHERN AFRICA JOINS THE ROSTER (2026-09-23) with the `southern_africa` pack that
+       # answers for ZW, BW, MZ, AO and NA: none of the five was on any forest's roster, and one
+       # pack answers all five because South Africa is the refining, port, power and financial
+       # hub of every one of them and the ZAR is the bloc's only executable currency -- Namibia
+       # is pegged 1:1 to it inside the CMA and Botswana's pula carries a PUBLISHED 40% rand
+       # weight. `southern_africa` is `za`'s COMPLEMENT, not a repeat: it owns the Great Dyke's
+       # PGM beneficiation orders, the ten De Beers sales cycles a year, the Mozambican LNG and
+       # Namibian Orange Basin timetables and Angola's 2024 OPEC exit.
        countries=("EG", "ZA", "NG", "KE", "GH", "ET", "TZ", "UG", "CD", "ZM",
-                  "CI", "GN", "ML", "BF", "SN"),
+                  "CI", "GN", "ML", "BF", "SN",
+                  "ZW", "BW", "MZ", "AO", "NA"),
        languages=("en", "ar", "fr", "sw", "am", "af", "ln", "bem", "ny", "dyu", "bm",
                   "ff", "mos", "wo"),
-       packs=("eg", "za", "ng", "ke", "gh", "east_africa", "copperbelt", "west_africa"),
+       packs=("eg", "za", "ng", "ke", "gh", "east_africa", "copperbelt", "west_africa",
+              "southern_africa", "sahel_coast"),
        grounds=("eg", "za", "ng", "ke"),
        mission="the South African, Nigerian, Kenyan and North African planes: metals, energy, "
                "agriculture and the frontier-FX ecology"),

@@ -5429,6 +5429,44 @@
    ]
   },
   {
+   "id": "W23",
+   "item": "NOTHING IS RETIRED ON AN ABSENCE: one shared reference-freshness guard, every destructive path inventoried, a law-gate fence over the inventory",
+   "domain": "W",
+   "phase": "W",
+   "status": "LANDED",
+   "gate": "none",
+   "scheduled_by": "run_law_gate.py:_LAW_FENCES (every law-gate boundary, i.e. every claude-invoking organ and the hourly box gate)",
+   "artifact": "desks/mt5/reports/DESTRUCTIVE_PATHS.json + desks/mt5/reports/REFERENCE_STANDDOWNS.jsonl",
+   "consumer": "scripts/check_no_retirement_on_absence.py (exit 1 on an unguarded path, a guard that is not called, a reference with no lease, or an inventory that went stale while the surface moved) and every guarded caller at its own call site",
+   "gap": "",
+   "next_step": "certificate_truth.apply is the last unguarded path (2 rows, one file): one require_live_reference at the top of apply() closes both and drops the ceiling to 0. Inside the sealed four, promoter._apply_live_policy (an empty-but-importable live policy retires the whole book) and promoter.retire_banned's parole door (an unreadable ledger reads as 'not paroled') carry the same shape and need the principal.",
+   "evidence": [
+    "libs/ops/reference_freshness.py:1 (the law, the incident and the lease order in the module docstring)",
+    "libs/ops/reference_freshness.py:114 (DERIVED_LEASES: every reference the component registry does not claim an output for, each row naming the writing organ, its cadence and the arithmetic)",
+    "libs/ops/reference_freshness.py:391 (assess_reference: FRESH/EMPTY/STALE/UNREADABLE/MISSING with rows, age, lease, lease_source and the writing organ)",
+    "libs/ops/reference_freshness.py:538 (require_live_reference: returns the stand-down record, or raises ReferenceNotLive under strict=True)",
+    "libs/ops/reference_freshness.py:668 (DESTRUCTIVE_PATHS: 35 declared paths -- 5 guarded, 26 positive-evidence-only, 2 unguarded, 7 inside the sealed four)",
+    "scripts/check_no_retirement_on_absence.py:1 (the fence: AST proof that a guarded path calls the guard, lease resolution, the two ratchets, inventory staleness by surface fingerprint)",
+    "scripts/run_law_gate.py:164 (registered in _LAW_FENCES)",
+    "libs/research/screen_conversion.py:507 (the worst case found: one silent producer failure used to unlink every converted screen on disk; now require_live_rows)",
+    "desks/mt5/scripts/retire_uncashable_certs.py:94 (stump floor and age over universe.json, where `if not meta` alone let a 23-symbol registry retire the book)",
+    "desks/mt5/research/retire_untradeable.py:78 (the same floor over the same registry)",
+    "libs/ops/workers.py:66 (an unconditional DELETE FROM on a timestamp now stands down when nothing is stamping)",
+    "libs/ops/proctree.py:153 (an empty or partial process table manufactured orphans and killed them; the table must now contain this process's own pid)",
+    "libs/ops/events.py:59 (REFERENCE_STAND_DOWN: a refusal is a transition with a time on it)",
+    "tests/ops/test_reference_freshness.py (33 tests: empty, stale, unreadable, missing and stump references each remove nothing; a fresh one still removes; the stand-down is recorded; the fence fails when a guard stops being called)",
+    "docs/desk_lessons.jsonl L0385 (a reference that says nothing is not a reference that says no)"
+   ],
+   "landed": [
+    "one shared guard every destructive pass calls before it removes anything, answering FRESH/EMPTY/STALE/UNREADABLE with the row count, the age, the lease and the organ that writes the reference",
+    "the lease comes from the artifact's envelope, else the component registry's max_silence_s, else the writing organ's cadence x 2 with the derivation RECORDED -- and a reference with none of those can never authorise a removal",
+    "FRESH-BUT-EMPTY IS NOT FRESH: the row count is measured from the store's own container and never from a self-declared n, which is the field a truncated write gets wrong",
+    "the full inventory of destructive paths published with each one's reference and whether it is guarded, positive-evidence-only, sealed or still unguarded",
+    "a law-gate fence with two ratchets that only fall, an AST proof that a guarded path actually calls the guard, and a surface fingerprint so an inventory that went stale while removals changed under it is fatal",
+    "stand-downs recorded where an operator meets them: REFERENCE_STANDDOWNS.jsonl plus a REFERENCE_STAND_DOWN event"
+   ]
+  },
+  {
    "id": "U16",
    "domain": "U",
    "phase": "U",
@@ -7681,7 +7719,8 @@
     "libs/research/sandbox_rotation.py:71 - scout_slots: slots DERIVED from the pass budget and the roster size, capped at half the pass",
     "desks/mt5/research/sandbox_runner.py:563 - the runner's order and shares come from the rotation plan; the scouts are re-pinned after the proposer seat",
     "desks/mt5/research/sandbox_runner.py:651 - the donated cells recorded per system so breadth is MEASURED rather than asserted",
-    "tests/test_sandbox_federation.py:71 - a simulated day of hourly passes leaves no runnable system past its window; the duplicate reads 0 marginal breadth and the orthogonal reads a direction"
+    "tests/test_sandbox_federation.py:71 - a simulated day of hourly passes leaves no runnable system past its window; the duplicate reads 0 marginal breadth and the orthogonal reads a direction",
+    "desks/mt5/research/sandbox_runner.py:76 - rotation_extra + the seed-rotated frame head: the BUNDLE was the breadth cap (145 lane-eligible instruments, ten in the bundle, every adapter slicing its first MAX_SYMBOLS off the same ten), not the engines"
    ],
    "scheduled_by": "leg:sandbox_runner (desks/mt5/research/hourly_cycle.py:3357, hourly)",
    "artifact": "desks/mt5/reports/SANDBOX_RUNNER.json (the rotation block: order, shares, scouts, ages, breadth)",
@@ -7689,7 +7728,7 @@
    "landed": [
     "sandbox rotation + measured breadth 2026-09-23"
    ],
-   "notes": "NEVER a throttle: the scout lane can only ever hand an hour to a system that was not getting one. Nothing in this item reduces any system's floor."
+   "notes": "NEVER a throttle: the scout lane can only ever hand an hour to a system that was not getting one. Nothing in this item reduces any system's floor. MEASURED 2026-09-23 after widening: bundle 10 -> 40 instruments, cells spanned 35 -> 97, candidates 88 -> 114 with 81 CREATED new in one pass (aeon 10 -> 36, pyextremes 3 -> 19, numerai_method 8 -> 24). The supply-line leg now runs BEFORE the runner in the same pass so a freshly provisioned library is used the hour it lands, not the hour after."
   },
   {
    "id": "U77",
@@ -7976,7 +8015,11 @@
     "libs/research/data_contract.py:259 - may(): the machine-extraction veto is gone",
     "desks/mt5/research/evidence_router.py:452 - the quarantine ledger, empty by construction, with the five acts written into its rule",
     "docs/LAWS.md:431 - section 5e, rewritten in full",
-    "tests/research/test_access_routing.py:1 - 27 tests: the three cases the principal named, the five acts, and one test per deleted brake"
+    "tests/research/test_access_routing.py:1 - 27 tests: the three cases the principal named, the five acts, and one test per deleted brake",
+    "desks/mt5/research/asia_collector.py:151 - _robots_allows: the reading is a label, and the BLOCKED_BY_ROBOTS refusal is deleted",
+    "desks/mt5/research/ingestion_ledger.py:234 - QUARANTINED_ACCESS is empty",
+    "desks/mt5/research/countries/__init__.py:277 - source_class() stops teaching the old convention; absent_layer() carries machine_use_allowed=True",
+    "tests/research/test_access_routing.py:213 - the structural test that keeps BLOCKED_BY_ROBOTS from being re-assigned in the shared fetch path"
    ],
    "scheduled_by": "hourly_cycle:evidence_router (desks/mt5/research/hourly_cycle.py, hourly) -- it walks every registry source through these functions",
    "artifact": "desks/mt5/reports/EVIDENCE_ROUTER.json + desks/mt5/data/evidence_quarantine.json (now empty by construction)",
@@ -7984,7 +8027,7 @@
    "landed": [
     "the access brakes removed and the law rewritten 2026-09-23"
    ],
-   "notes": "Evidence WEIGHT caps (PUBLIC_SOCIAL 0.6, USER_SUBMITTED 0.5) deliberately STAY: they are statements about truth, never about permission, and they never stop a row being mined or tested. NOT YET PROPAGATED, and named here rather than left silent: the ~211 machine_use_allowed=False rows across the 46 country packs and the source-registry JSONs still carry the old value, so consumers keyed on that field still skip them. The law and the classifier are the authority; the leaf data is a mechanical follow-up."
+   "notes": "Evidence WEIGHT caps (PUBLIC_SOCIAL 0.6, USER_SUBMITTED 0.5) deliberately STAY: they are statements about truth, never about permission, and they never stop a row being mined or tested. THE ORGAN SWEEP LANDED TOO: source_shares.machine_use_allowed() returns True for everything off the hard boundary (signature kept, so coverage_drain's call site is untouched); world_crawler's inherited registry pre-filter is gone and every row carries terms_note; deep_forest_miner no longer lets snippets_only stop a site fetch and re-routes legacy 'unreachable' grounds to search; event_surprise.admissible() refuses only NO_ADDRESS / NO_FIELD_MAP / a hard-boundary access string; prediction_markets' ACCESS_BEHAVIOUR is True for every non-refused label; data_acquisition_scientist dropped BLOCKED_BY_ROBOTS and REGISTERED_NO_MACHINE_EXTRACTION; evidence_watchtower no longer pins url_resolves to UNRESOLVED; ingestion_ledger's QUARANTINED_ACCESS is empty and ACCESS_UNCLEAR joined QUALIFIED_ACCESS; archaeology/snapshots' may_fetch refuses only the boundary markers and ACCESS_UNCLEAR's weight went 0.0 -> 1.00. asia_collector._robots_allows -- the LAST refusal in the shared fetch path that event_surprise and data_acquisition_scientist both call -- now records the robots reading as robots_disallows/terms_note and fetches either way; its BLOCKED_BY_ROBOTS status assignment is deleted and pinned deleted by a structural test. STILL OUTSTANDING, named rather than left silent: ~291 machine_use_allowed=False rows across 119 country pack files still carry the old value. The COUNT GREW from 211 during this work because countries/__init__.source_class() still taught the old convention in its docstring; that docstring and absent_layer()'s own False are now fixed, so new packs stop inheriting it. Flipping the existing rows is mechanical leaf-data follow-up; the law, the classifier and every organ are the authority and already agree."
   },
   {
    "id": "AR2",

@@ -266,6 +266,16 @@ def _writes_intel_generically(text: str) -> bool:
 #: cycles (its legs are the organs), and a file that imports the fence exit IS a fence (it
 #: measures production, it does not create it).
 _ORCHESTRATOR = re.compile(r"^def _producer\(", re.M)
+
+#: A file that ENUMERATES the intelligence roots is harvesting them, not filling one. Measured
+#: 2026-09-23: `evidence_router.py` binds both roots and walks them, and it won the organ slot
+#: for fifty seeded seats -- so every repair for those seats restarted the READER while the
+#: miner that fills them sat on another machine.
+_INTEL_HARVESTER = re.compile(r"INTEL_ROOTS|INTELLIGENCE_ROOTS")
+
+#: And the desk's own donation filename convention. A file that mints `discoveries_<ts>.json` is
+#: a producer by construction; nothing else in this tree writes that name.
+_DONATION_NAME = re.compile(r"discoveries_")
 _FENCE = re.compile(r"fence_exit|check_[a-z_]+\.py\b")
 
 
@@ -288,6 +298,11 @@ def _organ_score(rel: str, text: str, *, tier: int, hops: int, cadence_h: float 
         score -= 80
     if rel.startswith("scripts/check_") or _FENCE.search(text[:4000]):
         score -= 80
+    if _INTEL_HARVESTER.search(text) or ("iterdir()" in text and "intelligence" in text
+                                        and not _DONATION_NAME.search(text)):
+        score -= 60
+    if _DONATION_NAME.search(text):
+        score += 40
     if "/side_channels/" in f"/{rel}":
         #: The desk's own miner layer. A seat filled from a roster table is filled from here;
         #: `research/` holds the organs that READ the seats (the router, the compilers), and
@@ -973,14 +988,26 @@ def apply_relight(plans: Sequence[Relight], *, root: Path | None = None,
             continue
         paths = [str(base / x) for x in plan.production_paths]
         before = act.newest_production([Path(x) for x in paths])
-        actuator = act.producer_actuator(
-            plan.producer, plan.argv, paths,
-            name=f"relight:{plan.action}:{plan.producer}",
-            timeout_s=plan.timeout_s, cwd=str(base))
-        rec = act.run_actuator(actuator,
-                               {"production_paths": paths,
-                                "production_before": before if before > 0 else None},
-                               apply=True, runner=runner, sleeper=lambda _s: None)
+        ctx: dict[str, Any] = {"production_paths": paths,
+                               "production_before": before if before > 0 else None}
+        if plan.action == "restart_task":
+            #: A RESIDENT IS THE RECONCILER'S OWN REPAIR, with the reconciler's own proof: a NEW
+            #: live pid on the singleton lock and a watermark that moved. Judging a department
+            #: restart by "did an artifact appear in sixty seconds" reported nine healthy
+            #: residents UNPROVEN on the first pass -- a weaker postcondition applied to a
+            #: repair that already has a strong one.
+            stem = plan.producer.split(":", 1)[1] if ":" in plan.producer else plan.producer
+            actuator = act.restart_resident(plan.producer, str(plan.argv[-1]), stem)
+        else:
+            #: WINDOW ZERO, and it is not impatience. Running an organ is SYNCHRONOUS: its
+            #: output either moved while the repair ran or it did not, so polling afterwards
+            #: can only burn the hour. A resident restart is the asynchronous case and keeps
+            #: the plane's own window.
+            actuator = act.producer_actuator(
+                plan.producer, plan.argv, paths,
+                name=f"relight:{plan.action}:{plan.producer}", window_s=0,
+                timeout_s=plan.timeout_s, cwd=str(base))
+        rec = act.run_actuator(actuator, ctx, apply=True, runner=runner)
         out.append({"producer": plan.producer, "action": plan.action,
                     "result": ("RELIT" if rec.get("repaired") else str(rec.get("result"))),
                     "relit": bool(rec.get("repaired")),

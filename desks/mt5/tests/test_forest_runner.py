@@ -108,14 +108,26 @@ def test_the_scout_runs_even_when_the_caller_asks_for_other_roles_only(reg, monk
 
 
 def test_a_forest_with_no_pack_names_what_is_missing_and_is_never_idle(reg):
-    doc = fr.run_pass("north_america", budget_s=60, workers=4, dry_run=True)
+    """THE PREMISE IS DERIVED, NOT HARD-CODED (2026-09-23). This test named `north_america` as
+    the region with no pack; `libs/research/country_lab.py` then grew one, the premise died, and
+    the test went red for a reason that had nothing to do with what it measures. A test whose
+    subject is "a region the desk has not packed yet" has to ASK which region that is, or it
+    rots every time the desk covers more ground -- which is the direction the desk is supposed
+    to move. If every region is packed, the invariant still holds and is asserted the other way:
+    the scout runs and NAMES its seed either way, which is the property under test.
+    """
+    unpacked = sorted(f.id for f in F.REGIONAL_FORESTS
+                      if not any(fr.pack_module(c) for c in f.packs))
+    region = unpacked[0] if unpacked else "north_america"
+    doc = fr.run_pass(region, budget_s=60, workers=4, dry_run=True)
     rows = {r["role"]: r for r in doc["roles"]}
     assert len(rows) == 11
     assert rows[F.SCOUT_ROLE]["ran"] is True
     assert rows[F.SCOUT_ROLE]["new"] >= 1, "the scout works from the mandate's own terms"
     seeded = rows[F.SCOUT_ROLE]["seeded_by"]
     assert seeded, "the scout names what seeded it: polyglot, a pack, or the mandate"
-    assert not any(s.startswith("country_lab") for s in seeded), "no pack to seed from"
+    if unpacked:
+        assert not any(s.startswith("country_lab") for s in seeded), "no pack to seed from"
     official = json.dumps(rows["official_data"])
     assert F.UNMEASURED in official and "country pack" in official
     failure = json.dumps(rows["failure_miners"])

@@ -337,6 +337,59 @@ def _triangle_main() -> int:
     return int(triangle_tape.main())
 
 
+#: WHERE THE STATE-VECTOR BUDGET COMES FROM, and why it is not a constant.
+#:
+#: MEASURED 2026-09-23 on the trading box: a full `state_vector_build` pass costs **470 seconds**
+#: and exits 0 with its own named GAPs. This leg gave it 45 and killed it at 45 EVERY HOUR --
+#: the compute ledger recorded `state_vector TIMEOUT wall=45.167` and `data/state_vector.json`
+#: was **18.7 hours old** on a box whose regime lane is hourly. The allocator's
+#: `_admitted_extra_dims` reads that file to pick the state the book is solved and certified in,
+#: so every pass for most of a day conditioned on yesterday's world while reporting today's.
+#:
+#: A constant is what caused this, so the replacement is not another constant. The budget is
+#: LEARNED from this leg's own outcomes: a pass that completes sets the next budget to 1.5x what
+#: it took, a pass that is killed doubles it, and both are bounded by the cycle's own slack --
+#: never by a number chosen off a machine size. An unreadable memory falls back to the measured
+#: need, which is the honest floor rather than the historic 45.
+_SV_MEMORY = BASE / "data" / "state_vector_budget.json"
+#: One quarter of the hourly cycle. The ceiling is the CLOCK's, not the box's: a leg that ate
+#: more than this would starve the legs after it, and the cycle is the only thing that owns that
+#: trade-off.
+_SV_CEILING_S = 900.0
+#: The measured cost of one full pass, 2026-09-23. The floor, so an unreadable memory cannot
+#: reinstate a budget that is known to kill the build.
+_SV_FLOOR_S = 480.0
+
+
+def _state_vector_budget_s() -> float:
+    """This leg's budget, learned from its own outcomes and bounded by the cycle's slack."""
+    env = os.environ.get("STATE_VECTOR_HOURLY_BUDGET_SEC")
+    if env:
+        with suppress(ValueError):
+            return max(15.0, float(env))
+    try:
+        mem = json.loads(_SV_MEMORY.read_text(encoding="utf-8"))
+        want = float(mem["next_budget_s"])
+    except (OSError, ValueError, KeyError, TypeError):
+        return _SV_FLOOR_S
+    return float(min(_SV_CEILING_S, max(_SV_FLOOR_S, want)))
+
+
+def _state_vector_budget_learn(*, ok: bool, spent_s: float) -> None:
+    """Record what this pass cost so the next one is sized by measurement, never by guess."""
+    nxt = min(_SV_CEILING_S, max(_SV_FLOOR_S, spent_s * (1.5 if ok else 2.0)))
+    with suppress(OSError, TypeError, ValueError):
+        _SV_MEMORY.parent.mkdir(parents=True, exist_ok=True)
+        _SV_MEMORY.write_text(json.dumps({
+            "at": datetime.now(UTC).isoformat(timespec="seconds"),
+            "last_budget_s": round(float(spent_s), 1), "last_outcome": "OK" if ok else "KILLED",
+            "next_budget_s": round(float(nxt), 1),
+            "ceiling_s": _SV_CEILING_S, "floor_s": _SV_FLOOR_S,
+            "rule": ("completed -> 1.5x what it took; killed -> 2x, bounded by one quarter of "
+                     "the hourly cycle. Measured 2026-09-23: a full pass costs 470s"),
+        }, indent=1) + "\n", encoding="utf-8")
+
+
 def state_vector() -> dict:
     """Rebuild the desk's description of the world, once, for every consumer to read.
 
@@ -355,20 +408,23 @@ def state_vector() -> dict:
     # publication and the other producers could run.  A failed world-state refresh is a visible
     # degraded input, never permission to turn one optional model into a factory-wide kill switch.
     target = BASE / "research" / "state_vector_build.py"
-    timeout_s = max(15, float(os.environ.get("STATE_VECTOR_HOURLY_BUDGET_SEC", "45")))
+    timeout_s = _state_vector_budget_s()
     try:
         r = _run_tree(
             [sys.executable, "-u", "-W", "ignore", str(target), "--budget-s",
              str(max(10, timeout_s - 5))],
             capture_output=True, text=True, cwd=str(BASE), timeout=timeout_s, check=False,
         )
+        _state_vector_budget_learn(ok=r.returncode == 0, spent_s=timeout_s)
         return {
             "exit_code": int(r.returncode),
             "status": "OK" if r.returncode == 0 else "FAILED",
+            "budget_s": timeout_s,
             "tail": (r.stdout or r.stderr or "")[-500:],
             "at": datetime.now(UTC).isoformat(timespec="seconds"),
         }
     except subprocess.TimeoutExpired as exc:
+        _state_vector_budget_learn(ok=False, spent_s=timeout_s)
         return {"exit_code": None, "status": "TIMEOUT", "timeout_s": exc.timeout,
                 "at": datetime.now(UTC).isoformat(timespec="seconds")}
     except OSError as exc:
@@ -829,7 +885,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "forward_slot_ranker", "forward_exploitation", "shadow_discovery",
                      "missed_trade_archaeologist", "portfolio_bounty",
                      "drawdown_alpha_miner", "trade_autopsy", "counterfactual_attribution",
-                     "clock_liveness"),
+                     "clock_liveness", "allocator_liveness", "allocator_trigger"),
                     "forward"),
     # meta: the machine that runs the machine (the heavy part of it)
     **dict.fromkeys(("issue_board", "publish_state", "model_league", "ml_layer_meta",
@@ -3412,6 +3468,13 @@ def main() -> None:
     fops = _costed("federation_ops", lambda: _producer("federation_ops",
                                                         "research/federation_ops.py",
                                                         "--once", "--budget-s", "600"))
+    # THE SANDBOX SUPPLY LINE (LAWS 5h/5m): installs the pinned requirement of the systems the
+    # runner could only record UNMEASURED, into ONE shared venv over the desk's own interpreter,
+    # proves the module imports, reads the licence at the same pin, and settles what this
+    # interpreter can never host as PERMANENTLY_UNAVAILABLE with its exact error and its cover.
+    sbp = _costed("sandbox_provision", lambda: _producer("sandbox_provision",
+                                                         "research/sandbox_provision.py",
+                                                         "--once", "--budget-s", "600"))
     # THE SANDBOX RUNNER (LAWS 5h): the federation's execution layer. Runs the highest-ROI
     # runnable adapters in their sandboxes and the desk's own rebuilt cells over the desk's PIT
     # bars, converts every packet into registry candidates with provenance and charged trials,
@@ -3421,13 +3484,6 @@ def main() -> None:
                                                       "research/sandbox_runner.py",
                                                       "--once", "--budget-s", "900",
                                                       "--allow-network"))
-    # THE SANDBOX SUPPLY LINE (LAWS 5h/5m): installs the pinned requirement of the systems the
-    # runner could only record UNMEASURED, into ONE shared venv over the desk's own interpreter,
-    # proves the module imports, reads the licence at the same pin, and settles what this
-    # interpreter can never host as PERMANENTLY_UNAVAILABLE with its exact error and its cover.
-    sbp = _costed("sandbox_provision", lambda: _producer("sandbox_provision",
-                                                         "research/sandbox_provision.py",
-                                                         "--once", "--budget-s", "600"))
     # THE ROSTER (LAWS 5h): one GENERATED table naming every roster seed, every adapter and
     # every rebuilt cell with its disposition, licence, capability family, whether it runs here,
     # its last run, what it produced and its marginal breadth. Never hand-written.
@@ -3679,6 +3735,24 @@ def main() -> None:
     h12 = _costed("hunt12", hunt12)
     pa = _costed("pf_allocator", lambda: _producer(
         "pf_allocator", "research/pf_allocator.py", "--mode", _allocator_mode_for_the_hour()))
+    # DID THE MONEY BRAIN ACTUALLY PRODUCE, PROVE AND PUBLISH -- and on what? (2026-09-23.) Runs
+    # immediately after the solve, so the ages it publishes are the ages the pass ABOVE
+    # conditioned on. It names every allocator output with its real path and its consumer, every
+    # input with its age and whether the pass DECLARED it used, the heat against the floor, the
+    # book's join to the live rows, and the last named stand-down. Report only; the fence is
+    # `scripts/check_allocator_liveness.py`. Written because a probe read two paths the allocator
+    # does not write to, found them absent, and concluded the allocator was dead while both real
+    # artifacts were minutes old.
+    alv = _costed("allocator_liveness", lambda: _producer(
+        "allocator_liveness", "research/allocator_liveness.py", "--once", "--budget-s", "120"))
+    # 24/7 AND NOT SLOW (principal 2026-09-23). The hourly solve above is the BACKSTOP; this
+    # watches the artifacts that carry a state change -- a macro surprise, a regime transition, a
+    # certificate arriving or dying, a fill, a cost or capacity revision -- and fires the same
+    # solver the moment one moves, then publishes the event-to-allocation latency per trigger
+    # kind. The hourly leg is the floor on how often it looks; the 24/7 resident
+    # (`--resident`, desks/mt5/ops/box_tasks.manifest) is how it reacts in seconds.
+    atg = _costed("allocator_trigger", lambda: _producer(
+        "allocator_trigger", "research/allocator_trigger.py", "--once", "--budget-s", "300"))
     # THE PROMOTER READS THE SCAN THE LEG ABOVE JUST WROTE (2026-09-08). A promoted row reaches
     # the gateway only at status LIVE, and LIVE is written only by the promoter -- on a fresh
     # MEASURED admission that admits the sleeve, and for a STANDBY row on PROMOTE_ADMIT_STREAK
@@ -4115,7 +4189,8 @@ def main() -> None:
                     "fusion_cost": fzc, "cost_construction": cxc,
                     "edges_macro_fusion_sweep": emf,
                     "recertify_canon": rc, "hunt12": h12,
-                    "pf_allocator": pa, "promoter": pr,
+                    "pf_allocator": pa, "allocator_liveness": alv, "allocator_trigger": atg,
+                    "promoter": pr,
                     "frontier_implementer": fi,
                     "smoke_release": smoke},
                    indent=1), encoding="utf-8")

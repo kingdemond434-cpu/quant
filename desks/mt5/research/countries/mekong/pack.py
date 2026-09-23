@@ -720,17 +720,22 @@ def new_year_week(year: int) -> dict[str, Any]:
     """
     days = [date(year, 4, d) for d in (13, 14, 15, 16, 17)]
     table = national_holidays(year)
-    rows = []
+    rows: list[dict[str, Any]] = []
+    counts: list[int] = []
+    sessions = 0
     for day in days:
         name = table.get(day, "")
         closed = jurisdictions_closed(name)
+        counts.append(len(closed))
+        costs = day.weekday() < 5
+        sessions += int(costs)
         rows.append({"date": day.isoformat(), "name": name,
                      "jurisdictions_closed": closed, "n_closed": len(closed),
-                     "weekday": day.weekday(), "costs_a_session": day.weekday() < 5})
+                     "weekday": day.weekday(), "costs_a_session": costs})
     return {"year": year, "window": (days[0].isoformat(), days[-1].isoformat()),
             "days": tuple(rows),
-            "max_simultaneous": max((int(r["n_closed"]) for r in rows), default=0),
-            "weekday_sessions_lost": sum(1 for r in rows if r["costs_a_session"]),
+            "max_simultaneous": max(counts, default=0),
+            "weekday_sessions_lost": sessions,
             "thai_songkran": "13-15 April, owned by the `th` pack and read here -- the fourth "
                              "economy in the same window",
             "why": "ONE REGIONAL STOPPAGE, NOT FOUR COINCIDENCES; a single-country closure study "
@@ -3139,3 +3144,390 @@ POLICY_ERAS: tuple[dict[str, Any], ...] = (
                        "in which that claim becomes falsifiable",
      "status": "SCHEDULED"},
 )
+
+ACCESS_CONSTRAINTS: tuple[dict[str, Any], ...] = (
+    {"constraint": "NONE OF THE THREE CURRENCIES IS QUOTED BY THIS BROKER",
+     "measured": "data/universe/universe.json holds no MMK, KHR or LAK symbol",
+     "consequence": "every domestic monetary mechanism terminates in USDTHB, USDCNH, USDSGD or "
+                    "XAUUSD; all three currencies are INPUTS, never cells"},
+    {"constraint": "MYANMAR'S OFFICIAL STATISTICS HAVE LARGELY STOPPED SINCE 2021",
+     "measured": "the Central Statistical Organization's series are irregular or absent and "
+                 "reserves are not published on a reliable schedule",
+     "consequence": "every Myanmar quantity in this pack is a MIRROR MEASUREMENT (Chinese and "
+                    "Thai customs, UN Comtrade partner data) or a MODELLED ESTIMATE (the IFI "
+                    "country work), each labelled; MK-L exists to measure the substitute's bias "
+                    "rather than to hide it"},
+    {"constraint": "the Yangon exchange has effectively no tape and neither do the other two",
+     "measured": "YSX, CSX and LSX list a few dozen companies between them with days of no "
+                 "trade at all, no derivative and no published margin or short-interest series",
+     "consequence": "there is no domestic order book, no expiry clock and no leverage series in "
+                    "any of the three; the generic expiry and positioning miners correctly "
+                    "report UNMEASURED and the executable equity leg is US500 -- the buyer's "
+                    "market rather than the seller's"},
+    {"constraint": "LAOS HAS NO DOMESTIC ACADEMIC ECONOMICS GROUND",
+     "measured": "no domestic research institution publishing empirical macroeconomics, no "
+                 "working-paper series and no journal a crawler can reach",
+     "consequence": "the declared substitutes are the Mekong River Commission's technical "
+                    "programme, the ADB and IMF country work, and the Thai and Japanese Mekong "
+                    "research -- named in NO_LAWFUL_GROUND rather than left as a blank layer"},
+    {"constraint": "none of the three has a retail TRADING ecology at all",
+     "measured": "no margin product, no retail investor base and no leverage statistics in any "
+                 "of the three jurisdictions",
+     "consequence": "`retail_leverage_regime` is UNMEASURED because there is nothing to measure, "
+                    "not because nobody looked; the retail_ecology layer is filled instead by "
+                    "the money-changer and worker channels, which are a retail ecology of a "
+                    "different kind and are labelled USER_SUBMITTED and UNRELIABLE"},
+    {"constraint": "the transactable Myanmar and Lao exchange rates are not published by anyone",
+     "measured": "the parallel quote exists only on money-changer and messaging channels",
+     "consequence": "the parallel leg of every spread in this pack is USER_SUBMITTED ground that "
+                    "must be crawled and time-stamped by the desk itself; a spread cell "
+                    "compiled on a window with no captured parallel quote is UNMEASURED"},
+    {"constraint": "NO BROKER CONTRACT EXISTS FOR RARE EARTHS, RICE OR ELECTRICITY",
+     "measured": "the universe carries no rare-earth, rice or power contract of any kind",
+     "consequence": "the three largest mechanisms in this pack are routed through proxies with "
+                    "their controls named -- the metals complex for rare earths, the "
+                    "substitute-calorie complex for rice, and the Thai gas burn for hydro -- and "
+                    "each is stated as a WEAKENED CLAIM rather than presented as a direct one"},
+    {"constraint": "the rare-earth and rice price assessments forbid machine extraction",
+     "measured": "the commercial assessment services are LICENSED and their terms prohibit "
+                 "automated collection (machine_use_allowed=false on that source row)",
+     "consequence": "REGISTERED AND NEVER SCRAPED. The Chinese customs tonnage is used as the "
+                    "public substitute and the realised assessment price is UNMEASURED by name"},
+    {"constraint": "the three central-bank rate pages are overwritten in place",
+     "measured": "cbm.gov.mm, nbc.gov.kh and bol.gov.la all replace the day's rate rather than "
+                 "versioning it",
+     "consequence": "a point-in-time rate history exists only from a DAILY crawl or a "
+                    "web-archive snapshot; a cell compiled on an un-archived day is UNMEASURED "
+                    "rather than assumed"},
+    {"constraint": "the 2026 holiday rows are PROJECTED and none of the table is NOTIFIED",
+     "measured": "no row in LUNISOLAR claims NOTIFIED, because the crawler has not reached the "
+                 "three governments' annual holiday notifications",
+     "consequence": "a calendar cell compiled on a lunisolar row is a hypothesis and may never "
+                    "be promoted on that row alone; the fixed mid-April block IS computed from "
+                    "statute and is the part of MK-K that can carry weight"},
+    {"constraint": "Myanmar is UTC+6:30 and the other two are UTC+7",
+     "measured": "Asia/Yangon carries a HALF-HOUR offset; Phnom Penh and Vientiane do not",
+     "consequence": "a single regional session mask is wrong for one of the three by thirty "
+                    "minutes; the SESSION_WINDOWS here are stated in UTC and the half-hour is "
+                    "called out because it is the commonest conversion error about Myanmar"},
+    {"constraint": "the Myanmar jade and informal border trade is invisible in every statistic",
+     "measured": "official emporium receipts are a small fraction of the trade",
+     "consequence": "every Myanmar external statistic in this pack is a LOWER BOUND, and the "
+                    "jade actor exists so a miner never reads the balance of payments as "
+                    "complete"},
+)
+
+INSTITUTIONAL_FLOW_SOURCES: tuple[str, ...] = (
+    "Chinese customs rare-earth imports from Myanmar by HS code and origin",
+    "Thai gas supply by source, with the Myanmar pipeline line separated",
+    "Thai electricity imports from Laos, monthly",
+    "Cambodian customs monthly exports by product and destination",
+    "National Bank of Cambodia dollarisation share and Bakong volumes by currency",
+    "Mekong River Commission daily station water levels",
+    "Sihanoukville Autonomous Port container throughput (CSX-disclosed)",
+    "Laos-China Railway monthly freight tonnage",
+    "Thai registered migrant workers by nationality and border-trade by checkpoint",
+    "UN Comtrade partner-reported trade for all three jurisdictions",
+)
+
+SERIES: dict[str, str] = {
+    "MK_RARE_EARTH_CN": "CNCUSTOMS:rare_earth_imports_myanmar",
+    "MK_TH_GAS_MM": "TH:gas_supply_myanmar",
+    "MK_TH_GAS_TOTAL": "TH:gas_supply_by_source",
+    "MK_PIPELINE_OUTAGE": "TH:announced_pipeline_outage_windows",
+    "MK_MM_OFFICIAL_FX": "CBM:reference_rate_mmk_usd",
+    "MK_MM_PARALLEL_FX": "changers:parallel_rate_mmk_usd",
+    "MK_MM_SPREAD": "computed:parallel_spread(official, parallel)",
+    "MK_MM_RICE_POLICY": "MM:rice_export_policy_events",
+    "MK_KH_EXPORTS": "KH:exports_by_destination",
+    "MK_KH_DOLLARISATION": "NBC:dollarisation_share",
+    "MK_KH_BAKONG": "NBC:bakong_volume_by_currency",
+    "MK_KH_PORT": "PAS:container_teu",
+    "MK_LA_CPI": "LSB:cpi",
+    "MK_LA_FX": "BOL:reference_rate",
+    "MK_LA_DEBT": "LA:external_debt_schedule",
+    "MK_LA_POWER_EXPORT": "LA:electricity_exports_gwh",
+    "MK_MRC_LEVELS": "MRC:station_levels",
+    "MK_HYDRO_BOUND": "computed:hydro_bound(level_ratio)",
+    "MK_RAILWAY_FREIGHT": "LA:railway_freight_tonnes",
+    "MK_TH_MIGRANTS": "TH:registered_migrant_workers",
+    "MK_COMTRADE_MIRROR": "COMTRADE:partner_reported",
+    "MK_NEW_YEAR_WEEK": "computed:new_year_week(year)",
+}
+
+# --------------------------------------------------------------------------- the pack's miners
+CUSTOM_MINERS: tuple[dict[str, Any], ...] = (
+    {"name": "mekong_regional_calendar", "domain_ids": ("MK-K",), "kind": "calendar",
+     "cadence_s": 86400.0, "steerable": False, "wired": False,
+     "entry": "countries.mekong.pack:mine_regional_calendar",
+     "needs": ("FIXED_GENERAL", "LUNISOLAR", "new_year_week"),
+     "notes": "the mid-April block and the shared Theravada full moons, counted by how many of "
+              "the three jurisdictions each closure actually stops"},
+    {"name": "mekong_two_rate_regimes", "domain_ids": ("MK-C", "MK-I", "MK-E"), "kind": "macro",
+     "cadence_s": 86400.0, "steerable": True, "wired": False,
+     "entry": "countries.mekong.pack:mine_two_rate_regimes",
+     "needs": ("SPREAD_BUCKETS", "DOLLARISATION_BUCKETS", "parallel_spread"),
+     "notes": "the rationing buckets a spread cell conditions on and the dollarisation states "
+              "beside them -- three currency regimes in one region as one comparison"},
+    {"name": "mekong_hydro_constraint", "domain_ids": ("MK-H", "MK-A"), "kind": "physical",
+     "cadence_s": 3600.0, "steerable": True, "wired": False,
+     "entry": "countries.mekong.pack:mine_hydro_constraint",
+     "needs": ("HYDRO_BUCKETS", "hydro_bound", "the MRC station series"),
+     "notes": "the drought-tail buckets with the Thai gas-burn substitution named as the "
+              "control on every row, and the asymmetry stated rather than assumed"},
+    {"name": "mekong_regime_boundaries", "domain_ids": ("MK-B", "MK-F", "MK-J"), "kind": "event",
+     "cadence_s": 604800.0, "steerable": True, "wired": False,
+     "entry": "countries.mekong.pack:mine_regime_boundaries",
+     "needs": ("POLICY_ERAS", "USDTHB, USDCNH, COTTON D1 bars"),
+     "notes": "the dated era table including the 2021 measurement break and the SCHEDULED "
+              "forward boundary at the Lao amortisation wall"},
+    {"name": "mekong_measured_absences", "domain_ids": ("MK-L", "MK-D", "MK-G", "MK-M"),
+     "kind": "coverage", "cadence_s": 604800.0, "steerable": True, "wired": False,
+     "entry": "countries.mekong.pack:mine_measured_absences",
+     "needs": ("NO_LAWFUL_GROUND", "ACCESS_CONSTRAINTS", "TRANSMISSION_EDGES_SEED",
+               "INTERACTIONS"),
+     "notes": "the per-jurisdiction gaps with their lawful substitutes, and the pack's own map "
+              "as HYPOTHESIS rows -- a measured refusal is a discovery, not a blank"},
+)
+
+MINER_DOMAINS: dict[str, tuple[str, ...]] = {
+    "central_bank_surprise": ("MK-C", "MK-I"), "release_surprise": ("MK-B", "MK-F"),
+    "calendar_settlement": ("MK-K",), "holiday_liquidity": ("MK-K",),
+    "positioning": ("MK-E",), "carry_funding": ("MK-I", "MK-E"),
+    "corporate_flow": ("MK-F", "MK-G"), "institutional_flow": ("MK-G", "MK-J"),
+    "equity_mechanics": ("MK-F",), "derivatives_expiry": ("MK-F",),
+    "failure": ("MK-L", "MK-C"), "residual": ("MK-L", "MK-M"),
+    "transfer": ("MK-A", "MK-H"), "scouts": ("MK-B", "MK-M"),
+    "session_microstructure": ("MK-A", "MK-K"),
+}
+
+# --------------------------------------------------------------------------- assembly
+_PACK_FIELDS: tuple[str, ...] = (
+    "code", "name", "region_command", "currency", "executable_instruments", "central_bank",
+    "fixing_conventions", "settlement_conventions", "exchanges", "holidays_rule",
+    "fiscal_year_end", "positioning_sources", "native_languages", "terminology", "source_classes",
+    "datasets", "actors", "domains", "custom_miners", "transmission_edges_seed", "policy_eras")
+
+
+def as_dict() -> dict[str, Any]:
+    """The pack as a plain mapping: the framework fields plus everything the framework has no
+    slot for, carried beside them so nothing is silently dropped."""
+    return {
+        "code": CODE, "name": NAME, "region_command": REGION_COMMAND, "currency": CURRENCY,
+        "jurisdictions": JURISDICTIONS, "currencies": CURRENCIES,
+        "fiscal_year_ends": FISCAL_YEAR_ENDS, "central_banks": CENTRAL_BANKS,
+        "executable_instruments": EXECUTABLE_INSTRUMENTS, "central_bank": CENTRAL_BANK,
+        "fixing_conventions": FIXING_CONVENTIONS,
+        "settlement_conventions": SETTLEMENT_CONVENTIONS, "exchanges": EXCHANGES,
+        "release_classes": RELEASE_CLASSES, "session_windows": SESSION_WINDOWS,
+        "holidays_rule": HOLIDAYS_RULE, "fiscal_year_end": FISCAL_YEAR_END,
+        "positioning_sources": POSITIONING_SOURCES, "native_languages": NATIVE_LANGUAGES,
+        "terminology": TERMINOLOGY, "source_classes": SOURCE_CLASSES,
+        "source_layers": SOURCE_LAYERS, "layer_absences": LAYER_ABSENCES,
+        "no_lawful_ground": NO_LAWFUL_GROUND,
+        "layer_terms": layer_terms(), "source_layer_coverage": source_layer_coverage(),
+        "query_territories": QUERY_TERRITORIES, "script_coverage": script_coverage(),
+        "datasets": DATASETS, "actors": ACTORS, "domains": DOMAINS,
+        "cells": CELLS, "interactions": INTERACTIONS,
+        "custom_miners": CUSTOM_MINERS, "miner_domains": MINER_DOMAINS,
+        "transmission_edges_seed": TRANSMISSION_EDGES_SEED, "policy_eras": POLICY_ERAS,
+        "transmission_targets": TRANSMISSION_TARGETS, "access_constraints": ACCESS_CONSTRAINTS,
+        "region_desk": REGION_DESK, "forest": FOREST, "cot_currency": COT_CURRENCY,
+        "export_economy": EXPORT_ECONOMY, "retail_leverage_regime": RETAIL_LEVERAGE_REGIME,
+        "institutional_flow_sources": INSTITUTIONAL_FLOW_SOURCES, "series": SERIES,
+        "mission": MISSION, "new_year_week": new_year_week(2025),
+    }
+
+
+def _source_line(sc: Mapping[str, Any]) -> str:
+    return (f"{sc['id']} :: layer={sc['layer']} :: {sc['label']} :: "
+            f"roots={'; '.join(sc['roots']) or 'NONE'} :: "
+            f"queries={'; '.join(sc['queries']) or 'NONE'} :: "
+            f"languages={','.join(sc['languages']) or 'NONE'} :: access={sc['access_label']} :: "
+            f"credibility={sc['credibility']} :: predictive={sc['predictive_state']} :: "
+            f"machine_use_allowed={sc['machine_use_allowed']} :: licence={sc['licence']}")
+
+
+def _source_row(sc: Mapping[str, Any]) -> dict[str, Any]:
+    return {"id": sc["id"], "layer": sc["layer"], "label": sc["label"], "roots": sc["roots"],
+            "languages": sc["languages"], "licence": sc["licence"], "verified": False,
+            "query_terms": sc["queries"],
+            "notes": (f"access_label={sc['access_label']} | credibility={sc['credibility']} | "
+                      f"predictive_state={sc['predictive_state']} | "
+                      f"machine_use_allowed={sc['machine_use_allowed']} | {sc['notes']}")}
+
+
+def _holiday_rule_row() -> dict[str, Any]:
+    """The framework's HolidayRule shape: every closed date the rule produces for 2024-2026."""
+    dates = sorted({d.isoformat() for y in HOLIDAYS_RULE["years"] for d in market_holidays(y)})
+    return {"dates": tuple(dates),
+            "fixed_md": tuple(f"{m:02d}-{d:02d}" for m, d, _ in FIXED_GENERAL),
+            "weekly_closed": (5, 6), "notes": HOLIDAYS_RULE["authority"]}
+
+
+def lab_kwargs() -> dict[str, Any]:
+    """The keyword set `country_lab.CountryPack` is built from, in the shapes its coercion reads
+    best: sources as rows AND as tagged lines, positioning and miners as strings, the holiday
+    rule as dates, absent layers as a mapping."""
+    data = as_dict()
+    real = [s for s in SOURCE_CLASSES if not str(s["id"]).startswith("absent_")]
+    data.update({
+        "code": CODE.lower(),
+        "positioning_sources": tuple(str(p["name"]) for p in POSITIONING_SOURCES),
+        "custom_miners": tuple(str(m["entry"]) for m in CUSTOM_MINERS),
+        "source_classes": tuple(_source_line(s) for s in real),
+        "sources": tuple(_source_row(s) for s in real),
+        "absent_layers": dict(LAYER_ABSENCES),
+        "holidays_rule": _holiday_rule_row(),
+    })
+    return data
+
+
+def pack() -> Any:
+    """`country_lab.CountryPack` when the framework is present, else the mapping. Imported
+    lazily so this department stays importable on a tree where the framework is not."""
+    data = lab_kwargs()
+    try:
+        from libs.research import country_lab
+    except ImportError:
+        return data
+    cls = getattr(country_lab, "CountryPack", None)
+    if cls is None:
+        return data
+    try:
+        import dataclasses
+        names = {f.name for f in dataclasses.fields(cls)}
+    except Exception:
+        names = set(_PACK_FIELDS)
+    try:
+        return cls(**{k: v for k, v in data.items() if k in names})
+    except (TypeError, ValueError):
+        return data
+
+
+# --------------------------------------------------------------- the department's own miners
+#: Every `CUSTOM_MINERS` entry points at one of these. They are PURE PYTHON -- no network, no
+#: LLM, no heavy import -- and they read only this pack's own tables, so `mine()` can run them
+#: inside any budget and a test can call them with no fixtures at all.
+def mine_regional_calendar(pack_obj: Any = None, ctx: Any = None) -> dict[str, Any]:
+    """MK-K: the mid-April block and the shared Theravada closures, counted by how many of the
+    three jurisdictions each one actually stops. The COUNT is the measurement -- a day that
+    closes three countries is a different object from a day that closes one."""
+    rows: list[dict[str, Any]] = []
+    for year in HOLIDAYS_RULE["years"]:
+        y = int(year)
+        week = new_year_week(y)
+        shared = [{"date": d.isoformat(), "name": n,
+                   "jurisdictions_closed": jurisdictions_closed(n),
+                   "n_closed": len(jurisdictions_closed(n))}
+                  for d, n in national_holidays(y).items()
+                  if len(jurisdictions_closed(n)) >= 2]
+        rows.append({"year": y, "new_year_week": week,
+                     "n_shared_closures": len(shared), "shared": tuple(shared),
+                     "symbols": ("USDTHB", "COTTON", "USDSGD")})
+    return {"miner": "mekong_regional_calendar", "domain_ids": ("MK-K",), "rows": tuple(rows),
+            "n": len(rows), "symbols": ("USDTHB", "COTTON", "USDSGD"),
+            "control": "a SINGLE-COUNTRY closure elsewhere in the year as the placebo, and the "
+                       "Thai leg measured alone by the `th` pack"}
+
+
+def mine_two_rate_regimes(pack_obj: Any = None, ctx: Any = None) -> dict[str, Any]:
+    """MK-C / MK-I / MK-E: three currency regimes in one region, as the state buckets a cell
+    conditions on. No data is fetched: the buckets are the pack's own measured regimes and the
+    dollarised arm is the control the other two are read against."""
+    probes = ((1.0, 1.02), (1.0, 1.12), (1.0, 1.45), (1.0, 2.40))
+    rows = [dict(parallel_spread(o, p), probe=f"{o}->{p}") for o, p in probes]
+    rows += [dict(dollarisation_state(s), probe=f"dollarisation={s}")
+             for s in (0.25, 0.55, 0.78, 0.92)]
+    return {"miner": "mekong_two_rate_regimes", "domain_ids": ("MK-C", "MK-I", "MK-E"),
+            "rows": tuple(rows), "n": len(rows), "symbols": ("USDTHB", "USDCNH", "XAUUSD"),
+            "prior": "the honest prior is NO measurable effect on any executable leg from "
+                     "currencies the desk cannot trade; a positive result would be the surprise",
+            "control": "Cambodia as the dollarised arm and Vietnam as the managed-rate arm, "
+                       "over the same external shocks"}
+
+
+def mine_hydro_constraint(pack_obj: Any = None, ctx: Any = None) -> dict[str, Any]:
+    """MK-H / MK-A: the drought-tail buckets that bound Lao generation, with the Thai gas-burn
+    substitution named on every row. The asymmetry is carried rather than assumed away."""
+    rows = [dict(hydro_bound(r), probe=r) for r in (0.40, 0.65, 1.00, 1.35, 1.80)]
+    return {"miner": "mekong_hydro_constraint", "domain_ids": ("MK-H", "MK-A"),
+            "rows": tuple(rows), "n": len(rows), "symbols": ("USDTHB", "XNGUSD", "USDCNH"),
+            "control": "the Thai system's own gas burn over the same weeks, which must move the "
+                       "OPPOSITE WAY for the substitution mechanism to be real"}
+
+
+def mine_regime_boundaries(pack_obj: Any = None, ctx: Any = None) -> dict[str, Any]:
+    """MK-B / MK-F / MK-J: the dated boundaries that make a pooled Mekong study invalid,
+    including the 2021 MEASUREMENT break -- the date Myanmar's own statistics stop -- and the
+    SCHEDULED forward boundary at the Lao amortisation wall."""
+    rows = [{"era": str(e["name"]), "start": str(e["start"]), "end": str(e["end"]),
+             "status": str(e["status"]), "markers": tuple(e["markers"]),
+             "invalidates": str(e["why_it_matters"])} for e in POLICY_ERAS]
+    return {"miner": "mekong_regime_boundaries", "domain_ids": ("MK-B", "MK-F", "MK-J"),
+            "rows": tuple(rows), "n": len(rows), "symbols": ("USDTHB", "USDCNH", "COTTON"),
+            "control": "the pandemic window, which contains both the EBA event and the railway "
+                       "opening and is the built-in confound every era study here must beat"}
+
+
+def mine_measured_absences(pack_obj: Any = None, ctx: Any = None) -> dict[str, Any]:
+    """MK-L and the map: the per-jurisdiction gaps with their lawful substitutes, plus this
+    pack's own edges and sibling interactions as HYPOTHESIS rows. A MEASURED REFUSAL IS A
+    DISCOVERY -- a named hole with a named substitute is worth more than a padded row."""
+    rows: list[dict[str, Any]] = [
+        {"kind": "gap", "id": f"{g['jurisdiction']}:{g['layer']}",
+         "jurisdiction": g["jurisdiction"], "layer": g["layer"],
+         "reason": g["reason"], "substitute": g["substitute"]}
+        for g in NO_LAWFUL_GROUND]
+    rows += [{"kind": "edge", "id": str(e["id"]), "targets": tuple(e["targets"]),
+              "evidence": str(e["evidence"]), "falsifier": str(e["falsifier"]),
+              "control": str(e["control"])} for e in TRANSMISSION_EDGES_SEED]
+    rows += [{"kind": "interaction", "id": f"MK-X:{r['with']}", "targets": tuple(r["targets"]),
+              "evidence": "HYPOTHESIS", "falsifier": str(r["control"]),
+              "control": str(r["control"])} for r in INTERACTIONS]
+    return {"miner": "mekong_measured_absences",
+            "domain_ids": ("MK-L", "MK-D", "MK-G", "MK-M"),
+            "rows": tuple(rows), "n": len(rows),
+            "gaps_by_jurisdiction": {j: len(jurisdiction_gaps(j)) for j in JURISDICTIONS},
+            "control": "every row is HYPOTHESIS until the gauntlet says otherwise, and every "
+                       "gap row names the lawful substitute rather than leaving a blank"}
+
+
+#: name -> callable, so the two registrations (CUSTOM_MINERS and this) are ONE set and a test
+#: can assert it rather than trusting it.
+MINERS: dict[str, Any] = {
+    "mine_regional_calendar": mine_regional_calendar,
+    "mine_two_rate_regimes": mine_two_rate_regimes,
+    "mine_hydro_constraint": mine_hydro_constraint,
+    "mine_regime_boundaries": mine_regime_boundaries,
+    "mine_measured_absences": mine_measured_absences,
+}
+
+
+def mine(ctx: Any = None) -> dict[str, Any]:
+    """THE DEPARTMENT ENTRY. Runs this pack's own miners over its own tables and returns the
+    report; when a department Ctx is given it emits each row through `ctx.record` as well.
+
+    Pure Python: no network, no LLM, no heavy import. `unmeasured` is a first-class part of the
+    answer -- a thing this pack knows it cannot see is a measurement and never a blank (L1.28a),
+    and for three frontier economies that list is long and is the most useful thing here.
+    """
+    rows: list[dict[str, Any]] = []
+    for name, fn in MINERS.items():
+        got = fn(None, ctx)
+        rows.append({"miner": name, "n": int(got.get("n", 0)),
+                     "domain_ids": tuple(got.get("domain_ids", ()))})
+        record = getattr(ctx, "record", None) if ctx is not None else None
+        if callable(record):
+            record(got)
+    unmeasured = [str(c["constraint"]) for c in ACCESS_CONSTRAINTS]
+    unmeasured += [f"{g['jurisdiction']}/{g['layer']}: {g['reason'][:60]}"
+                   for g in NO_LAWFUL_GROUND]
+    return {"code": CODE, "at": datetime.now(tz=UTC).date().isoformat(), "emitted": len(rows),
+            "cells_emitted": len(cells()), "rows": tuple(rows),
+            "unmeasured": tuple(unmeasured),
+            "jurisdictions": JURISDICTIONS,
+            "layers": source_layer_coverage()["n_layers_covered"],
+            "interactions": tuple(str(r["with"]) for r in INTERACTIONS),
+            "note": "pure-python department pass over this pack's own tables; every row is a "
+                    "HYPOTHESIS for the one gauntlet and nothing here is a measurement"}

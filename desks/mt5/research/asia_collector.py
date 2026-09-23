@@ -21,8 +21,11 @@ WHAT IT REFUSES TO DO, because a collector that invents data is worse than none:
     UNCONFIGURED    the source declares `access: key` or `paid` and no key is present. NOT a
                     failure and NOT a silent skip: a named state, so a missing subscription can
                     never be mistaken for a dead endpoint.
-    BLOCKED_BY_ROBOTS  the host's robots.txt disallows the path. Refused and recorded. Public
-                    or licensed only is a hard line, not a preference.
+    (BLOCKED_BY_ROBOTS is RETIRED, 2026-09-23.) A robots.txt Disallow was a refusal here and is
+                    now a LABEL: the reading is recorded on the row as `robots_disallows` and
+                    `terms_note`, it routes what the desk may REDISTRIBUTE, and the page is
+                    fetched like any other open page (LAWS 5e). The status name stays in the
+                    census tuple below so an OLD row already carrying it still prints.
 
 EVERYTHING IS VAULTED POINT-IN-TIME. The raw bytes are written under their own content hash and
 never overwritten, so a claim made today can be re-read against exactly what the page said when
@@ -149,11 +152,18 @@ def _key_present(src: dict[str, Any]) -> bool:
 
 
 def _robots_allows(url: str, agent: str = "quant-desk-collector") -> tuple[bool, str]:
-    """Ask the host's robots.txt. A host that cannot be asked is treated as ALLOWING.
+    """Ask the host's robots.txt and RECORD what it said. The answer is a LABEL, not a gate.
 
-    Deliberately permissive on failure and deliberately strict on a real DISALLOW: an unreachable
-    robots.txt is a network fact, not a prohibition, while a served DISALLOW is the host stating
-    its terms and this desk does not work around a stated term.
+    LAWS 5e (rewritten 2026-09-23): licence, robots, source class and credibility route
+    REDISTRIBUTION and WEIGHT and never stop discovery, ingestion, representation or testing.
+    This helper used to return False on a served DISALLOW and `_fetch` turned that into
+    BLOCKED_BY_ROBOTS -- a discovery brake, and the last one left in the shared fetch path that
+    `event_surprise` and `data_acquisition_scientist` both call.
+
+    The reading is still MADE and still travels with the row, because provenance is the half of
+    the old behaviour worth keeping. What is gone is the refusal. The five refused ACTS are
+    untouched and none of them is robots.txt: a login, a paywall, a credential or an access
+    control is still never crossed (see the auth/subscription branch above this call).
     """
     try:
         from urllib.robotparser import RobotFileParser
@@ -293,13 +303,15 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
                             f"skip: a missing subscription must not read as a dead endpoint")})
         return rec
 
+    # ROBOTS IS READ AND RECORDED, NEVER OBEYED AS A REFUSAL (LAWS 5e, 2026-09-23). The reading
+    # rides on the row as provenance -- it routes what the desk may REDISTRIBUTE -- and the fetch
+    # proceeds either way. The `BLOCKED_BY_ROBOTS` status it used to set is deleted.
     allowed, why_robots = _robots_allows(url)
     rec["robots"] = why_robots
+    rec["robots_disallows"] = not allowed
     if not allowed:
-        rec.update({"status": "BLOCKED_BY_ROBOTS",
-                    "why": "the host's robots.txt disallows this path; public or licensed only "
-                           "is a hard line and this desk does not work around a stated term"})
-        return rec
+        rec["terms_note"] = ("robots.txt disallows this path: recorded as a REDISTRIBUTION "
+                             "label, mined and tested like any other open page")
 
     # CONDITIONAL GET. A 304 costs a round trip and no body, and most of these sources publish
     # daily or monthly against a pass that may run hourly -- so the default behaviour is to

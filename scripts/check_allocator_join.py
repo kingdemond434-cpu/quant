@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -54,6 +55,16 @@ def _book_key(row: dict, book: dict) -> str | None:
     name = str(row.get("name") or "")
     if name in book:
         return name
+    # THE VERSION SUFFIX (2026-09-23): the live rows are `gold_afternoon_v2/_v3/_v4` and the
+    # allocator prices `gold_afternoon`. Same sleeve, same window, re-versioned row -- so the
+    # join emptied on a suffix and this fence measured 0/7. Mirrors `gateway._book_key` exactly.
+    base = re.sub(r"_v\d+$", "", name)
+    if base != name:
+        if base in book:
+            return base
+        folded_base = {k.lower(): k for k in book}
+        if base.lower() in folded_base:
+            return folded_base[base.lower()]
     sym = str(row.get("symbol") or "").upper()
     fam = str(row.get("family") or "")
     sel = str(row.get("selector") or "")

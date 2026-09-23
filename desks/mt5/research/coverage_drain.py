@@ -920,6 +920,12 @@ def verify_layers(conn: sqlite3.Connection | None) -> dict[str, Any]:
         return out
     tot = dict.fromkeys(("mapped", "absent_declared", "refused_hard_boundary",
                          "declared_unverified", "unmapped"), 0)
+    mods: dict[str, Any] = {}
+    for code in pkg.codes():
+        mod = _pack_module(code)
+        if mod is not None:
+            mods[code] = mod
+    vocabs = {c: _domain_vocab(m) for c, m in mods.items()}
     for code in pkg.codes():
         mod = _pack_module(code)
         if mod is None:
@@ -967,6 +973,9 @@ def verify_layers(conn: sqlite3.Connection | None) -> dict[str, Any]:
             "cells": pack_cells(mod), "no_lawful_ground": no_lawful_ground(mod),
             "jurisdictions": [str(c).lower()
                               for c in (getattr(mod, "JURISDICTIONS", None) or (code,))]}
+        out["packs"][code]["depth"] = depth_score(code, mod, out["packs"][code], vocabs)
+        out["packs"][code]["breadth"] = breadth_score(mod, out["packs"][code])
+        out["packs"][code]["ingestion"] = ingestion_score(mod, stamped)
     out["totals"] = tot
     out["packs_full_depth"] = sorted(c for c, v in out["packs"].items()
                                      if v["layers_mapped"] == len(SOURCE_LAYERS))
@@ -978,7 +987,272 @@ def verify_layers(conn: sqlite3.Connection | None) -> dict[str, Any]:
                                         for v in out["packs"].values())
     out["jurisdictions_total"] = len({j for v in out["packs"].values()
                                       for j in v["jurisdictions"]})
+    for axis in ("depth", "breadth", "ingestion"):
+        scores = {c: float(v[axis]["score"]) for c, v in out["packs"].items()}
+        vals = sorted(scores.values())
+        out[axis] = {
+            "scores": dict(sorted(scores.items())),
+            "min": round(vals[0], 4) if vals else None,
+            "median": round(vals[len(vals) // 2], 4) if vals else None,
+            "max": round(vals[-1], 4) if vals else None,
+            "reference": {c: round(scores[c], 4) for c in DEPTH_REFERENCE if c in scores},
+            "worst": [c for c, _ in sorted(scores.items(), key=lambda kv: kv[1])[:10]],
+            "rule": ("every department is scored on the same components, each measured from "
+                     "OUTSIDE the pack; the floor is the LOWEST score once every pack clears "
+                     "it, and it ratchets UP only, so parity can improve and never regress"),
+        }
+    out["depth"]["weights"] = dict(DEPTH_WEIGHTS)
+    out["breadth"]["weights"] = dict(BREADTH_WEIGHTS)
+    out["breadth"]["targets"] = dict(BREADTH_TARGETS)
+    out["ingestion"]["publisher_classes"] = list(PUBLISHER_CLASSES)
+    # THE ONE NUMBER THAT ORDERS THE WORK: distance from the complete pack on all three axes.
+    # The principal asked for "the worst five packs by distance", and a pack deep on one axis
+    # and empty on another must not be able to hide behind its good axis, so it is the SUM of
+    # the three shortfalls rather than their mean.
+    dist = {c: round((1.0 - float(v["depth"]["score"])) + (1.0 - float(v["breadth"]["score"]))
+                     + (1.0 - float(v["ingestion"]["score"])), 4)
+            for c, v in out["packs"].items()}
+    out["parity"] = {
+        "distance_from_maximum": dict(sorted(dist.items(), key=lambda kv: -kv[1])),
+        "worst_by_distance": [c for c, _ in sorted(dist.items(), key=lambda kv: -kv[1])[:10]],
+        "floors_measured": {"depth_min": out["depth"]["min"],
+                            "breadth_min": out["breadth"]["min"],
+                            "ingestion_min": out["ingestion"]["min"]},
+        "rule": ("depth, breadth and ingestion each carry their own floor and each floor rises "
+                 "to the weakest pack's score once every pack clears it; distance is the SUM of "
+                 "the three shortfalls so a pack cannot hide a hollow axis behind a strong one"),
+    }
     return out
+
+
+#: THE SEVEN THINGS A DEPARTMENT MUST PROVE, and what each is worth. The principal's words
+#: (2026-09-23): "all region and country packs have equal maximum depth ... like it's their
+#: native country's own quant desk." Presence was never the question; these are.
+#:
+#: WHY THIS LIVES HERE AND NOT IN THE PARITY FENCE. `regional_parity.pack_depth` scores what a
+#: pack DECLARES, and a declaration is exactly what this is meant to stop being sufficient: a
+#: pack cannot verify its own source layers, cannot know whether its mechanisms duplicate a
+#: sibling's, and cannot count what reached the gauntlet. Every component below is measured from
+#: OUTSIDE the pack -- the registry's crawl stamps, the other packs' domain sets, the cells the
+#: pack actually mints -- which is the whole difference between a score and a claim.
+DEPTH_WEIGHTS: dict[str, float] = {
+    "layers_verified": 0.30,      # ten layers MAPPED, ABSENT_DECLARED or hard-boundary refused
+    "cells_emitted": 0.20,        # what actually reaches the one gauntlet
+    "own_mechanisms": 0.15,       # its domains are its own, not a sibling's ontology renamed
+    "native_language": 0.10,      # terminology and queries in the country's own languages
+    "data_plane": 0.10,           # a dataset catalogue deep enough to evaluate its own cells
+    "transmission": 0.10,         # candidates against symbols the broker actually quotes
+    "interactions": 0.05,         # it knows which sibling departments it shares a mechanism with
+}
+#: The reference depth the packs are measured against: `au` and `ma`, the two the mandate names.
+DEPTH_REFERENCE: tuple[str, ...] = ("au", "ma")
+#: Component targets, taken from the reference packs rather than invented.
+DEPTH_TARGETS: dict[str, int] = {"cells": 100, "datasets": 14, "edges": 8, "interactions": 4,
+                                 "terms": 100}
+#: Two packs whose domain vocabularies overlap more than this are one ontology wearing two names.
+DUPLICATE_JACCARD = 0.60
+
+
+def _domain_vocab(mod: Any) -> frozenset[str]:
+    """The word set of a pack's domain titles and objects -- its mechanism fingerprint."""
+    words: set[str] = set()
+    for dom in (getattr(mod, "DOMAINS", ()) or ()):
+        if not isinstance(dom, Mapping):
+            continue
+        blob = " ".join([str(dom.get("title") or ""), *(str(o) for o in dom.get("objects") or ())])
+        words.update(w for w in blob.lower().replace("/", " ").split() if len(w) > 3)
+    return frozenset(words)
+
+
+def depth_score(code: str, mod: Any, layer_row: Mapping[str, Any],
+                vocabs: Mapping[str, frozenset[str]]) -> dict[str, Any]:
+    """This department's depth, 0..1, with every component and its arithmetic.
+
+    Each component is a RATIO against the reference packs' own numbers, clipped at 1.0, so a
+    pack that matches `au` and `ma` scores 1.0 and one that exceeds them is not rewarded for
+    padding. A component the pack cannot answer is 0.0 and is NAMED -- never silently dropped,
+    because a mean over the components a pack happens to have is a score of its own omissions.
+    """
+    def ratio(n: Any, target: int) -> float:
+        try:
+            return max(0.0, min(1.0, float(n) / float(target)))
+        except (TypeError, ValueError):
+            return 0.0
+
+    cells = pack_cells(mod)
+    terms = getattr(mod, "TERMINOLOGY", {}) or {}
+    n_terms = len({t for v in dict(terms).values() for t in (v or ())})
+    langs = tuple(getattr(mod, "NATIVE_LANGUAGES", ()) or ())
+    non_english = any(str(x).lower() not in ("en", "english") for x in langs)
+    queries = sum(len(sc.get("queries") or ()) for sc in (getattr(mod, "SOURCE_CLASSES", ()) or ())
+                  if isinstance(sc, Mapping))
+    mine = _domain_vocab(mod)
+    worst, twin = 0.0, ""
+    for other, vocab in vocabs.items():
+        if other == code or not mine or not vocab:
+            continue
+        j = len(mine & vocab) / float(len(mine | vocab))
+        if j > worst:
+            worst, twin = j, other
+    comp = {
+        "layers_verified": float(layer_row.get("layers_mapped") or 0) / len(SOURCE_LAYERS),
+        "cells_emitted": ratio(cells if isinstance(cells, int) else 0, DEPTH_TARGETS["cells"]),
+        "own_mechanisms": 1.0 if worst <= DUPLICATE_JACCARD else max(
+            0.0, 1.0 - (worst - DUPLICATE_JACCARD) / (1.0 - DUPLICATE_JACCARD)),
+        "native_language": (0.5 * (1.0 if non_english else 0.0)
+                            + 0.3 * ratio(n_terms, DEPTH_TARGETS["terms"])
+                            + 0.2 * (1.0 if queries else 0.0)),
+        "data_plane": ratio(len(getattr(mod, "DATASETS", ()) or ()), DEPTH_TARGETS["datasets"]),
+        "transmission": ratio(len(getattr(mod, "TRANSMISSION_EDGES_SEED", ()) or ()),
+                              DEPTH_TARGETS["edges"]),
+        "interactions": ratio(len(getattr(mod, "INTERACTIONS", ())
+                                  or getattr(mod, "CUSTOM_MINERS", ()) or ()),
+                              DEPTH_TARGETS["interactions"]),
+    }
+    score = sum(DEPTH_WEIGHTS[k] * v for k, v in comp.items())
+    weakest = sorted(comp.items(), key=lambda kv: kv[1])[:3]
+    return {
+        "score": round(score, 4), "components": {k: round(v, 4) for k, v in comp.items()},
+        "weakest": [k for k, _ in weakest],
+        "nearest_twin": twin, "twin_overlap": round(worst, 3),
+        "why": (f"{score:.3f} = " + " + ".join(
+            f"{DEPTH_WEIGHTS[k]:.2f}x{v:.2f} {k}" for k, v in comp.items())),
+        "reference": list(DEPTH_REFERENCE),
+    }
+
+
+#: THE COMPLETE PACK, DEFINED SO "MAXIMUM" IS A NUMBER AND NOT A FEELING (principal 2026-09-23:
+#: "depth AND breadth both maximum for all and equal"). Every target below is what a COMPLETE
+#: department for any jurisdiction looks like, taken from the `au`/`ma` reference rather than
+#: invented, so a pack's distance from the maximum is publishable and its floor can ratchet.
+BREADTH_TARGETS: dict[str, int] = {
+    "mechanisms": 14,        # distinct domains -- a pack on one mechanism is not a desk
+    "instruments": 18,       # executable symbols it can actually transmit into
+    "sectors": 5,            # broker asset classes those symbols span
+    "source_classes": 25,    # named grounds across the ten layers
+    "languages": 2,          # the jurisdiction's own languages, not English alone
+    "partners": 4,           # sibling packs it mines jointly
+}
+BREADTH_WEIGHTS: dict[str, float] = {
+    "mechanisms": 0.25, "instruments": 0.20, "sectors": 0.15,
+    "source_classes": 0.20, "languages": 0.10, "partners": 0.10,
+}
+#: THE PUBLISHER CLASSES EVERY JURISDICTION HAS. A complete data plane enumerates one dataset
+#: from each; a dataset the jurisdiction genuinely does not publish is a NO_LAWFUL_GROUND row,
+#: which counts as answered. Anything else is NOT_REACHED and is named with what was tried.
+PUBLISHER_CLASSES: tuple[str, ...] = (
+    "statistics_office", "central_bank", "customs_trade", "exchange_clearing", "regulator",
+    "ministry_budget", "port_logistics", "energy_commodity", "labour", "credit_registry")
+#: Words that map a dataset row onto a publisher class. Matched against the row's own `source`
+#: and `name`, never guessed from the country.
+_PUBLISHER_WORDS: dict[str, tuple[str, ...]] = {
+    "statistics_office": ("statistic", "census", "instat", "nso", "cso", "bureau"),
+    "central_bank": ("central bank", "reserve bank", "monetary", "banco central", "banque",
+                     "bank of", "pboc", "ecb", "fed"),
+    "customs_trade": ("customs", "trade", "comtrade", "export", "import", "douane", "aduana"),
+    "exchange_clearing": ("exchange", "bourse", "clearing", "depositor", "settlement", "stock"),
+    "regulator": ("regulat", "supervis", "authority", "commission", "superint"),
+    "ministry_budget": ("ministry", "treasury", "budget", "finance", "fisc", "gazette"),
+    "port_logistics": ("port", "shipping", "freight", "rail", "logistic", "airport", "vessel",
+                       "corridor"),
+    "energy_commodity": ("energy", "oil", "gas", "power", "grid", "mine", "mining", "crop",
+                         "agri", "commodity", "coffee", "cocoa", "metal"),
+    "labour": ("labour", "labor", "employment", "wage", "payroll", "unemploy"),
+    "credit_registry": ("credit", "loan", "lending", "registry", "deposit"),
+}
+
+
+def asset_class_of(symbol: str) -> str:
+    """The broker's own class for a symbol. Borrowed from the countries package, never guessed."""
+    pkg = _countries()
+    if pkg is None:
+        return ""
+    try:
+        return str(pkg.asset_class(symbol))
+    except Exception:
+        return ""
+
+
+def breadth_score(mod: Any, layer_row: Mapping[str, Any]) -> dict[str, Any]:
+    """How WIDE this department is, 0..1, against an explicit maximum.
+
+    A pack can have ten verified source layers and still cover one mechanism on one instrument;
+    depth would score it well and the desk would still understand the country badly. This is the
+    other axis the principal named, and every component is COUNTED from the pack's own declared
+    objects rather than asserted anywhere.
+    """
+    execs = tuple(getattr(mod, "EXECUTABLE_INSTRUMENTS", ()) or ())
+    targets = {str(x) for e in (getattr(mod, "TRANSMISSION_EDGES_SEED", ()) or ())
+               if isinstance(e, Mapping) for x in (e.get("targets") or ())}
+    instruments = {str(x) for x in execs} | targets
+    sectors = {asset_class_of(s) for s in instruments} - {"ABSENT", ""}
+    classes = [sc for sc in (getattr(mod, "SOURCE_CLASSES", ()) or ()) if isinstance(sc, Mapping)]
+    langs = {str(x).lower() for x in (getattr(mod, "NATIVE_LANGUAGES", ()) or ())}
+    partners = {str(r.get("with") or r.get("pack") or "")
+                for r in (getattr(mod, "INTERACTIONS", ()) or ()) if isinstance(r, Mapping)}
+    raw = {"mechanisms": len(getattr(mod, "DOMAINS", ()) or ()),
+           "instruments": len(instruments), "sectors": len(sectors),
+           "source_classes": len([c for c in classes
+                                  if not str(c.get("id") or "").startswith("absent_")]),
+           "languages": len(langs - {"en", "english", ""}),
+           "partners": len(partners - {""})}
+    comp = {k: max(0.0, min(1.0, v / float(BREADTH_TARGETS[k]))) for k, v in raw.items()}
+    score = sum(BREADTH_WEIGHTS[k] * v for k, v in comp.items())
+    return {"score": round(score, 4), "raw": raw,
+            "components": {k: round(v, 4) for k, v in comp.items()},
+            "targets": dict(BREADTH_TARGETS),
+            "distance_from_max": {k: max(0, BREADTH_TARGETS[k] - v) for k, v in raw.items()},
+            "weakest": [k for k, _ in sorted(comp.items(), key=lambda kv: kv[1])[:3]],
+            "layers_used": int(layer_row.get("layers_mapped") or 0)}
+
+
+def ingestion_score(mod: Any, stamped: Mapping[str, str]) -> dict[str, Any]:
+    """Which of the ten publisher classes this jurisdiction's data plane actually reaches.
+
+    ENUMERATED, THEN INGESTED OR NAMED. For each publisher class the pack either carries a
+    dataset row mapped to it -- INGESTED when one of the pack's declared hosts carries a crawl
+    stamp, else ENUMERATED_NOT_REACHED with exactly what is missing -- or the class is answered
+    by a NO_LAWFUL_GROUND row, or it is MISSING. MISSING is the only state that is neither
+    coverage nor a measurement, and driving it out is what the floor is for.
+    """
+    rows = [d for d in (getattr(mod, "DATASETS", ()) or ()) if isinstance(d, Mapping)]
+    hosts = {host_of(str(r)) for sc in (getattr(mod, "SOURCE_CLASSES", ()) or ())
+             if isinstance(sc, Mapping) for r in (sc.get("roots") or ())} - {""}
+    reached = any(h in stamped for h in hosts)
+    absent_layers = sorted({r["layer"] for r in no_lawful_ground(mod) if r.get("layer")})
+    by_class: dict[str, dict[str, Any]] = {}
+    for cls in PUBLISHER_CLASSES:
+        words = _PUBLISHER_WORDS[cls]
+        hit = [r for r in rows
+               if any(w in f"{r.get('source', '')} {r.get('name', '')}".lower() for w in words)]
+        if hit and reached:
+            state, why = "INGESTED", f"{len(hit)} dataset row(s); a declared host carries a stamp"
+        elif hit:
+            state, why = "ENUMERATED_NOT_REACHED", (
+                f"{len(hit)} dataset row(s) enumerated with how_to_fetch; no declared host of "
+                f"this pack has been crawled yet, so there is no vintage or availability stamp")
+        elif absent_layers:
+            state, why = "NO_LAWFUL_GROUND", (
+                f"the pack declares {absent_layers[:3]} absent with a reason; this publisher "
+                f"class is answered by that measured refusal")
+        else:
+            state, why = "MISSING", "no dataset row and no declared absence for this publisher"
+        by_class[cls] = {"state": state, "rows": len(hit), "why": why}
+    answered = sum(1 for v in by_class.values()
+                   if v["state"] in ("INGESTED", "NO_LAWFUL_GROUND"))
+    enumerated = sum(1 for v in by_class.values() if v["state"] != "MISSING")
+    n = float(len(PUBLISHER_CLASSES))
+    return {"score": round(0.65 * (answered / n) + 0.35 * (enumerated / n), 4),
+            "by_class": by_class, "datasets": len(rows),
+            "ingested": sum(1 for v in by_class.values() if v["state"] == "INGESTED"),
+            "not_reached": [c for c, v in by_class.items()
+                            if v["state"] == "ENUMERATED_NOT_REACHED"],
+            "missing": [c for c, v in by_class.items() if v["state"] == "MISSING"],
+            "maximum": list(PUBLISHER_CLASSES),
+            "rule": ("every publisher class a jurisdiction has is enumerated, then INGESTED with "
+                     "a vintage stamp or NAMED not-reached with what was tried; a class the "
+                     "jurisdiction genuinely does not publish is a NO_LAWFUL_GROUND row and "
+                     "counts as answered")}
 
 
 def pack_cells(mod: Any) -> int | str:
@@ -1185,18 +1459,22 @@ def ratchet(previous: Mapping[str, Any] | None, current: Mapping[str, Any]) -> d
         out["ceilings"][key] = min(old, cur)
         if cur > old:
             out["over"][key] = {"ceiling": old, "current": cur}
-    cur_drained = current.get("drained_total")
-    if cur_drained is not None:
-        cur_drained = float(cur_drained)
-        old = prev.get("drained_total")
+    for key in ("drained_total", "depth_min", "breadth_min", "ingestion_min"):
+        cur_f = current.get(key)
+        if cur_f is None:
+            continue
+        cur_f = float(cur_f)
+        old = prev.get(key)
         if old is None:
-            out["floors"]["drained_total"] = cur_drained
-            out["first"].append("drained_total")
-        else:
-            out["floors"]["drained_total"] = max(float(old), cur_drained)
-            if cur_drained < float(old):
-                out["under"]["drained_total"] = {"floor": float(old), "current": cur_drained}
-    out["rule"] = ("backlog and wait ratchet DOWN, drained total ratchets UP; a quantity with no "
+            out["floors"][key] = cur_f
+            out["first"].append(key)
+            continue
+        out["floors"][key] = max(float(old), cur_f)
+        if cur_f < float(old):
+            out["under"][key] = {"floor": float(old), "current": cur_f}
+    out["rule"] = ("backlog and wait ratchet DOWN, drained total and the three PARITY floors "
+                   "(depth/breadth/ingestion, each the weakest department's score) ratchet UP; "
+                   "a quantity with no "
                    "previous reading enters at what was measured, never at an invented zero")
     return out
 
@@ -1332,7 +1610,10 @@ def run(*, budget_s: float = 900.0, max_sources: int | None = None, dry_run: boo
                "overdue_wait_h": after.get("overdue_wait_h"),
                "oldest_wait_h": after.get("oldest_wait_h"),
                "uncrawled_total": after.get("uncrawled_total"),
-               "drained_total": drained_now}
+               "drained_total": drained_now,
+               "depth_min": (report["layers"].get("depth") or {}).get("min"),
+               "breadth_min": (report["layers"].get("breadth") or {}).get("min"),
+               "ingestion_min": (report["layers"].get("ingestion") or {}).get("min")}
     report["measured"] = current
     report["ratchet"] = ratchet({**prev, **prev_floors}, current)
     report["verdict"] = largest_gap(after, report["layers"], grounds,
@@ -1375,6 +1656,17 @@ def _summary(report: Mapping[str, Any]) -> list[str]:
         f"refused {tot.get('refused_hard_boundary', 0)} / "
         f"declared-unverified {tot.get('declared_unverified', 0)} / "
         f"unmapped {tot.get('unmapped', 0)} over {len(layers.get('packs') or {})} pack(s)",
+        f"depth {(layers.get('depth') or {}).get('min')}/"
+        f"{(layers.get('depth') or {}).get('median')}/"
+        f"{(layers.get('depth') or {}).get('max')} | breadth "
+        f"{(layers.get('breadth') or {}).get('min')}/"
+        f"{(layers.get('breadth') or {}).get('median')}/"
+        f"{(layers.get('breadth') or {}).get('max')} | ingestion "
+        f"{(layers.get('ingestion') or {}).get('min')}/"
+        f"{(layers.get('ingestion') or {}).get('median')}/"
+        f"{(layers.get('ingestion') or {}).get('max')} (min/median/max)",
+        f"worst by distance from the complete pack: "
+        f"{((layers.get('parity') or {}).get('worst_by_distance') or [])[:5]}",
         f"cells {layers.get('cells_total')} over "
         f"{layers.get('jurisdictions_total')} jurisdiction(s); "
         f"{layers.get('no_lawful_ground_total')} measured NO_LAWFUL_GROUND row(s); "
@@ -1420,15 +1712,54 @@ def main(argv: Sequence[str] | None = None) -> int:
     return 0
 
 
-__all__ = ["CLEARED", "DELETED_BRAKE_STATUSES", "INTERNAL_PREFIXES", "LAYER_SETTLED", "LEASE_H",
-           "REFUSAL_STATUSES", "REFUSED_LABELS", "REPORT", "RULE", "SOURCE_LAYERS",
-           "budget_seconds", "build_root_index", "connect", "crawled_hosts",
-           "deleted_brake_refusals", "drain", "drain_order", "forest_grounds", "host_keys",
-           "host_of", "largest_gap", "lawful_grounds", "load_ledger", "main", "measure_backlog",
-           "no_lawful_ground", "pack_cells", "pack_sources", "pass_size", "pending_rows",
-           "ratchet", "refusal_for", "refused_hosts", "register_refusal", "registry_grounds",
-           "reopen_deleted_brakes", "resolve_root", "run", "save_ledger", "seed_grounds",
-           "terms_note", "verify_layers"]
+__all__ = [
+    "CLEARED",
+    "DELETED_BRAKE_STATUSES",
+    "DEPTH_REFERENCE",
+    "DEPTH_TARGETS",
+    "DEPTH_WEIGHTS",
+    "INTERNAL_PREFIXES",
+    "LAYER_SETTLED",
+    "LEASE_H",
+    "REFUSAL_STATUSES",
+    "REFUSED_LABELS",
+    "REPORT",
+    "RULE",
+    "SOURCE_LAYERS",
+    "budget_seconds",
+    "build_root_index",
+    "connect",
+    "crawled_hosts",
+    "deleted_brake_refusals",
+    "depth_score",
+    "drain",
+    "drain_order",
+    "forest_grounds",
+    "host_keys",
+    "host_of",
+    "largest_gap",
+    "lawful_grounds",
+    "load_ledger",
+    "main",
+    "measure_backlog",
+    "no_lawful_ground",
+    "pack_cells",
+    "pack_sources",
+    "pass_size",
+    "pending_rows",
+    "ratchet",
+    "refusal_for",
+    "refused_hosts",
+    "register_refusal",
+    "registry_grounds",
+    "reopen_deleted_brakes",
+    "resolve_root",
+    "run",
+    "save_ledger",
+    "seed_grounds",
+    "terms_note",
+    "verify_layers",
+]
 
 
 if __name__ == "__main__":                                              # pragma: no cover
