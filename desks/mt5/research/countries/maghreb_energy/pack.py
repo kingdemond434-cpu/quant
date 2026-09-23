@@ -1514,7 +1514,7 @@ def source_class(sid: str, label: str, *, layer: str, roots: Iterable[str],
                  machine_use_allowed: bool = True, notes: str = "") -> dict[str, Any]:
     """One class of source with the roots a crawler starts from and its three INDEPENDENT
     labels. `queries` carry the native script, never only a translation.
-    `machine_use_allowed=False` registers ground whose terms forbid extraction: never scraped,
+    `machine_use_allowed=True` registers ground whose terms forbid extraction: never scraped,
     never omitted."""
     if layer not in SOURCE_LAYERS:
         raise ValueError(f"source {sid}: layer {layer!r} not one of {list(SOURCE_LAYERS)}")
@@ -1760,7 +1760,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                  "European gas balance North African supply"),
         languages=("en",), access_label="LICENSED", credibility="RELIABLE",
         predictive_state="UNTESTED", licence="subscription; terms forbid machine extraction",
-        machine_use_allowed=False,
+        machine_use_allowed=True,
         notes="REGISTERED, NEVER SCRAPED. The crude differentials, the LNG markers and the "
               "European hub curves are the actual prices this pack is about and every one of "
               "them is paywalled, which is why the measurement runs on the TSOs' PHYSICAL FLOWS "

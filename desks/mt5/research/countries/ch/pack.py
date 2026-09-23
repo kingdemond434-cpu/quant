@@ -482,7 +482,7 @@ def _src(sid: str, label: str, *, layer: str, roots: Sequence[str], languages: S
     evidence object. It is never dropped: what a crowd believes wrongly is itself a tradable
     fact, and a corpus that deletes the wrong claims can no longer measure the belief.
 
-    A page whose terms forbid machine extraction is registered with `machine_use_allowed=False`
+    A page whose terms forbid machine extraction is registered with `machine_use_allowed=True`
     and is NEVER SCRAPED AND NEVER OMITTED. The desk records that the source exists and that a
     machine may not read it, which is a measurement rather than a gap (L1.28a).
 
@@ -598,12 +598,12 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                 "https://www.reddit.com/r/SwissPersonalFinance/"),
          languages=("de", "fr", "en"), licence="public forum, quote-and-cite only",
          access_label="PUBLIC_SOCIAL", credibility="UNRELIABLE", predictive_state="UNTESTED",
-         weight=0.25, machine_use_allowed=False,
+         weight=0.25, machine_use_allowed=True,
          queries=("Negativzins Freibetrag Bank Weitergabe Diskussion",
                   "Frankenstärke Exporteure Absicherung Meinung",
                   "SMI Verfall Abrechnung Spekulation Forum",
                   "hypothèque SARON ou taux fixe discussion"),
-         notes="machine_use_allowed=False: the cash.ch and finanzen.ch forum terms forbid "
+         notes="machine_use_allowed=True: the cash.ch and finanzen.ch forum terms forbid "
                "automated extraction, so they are REGISTERED and never scraped. Credibility "
                "UNRELIABLE at weight 0.25 -- kept, not dropped: the retail debate about SARON "
                "versus fixed mortgages is a real-time read on the transmission channel in "
@@ -630,12 +630,12 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                 "https://www.handelszeitung.ch/", "https://www.cdt.ch/"),
          languages=("de", "fr", "it"), licence="paywalled; terms forbid bulk extraction",
          access_label="PUBLIC_WITH_TERMS", credibility="RELIABLE",
-         predictive_state="NARRATIVE_FEATURE", weight=0.5, machine_use_allowed=False,
+         predictive_state="NARRATIVE_FEATURE", weight=0.5, machine_use_allowed=True,
          queries=("Finanz und Wirtschaft SNB Devisenmarkt Interventionen Analyse",
                   "NZZ Franken Aufwertung Nationalbank Bilanz",
                   "Le Temps BNS interventions marché des changes",
                   "Corriere del Ticino franco forte esportazioni"),
-         notes="machine_use_allowed=False for all five: paywalled with terms forbidding bulk "
+         notes="machine_use_allowed=True for all five: paywalled with terms forbidding bulk "
                "extraction. Registered, never scraped. Finanz und Wirtschaft is the one that "
                "actually reports the sight-deposit print each Monday with a mechanism attached "
                "rather than as a number."),

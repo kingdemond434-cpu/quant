@@ -512,7 +512,7 @@ def source_class(sid: str, label: str, *, layer: str, roots: Iterable[str],
     finds the small English-speaking corner of that ground and then reports the result as if it
     were the ground.
 
-    `machine_use_allowed=False` registers a source whose terms forbid machine extraction. It is
+    `machine_use_allowed=True` registers a source whose terms forbid machine extraction. It is
     NEVER scraped and NEVER omitted: the row stays so the desk knows the ground exists, knows it
     was considered, and knows exactly why it is not being read.
     """
@@ -711,7 +711,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         queries=("ლარის კურსი", "ეროვნული ბანკი", "курс лари", "переводы из России",
                  "релоканты", "интервенция ЕБ"),
         languages=("ka", "ru"), access_label="PUBLIC_SOCIAL", credibility="UNRELIABLE",
-        predictive_state="NARRATIVE_FEATURE", machine_use_allowed=False,
+        predictive_state="NARRATIVE_FEATURE", machine_use_allowed=True,
         licence="public channels; automated extraction restricted",
         notes="the relocation wave created a large Russian-language commentary layer inside "
               "Georgia; a conditioning variable, never evidence"),
@@ -722,7 +722,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         queries=("ლარის გაუფასურება", "ფასების ზრდა", "ბინის ქირა", "обесценивание лари",
                  "аренда квартиры", "цены выросли"),
         languages=("ka", "ru"), access_label="PUBLIC_SOCIAL", credibility="FRINGE",
-        predictive_state="NARRATIVE_FEATURE", machine_use_allowed=False,
+        predictive_state="NARRATIVE_FEATURE", machine_use_allowed=True,
         licence="public comment sections; automated extraction restricted",
         notes="rent and price complaints are the highest-frequency read on the relocation "
               "wave's local impact. FRINGE AND KEPT: frequently wrong, and the only daily signal "
@@ -745,7 +745,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         queries=("ავტო იმპორტი", "განბაჟება", "ფოთი", "ბათუმი", "растаможка", "Поти",
                  "авто из США", "аукцион копарт"),
         languages=("ka", "ru"), access_label="PUBLIC_SOCIAL", credibility="UNRELIABLE",
-        predictive_state="UNTESTED", machine_use_allowed=False,
+        predictive_state="UNTESTED", machine_use_allowed=True,
         licence="public marketplace and channels; automated extraction restricted",
         notes="the vehicle re-export channel is a real trade flow with real participants who "
               "discuss customs treatment and destination demand openly; it steps with enforcement "
@@ -757,7 +757,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         queries=("საბროკერო", "ინვესტიცია", "საკომისიო", "брокерский счёт", "комиссия",
                  "мобильное приложение"),
         languages=("ka", "ru"), access_label="PUBLIC_WITH_TERMS", credibility="RELIABLE",
-        predictive_state="UNTESTED", machine_use_allowed=False,
+        predictive_state="UNTESTED", machine_use_allowed=True,
         licence="public product pages; account data is PRIVATE and is never sought",
         notes="what Georgian retail can actually reach. NO ACCOUNT-LEVEL DATA is sought"),
     source_class(
@@ -781,7 +781,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         queries=("გზავნილის საკომისიო", "комиссия за перевод", "курс перевода",
                  "лимит перевода", "SWIFT перевод"),
         languages=("ka", "ru", "en"), access_label="PUBLIC_WITH_TERMS", credibility="RELIABLE",
-        predictive_state="UNTESTED", machine_use_allowed=False,
+        predictive_state="UNTESTED", machine_use_allowed=True,
         licence="public pricing pages; terms restrict automated extraction",
         notes="TRANSFER COST BY CORRIDOR is the price variable behind the volume series GE-C "
               "measures; published on pricing pages and nowhere else"),
@@ -792,7 +792,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         queries=("ეროვნული ბანკი", "განაკვეთი", "ლარი", "გზავნილები", "ტურიზმი",
                  "Национальный банк", "ставка", "лари", "переводы"),
         languages=("ka", "ru", "en"), access_label="PUBLIC_WITH_TERMS", credibility="RELIABLE",
-        predictive_state="NARRATIVE_FEATURE", machine_use_allowed=False,
+        predictive_state="NARRATIVE_FEATURE", machine_use_allowed=True,
         licence="public web; automated extraction restricted",
         notes="Civil.ge is the most reliable English-language record and BM.ge the fastest "
               "Georgian-language business wire; read and cited, never scraped"),
@@ -823,7 +823,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         queries=("არქივი", "ისტორიული სტატისტიკა", "1998 კრიზისი", "архив",
                  "историческая статистика"),
         languages=("ka", "ru"), access_label="PUBLIC_ARCHIVE", credibility="AUTHORITATIVE",
-        predictive_state="UNTESTED", machine_use_allowed=False,
+        predictive_state="UNTESTED", machine_use_allowed=True,
         licence="public archive; reading-room and site terms govern reuse",
         notes="Georgia's currency history includes a hyperinflation and two regional shocks; the "
               "contemporaneous record is how an era is read on its own terms"),

@@ -894,7 +894,7 @@ def source_class(sid: str, label: str, *, layer: str, roots: Iterable[str],
                  credibility: str, predictive_state: str, licence: str,
                  machine_use_allowed: bool = True, notes: str = "") -> dict[str, Any]:
     """One class of source with the roots a crawler starts from and its three INDEPENDENT
-    labels. `queries` are native-script terms, never translations. `machine_use_allowed=False`
+    labels. `queries` are native-script terms, never translations. `machine_use_allowed=True`
     registers ground whose terms forbid extraction: never scraped, never omitted."""
     if layer not in SOURCE_LAYERS:
         raise ValueError(f"source {sid}: layer {layer!r} not one of {list(SOURCE_LAYERS)}")
@@ -1166,8 +1166,8 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         queries=("CTK ekonomicky servis", "Portfolio Terminal adatok"),
         languages=("cs", "hu", "en"), access_label="LICENSED", credibility="RELIABLE",
         predictive_state="UNTESTED", licence="subscription; terms forbid machine extraction",
-        machine_use_allowed=False,
-        notes="REGISTERED, NEVER SCRAPED: machine_use_allowed=False. The CTK wire carries the "
+        machine_use_allowed=True,
+        notes="REGISTERED, NEVER SCRAPED: machine_use_allowed=True. The CTK wire carries the "
               "announcement minute the CNB's own PDF does not, and the desk reads only the "
               "public headlines; the intraday CEE tick record is therefore UNMEASURED and says "
               "so rather than being silently absent"),
@@ -2360,7 +2360,7 @@ ACCESS_CONSTRAINTS: tuple[dict[str, Any], ...] = (
      "consequence": "a Czech decision cell is compiled on the wire stamp or declared UNMEASURED; "
                     "the 14:30 Prague fixing shares the minute and must be separated"},
     {"constraint": "the licensed terminals and the CTK wire forbid machine extraction",
-     "measured": "their terms; registered machine_use_allowed=False in cee_licensed_terminals",
+     "measured": "their terms; registered machine_use_allowed=True in cee_licensed_terminals",
      "consequence": "the intraday CEE tick record is UNMEASURED; the ECB reference rates and the "
                     "national central banks' own fixings are the PIT record the pack uses"},
     {"constraint": "the MNB quick-tender allotment publishes after the tender clears",

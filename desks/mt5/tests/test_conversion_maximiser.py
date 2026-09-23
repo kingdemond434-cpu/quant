@@ -231,12 +231,33 @@ def test_the_debt_falls_when_rows_are_repaired(desk) -> None:
         _plant(desk["conn"], f"c_f{i}", family="range_reversion", symbol="TESTFX",
                mechanism="mean reversion after an overnight gap",
                required_data="universe/TESTFX_H1.parquet")
+    # Past the in-flight grace: these rows have already missed a turn, so they ARE debt.
+    desk["conn"].execute("UPDATE research_candidates SET created_at=?",
+                         ((datetime.now(tz=UTC) - timedelta(hours=9)).isoformat(),))
+    desk["conn"].commit()
     out = _run(desk)
     before = out["debt_before"]["total_debt"]
     after = out["debt_after"]["total_debt"]
     assert before is not None and after is not None
     assert after < before, "a pass that repairs rows must lower the measured debt"
     assert out["debt_after"]["status"] == "MEASURED"
+
+
+def test_work_in_flight_is_published_and_becomes_debt_on_the_clock(desk) -> None:
+    """The compiler mints on one leg and this organ drains on the next: a row minted minutes ago
+    is work-in-progress, not debt -- and it is counted, never netted away."""
+    fresh = _plant(desk["conn"], "c_fresh", family="range_reversion", symbol="TESTFX")
+    debt = cm.measure_debt(desk["conn"])
+    assert debt["components"]["donated_never_cell"] == 0
+    assert debt["in_flight"]["donated_never_cell"] == 1
+    assert debt["in_flight_total"] == 1
+
+    old = (datetime.now(tz=UTC) - timedelta(hours=9)).isoformat()
+    desk["conn"].execute("UPDATE research_candidates SET created_at=? WHERE id=?", (old, fresh))
+    desk["conn"].commit()
+    aged = cm.measure_debt(desk["conn"])
+    assert aged["components"]["donated_never_cell"] == 1, "a missed turn IS debt"
+    assert aged["in_flight_total"] == 0
 
 
 def test_the_debt_components_are_named_and_never_silently_zero(desk) -> None:

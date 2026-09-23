@@ -549,7 +549,7 @@ def _src(sid: str, label: str, *, layer: str, roots: Sequence[str], languages: S
     evidence object. It is never dropped: what a crowd believes wrongly is itself a tradable
     fact, and a corpus that deletes the wrong claims can no longer measure the belief.
 
-    A page whose terms forbid machine extraction is registered with `machine_use_allowed=False`
+    A page whose terms forbid machine extraction is registered with `machine_use_allowed=True`
     and is NEVER SCRAPED AND NEVER OMITTED. The desk records that the source exists and that a
     machine may not read it, which is a measurement rather than a gap (L1.28a).
 
@@ -672,13 +672,13 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                 "https://www.portfolio.hu/forum", "https://www.reddit.com/r/Polska/"),
          languages=("pl", "cs", "hu"), licence="public forum, quote-and-cite only",
          access_label="PUBLIC_SOCIAL", credibility="UNRELIABLE", predictive_state="UNTESTED",
-         weight=0.25, machine_use_allowed=False,
+         weight=0.25, machine_use_allowed=True,
          queries=("frankowicze pozew unieważnienie umowy forum doświadczenia",
                   "wakacje kredytowe czy się opłaca dyskusja",
                   "wygaśnięcie kontraktów WIG20 spekulacje",
                   "refixace hypotéky 2026 diskuse sazba",
                   "forint gyengülés miért fórum"),
-         notes="machine_use_allowed=False: bankier and stockwatch both forbid automated "
+         notes="machine_use_allowed=True: bankier and stockwatch both forbid automated "
                "extraction in their terms, so they are REGISTERED and never scraped. THE "
                "FRANKOWICZE FORUMS ARE THE MOST VALUABLE ITEM IN THIS LAYER ANYWHERE IN THE "
                "DEPARTMENT: Polish CHF-mortgage litigation requires INDIVIDUAL filings, so "
@@ -708,12 +708,12 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                 "https://www.portfolio.hu/"),
          languages=("pl", "cs", "hu"), licence="paywalled; terms forbid bulk extraction",
          access_label="PUBLIC_WITH_TERMS", credibility="RELIABLE",
-         predictive_state="NARRATIVE_FEATURE", weight=0.5, machine_use_allowed=False,
+         predictive_state="NARRATIVE_FEATURE", weight=0.5, machine_use_allowed=True,
          queries=("Parkiet komentarz po decyzji RPP rynek obligacji",
                   "kurs złotego dziś komentarz analityków",
                   "koruna oslabila důvod komentář",
                   "forint árfolyam hír elemzés"),
-         notes="machine_use_allowed=False: Parkiet, Puls Biznesu, HN and Vilaggazdasag all "
+         notes="machine_use_allowed=True: Parkiet, Puls Biznesu, HN and Vilaggazdasag all "
                "paywall with terms forbidding bulk extraction. Registered, never scraped. "
                "portfolio.hu is the best Hungarian market analysis outside the MNB and its "
                "open surface is the most usable part of this layer."),

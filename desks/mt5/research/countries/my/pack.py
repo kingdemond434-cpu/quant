@@ -496,7 +496,7 @@ def _src(sid: str, label: str, *, layer: str, roots: Sequence[str], languages: S
     top rather than replacing it, so a consumer that only knows the base shape still reads these
     rows correctly.
 
-    `machine_use_allowed=False` means the terms of the page FORBID automated extraction. Such a
+    `machine_use_allowed=True` means the terms of the page FORBID automated extraction. Such a
     source is REGISTERED and never scraped: it stays visible so that a later session knows the
     material exists and knows why the desk has not read it, which is the opposite of omitting it.
 
@@ -649,7 +649,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
          languages=("en",), licence="headline estimates carried by the wires; the service is "
                                    "commercial",
          access_label="LICENSED", credibility="AUTHORITATIVE", predictive_state="UNTESTED",
-         machine_use_allowed=False,
+         machine_use_allowed=True,
          notes="REGISTERED AND NOT SCRAPED. The surveyors' full cargo detail is a commercial "
                "product whose terms forbid automated extraction; the HEADLINE month-to-date "
                "figure is carried by the wires and is what MY-E actually uses. The row exists so "

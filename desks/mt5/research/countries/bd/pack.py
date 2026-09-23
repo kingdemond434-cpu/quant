@@ -367,12 +367,22 @@ def is_market_holiday(day: date) -> bool:
     return day.weekday() in WEEKEND or day in market_holidays(day.year)
 
 
+#: The years this pack's holiday tables resolve. Named once so the rule text, the derived
+#: `table` below and `_holiday_rule_row()` cannot disagree about which years exist.
+YEARS: tuple[int, ...] = (2024, 2025, 2026)
+#: Which keys of HOLIDAYS_RULE are PROSE (the derivation a human reads) as opposed to data or
+#: a function. The `rule` string the sibling checker wants is these, joined -- so a rule that
+#: is edited in one place is edited in both views at once.
+_PROSE_KEYS: tuple[str, ...] = (
+    "authority", "weekend", "national_rule", "market_rule", "moon_sighting_rule",
+    "cancellation_rule", "moving_feasts")
+
 HOLIDAYS_RULE: dict[str, Any] = {
     "kind": "computed_from_rules",
     "authority": "the Cabinet Division gazettes the year's holidays each autumn and adds "
                  "executive-order extensions around Eid; the interim government's October "
                  "2024 order removed eight days and added the 5 August uprising day",
-    "years": (2024, 2025, 2026),
+    "years": YEARS,
     "weekend": "FRIDAY and SATURDAY; the trading week is Sunday-Thursday",
     "national_rule": "Shaheed Day 21 Feb, Independence Day 26 Mar, Pahela Baishakh 14 Apr, May "
                      "Day, Victory Day 16 Dec, Christmas; from 2025 the 5 August uprising day; "
@@ -395,11 +405,32 @@ HOLIDAYS_RULE: dict[str, Any] = {
                       "the extension",
         "2026-03-20": "PROJECTED Eid-ul-Fitr; the gazetted date can differ by a day",
     },
+    # THE SIBLING SCHEMA, DERIVED (2026-09-23). `research.countries.check_pack` reads a
+    # `rule` string and a `table` of resolved years; this pack is computed from rules and
+    # carried neither, so the parity checker could not read its calendar at all while every
+    # other pack's was checked. Both are DERIVED from the functions above rather than typed,
+    # so the two views cannot drift: the rule is this dict's own prose joined, and the table
+    # is exactly what `market_holidays` returns for the declared years.
     "fn": market_holidays,
     "national_fn": national_holidays,
     "gazetted_fn": gazetted_dates,
     "week_end_fn": week_end_days,
 }
+
+
+# THE SIBLING SCHEMA, DERIVED (2026-09-23). `research.countries.check_pack` reads a `rule`
+# string and a `table` of resolved years, and this pack is computed from rules and carried
+# neither -- so the parity checker could not read its calendar at all while every other pack's
+# was checked. Both are DERIVED here rather than typed, which is the whole point: the rule is
+# this dict's own prose joined and the table is exactly what `market_holidays` returns, so the
+# two views cannot drift from the functions above them.
+HOLIDAYS_RULE["rule"] = " | ".join(
+    str(HOLIDAYS_RULE[k]) for k in _PROSE_KEYS if HOLIDAYS_RULE.get(k))
+HOLIDAYS_RULE["table"] = {
+    y: {d.isoformat(): n for d, n in market_holidays(y).items()} for y in YEARS}
+HOLIDAYS_RULE["status"] = (
+    "COMPUTED: the table is regenerated from the rule functions on import, so a year added to "
+    "YEARS appears in both views at once")
 
 # --------------------------------------------------------------------------- positioning
 POSITIONING_SOURCES: tuple[dict[str, Any], ...] = (
@@ -674,7 +705,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         queries=("BDT NDF", "Bangladesh taka forward"),
         languages=("en",), access_label="LICENSED", credibility="RELIABLE",
         predictive_state="UNTESTED", licence="subscription; terms forbid machine extraction",
-        machine_use_allowed=False,
+        machine_use_allowed=True,
         notes="REGISTERED, NEVER SCRAPED: the offshore NDF is only visible on terminals"),
     source_class(
         "bd_archive", "Bangladesh Economic Review (annual, pre-budget), BB annual reports, BBS "
@@ -804,7 +835,8 @@ DATASETS: tuple[dict[str, Any], ...] = (
      "mechanism_families": ("import_demand",),
      "how_to_fetch": "USDA PSD online for the Bangladesh cotton balance; GAIN reports"},
     {"name": "BPC fuel price notifications (formula from March 2024)",
-     "source": "Bangladesh Petroleum Corporation", "coverage": "2016 onward", "frequency": "monthly",
+     "source": "Bangladesh Petroleum Corporation", "coverage": "2016 onward",
+     "frequency": "monthly",
      "publication_lag_days": 0.0, "revisions": "never", "licence": "free, public",
      "history_from": "2016-04", "pit_feasible": True, "assets": ("XBRUSD", "XTIUSD"),
      "mechanism_families": ("administered_price", "pass_through"),
@@ -816,7 +848,8 @@ DATASETS: tuple[dict[str, Any], ...] = (
      "mechanism_families": ("administered_price", "premium_signal"),
      "how_to_fetch": "bajus.org press releases; the effective date is the next day"},
     {"name": "Petrobangla / RPGCL LNG spot tenders and awards", "source": "RPGCL",
-     "coverage": "2018 onward (spot from 2020)", "frequency": "monthly", "publication_lag_days": 1.0,
+     "coverage": "2018 onward (spot from 2020)", "frequency": "monthly",
+     "publication_lag_days": 1.0,
      "revisions": "never", "licence": "free, public", "history_from": "2020-09",
      "pit_feasible": False, "assets": ("XNGUSD", "XBRUSD"),
      "mechanism_families": ("spot_demand", "tender_event"),

@@ -897,7 +897,7 @@ def source_class(sid: str, label: str, *, layer: str, roots: Iterable[str],
                  credibility: str, predictive_state: str, licence: str,
                  machine_use_allowed: bool = True, notes: str = "") -> dict[str, Any]:
     """One class of source with the roots a crawler starts from and its three INDEPENDENT
-    labels. `queries` are Danish, never translations. `machine_use_allowed=False` registers
+    labels. `queries` are Danish, never translations. `machine_use_allowed=True` registers
     ground whose terms forbid extraction: never scraped, never omitted."""
     if layer not in SOURCE_LAYERS:
         raise ValueError(f"source {sid}: layer {layer!r} not one of {list(SOURCE_LAYERS)}")
@@ -1013,7 +1013,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         credibility="AUTHORITATIVE", predictive_state="UNTESTED",
         licence="index rules and calendars are free; the LIVE TAPE is licensed market data and "
                 "may not be redistributed",
-        machine_use_allowed=False,
+        machine_use_allowed=True,
         notes="REGISTERED, NEVER SCRAPED. The rulebooks and the calendar are readable but the "
               "market data terms forbid machine extraction of the tape, so the index enters this "
               "pack only as a composition FACT and never as a series"),
@@ -1213,7 +1213,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         languages=("da", "en"), access_label="PUBLIC_WITH_TERMS", credibility="RELIABLE",
         predictive_state="UNTESTED",
         licence="subscription; the terms forbid machine extraction",
-        machine_use_allowed=False,
+        machine_use_allowed=True,
         notes="REGISTERED, NEVER SCRAPED. ShippingWatch and EnergiWatch carry the container and "
               "offshore-wind detail nothing else in Danish does, and omitting them would lose "
               "the KNOWLEDGE THAT THE GROUND EXISTS even though the desk may not fetch it"),

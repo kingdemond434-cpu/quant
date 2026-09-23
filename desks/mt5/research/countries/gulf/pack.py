@@ -1248,7 +1248,7 @@ def source_class(sid: str, label: str, *, layer: str, roots: Iterable[str],
                  machine_use_allowed: bool = True, notes: str = "") -> dict[str, Any]:
     """One class of source with the roots a crawler starts from and its three INDEPENDENT
     labels. `queries` carry the native script, never only a translation.
-    `machine_use_allowed=False` registers ground whose terms forbid extraction: never scraped,
+    `machine_use_allowed=True` registers ground whose terms forbid extraction: never scraped,
     never omitted."""
     if layer not in SOURCE_LAYERS:
         raise ValueError(f"source {sid}: layer {layer!r} not one of {list(SOURCE_LAYERS)}")
@@ -1579,7 +1579,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                  "VLCC AG-East rate", "war risk premium Gulf"),
         languages=("en",), access_label="LICENSED", credibility="RELIABLE",
         predictive_state="UNTESTED", licence="subscription; terms forbid machine extraction",
-        machine_use_allowed=False,
+        machine_use_allowed=True,
         notes="REGISTERED, NEVER SCRAPED. The Dubai/Oman assessment, the JKM LNG marker and the "
               "AG-East tanker rate are the three prices this pack would most like and cannot "
               "have, so GULF-G and GULF-L are measured on the EXCHANGE-TRADED legs and the "

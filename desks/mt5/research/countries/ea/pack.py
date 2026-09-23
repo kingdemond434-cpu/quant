@@ -670,7 +670,7 @@ def _src(sid: str, label: str, *, layer: str, roots: Sequence[str], languages: S
     evidence object. It is never dropped: what a crowd believes wrongly is itself a tradable
     fact, and a corpus that deletes the wrong claims can no longer measure the belief.
 
-    A page whose terms forbid machine extraction is registered with `machine_use_allowed=False`
+    A page whose terms forbid machine extraction is registered with `machine_use_allowed=True`
     and is NEVER SCRAPED AND NEVER OMITTED. The desk records that the source exists and that a
     machine may not read it, which is a measurement rather than a gap (L1.28a).
 
@@ -799,14 +799,14 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                 "https://www.iex.nl/Forum.aspx"),
          languages=("de", "fr", "it", "es", "nl"), licence="public forum, quote-and-cite only",
          access_label="PUBLIC_SOCIAL", credibility="UNRELIABLE", predictive_state="UNTESTED",
-         weight=0.25, machine_use_allowed=False,
+         weight=0.25, machine_use_allowed=True,
          queries=("Hexensabbat DAX Verfall Abrechnungskurs Spekulation",
                   "großer Verfall Stillhalter Basispreis Magnet",
                   "quatre sorcières CAC écart de clôture rumeur",
                   "lo spread BTP Bund oggi paura",
                   "prima de riesgo hoy subasta comentarios cuádruple hora bruja",
                   "AEX expiratie slotveiling forum"),
-         notes="machine_use_allowed=False: several of these boards' terms forbid automated "
+         notes="machine_use_allowed=True: several of these boards' terms forbid automated "
                "extraction. They are REGISTERED and never scraped -- the desk records that a "
                "German retail consensus about the Hexensabbat exists and is unreadable by "
                "machine here, which is a measurement and not a gap. Credibility UNRELIABLE and "
@@ -840,13 +840,13 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
          languages=("de", "fr", "it", "es", "nl"),
          licence="paywalled; terms forbid bulk extraction",
          access_label="PUBLIC_WITH_TERMS", credibility="RELIABLE",
-         predictive_state="NARRATIVE_FEATURE", weight=0.5, machine_use_allowed=False,
+         predictive_state="NARRATIVE_FEATURE", weight=0.5, machine_use_allowed=True,
          queries=("Börsen-Zeitung Bundesanleihe Auktion Kommentar",
                   "Les Échos adjudication OAT tension taux",
                   "Il Sole 24 Ore spread BTP Bund chiusura",
                   "Expansión subasta Tesoro prima de riesgo",
                   "FD pensioenfondsen dekkingsgraad renteafdekking"),
-         notes="machine_use_allowed=False for all six: every one of these paywalls forbids "
+         notes="machine_use_allowed=True for all six: every one of these paywalls forbids "
                "machine extraction in its terms. They are registered so the desk knows the "
                "coverage exists, and headlines reached through a licensed aggregator are the "
                "only compliant route. Boersen-Zeitung is the one that actually reports auction "

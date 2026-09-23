@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import inspect
 from collections.abc import Callable
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -38,6 +39,7 @@ __all__ = [
     "get_all_family_names",
     "get_family_func",
     "get_param_grid",
+    "live_family_names",
 ]
 
 
@@ -83,13 +85,78 @@ def register_family(
     return decorator
 
 
-def get_family_func(name: str) -> Callable | None:
+def get_family_func(name: str) -> Callable[..., Any] | None:
+    """The constructor for `name`, across BOTH populations this module can reach.
+
+    FAMILY_REGISTRY holds the 27 decorated families. The 31 in
+    `families_orthogonal.ORTHOGONAL_FAMILIES` are equally real code that the forward engine
+    already resolves (`executables.resolve_family` falls through to them), but this lookup
+    stopped at the registry -- so the backtest and pipeline lanes silently skipped every
+    orthogonal family as "no such family" rather than testing it. Absence of a decorator is
+    not absence of an implementation; this makes the two lanes agree.
+    """
     entry = FAMILY_REGISTRY.get(name)
-    return entry["func"] if entry else None
+    if entry:
+        fn: Callable[..., Any] | None = entry["func"]
+        return fn
+    # HUNT16 IS THE THIRD POPULATION, and leaving it out left this lookup disagreeing with
+    # `executables.resolve_family`, which checks it FIRST. Measured 2026-09-12: a LIVE sleeve on
+    # `dav_range_filter_adx` read as "family has no constructor" here while the forward engine
+    # resolved it without trouble -- two lanes answering differently about whether a live sleeve
+    # can be executed at all. That is the same defect this function's docstring was written to
+    # fix, one population later: absence of a decorator is not absence of an implementation.
+    try:
+        from mt5desk.executables import hunt16_families
+        h16: Callable[..., Any] | None = hunt16_families().get(name)
+        if h16 is not None:
+            return h16
+    except Exception:
+        pass
+    try:
+        from mt5desk import families_orthogonal as fo
+    except Exception:
+        return None
+    ofn: Callable[..., Any] | None = fo.ORTHOGONAL_FAMILIES.get(name)
+    return ofn
 
 
 def get_all_family_names() -> list[str]:
     return sorted(FAMILY_REGISTRY.keys())
+
+
+def live_family_names() -> list[str]:
+    """EVERY family the desk can actually resolve, across all populations -- the live set.
+
+    `get_all_family_names` returns the 27 DECORATED families, which is the right answer to "what
+    carries a param grid" and the wrong one to "what may be hunted or judged". The orthogonal
+    sweep's families and the hunt16 population are equally real code that `get_family_func` and
+    `executables.resolve_family` both resolve, so a caller that hunts or judges "all families"
+    off the decorated set silently omits them -- the same defect `get_family_func`'s own
+    docstring was written to fix, one caller up.
+
+    THIS IS THE ANSWER TO "NOT FIXED LIKE THESE SIX, EVERY TIME" (the principal, 2026-09-23).
+    Any organ whose subject is "the families" reads THIS, so a family added tomorrow is hunted
+    and judged the hour it is registered, with no edit anywhere. A population that fails to
+    import contributes nothing and narrows nothing: absence of an import is not absence of a
+    family, and this function never returns fewer names than the registry it can read.
+    """
+    names = set(FAMILY_REGISTRY.keys())
+    try:
+        from mt5desk.executables import hunt16_families
+        names |= set(hunt16_families().keys())
+    except Exception:
+        pass
+    try:
+        from mt5desk import families_orthogonal as fo
+        names |= set(fo.ORTHOGONAL_FAMILIES.keys())
+    except Exception:
+        pass
+    try:
+        from mt5desk.families_edge_queue import EDGE_QUEUE_FAMILIES
+        names |= set(EDGE_QUEUE_FAMILIES.keys())
+    except Exception:
+        pass
+    return sorted(names)
 
 
 def get_param_grid(name: str) -> dict[str, list]:
@@ -2024,3 +2091,126 @@ def family_macro_swing(
             ttl_bars=hold_bars, tag=f"macro_swing.{lookback_days}d"))
         last_i = i
     return signals
+
+
+# ==============================================================================================
+# THE JOINT GENOME (F5, 2026-09-12): the layers every other family holds constant.
+#
+# WHY THIS LIVES HERE AND NOT IN THE SEARCH THAT FOUND IT. `joint_evolution` measured that the
+# desk's layers are NOT separable -- on the first run, `range_start x trigger_atr` carried 43.5%
+# of fitness variance in its interaction alone, and `atr_n x session` 24.3%. A search that finds
+# a better (state, horizon, entry, exit, execution) combination is worth nothing if the gauntlet
+# cannot BUILD the object it found: the candidate reaches the intake, `build_cell` calls the base
+# family with kwargs it does not accept, and the cell is silently unbuildable. That is the exact
+# shape of the zombie certificate -- a row that looks like a candidate and can never be run.
+#
+# So the joint object is a REGISTERED FAMILY. One implementation of the layer transform, used by
+# the search and by the judge, which is the same "one canonical validator" rule that stops this
+# desk from proving that two of its own programs agree.
+#
+# IT ADDS NO MECHANISM. Every signal still originates in a base family; this wraps that family's
+# signals in the state condition, horizon, entry, exit and execution policy that the search
+# found. If the wrapper is set to its neutral values the output is the base family exactly.
+# ==============================================================================================
+
+_JOINT_SESSIONS = {"london": (7, 13), "ny": (13, 20)}
+
+
+def apply_layers(sigs: list[Signal], h1: pd.DataFrame, *,
+                 state_band: str = "any", session: str = "any",
+                 trigger_atr: float = 0.0, rest_bars: int = 1,
+                 ttl_mult: float = 1.0, rr_mult: float = 1.0,
+                 bank_frac: float = 0.0, trail_k: float = 0.0) -> list[Signal]:
+    """Wrap a family's signals in the layers `alpha_evolution`'s RECIPE holds constant.
+
+    Applied to the Signal LIST rather than inside any family, so the whole registered catalogue
+    joins the joint search without one of them being edited.
+    """
+    import dataclasses
+    if not sigs:
+        return []
+    close = h1["close"].astype(float)
+    ret = np.log(close).diff()
+    vol = ret.rolling(120).std()
+    band = vol.rolling(480).median()
+    atr = (h1["high"].astype(float) - h1["low"].astype(float)).rolling(20).mean()
+
+    out: list[Signal] = []
+    for s in sigs:
+        t = pd.Timestamp(s.time)
+        if t not in close.index:
+            continue
+        # STATE CONDITION. A volatility band and a session, both compared to the symbol's OWN
+        # trailing median rather than to a constant -- an absolute vol threshold means a
+        # different thing for XAUUSD and EURUSD and would make the axis a symbol proxy.
+        if state_band != "any":
+            v, b = float(vol.get(t, np.nan)), float(band.get(t, np.nan))
+            if not (np.isfinite(v) and np.isfinite(b) and b > 0):
+                continue
+            if (state_band == "calm") != (v <= b):
+                continue
+        if session != "any":
+            lo_h, hi_h = _JOINT_SESSIONS.get(session, (0, 24))
+            inside = lo_h <= int(t.hour) < hi_h
+            if session == "asia":
+                inside = int(t.hour) < 7 or int(t.hour) >= 20
+            if not inside:
+                continue
+        a = float(atr.get(t, np.nan))
+        if not np.isfinite(a) or a <= 0:
+            continue
+        # ENTRY / EXECUTION POLICY. Market at next open, or a resting order at an ATR offset that
+        # must be touched within `rest_bars` or the trade never happens. A better price and a
+        # missed trade; which dominates is the interaction this axis exists to expose.
+        trig = None if trigger_atr <= 0 else float(close[t] - s.side * trigger_atr * a)
+        entry_ref = trig if trig is not None else float(close[t])
+        stop_dist = abs(entry_ref - float(s.stop))
+        if stop_dist <= 0:
+            continue
+        base_rr = abs(float(s.target) - entry_ref) / stop_dist
+        out.append(dataclasses.replace(
+            s,
+            trigger=trig,
+            wait_bars=max(1, int(rest_bars)) if trig is not None else 1,
+            ttl_bars=max(1, round(int(s.ttl_bars) * float(ttl_mult))),
+            target=float(entry_ref + s.side * stop_dist * base_rr * float(rr_mult)),
+            bank_frac=float(bank_frac),
+            runner_trail_k=float(trail_k),
+        ))
+    return out
+
+
+@register_family(param_grid={
+    "trigger_atr": [0.0, 0.25, 0.5],
+    "ttl_mult": [0.5, 1.0, 2.0],
+    "rr_mult": [0.7, 1.0, 1.5],
+}, tags=["joint"])
+def family_joint_genome(df: pd.DataFrame, *, base_family: str = "momentum_volgate",
+                        state_band: str = "any", session: str = "any",
+                        trigger_atr: float = 0.0, rest_bars: int = 1,
+                        ttl_mult: float = 1.0, rr_mult: float = 1.0,
+                        bank_frac: float = 0.0, trail_k: float = 0.0,
+                        **base_kwargs: Any) -> list[Signal]:
+    """A base family's mechanism, executed under a jointly searched policy.
+
+    `base_family` names the registered family that supplies the signals; every other keyword is
+    either one of the layer genes above or a kwarg passed straight through to that family. A
+    joint cell is therefore judged by the gauntlet on exactly the object the search scored.
+    """
+    entry = FAMILY_REGISTRY.get(str(base_family))
+    if not entry:
+        return []
+    fn = entry["func"]
+    allowed = set(entry.get("defaults") or {})
+    kw = {k: v for k, v in base_kwargs.items() if k in allowed}
+    h1 = _h1(df)
+    try:
+        sigs = list(fn(df, **kw) or [])
+    except (TypeError, ValueError, KeyError):
+        return []
+    wrapped = apply_layers(sigs, h1, state_band=state_band, session=session,
+                          trigger_atr=trigger_atr, rest_bars=rest_bars, ttl_mult=ttl_mult,
+                          rr_mult=rr_mult, bank_frac=bank_frac, trail_k=trail_k)
+    for s in wrapped:
+        s.tag = f"joint.{base_family}"
+    return wrapped

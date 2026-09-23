@@ -476,3 +476,65 @@ def test_the_side_channel_gate_can_never_empty_the_authority_file_again() -> Non
     assert "REFUSING to write: merge would shrink" in src
     # and no writer of this file may drop the attestation again
     assert 'json.dumps({"n": len(survivors_all), "survivors": survivors_all,\n' not in src
+
+
+# ------------------------------------------------------------------- ONE CANONISED LANE
+def test_one_canonical_store_each_and_every_other_is_a_derived_view_or_a_claim(desk: Path):
+    """The principal, 2026-09-23: 'all certificates and clocks must be ONE canonised lane, not
+    separate'. The lane is NAMED in code, and the census is what the fence compares."""
+    paths = CT.Paths.at(desk)
+    doc = CT.audit(paths)
+    one = doc["one_lane"]
+    assert one["canonical"] == {"certificates": "reports/UNIVERSAL_SURVIVORS.json",
+                                "clocks": "data/sleeve_registry.json"}
+    assert set(one["derived"]) == set(CT.DERIVED_VIEWS)
+    assert set(one["claims"]) == set(CT.CLAIM_STORES)
+    assert all(v["confers_certification"] is False for v in one["claims"].values())
+    assert one["n_stores"] == 8
+
+
+def test_the_fence_fails_when_a_derived_view_is_written_independently(desk: Path):
+    """A row in the seal that its source does not hold means somebody wrote the view directly."""
+    paths = CT.Paths.at(desk)
+    seal = _r(paths.seal)
+    seal["survivors"]["external.SNEAKED.carry.p=9"] = _cert("SNEAKED", "carry", "asia")
+    _w(paths.seal, seal)
+    doc = CT.audit(paths)
+    assert _kinds(doc)["DERIVED_STORE_WRITTEN_DIRECTLY"] == 1
+    assert "DERIVED_STORE_WRITTEN_DIRECTLY" in CT.FATAL_KINDS
+    assert doc["one_lane"]["derived"]["data/UNIVERSAL_SURVIVORS.canon.json"]["n_independent"] == 1
+
+
+def test_every_claim_the_canon_does_not_hold_is_submitted_to_the_one_judge(desk: Path):
+    """No store certifies by declaring -- the scalp lane's self-declaration included."""
+    paths = CT.Paths.at(desk)
+    _w(paths.scalp_gates, {"gate_policy": dict(ATTESTATION), "n_certified": 0,
+                           "candidates": {"xau_m5_anti_breakout_overlap": {"sym": "XAUUSD"}}})
+    out = CT.submit_to_judge(paths, CT.canon(paths), "2026-09-23T10:00:00+00:00")
+    rows = [json.loads(x) for x in paths.queue.read_text(encoding="utf-8").splitlines()]
+    keys = {r["key"] for r in rows}
+    assert out["submitted"] == len(rows) >= 3
+    assert "xau_m5_anti_breakout_overlap" in keys          # a self-declaration is a claim
+    assert "external.GBPJPY.session_range_breakout" in keys        # an un-held ledger claim
+    assert "external.USDSGD.overnight_gap_decay.p=3" in keys       # a power-cure candidate
+    assert "external.CADJPY.session_range_breakout" not in keys    # the canon holds it
+    assert not any("discovered" in k for k in keys)                # a ban is never re-judged
+    assert all(r["judge"].endswith("external_gauntlet.py") and r["status"] == "QUEUED"
+               for r in rows)
+    assert CT.submit_to_judge(paths, CT.canon(paths), "x")["submitted"] == 0   # idempotent
+
+
+def test_a_claim_older_than_one_judging_cycle_that_reached_no_queue_is_fatal(desk: Path):
+    paths = CT.Paths.at(desk)
+    led = _r(paths.ledger)
+    led["claims"]["external.GBPJPY.session_range_breakout"]["updated_at"] = \
+        "2026-09-01T00:00:00+00:00"
+    _w(paths.ledger, led)
+    paths.queue.parent.mkdir(parents=True, exist_ok=True)
+    paths.queue.write_text("", encoding="utf-8")
+    doc = CT.audit(paths, now="2026-09-23T10:00:00+00:00")
+    assert _kinds(doc)["CLAIM_NOT_SUBMITTED_TO_JUDGE"] == 1
+    assert "CLAIM_NOT_SUBMITTED_TO_JUDGE" in CT.FATAL_KINDS
+    CT.submit_to_judge(paths, CT.canon(paths), "2026-09-23T10:00:00+00:00")
+    after = CT.audit(paths, now="2026-09-23T10:00:00+00:00")
+    assert _kinds(after).get("CLAIM_NOT_SUBMITTED_TO_JUDGE", 0) == 0

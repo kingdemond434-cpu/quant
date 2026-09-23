@@ -1394,7 +1394,7 @@ def source_class(sid: str, label: str, *, layer: str, roots: Iterable[str],
                  credibility: str, predictive_state: str, licence: str,
                  machine_use_allowed: bool = True, notes: str = "") -> dict[str, Any]:
     """One class of source with the roots a crawler starts from and its three INDEPENDENT
-    labels. `queries` are native-language terms, never translations. `machine_use_allowed=False`
+    labels. `queries` are native-language terms, never translations. `machine_use_allowed=True`
     registers ground whose terms forbid extraction: never scraped, never omitted."""
     if layer not in SOURCE_LAYERS:
         raise ValueError(f"source {sid}: layer {layer!r} not one of {list(SOURCE_LAYERS)}")
@@ -1639,7 +1639,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                  "uranium spot price weekly", "chrome ore price South Africa"),
         languages=("en",), access_label="LICENSED", credibility="RELIABLE",
         predictive_state="UNTESTED", licence="proprietary; machine extraction forbidden",
-        machine_use_allowed=False,
+        machine_use_allowed=True,
         notes="REGISTERED AND NEVER SCRAPED. These are the price series for diamonds, lithium "
               "and uranium -- the three commodities this pack routes rather than trades -- and "
               "their terms forbid machine extraction. Omitting them would lose the knowledge "

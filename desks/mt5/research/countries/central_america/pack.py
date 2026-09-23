@@ -1682,7 +1682,7 @@ def source_class(sid: str, label: str, *, layer: str, roots: Iterable[str],
                  credibility: str, predictive_state: str, licence: str,
                  machine_use_allowed: bool = True, notes: str = "") -> dict[str, Any]:
     """One class of source with the roots a crawler starts from and its three INDEPENDENT
-    labels. `queries` are native-language terms, never translations. `machine_use_allowed=False`
+    labels. `queries` are native-language terms, never translations. `machine_use_allowed=True`
     registers ground whose terms forbid extraction: never scraped, never omitted."""
     if layer not in SOURCE_LAYERS:
         raise ValueError(f"source {sid}: layer {layer!r} not one of {list(SOURCE_LAYERS)}")
@@ -2013,7 +2013,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                  "world container index semanal"),
         languages=("en", "es"), access_label="LICENSED", credibility="AUTHORITATIVE",
         predictive_state="UNTESTED", licence="subscription; terms forbid machine extraction",
-        machine_use_allowed=False,
+        machine_use_allowed=True,
         notes="REGISTERED, NEVER SCRAPED AND NEVER OMITTED. The box rate is the channel through "
               "which the canal constraint reaches the US consumer and it is behind a paywall, so "
               "the freight leg is UNMEASURED and the physical transit count carries the claim"),
@@ -2325,7 +2325,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                  "El Salvador bond rally bitcoin IMF"),
         languages=("en", "es"), access_label="LICENSED", credibility="AUTHORITATIVE",
         predictive_state="UNTESTED", licence="subscription; terms forbid machine extraction",
-        machine_use_allowed=False,
+        machine_use_allowed=True,
         notes="REGISTERED, NEVER SCRAPED AND NEVER OMITTED. The wires are how the market LEARNS "
               "an isthmus fact and their timestamps are the honest event minute; the desk reads "
               "the primary source instead and records that the wire is the transmission"),

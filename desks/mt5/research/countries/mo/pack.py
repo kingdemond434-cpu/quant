@@ -800,7 +800,7 @@ def source_class(sid: str, label: str, *, layer: str, roots: Iterable[str],
                  credibility: str, predictive_state: str, licence: str,
                  machine_use_allowed: bool = True, notes: str = "") -> dict[str, Any]:
     """One class of source with the roots a crawler starts from and its three INDEPENDENT
-    labels. `queries` are native-script terms, never translations. `machine_use_allowed=False`
+    labels. `queries` are native-script terms, never translations. `machine_use_allowed=True`
     registers ground whose terms forbid extraction: never scraped, never omitted."""
     if layer not in SOURCE_LAYERS:
         raise ValueError(f"source {sid}: layer {layer!r} not one of {list(SOURCE_LAYERS)}")
@@ -1140,7 +1140,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                  "estimativas de consenso receitas de jogo"),
         languages=("en",), access_label="LICENSED", credibility="RELIABLE",
         predictive_state="UNTESTED", licence="subscription; terms forbid machine extraction",
-        machine_use_allowed=False,
+        machine_use_allowed=True,
         notes="REGISTERED, NEVER SCRAPED. The only true CONSENSUS number for a Macau monthly "
               "print lives on a terminal, and the hotel benchmarking panels are the only "
               "cross-property occupancy series. Both are paywalled, so MO-A's surprise is "

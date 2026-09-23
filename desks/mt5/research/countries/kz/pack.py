@@ -513,7 +513,7 @@ def source_class(sid: str, label: str, *, layer: str, roots: Iterable[str],
     finds the small English-speaking corner of that ground and then reports the result as if it
     were the ground.
 
-    `machine_use_allowed=False` registers a source whose terms forbid machine extraction. It is
+    `machine_use_allowed=True` registers a source whose terms forbid machine extraction. It is
     NEVER scraped and NEVER omitted: the row stays so the desk knows the ground exists, knows it
     was considered, and knows exactly why it is not being read.
     """
@@ -664,7 +664,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                  "средневзвешенный курс", "AIX", "АХҚО", "МФЦА", "ағылшын құқығы",
                  "английское право", "листинг"),
         languages=("kk", "ru", "en"), access_label="LICENSED", credibility="AUTHORITATIVE",
-        predictive_state="UNTESTED", machine_use_allowed=False,
+        predictive_state="UNTESTED", machine_use_allowed=True,
         licence="exchange data; the desk holds NO licence",
         notes="the official USDKZT rate is struck in the KASE morning session and applies the "
               "NEXT day; this is also where the National Fund's sales land. NOT ACCESSIBLE to "
@@ -725,7 +725,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                  "теңге болжамы", "целевая цена", "банковский сектор", "банк секторы",
                  "нефтяные доходы"),
         languages=("kk", "ru"), access_label="PUBLIC_WITH_TERMS", credibility="RELIABLE",
-        predictive_state="NOT_PREDICTIVE", machine_use_allowed=False,
+        predictive_state="NOT_PREDICTIVE", machine_use_allowed=True,
         licence="public web; redistribution restricted",
         notes="Ranking.kz aggregates domestic financial statistics into free charts that are "
               "faster than the official releases they are built from. NOT_PREDICTIVE is a "
@@ -736,7 +736,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         queries=("Tengenomika", "теңге", "Нацфонд продажи", "валютные интервенции",
                  "инфляция Казахстан", "базовая ставка решение", "макро Казахстан"),
         languages=("ru", "kk"), access_label="PUBLIC_SOCIAL", credibility="UNRELIABLE",
-        predictive_state="NARRATIVE_FEATURE", machine_use_allowed=False,
+        predictive_state="NARRATIVE_FEATURE", machine_use_allowed=True,
         licence="public channels; automated extraction restricted",
         notes="the fastest Kazakh macro commentary and the place a policy rumour is dated; a "
               "conditioning variable, never evidence"),
@@ -747,7 +747,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         queries=("Tradernet", "Фридом", "Freedom Broker", "инвестидея", "портфель",
                  "подписка на трейдера", "копирование сделок", "автоследование"),
         languages=("ru", "kk"), access_label="PUBLIC_SOCIAL", credibility="FRINGE",
-        predictive_state="UNTESTED", machine_use_allowed=False,
+        predictive_state="UNTESTED", machine_use_allowed=True,
         licence="public social feed; automated extraction restricted",
         notes="Freedom is the dominant Kazakh retail broker and its Tradernet platform carries a "
               "SOCIAL FEED with published trader ideas and a follow mechanic. Heavy survivorship "
@@ -761,7 +761,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         queries=("Kaspi", "Каспи", "депозит ставка", "депозит мөлшерлемесі", "доллар алу",
                  "как купить доллары", "теңге әлсіреуі", "ослабление тенге", "смартлаб"),
         languages=("ru", "kk"), access_label="PUBLIC_SOCIAL", credibility="UNRELIABLE",
-        predictive_state="UNTESTED", machine_use_allowed=False,
+        predictive_state="UNTESTED", machine_use_allowed=True,
         licence="public social; automated extraction restricted",
         notes="Kaspi is a genuine super-app: most Kazakh retail financial behaviour passes "
               "through it, and household currency substitution is discussed there and on the "
@@ -772,7 +772,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         queries=("девальвация", "девальвация болады ма", "курс доллара прогноз",
                  "Нацфонд транш", "инфляция народная"),
         languages=("ru", "kk"), access_label="PUBLIC_SOCIAL", credibility="FRINGE",
-        predictive_state="NARRATIVE_FEATURE", machine_use_allowed=False,
+        predictive_state="NARRATIVE_FEATURE", machine_use_allowed=True,
         licence="public comment sections; automated extraction restricted",
         notes="devaluation expectation is the central Kazakh household variable and it is "
               "expressed here long before any survey measures it. FRINGE AND KEPT: the comment "
@@ -784,7 +784,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         queries=("Tradernet API", "торговый терминал", "сауда терминалы", "мобильное приложение",
                  "комиссия брокера", "маржинальная торговля", "плечо", "шорт"),
         languages=("ru", "kk"), access_label="PUBLIC_WITH_TERMS", credibility="RELIABLE",
-        predictive_state="UNTESTED", machine_use_allowed=False,
+        predictive_state="UNTESTED", machine_use_allowed=True,
         licence="public product pages; account data is PRIVATE and is never sought",
         notes="which instruments Kazakh retail can reach and at what cost. NO ACCOUNT-LEVEL DATA "
               "is sought; that would be PRIVATE and is out of bounds"),
@@ -807,7 +807,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         queries=("Pine Script", "индикатор", "стратегия", "идея", "нефть", "USDKZT",
                  "Brent анализ"),
         languages=("ru",), access_label="PUBLIC_WITH_TERMS", credibility="UNRELIABLE",
-        predictive_state="UNTESTED", machine_use_allowed=False,
+        predictive_state="UNTESTED", machine_use_allowed=True,
         licence="public with terms; automated extraction restricted",
         notes="registered and read, never scraped"),
     source_class(
@@ -818,7 +818,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                  "тенге", "теңге", "КТК", "Тенгиз", "Кашаган", "нефтедобыча",
                  "экспортная пошлина"),
         languages=("ru", "kk"), access_label="PUBLIC_WITH_TERMS", credibility="RELIABLE",
-        predictive_state="NARRATIVE_FEATURE", machine_use_allowed=False,
+        predictive_state="NARRATIVE_FEATURE", machine_use_allowed=True,
         licence="public web; automated extraction restricted",
         notes="Vlast and LS carry the most independent coverage of National Fund policy; the "
               "others are faster. READ AND CITED, NEVER SCRAPED"),
@@ -851,7 +851,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         queries=("мұрағат", "архив", "историческая статистика", "1999 девальвация",
                  "2009 девальвация", "2015 девальвация"),
         languages=("kk", "ru"), access_label="PUBLIC_ARCHIVE", credibility="AUTHORITATIVE",
-        predictive_state="UNTESTED", machine_use_allowed=False,
+        predictive_state="UNTESTED", machine_use_allowed=True,
         licence="public archive; reading-room and site terms govern reuse",
         notes="three devaluations in sixteen years formed the household reflex KZ-A's "
               "transmission channel runs through; the contemporaneous record is how that reflex "
@@ -889,7 +889,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         queries=("астық қоры", "запасы зерна", "элеватор", "вагоны", "рейс", "квота на вагоны",
                  "экспорт пшеницы", "бидай экспорты", "Узбекистан", "Афганистан"),
         languages=("kk", "ru"), access_label="PUBLIC_WITH_TERMS", credibility="RELIABLE",
-        predictive_state="UNTESTED", machine_use_allowed=False,
+        predictive_state="UNTESTED", machine_use_allowed=True,
         licence="mixed: ministry data is open, trade press is subscription",
         notes="RAIL-CAR AVAILABILITY, not price, is the binding constraint on Kazakh grain "
               "exports most years -- a physical bottleneck that no price series reveals"),

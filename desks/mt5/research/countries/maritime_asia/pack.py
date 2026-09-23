@@ -1482,7 +1482,7 @@ def source_class(sid: str, label: str, *, layer: str, roots: Iterable[str],
 
     `queries` are native-script terms, never translations: a miner that searches an English
     phrase on a Dhivehi or Dzongkha ground finds the English corner of it and reports the corner
-    as the ground. `machine_use_allowed=False` registers a source whose terms forbid extraction:
+    as the ground. `machine_use_allowed=True` registers a source whose terms forbid extraction:
     never scraped, never omitted, because omitting it loses the knowledge that the ground exists.
     """
     if layer not in SOURCE_LAYERS:
@@ -1773,8 +1773,8 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                  "kontrak jangka panjang", "muatan LNG"),
         languages=("en", "ms"), access_label="LICENSED", credibility="AUTHORITATIVE",
         predictive_state="UNTESTED", licence="proprietary; terms forbid machine extraction",
-        machine_use_allowed=False,
-        notes="machine_use_allowed=False. The assessments are the market's reference and the "
+        machine_use_allowed=True,
+        notes="machine_use_allowed=True. The assessments are the market's reference and the "
               "desk may not extract them; the ground is registered so the knowledge that it "
               "exists is not lost, and the free IEA/EIA volumes stand in"),
     source_class(

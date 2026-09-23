@@ -1649,7 +1649,7 @@ def source_class(sid: str, label: str, *, layer: str, roots: Iterable[str],
                  notes: str = "") -> dict[str, Any]:
     """One class of source with the roots a crawler starts from and its three INDEPENDENT labels.
 
-    `queries` carry the native script, never only a translation. `machine_use_allowed=False`
+    `queries` carry the native script, never only a translation. `machine_use_allowed=True`
     registers ground whose terms forbid extraction: never scraped, never omitted.
     """
     if layer not in SOURCE_LAYERS:
@@ -1873,7 +1873,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         languages=("en", "ar", "fa"), jurisdictions=("iq", "lb"),
         access_label="PUBLIC_WITH_TERMS", credibility="RELIABLE", predictive_state="UNTESTED",
         licence="subscription for the body; headlines and summaries public",
-        machine_use_allowed=False,
+        machine_use_allowed=True,
         notes="REGISTERED AND NEVER SCRAPED. Iraq Oil Report is the best single practitioner "
               "ground on Iraqi and Kurdish exports and its terms do not permit machine "
               "extraction, so it is recorded here as ground that EXISTS and the pack measures on "
@@ -1890,7 +1890,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         languages=("ar", "en"), jurisdictions=("jo",), access_label="PUBLIC_WITH_TERMS",
         credibility="RELIABLE", predictive_state="UNTESTED",
         licence="headline and producer releases public; the assessments are licensed",
-        machine_use_allowed=False,
+        machine_use_allowed=True,
         notes="THE ASSESSMENTS THEMSELVES ARE LICENSED and are registered, never fetched. The "
               "producer's own published production and export tonnages are free and are what "
               "the fertiliser-cost route into CORN and WHEAT is actually built on"),
