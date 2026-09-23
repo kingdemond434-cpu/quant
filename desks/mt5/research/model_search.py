@@ -246,6 +246,22 @@ def run(symbols: list[str] | None = None, budget_s: float = BUDGET_S,
     deadline = time.monotonic() + budget_s
     todo, chosen = _symbols(symbols)
     fams = tuple(families) if families else MF.ORDER
+    # THE PROPOSER SEAT, OPTIONAL: it may REORDER this search and may never widen it. The option
+    # set is `MF.ORDER`; a name the model invents is not in it and is discarded with a reason, so
+    # no unregistered family can enter by being named. Order matters only where the budget
+    # truncates the grid, which is exactly where a prior is worth having and nowhere else. On a
+    # box with no panel this returns `fams` unchanged and the hint reads UNMEASURED.
+    seat_hint: dict[str, Any] = {"verdict": "UNMEASURED"}
+    try:
+        from libs.research import proposer_seat as _ps
+        fams_hinted, seat_hint = _ps.order_hint(
+            "model_search", fams,
+            question=("Order these model families by which is most likely to find a real, "
+                      "economically explicable relation in hourly FX, metals and index bars. "
+                      "Return the full list, best first."))
+        fams = tuple(fams_hinted)
+    except Exception as _exc:                             # pragma: no cover - optional seat
+        seat_hint = {"verdict": "UNMEASURED", "why": f"{type(_exc).__name__}: {_exc}"}
     cells: list[dict[str, Any]] = []
     per_symbol: dict[str, Any] = {}
     queues = CL.QueueSet()
@@ -333,6 +349,7 @@ def run(symbols: list[str] | None = None, budget_s: float = BUDGET_S,
         "generated_utc": datetime.now(tz=UTC).isoformat(),
         "symbols": {**chosen, "n": len(todo), "swept": todo},
         "representations": list(reps), "families": list(fams),
+        "proposer_seat": seat_hint,
         "allow_heavy": allow_heavy, "budget_s": budget_s, "horizon": HORIZON,
         "cells_tested": len([c for c in cells if c.get("model")]),
         "n_earning": len(winners),

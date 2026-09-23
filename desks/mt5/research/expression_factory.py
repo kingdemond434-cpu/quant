@@ -1265,6 +1265,10 @@ class Factory:
         self.started = time.monotonic()
         self.budget_s = 0.0
         self.cells_done = 0
+        #: Inventions seeded by the optional proposer seat this pass. Counted so the report can
+        #: say what share of the population a model prior supplied -- zero is the normal reading
+        #: on a box with no panel, and it is a measurement rather than an absence.
+        self.seat_cells = 0
 
     # ---- bookkeeping
     def say(self, msg: str) -> None:
@@ -1632,9 +1636,47 @@ class Factory:
         syms = list(self.lake.worlds)
         sym = syms[int(self.rng.integers(len(syms)))]
         terms = ag.available_terminals(self.lake.worlds[sym].frames)
+        # THE PROPOSER SEAT, OPTIONAL AND JUDGED THE SAME (2026-09-23). A parked skeleton is
+        # drained here and becomes an ORDINARY invention cell -- same screens, same nulls, same
+        # tier ladder, same trial charge. Its only difference is the `generator` string, which
+        # is what lets the desk measure whether a model prior converts better than a random
+        # draw. An empty queue, a dark panel or an unimportable seat all return nothing and this
+        # falls through to exactly the random draw it has always made.
+        seeded = self._seat_skeleton(terms)
+        if seeded is not None:
+            return Cell(seeded, sym, int(self.rng.choice(HORIZONS)), "none", "invention", "",
+                        "proposer_seat", self.lake.worlds[sym].asset_class, ["invent"])
         expr = ag.random_expr(self.rng, max_depth=3, terminals=terms)
         return Cell(expr, sym, int(self.rng.choice(HORIZONS)), "none", "invention", "",
                     "random", self.lake.worlds[sym].asset_class, ["invent"])
+
+    def _seat_skeleton(self, terms: Sequence[str]) -> Expr | None:
+        """One parked seat proposal, re-validated against THIS world's terminals, or None.
+
+        RE-VALIDATED HERE because the seat checks a skeleton against the whole declared
+        vocabulary while a world carries only the series it actually has: a tree naming a
+        terminal this symbol lacks would evaluate to NaN everywhere and burn a cell for nothing.
+        """
+        try:
+            from libs.research import proposer_seat as ps
+        except Exception:                                 # pragma: no cover - import guard
+            return None
+        try:
+            rows = ps.take("expression_factory", limit=1)
+        except Exception:                                 # pragma: no cover - defensive
+            return None
+        for row in rows:
+            payload = row.get("payload") if isinstance(row, dict) else None
+            expr = payload.get("expr") if isinstance(payload, dict) else None
+            if expr is None:
+                continue
+            try:
+                if ag.is_valid(expr, terminals=list(terms)):
+                    self.seat_cells += 1
+                    return expr
+            except Exception:                             # pragma: no cover - defensive
+                continue
+        return None
 
     def pick_parent(self, pool: list[Parent]) -> Parent:
         """V(a)-weighted draw among the pool, empty QD cells favoured through novelty."""
@@ -1800,6 +1842,7 @@ class Factory:
         report["stages"] = {"transfer_parents": len([p for p in self.parents.values()
                                                      if p.transferred]),
                             "mutations": n_mut, "inventions": n_inv,
+                            "seat_seeded_inventions": self.seat_cells,
                             "order": "HARVEST -> TRANSFER -> LIGHT MUTATION -> NEW INVENTION"}
         report["status"] = "RAN"
         return self.finish(report)

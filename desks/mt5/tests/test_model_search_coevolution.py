@@ -34,9 +34,19 @@ for p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
     if p not in sys.path:
         sys.path.insert(0, p)
 
+from libs.data import feature_store as fs  # noqa: E402
 from libs.research import coevolution_lab as CL  # noqa: E402
 from libs.research import model_families as MF  # noqa: E402
 from research import model_search as MS  # noqa: E402
+from research import proposer_common as pc  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def _no_backend_probe(monkeypatch: pytest.MonkeyPatch) -> None:
+    """No test forks the heavy-backend health probe; the seed says every backend is healthy."""
+    monkeypatch.setattr(MF, "_health_cache",
+                        {"measured_utc": 9e18, "probe_complete": True, "passes": 0,
+                         "state": dict.fromkeys(MF.FAMILIES, "ok")})
 
 
 def _bars(n: int = 2600, seed: int = 5, planted: bool = True) -> pd.DataFrame:
@@ -65,7 +75,7 @@ def _bars(n: int = 2600, seed: int = 5, planted: bool = True) -> pd.DataFrame:
 @pytest.fixture
 def one_symbol(monkeypatch: pytest.MonkeyPatch) -> str:
     df = _bars()
-    monkeypatch.setattr(MS.pc, "bars", lambda sym: df if sym == "TESTFX" else None)
+    monkeypatch.setattr(pc, "bars", lambda sym: df if sym == "TESTFX" else None)
     monkeypatch.setattr(MS, "_symbols", lambda explicit: (["TESTFX"], {"source": "test"}))
     return "TESTFX"
 
@@ -112,7 +122,7 @@ def test_the_planted_momentum_structure_is_rediscovered(one_symbol: str,
 
 def test_the_control_bars_with_nothing_planted_win_far_less(
         monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    monkeypatch.setattr(MS.pc, "bars", lambda sym: _bars(planted=False, seed=9))
+    monkeypatch.setattr(pc, "bars", lambda sym: _bars(planted=False, seed=9))
     monkeypatch.setattr(MS, "_symbols", lambda explicit: (["TESTFX"], {"source": "test"}))
     doc = MS.run(budget_s=180.0, families=("linear", "tree"), reps=("raw", "vol_scaled"),
                  allow_heavy=False, write_queue=False, enqueue=False, n_bars=2600,
@@ -144,7 +154,7 @@ def test_failures_fill_the_queues_and_idle_capacity_is_a_defect(
         monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     # The CONTROL bars: nothing is planted, so the cells fail -- which is the point. A sweep
     # over a world with no structure must still change the next run.
-    monkeypatch.setattr(MS.pc, "bars", lambda sym: _bars(planted=False, seed=13))
+    monkeypatch.setattr(pc, "bars", lambda sym: _bars(planted=False, seed=13))
     monkeypatch.setattr(MS, "_symbols", lambda explicit: (["TESTFX"], {"source": "test"}))
     doc = MS.run(budget_s=240.0, families=("linear", "neural", "graph"),
                  reps=("rank", "range_state"), allow_heavy=False, write_queue=False,
@@ -175,15 +185,15 @@ def test_every_cell_is_charged_through_the_trial_ledger(one_symbol: str,
 # ------------------------------------------------------------------ the co-evolution closure
 def test_the_closure_runs_islands_residuals_self_play_and_worlds(
         monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    import factor_model_coevolution as FMC
+    from research import factor_model_coevolution as FMC
 
     df = _bars(n=2400, seed=3)
-    monkeypatch.setattr(FMC.pc, "bars", lambda sym: df if sym == "TESTFX" else None)
+    monkeypatch.setattr(pc, "bars", lambda sym: df if sym == "TESTFX" else None)
     monkeypatch.setattr(FMC, "_symbols", lambda symbols: (["TESTFX"], {"source": "test"}))
     monkeypatch.setattr(FMC, "MIN_BARS", 500)
     monkeypatch.setattr(FMC, "N_BARS", 2400)
     monkeypatch.setattr(FMC, "REPORT", tmp_path / "COEVOLUTION.json")
-    monkeypatch.setattr(FMC.fs, "STORE", tmp_path / "features")
+    monkeypatch.setattr(fs, "STORE", tmp_path / "features")
     monkeypatch.setattr(FMC, "FEATURE_ROOT", tmp_path / "features")
     # Nothing reaches the real registry from a test.
     monkeypatch.setattr(FMC, "_enqueue_survivor",
@@ -210,7 +220,7 @@ def test_the_closure_runs_islands_residuals_self_play_and_worlds(
 
 def test_the_closure_pools_residuals_and_labels_all_seven_axes(
         monkeypatch: pytest.MonkeyPatch) -> None:
-    import factor_model_coevolution as FMC
+    from research import factor_model_coevolution as FMC
 
     df = _bars(n=900, seed=4)
     rows = np.arange(0, 800, 6)
@@ -232,3 +242,30 @@ def test_a_champion_that_a_simpler_pairing_beats_never_reaches_the_registry() ->
     kids = CL.descendants_for({**champ, "verdict": MF.NEGATIVE, "n": 400,
                                "residual_structured": True}, symbol="TESTFX")
     assert kids[0].payload["descendant_kind"] == "model_family_challenger"
+
+
+def test_the_zoo_is_asked_only_for_models_whose_backend_returns(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """The zoo runs EVERY model in TAX on every pairing, so one hanging backend kills the leg.
+
+    This organ does not edit the zoo; it chooses which models to ask for, and publishes what it
+    set aside and why. A model set aside is UNMEASURED, never declared dead.
+    """
+    from research import factor_model_coevolution as FMC
+
+    monkeypatch.setattr(MF, "_health_cache",
+                        {"measured_utc": 9e18, "probe_complete": False, "passes": 2,
+                         "state": {**dict.fromkeys(MF.FAMILIES, "ok"), "boosting": "started"}})
+    keep, aside = FMC.healthy_zoo_models()
+    assert "hist_gb" not in keep and "hist_gb" in aside
+    assert "UNMEASURED, not dead" in aside["hist_gb"]
+    assert "logistic" in keep and "ridge_sign" in keep
+    assert FMC._fam_ok("linear") is True
+    assert FMC._fam_ok("boosting") is False
+
+    # With every backend healthy nothing is set aside.
+    monkeypatch.setattr(MF, "_health_cache",
+                        {"measured_utc": 9e18, "probe_complete": True, "passes": 1,
+                         "state": dict.fromkeys(MF.FAMILIES, "ok")})
+    keep2, aside2 = FMC.healthy_zoo_models()
+    assert aside2 == {} and "hist_gb" in keep2

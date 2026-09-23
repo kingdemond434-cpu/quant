@@ -1081,6 +1081,30 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
 
     admitted, dedup_status = dedup(judged)
     simplified_away = len(judged) - len(admitted)
+
+    # ---- THE PROPOSER SEAT, OPTIONAL: candidate mechanism names for uninterpreted objects.
+    # An object the traditions could not interpret carries a measured relation with no named
+    # cause. The seat proposes a CAUSE TO TEST and nothing else: it lands in `notes`, it never
+    # touches `interpretation.status`, and the object is judged and donated exactly as it would
+    # be without the seat. {} on a box with no panel, so this is a no-op there.
+    seat_named = 0
+    try:
+        from libs.research import proposer_seat as _ps
+        _open = [o for o in admitted if o.interpretation.status != "interpreted"][:12]
+        _names = _ps.names_for("math_lab",
+                               [{"key": o.object_id, "claim": o.statement[:200],
+                                 "tradition": o.tradition, "target": o.target} for o in _open])
+        for _o in _open:
+            _hit = _names.get(_o.object_id)
+            if _hit:
+                _o.notes.append(f"proposer_seat CANDIDATE mechanism (untested, not an "
+                                f"interpretation): {_hit['mechanism']} | falsifier: "
+                                f"{_hit['falsifier']} | by {_hit['by'].get('model')}")
+                seat_named += 1
+    except Exception as _exc:                             # pragma: no cover - optional seat
+        seat_named = 0
+        del _exc
+
     survivors = [o for o in admitted if o.passed]
     survivors.sort(key=lambda o: -(o.value or -9e9))
 
@@ -1130,7 +1154,11 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
                      dry_run,
                      ([f"budget: {unjudged} proposed objects were not judged this pass (judge "
                        f"deadline {0.80 * budget_s:.0f}s of a {budget_s:.0f}s budget)"]
-                      if unjudged else []),
+                      if unjudged else []) +
+                     ([] if seat_named else
+                      ["proposer_seat: no candidate mechanism name proposed this pass (no panel "
+                       "resolves, or nothing was uninterpreted) -- UNMEASURED, and every object "
+                       "was judged exactly as it is without the seat"]),
                      simplified_away=simplified_away, engines=engines,
                      wiring=wiring)
     if not dry_run:

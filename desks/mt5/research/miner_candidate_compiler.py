@@ -1334,10 +1334,48 @@ def main() -> int:
         graph_note["why"] = f"{type(exc).__name__}: {exc}"[:300]
         print(f"hypothesis graph not updated (non-fatal): {graph_note['why']}")
 
+    # DOOR (a) OF THE NET-EDGE SPINE: THE INTAKE RANKS ON NET, NOT ON GROSS (2026-09-23).
+    # `net_edge_spine` publishes net = gross - spread/slippage - impact - financing - commission
+    # - the multiplicity charge already owed, per (symbol, family), in data/net_edge_ranks.json.
+    # A candidate whose SIGN flips after costs is stamped COST_DEAD WITH ITS DECOMPOSITION and
+    # kept -- the spine donates its lower-turnover descendant back through the `net_edge` seat,
+    # which is the `cost_dead -> lower_turnover_descendant` route the coevolution lab declares.
+    # Nothing is dropped, nothing is vetoed, and the order is the only thing that changes.
+    net_note: dict = {"ranked": False}
+    try:
+        _ranks = json.loads((OUT.parent.parent / "net_edge_ranks.json").read_text("utf-8"))
+        _by_cell = _ranks.get("by_cell") or {}
+        _n_dead = 0
+        for c in candidates.values():
+            hit = _by_cell.get(f"{c.get('symbol')}|{c.get('family')}")
+            if not isinstance(hit, dict):
+                continue
+            c["net_edge"] = hit.get("net")
+            c["gross_edge"] = hit.get("gross")
+            c["net_verdict"] = hit.get("verdict")
+            c["net_is_bound"] = hit.get("net_is_bound")
+            c["net_decomposition"] = hit.get("terms")
+            if str(hit.get("verdict") or "").startswith("COST_DEAD"):
+                c["cost_dead"] = True
+                c["cost_dead_route"] = "net_edge seat -> lower_turnover_descendant"
+                _n_dead += 1
+        net_note = {"ranked": True, "n_priced": sum(1 for c in candidates.values()
+                                                    if c.get("net_edge") is not None),
+                    "n_cost_dead": _n_dead, "source": "data/net_edge_ranks.json",
+                    "rule": "ranked by NET; a COST_DEAD cell is marked and kept, never dropped"}
+    except (OSError, ValueError) as exc:
+        net_note = {"ranked": False, "why": f"{type(exc).__name__}: net_edge_ranks.json is "
+                                            "unreadable; the order falls back to insertion and "
+                                            "no candidate is priced (UNMEASURED, not free)"}
+    ordered = sorted(candidates.values(),
+                     key=lambda c: (c.get("net_edge") is None,
+                                    -(c.get("net_edge") or 0.0), str(c.get("symbol") or "")))
+
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps({
         "compiled_at": now.isoformat(timespec="seconds"),
-        "hypotheses": list(candidates.values()),
+        "hypotheses": ordered,
+        "net_ranking": net_note,
         "per_source": per_source,
         "seats": seats,
         "seats_dark": seats_dark,

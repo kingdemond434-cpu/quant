@@ -619,6 +619,64 @@ def _value(entry: dict[str, Any]) -> float:
     return float(raw) if isinstance(raw, float) else -1.0
 
 
+def net_of_cost(*groups: list[dict[str, Any]]) -> dict[str, Any]:
+    """DOOR (b) OF THE NET-EDGE SPINE: a scarce slot goes to the highest NET E[log W].
+
+    `net_edge_spine` prices every cell at net = gross - spread/slippage - impact - financing -
+    commission - the multiplicity charge already owed, and publishes net/gross per
+    (symbol, family) in `data/net_edge_ranks.json`. This stamps each ranked row with that RATIO
+    and with `net_slot_value = slot_value x ratio`, and returns the priority order net implies.
+
+    `slot_value` is never overwritten and no clock is stopped: the two numbers answer different
+    questions and a reader must be able to see them disagree. A cell the spine has not priced
+    reads UNMEASURED -- NOT a ratio of 1.0, which would be the claim that it trades for free.
+    """
+    path = Path(CAPACITY_FILE).parent / "net_edge_ranks.json"
+    doc = _read_json(path)
+    by_cell = (doc.get("by_cell") or {}) if isinstance(doc, dict) else {}
+    if not by_cell:
+        for group in groups:
+            for e in group:
+                e["net_over_gross"] = UNMEASURED
+                e["net_slot_value"] = UNMEASURED
+        return {"status": UNMEASURED, "source": str(path), "n_priced": 0, "priority": [],
+                "why": ("net_edge_spine has not published net_edge_ranks.json on this host: no "
+                        "slot is re-ranked and no ratio is assumed -- an unpriced cell is "
+                        "UNMEASURED, never free")}
+    priced = 0
+    dead = 0
+    priority: list[dict[str, Any]] = []
+    for group in groups:
+        for e in group:
+            hit = by_cell.get(f"{e.get('symbol') or ''}|{e.get('family') or ''}")
+            gross = _f((hit or {}).get("gross"))
+            net = _f((hit or {}).get("net"))
+            if not isinstance(hit, dict) or gross is None or net is None or gross <= 0:
+                e["net_over_gross"] = UNMEASURED
+                e["net_slot_value"] = UNMEASURED
+                continue
+            ratio = net / gross
+            priced += 1
+            e["net_over_gross"] = round(ratio, 6)
+            e["net_verdict"] = hit.get("verdict")
+            value = e.get("slot_value")
+            e["net_slot_value"] = (round(float(value) * ratio, 14)
+                                   if isinstance(value, float) else UNMEASURED)
+            if str(hit.get("verdict") or "").startswith("COST_DEAD"):
+                dead += 1
+            if isinstance(e["net_slot_value"], float):
+                priority.append({"key": e.get("clock") or e.get("cell"),
+                                 "symbol": e.get("symbol"), "family": e.get("family"),
+                                 "slot_value": value, "net_over_gross": e["net_over_gross"],
+                                 "net_slot_value": e["net_slot_value"],
+                                 "net_verdict": e.get("net_verdict")})
+    priority.sort(key=lambda r: -float(r["net_slot_value"]))
+    return {"status": "MEASURED", "source": str(path), "n_priced": priced,
+            "n_cost_dead": dead, "priority": priority[:25],
+            "boundary": ("the net ranking reorders the PUBLISHED priority; it removes no "
+                         "candidate, stops no clock and shrinks no heat")}
+
+
 def run(write: bool = True, now: datetime | None = None) -> dict[str, Any]:
     """Rank every slot the desk holds and every one it could hold, and price the difference."""
     stamp = now or datetime.now(UTC)
@@ -710,9 +768,11 @@ def run(write: bool = True, now: datetime | None = None) -> dict[str, Any]:
 
     roi = roi_weights()
     weights = {str(k): float(v) for k, v in roi["by_family"].items()}
+    net = net_of_cost(ranked_running, ranked_waiting)
     payload = {
         "at": stamp.isoformat(), "rule": RULE,
         "roi_weights": roi,
+        "net_of_cost": net,
         "roi_priority_running": _weigh(ranked_running, weights, "clock"),
         "roi_priority_waiting": _weigh(ranked_waiting, weights, "cell"),
         "capacity": measure_capacity(states, stamp.date()), "thresholds": th,

@@ -341,6 +341,15 @@ orthogonality, independent survivor yield and marginal contribution to effective
   residual and mechanism carries a disposition: UNPROCESSED -> INTERPRETED -> EXPANDED ->
   COMPILED -> QUEUED -> TESTED, or BLOCKED with a reason. Unexplained conversion debt is driven
   to zero; not every cell is tested today, but every cell is owed a disposition.
+- **Conversion debt ratchets DOWN (principal 2026-09-23).** Every mined row ends as a TESTABLE
+  CELL or as a RECORDED, REASONED REFUSAL; an unconverted row is a defect with a NAMED OWNER, and
+  the count of them is conversion debt. The ratchet is seeded from the measured debt and may only
+  fall — no organ, session or hand edit may raise it (the enforced ceiling is
+  `min(ceiling, lowest_ever)`). A row parked with an owner is a disposition, not a verdict: past
+  its grace it counts as debt again. Conversions are prioritised by the EFFECTIVE BREADTH they
+  add, never by raw count. `desks/mt5/research/conversion_maximiser.py` (hourly leg
+  `conversion_maximiser`), `scripts/check_conversion_debt.py`,
+  `data/conversion_debt_ratchet.json`, `desks/mt5/reports/CONVERSION_MAXIMISER.json`.
 - **Four jobs, kept apart.** Mining maximises the opportunity set; the gauntlet maximises truth;
   forward evidence validates reality; the allocator maximises growth. No mining organ writes the
   book, the promoter's inputs or a certificate (`mining_objective.separation_of_powers`,
@@ -995,5 +1004,21 @@ packs name has no resident, no discovery in its trailing window, or no candidate
   CERTIFICATE TRUTH (§5j): every store that claims a certificate or a clock is audited against the
   one lane by `desks/mt5/research/certificate_truth.py` (hourly leg `certificate_truth`, artifact
   `reports/CERTIFICATE_TRUTH.json`), and any banned-family residue or unbacked clock fails the gate.
+- `scripts/check_component_registry.py` (law half) holds the WIRING RATCHET: every executable
+  carries a ComponentSpec, and the count with NO clock may only fall -- 684 on 2026-09-17, 200 on
+  2026-09-22, **1 on 2026-09-23** (ratchet 2: one deliberate, one slot of headroom for an organ
+  that lands minutes before its leg in a tree a dozen builders share). The one that remains is
+  the operator's arm-and-pass money-path recovery tool, unclocked on purpose because no clock may
+  arm the money path unattended. The long tail
+  that is too small for a leg of its own rides the two STANDING BATTERIES
+  (`desks/mt5/research/batteries.py`, hourly legs `fence_battery` and `organ_battery`): a named
+  roster rotated under one budget, every organ's last verdict published with its AGE in
+  `reports/BATTERY_*.json`, `failing` and `never_run` as the worklist, read by `wiring_ceo`. An
+  organ that is neither wired nor rostered is RETIRED to `_retired/` with a row in
+  `docs/research/retirements.jsonl` naming reason, replacement and date -- never deleted, never
+  left idle (LAWS 7 / III.16; a fence that never ran is a claim the desk cannot cash, L1.49).
+  The registry also publishes each scheduled component's FRESHNESS expectation (clock, cadence,
+  max_silence, artifact class), so staleness is judged against a declared row and a component
+  with no cadence is named UNMEASURED rather than counted fresh.
 - The vault index (`scripts/vault_search.py`) covers this file, RESEARCH.md and all annexes; an
   empty result means these tokens are absent, never that the question was unsettled.

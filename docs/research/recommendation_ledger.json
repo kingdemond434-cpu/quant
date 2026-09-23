@@ -6466,7 +6466,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-3941c691df -- hourly_cycle:implementer turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:47:09.652596+00:00"
   },
   {
    "id": "R0496",
@@ -6478,7 +6483,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Hourly:refresh_bars",
+   "next_action": "BT-a27bf4e341 -- build data/trade_forensics.json and wire it to a clock",
+   "blocker": "data/trade_forensics.json does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:47:02.212100+00:00"
   },
   {
    "id": "R0497",
@@ -6490,7 +6500,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Hourly:promoter",
+   "next_action": "BT-e876a1943a -- build scripts/promote_moat_survivors.py and wire it to a clock",
+   "blocker": "scripts/promote_moat_survivors.py does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:47:08.639182+00:00"
   },
   {
    "id": "R0498",
@@ -6634,7 +6649,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:mine",
+   "next_action": "BT-97be6f3b3a -- build data/gap_rerank.json and wire it to a clock",
+   "blocker": "data/gap_rerank.json does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:47:22.698149+00:00"
   },
   {
    "id": "R0510",
@@ -6658,7 +6678,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-a5a0b13764 -- wire tests/risk/test_capital_events.py as a leg or a box task",
+   "blocker": "tests/risk/test_capital_events.py exists and no clock in this repo runs it (III.16: unwired or idle is a defect)",
+   "blocker_class": "needs_clock",
+   "triaged_at": "2026-09-23T02:47:31.320338+00:00"
   },
   {
    "id": "R0512",
@@ -6670,7 +6695,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:mine",
+   "next_action": "BT-7dcc90a8d8 -- build ops/brain_hunter.sh and wire it to a clock",
+   "blocker": "ops/brain_hunter.sh does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:47:31.348366+00:00"
   },
   {
    "id": "R0513",
@@ -6682,7 +6712,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "timer:crontab.manifest",
+   "next_action": "BT-429ec5c5b2 -- make the change in scripts/check_citation_integrity.py and dispose this row citing the commit",
+   "blocker": "scripts/check_citation_integrity.py already exists and runs on timer:crontab.manifest; this row asks for a CHANGE to it, and an organ merely running proves nothing about the change",
+   "blocker_class": "needs_change",
+   "triaged_at": "2026-09-23T02:47:34.399284+00:00"
   },
   {
    "id": "R0514",
@@ -6694,7 +6729,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:mine",
+   "next_action": "BT-55c1812f03 -- hourly_cycle:mine turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:46:24.322580+00:00"
   },
   {
    "id": "R0515",
@@ -6706,7 +6746,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Gauntlet",
+   "next_action": "BT-f3ee7d4539 -- wire scripts/model_upgrade.py as a leg or a box task",
+   "blocker": "scripts/model_upgrade.py exists and no clock in this repo runs it (III.16: unwired or idle is a defect)",
+   "blocker_class": "needs_clock",
+   "triaged_at": "2026-09-23T02:46:26.150541+00:00"
   },
   {
    "id": "R0516",
@@ -6718,7 +6763,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "principal",
+   "next_action": "BT-4bf349f4a5 -- write the change as a SPEC for the principal to approve; do not edit the sealed file",
+   "blocker": "run_deadman_switch.py is sealed: no session edits it autonomously (LAWS: Tier-3 never-touch and the four sealed judges)",
+   "blocker_class": "needs_principal",
+   "triaged_at": "2026-09-23T02:46:26.211353+00:00"
   },
   {
    "id": "R0517",
@@ -6730,7 +6780,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Hourly:promoter",
+   "next_action": "BT-512a76bbc6 -- MT5-Hourly:promoter turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:46:28.447977+00:00"
   },
   {
    "id": "R0518",
@@ -6742,7 +6797,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:mine",
+   "next_action": "BT-233d5bca99 -- hourly_cycle:mine turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:46:39.431991+00:00"
   },
   {
    "id": "R0519",
@@ -6754,7 +6814,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:mine",
+   "next_action": "BT-82813c61d9 -- hourly_cycle:mine turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:46:39.408994+00:00"
   },
   {
    "id": "R0520",
@@ -6826,7 +6891,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:fence_battery",
+   "next_action": "BT-539f760e31 -- wire libs/research/mine_conversion.py as a leg or a box task",
+   "blocker": "libs/research/mine_conversion.py exists and no clock in this repo runs it (III.16: unwired or idle is a defect)",
+   "blocker_class": "needs_clock",
+   "triaged_at": "2026-09-23T02:46:18.614858+00:00"
   },
   {
    "id": "R0526",
@@ -6838,7 +6908,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-bc23db6be4 -- hourly_cycle:implementer turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:46:52.341467+00:00"
   },
   {
    "id": "R0527",
@@ -6886,7 +6961,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Gauntlet",
+   "next_action": "BT-dca91a0c2d -- build tests/research/test_orderbook_state_screen.py and wire it to a clock",
+   "blocker": "tests/research/test_orderbook_state_screen.py does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:47:08.704658+00:00"
   },
   {
    "id": "R0531",
@@ -6894,11 +6974,11 @@
    "summary": "The orderbook-state screen's SIGNAL and TARGET legs now run on DIFFERENT CLOCKS and nothing declares it (L1.46). Depth snapshots are timestamped with our receipt (moat_mine._depth_snaps reads r['t']) while bybit prints, after R0378, use the venue per-print stamp -- the only correct choice, since a trades batch receipt is off by up to 88,858ms on a 60,000ms bar. Measured recv-minus-venue on the real tape: depth +219ms median (122/581 p10/p90). The direction is SAFE and that is why R0378 shipped it: recv runs late, so the state paired with a bar is from at least 219ms BEFORE the boundary, which attenuates an IC toward zero and cannot leak. But 'safe' is not 'declared', and section 6 of the frozen pre-registration names no clock at all. FIX: align both legs on the venue stamp -- depth rows already carry a vt venue-time field and it is unused -- or record the offset in the artifact's alignment block with its measured distribution. Note the blast radius: _depth_snaps is shared, so switching it touches every moat screen, which is why this is its own row rather than scope inside R0378.",
    "roi_bps": 10.0,
    "raised": "2026-08-12T21:02:01.339153+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "rejected",
+   "reason": "Out of universe: names bybit, and the MT5 universe mandate (2026-08-18) is that no crypto-EXCHANGE ground is ever hunted again -- no miner, query or research mandate may target it. Fusion-executable crypto CFDs remain in scope and this row does not name one.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-09-23T02:47:08.755217+00:00"
   },
   {
    "id": "R0532",
@@ -6910,7 +6990,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-MoatRecorder",
+   "next_action": "BT-b22ee3d887 -- MT5-MoatRecorder turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:47:09.716896+00:00"
   },
   {
    "id": "R0533",
@@ -6922,7 +7007,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-6e104f0157 -- build tests/research/test_unlock_supply_series.py and wire it to a clock",
+   "blocker": "tests/research/test_unlock_supply_series.py does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:46:30.106607+00:00"
   },
   {
    "id": "R0534",
@@ -6934,7 +7024,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-98d9870f5a -- build scripts/run_llm_trader.py and wire it to a clock",
+   "blocker": "scripts/run_llm_trader.py does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:46:28.424946+00:00"
   },
   {
    "id": "R0535",
@@ -6946,7 +7041,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "timer:crontab.manifest",
+   "next_action": "BT-87487fcc43 -- make the change in scripts/check_organ_liveness.py and dispose this row citing the commit",
+   "blocker": "scripts/check_organ_liveness.py already exists and runs on timer:crontab.manifest; this row asks for a CHANGE to it, and an organ merely running proves nothing about the change",
+   "blocker_class": "needs_change",
+   "triaged_at": "2026-09-23T02:46:46.525555+00:00"
   },
   {
    "id": "R0536",
@@ -6958,7 +7058,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-abe3437dec -- build data/stage_state.json and wire it to a clock",
+   "blocker": "data/stage_state.json does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:49:56.929275+00:00"
   },
   {
    "id": "R0537",
@@ -6970,7 +7075,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-7fe453aac8 -- build data/ramp_state.json and wire it to a clock",
+   "blocker": "data/ramp_state.json does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:49:56.953827+00:00"
   },
   {
    "id": "R0538",
@@ -6982,7 +7092,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Gateway",
+   "next_action": "BT-0319408e2b -- MT5-Gateway turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:49:57.015190+00:00"
   },
   {
    "id": "R0539",
@@ -6994,7 +7109,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Hourly:promoter",
+   "next_action": "BT-395ce33aba -- MT5-Hourly:promoter turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:49:57.040147+00:00"
   },
   {
    "id": "R0540",
@@ -7018,7 +7138,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:shadow_forward",
+   "next_action": "BT-bad8d7340c -- hourly_cycle:shadow_forward turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:49:57.102761+00:00"
   },
   {
    "id": "R0542",
@@ -7030,7 +7155,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-46652a24ff -- build scripts/revalidate_clocks.py and wire it to a clock",
+   "blocker": "scripts/revalidate_clocks.py does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:49:57.145396+00:00"
   },
   {
    "id": "R0543",
@@ -7042,7 +7172,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Hourly:promoter",
+   "next_action": "BT-2feb23c7ff -- wire tests/self_improvement/test_forecast_calibration.py as a leg or a box task",
+   "blocker": "tests/self_improvement/test_forecast_calibration.py exists and no clock in this repo runs it (III.16: unwired or idle is a defect)",
+   "blocker_class": "needs_clock",
+   "triaged_at": "2026-09-23T02:50:00.345774+00:00"
   },
   {
    "id": "R0544",
@@ -7050,11 +7185,11 @@
    "summary": "R0398 follow-up: the test suite writes 1089 of the 1097 rows in the LIVE data/freshness_contracts.jsonl. Measured 2026-08-12: 1089 distinct contracts carry /tmp/pytest-of-quant/... paths, leaving n_contracts=8 as the real denominator of the L1.44 fence. The two suites that own the fence DO pin QUANT_FRESH_ROOT; the leak is from every OTHER test that calls read_fresh on a tmp PATH without pinning the ROOT, so libs.ops.fresh._record resolves root from cwd (the repo) and writes the tmp path into the production registry. The FOREIGN verdict correctly quarantines them, so this is not a wrong verdict -- it is a 99.3% noise denominator, and deleting the rows would blind the very guard that makes the leak visible. Fix at the writer, not the reader: an autouse fixture pinning QUANT_FRESH_ROOT for the whole suite (there is no tests/conftest.py today), which keeps the FOREIGN guard live for a real production leak. Same class as the 2026-08-05 finding that the suite was writing to the live L1.29 calibration store.",
    "roi_bps": null,
    "raised": "2026-08-13T00:05:59.090850+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "tests/conftest.py did not exist when this row was raised (2026-08-13) and was ADDED in e7a7fe00cc73 on 2026-08-14, 1.4 days later; the deliverable is the file itself, so the add-commit is the proof rather than a claim.",
+   "commit": "e7a7fe00cc73f595112ea557c448511207b335a9",
    "due": null,
-   "disposed": null
+   "disposed": "2026-09-23T02:50:01.311833+00:00"
   },
   {
    "id": "R0545",
@@ -7066,7 +7201,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:fence_battery",
+   "next_action": "BT-05930acf50 -- hourly_cycle:fence_battery turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:50:01.362527+00:00"
   },
   {
    "id": "R0546",
@@ -7078,7 +7218,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:mine",
+   "next_action": "BT-3466cce15a -- build tests/ops/test_maker_share_denominator.py and wire it to a clock",
+   "blocker": "tests/ops/test_maker_share_denominator.py does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:50:05.307493+00:00"
   },
   {
    "id": "R0547",
@@ -7126,7 +7271,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "timer:crontab.manifest",
+   "next_action": "BT-0adab9c0f2 -- make the change in scripts/check_change_window.py and dispose this row citing the commit",
+   "blocker": "scripts/check_change_window.py already exists and runs on timer:crontab.manifest; this row asks for a CHANGE to it, and an organ merely running proves nothing about the change",
+   "blocker_class": "needs_change",
+   "triaged_at": "2026-09-23T02:47:37.447801+00:00"
   },
   {
    "id": "R0551",
@@ -7138,7 +7288,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:fence_battery",
+   "next_action": "BT-69b0fdca62 -- build data/freshness_contracts.json and wire it to a clock",
+   "blocker": "data/freshness_contracts.json does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:47:37.518459+00:00"
   },
   {
    "id": "R0552",
@@ -7150,7 +7305,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-2f0e9f2ba6 -- wire tests/scripts/test_build_standard_contract.py as a leg or a box task",
+   "blocker": "tests/scripts/test_build_standard_contract.py exists and no clock in this repo runs it (III.16: unwired or idle is a defect)",
+   "blocker_class": "needs_clock",
+   "triaged_at": "2026-09-23T02:47:38.750274+00:00"
   },
   {
    "id": "R0553",
@@ -7162,7 +7322,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-0ad18affa6 -- hourly_cycle:implementer turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:47:09.742501+00:00"
   },
   {
    "id": "R0554",
@@ -7174,7 +7339,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:fence_battery",
+   "next_action": "BT-23e5b3da74 -- build data/denominator_contracts.json and wire it to a clock",
+   "blocker": "data/denominator_contracts.json does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:47:15.033748+00:00"
   },
   {
    "id": "R0555",
@@ -7186,7 +7356,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:fence_battery",
+   "next_action": "BT-fc42020c19 -- hourly_cycle:fence_battery turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:46:39.492031+00:00"
   },
   {
    "id": "R0556",
@@ -7194,11 +7369,11 @@
    "summary": "L1.57 COVERAGE RATCHET, RESIDUAL AFTER R0417: 18/56 fences declare a denominator (32%, up from 13/56 on 2026-08-13). R0417 is closed on the two it named as highest blast radius -- check_utilisation (every ceiling UNMEASURED left idle_unexplained empty, so a fully dark board exited 0) and check_mypy_ratchet (uncheckable files are POPPED from counts, so mypy uninstalled yielded total_errors 0 / n_files_checked 0 / exit 0) -- plus check_freshness, check_input_provenance, check_gate_reachability and check_clock_provenance. THE REMAINING 38 ARE NOT ALL ONE-LINERS, and the two shapes need different work. MOST are a kwarg at the exit site once you pick a count the RUN found. But at least one is a genuine design change and must not be waved through as wiring: check_build_standard publishes n_governed = len(_GOVERNED), a HARDCODED tuple, and len(organs) is identical to it by construction because organs is built by iterating that tuple -- so neither expression counts anything discovered, and both are exactly the constant-denominator half L1.57 names ('it must count what the RUN found'). Giving that fence an honest denominator means making its roster DISCOVERED, which is a real change to what it governs, not a kwarg. data/denominators.json next_action names the queue in order. Working rule learned in R0417: pick the count that would FALL if the scan died, never the count of what the author wrote down -- and prefer preserving an existing fail-list verdict exactly while adding only the vacuity refusal, since converting a fail-list to a pass-list is a second unrelated change to what a fence blocks on.",
    "roi_bps": 15.0,
    "raised": "2026-08-13T01:49:34.510297+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "rejected",
+   "reason": "Duplicate of R0417, which is already terminal and says the same thing; this ledger's rule is one row per recommendation, and two rows for one ask split its evidence and its owner across both.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-09-23T02:46:54.242151+00:00"
   },
   {
    "id": "R0557",
@@ -7210,7 +7385,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:mine",
+   "next_action": "BT-695cea5ca2 -- wire tests/governance/test_source_universality.py as a leg or a box task",
+   "blocker": "tests/governance/test_source_universality.py exists and no clock in this repo runs it (III.16: unwired or idle is a defect)",
+   "blocker_class": "needs_clock",
+   "triaged_at": "2026-09-23T02:47:09.629507+00:00"
   },
   {
    "id": "R0558",
@@ -7222,7 +7402,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-86c8336bf2 -- build reports/cross_section_breadth.json and wire it to a clock",
+   "blocker": "reports/cross_section_breadth.json does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:50:07.314344+00:00"
   },
   {
    "id": "R0559",
@@ -7234,7 +7419,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-a83d070e6b -- hourly_cycle:implementer turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:50:07.348316+00:00"
   },
   {
    "id": "R0560",
@@ -7246,7 +7436,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-0b96cc3fd0 -- hourly_cycle:implementer turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:50:07.411468+00:00"
   },
   {
    "id": "R0561",
@@ -7258,7 +7453,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:fence_battery",
+   "next_action": "BT-6c936bfc63 -- hourly_cycle:fence_battery turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:50:07.437135+00:00"
   },
   {
    "id": "R0562",
@@ -7270,7 +7470,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:fence_battery",
+   "next_action": "BT-1b641ae4d3 -- build scripts/log_swaps.py and wire it to a clock",
+   "blocker": "scripts/log_swaps.py does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:47:13.511217+00:00"
   },
   {
    "id": "R0563",
@@ -7278,11 +7483,11 @@
    "summary": "MONEY-PATH SPOT FILTER DIVERGENCE, LIVE AND ALREADY PINNED BY A RED TEST. tests/execution/test_filter_parity.py fails 4/5 today (KeyError min_notional at :85). libs/execution/binance_spot_live.py:121 emits min_notional from the NOTIONAL/MIN_NOTIONAL filter; libs/execution/binance_spot_testnet.py:95-99 exchange_filters() returns only step/min_qty/qty_prec/tick/price_prec and omits it entirely. min_notional is the venue minimum ORDER VALUE -- a gate quantity filters cannot express -- so on the testnet path an order below the venue minimum is not caught locally and is rejected by the venue instead, and the two parsers disagree about what a symbol's constraints ARE. The test was written precisely to pin this divergence and it is red, which means the parity guarantee the money path assumes has been absent for as long as the test has been failing. Surfaced 2026-08-13 while setting the R0422 resolver for forecast 20260731-filter-parity-holds (p=0.90, due 2026-10-31) -- that forecast currently grades FALSE. FIX: add min_notional to binance_spot_testnet.exchange_filters() reading BOTH filter names (MIN_NOTIONAL and NOTIONAL), absent => 0.0 not a silent default, exactly as the live parser does. CHECK THE L1.38 CHANGE WINDOW FIRST: this is money path. It is a REPAIR not an improvement, and repairs always proceed even inside a freeze.",
    "roi_bps": 25.0,
    "raised": "2026-08-13T02:55:21.552300+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "rejected",
+   "reason": "Out of universe: names binance, and the MT5 universe mandate (2026-08-18) is that no crypto-EXCHANGE ground is ever hunted again -- no miner, query or research mandate may target it. Fusion-executable crypto CFDs remain in scope and this row does not name one.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-09-23T02:46:39.492128+00:00"
   },
   {
    "id": "R0564",
@@ -7294,7 +7499,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Gateway",
+   "next_action": "BT-eda2853239 -- build tests/execution/test_carry_entry_gate.py and wire it to a clock",
+   "blocker": "tests/execution/test_carry_entry_gate.py does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:46:24.346443+00:00"
   },
   {
    "id": "R0565",
@@ -7318,7 +7528,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Gauntlet",
+   "next_action": "BT-17cc7255e8 -- wire libs/validation/dsr.py as a leg or a box task",
+   "blocker": "libs/validation/dsr.py exists and no clock in this repo runs it (III.16: unwired or idle is a defect)",
+   "blocker_class": "needs_clock",
+   "triaged_at": "2026-09-23T02:46:24.298869+00:00"
   },
   {
    "id": "R0567",
@@ -7330,7 +7545,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Gauntlet",
+   "next_action": "BT-a788a84c20 -- build scripts/run_moat_campaign.py and wire it to a clock",
+   "blocker": "scripts/run_moat_campaign.py does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:46:59.231323+00:00"
   },
   {
    "id": "R0568",
@@ -7342,7 +7562,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-346f36a4b9 -- hourly_cycle:implementer turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:47:13.534817+00:00"
   },
   {
    "id": "R0569",
@@ -7354,7 +7579,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-9370849ace -- hourly_cycle:implementer turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:47:22.728668+00:00"
   },
   {
    "id": "R0570",
@@ -7398,11 +7628,11 @@
    "summary": "THE STERILE-COCKPIT WINDOW HAS BEEN LATCHED OPEN FOR 11.7 DAYS BY A DISARMED FILE, AND IT IS AN UNPRICED CLAMP (L1.43 welded gate + L1.51). check_change_window reports STERILE / verdict BLOCK for every money-path path, on the single window RAIL_BREACH: 'a ruin/derisk rail is live (CASHCARRY_KILL present) -- the book is unwinding'. THE EVIDENCE SAYS THE BOOK IS NOT UNWINDING: data/CASHCARRY_KILL is dated 2026-08-01T21:55 (11.7 days), its own contents read 'live_guard freeze ...: pager ladder at 4h rung (disarmed)', data/cashcarry_positions.json carries positions {} (zero open carries) and last_risk_action 'ok'. So the window is keyed on the PRESENCE of a file whose own text says the thing it names is disarmed, over a flat book. THE FENCE IS CORRECT AND THE INPUT IS STALE -- this is not a request to loosen L1.38, which is a real law and whose freeze direction is right. Two defects: (1) a gate that has BLOCKED 100 percent of money-path improvements for 11.7 days carries zero information and is the welded-gate class the desk hunts elsewhere; (2) L1.51 requires every clamp to carry {since, holds_usd, usd_per_day, cumulative_usd, lifting_condition} and this one carries NONE, so the cost of every deferred money-path fix is invisible. MEASURED CONSEQUENCE THIS CYCLE: R0442's tape-stamping half was scheduled rather than built, and it is the second row deferred behind this window. WORK: (a) decide whether _rail_live should key on an ARMED rail (a live drawdown action or a non-empty book) rather than file presence, or whether CASHCARRY_KILL is simply stale and clearing it is a principal act -- NEITHER is a threshold change; (b) price the clamp per L1.51. On mode PAPER the honest holds_usd is UNMEASURABLE-PAPER-BOOK, never 0 -- a zero prices the deferral as free.",
    "roi_bps": 9.0,
    "raised": "2026-08-13T04:57:26.269859+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "rejected",
+   "reason": "REFUSED by the principal's standing order (2026-09-08, given three times): no session lowers the desk's aggressiveness by fiat. The 20% heat floor, the 0.02-lot gold floor and the allocator's fractions stay as they are; a cap, shrink or veto is admitted only with a proof that robust forward E[log W] RISES (Growth Governance Rule 1), which this row does not carry.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-09-23T02:47:09.629644+00:00"
   },
   {
    "id": "R0574",
@@ -7414,7 +7644,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:shadow_forward",
+   "next_action": "BT-d7b60eb62d -- wire scripts/study_absorbing_kelly.py as a leg or a box task",
+   "blocker": "scripts/study_absorbing_kelly.py exists and no clock in this repo runs it (III.16: unwired or idle is a defect)",
+   "blocker_class": "needs_clock",
+   "triaged_at": "2026-09-23T02:47:16.996026+00:00"
   },
   {
    "id": "R0575",
@@ -7426,7 +7661,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:fence_battery",
+   "next_action": "BT-44a7a07d27 -- hourly_cycle:fence_battery turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:47:23.804056+00:00"
   },
   {
    "id": "R0576",
@@ -7438,7 +7678,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-ed69fb16ef -- hourly_cycle:implementer turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:47:26.056354+00:00"
   },
   {
    "id": "R0577",
@@ -7450,7 +7695,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:mine",
+   "next_action": "BT-3ccc12047e -- wire libs/research/panel_breadth.py as a leg or a box task",
+   "blocker": "libs/research/panel_breadth.py exists and no clock in this repo runs it (III.16: unwired or idle is a defect)",
+   "blocker_class": "needs_clock",
+   "triaged_at": "2026-09-23T02:50:09.235504+00:00"
   },
   {
    "id": "R0578",
@@ -7498,7 +7748,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:mine",
+   "next_action": "BT-85ff2365ca -- build qlib/data/ops.py and wire it to a clock",
+   "blocker": "qlib/data/ops.py does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:47:38.813408+00:00"
   },
   {
    "id": "R0582",
@@ -7522,7 +7777,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:fence_battery",
+   "next_action": "BT-356df08192 -- build data/audit_coverage.json and wire it to a clock",
+   "blocker": "data/audit_coverage.json does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:46:39.515474+00:00"
   },
   {
    "id": "R0584",
@@ -7534,7 +7794,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:mine",
+   "next_action": "BT-390d9da5ea -- hourly_cycle:mine turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:46:52.404277+00:00"
   },
   {
    "id": "R0585",
@@ -7546,7 +7811,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-553158d8f9 -- hourly_cycle:implementer turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:47:00.048485+00:00"
   },
   {
    "id": "R0586",
@@ -7558,7 +7828,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-315ebb5c33 -- build data/sor_crypto.sqlite and wire it to a clock",
+   "blocker": "data/sor_crypto.sqlite does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:46:52.320540+00:00"
   },
   {
    "id": "R0587",
@@ -7570,7 +7845,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:shadow_forward",
+   "next_action": "BT-d1e18f3c81 -- wire libs/self_improvement/adaptive_thresholds.py as a leg or a box task",
+   "blocker": "libs/self_improvement/adaptive_thresholds.py exists and no clock in this repo runs it (III.16: unwired or idle is a defect)",
+   "blocker_class": "needs_clock",
+   "triaged_at": "2026-09-23T02:47:04.322164+00:00"
   },
   {
    "id": "R0588",
@@ -7582,7 +7862,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-710ea3dccf -- build data/audit_coverage.json and wire it to a clock",
+   "blocker": "data/audit_coverage.json does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:47:08.727334+00:00"
   },
   {
    "id": "R0589",
@@ -7594,7 +7879,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-MoatRecorder",
+   "next_action": "BT-31eaf63aa2 -- MT5-MoatRecorder turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:47:43.054360+00:00"
   },
   {
    "id": "R0590",
@@ -7606,7 +7896,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:mine",
+   "next_action": "BT-4881643e01 -- hourly_cycle:mine turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:47:43.116907+00:00"
   },
   {
    "id": "R0591",
@@ -7618,7 +7913,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-178da67653 -- wire libs/research/convergence.py as a leg or a box task",
+   "blocker": "libs/research/convergence.py exists and no clock in this repo runs it (III.16: unwired or idle is a defect)",
+   "blocker_class": "needs_clock",
+   "triaged_at": "2026-09-23T02:47:45.249999+00:00"
   },
   {
    "id": "R0592",
@@ -7630,7 +7930,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-2970071dea -- hourly_cycle:implementer turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:50:09.298205+00:00"
   },
   {
    "id": "R0593",
@@ -7642,7 +7947,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:mine",
+   "next_action": "BT-cb6a3d9b93 -- hourly_cycle:mine turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:50:09.323718+00:00"
   },
   {
    "id": "R0594",
@@ -7654,7 +7964,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-18ce020df3 -- hourly_cycle:implementer turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:50:09.349227+00:00"
   },
   {
    "id": "R0595",
@@ -7666,7 +7981,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Gauntlet",
+   "next_action": "BT-8d333a65e0 -- wire scripts/model_upgrade.py as a leg or a box task",
+   "blocker": "scripts/model_upgrade.py exists and no clock in this repo runs it (III.16: unwired or idle is a defect)",
+   "blocker_class": "needs_clock",
+   "triaged_at": "2026-09-23T02:50:09.411440+00:00"
   },
   {
    "id": "R0596",
@@ -7678,7 +7998,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Hourly:promoter",
+   "next_action": "BT-66e1397cbf -- build libs/research/list_order.sh and wire it to a clock",
+   "blocker": "libs/research/list_order.sh does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:50:11.513919+00:00"
   },
   {
    "id": "R0597",
@@ -7690,7 +8015,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Hourly:refresh_bars",
+   "next_action": "BT-2d87c08f75 -- MT5-Hourly:refresh_bars turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:50:11.540923+00:00"
   },
   {
    "id": "R0598",
@@ -7702,7 +8032,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:fence_battery",
+   "next_action": "BT-80424698c2 -- wire tests/scripts/test_build_standard_contract.py as a leg or a box task",
+   "blocker": "tests/scripts/test_build_standard_contract.py exists and no clock in this repo runs it (III.16: unwired or idle is a defect)",
+   "blocker_class": "needs_clock",
+   "triaged_at": "2026-09-23T02:50:11.597570+00:00"
   },
   {
    "id": "R0599",
@@ -7714,7 +8049,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:mine",
+   "next_action": "BT-9b3b8a3838 -- hourly_cycle:mine turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:50:11.626625+00:00"
   },
   {
    "id": "R0600",
@@ -7726,7 +8066,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Hourly:refresh_bars",
+   "next_action": "BT-ffafac7eed -- MT5-Hourly:refresh_bars turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:50:11.653965+00:00"
   },
   {
    "id": "R0601",
@@ -7738,7 +8083,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Hourly:promoter",
+   "next_action": "BT-b25a9afaa4 -- build data/forward_slots.json and wire it to a clock",
+   "blocker": "data/forward_slots.json does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:46:39.541803+00:00"
   },
   {
    "id": "R0602",
@@ -7750,7 +8100,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Hourly:promoter",
+   "next_action": "BT-602639361f -- wire libs/validation/brain_calibration.py as a leg or a box task",
+   "blocker": "libs/validation/brain_calibration.py exists and no clock in this repo runs it (III.16: unwired or idle is a defect)",
+   "blocker_class": "needs_clock",
+   "triaged_at": "2026-09-23T02:46:54.218962+00:00"
   },
   {
    "id": "R0603",
@@ -7762,7 +8117,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:fence_battery",
+   "next_action": "BT-93745aae5d -- hourly_cycle:fence_battery turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:47:17.027754+00:00"
   },
   {
    "id": "R0604",
@@ -7786,7 +8146,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Gauntlet",
+   "next_action": "BT-f05d9952ca -- MT5-Gauntlet turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:50:11.725428+00:00"
   },
   {
    "id": "R0606",
@@ -7798,7 +8163,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "runner:run_research_cycle.sh",
+   "next_action": "BT-7e02d23ec2 -- make the change in scripts/run_wealth_report.py and dispose this row citing the commit",
+   "blocker": "scripts/run_wealth_report.py already exists and runs on runner:run_research_cycle.sh; this row asks for a CHANGE to it, and an organ merely running proves nothing about the change",
+   "blocker_class": "needs_change",
+   "triaged_at": "2026-09-23T02:50:13.646975+00:00"
   },
   {
    "id": "R0607",
@@ -7810,7 +8180,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:fence_battery",
+   "next_action": "BT-31d1f643c9 -- build tests/governance/test_funding_capture_fence.py and wire it to a clock",
+   "blocker": "tests/governance/test_funding_capture_fence.py does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:47:08.755094+00:00"
   },
   {
    "id": "R0608",
@@ -7834,7 +8209,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-292fbd9801 -- wire libs/data/render_fetch.py as a leg or a box task",
+   "blocker": "libs/data/render_fetch.py exists and no clock in this repo runs it (III.16: unwired or idle is a defect)",
+   "blocker_class": "needs_clock",
+   "triaged_at": "2026-09-23T02:47:18.901615+00:00"
   },
   {
    "id": "R0610",
@@ -7846,7 +8226,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:queue_cycle",
+   "next_action": "BT-878a078aff -- hourly_cycle:queue_cycle turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:47:13.594277+00:00"
   },
   {
    "id": "R0611",
@@ -7879,7 +8264,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:mine",
+   "next_action": "BT-e45bf226b0 -- build data/liquidations.parquet and wire it to a clock",
+   "blocker": "data/liquidations.parquet does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:46:39.616127+00:00"
   },
   {
    "id": "R0613",
@@ -7891,7 +8281,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:mine",
+   "next_action": "BT-150c27b29a -- build data/cot_btc_panel.json and wire it to a clock",
+   "blocker": "data/cot_btc_panel.json does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:47:00.109002+00:00"
   },
   {
    "id": "R0614",
@@ -7903,7 +8298,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:fence_battery",
+   "next_action": "BT-48d802756b -- hourly_cycle:fence_battery turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:50:13.713679+00:00"
   },
   {
    "id": "R0615",
@@ -7915,7 +8315,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:fence_battery",
+   "next_action": "BT-f77011453e -- hourly_cycle:fence_battery turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:50:15.626038+00:00"
   },
   {
    "id": "R0616",
@@ -7939,7 +8344,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:mine",
+   "next_action": "BT-910ec4d930 -- wire scripts/source_backlog_next.py as a leg or a box task",
+   "blocker": "scripts/source_backlog_next.py exists and no clock in this repo runs it (III.16: unwired or idle is a defect)",
+   "blocker_class": "needs_clock",
+   "triaged_at": "2026-09-23T02:47:21.405527+00:00"
   },
   {
    "id": "R0618",
@@ -8059,7 +8469,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Hourly:promoter",
+   "next_action": "BT-e0c6e446c1 -- build data/margin_topology.json and wire it to a clock",
+   "blocker": "data/margin_topology.json does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:48:43.596906+00:00"
   },
   {
    "id": "R0627",
@@ -8073,7 +8488,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-9a393e5bf4 -- build data/margin_topology_terms.json and wire it to a clock",
+   "blocker": "data/margin_topology_terms.json does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:48:19.553227+00:00"
   },
   {
    "id": "R0628",
@@ -8087,7 +8507,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:shadow_forward",
+   "next_action": "BT-1197e4e85f -- hourly_cycle:shadow_forward turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:48:13.614830+00:00"
   },
   {
    "id": "R0629",
@@ -8101,7 +8526,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Hourly:promoter",
+   "next_action": "BT-cc4aaf842e -- MT5-Hourly:promoter turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:47:55.523206+00:00"
   },
   {
    "id": "R0630",
@@ -8129,7 +8559,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-8c39f0953c -- hourly_cycle:implementer turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:48:43.643668+00:00"
   },
   {
    "id": "R0632",
@@ -8139,11 +8574,11 @@
    "rank": 8.0,
    "roi_basis": "rank",
    "raised": "2026-08-19T06:41:23.019993+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "rejected",
+   "reason": "Out of universe: names binance, and the MT5 universe mandate (2026-08-18) is that no crypto-EXCHANGE ground is ever hunted again -- no miner, query or research mandate may target it. Fusion-executable crypto CFDs remain in scope and this row does not name one.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-09-23T02:48:19.553353+00:00"
   },
   {
    "id": "R0633",
@@ -8157,7 +8592,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:fence_battery",
+   "next_action": "BT-73be4c744a -- hourly_cycle:fence_battery turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:47:55.606450+00:00"
   },
   {
    "id": "R0634",
@@ -8213,7 +8653,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-MoatRecorder",
+   "next_action": "BT-c18d508dae -- build data/geckoterminal_trades.json and wire it to a clock",
+   "blocker": "data/geckoterminal_trades.json does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:49:33.423089+00:00"
   },
   {
    "id": "R0638",
@@ -8223,11 +8668,11 @@
    "rank": 78.0,
    "roi_basis": "rank",
    "raised": "2026-08-19T08:18:50.760034+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "rejected",
+   "reason": "Out of universe: names bybit, and the MT5 universe mandate (2026-08-18) is that no crypto-EXCHANGE ground is ever hunted again -- no miner, query or research mandate may target it. Fusion-executable crypto CFDs remain in scope and this row does not name one.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-09-23T02:49:27.555661+00:00"
   },
   {
    "id": "R0639",
@@ -8241,7 +8686,12 @@
    "due": null,
    "disposed": null,
    "renumbered_from": "R0582",
-   "renumber_reason": "id was allocated to a different recommendation on the other branch; renumbered at merge so citations stay unambiguous"
+   "renumber_reason": "id was allocated to a different recommendation on the other branch; renumbered at merge so citations stay unambiguous",
+   "owner": "hourly_cycle:mine",
+   "next_action": "BT-79e19832e4 -- hourly_cycle:mine turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:47:40.220074+00:00"
   },
   {
    "id": "R0640",
@@ -8269,7 +8719,12 @@
    "due": null,
    "disposed": null,
    "renumbered_from": "R0584",
-   "renumber_reason": "id was allocated to a different recommendation on the other branch; renumbered at merge so citations stay unambiguous"
+   "renumber_reason": "id was allocated to a different recommendation on the other branch; renumbered at merge so citations stay unambiguous",
+   "owner": "hourly_cycle:mine",
+   "next_action": "BT-43ab83f534 -- wire scripts/mine_gate.py as a leg or a box task",
+   "blocker": "scripts/mine_gate.py exists and no clock in this repo runs it (III.16: unwired or idle is a defect)",
+   "blocker_class": "needs_clock",
+   "triaged_at": "2026-09-23T02:47:43.030098+00:00"
   },
   {
    "id": "R0642",
@@ -8283,7 +8738,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Gateway",
+   "next_action": "BT-ba800b50d6 -- wire libs/ops/claim_registry.py as a leg or a box task",
+   "blocker": "libs/ops/claim_registry.py exists and no clock in this repo runs it (III.16: unwired or idle is a defect)",
+   "blocker_class": "needs_clock",
+   "triaged_at": "2026-09-23T02:49:43.019766+00:00"
   },
   {
    "id": "R0643",
@@ -8297,7 +8757,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "timer:crontab.manifest",
+   "next_action": "BT-e906496c27 -- make the change in scripts/build_enforcement_matrix.py and dispose this row citing the commit",
+   "blocker": "scripts/build_enforcement_matrix.py already exists and runs on timer:crontab.manifest; this row asks for a CHANGE to it, and an organ merely running proves nothing about the change",
+   "blocker_class": "needs_change",
+   "triaged_at": "2026-09-23T02:49:28.533491+00:00"
   },
   {
    "id": "R0644",
@@ -8311,7 +8776,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:shadow_forward",
+   "next_action": "BT-21c01b7048 -- make the change in desks/mt5/research/shadow_forward.py and dispose this row citing the commit",
+   "blocker": "desks/mt5/research/shadow_forward.py already exists and runs on hourly_cycle:shadow_forward; this row asks for a CHANGE to it, and an organ merely running proves nothing about the change",
+   "blocker_class": "needs_change",
+   "triaged_at": "2026-09-23T02:49:16.012693+00:00"
   },
   {
    "id": "R0645",
@@ -8325,7 +8795,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-9770b597f7 -- wire desks/mt5/mt5desk/risk_units.py as a leg or a box task",
+   "blocker": "desks/mt5/mt5desk/risk_units.py exists and no clock in this repo runs it (III.16: unwired or idle is a defect)",
+   "blocker_class": "needs_clock",
+   "triaged_at": "2026-09-23T02:49:12.149501+00:00"
   },
   {
    "id": "R0646",
@@ -8339,7 +8814,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "principal",
+   "next_action": "BT-7d7703668f -- write the change as a SPEC for the principal to approve; do not edit the sealed file",
+   "blocker": "promoter.py is sealed: no session edits it autonomously (LAWS: Tier-3 never-touch and the four sealed judges)",
+   "blocker_class": "needs_principal",
+   "triaged_at": "2026-09-23T02:49:01.151712+00:00"
   },
   {
    "id": "R0647",
@@ -8367,7 +8847,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:mine",
+   "next_action": "BT-80ef0148fa -- hourly_cycle:mine turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:47:46.494977+00:00"
   },
   {
    "id": "R0649",
@@ -8409,7 +8894,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Hourly:promoter",
+   "next_action": "BT-3d48178ffe -- MT5-Hourly:promoter turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:49:00.904347+00:00"
   },
   {
    "id": "R0652",
@@ -8423,7 +8913,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-59abc4f7e0 -- wire libs/research/source_backlog.py as a leg or a box task",
+   "blocker": "libs/research/source_backlog.py exists and no clock in this repo runs it (III.16: unwired or idle is a defect)",
+   "blocker_class": "needs_clock",
+   "triaged_at": "2026-09-23T02:48:20.735069+00:00"
   },
   {
    "id": "R0653",
@@ -8437,7 +8932,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Gateway",
+   "next_action": "BT-b87d02396e -- build data/gotobi_screen.json and wire it to a clock",
+   "blocker": "data/gotobi_screen.json does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:48:43.711069+00:00"
   },
   {
    "id": "R0654",
@@ -8451,7 +8951,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Gauntlet",
+   "next_action": "BT-b846c3e39e -- wire libs/research/alpha_economics.py as a leg or a box task",
+   "blocker": "libs/research/alpha_economics.py exists and no clock in this repo runs it (III.16: unwired or idle is a defect)",
+   "blocker_class": "needs_clock",
+   "triaged_at": "2026-09-23T02:47:57.639717+00:00"
   },
   {
    "id": "R0655",
@@ -8465,7 +8970,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "runner:run_commit_audit.sh",
+   "next_action": "BT-acfbce8f0e -- make the change in scripts/run_external_panel.py and dispose this row citing the commit",
+   "blocker": "scripts/run_external_panel.py already exists and runs on runner:run_commit_audit.sh; this row asks for a CHANGE to it, and an organ merely running proves nothing about the change",
+   "blocker_class": "needs_change",
+   "triaged_at": "2026-09-23T02:47:50.539176+00:00"
   },
   {
    "id": "R0656",
@@ -8479,7 +8989,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:mine",
+   "next_action": "BT-18472b4312 -- hourly_cycle:mine turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:47:57.702805+00:00"
   },
   {
    "id": "R0657",
@@ -8535,7 +9050,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:mine",
+   "next_action": "BT-042192a178 -- wire desks/mt5/side_channels/mql5_codebase.py as a leg or a box task",
+   "blocker": "desks/mt5/side_channels/mql5_codebase.py exists and no clock in this repo runs it (III.16: unwired or idle is a defect)",
+   "blocker_class": "needs_clock",
+   "triaged_at": "2026-09-23T02:48:44.905440+00:00"
   },
   {
    "id": "R0661",
@@ -8549,7 +9069,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:shadow_forward",
+   "next_action": "BT-50929786c4 -- hourly_cycle:shadow_forward turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:47:47.413715+00:00"
   },
   {
    "id": "R0662",
@@ -8573,11 +9098,11 @@
    "rank": null,
    "roi_basis": "measured",
    "raised": "2026-08-26T08:52:07.875244+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "desks/mt5/data/sleeve_registry.json did not exist when this row was raised (2026-08-26) and was ADDED in 3970295eb715 on 2026-09-06, 10.7 days later; the deliverable is the file itself, so the add-commit is the proof rather than a claim.",
+   "commit": "3970295eb7152ab521e16a728f798dfdbdb7a863",
    "due": null,
-   "disposed": null
+   "disposed": "2026-09-23T02:46:41.006431+00:00"
   },
   {
    "id": "R0664",
@@ -8591,7 +9116,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:shadow_forward",
+   "next_action": "BT-24bc8ac819 -- hourly_cycle:shadow_forward turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:46:39.348286+00:00"
   },
   {
    "id": "R0665",
@@ -8619,7 +9149,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:mine",
+   "next_action": "BT-fcb1381ba5 -- wire desks/mt5/side_channels/mql5_forum.py as a leg or a box task",
+   "blocker": "desks/mt5/side_channels/mql5_forum.py exists and no clock in this repo runs it (III.16: unwired or idle is a defect)",
+   "blocker_class": "needs_clock",
+   "triaged_at": "2026-09-23T02:48:22.106996+00:00"
   },
   {
    "id": "R0667",
@@ -8633,7 +9168,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:mine",
+   "next_action": "BT-674b653aa1 -- hourly_cycle:mine turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:48:44.929914+00:00"
   },
   {
    "id": "R0668",
@@ -8647,7 +9187,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Gateway",
+   "next_action": "BT-6cd958208d -- MT5-Gateway turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:48:13.639626+00:00"
   },
   {
    "id": "R0669",
@@ -8661,7 +9206,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Gateway",
+   "next_action": "BT-5cb465f294 -- MT5-Gateway turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:48:44.994542+00:00"
   },
   {
    "id": "R0670",
@@ -8675,7 +9225,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "runner:run_seed_miners_hourly.sh",
+   "next_action": "BT-e88624f954 -- make the change in desks/mt5/side_channels/seed_miners.py and dispose this row citing the commit",
+   "blocker": "desks/mt5/side_channels/seed_miners.py already exists and runs on runner:run_seed_miners_hourly.sh; this row asks for a CHANGE to it, and an organ merely running proves nothing about the change",
+   "blocker_class": "needs_change",
+   "triaged_at": "2026-09-23T02:48:46.405828+00:00"
   },
   {
    "id": "R0671",
@@ -8689,7 +9244,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Hourly:promoter",
+   "next_action": "BT-544c4f3726 -- MT5-Hourly:promoter turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:47:57.727234+00:00"
   },
   {
    "id": "R0672",
@@ -8703,7 +9263,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Hourly:refresh_bars",
+   "next_action": "BT-0e8a163e37 -- MT5-Hourly:refresh_bars turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:49:27.397067+00:00"
   },
   {
    "id": "R0673",
@@ -8717,7 +9282,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Hourly:promoter",
+   "next_action": "BT-a3045961e0 -- wire desks/mt5/research/book_reality.py as a leg or a box task",
+   "blocker": "desks/mt5/research/book_reality.py exists and no clock in this repo runs it (III.16: unwired or idle is a defect)",
+   "blocker_class": "needs_clock",
+   "triaged_at": "2026-09-23T02:49:43.111201+00:00"
   },
   {
    "id": "R0674",
@@ -8731,7 +9301,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-89adb79c77 -- hourly_cycle:implementer turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:49:43.047461+00:00"
   },
   {
    "id": "R0675",
@@ -8745,7 +9320,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:mine",
+   "next_action": "BT-13a4ec1dc8 -- hourly_cycle:mine turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:49:17.424851+00:00"
   },
   {
    "id": "R0676",
@@ -8759,7 +9339,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:shadow_forward",
+   "next_action": "BT-78ffd967a4 -- build scripts/run_cashcarry_executor.py and wire it to a clock",
+   "blocker": "scripts/run_cashcarry_executor.py does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:49:54.348347+00:00"
   },
   {
    "id": "R0677",
@@ -8773,7 +9358,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:shadow_forward",
+   "next_action": "BT-46d2daf747 -- hourly_cycle:shadow_forward turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:48:13.699185+00:00"
   },
   {
    "id": "R0678",
@@ -8787,7 +9377,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Hourly:refresh_bars",
+   "next_action": "BT-f0ae10d086 -- wire desks/mt5/research/fetch_universe.py as a leg or a box task",
+   "blocker": "desks/mt5/research/fetch_universe.py exists and no clock in this repo runs it (III.16: unwired or idle is a defect)",
+   "blocker_class": "needs_clock",
+   "triaged_at": "2026-09-23T02:48:03.310977+00:00"
   },
   {
    "id": "R0679",
@@ -8801,7 +9396,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-a3f4b912a9 -- wire desks/mt5/mt5desk/engine.py as a leg or a box task",
+   "blocker": "desks/mt5/mt5desk/engine.py exists and no clock in this repo runs it (III.16: unwired or idle is a defect)",
+   "blocker_class": "needs_clock",
+   "triaged_at": "2026-09-23T02:48:30.141479+00:00"
   },
   {
    "id": "R0680",
@@ -8815,7 +9415,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-2189ec7bc9 -- hourly_cycle:implementer turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:48:03.347671+00:00"
   },
   {
    "id": "R0681",
@@ -8829,7 +9434,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:mine",
+   "next_action": "BT-be3882b100 -- hourly_cycle:mine turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:47:47.437102+00:00"
   },
   {
    "id": "R0682",
@@ -8843,7 +9453,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:fence_battery",
+   "next_action": "BT-cbf824258a -- build path/x.json and wire it to a clock",
+   "blocker": "path/x.json does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:48:04.691799+00:00"
   },
   {
    "id": "R0683",
@@ -8857,7 +9472,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Hourly:refresh_bars",
+   "next_action": "BT-0beb061e36 -- MT5-Hourly:refresh_bars turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:48:32.233670+00:00"
   },
   {
    "id": "R0684",
@@ -8871,7 +9491,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Hourly:refresh_bars",
+   "next_action": "BT-342b1a67db -- MT5-Hourly:refresh_bars turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:48:13.724165+00:00"
   },
   {
    "id": "R0685",
@@ -8885,7 +9510,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "timer:crontab.manifest",
+   "next_action": "BT-ee40db8bd9 -- make the change in scripts/run_generation_diversity.py and dispose this row citing the commit",
+   "blocker": "scripts/run_generation_diversity.py already exists and runs on timer:crontab.manifest; this row asks for a CHANGE to it, and an organ merely running proves nothing about the change",
+   "blocker_class": "needs_change",
+   "triaged_at": "2026-09-23T02:48:49.906904+00:00"
   },
   {
    "id": "R0686",
@@ -8941,7 +9571,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:shadow_forward",
+   "next_action": "BT-a7f56ff75a -- wire tests/conftest.py as a leg or a box task",
+   "blocker": "tests/conftest.py exists and no clock in this repo runs it (III.16: unwired or idle is a defect)",
+   "blocker_class": "needs_clock",
+   "triaged_at": "2026-09-23T02:50:15.650050+00:00"
   },
   {
    "id": "R0690",
@@ -8955,7 +9590,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "timer:crontab.manifest",
+   "next_action": "BT-061dc5dc26 -- make the change in scripts/run_strategy_coverage.py and dispose this row citing the commit",
+   "blocker": "scripts/run_strategy_coverage.py already exists and runs on timer:crontab.manifest; this row asks for a CHANGE to it, and an organ merely running proves nothing about the change",
+   "blocker_class": "needs_change",
+   "triaged_at": "2026-09-23T02:49:54.225702+00:00"
   },
   {
    "id": "R0691",
@@ -8969,7 +9609,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Hourly:refresh_bars",
+   "next_action": "BT-22318d03c0 -- wire libs/research/transcript_candidates.py as a leg or a box task",
+   "blocker": "libs/research/transcript_candidates.py exists and no clock in this repo runs it (III.16: unwired or idle is a defect)",
+   "blocker_class": "needs_clock",
+   "triaged_at": "2026-09-23T02:48:32.297353+00:00"
   },
   {
    "id": "R0692",
@@ -8983,7 +9628,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:mine",
+   "next_action": "BT-d02af5a6f4 -- hourly_cycle:mine turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:48:04.713942+00:00"
   },
   {
    "id": "R0693",
@@ -8997,7 +9647,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Hourly:refresh_bars",
+   "next_action": "BT-8986aa513e -- wire libs/research/transcript_candidates.py as a leg or a box task",
+   "blocker": "libs/research/transcript_candidates.py exists and no clock in this repo runs it (III.16: unwired or idle is a defect)",
+   "blocker_class": "needs_clock",
+   "triaged_at": "2026-09-23T02:47:53.451152+00:00"
   },
   {
    "id": "R0694",
@@ -9011,7 +9666,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-MoatRecorder",
+   "next_action": "BT-a8512a5c3c -- MT5-MoatRecorder turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:47:46.354898+00:00"
   },
   {
    "id": "R0695",
@@ -9025,7 +9685,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Gateway",
+   "next_action": "BT-b15536938b -- MT5-Gateway turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:47:46.411148+00:00"
   },
   {
    "id": "R0696",
@@ -9039,7 +9704,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-0a705c5857 -- hourly_cycle:implementer turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:49:00.946235+00:00"
   },
   {
    "id": "R0697",
@@ -9053,7 +9723,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:mine",
+   "next_action": "BT-79e60245e0 -- hourly_cycle:mine turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:49:54.447720+00:00"
   },
   {
    "id": "R0698",
@@ -9067,7 +9742,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:mine",
+   "next_action": "BT-be1e83a053 -- hourly_cycle:mine turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:49:54.412367+00:00"
   },
   {
    "id": "R0699",
@@ -9081,7 +9761,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-dc04905556 -- hourly_cycle:implementer turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:49:54.256932+00:00"
   },
   {
    "id": "R0700",
@@ -9095,7 +9780,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:mine",
+   "next_action": "BT-02e6107aed -- hourly_cycle:mine turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:49:28.619835+00:00"
   },
   {
    "id": "R0701",
@@ -9109,7 +9799,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:mine",
+   "next_action": "BT-c54fcfeb47 -- hourly_cycle:mine turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:49:27.426889+00:00"
   },
   {
    "id": "R0702",
@@ -9123,7 +9818,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-MoatRecorder",
+   "next_action": "BT-610c751fd8 -- MT5-MoatRecorder turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:49:27.555534+00:00"
   },
   {
    "id": "R0703",
@@ -9137,7 +9837,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-9e0e010043 -- hourly_cycle:implementer turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:49:01.117735+00:00"
   },
   {
    "id": "R0704",
@@ -9151,7 +9856,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-6210cefb78 -- hourly_cycle:implementer turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:48:04.735494+00:00"
   },
   {
    "id": "R0705",
@@ -9165,7 +9875,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-MoatRecorder",
+   "next_action": "BT-3fd54ab420 -- MT5-MoatRecorder turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:48:32.324546+00:00"
   },
   {
    "id": "R0706",
@@ -9179,7 +9894,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:mine",
+   "next_action": "BT-2bf40745c8 -- wire desks/mt5/side_channels/china_miner.py as a leg or a box task",
+   "blocker": "desks/mt5/side_channels/china_miner.py exists and no clock in this repo runs it (III.16: unwired or idle is a defect)",
+   "blocker_class": "needs_clock",
+   "triaged_at": "2026-09-23T02:48:51.124768+00:00"
   },
   {
    "id": "R0707",
@@ -9193,7 +9913,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Hourly:refresh_bars",
+   "next_action": "BT-3b50e2ffe4 -- build data/strategy_coverage.json and wire it to a clock",
+   "blocker": "data/strategy_coverage.json does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:48:13.747447+00:00"
   },
   {
    "id": "R0708",
@@ -9207,7 +9932,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Gateway",
+   "next_action": "BT-8e3d7b74d6 -- MT5-Gateway turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:48:33.319443+00:00"
   },
   {
    "id": "R0709",
@@ -9221,7 +9951,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-714dc10033 -- hourly_cycle:implementer turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:47:53.510512+00:00"
   },
   {
    "id": "R0710",
@@ -9235,7 +9970,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "timer:crontab.manifest",
+   "next_action": "BT-a7c80b26d6 -- make the change in scripts/run_strategy_coverage.py and dispose this row citing the commit",
+   "blocker": "scripts/run_strategy_coverage.py already exists and runs on timer:crontab.manifest; this row asks for a CHANGE to it, and an organ merely running proves nothing about the change",
+   "blocker_class": "needs_change",
+   "triaged_at": "2026-09-23T02:48:52.047572+00:00"
   },
   {
    "id": "R0711",
@@ -9249,7 +9989,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Hourly:promoter",
+   "next_action": "BT-686e1895b1 -- MT5-Hourly:promoter turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:48:04.794796+00:00"
   },
   {
    "id": "R0712",
@@ -9263,7 +10008,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Gateway",
+   "next_action": "BT-2f8723150a -- MT5-Gateway turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:47:46.520277+00:00"
   },
   {
    "id": "R0713",
@@ -9277,7 +10027,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:mine",
+   "next_action": "BT-466e3893fd -- build data/secrets/databento.json and wire it to a clock",
+   "blocker": "data/secrets/databento.json does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:48:33.345499+00:00"
   },
   {
    "id": "R0714",
@@ -9291,7 +10046,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:shadow_forward",
+   "next_action": "BT-f560a04713 -- build data/cost_surface_report.json and wire it to a clock",
+   "blocker": "data/cost_surface_report.json does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:48:52.909916+00:00"
   },
   {
    "id": "R0715",
@@ -9305,7 +10065,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Hourly:refresh_bars",
+   "next_action": "BT-0acd3090f4 -- MT5-Hourly:refresh_bars turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:49:54.511786+00:00"
   },
   {
    "id": "R0716",
@@ -9319,7 +10084,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-c15e841fd1 -- hourly_cycle:implementer turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:49:30.593138+00:00"
   },
   {
    "id": "R0717",
@@ -9333,7 +10103,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-d6cff2ca0d -- build BASE/data/cot_tff.json and wire it to a clock",
+   "blocker": "BASE/data/cot_tff.json does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:49:28.593194+00:00"
   },
   {
    "id": "R0718",
@@ -9347,7 +10122,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-94812c9ba2 -- build data/unlock_event_screen.json and wire it to a clock",
+   "blocker": "data/unlock_event_screen.json does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:48:38.908482+00:00"
   },
   {
    "id": "R0719",
@@ -9361,7 +10141,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:queue_cycle",
+   "next_action": "BT-c44ab9c343 -- hourly_cycle:queue_cycle turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:48:53.816060+00:00"
   },
   {
    "id": "R0720",
@@ -9375,7 +10160,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-MoatRecorder",
+   "next_action": "BT-c53fef5f2e -- MT5-MoatRecorder turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:48:53.745577+00:00"
   },
   {
    "id": "R0721",
@@ -9389,7 +10179,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-MoatRecorder",
+   "next_action": "BT-2808b93149 -- MT5-MoatRecorder turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:48:33.412091+00:00"
   },
   {
    "id": "R0722",
@@ -9403,7 +10198,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-adbfe993ee -- wire libs/ops/protected_artifacts.py as a leg or a box task",
+   "blocker": "libs/ops/protected_artifacts.py exists and no clock in this repo runs it (III.16: unwired or idle is a defect)",
+   "blocker_class": "needs_clock",
+   "triaged_at": "2026-09-23T02:48:53.713747+00:00"
   },
   {
    "id": "R0723",
@@ -9417,7 +10217,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Hourly:refresh_bars",
+   "next_action": "BT-d2e9410fa1 -- wire desks/mt5/side_channels/github_miner.py as a leg or a box task",
+   "blocker": "desks/mt5/side_channels/github_miner.py exists and no clock in this repo runs it (III.16: unwired or idle is a defect)",
+   "blocker_class": "needs_clock",
+   "triaged_at": "2026-09-23T02:48:15.115699+00:00"
   },
   {
    "id": "R0724",
@@ -9431,7 +10236,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Gateway",
+   "next_action": "BT-739773a860 -- MT5-Gateway turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:48:15.137548+00:00"
   },
   {
    "id": "R0725",
@@ -9445,7 +10255,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-e0c88d7eb1 -- hourly_cycle:implementer turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:49:01.217742+00:00"
   },
   {
    "id": "R0726",
@@ -9459,7 +10274,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-7e3a72f2ca -- hourly_cycle:implementer turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:49:01.049946+00:00"
   },
   {
    "id": "R0727",
@@ -9473,7 +10293,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Hourly:refresh_bars",
+   "next_action": "BT-15c03f9a15 -- build scripts/run_overlay_backtest.py and wire it to a clock",
+   "blocker": "scripts/run_overlay_backtest.py does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:49:01.015653+00:00"
   },
   {
    "id": "R0728",
@@ -9487,7 +10312,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Hourly:refresh_bars",
+   "next_action": "BT-26ff383ecd -- MT5-Hourly:refresh_bars turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:48:38.953788+00:00"
   },
   {
    "id": "R0729",
@@ -9501,7 +10331,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-MoatRecorder",
+   "next_action": "BT-98f5fdc3e2 -- wire libs/alpha_factory/wq_operators.py as a leg or a box task",
+   "blocker": "libs/alpha_factory/wq_operators.py exists and no clock in this repo runs it (III.16: unwired or idle is a defect)",
+   "blocker_class": "needs_clock",
+   "triaged_at": "2026-09-23T02:48:06.330290+00:00"
   },
   {
    "id": "R0730",
@@ -9515,7 +10350,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "runner:run_external_pipeline.sh",
+   "next_action": "BT-b42f9b5d91 -- make the change in desks/mt5/research/edge_search.py and dispose this row citing the commit",
+   "blocker": "desks/mt5/research/edge_search.py already exists and runs on runner:run_external_pipeline.sh; this row asks for a CHANGE to it, and an organ merely running proves nothing about the change",
+   "blocker_class": "needs_change",
+   "triaged_at": "2026-09-23T02:48:10.112574+00:00"
   },
   {
    "id": "R0731",
@@ -9529,7 +10369,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Hourly:refresh_bars",
+   "next_action": "BT-acd50994bf -- MT5-Hourly:refresh_bars turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:48:10.912668+00:00"
   },
   {
    "id": "R0732",
@@ -9543,7 +10388,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-MoatRecorder",
+   "next_action": "BT-30439e93e0 -- wire libs/alpha_factory/wq_operators.py as a leg or a box task",
+   "blocker": "libs/alpha_factory/wq_operators.py exists and no clock in this repo runs it (III.16: unwired or idle is a defect)",
+   "blocker_class": "needs_clock",
+   "triaged_at": "2026-09-23T02:48:39.015807+00:00"
   },
   {
    "id": "R0733",
@@ -9557,7 +10407,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-63243f2b45 -- build yli188/101Alpha_code_2.py and wire it to a clock",
+   "blocker": "yli188/101Alpha_code_2.py does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:47:55.307544+00:00"
   },
   {
    "id": "R0734",
@@ -9571,7 +10426,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-22996d1efa -- hourly_cycle:implementer turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:48:10.934846+00:00"
   },
   {
    "id": "R0735",
@@ -9585,7 +10445,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-fe850ef3a6 -- hourly_cycle:implementer turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:48:15.201679+00:00"
   },
   {
    "id": "R0736",
@@ -9599,7 +10464,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:mine",
+   "next_action": "BT-ad73aa5d17 -- wire data/brain_hunter_s13_pdf_cmap_extract.py as a leg or a box task",
+   "blocker": "data/brain_hunter_s13_pdf_cmap_extract.py exists and no clock in this repo runs it (III.16: unwired or idle is a defect)",
+   "blocker_class": "needs_clock",
+   "triaged_at": "2026-09-23T02:47:48.247337+00:00"
   },
   {
    "id": "R0737",
@@ -9613,7 +10483,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Gauntlet",
+   "next_action": "BT-131609be17 -- build data/cboe_vol_term_structure.json and wire it to a clock",
+   "blocker": "data/cboe_vol_term_structure.json does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:49:02.337401+00:00"
   },
   {
    "id": "R0738",
@@ -9627,7 +10502,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Hourly:refresh_bars",
+   "next_action": "BT-b4242cb9ad -- MT5-Hourly:refresh_bars turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:49:27.452527+00:00"
   },
   {
    "id": "R0739",
@@ -9641,7 +10521,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "principal",
+   "next_action": "BT-fb3056559e -- write the change as a SPEC for the principal to approve; do not edit the sealed file",
+   "blocker": "external_gauntlet.py is sealed: no session edits it autonomously (LAWS: Tier-3 never-touch and the four sealed judges)",
+   "blocker_class": "needs_principal",
+   "triaged_at": "2026-09-23T02:47:45.307199+00:00"
   },
   {
    "id": "R0740",
@@ -9655,7 +10540,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-778b6a5e41 -- hourly_cycle:implementer turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:47:46.331382+00:00"
   },
   {
    "id": "R0741",
@@ -9669,7 +10559,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-004b987736 -- wire libs/research/fusion_search.py as a leg or a box task",
+   "blocker": "libs/research/fusion_search.py exists and no clock in this repo runs it (III.16: unwired or idle is a defect)",
+   "blocker_class": "needs_clock",
+   "triaged_at": "2026-09-23T02:48:12.746861+00:00"
   },
   {
    "id": "R0742",
@@ -9683,7 +10578,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "timer:crontab.manifest",
+   "next_action": "BT-24ecb2dd36 -- make the change in scripts/measure_admission_power.py and dispose this row citing the commit",
+   "blocker": "scripts/measure_admission_power.py already exists and runs on timer:crontab.manifest; this row asks for a CHANGE to it, and an organ merely running proves nothing about the change",
+   "blocker_class": "needs_change",
+   "triaged_at": "2026-09-23T02:49:21.753667+00:00"
   },
   {
    "id": "R0743",
@@ -9693,11 +10593,11 @@
    "rank": 7.0,
    "roi_basis": "rank",
    "raised": "2026-08-29T16:38:30.822720+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "scripts/_retired/run_cot_change_screen.py did not exist when this row was raised (2026-08-29) and was ADDED in fc2749db75e2 on 2026-09-23, 24.4 days later; the deliverable is the file itself, so the add-commit is the proof rather than a claim.",
+   "commit": "fc2749db75e2de3fe07a3be43234d4974fe4b567",
    "due": null,
-   "disposed": null
+   "disposed": "2026-09-23T02:48:15.352417+00:00"
   },
   {
    "id": "R0744",
@@ -9767,7 +10667,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "runner:run_cro_ai.sh",
+   "next_action": "BT-6d24b2bef8 -- make the change in scripts/max_audit.py and dispose this row citing the commit",
+   "blocker": "scripts/max_audit.py already exists and runs on runner:run_cro_ai.sh; this row asks for a CHANGE to it, and an organ merely running proves nothing about the change",
+   "blocker_class": "needs_change",
+   "triaged_at": "2026-09-23T02:49:24.206624+00:00"
   },
   {
    "id": "R0749",
@@ -9781,7 +10686,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:shadow_forward",
+   "next_action": "BT-097ce1013f -- build data/derivative_shadow_state.json and wire it to a clock",
+   "blocker": "data/derivative_shadow_state.json does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:49:54.592770+00:00"
   },
   {
    "id": "R0750",
@@ -9795,7 +10705,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:mine",
+   "next_action": "BT-587e2203a7 -- wire desks/mt5/research/crowding_miner.py as a leg or a box task",
+   "blocker": "desks/mt5/research/crowding_miner.py exists and no clock in this repo runs it (III.16: unwired or idle is a defect)",
+   "blocker_class": "needs_clock",
+   "triaged_at": "2026-09-23T02:48:57.547358+00:00"
   },
   {
    "id": "R0751",
@@ -9809,7 +10724,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Hourly:refresh_bars",
+   "next_action": "BT-c723f2e877 -- build scripts/check_crowding.py and wire it to a clock",
+   "blocker": "scripts/check_crowding.py does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:48:40.939018+00:00"
   },
   {
    "id": "R0752",
@@ -9823,7 +10743,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-e645f01e85 -- hourly_cycle:implementer turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:48:12.807918+00:00"
   },
   {
    "id": "R0753",
@@ -9837,7 +10762,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Gateway",
+   "next_action": "BT-a77f15ced4 -- build data/intelligence/gpt_practitioner_corpus.json and wire it to a clock",
+   "blocker": "data/intelligence/gpt_practitioner_corpus.json does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:49:54.319708+00:00"
   },
   {
    "id": "R0754",
@@ -9851,7 +10781,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-8e50e5649b -- hourly_cycle:implementer turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:49:54.636212+00:00"
   },
   {
    "id": "R0755",
@@ -9865,7 +10800,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Hourly:refresh_bars",
+   "next_action": "BT-fef15312fe -- build data/brain_hunter_s50_rough_volatility_replication.json and wire it to a clock",
+   "blocker": "data/brain_hunter_s50_rough_volatility_replication.json does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:49:30.623581+00:00"
   },
   {
    "id": "R0756",
@@ -9879,7 +10819,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-8445e31859 -- wire libs/research/public_strategy_hunter.py as a leg or a box task",
+   "blocker": "libs/research/public_strategy_hunter.py exists and no clock in this repo runs it (III.16: unwired or idle is a defect)",
+   "blocker_class": "needs_clock",
+   "triaged_at": "2026-09-23T02:48:42.529410+00:00"
   },
   {
    "id": "R0757",
@@ -9893,7 +10838,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-fd3e2994f1 -- wire libs/research/public_strategy_hunter.py as a leg or a box task",
+   "blocker": "libs/research/public_strategy_hunter.py exists and no clock in this repo runs it (III.16: unwired or idle is a defect)",
+   "blocker_class": "needs_clock",
+   "triaged_at": "2026-09-23T02:48:57.609594+00:00"
   },
   {
    "id": "R0758",
@@ -9907,7 +10857,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-576173f132 -- hourly_cycle:implementer turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:48:17.309747+00:00"
   },
   {
    "id": "R0759",
@@ -9935,7 +10890,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-60d95ff466 -- hourly_cycle:implementer turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:47:55.340321+00:00"
   },
   {
    "id": "R0761",
@@ -9949,7 +10909,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Hourly:refresh_bars",
+   "next_action": "BT-e69d1f0bee -- build data/brain_hunter_s53_h1_cadence_audit.json and wire it to a clock",
+   "blocker": "data/brain_hunter_s53_h1_cadence_audit.json does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:48:42.596306+00:00"
   },
   {
    "id": "R0762",
@@ -9963,7 +10928,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Gauntlet",
+   "next_action": "BT-43ebce2c5c -- MT5-Gauntlet turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:49:31.401370+00:00"
   },
   {
    "id": "R0763",
@@ -9977,7 +10947,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:shadow_forward",
+   "next_action": "BT-eecb17374e -- build data/brain_hunter_s54_spread_timevariation.json and wire it to a clock",
+   "blocker": "data/brain_hunter_s54_spread_timevariation.json does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:49:27.516502+00:00"
   },
   {
    "id": "R0764",
@@ -9991,7 +10966,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:fence_battery",
+   "next_action": "BT-3052f6aee5 -- hourly_cycle:fence_battery turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:49:03.535020+00:00"
   },
   {
    "id": "R0765",
@@ -10005,7 +10985,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-MoatRecorder",
+   "next_action": "BT-2b1ce03613 -- wire libs/validation/random_baseline.py as a leg or a box task",
+   "blocker": "libs/validation/random_baseline.py exists and no clock in this repo runs it (III.16: unwired or idle is a defect)",
+   "blocker_class": "needs_clock",
+   "triaged_at": "2026-09-23T02:49:27.337684+00:00"
   },
   {
    "id": "R0766",
@@ -10019,7 +11004,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-30a95d7952 -- wire libs/research/operators.py as a leg or a box task",
+   "blocker": "libs/research/operators.py exists and no clock in this repo runs it (III.16: unwired or idle is a defect)",
+   "blocker_class": "needs_clock",
+   "triaged_at": "2026-09-23T02:48:19.447681+00:00"
   },
   {
    "id": "R0767",
@@ -10033,7 +11023,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-c0151fa29c -- wire libs/alpha_factory/wq_operators.py as a leg or a box task",
+   "blocker": "libs/alpha_factory/wq_operators.py exists and no clock in this repo runs it (III.16: unwired or idle is a defect)",
+   "blocker_class": "needs_clock",
+   "triaged_at": "2026-09-23T02:48:43.419508+00:00"
   },
   {
    "id": "R0768",
@@ -10047,7 +11042,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-0b0bd39cd6 -- wire libs/research/pdf_text.py as a leg or a box task",
+   "blocker": "libs/research/pdf_text.py exists and no clock in this repo runs it (III.16: unwired or idle is a defect)",
+   "blocker_class": "needs_clock",
+   "triaged_at": "2026-09-23T02:48:59.639429+00:00"
   },
   {
    "id": "R0769",
@@ -10061,7 +11061,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-18dea1ce68 -- wire data/external/aqr/fetch_article_pdfs.py as a leg or a box task",
+   "blocker": "data/external/aqr/fetch_article_pdfs.py exists and no clock in this repo runs it (III.16: unwired or idle is a defect)",
+   "blocker_class": "needs_clock",
+   "triaged_at": "2026-09-23T02:49:00.612530+00:00"
   },
   {
    "id": "R0770",
@@ -10075,7 +11080,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-MoatRecorder",
+   "next_action": "BT-b454d43355 -- MT5-MoatRecorder turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:47:55.416994+00:00"
   },
   {
    "id": "R0771",
@@ -10089,7 +11099,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-e0ef5f5f16 -- build data/brain_hunter_s58_pdf_decrypt.py and wire it to a clock",
+   "blocker": "data/brain_hunter_s58_pdf_decrypt.py does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:48:43.442306+00:00"
   },
   {
    "id": "R0772",
@@ -10103,7 +11118,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-0f5e843116 -- build data/brain_hunter_s59_aes_pdf.py and wire it to a clock",
+   "blocker": "data/brain_hunter_s59_aes_pdf.py does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:48:19.510907+00:00"
   },
   {
    "id": "R0773",
@@ -10117,7 +11137,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-76005a85ac -- build data/external/aqr/pdf_readability_audit.py and wire it to a clock",
+   "blocker": "data/external/aqr/pdf_readability_audit.py does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:48:13.551330+00:00"
   },
   {
    "id": "R0774",
@@ -10131,7 +11156,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "MT5-Gauntlet",
+   "next_action": "BT-26914cebd1 -- build data/brain_hunter_s60_timing_luck.json and wire it to a clock",
+   "blocker": "data/brain_hunter_s60_timing_luck.json does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:47:49.432021+00:00"
   },
   {
    "id": "R0775",
@@ -10145,7 +11175,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-5cec9e8579 -- build data/brain_hunter_s58_corr_regime.py and wire it to a clock",
+   "blocker": "data/brain_hunter_s58_corr_regime.py does not exist in this tree",
+   "blocker_class": "needs_code",
+   "triaged_at": "2026-09-23T02:47:55.450315+00:00"
   },
   {
    "id": "R0776",
@@ -10159,7 +11194,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:mine",
+   "next_action": "BT-84eba024e6 -- hourly_cycle:mine turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:48:43.504415+00:00"
   },
   {
    "id": "R0777",
@@ -10173,7 +11213,12 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:fence_battery",
+   "next_action": "BT-c3e90c2b4c -- hourly_cycle:fence_battery turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:49:00.638126+00:00"
   },
   {
    "id": "R0778",
@@ -10187,7 +11232,143 @@
    "reason": null,
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": null,
+   "owner": "hourly_cycle:queue_cycle",
+   "next_action": "BT-e269dbe203 -- hourly_cycle:queue_cycle turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:48:19.533169+00:00"
+  },
+  {
+   "id": "R0779",
+   "source": "ceo_docket",
+   "summary": "the vol_transition mechanism as a fundable family. Experiment: generate vol_transition cells across the registry, judge them in the standing gauntlet, and measure the marginal dE[log W] of the best survivor AFTER residualising against the funded book Refuted if: no cell survives the ten gates, or the best survivor's marginal dE[log W] against the held book is <= 0",
+   "roi_bps": null,
+   "rank": 1,
+   "roi_basis": "rank",
+   "raised": "2026-09-23T02:45:55.226894+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null,
+   "owner": "MT5-Gauntlet",
+   "next_action": "BT-f1c307c28d -- MT5-Gauntlet turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:47:46.432441+00:00"
+  },
+  {
+   "id": "R0780",
+   "source": "ceo_docket",
+   "summary": "Add a row (mechanism, trigger, owner) or record it as closed -- being written down somewhere is not the same as being driven.. Experiment: implement it and measure the named quantity -- add  -- before and after, against the funded book Refuted if: the measured quantity does not move, or dE[log W] does not rise",
+   "roi_bps": null,
+   "rank": 8,
+   "roi_basis": "rank",
+   "raised": "2026-09-23T02:45:55.226894+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-69bf9ebc0e -- hourly_cycle:implementer turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:48:43.532678+00:00"
+  },
+  {
+   "id": "R0781",
+   "source": "ceo_docket",
+   "summary": "Add each to _DIG_DOCS (in scope) or to _DIG_DOCS_EXCLUDED with a stated reason -- never leave it decided by omission.. Experiment: implement it and measure the named quantity -- add  -- before and after, against the funded book Refuted if: the measured quantity does not move, or dE[log W] does not rise",
+   "roi_bps": null,
+   "rank": 10,
+   "roi_basis": "rank",
+   "raised": "2026-09-23T02:45:55.226894+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-b059118625 -- hourly_cycle:implementer turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:49:00.701043+00:00"
+  },
+  {
+   "id": "R0782",
+   "source": "ceo_docket",
+   "summary": "Every dig must advance the top OPEN item it can and ADD any paid dataset it encountered -- a list that never grows is the same blind spot in a different shape.. Experiment: implement it and measure the named quantity -- add  -- before and after, against the funded book Refuted if: the measured quantity does not move, or dE[log W] does not rise",
+   "roi_bps": null,
+   "rank": 11,
+   "roi_basis": "rank",
+   "raised": "2026-09-23T02:45:55.226894+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-c86cc13877 -- hourly_cycle:implementer turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:49:00.730115+00:00"
+  },
+  {
+   "id": "R0783",
+   "source": "ceo_docket",
+   "summary": "restores risk-taking the desk is currently refusing -- capacity it already has and is not using. Experiment: Clear the named cause, then confirm the next gateway pass writes no line of this reason class and that new risk reaches the venue. Refuted if: The reason class reappears on the following pass, meaning the cause diagnosed was not the cause acting.",
+   "roi_bps": null,
+   "rank": 12,
+   "roi_basis": "rank",
+   "raised": "2026-09-23T02:45:55.226894+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null,
+   "owner": "MT5-Gateway",
+   "next_action": "BT-24be8b2282 -- MT5-Gateway turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:49:00.792750+00:00"
+  },
+  {
+   "id": "R0784",
+   "source": "ceo_docket",
+   "summary": "DISTRIBUTED_TRAINING. Experiment: UNFALSIFIABLE: no experiment stated by the scout Refuted if: no measurable change in dE[log W] or in n_eff after implementation",
+   "roi_bps": null,
+   "rank": 13,
+   "roi_basis": "rank",
+   "raised": "2026-09-23T02:45:55.226894+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null,
+   "owner": "hourly_cycle:implementer",
+   "next_action": "BT-61d86ec744 -- hourly_cycle:implementer turns this into a cited spec (file + clock + artifact)",
+   "blocker": "the row cites no file in this repo, so there is nothing to prove, schedule or build against -- it needs a target before it can be worked",
+   "blocker_class": "needs_specification",
+   "triaged_at": "2026-09-23T02:49:00.822447+00:00"
+  },
+  {
+   "id": "R0785",
+   "source": "frontier_audit",
+   "summary": "`shadow_spec.params` is absent -- the parameterisation that passed the gauntlet was never recorded, and enrolling a guessed one would forward-test a DIFFERENT strategy than the one certified [desks/mt5/reports/CERTIFICATE_HYGIENE.json]",
+   "roi_bps": null,
+   "rank": null,
+   "roi_basis": null,
+   "raised": "2026-09-23T02:45:55.226894+00:00",
+   "status": "scheduled",
+   "reason": "desks/mt5/reports/CERTIFICATE_HYGIENE.json is written by an organ on hourly_cycle:implementer and has not been rewritten since this row was raised; the row is waiting on that clock, and its due date is that clock's next firing.",
+   "commit": null,
+   "due": "2026-09-23",
+   "disposed": "2026-09-23T02:50:19.827385+00:00",
+   "clock": "hourly_cycle:implementer"
   }
- ]
+ ],
+ "last_drain_at": "2026-09-23T02:50:19.827423+00:00",
+ "last_drain_by": "desks/mt5/research/implementer.py"
 }

@@ -7,10 +7,25 @@ candidate crowned without beating the simpler explanation.
 """
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 
 from libs.research import coevolution_lab as CL
 from libs.research import model_families as MF
+
+
+@pytest.fixture(autouse=True)
+def _no_backend_probe(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A test never spawns the heavy-backend probe subprocess.
+
+    `availability()` consults a measured health cache; leaving it unseeded would make the first
+    test run fork a probe that deliberately waits out a hang. The seed says every backend is
+    healthy, so nothing here is passing because a backend was quietly skipped.
+    """
+    monkeypatch.setattr(MF, "_health_cache",
+                        {"measured_utc": 9e18, "probe_complete": True, "passes": 0,
+                         "state": dict.fromkeys(MF.FAMILIES, "ok")})
 
 
 # ------------------------------------------------------------------ item 18: synthetic worlds
@@ -107,7 +122,7 @@ def test_a_flat_residual_raises_nothing() -> None:
     ({"n": 0, "verdict": CL.UNMEASURED}, "no_data", "data"),
 ])
 def test_every_failure_emits_the_descendant_its_kind_implies(
-        result: dict, kind: str, queue: str) -> None:
+        result: dict[str, Any], kind: str, queue: str) -> None:
     assert CL.classify_failure(result) == kind
     kids = CL.descendants_for(result, symbol="XAUUSD")
     assert kids, "a dead cell that emits nothing is the defect this rule exists to stop"
@@ -238,3 +253,37 @@ def test_the_shims_degrade_to_a_local_fallback_without_the_other_builders_module
         assert doc["backend"] in {"local_fallback"} or doc["backend"].startswith(
             ("research_priors", "experiment_spec", "experiment_graph"))
     assert 0.0 <= CL.prior_for("unknown", 0.5)["prior"] <= 1.0
+
+
+# ------------------------------------------------------------------ item 6: a backend that HANGS
+def test_a_backend_that_imports_but_never_returns_is_unmeasured_not_used(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """IMPORTABLE IS NOT USABLE. Measured on the build box: sklearn imports and
+    HistGradientBoostingClassifier.fit never returns, so one `boosting` cell would eat a whole
+    leg budget. A family whose probe row is still `started` is served by the fallback."""
+    monkeypatch.setattr(MF, "_import", lambda mod: object())        # everything importable
+    monkeypatch.setattr(MF, "_health_cache",
+                        {"measured_utc": 9e18, "probe_complete": False, "passes": 2,
+                         "state": {**dict.fromkeys(MF.FAMILIES, "ok"), "boosting": "started"}})
+    avail = MF.availability()
+    assert avail["boosting"]["backend"] == "fallback"
+    assert avail["boosting"]["heavy_verdict"] == MF.UNMEASURED
+    assert "DID NOT RETURN" in avail["boosting"]["why"]
+    assert avail["linear"]["backend"] == "heavy"                    # the healthy one is used
+
+    w = CL.synthetic_world("threshold", n=400, seed=4, noise=0.5)
+    r = MF.walk_forward("boosting", w["x"], w["y"], min_rows=120)
+    assert r["backend"] == "fallback", "a hanging backend is never called"
+    assert r["verdict"] in {MF.POSITIVE, MF.NEGATIVE}
+
+
+def test_a_family_the_probe_never_reached_is_unmeasured_rather_than_assumed_good(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(MF, "_import", lambda mod: object())
+    monkeypatch.setattr(MF, "_health_cache",
+                        {"measured_utc": 9e18, "probe_complete": False, "passes": 1,
+                         "state": {"linear": "ok"}})
+    avail = MF.availability()
+    assert avail["neural"]["heavy_verdict"] == MF.UNMEASURED
+    assert avail["neural"]["probe_state"] == MF.UNMEASURED
+    assert "never reached" in avail["neural"]["why"]

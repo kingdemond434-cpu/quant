@@ -1,11 +1,23 @@
-"""THE ACCESS / LEGAL ROUTER -- legality as a surgical routing system, never a research brake.
+"""THE ACCESS ROUTER -- classification ROUTES USE. It never stops mining, ever.
 
-LAWS 5e (principal's standing order, 2026-09-17, permanent). The failure this module exists to
-prevent is not a legal one: it is a TIMID one. A crawler that meets an unfamiliar page and
-discards it "because it looks risky" throws away most of the world's information for no measured
-reason, and nothing in the desk ever records that it happened. The principal's order is the
-opposite shape -- mine aggressively, classify precisely, and restrict ONLY the specific use that
-is actually prohibited.
+LAWS 5e (principal's standing order, 2026-09-23, permanent, replacing the 2026-09-17 text). THE
+DESK MINES AND TESTS EVERYTHING IT CAN SEE ON THE OPEN INTERNET. Licence, robots, source class and
+credibility are ROUTING AND PROVENANCE LABELS on the row: they describe what the desk may
+REDISTRIBUTE or publish, and how much weight the evidence carries. They NEVER stop discovery,
+ingestion, representation or testing.
+
+The failure this module exists to prevent is not a legal one: it is a TIMID one. A crawler that
+meets an unfamiliar page and discards it "because it looks risky" throws away most of the world's
+information for no measured reason, and nothing in the desk ever records that it happened. Things
+published on the open internet are lawful to read. The 2026-09-17 version of this module carried a
+quarantine, a machine-extraction veto and a robots refusal; all three were DISCOVERY BRAKES THE
+DESK IMPOSED ON ITSELF, and all three are deleted. There is no ACCESS_UNCLEAR quarantine any more:
+an unclear row is mined and tested with its label attached. Fringe, retail, forum, archive and
+machine-translated ground are FIRST-CLASS INPUTS.
+
+WHAT REMAINS REFUSED IS ABOUT ACTS, NOT ABOUT CONTENT, AND IT IS EXACTLY FIVE (`HARD_BOUNDARY`).
+Nothing else is a brake. A later session must not re-derive the old caution from silence: if an
+act is not one of those five, the desk mines it.
 
 THE PIPELINE IS FIVE STAGES AND EVERY SOURCE WALKS ALL FIVE:
 
@@ -19,7 +31,8 @@ as "skipped" is a pipeline nobody can audit.
 
 THREE INDEPENDENT DIMENSIONS, NEVER COLLAPSED. This is the whole design:
 
-    access_label      can the desk LAWFULLY OBSERVE it
+    access_label      WHAT THE DESK MAY REDISTRIBUTE and how the row is provenanced (never
+                      whether it may be mined: everything off the hard boundary is mined)
     credibility       is the claim likely TRUE
     predictive_state  does its EXISTENCE predict anything
 
@@ -29,15 +42,15 @@ claim, and still PREDICTIVE as a crowding or narrative feature -- which is why `
 drops a fringe or contradicted claim, it lowers its weight and keeps it as an evidence object.
 Collapsing the three into one "quality score" is how a desk deletes its own crowding signal.
 
-THE HARD BOUNDARY is specific, short and absolute (`HARD_BOUNDARY`): no credential theft, no
-access-control bypass, no private or confidential data harvesting, no doxxing, no stolen datasets,
-no material nonpublic information used for trading. PRIVATE, CONFIDENTIAL_MNPI and
-STOLEN_UNAUTHORIZED are REFUSED with the reason recorded -- recorded, because a refusal nobody
-wrote down gets re-proposed next month by a miner that never heard about it.
+THE HARD BOUNDARY is specific, short, absolute and FIVE ACTS long (`HARD_BOUNDARY`). PRIVATE,
+CONFIDENTIAL_MNPI and STOLEN_UNAUTHORIZED are the three labels that carry them, and they are
+REFUSED with the reason recorded -- recorded, because a refusal nobody wrote down gets re-proposed
+next month by a miner that never heard about it. If a page is behind a login or a paywall the desk
+does not break in; EVERYTHING REACHABLE WITHOUT BREAKING IN IS MINED, including the open surface
+of a paywalled domain.
 
-ACCESS_UNCLEAR IS QUARANTINED, NOT DISCARDED: metadata kept, content not consumed, until the
-access right is resolved. That is the anti-timid half of the same rule -- an unresolved question
-is a QUESTION, and answering it later is cheap only if the row survived.
+ACCESS_UNCLEAR IS MINED AND TESTED WITH ITS LABEL ATTACHED. There is no quarantine. An unresolved
+access question is a PROVENANCE NOTE on the row, not a reason to leave the content unread.
 
 PURE. No IO, no clock, no network, no registry. `desks/mt5/research/evidence_router.py` is the
 organ that walks the registry and the intelligence rows through these functions.
@@ -51,17 +64,35 @@ from typing import Any, Literal, cast
 
 #: The order, verbatim. Carried as a constant so an organ can print the rule it is applying and
 #: a fence can check the text still says what the law says.
-PRINCIPLE = ("Mine aggressively; classify precisely; restrict only the specific use that is "
-             "actually prohibited.")
+PRINCIPLE = ("The desk mines and tests everything it can see on the open internet. Licence, "
+             "robots, source class and credibility are routing and provenance labels: they "
+             "describe what may be redistributed and how much weight the evidence carries, and "
+             "they never stop discovery, ingestion, representation or testing.")
 
-#: The hard boundary, verbatim and absolute. Nothing in this module or its callers may widen it.
+#: THE HARD BOUNDARY -- five ACTS, verbatim and absolute. Nothing in this module or its callers
+#: may widen it, and nothing may add a sixth. These are acts, not content: they describe things
+#: the desk does not DO, never subjects it may not read.
 HARD_BOUNDARY: tuple[str, ...] = (
-    "no credential theft",
-    "no access-control bypass",
-    "no private or confidential data harvesting",
-    "no doxxing",
-    "no stolen datasets",
-    "no material nonpublic information used for trading",
+    "no credential theft or logging in as someone else",
+    "no bypassing an access control or a paywall",
+    "no material non-public information",
+    "no stolen or leaked private data",
+    "no personal data harvesting or doxxing",
+)
+
+#: The number is load-bearing: a fence checks it, so a later session cannot quietly add a sixth
+#: brake and call it a boundary.
+HARD_BOUNDARY_COUNT = 5
+
+#: DELETED BRAKES, named so a later session recognises them if it meets one in old code or prose
+#: and does not mistake it for a live rule. Each was a discovery brake, not a legal requirement.
+REMOVED_BRAKES: tuple[str, ...] = (
+    "ACCESS_UNCLEAR quarantine (metadata kept, content not consumed)",
+    "machine-extraction veto on PUBLIC_WITH_TERMS",
+    "robots.txt Disallow treated as a refusal",
+    "machine_use_allowed=false treated as 'registered, never scraped'",
+    "'public/licensed sources only' as a pre-filter on discovery",
+    "source-class and credibility used to drop rather than weight a row",
 )
 
 #: The five stages, in order. `route()` reports which one decided.
@@ -108,86 +139,97 @@ OBTAINED: tuple[Obtained, ...] = ("public_page", "api", "user_submission", "arch
 USES: tuple[str, ...] = ("register", "read_manual", "fetch_api", "machine_extract", "store_raw",
                          "derive_features", "alpha_input", "narrative_feature", "redistribute")
 
-#: THE ROUTING TABLE, AS DATA (LAWS 5e). One row per label: what may be done, whether the content
-#: is quarantined, whether the source is refused outright, and the CEILING on the evidence weight
-#: anything derived from it may carry. The cap is a ceiling, never a floor -- credibility lowers
-#: it further and nothing raises it.
+#: EVERY USE A MINING PIPELINE NEEDS. `redistribute` is deliberately NOT here -- it is the one
+#: use a licence can actually take away, and it is granted per-label below.
+MINING_USES: tuple[str, ...] = ("register", "read_manual", "fetch_api", "machine_extract",
+                                "store_raw", "derive_features", "alpha_input",
+                                "narrative_feature")
+
+#: THE ROUTING TABLE, AS DATA (LAWS 5e). One row per label: what may be done, whether the source
+#: is refused outright (the five acts only), and the CEILING on the EVIDENCE weight anything
+#: derived from it may carry. THE CAP IS ABOUT EVIDENCE, NEVER ABOUT LEGALITY, and it never stops
+#: the row being mined or tested -- a capped row is tested exactly as hard as any other and its
+#: result simply carries less weight. `quarantine` is retained as a field and is False on every
+#: row: the quarantine was deleted on 2026-09-23 and the key stays only so old readers do not
+#: KeyError.
 ROUTING: dict[AccessLabel, dict[str, Any]] = {
     "PUBLIC": {
-        "allowed_uses": ("register", "read_manual", "fetch_api", "machine_extract", "store_raw",
-                         "derive_features", "alpha_input", "narrative_feature"),
+        "allowed_uses": MINING_USES,
         "quarantine": False, "refused": False, "evidence_weight_cap": 1.0,
         "reason": "public page: observe, extract and research it; reliability is a SEPARATE axis",
     },
     "PUBLIC_WITH_TERMS": {
-        # Machine extraction is the ONE use the terms actually prohibit, so it is the one use
-        # removed. The source stays registered and reachable by API or manual review.
-        "allowed_uses": ("register", "read_manual", "fetch_api", "derive_features", "alpha_input",
-                         "narrative_feature"),
+        # MINED IN FULL. The terms bear on REDISTRIBUTION, which is the use withheld; they have
+        # never bound what the desk may read, extract or test privately for its own research.
+        "allowed_uses": MINING_USES,
         "quarantine": False, "refused": False, "evidence_weight_cap": 1.0,
-        "reason": ("public but the terms restrict machine access: reach it through an allowed API "
-                   "or a manual-review path, never scraped and never omitted"),
+        "reason": ("public with terms or a robots note: MINED AND TESTED IN FULL; the label "
+                   "routes redistribution and provenance, never discovery"),
     },
     "LICENSED": {
-        "allowed_uses": ("register", "read_manual", "fetch_api", "machine_extract", "store_raw",
-                         "derive_features", "alpha_input", "narrative_feature"),
+        "allowed_uses": MINING_USES,
         "quarantine": False, "refused": False, "evidence_weight_cap": 1.0,
         "reason": "licensed: used strictly per its licence; redistribution is not implied",
     },
     "OPEN_DATA": {
-        "allowed_uses": ("register", "read_manual", "fetch_api", "machine_extract", "store_raw",
-                         "derive_features", "alpha_input", "narrative_feature", "redistribute"),
+        "allowed_uses": (*MINING_USES, "redistribute"),
         "quarantine": False, "refused": False, "evidence_weight_cap": 1.0,
-        "reason": "open data licence: the widest lawful use the desk has",
+        "reason": "open data licence: the widest lawful use the desk has, redistribution included",
     },
     "PUBLIC_ARCHIVE": {
-        "allowed_uses": ("register", "read_manual", "fetch_api", "machine_extract", "store_raw",
-                         "derive_features", "alpha_input", "narrative_feature"),
+        "allowed_uses": MINING_USES,
         "quarantine": False, "refused": False, "evidence_weight_cap": 1.0,
-        "reason": "public archive: the point-in-time record is exactly what a PIT desk wants",
+        "reason": ("public archive: FIRST-CLASS ground; the point-in-time record is exactly what "
+                   "a PIT desk wants"),
     },
     "PUBLIC_SOCIAL": {
-        "allowed_uses": ("register", "read_manual", "fetch_api", "machine_extract", "store_raw",
-                         "derive_features", "alpha_input", "narrative_feature"),
+        "allowed_uses": MINING_USES,
         "quarantine": False, "refused": False, "evidence_weight_cap": 0.6,
-        "reason": ("public social: lawful to observe and research; the weight ceiling is about "
-                   "EVIDENCE, not legality, and the crowding/narrative use is first-class"),
+        "reason": ("public social, forum and retail ground: FIRST-CLASS input, mined and tested "
+                   "in full; the weight ceiling is about EVIDENCE, not legality, and the "
+                   "crowding/narrative use is first-class"),
     },
     "USER_SUBMITTED": {
-        "allowed_uses": ("register", "read_manual", "store_raw", "derive_features", "alpha_input",
-                         "narrative_feature"),
+        "allowed_uses": MINING_USES,
         "quarantine": False, "refused": False, "evidence_weight_cap": 0.5,
         "reason": "submitted by a user: usable, provenance is the submitter and is recorded",
     },
     "ACCESS_UNCLEAR": {
-        # METADATA KEPT, CONTENT NOT CONSUMED. `register` is the only use, and that is the point:
-        # the row survives so the question can be answered later at no re-discovery cost.
-        "allowed_uses": ("register",),
-        "quarantine": True, "refused": False, "evidence_weight_cap": 0.0,
-        "reason": ("access rights unresolved: QUARANTINED -- metadata kept, content not consumed, "
-                   "until the right is resolved. Never discarded"),
+        # MINED AND TESTED WITH THE LABEL ATTACHED. The 2026-09-17 quarantine (`register` only,
+        # cap 0.0) is DELETED: an unresolved access question is a provenance note, never a reason
+        # to leave content unread. The cap is 1.0 because access has nothing to say about truth --
+        # credibility is the axis that weights the row.
+        "allowed_uses": MINING_USES,
+        "quarantine": False, "refused": False, "evidence_weight_cap": 1.0,
+        "reason": ("access path unresolved: MINED AND TESTED with the label attached; the "
+                   "unclear-access quarantine was deleted on 2026-09-23"),
     },
     "PRIVATE": {
         "allowed_uses": (),
         "quarantine": False, "refused": True, "evidence_weight_cap": 0.0,
-        "reason": "private data: never an alpha input (hard boundary: no private data harvesting)",
+        "reason": ("behind a login or an access control, or personal data: the desk does not "
+                   "break in and does not harvest people (hard boundary acts 1, 2 and 5)"),
     },
     "CONFIDENTIAL_MNPI": {
         "allowed_uses": (),
         "quarantine": False, "refused": True, "evidence_weight_cap": 0.0,
-        "reason": ("material nonpublic information: never an alpha input and never traded on "
-                   "(hard boundary: no MNPI used for trading)"),
+        "reason": ("material non-public information: never an alpha input and never traded on "
+                   "(hard boundary act 3)"),
     },
     "STOLEN_UNAUTHORIZED": {
         "allowed_uses": (),
         "quarantine": False, "refused": True, "evidence_weight_cap": 0.0,
-        "reason": ("unauthorised or stolen material: never an alpha input (hard boundary: no "
-                   "stolen datasets, no credential theft, no access-control bypass)"),
+        "reason": ("stolen or leaked private data, or material obtained by bypassing an access "
+                   "control or paywall (hard boundary acts 1, 2 and 4)"),
     },
 }
 
-#: The three labels that may never become an alpha input.
+#: The three labels that carry the five refused ACTS. They are the ONLY refusals in the desk.
 REFUSED_LABELS: tuple[AccessLabel, ...] = ("PRIVATE", "CONFIDENTIAL_MNPI", "STOLEN_UNAUTHORIZED")
+
+#: Every other label is mined. Named as data so a fence can assert the list did not shrink.
+MINED_LABELS: tuple[AccessLabel, ...] = tuple(
+    lab for lab in ACCESS_LABELS if lab not in REFUSED_LABELS)
 
 #: Evidence-weight ceiling by credibility. UNRELIABLE, FRINGE and CONTRADICTED are LOW, never
 #: zero and never dropped: a false public rumour that everyone is reading is a crowding feature,
@@ -281,7 +323,13 @@ def credibility_of(source_class: str = "", declared: str = "") -> Credibility:
 
 @dataclass(frozen=True)
 class AccessVerdict:
-    """What the desk may lawfully DO with one source, and why."""
+    """What the desk DOES with one source, and why.
+
+    `machine_use_allowed` is TRUE for every label that is not one of the five refused acts. It is
+    kept as a field because organs across the desk read it, but its meaning changed on 2026-09-23:
+    it no longer answers "do the terms permit a crawler" (that was a self-imposed brake), it
+    answers "is this row mined at all", and the only rows that are not are the refused three.
+    """
 
     access_label: AccessLabel
     allowed_uses: tuple[str, ...]
@@ -291,34 +339,47 @@ class AccessVerdict:
     evidence_weight_cap: float
     #: The metadata fact that decided the label, so a verdict can be argued with.
     basis: str = "source metadata"
-    #: True when the terms forbid machine extraction. REGISTERED, never scraped, never omitted.
+    #: True unless the row is refused on the hard boundary. Never False for terms or robots.
     machine_use_allowed: bool = True
+    #: THE ROUTING LABEL THAT REPLACED THE BRAKE: may the desk republish this outside itself?
+    #: A terms or robots note lands here and NOWHERE ELSE, so it can never stop mining again.
+    redistribute_allowed: bool = False
+    #: Free-text provenance note carried with the row (terms, robots, paywall, licence).
+    terms_note: str = ""
 
     def may(self, use: str) -> bool:
         """Is `use` permitted? The only question a caller should ever ask this object."""
         return use in self.allowed_uses
 
+    @property
+    def mined(self) -> bool:
+        """True when the desk mines, ingests, represents and tests this row -- everything that is
+        not one of the five refused acts."""
+        return not self.refused
+
 
 def _verdict(label: AccessLabel, basis: str, *, reason: str | None = None,
-             machine_use_allowed: bool = True,
-             drop_uses: tuple[str, ...] = ()) -> AccessVerdict:
+             terms_note: str = "") -> AccessVerdict:
     row = ROUTING[label]
-    uses = tuple(u for u in cast(tuple[str, ...], row["allowed_uses"]) if u not in drop_uses)
+    uses = cast(tuple[str, ...], row["allowed_uses"])
+    refused = bool(row["refused"])
     return AccessVerdict(
-        access_label=label, allowed_uses=uses, quarantine=bool(row["quarantine"]),
-        refused=bool(row["refused"]), reason=reason or str(row["reason"]),
+        access_label=label, allowed_uses=uses, quarantine=False,
+        refused=refused, reason=reason or str(row["reason"]),
         evidence_weight_cap=float(row["evidence_weight_cap"]), basis=basis,
-        machine_use_allowed=machine_use_allowed)
+        machine_use_allowed=not refused, redistribute_allowed="redistribute" in uses,
+        terms_note=terms_note)
 
 
 def classify(meta: dict[str, Any]) -> AccessVerdict:
     """The LEGAL/ACCESS stage: one source's metadata -> one access verdict.
 
-    ORDER MATTERS AND IT IS THE HARD BOUNDARY FIRST. Anything that looks like an unauthorised
-    dump, material nonpublic information, or an authenticated private surface is refused before
-    any other reading can rescue it -- a licence field saying "public" on a credential list does
-    not make it public. Everything AFTER the boundary is read generously, because that is the
-    other half of the same order: the boundary is narrow so the permission can be wide.
+    ORDER MATTERS AND IT IS THE HARD BOUNDARY FIRST -- the five acts, and nothing else. Anything
+    that looks like an unauthorised dump, material non-public information, or an authenticated
+    private surface is refused before any other reading can rescue it: a licence field saying
+    "public" on a credential list does not make it public. Everything AFTER the boundary is MINED,
+    without exception, because that is the other half of the same order: the boundary is five acts
+    wide so the permission can be everything else.
 
     Metadata keys read (all optional; absence is UNMEASURED, never a permission):
       url / domain, source_class, obtained, licence, robots (allowed/disallowed/unknown),
@@ -358,19 +419,28 @@ def classify(meta: dict[str, Any]) -> AccessVerdict:
     if obtained == "archive" or str(meta.get("source_class") or "") == "archive":
         return _verdict("PUBLIC_ARCHIVE", "public archive")
 
-    # TERMS THAT FORBID MACHINE EXTRACTION. The one restricted use is removed and the source is
-    # REGISTERED with machine_use_allowed=false -- reachable by API or manual review, never
-    # scraped, never omitted. A robots.txt Disallow is exactly this fact in another format.
+    # TERMS, ROBOTS AND PAYWALLS ARE LABELS, NOT BRAKES (2026-09-23). Every one of these rows is
+    # MINED AND TESTED IN FULL; what the label withholds is `redistribute`, which PUBLIC_WITH_TERMS
+    # does not grant. The old branch removed `machine_extract` and `store_raw` and registered the
+    # source "never scraped" -- that was the brake, and it is gone.
     machine = _flag(meta, "machine_use_allowed")
     robots = str(meta.get("robots") or "unknown").strip().lower()
-    restricted = machine is False or robots in ("disallow", "disallowed", "barred", "blocked")
-    if restricted:
-        basis = ("machine_use_allowed=false" if machine is False
-                 else f"robots={robots}")
-        return _verdict("PUBLIC_WITH_TERMS", basis, machine_use_allowed=False,
-                        drop_uses=("machine_extract", "store_raw"))
+    notes: list[str] = []
+    if machine is False:
+        notes.append("the source declares machine_use_allowed=false")
+    if robots in ("disallow", "disallowed", "barred", "blocked"):
+        notes.append(f"robots={robots}")
+    if _flag(meta, "paywalled") is True:
+        # The open surface of a paywalled domain is mined; the wall itself is never bypassed
+        # (hard boundary act 2), which is enforced by the DUMP_MARKERS branch above.
+        notes.append("paywalled: the open surface is mined, the wall is never bypassed")
     if _flag(meta, "has_terms") is True or "terms of service" in blob or "terms of use" in blob:
-        return _verdict("PUBLIC_WITH_TERMS", "declared terms present", machine_use_allowed=True)
+        notes.append("declared terms present")
+    if notes:
+        note = "; ".join(notes)
+        return _verdict("PUBLIC_WITH_TERMS", note,
+                        reason=(f"{ROUTING['PUBLIC_WITH_TERMS']['reason']} [{note}]"),
+                        terms_note=note)
 
     klass = str(meta.get("source_class") or "")
     if klass in ("retail_ecology", "app_ecosystem") or _flag(meta, "is_social") is True:
@@ -440,7 +510,8 @@ class RoutedEvidence:
 
     @property
     def dropped(self) -> bool:
-        """True only when nothing at all was kept. A quarantined row is NOT dropped."""
+        """True only when nothing at all was kept -- one of the five refused acts, or a row with
+        no identity and no content at all."""
         return self.evidence is None
 
 
@@ -448,8 +519,9 @@ def route(source_meta: dict[str, Any], content_meta: dict[str, Any] | None = Non
           ) -> RoutedEvidence:
     """DISCOVER -> CAPTURE METADATA -> LEGAL/ACCESS -> EVIDENCE -> RESEARCH, and which stage ruled.
 
-    Never "looks risky -> discard". The only outcomes are: researchable, quarantined (metadata
-    kept), or refused with a named reason on the hard boundary.
+    Never "looks risky -> discard", and no longer "unclear -> quarantine". There are exactly two
+    outcomes: RESEARCHABLE with its labels attached, or refused with a named reason on one of the
+    five acts of the hard boundary.
     """
     content = dict(content_meta or {})
     sid = str(source_meta.get("source_id") or source_meta.get("url") or
@@ -484,23 +556,18 @@ def route(source_meta: dict[str, Any], content_meta: dict[str, Any] | None = Non
         narrative_feature=bool(content.get("narrative_feature")),
         provenance={"basis": verdict.basis, "obtained": source_meta.get("obtained"),
                     "url": source_meta.get("url"),
-                    "machine_use_allowed": verdict.machine_use_allowed},
+                    "machine_use_allowed": verdict.machine_use_allowed,
+                    "redistribute_allowed": verdict.redistribute_allowed,
+                    "terms_note": verdict.terms_note},
     ).preserve()
 
-    # STAGE 3b: quarantine. The METADATA IS KEPT and the content is not consumed.
-    if verdict.quarantine:
-        return RoutedEvidence(
-            stage="LEGAL_ACCESS", verdict=verdict,
-            evidence=replace(obj, claim_text="", evidence_weight=0.0), researchable=False,
-            why=("QUARANTINED: metadata kept, content not consumed until access rights are "
-                 "resolved -- never discarded"))
-
-    # STAGE 4/5: evidence classification, then research. A low-credibility public claim is
-    # RESEARCHABLE at low weight; that is the independence rule doing its job.
+    # STAGE 4/5: evidence classification, then research. EVERY row that cleared the five acts is
+    # RESEARCHABLE -- a low-credibility or unclear-access claim is researched at a lower weight,
+    # which is the independence rule doing its job. There is no quarantine stage any more.
     return RoutedEvidence(
         stage="RESEARCH", verdict=verdict, evidence=obj,
         researchable=verdict.may("alpha_input") or verdict.may("narrative_feature"),
         why=(f"{verdict.access_label} x {obj.credibility} x {obj.predictive_state} -> weight "
              f"{obj.evidence_weight}"
-             + ("; machine extraction not permitted: reach it by API or manual review"
-                if not verdict.machine_use_allowed else "")))
+             + (f"; routing label: {verdict.terms_note} (redistribution withheld, mining is not)"
+                if verdict.terms_note else "")))

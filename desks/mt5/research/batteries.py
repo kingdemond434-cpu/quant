@@ -134,6 +134,13 @@ FENCES: tuple[Entry, ...] = (
     _e("desks/mt5/scripts/check_desk_health.py", "is the desk running, in plain English"),
     _e("desks/mt5/scripts/check_llm_seat.py", "why this box has no seat, without printing a key"),
     _e("desks/mt5/scripts/disk_census.py", "what is on this disk, and what deleting it costs"),
+    # Landed by another builder on 2026-09-23 with no clock of their own; both are read-only and
+    # were measured runnable the same day. If either later joins the law gate, the registry will
+    # show that clock beside this one -- a fence running twice is cheap, a fence running nowhere
+    # is the defect.
+    _e("scripts/check_seat_health.py", "every configured seat donates, or it is named"),
+    _e("scripts/check_recommendation_flow.py", "the lane from recommendation to implementation "
+       "must DRAIN"),
 )
 
 #: THE ORGAN ROSTER -- standing fixers, region organs and report builders. Production mode.

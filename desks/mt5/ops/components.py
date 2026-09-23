@@ -1007,7 +1007,11 @@ def reach_specs(reg: Registry, root: Path | None = None,
         by_stem.setdefault(p.stem, []).append(rel)
     claimed = reg.claimed_paths()
     reached: dict[str, tuple[str, str]] = {}
-    frontier = [p for s in reg.all() if s.scheduled for p in s.code_paths]
+    # DEDUPED, and re-reading is refused below: a thousand scheduled specs name a few hundred
+    # distinct files (every daily step names daily_cycle.py, every forest names forest_runner.py),
+    # and parsing the same large file thirty times is where a 216 s registry build came from.
+    frontier = list(dict.fromkeys(p for s in reg.all() if s.scheduled for p in s.code_paths))
+    walked: set[str] = set()
     # The dynamic edges first, as closure ROOTS: what a region pack imports statically is then
     # reached by the ordinary walk below, from the pack the runner imports by pattern.
     for rel, via in (extra_roots or {}).items():
@@ -1016,6 +1020,9 @@ def reach_specs(reg: Registry, root: Path | None = None,
             frontier.append(rel)
     while frontier:
         rel = frontier.pop()
+        if rel in walked:
+            continue
+        walked.add(rel)
         text = _read_text(base / rel)
         if not text:
             continue
@@ -1051,8 +1058,8 @@ def build_registry(root: Path | None = None) -> Registry:
     reg = Registry()
     for group in (explicit_specs(), resident_specs(), hourly_leg_specs(), daily_step_specs(),
                   manifest_task_specs(), timer_specs(root), federation_worker_specs(),
-                  cron_specs(root), systemd_manifest_specs(root), law_gate_specs(root),
-                  hook_specs(root), battery_specs(root)):
+                  cron_specs(root), systemd_manifest_specs(root), battery_specs(root),
+                  law_gate_specs(root), hook_specs(root)):
         for s in group:
             reg.add(s, replace=True)
     reg.add_all(reach_specs(reg, root, dynamic_reach_roots(root)), replace=True)
