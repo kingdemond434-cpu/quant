@@ -122,8 +122,37 @@ VERIFIED = DATA / "spread_repair_verified.json"
 SLEEVE_REGISTRY = DATA / "sleeve_registry.json"
 LIVE_LEDGER = DATA / "live_ledger.jsonl"
 INTENTS = DATA / "order_intents.jsonl"
+#: The fill recorder's measurement of the desk's own executions. Impact was published here as
+#: UNMEASURED "because matched_fills is 0" -- a sentence, not a reading, and it stayed after the
+#: recorder started joining fills. This reads the recorder's own verdict so the claim cannot
+#: outlive the fact.
+FILL_RECORDER = REPORTS / "FILL_RECORDER.json"
 
 SEAT = "cost_truth"
+
+
+def _impact_reading() -> dict[str, Any]:
+    """Market impact as the fill recorder measured it, or why it could not be measured.
+
+    Never asserts a fill count of its own: an absent or unreadable recorder report is UNMEASURED
+    with that named as the reason, which is a real answer and not a zero impact term.
+    """
+    try:
+        doc = json.loads(FILL_RECORDER.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {"status": UNMEASURED,
+                "why": ("desks/mt5/reports/FILL_RECORDER.json is absent or unreadable on this "
+                        "host, so impact has no fills to be measured from; an unpriced term "
+                        "makes net a BOUND, never a zero"),
+                "source": "desks/mt5/reports/FILL_RECORDER.json"}
+    blk = dict(doc.get("impact") or {})
+    blk.setdefault("status", UNMEASURED)
+    blk["matched_fills"] = doc.get("matched_fills")
+    blk["source"] = "desks/mt5/reports/FILL_RECORDER.json"
+    if blk.get("status") != "MEASURED":
+        blk.setdefault("why", "the fill recorder published no impact verdict")
+        blk["net_is_a_bound"] = True
+    return blk
 MEASURED, MODELLED, UNMEASURED = "MEASURED", "MODELLED", "UNMEASURED"
 OVERCHARGED, OK, UNDERCHARGED = "OVERCHARGED", "OK", "UNDERCHARGED"
 
@@ -491,9 +520,7 @@ def realised_reading(symbol: str, deals: list[dict[str, Any]], ledger: list[dict
     out["commission_swap_r"] = pcts(comm_rs)
     out["entry_slip_r"] = pcts(cost_rs)
     out["stop_pts_realised"] = pcts(stops_pts)
-    out["impact"] = {"status": UNMEASURED,
-                     "why": "market impact needs matched fills at size and matched_fills is 0; "
-                            "an unpriced term makes net a BOUND, never a zero"}
+    out["impact"] = _impact_reading()
     return out
 
 
@@ -956,9 +983,7 @@ def build(universe: dict[str, Any], fusion: Any, cost_to_edge: Any, snapshot: di
         "overcharged": over, "n_overcharged": len(over),
         "rejudge": judged,
         "execution_surface": surface,
-        "impact": {"status": UNMEASURED,
-                   "why": "matched_fills is 0: market impact is unpriced, so every net that "
-                          "needs it is a BOUND and the verdict says so"},
+        "impact": _impact_reading(),
         "symbols": rows,
         "rule": ("three independent readings per symbol -- what the model charges, what the "
                  "broker quotes over the whole session, and what the account actually paid. A "

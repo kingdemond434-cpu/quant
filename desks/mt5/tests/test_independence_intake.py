@@ -192,3 +192,69 @@ def test_the_leg_is_on_a_clock_and_in_a_layer() -> None:
     from libs.research.layers import LEG_LAYER
     assert LEG_LAYER["independence_intake"] == "meta"
     assert LEG_DEPARTMENT["independence_intake"] == "meta"
+
+
+def _grid(targets: list[dict[str, Any]]) -> dict[str, Any]:
+    return {"available": True, "targets": targets, "occupied_cells": 10, "nominal_cells": 100,
+            "reachable_empty_cells": len(targets)}
+
+
+def test_the_filler_transplants_a_family_rule_onto_the_empty_cells(monkeypatch: Any) -> None:
+    calls: list[dict[str, Any]] = []
+
+    def _enqueue(**kw: Any) -> tuple[str, bool]:
+        calls.append(kw)
+        return f"c{len(calls)}", True
+
+    import libs.moat.registry as reg
+    monkeypatch.setattr(reg, "enqueue_candidate", _enqueue)
+    monkeypatch.setattr(ii, "_donors", lambda db=None: {
+        "carry": {"family": "carry", "symbol": "EURUSD", "horizon": "sub_4h",
+                  "params": {"band": 0.2}, "mechanism": "carry"}})
+    monkeypatch.setattr(ii, "_symbol_case", lambda: {"xauusd": "XAUUSD", "eurusd": "EURUSD"})
+    targets = [{"cell": "carry|xauusd|sub_4h", "family": "carry", "symbol": "xauusd",
+                "horizon": "sub_4h"},
+               {"cell": "carry|eurusd|multi_day", "family": "carry", "symbol": "eurusd",
+                "horizon": "multi_day"},
+               {"cell": "unknown_family|xauusd|sub_4h", "family": "unknown_family",
+                "symbol": "xauusd", "horizon": "sub_4h"}]
+    out = ii.fill_empty_cells(_grid(targets))
+    assert out["available"]
+    # the family with no donor is simply not transplanted -- there is nothing to move
+    assert out["empty_cells_targeted"] == 2 and out["cells_created_in_empty_cells"] == 2
+    assert out["by_operator"] == {"cross_instrument": 1, "cross_horizon": 1}
+    assert out["occupied_cells_before"] == 10 and out["occupied_cells_after"] == 12
+    assert out["occupancy_before"] == 0.1 and out["occupancy_after"] == 0.12
+    assert {c["symbol"] for c in calls} == {"XAUUSD", "EURUSD"}
+    assert all("mutation: cross_" in c["mechanism"] for c in calls)
+    assert all(c["params"] == {"band": 0.2} for c in calls)
+
+
+def test_a_cell_already_present_creates_nothing_and_is_counted_apart(monkeypatch: Any) -> None:
+    import libs.moat.registry as reg
+    monkeypatch.setattr(reg, "enqueue_candidate", lambda **kw: ("existing", False))
+    monkeypatch.setattr(ii, "_donors", lambda db=None: {
+        "carry": {"family": "carry", "symbol": "EURUSD", "horizon": "sub_4h",
+                  "params": {"band": 0.2}, "mechanism": "carry"}})
+    monkeypatch.setattr(ii, "_symbol_case", lambda: {"xauusd": "XAUUSD"})
+    out = ii.fill_empty_cells(_grid([{"cell": "carry|xauusd|sub_4h", "family": "carry",
+                                      "symbol": "xauusd", "horizon": "sub_4h"}]))
+    assert out["cells_created_in_empty_cells"] == 0 and out["already_present"] == 1
+    assert out["occupied_cells_after"] == out["occupied_cells_before"]
+
+
+def test_occupancy_ratchets_up_only_and_a_fall_without_a_reason_is_named(
+        tmp_path: Path) -> None:
+    rat = tmp_path / "grid_occupancy_ratchet.json"
+    first = ii.ratchet_occupancy({"available": True, "occupied_cells_after": 100,
+                                  "occupancy_after": 0.1}, rat)
+    assert first["occupied_cells_best"] == 100 and first["verdict"] == "MEASURED"
+    up = ii.ratchet_occupancy({"available": True, "occupied_cells_after": 140,
+                               "occupancy_after": 0.14}, rat)
+    assert up["occupied_cells_best"] == 140
+    down = ii.ratchet_occupancy({"available": True, "occupied_cells_after": 90,
+                                 "occupancy_after": 0.09}, rat)
+    assert down["verdict"] == "REGRESSION" and down["failures"]
+    assert down["occupied_cells_best"] == 140          # the best never falls with it
+    assert ii.ratchet_occupancy({"available": False, "why": "UNMEASURED: nothing"},
+                                rat)["verdict"] == "UNMEASURED"

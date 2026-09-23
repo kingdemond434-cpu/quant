@@ -1002,6 +1002,35 @@ def _record_intent(**row) -> str | None:
                     row.setdefault("decision_bid", float(_tk.bid))
                     row.setdefault("decision_ask", float(_tk.ask))
                     row.setdefault("spread_at_decision", float(_tk.ask) - float(_tk.bid))
+        # THE SEND-TO-ACK CLOCK, UNDER ITS OWN NAME, AND THE BOOK THE ORDER WENT TO.
+        # `latency_ms` is measured with `perf_counter` around `order_send` alone, so it IS the
+        # send-to-ack round trip -- but the fill corpus read it into
+        # `latency_decision_to_send_ms` and `latency_send_to_ack_ms` stayed empty on every row,
+        # which is the half of the shortfall model that prices WAITING. Both names are written
+        # now (the old one unchanged, so nothing that reads it moves) and the two wall clocks the
+        # round trip sits between are stamped, so send-to-fill is a fact and not a subtraction a
+        # reader has to guess at. `account` separates the live book from the prop book: until now
+        # an intent row named neither, and the two accounts' fills could only be told apart after
+        # the deal closed. RECORDING ONLY -- no branch below this changes an order.
+        with contextlib.suppress(Exception):
+            _lat = row.get("latency_ms")
+            if _lat is not None:
+                row.setdefault("latency_send_to_ack_ms", float(_lat))
+                row.setdefault("acked_at", row["time"])
+                with contextlib.suppress(Exception):
+                    _ack = datetime.fromisoformat(str(row["time"]).replace("Z", "+00:00"))
+                    row.setdefault(
+                        "sent_at",
+                        (_ack - timedelta(milliseconds=float(_lat))).isoformat())
+        with contextlib.suppress(Exception):
+            if row.get("account") is None:
+                _ai = mt5.account_info()
+                if _ai is not None:
+                    row.setdefault("account", int(getattr(_ai, "login", 0) or 0))
+                    row.setdefault("server", str(getattr(_ai, "server", "") or ""))
+                    from mt5desk.provenance import account_kind as _akind
+                    row.setdefault(
+                        "account_kind", _akind(getattr(_ai, "trade_mode", None)))
         with contextlib.suppress(Exception):
             if row.get("symbol") and row.get("point") is None:
                 _si = mt5.symbol_info(row["symbol"])

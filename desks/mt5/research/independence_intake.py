@@ -41,6 +41,14 @@ ratchets it (`docs/research/producer_yield_ratchet.json`: the orthogonality-weig
 not fall below its own best without a stated reason). It is READ here and republished in
 context, never re-derived -- two implementations of one number are two numbers.
 
+THE NEXT WIRING POINT, NAMED SO NOBODY HAS TO FIND IT AGAIN. `empty_pairs()` is consumed today by
+`survivor_distiller.mix_by_mechanism` (order) and `expression_factory.hypothesis_symbols` (which
+instruments a pass loads first), and `fill_empty_cells` mints into the empties directly. The
+island seeding in `desks/mt5/research/factor_model_coevolution.py` and `joint_evolution.py` is
+NOT wired: each island still seeds from its own population, so an island can spend a whole run
+inside ground the grid already holds. Seed one island per pass from the head of `grid.targets`
+and it becomes a third filler -- same helper, same artifact, no new organ.
+
 Clock: `hourly_cycle` leg `independence_intake`. Artifact: `reports/INDEPENDENCE_INTAKE.json`.
 Consumers: `survivor_distiller` (the mix share and the empty targets), the yield fence's
 context, `tier1_scorecard`.
@@ -86,6 +94,15 @@ MAX_TARGETS = 400
 #: Rows read from the registry for the ladder. The ladder is a count of DISTINCT keys, which
 #: saturates long before this; the bound keeps the scan off an 8 GB box's memory.
 MAX_ROWS = 400_000
+
+#: How many empty cells one PASS transplants a rule onto. Not a ceiling on the grid and not a cap
+#: on any producer: the ranked list is re-derived every hour and a cell that fills leaves it, so
+#: the next pass continues down the same list. It bounds one hour's registry writes, nothing else.
+MAX_FILLS_PER_PASS = 400
+#: Occupancy rises only. A floor, never a cap -- the remedy for a breach is to fill more cells.
+OCCUPANCY_RATCHET = ROOT / "docs" / "research" / "grid_occupancy_ratchet.json"
+#: What the filled cells are stamped with, so the census and the yield fence can bill this organ.
+SOURCE = "independence_intake"
 
 #: Operator name prefixes that change the MECHANISM rather than a constant. `condition_on_state`
 #: conditions the rule on a different market state; `cross_` moves it to another family, horizon
@@ -328,6 +345,166 @@ def tune_mix(gain: dict[str, Any], path: Path | None = None) -> dict[str, Any]:
     return doc
 
 
+def _donors(db: Path | None = None) -> dict[str, dict[str, Any]]:
+    """One real, param-carrying candidate per family: the rule a transplant carries with it.
+
+    SQLite's bare-column rule returns the row holding `max(seq)`, so this is the family's most
+    recent candidate rather than an arbitrary one. A family with no params has no donor and is
+    simply not transplanted -- there is nothing to move.
+    """
+    path = db or REGISTRY
+    if not path.exists():
+        return {}
+    try:
+        con = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+    except sqlite3.Error:
+        return {}
+    try:
+        cur = con.execute(
+            "select lower(coalesce(nullif(family,''),'?')), family, symbol, "
+            "lower(coalesce(nullif(horizon,''),'?')), params_json, mechanism, max(seq) "
+            "from research_candidates "
+            "where params_json is not null and params_json not in ('', '{}') "
+            "and family is not null and family != '' group by 1")
+        out: dict[str, dict[str, Any]] = {}
+        for key, fam, sym, hor, params, mech, _seq in cur:
+            try:
+                parsed = json.loads(params)
+            except (TypeError, ValueError):
+                continue
+            if isinstance(parsed, dict) and parsed:
+                out[str(key)] = {"family": str(fam), "symbol": str(sym), "horizon": str(hor),
+                                 "params": parsed, "mechanism": str(mech or "")}
+        return out
+    except sqlite3.Error:
+        return {}
+    finally:
+        con.close()
+
+
+def _symbol_case() -> dict[str, str]:
+    """lower(symbol) -> the registry's own spelling, so a transplant names a real instrument."""
+    uni = _read(UNIVERSE, default={})
+    return {str(s).lower(): str(s) for s in uni} if isinstance(uni, dict) else {}
+
+
+def fill_empty_cells(grid: dict[str, Any], *, budget_s: float = 120.0,
+                     db: Path | None = None) -> dict[str, Any]:
+    """AIM, NOT A LIST: transplant a family's own rule onto the empty cells it has not reached.
+
+    PUBLISHING TARGETS IS NOT FILLING THE GRID (the principal, 2026-09-23). 889 of 57,275 cells
+    occupied is 1.55%, and a ranked list of 12,835 reachable empties changes nothing on its own.
+    The distiller's mechanism arm cannot reach them either: its moves step from a certificate that
+    ALREADY occupies its (family|symbol) pair, so an empty-cell preference can never fire there.
+
+    What reaches an empty cell is a CROSS move. This takes the family's own most recent
+    param-carrying rule and enqueues it, unchanged, on the empty (symbol, horizon) the grid names
+    -- `cross_instrument` when the instrument differs, `cross_horizon` when only the horizon does.
+    Both are mechanism-class operators, stamped so `orthogonality_gain` bills them and the
+    declared mix learns what they bought.
+
+    NOTHING IS CAPPED, DROPPED OR THROTTLED. Every cell goes through `enqueue_candidate`, the one
+    registry door, which de-duplicates on content hash: a rule already present raises its search
+    count and creates nothing, so a re-run cannot inflate the count. `MAX_FILLS_PER_PASS` is the
+    size of a PASS, not a ceiling on the grid -- the ranked list is re-derived every hour and the
+    cells filled leave it, so the next pass continues down the same list.
+    """
+    started = time.monotonic()
+    targets = [t for t in (grid.get("targets") or []) if isinstance(t, dict)]
+    if not targets:
+        return {"available": False,
+                "why": f"{UNMEASURED}: no reachable empty cell to aim at this pass"}
+    try:
+        if str(ROOT) not in sys.path:
+            sys.path.insert(0, str(ROOT))
+        from libs.moat.registry import enqueue_candidate
+    except Exception as exc:                                             # pragma: no cover
+        return {"available": False,
+                "why": f"{UNMEASURED}: registry door unimportable ({type(exc).__name__})"}
+    donors = _donors(db)
+    case = _symbol_case()
+    occupied_before = int(grid.get("occupied_cells") or 0)
+    nominal = int(grid.get("nominal_cells") or 0)
+    created: set[str] = set()
+    targeted = existing = failed = 0
+    by_operator: Counter[str] = Counter()
+    for t in targets[:MAX_FILLS_PER_PASS]:
+        if time.monotonic() - started > budget_s:
+            break
+        donor = donors.get(str(t.get("family") or ""))
+        if not donor:
+            continue
+        sym = case.get(str(t.get("symbol") or ""), str(t.get("symbol") or "").upper())
+        hor = str(t.get("horizon") or "")
+        op = "cross_instrument" if sym.lower() != donor["symbol"].lower() else "cross_horizon"
+        targeted += 1
+        try:
+            _id, made = enqueue_candidate(
+                family=donor["family"], symbol=sym, params=donor["params"],
+                origin=SOURCE, generator=SOURCE, horizon=hor,
+                mechanism=(f"{donor['mechanism'] or donor['family']} carried to {sym} at {hor} "
+                           f"(mutation: {op})"))
+        except Exception:                                                # pragma: no cover
+            failed += 1
+            continue
+        by_operator[op] += 1
+        if made:
+            created.add(str(t.get("cell") or f"{t.get('family')}|{sym.lower()}|{hor}"))
+        else:
+            existing += 1
+    after = occupied_before + len(created)
+    return {
+        "available": True,
+        "law": ("AIM, NOT RESTRICTION: every cell is minted through the one registry door, which "
+                "de-duplicates on content hash. Nothing is capped, dropped or slowed"),
+        "empty_cells_targeted": targeted,
+        "cells_created_in_empty_cells": len(created),
+        "already_present": existing, "failed": failed,
+        "by_operator": dict(by_operator),
+        "occupied_cells_before": occupied_before, "occupied_cells_after": after,
+        "occupancy_before": round(occupied_before / nominal, 6) if nominal else None,
+        "occupancy_after": round(after / nominal, 6) if nominal else None,
+        "newly_occupied_cells": len(created),
+        "reachable_empty_after": max(int(grid.get("reachable_empty_cells") or 0) - len(created), 0),
+        "elapsed_s": round(time.monotonic() - started, 3),
+    }
+
+
+def ratchet_occupancy(fill: dict[str, Any], path: Path | None = None) -> dict[str, Any]:
+    """GRID OCCUPANCY RISES ONLY. A fall below the best carries a stated reason or it is a lie.
+
+    The ratchet is a FLOOR and never a cap: the remedy for a breach is to fill more cells, never
+    to mint fewer. An unmeasured pass moves nothing -- an absent measurement is not a regression.
+    """
+    out = path or OCCUPANCY_RATCHET
+    doc = _read(out, default={})
+    doc = doc if isinstance(doc, dict) else {}
+    if not fill.get("available"):
+        return {**doc, "verdict": UNMEASURED,
+                "why": str(fill.get("why") or f"{UNMEASURED}: nothing measured this pass")}
+    now_cells = int(fill.get("occupied_cells_after") or 0)
+    best = doc.get("occupied_cells_best")
+    reason = str(doc.get("regression_reason") or "")
+    failures: list[str] = []
+    if isinstance(best, (int, float)) and now_cells < best and not reason:
+        failures.append(
+            f"grid occupancy fell to {now_cells} occupied cells against a best of {best:g} with "
+            f"no stated reason: set `regression_reason` in {out.name} or name the generator that "
+            f"stopped filling. The remedy is more cells, never fewer")
+    if not isinstance(best, (int, float)) or now_cells > best:
+        doc["occupied_cells_best"] = now_cells
+        doc["occupancy_best"] = fill.get("occupancy_after")
+    doc["updated_utc"] = datetime.now(tz=UTC).isoformat(timespec="seconds")
+    doc["law"] = "GRID OCCUPANCY RISES ONLY. This ratchet is a floor and never a cap."
+    doc.setdefault("regression_reason", None)
+    try:
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(doc, indent=1) + "\n", encoding="utf-8")
+    except OSError as exc:                                               # pragma: no cover
+        doc["write_error"] = f"{type(exc).__name__}: {exc}"
+    return {**doc, "verdict": "REGRESSION" if failures else "MEASURED", "failures": failures}
+
+
 def headline() -> dict[str, Any]:
     """The yield fence's own orthogonality-weighted throughput, READ and never re-derived."""
     doc = _read(YIELD, default={})
@@ -369,6 +546,11 @@ def run(budget_s: float = 240.0, *, db: Path | None = None) -> dict[str, Any]:
     mix = tune_mix(gain)
     head = headline()
     intake = intake_split()
+    # AIM: transplant the families' own rules onto the empty cells, then ratchet what that filled.
+    fill = (fill_empty_cells(grid, budget_s=max(budget_s * 0.5, 30.0), db=db)
+            if grid.get("available") else
+            {"available": False, "why": f"{UNMEASURED}: no measured grid to aim at"})
+    occupancy_ratchet = ratchet_occupancy(fill)
     doc: dict[str, Any] = {
         "generated_utc": datetime.now(tz=UTC).isoformat(timespec="seconds"),
         "law": ("RAISE THE ORTHOGONALITY-WEIGHTED FIGURE, NOT THE RAW ONE. Nothing here caps, "
@@ -377,6 +559,7 @@ def run(budget_s: float = 240.0, *, db: Path | None = None) -> dict[str, Any]:
                 "ground the desk does not yet hold."),
         "registry_note": why,
         "headline": head, "dedup_ladder": ladder, "grid": grid,
+        "fill": fill, "occupancy_ratchet": occupancy_ratchet,
         "intake": intake,
         "mutation_mix": {**mix, "gain": gain,
                          "consumer": "desks/mt5/research/survivor_distiller.py",
@@ -421,6 +604,13 @@ def render(doc: dict[str, Any]) -> list[str]:
              f"({grid.get('occupancy')}), {grid.get('reachable_empty_cells')} reachable empty",
              f"  mix     mechanism share "
              f"{(doc.get('mutation_mix') or {}).get('declared_mechanism_share')}"]
+    fill = doc.get("fill") or {}
+    if fill.get("available"):
+        lines.append(f"  fill    {fill.get('empty_cells_targeted')} empty cells aimed at, "
+                     f"{fill.get('cells_created_in_empty_cells')} cells created; occupancy "
+                     f"{fill.get('occupancy_before')} -> {fill.get('occupancy_after')} "
+                     f"({fill.get('occupied_cells_before')} -> "
+                     f"{fill.get('occupied_cells_after')} cells)")
     intake = doc.get("intake") or {}
     if intake.get("available"):
         lines.append(f"  intake  {intake.get('unseen_mechanisms')} unseen / "

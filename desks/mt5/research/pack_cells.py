@@ -227,6 +227,193 @@ def country_pack(code: str) -> tuple[tuple[str, ...], str]:
     return instruments, region
 
 
+# ---------------------------------------------------------------- the mapping ladder
+# MEASURED 2026-09-23, AND IT IS NOT WHAT THE BACKLOG SAID. The 29 grounds this organ could not
+# convert are not countries missing a pack: every one of them carries country = NULL. They are
+# LANES -- `github`, `mql5_signals`, `literature`, `asia:cfets_fixing`, `deep_forest` -- whose
+# documents come from many hosts, and whose jurisdiction is a property of the DOCUMENT, not of
+# the registry row. Meanwhile every country that does name itself (cz, az, ca, au, kz, ar, ge,
+# cl, br, idn, ea, bd, ind, ch, lk, co) already has a pack, so "write 29 packs" would have been
+# 29 files nobody needed.
+#
+# So the resolution is a LADDER, and every rung is derived from something the desk already
+# declares. Nothing below is a typed table:
+#
+#   1. country_pack                     the registry's own country column -> the pack's own
+#                                       EXECUTABLE_INSTRUMENTS (the rung that already existed)
+#   2. jurisdiction_of_documents        the ccTLD of the hosts the ground's OWN held documents
+#                                       were fetched from, against an index inverted out of the
+#                                       packs' own JURISDICTIONS tuples and directory names
+#   3. instruments_named_in_documents   the MT5 symbols named verbatim in the held text, against
+#                                       the desk's own universe registry, routed through
+#                                       universe_policy so a single-name equity never becomes a
+#                                       statistical hypothesis (LAWS: two lanes)
+#   4. UNMAPPED                         with the hosts it saw and the rung that failed, which is
+#                                       a named owned reason and not a silent zero
+#
+# A rung is never a filter: rung 2 cannot narrow rung 1, and a ground that clears rung 1 never
+# reaches rung 2. The ladder only ADDS grounds that had nothing.
+_JURIS_INDEX: dict[str, str] | None = None
+_UNIVERSE: frozenset[str] | None = None
+#: Documents sampled to resolve a ground's jurisdiction. The dominant host wins, so one stray
+#: link cannot move a ground; the sample is bounded because a ground with 300 documents is
+#: resolved by the same hosts as a ground with 12.
+RESOLVE_SAMPLE = 24
+
+
+def jurisdiction_index() -> dict[str, str]:
+    """Every jurisdiction the desk's packs cover -> the pack that covers it. DERIVED, never typed.
+
+    A two-letter pack directory IS its ISO-3166 alpha-2 code; a regional pack declares the codes
+    it covers in its own `JURISDICTIONS` tuple. A code absent from this index is covered by no
+    pack on the desk, which is the only honest ground for writing a new one.
+    """
+    global _JURIS_INDEX
+    if _JURIS_INDEX is not None:
+        return _JURIS_INDEX
+    idx: dict[str, str] = {}
+    base = Path(__file__).resolve().parent / "countries"
+    try:
+        dirs = sorted(p for p in base.iterdir() if (p / "pack.py").exists())
+    except OSError:
+        dirs = []
+    for d in dirs:
+        if len(d.name) == 2:
+            idx.setdefault(d.name.lower(), d.name)
+        try:
+            mod = __import__(f"countries.{d.name}.pack", fromlist=["pack"])
+        except Exception:
+            continue
+        for j in (getattr(mod, "JURISDICTIONS", ()) or ()):
+            code = str(j).strip().lower()
+            if code:
+                idx.setdefault(code, d.name)
+    _JURIS_INDEX = idx
+    return idx
+
+
+def universe_symbols() -> frozenset[str]:
+    """The MT5 symbols the broker actually quotes, from the desk's own universe registry."""
+    global _UNIVERSE
+    if _UNIVERSE is not None:
+        return _UNIVERSE
+    doc = _read(DESK / "data" / "universe" / "universe.json", {}) or {}
+    names = list(doc) if isinstance(doc, dict) else []
+    _UNIVERSE = frozenset(str(n) for n in names if str(n).strip())
+    return _UNIVERSE
+
+
+def _host_of(url: str) -> str:
+    raw = str(url or "").strip()
+    if "://" in raw:
+        raw = raw.split("://", 1)[1]
+    return raw.split("/", 1)[0].split("@")[-1].split(":")[0].strip().lower()
+
+
+def _cctld(host: str) -> str:
+    """The host's country code, when its last label IS one. `boj.or.jp` -> `jp`; `mql5.com` -> ''.
+
+    A generic top-level domain has no jurisdiction and returns "", which is a measurement about
+    the host and the reason such a ground falls through to rung 3.
+    """
+    label = host.rsplit(".", 1)[-1] if "." in host else ""
+    return label if len(label) == 2 and label.isalpha() else ""
+
+
+def held_documents(source_id: str, limit: int = RESOLVE_SAMPLE) -> list[dict[str, str]]:
+    """(url, text) for the documents this ground already holds, from the claims' own provenance."""
+    try:
+        from libs.moat.registry import connect
+        conn = connect()
+    except Exception:
+        return []
+    try:
+        out: list[dict[str, str]] = []
+        for r in conn.execute("SELECT text, provenance_json FROM claims WHERE source_id = ? "
+                              "ORDER BY created_at LIMIT ?", (source_id, int(limit))):
+            prov = _read_json_str(str(r["provenance_json"] or ""))
+            out.append({"url": str(prov.get("url") or ""), "text": str(r["text"] or "")})
+        return out
+    except Exception:
+        return []
+    finally:
+        with contextlib.suppress(Exception):
+            conn.close()
+
+
+def _read_json_str(raw: str) -> dict[str, Any]:
+    try:
+        doc = json.loads(raw or "{}")
+    except ValueError:
+        return {}
+    return doc if isinstance(doc, dict) else {}
+
+
+def named_instruments(texts: list[str]) -> list[str]:
+    """MT5 symbols named verbatim in the held documents, in the order the universe declares them.
+
+    Routed through `universe_policy.may_hypothesise`, which is the mandate's own asset-class
+    router: a single-name equity is traded on its disclosures and never minted as a statistical
+    hypothesis, so it is set aside here by the same rule the backtest router uses.
+    """
+    blob = " ".join(texts)
+    if not blob:
+        return []
+    upper = blob.upper()
+    try:
+        from research.universe_policy import may_hypothesise
+    except Exception:
+        def may_hypothesise(_sym: str) -> bool:  # noqa: ANN001 - absent router never filters
+            return True
+    hits: list[str] = []
+    for sym in sorted(universe_symbols()):
+        if len(sym) < 5 or not sym.isalnum():
+            continue                                   # a 3-letter token matches too much prose
+        if sym.upper() in upper and may_hypothesise(sym):
+            hits.append(sym)
+    return hits
+
+
+def resolve_ground(row: dict[str, Any]) -> dict[str, Any]:
+    """The ladder, applied to ONE ground: (targets, region, mapped_by, reason, hosts).
+
+    Called only for a ground that rung 1 left with no instrument AND that holds documents, so it
+    costs one bounded claims read per unmapped ground per pass and nothing at all for the rest.
+    """
+    sid = str(row.get("id") or "")
+    docs = held_documents(sid)
+    hosts = [_host_of(d["url"]) for d in docs if d.get("url")]
+    reg_host = _host_of(str(row.get("url") or ""))
+    if reg_host:
+        hosts.append(reg_host)
+    codes = [c for c in (_cctld(h) for h in hosts) if c]
+    idx = jurisdiction_index()
+    ranked = sorted({c: codes.count(c) for c in codes}.items(), key=lambda kv: (-kv[1], kv[0]))
+    for code, _n in ranked:
+        pack = idx.get(code)
+        if not pack:
+            continue
+        instruments, region = country_pack(pack)
+        if instruments:
+            return {"targets": list(instruments[:8]), "region": region,
+                    "mapped_by": "jurisdiction_of_documents",
+                    "reason": "", "hosts": sorted(set(hosts))[:6], "code": code, "pack": pack}
+    named = named_instruments([d["text"] for d in docs])
+    if named:
+        return {"targets": named[:8], "region": "GLOBAL",
+                "mapped_by": "instruments_named_in_documents", "reason": "",
+                "hosts": sorted(set(hosts))[:6], "code": "", "pack": ""}
+    unknown = sorted({c for c in codes if c and c not in idx})
+    return {"targets": [], "region": "UNMAPPED", "mapped_by": "none",
+            "hosts": sorted(set(hosts))[:6], "code": "", "pack": "",
+            "reason": (
+                f"no rung resolves it: its documents come from {', '.join(sorted(set(hosts))[:4]) or 'no recorded host'}"
+                + (f"; the country code(s) {', '.join(unknown)} are covered by no pack under "
+                   "research/countries/ -- writing one closes it" if unknown else
+                   "; those hosts carry a generic top-level domain, and no MT5 symbol is named "
+                   "verbatim in the documents held, so the ground names no instrument yet"))}
+
+
 def world_rows() -> tuple[list[dict[str, Any]], str]:
     """Every registered world ground with the documents it already holds and the cells it owes.
 
@@ -268,12 +455,28 @@ def world_rows() -> tuple[list[dict[str, Any]], str]:
                         "cells_emitted": cells.get(sid, 0),
                         "discoveries": disc.get(sid, 0),
                         "cells_judged": judged.get(sid, 0)})
-        return out, ""
+        rows_out = out
     except Exception as exc:
         return [], f"registry query failed: {type(exc).__name__}: {exc}"
     finally:
         with contextlib.suppress(Exception):
             conn.close()
+    # THE LADDER, and only where rung 1 left nothing. A ground that already names instruments is
+    # never re-resolved, and a ground holding no document costs nothing here: the whole ladder is
+    # one bounded claims read per UNMAPPED ground that has something to convert.
+    for w in rows_out:
+        w["mapped_by"] = "country_pack" if w["targets"] else "none"
+        if w["targets"] or w["n_documents"] <= 0:
+            continue
+        res = resolve_ground(w)
+        w["mapped_by"] = res["mapped_by"]
+        w["hosts"] = res["hosts"]
+        if res["targets"]:
+            w["targets"] = res["targets"]
+            w["region"] = res["region"]
+        if res["reason"]:
+            w["reason"] = res["reason"]
+    return rows_out, ""
 
 
 def _claims_for(source_id: str, limit: int, offset: int) -> list[dict[str, Any]]:
