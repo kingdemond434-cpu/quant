@@ -3361,7 +3361,8 @@ def main() -> None:
     # resting state. Third-party code runs only inside libs/research/sandbox.py.
     sbr = _costed("sandbox_runner", lambda: _producer("sandbox_runner",
                                                       "research/sandbox_runner.py",
-                                                      "--once", "--budget-s", "900"))
+                                                      "--once", "--budget-s", "900",
+                                                      "--allow-network"))
     # THE SANDBOX SUPPLY LINE (LAWS 5h/5m): installs the pinned requirement of the systems the
     # runner could only record UNMEASURED, into ONE shared venv over the desk's own interpreter,
     # proves the module imports, reads the licence at the same pin, and settles what this
@@ -3530,14 +3531,15 @@ def main() -> None:
         _apply_judging_env()
     except Exception as _exc:
         print(f"judging_throughput env not applied: {type(_exc).__name__}: {_exc}", flush=True)
-    # EVERY CERTIFICATE GETS ITS CLOCK THE MOMENT IT EXISTS, with no quota and no waiting queue
-    # (principal 2026-09-23: forward evidence is never rationed; forward clocks gather evidence
-    # and deploy no capital, so the only thing a slot cap bought was a slower desk). It runs
-    # immediately after the judge so a certificate minted this hour is enrolled this hour.
-    fen = _costed("forward_enrolment", lambda: _producer(
-        "forward_enrolment", "research/forward_enrolment.py", "--once", "--budget-s", "300"))
     gt = _costed("external_gauntlet", lambda: _producer(
         "external_gauntlet", "scripts/external_gauntlet.py"))
+    # EVERY CERTIFICATE GETS ITS CLOCK THE MOMENT IT EXISTS, with no quota and no waiting queue
+    # (principal 2026-09-23: forward evidence is never rationed; forward clocks gather evidence
+    # and deploy no capital, so the only thing a slot cap bought was a slower desk). AFTER the
+    # judge, deliberately: a certificate minted by THIS hour's sweep is enrolled in THIS hour's
+    # pass rather than the next one, which is what "immediately" has to mean on an hourly clock.
+    fen = _costed("forward_enrolment", lambda: _producer(
+        "forward_enrolment", "research/forward_enrolment.py", "--once", "--budget-s", "300"))
     # THE FALSIFIERS RUN AGAINST THE FRESH CANON (Tier-1 item V4, 2026-09-09). libs/validation/
     # falsifiers.py had zero callers; every certificate was minted and never attacked. The
     # producer budgets itself (600 s default) under this leg's timeout and writes

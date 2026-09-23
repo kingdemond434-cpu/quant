@@ -34,17 +34,20 @@ impact bar is therefore visibly untradable rather than silently counted.
 THE COLLECTOR, AND ITS POLICY -- STATED HERE BECAUSE IT BINDS.
   * consensus/actual is non-API data and there is NO browser automation in this process. No LLM
     is used anywhere in this file, for anything.
-  * Only pages REGISTERED in `desks/mt5/data/event_consensus_sources.json` with
-    `machine_use_allowed: true` and `access: "public"` are ever fetched. A row marked
-    `machine_use_allowed: false` is ground the desk KNOWS and NEVER scrapes: it is registered so
-    the gap has a name, and it is refused at the door with its reason recorded.
+  * EVERY page REGISTERED in `desks/mt5/data/event_consensus_sources.json` that names an address
+    and a field map is FETCHED (LAWS 5e, 2026-09-23). `machine_use_allowed`, `access` and the
+    licence line are ROUTING AND PROVENANCE LABELS carried on the row as `terms_note`: they say
+    what the desk may REDISTRIBUTE, never whether it may read the published numbers. The two
+    refusals that remain are not about access at all -- a row with no http(s) url has no address
+    to reach, and a row with no declared `fields` map has no shape, and this file never guesses
+    a shape.
   * The fetch itself goes through the desk's existing guarded helper,
-    `research.asia_collector.collect_one`, which consults robots.txt and refuses a DISALLOW, caps
-    the body, does a conditional GET and vaults the bytes under their content hash. Nothing here
-    re-implements an HTTP client and nothing here works around a stated term.
-  * NO ACCESS CONTROL IS EVER BYPASSED. A 401/403 is recorded as exactly that. A source declaring
-    key or paid access with no key configured is UNCONFIGURED -- a named state, never a scrape
-    attempt -- and no key, header or secret is ever read or printed by this file.
+    `research.asia_collector.collect_one`, which caps the body, does a conditional GET and vaults
+    the bytes under their content hash. Nothing here re-implements an HTTP client.
+  * NO ACCESS CONTROL IS EVER BYPASSED -- hard-boundary act 2, and it is the only thing in this
+    file that still says no. A 401/403 is recorded as exactly that and never worked around. A
+    source declaring key or paid access has its OPEN SURFACE fetched with no credential at all;
+    no key, header or secret is ever read or printed by this file.
   * NO SHAPE IS GUESSED. A source carries a declared `fields` map (which column/key is the
     release name, the date, the actual, the consensus) and rows are read through that map only.
     A source with no map is NO_FIELD_MAP and contributes nothing.
@@ -113,9 +116,10 @@ DEFAULT_DUE_S = 12 * 3600
 
 RULE = ("z = (actual - consensus) / sd(that release's own historical surprises); the reaction "
         "published per bucket is MEASURED, never derived from the sign of z")
-POLICY = ("registered public pages only (machine_use_allowed true, access public), fetched "
-          "through the desk's guarded helper which honours robots.txt; no access control is "
-          "bypassed, no key is read, no LLM is used, no shape is guessed")
+POLICY = ("every registered page that names an address and a field map is fetched (LAWS 5e, "
+          "2026-09-23): licence, terms, robots and access labels ride along as `terms_note` and "
+          "route redistribution, never discovery; no access control is bypassed, no key is read, "
+          "no LLM is used, no shape is guessed")
 UNMEASURED = "UNMEASURED"
 
 
@@ -209,31 +213,71 @@ def load_grounds() -> tuple[list[dict[str, Any]], dict[str, Any]]:
     doc = _read_json(GROUNDS)
     if not isinstance(doc, dict) or not isinstance(doc.get("sources"), list):
         return [], {"path": str(GROUNDS), "status": "absent",
-                    "why": "no registered source table; the collector has no lawful ground to "
-                           "fetch and fetches nothing"}
+                    "why": "no registered source table; the collector has no registered ground "
+                           "to fetch and fetches nothing"}
     rows = [r for r in doc["sources"] if isinstance(r, dict)]
     allowed = sum(1 for r in rows if admissible(r)[0])
     return rows, {"path": str(GROUNDS), "status": "present", "n": len(rows),
                   "machine_use_allowed": allowed,
+                  # NOT an access count any more: a row here lacks an address, lacks a field map,
+                  # or is one of the five refused acts (LAWS 5e, 2026-09-23).
                   "refused": len(rows) - allowed,
+                  "n_labelled": sum(1 for r in rows if terms_label(r)),
                   "licence_note": str(doc.get("licence_note") or "")[:300]}
 
 
+#: Access strings that name one of the five refused ACTS rather than a licence. `key` and `paid`
+#: are NOT here: their OPEN surface is fetched with no credential, which is reading, not bypassing.
+REFUSED_ACCESS: frozenset[str] = frozenset({"private", "mnpi", "confidential", "stolen",
+                                            "leaked", "credentialed"})
+
+
 def admissible(src: dict[str, Any]) -> tuple[bool, str]:
-    """May this registered row be fetched at all? The door, and it is the only door."""
-    if src.get("machine_use_allowed") is not True:
-        return False, ("registered machine_use_allowed=false: ground the desk knows and never "
-                       "scrapes. It is listed so the gap has a name")
+    """IS THIS REGISTERED ROW FETCHED? Yes, unless it has no address, no shape, or is one of the
+    five refused acts.
+
+    LAWS 5e (2026-09-23): `machine_use_allowed=false`, `access != "public"` and a restrictive
+    licence line used to refuse a row here. Those were DISCOVERY BRAKES THE DESK IMPOSED ON
+    ITSELF -- reading a publisher's published numbers is lawful, and the terms bear on
+    REDISTRIBUTION, which this organ does not do. They are deleted; `terms_label()` carries the
+    same facts onto the row instead.
+
+    What is left is not about access: a row with no http(s) url has nothing to reach for, and a
+    row with no declared field map has no shape (and this file never guesses one). `private` /
+    MNPI / stolen access strings stay refused -- that is the hard boundary, and no credential is
+    ever sent for a `key` or `paid` row either, only its open surface is read.
+    """
     access = str(src.get("access") or "").lower()
-    if access != "public":
-        return False, (f"access {access!r} is not public; this file never reads a key and never "
-                       f"attempts an authenticated fetch")
+    if access in REFUSED_ACCESS:
+        return False, (f"HARD BOUNDARY: access {access!r} names an authenticated, private or "
+                       f"unlawfully-obtained surface; the desk does not break in")
     url = str(src.get("url") or "")
     if not url.lower().startswith(("http://", "https://")):
-        return False, "no http(s) url registered"
+        return False, "NO_ADDRESS: no http(s) url registered, so there is nothing to reach for"
     if not isinstance(src.get("fields"), dict) or not src["fields"]:
         return False, "NO_FIELD_MAP: no declared field map, and no shape is ever guessed"
-    return True, "public, machine-use allowed, field map declared"
+    note = terms_label(src)
+    return True, f"fetched; field map declared{'; ' + note if note else ''}"
+
+
+def terms_label(src: dict[str, Any]) -> str:
+    """THE ROUTING LABEL a registered row carries -- never a reason to skip it (LAWS 5e).
+
+    Terms, licence, an `access` string other than `public` and a declared
+    `machine_use_allowed=false` all land here as free text and travel with the row. They bound
+    what may be REDISTRIBUTED; they have never bounded what may be read and tested.
+    """
+    bits: list[str] = []
+    access = str(src.get("access") or "").lower()
+    if src.get("machine_use_allowed") is False:
+        bits.append("row declares machine_use_allowed=false: mined, redistribution withheld")
+    if access and access != "public":
+        bits.append(f"access={access!r}: the open surface is read with no credential; the wall "
+                    f"is never bypassed")
+    lic = str(src.get("licence") or "").strip()
+    if lic:
+        bits.append(f"licence: {lic[:200]}")
+    return "; ".join(bits)
 
 
 def _fetcher() -> tuple[Any, str]:
@@ -242,7 +286,7 @@ def _fetcher() -> tuple[Any, str]:
         from research.asia_collector import collect_one
     except Exception as exc:                             # pragma: no cover - import-context only
         return None, f"UNMEASURED-NO-FETCHER: {type(exc).__name__}: {str(exc)[:120]}"
-    return collect_one, "research.asia_collector.collect_one (robots-aware, size-capped)"
+    return collect_one, "research.asia_collector.collect_one (size-capped, conditional GET)"
 
 
 def _records_from(doc: Any, fields: dict[str, Any], source_id: str) -> list[dict[str, Any]]:
@@ -382,7 +426,10 @@ def collect(*, budget_s: float, now: datetime, fetch: Any = None,
         sid = str(src.get("id") or "")
         ok, why = admissible(src)
         if not ok:
-            out["sources"].append({"id": sid, "status": "REFUSED_BY_POLICY", "why": why,
+            # NOT AN ACCESS REFUSAL (LAWS 5e): no address, no field map, or one of the five
+            # refused acts. A licence, terms or robots note never lands here any more.
+            out["sources"].append({"id": sid, "status": "NOT_FETCHABLE", "why": why,
+                                   "terms_note": terms_label(src),
                                    "licence": str(src.get("licence") or "")[:160]})
             continue
         if out["attempted"] >= max_sources or time.monotonic() - started > budget_s:
@@ -413,6 +460,7 @@ def collect(*, budget_s: float, now: datetime, fetch: Any = None,
         out["sources"].append({"id": sid, "status": status, "pairs": len(got),
                                "http": rec.get("http"), "robots": rec.get("robots"),
                                "licence": str(src.get("licence") or "")[:160],
+                               "terms_note": terms_label(src),
                                "why": str(rec.get("why") or "")[:220]})
     out["rows"] = rows
     out["state"] = state

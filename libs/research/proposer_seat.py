@@ -41,6 +41,16 @@ ROUTING IS NOT DUPLICATED HERE. `libs.ops.llm_seat` resolves the seat, discovers
 enforces the free-tier request budget and records spend; `libs.research.free_panel` rotates the
 zero-cost roster on a rate limit; `libs.ops.llm_route` reports what the roster can reach. This
 module composes a prompt, calls one of those, and parses the reply. It owns no transport.
+
+IT IS FOR EVERY RESEARCH PROCESS, NOT ONLY THE FACTORIES (principal 2026-09-23: "the proposer
+seat should be for all miners, crawlers etc, all research processes there, not just factories --
+rather everything, even sandboxed"). `ask(organ, kind, ...)` is THE entry point and the only one:
+an organ is wired by adding one line to `ORGANS` and making one call. That is deliberate rather
+than convenient -- `llm_route`'s own docstring records the alternative, eleven organs each
+resolving a model their own way, one of them dead for weeks with no artifact and no complaint. A
+prior wired by copy-paste is wired eleven slightly different ways and the differences are all in
+the guard. `run()` then reports every registered organ with its counts, so "is the seat
+everywhere?" is answered by reading the artifact instead of by grepping and hoping.
 """
 
 from __future__ import annotations
@@ -50,6 +60,7 @@ import hashlib
 import json
 import os
 import re
+import sys
 import time
 from collections.abc import Callable, Sequence
 from dataclasses import asdict, dataclass, field
@@ -58,6 +69,16 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
+#: THE REPOSITORY ROOT ON sys.path, BECAUSE THIS FILE IS ALSO A LEG.
+#:
+#: The hourly cycle runs producers as `python -u <path>` with cwd at the repo root. Since 3.11 a
+#: script's directory goes on sys.path and the cwd does NOT, so `libs/research/proposer_seat.py`
+#: starts with `libs/research` on the path and `libs.ops.llm_seat` unimportable. Every import
+#: here is guarded, so the failure would not crash -- it would resolve to "no seat" and the leg
+#: would report the seat DARK on a box that holds fifteen credentials. That is the worst shape
+#: of bug this desk knows: a healthy-looking report about an organ that is not running.
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 DESK = ROOT / "desks" / "mt5"
 REPORT = DESK / "reports" / "PROPOSER_SEAT.json"
 #: Where a proposal waits for the factory that will judge it. One file per factory, append-only

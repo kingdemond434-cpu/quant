@@ -54,7 +54,7 @@ its mechanism actually reaches, so an absent instrument produces a transmission 
 never a cell that can never be filled (L1.49).
 
 THE TWO-LANE ORDER (2026-09-06). Danish market commentary is dominated by four names -- Novo
-Nordisk, A.P. Moller-Maersk, Orsted, Danske Bank -- and every one of them is an EVENT-lane
+Nordisk, A.P. Møller-Maersk, Ørsted, Danske Bank -- and every one of them is an EVENT-lane
 instrument. They appear in this pack as ACTORS and as index-composition facts only. No share CFD
 appears in any instrument tuple in this department.
 """

@@ -156,6 +156,20 @@ def _on_windows() -> bool:
     return os.name == "nt"
 
 
+def _load_by_path(name: str, path: Path) -> Any:
+    """Import a repo script by FILE PATH. None when it cannot be loaded, never a raise."""
+    import importlib.util
+    try:
+        spec = importlib.util.spec_from_file_location(f"_pw_{name}", path)
+        if spec is None or spec.loader is None:
+            return None
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+    except Exception:
+        return None
+    return mod
+
+
 def defect(check: str, organ: str, evidence: str, repair: str, *,
            severity: str = "MAJOR", key: str | None = None) -> dict[str, Any]:
     """One DEFECT ROW: the organ, the evidence that it is broken, and the repair. All three,
@@ -492,12 +506,21 @@ def check_declared_tasks(present: Mapping[str, str] | None = None,
     The declared list is READ FROM THE INSTALLER (`scripts/check_scheduled_tasks.declared`), never
     typed again here: a second list is a second opinion, and the desk has paid for those.
     """
-    try:
-        from scripts import check_scheduled_tasks as cst
-    except ImportError:  # pragma: no cover - the fence module is part of the repo
-        return [], {"measured": False, "why": "scripts.check_scheduled_tasks is not importable"}
-    want = list(declared) if declared is not None else cst.declared()
-    have = dict(present) if present is not None else cst.present()
+    if declared is None or present is None:
+        # LOADED BY PATH, never `from scripts import ...`. `tests/scripts/__init__.py` makes a
+        # REGULAR package called `scripts`, and a regular package beats the repo root's namespace
+        # package wherever it sits on sys.path -- so the package import silently resolved to the
+        # TEST directory, this function took its ImportError branch, and the watchdog reported
+        # "not importable" instead of the box's disabled clocks. A watchdog defeated by an
+        # import-shadowing rule is exactly the silent stop it exists to end.
+        cst = _load_by_path("check_scheduled_tasks", ROOT / "scripts" / "check_scheduled_tasks.py")
+        if cst is None:
+            return [], {"measured": False,
+                        "why": "scripts/check_scheduled_tasks.py could not be loaded"}
+        want = list(declared) if declared is not None else cst.declared()
+        have = dict(present) if present is not None else cst.present()
+    else:
+        want, have = list(declared), dict(present)
     facts: dict[str, Any] = {"declared": len(want), "present": len(have)}
     if not have:
         facts["measured"] = False
@@ -728,11 +751,12 @@ def check_fences_ran(root: Path | None = None,
     doc = _read_json(base / "data" / "law_gate.json")
     facts: dict[str, Any] = {}
     rows: list[dict[str, Any]] = []
-    try:
-        from scripts.run_law_gate import _LAW_FENCES, _STATE_FENCES
-        want = {n for n, _a in (*_LAW_FENCES, *_STATE_FENCES)}
-    except (ImportError, AttributeError):  # pragma: no cover - the gate is part of the repo
-        return [], {"measured": False, "why": "scripts.run_law_gate is not importable"}
+    # BY PATH, for the reason `check_declared_tasks` explains: `scripts` is a namespace package
+    # that a regular `scripts` package elsewhere on sys.path shadows without a word.
+    gate = _load_by_path("run_law_gate", base / "scripts" / "run_law_gate.py")
+    if gate is None or not hasattr(gate, "_LAW_FENCES"):
+        return [], {"measured": False, "why": "scripts/run_law_gate.py could not be loaded"}
+    want = {n for n, _a in (*gate._LAW_FENCES, *gate._STATE_FENCES)}
     facts["declared_fences"] = len(want)
     if not isinstance(doc, dict):
         rows.append(defect("fence_ran", "run_law_gate",

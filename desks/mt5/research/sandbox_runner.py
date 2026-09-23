@@ -56,6 +56,7 @@ from libs.research import adapters as A  # noqa: E402
 from libs.research import external_federation as fed  # noqa: E402
 from libs.research import licence_reader as LR  # noqa: E402
 from libs.research import sandbox as SB  # noqa: E402
+from libs.research import sandbox_rotation as ROT  # noqa: E402
 from libs.research import trial_ledger as T  # noqa: E402
 from libs.research.external_federation import ExternalResearchPacket  # noqa: E402
 from research import sandboxes as CELLS  # noqa: E402
@@ -524,16 +525,6 @@ def charge_trials(trials: list[Any], *, apply: bool) -> dict[str, Any]:
 
 # ------------------------------------------------------------------------------- the pass
 
-def roi_rows(state: dict[str, Any], plans: list[Plan]) -> list[dict[str, Any]]:
-    sys_state = state.get("systems") or {}
-    rows = []
-    for p in plans:
-        s = sys_state.get(p.system_id) or {}
-        rows.append({"system_id": p.system_id, "information_gain": s.get("information_gain"),
-                     "compute_spent": s.get("compute_spent"), "live_delta_elog": None})
-    return rows
-
-
 def run_pass(*, budget_s: float = 900.0, dry_run: bool = False, allow_fetch: bool = True,
              allow_network: bool = False, root: Path | None = None,
              symbols: list[str] | None = None, max_systems: int | None = None,
@@ -564,9 +555,16 @@ def run_pass(*, budget_s: float = 900.0, dry_run: bool = False, allow_fetch: boo
     plans.extend(p for p in plan_cells() if not only or p.system_id in only
                  or p.system_id[len(A.CELL_PREFIX):] in only)
     runnable = [p for p in plans if p.status == "RUNNABLE"]
-    alloc = fed.allocation(roi_rows(state, runnable), int(deadline.left()), floor_s=FLOOR_S) \
-        if runnable else {}
-    order = sorted(runnable, key=lambda p: (-alloc.get(p.system_id, 0), p.system_id))
+    #: ROTATION (libs/research/sandbox_rotation.py). Pure ROI order is a ratchet -- the systems
+    #: that produced get the hour, so the ones that never got an hour never produce. The plan
+    #: gives the most OVERDUE runnable systems a floor share first (every one runs inside the
+    #: 24h window) and spends the rest ROI-proportionally REWEIGHTED by measured marginal
+    #: breadth, so orthogonal cells buy more of the hour than a crowded corner does.
+    rotation = ROT.plan([p.system_id for p in runnable], state["systems"],
+                        budget_s=max(1.0, deadline.left()), floor_s=FLOOR_S) if runnable else {}
+    alloc = {str(k): int(v) for k, v in (rotation.get("shares") or {}).items()}
+    _rot_rank = {sid: i for i, sid in enumerate(rotation.get("order") or [])}
+    order = sorted(runnable, key=lambda p: (_rot_rank.get(p.system_id, 10 ** 6), p.system_id))
     # THE PROPOSER SEAT, OPTIONAL: which sandboxed SYSTEM is worth this pass's seconds first.
     # An ORDER over the systems the federation already holds and the allocator already funded --
     # the seat may reorder what runs, never add a system, never change an allocation and never
@@ -586,6 +584,13 @@ def run_pass(*, budget_s: float = 900.0, dry_run: bool = False, allow_fetch: boo
             order = sorted(order, key=lambda p: _rank.get(p.system_id, 10 ** 6))
     except Exception as _exc:                             # pragma: no cover - optional seat
         seat_hint = {"verdict": "UNMEASURED", "why": f"{type(_exc).__name__}: {_exc}"}
+    #: The seat may reorder the EXPLOIT lane; the SCOUT lane is ordered by age alone and is
+    #: pinned back to the front afterwards. A model's opinion may not starve a frontier -- that
+    #: is exactly the ratchet the rotation exists to break (L1.32).
+    _scouts = {str(s) for s in (rotation.get("scouts") or [])}
+    if _scouts:
+        order = ([p for p in order if p.system_id in _scouts]
+                 + [p for p in order if p.system_id not in _scouts])
     if max_systems:
         order = order[:max_systems]
     conn = None if dry_run else R.connect()
@@ -623,7 +628,16 @@ def run_pass(*, budget_s: float = 900.0, dry_run: bool = False, allow_fetch: boo
                 plan.task = {"kind": "rebuilt", "system": plan.system_id,
                              "what": "the packet carried text only: rebuild the mechanism as a "
                                      "cell that yields candidates or representations"}
-            gain = (len(pkt.candidates) + 0.5 * (len(pkt.representations) + len(pkt.mechanisms))
+            #: A MEASURED research method is a donation like any other and was worth ZERO here
+            #: until 2026-09-23: `cell:rl_execution_challenger` donated a learned execution
+            #: policy and three QUBO schedules every pass, scored information_gain 0.0, and so
+            #: read ROI 0.0 and sank to the bottom of every allocation it was in. Route/note rows
+            #: (`ROUTE_KINDS`) still count nothing -- those are the TEXT_ONLY case.
+            _methods = sum(1 for r in pkt.research_methods
+                           if str(r.get("kind")) not in ROUTE_KINDS
+                           and str(r.get("kind")) != UNMEASURED)
+            gain = (len(pkt.candidates) + 0.5 * (len(pkt.representations) + len(pkt.mechanisms)
+                                                 + _methods)
                     + len(pkt.datasets))
             s_row = state["systems"].setdefault(plan.system_id, {})
             s_row.update({"runs": int(s_row.get("runs") or 0) + 1,
@@ -632,6 +646,13 @@ def run_pass(*, budget_s: float = 900.0, dry_run: bool = False, allow_fetch: boo
                           "candidates": int(s_row.get("candidates") or 0) + len(pkt.candidates),
                           "last_run_id": pkt.run_id, "last_status": status, "last_at": now()})
             s_row["roi"] = fed.roi({**s_row, "live_delta_elog": None})
+            #: THE CELLS THIS SYSTEM REACHES, kept so breadth can be MEASURED rather than
+            #: asserted: one (family|symbol|horizon) key per candidate that entered the queue,
+            #: de-duplicated, capped. `sandbox_rotation.breadth` turns these rows into the
+            #: effective rank of the federation and each system's marginal contribution to it.
+            _cells = {ROT.cell_key(c.get("family"), sym, c.get("horizon"))
+                      for c in pkt.candidates for sym in (c.get("symbols") or [])}
+            s_row["cells"] = sorted(set(s_row.get("cells") or []) | _cells)[:ROT.MAX_CELLS]
             record = {**plan.record(), "run_status": status, "seconds": seconds,
                       "counts": pkt.counts(), "ingested": ing, "budget_share_s": share,
                       "meta": {k: v for k, v in meta.items() if k != "sandbox"},
@@ -666,6 +687,7 @@ def run_pass(*, budget_s: float = 900.0, dry_run: bool = False, allow_fetch: boo
                    "digest": bundle.digest(), "n_bars_cap": bars_cap(free_mb),
                    "free_phys_mb": free_mb, "provenance": dict(bundle.provenance)},
         "allocation_s": alloc, "proposer_seat": seat_hint,
+        "rotation": rotation,
         "systems_tried": tried, "packets": packets,
         "candidates": totals, "effective_trials": census,
         "text_only": text_only, "skipped_budget": skipped_budget,

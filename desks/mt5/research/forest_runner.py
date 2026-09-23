@@ -31,9 +31,12 @@ source scout works from the mandate's own terms, and the other ten roles report 
 NAMING THE PACK AND THE PATH that would measure them. An idle forest and an unmeasured one look
 identical in a count and are opposite findings (L1.28a), so they are never rendered the same.
 
-**NETWORK CALLS ONLY THROUGH THE DESK'S EXISTING FETCHERS.** This file opens no socket. The data
-planes and the deep-forest miner own the robots/terms checks; a page whose `machine_use_allowed`
-is false is REGISTERED as a known ground and never fetched. No secret is read or printed here.
+**NETWORK CALLS ONLY THROUGH THE DESK'S EXISTING FETCHERS.** This file opens no socket; the data
+planes and the deep-forest miner own every fetch. A ground whose terms, robots or licence note
+says something is REGISTERED WITH THAT NOTE AS A LABEL AND MINED (LAWS 5e, 2026-09-23) -- the
+label routes REDISTRIBUTION, never discovery. The five acts of
+`libs.research.access_classifier.HARD_BOUNDARY` are the only refusals left. No secret is read or
+printed here.
 """
 from __future__ import annotations
 
@@ -491,7 +494,7 @@ def role_source_scouts(run: Run, res: RoleResult, budget_s: float) -> None:
         # SEARCH STRING and never a ground, so anything shaped like a URL, a host or a path is
         # discarded before it gets here and no crawler can be routed by a model naming an
         # address. Everything a term surfaces still enters through `source_frontier` as a
-        # CANDIDATE and is fetched only by the organ that owns its robots/terms check. No panel,
+        # CANDIDATE and is fetched by the organ that owns the fetch, which mines it. No panel,
         # no call, and the scout works from exactly the seeds it has today.
         try:
             from libs.research import proposer_seat as _ps
@@ -533,8 +536,9 @@ def role_source_scouts(run: Run, res: RoleResult, budget_s: float) -> None:
                         country=str(ground.get("region") or ""),
                         discovered_from=f"{GENERATOR}:{run.forest}",
                         discovered_via="forest_source_scout", status="candidate",
-                        licence_note="declared ground; fetched only by the organ that owns its "
-                                     "robots/terms check", conn=conn)))
+                        licence_note="declared ground; MINED by the organ that owns the fetch, "
+                                     "with any terms/robots note carried as a routing label "
+                                     "(LAWS 5e) rather than as a refusal", conn=conn)))
         by_layer: dict[str, list[str]] = {}
         for s in seeds:
             by_layer.setdefault(str(s.get("layer") or "all"), []).append(str(s.get("query") or ""))
@@ -704,8 +708,8 @@ def role_practitioner(run: Run, res: RoleResult, budget_s: float) -> None:
                    text=str(g.get("why") or ""), conn=conn,
                    payload={"route": g.get("route"), "kind": g.get("kind"),
                             "language": g.get("language"), "weight": g.get("weight")},
-                   why="the ground is registered here; only deep_forest_miner fetches it, under "
-                       "its own robots and terms checks")
+                   why="the ground is registered here; deep_forest_miner MINES it, carrying any "
+                       "terms or robots note as a routing label (LAWS 5e)")
         res.detail.update({"n_grounds": len(grounds), "n_claims": len(claims)})
         res.why = f"{len(claims)} mined claim(s), {len(grounds)} ground(s) for this region"
     finally:
@@ -854,10 +858,10 @@ def role_archive(run: Run, res: RoleResult, budget_s: float) -> None:
                    text=str(cell.get("note") or ""), conn=conn,
                    payload={"access_label": cell.get("access_label"),
                             "credibility": cell.get("credibility"),
-                            "quarantined": cell.get("quarantined"),
+                            "terms_note": cell.get("terms_note") or cell.get("note"),
                             "archive_kind": cell.get("archive_kind")},
-                   why="a ground whose terms are unread is quarantined and registered, never "
-                       "fetched: registration is not permission")
+                   why="a ground whose terms are unread is MINED with the unread-terms label "
+                       "attached (LAWS 5e): the quarantine was deleted on 2026-09-23")
         if not cells:
             res.note("archive_cells",
                      f"{UNMEASURED}: the archive layer names no region x kind cell for "
@@ -1384,9 +1388,10 @@ def _report(run: Run, seeded: int, plan: Sequence[tuple[str, float]]) -> dict[st
         "techniques": run.techniques[:24],
         "unmeasured": unmeasured,
         "unmeasured_packs": F.unmeasured_packs(spec.id),
-        "boundary": ("this organ opens no socket: every fetch belongs to the organ that owns its "
-                     "robots and terms check, a ground whose machine use is not allowed is "
-                     "registered and never fetched, and no secret is read or printed here"),
+        "boundary": ("this organ opens no socket: every fetch belongs to the organ that owns it, "
+                     "every registered ground is MINED with its terms/robots note carried as a "
+                     "routing label (LAWS 5e, 2026-09-23), the only refusals are the five acts "
+                     "of access_classifier.HARD_BOUNDARY, and no secret is read or printed here"),
         "rule": ("eleven agents in parallel, every write through the dedup chain first, one "
                  "registry; a role with no ground reports UNMEASURED by name and the forest is "
                  "never idle"),
