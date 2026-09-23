@@ -6,6 +6,7 @@ needed (the MT5 half is a `# pragma: no cover` boundary by construction).
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import sys
 from datetime import UTC, datetime, timedelta
@@ -20,7 +21,14 @@ sys.path.insert(0, str(ROOT / "desks" / "mt5" / "research"))
 
 import cost_truth as CT  # noqa: E402
 
-from scripts import check_cost_truth as FENCE  # noqa: E402
+# BY PATH, NOT BY PACKAGE. `tests/scripts/__init__.py` makes `scripts` resolve to the TEST
+# package whenever that directory is collected in the same session, so `from scripts
+# import ...` fails in the full suite while passing on its own.
+_FENCE_SPEC = importlib.util.spec_from_file_location(
+    "check_cost_truth", ROOT / "scripts" / "check_cost_truth.py")
+assert _FENCE_SPEC and _FENCE_SPEC.loader
+FENCE = importlib.util.module_from_spec(_FENCE_SPEC)
+_FENCE_SPEC.loader.exec_module(FENCE)
 
 # ------------------------------------------------------------------------------- the readings
 
@@ -320,6 +328,7 @@ def test_main_publishes_without_a_terminal_and_never_crashes(
     monkeypatch.setattr(CT, "VENUE_SURFACE", tmp_path / "COST_SURFACE.json")
     monkeypatch.setattr(CT, "SPREAD_PROVENANCE", tmp_path / "SPREAD_PROVENANCE.json")
     monkeypatch.setattr(CT, "VERIFIED", tmp_path / "spread_repair_verified.json")
+    monkeypatch.setattr(CT, "SLEEVE_REGISTRY", tmp_path / "sleeve_registry.json")
     (tmp_path / "universe.json").write_text(json.dumps(
         {"EURCHF": {"median_spread_pts": 0.5, "tick_size": 1e-5, "contract_size": 1e5}}), "utf-8")
     (tmp_path / "live_ledger.jsonl").write_text(

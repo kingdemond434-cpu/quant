@@ -1,0 +1,50 @@
+{
+ "at": "2026-09-23T05:28:43+00:00",
+ "commission_total_overcharge": 1.0,
+ "coverage_symbols_measured": 78,
+ "history": [
+  {
+   "at": "2026-09-23T03:55:00+00:00",
+   "commission_total_overcharge": 5.625,
+   "coverage": 54,
+   "n": 5,
+   "symbols": [
+    "AUDCHF",
+    "CADCHF",
+    "GBPAUD",
+    "GBPCHF",
+    "XAUUSD"
+   ]
+  },
+  {
+   "at": "2026-09-23T04:47:01+00:00",
+   "commission_total_overcharge": 1.0,
+   "coverage": 65,
+   "n": 6,
+   "symbols": [
+    "AUDCHF",
+    "CADCHF",
+    "GBPAUD",
+    "GBPCHF",
+    "GBPNZD",
+    "XAUUSD"
+   ]
+  }
+ ],
+ "n_overcharged": 7,
+ "overcharged_symbols": [
+  "AUDCHF",
+  "CADCHF",
+  "GBPAUD",
+  "GBPCHF",
+  "GBPNZD",
+  "NZDSGD",
+  "XAUUSD"
+ ],
+ "owners": {
+  "commission_rate": "FIXED 2026-09-23: fusion_cost.COMMISSION_PER_LOT_PER_SIDE 2.25 -> the measured 2.00 in ACCOUNT currency; overcharge 1.125 -> 1.0",
+  "commission_ratio": "FIXED 2026-09-23: net_edge_spine.commission_term carries the RAW regime multiplier; overcharge 5.0 -> 1.0",
+  "median_spread_pts": "106 of 136 registry corrections APPLIED 2026-09-23 through repair_universe_spreads.py --only-verified (GBPCHF 165->3, CADCHF 98->3, NZDJPY 147->15); 30 were REFUSED because they move the charge AWAY from this broker's quote. The six left here are the residue: AUDCHF and XAUUSD carry realized_fills stamps the repair keeps, and CADCHF/GBPCHF/GBPAUD/GBPNZD sit at their bar median, which is the WIDE reading, against a tighter live book. Closing them needs the tick tape, not this fence."
+ },
+ "rule": "DECLARED DEBT, and it may only shrink. A new overcharged symbol or a rising commission overcharge fails scripts/check_cost_truth.py; a debt that falls rewrites this file. RE-SEEDED 2026-09-23 at WIDER COVERAGE: the first seeding measured 54 symbols and this one measures 152 (every symbol with a pending registry correction is now quoted so the correction can be verified). GBPNZD and GBPAUD are not new debt, they are newly VISIBLE -- and the count may only fall from here. RE-SEEDED again 2026-09-23 at coverage 78: cost_truth's symbol universe now includes every LIVE sleeve so scripts/check_cost_surface.py can audit what it audits; NZDSGD is newly VISIBLE, not new debt. The count may only fall from here."
+}

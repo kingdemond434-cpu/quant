@@ -219,6 +219,16 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # the debt shrinks. A STATE fence: the measurement needs the terminal, so a box without one
     # reads UNMEASURED, which is a real answer and not a pass by silence.
     ("check_cost_truth.py", ()),
+    # L1.5 / L2.10, THE OTHER DIRECTION. check_cost_truth catches the desk charging itself MORE
+    # than the venue; this one catches a LIVE sleeve charged LESS -- the direction that
+    # manufactures survivors. It was written 2026-08-29 and never referenced by this gate or by
+    # ops/gates.sh, so it returned rc=2 for weeks and blocked nothing (LAWS 7: unwired is a
+    # defect). Its ruler was repointed 2026-09-23 from the H1 bar spread STAMP to the broker's
+    # own quote in reports/COST_TRUTH.json, because the stamp samples the widest instant of its
+    # hour and overstated the executable book by orders of magnitude (EURUSD 12 pts stamped
+    # against a live and 44,640-bar-M1 median of 0.0). Thresholds unchanged. A STATE fence: with
+    # no COST_TRUTH.json it reads NOT-READABLE-HERE, which is a real answer about the HOST.
+    ("check_cost_surface.py", ()),
     # THE STATE HALF of the enrolment law: no certificate clockless past one cycle. An absent
     # FORWARD_ENROLMENT.json is UNMEASURED, which is a real answer on a clean checkout.
     ("check_forward_enrolment.py", ("--state-only",)),
