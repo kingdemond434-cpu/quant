@@ -394,6 +394,31 @@ def _ratchet_doc() -> dict[str, Any]:
     return doc if isinstance(doc, dict) else {}
 
 
+def _set_aside_summary() -> dict[str, Any]:
+    """The producers' own named refusals, read from reports/SET_ASIDE_LEDGER.json.
+
+    An absent ledger is UNMEASURED, never zero: it means no organ has recorded a truncation
+    yet, not that no organ truncates. Nothing here gates or caps -- it is the denominator the
+    throughput numbers above are otherwise read without.
+    """
+    try:
+        from libs.research import set_aside as sa
+    except Exception as exc:                                # pragma: no cover - import guard
+        return {"available": False, "why": f"{type(exc).__name__}: {exc}"}
+    doc = sa.read()
+    totals = doc.get("totals") if isinstance(doc.get("totals"), dict) else {}
+    if not totals:
+        return {"available": False, "why": "no organ has recorded a named refusal yet",
+                "path": _rel(sa.PATH)}
+    worst = sorted(totals.items(), key=lambda kv: -int((kv[1] or {}).get("set_aside", 0)))
+    return {"available": True, "path": _rel(sa.PATH), "at": doc.get("at"),
+            "organs": doc.get("organs"), "stages": len(totals),
+            "set_aside_total": doc.get("set_aside_total"),
+            "worst": [{"stage": k, "set_aside": v.get("set_aside"), "kept": v.get("kept"),
+                       "considered": v.get("considered"), "ordering": v.get("ordering")}
+                      for k, v in worst[:10]]}
+
+
 def yield_audit(window_hours: float = YIELD_WINDOW_HOURS) -> dict[str, Any]:
     """EVERY PRODUCER OWES CELLS: who is paying for its compute, and how orthogonally."""
     census = _read(CENSUS, default={})
@@ -527,6 +552,13 @@ def yield_audit(window_hours: float = YIELD_WINDOW_HOURS) -> dict[str, Any]:
         "cells_to_judge_per_hour": to_judge_per_h,
         "orthogonal_cells_to_judge_per_hour": ortho_per_h,
         "orthogonality_weight": None if weight is None else round(weight, 4),
+        # WHAT THE PRODUCERS CHOSE NOT TO LOOK AT, from their own named refusals
+        # (libs/research/set_aside.py -> reports/SET_ASIDE_LEDGER.json). A throughput number
+        # read without this is the numerator of a fraction whose denominator is hidden: an organ
+        # carrying 40 of 900 rows is not the same measurement as one carrying 40 of 41. Only the
+        # four immutable evaluator files may REFUSE a cell (LAWS 7); everything counted here is a
+        # BATCH BUDGET, and this fence names it rather than capping anything.
+        "set_aside": _set_aside_summary(),
         "ratchet": {"owing_max": owing_max, "cells_to_judge_per_hour_best": best_judge,
                     "orthogonal_cells_to_judge_per_hour_best": best_ortho,
                     "regression_reason": reason or None},
