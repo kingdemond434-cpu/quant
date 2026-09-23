@@ -37,6 +37,14 @@ LAYERS = ("information", "prediction", "timing", "sizing", "portfolio", "executi
 LEG_LAYER: dict[str, str] = {
     # information: what the desk knows before it predicts anything
     "mine": "information", "moat_miner": "information", "world_crawler": "information",
+    # The moat exchange prices candidates the desk already holds -- novelty against the
+    # canon and the graveyard, independence against the book. That is information about the
+    # desk's own stock of hypotheses, not a new prediction (Tier-1 M6/M4).
+    "moat_candidate_compiler": "information",
+    # The program database evolves the desk's own SEARCH ALGORITHMS and scores each
+    # class against its own organ. That is the meta layer: it changes how the desk looks,
+    # not what it predicts (Tier-1 Q3).
+    "algorithm_db": "meta",
     # The proposer seat and the kimi hunter both buy the desk a PRIOR it did not have -- which
     # skeleton, which mechanism name, which territory -- before any claim about returns is made.
     # That is information, not prediction: neither one scores anything.
@@ -414,6 +422,16 @@ LEG_LAYER: dict[str, str] = {
     # year or volatility regime. That is a property of the PREDICTION -- whether the claim about
     # returns holds outside the environment it was fitted in -- so it is billed there.
     "causal_invariance": "prediction",
+    # THE CLOSED-LOOP ORGANS (Tier-1 B14-B25, 2026-09-23), each billed where its work lands.
+    # Acquisition and the actor populations describe the world, so they are information; the
+    # destroyer pool and the multi-chart counterfactual are claims about returns, so they are
+    # prediction; the shortfall refit is how an order reaches the venue; the bench, the evidence
+    # chain, the immutable clock ledger and the meta-tournament are the machine measuring itself.
+    "source_evig": "information", "actor_pressure": "information",
+    "destroyer_pool": "prediction", "counterfactual_timeframes": "prediction",
+    "shortfall_model": "execution",
+    "quantbench": "meta", "evidence_chain": "meta", "clock_ledger": "meta",
+    "meta_rnd": "meta",
     "wiring_audit": "meta", "queue_cycle": "meta", "time_joins": "meta", "brain_ab": "meta",
     # THE CONTROL PLANE is meta by construction: it measures whether the machine that runs the
     # machine is doing what desired state says, and it predicts, sizes and times nothing.

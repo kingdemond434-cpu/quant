@@ -160,14 +160,34 @@ def probe_modifiers_two_sided(expect: dict[str, Any]) -> dict[str, Any]:
     except Exception as exc:
         return {"verdict": "UNMEASURED", "why": f"capital_modifiers unavailable: {exc}"}
     one_sided = [m.name for m in REGISTRY
-                 if str(getattr(m, "kind", "")) == "two_sided" and float(getattr(m, "hi", 0)) <= 1.0]
+                 if str(getattr(m, "kind", "")) == "two_sided"
+                 and float(getattr(m, "hi", 0)) <= 1.0]
     return {"verdict": "REGRESSED" if one_sided else "PASS",
             "n_modifiers": len(REGISTRY), "one_sided": one_sided,
             "why": ("a modifier declared two_sided cannot boost" if one_sided else
                     "every two-sided modifier can move capital both ways")}
 
 
+def probe_evidence_chain(expect: dict[str, Any]) -> dict[str, Any]:
+    """THE UNPROVABLE CERTIFICATE: nothing could say whether the record read today is the one
+    that was judged. The chain over spec, seeds and verdicts must verify from genesis."""
+    try:
+        from research.evidence_chain import chain_status
+    except Exception as exc:
+        return {"verdict": "UNMEASURED", "why": f"evidence_chain unavailable: {exc}"}
+    st = chain_status()
+    if st.get("n_rows", 0) == 0:
+        return {"verdict": "UNMEASURED", "why": "no chain rows on this host yet",
+                "chain_verdict": st.get("verdict"), "n_rows": st.get("n_rows")}
+    return {"verdict": "PASS" if st.get("verdict") == "INTACT" else "REGRESSED",
+            "chain_verdict": st.get("verdict"), "n_rows": st.get("n_rows"),
+            "head": str(st.get("head"))[:16], "breaks": st.get("breaks"),
+            "why": ("the chain verifies from genesis" if st.get("verdict") == "INTACT"
+                    else "the evidence chain no longer verifies")}
+
+
 CHECKS: dict[str, Callable[[dict[str, Any]], dict[str, Any]]] = {
+    "evidence_chain_intact": probe_evidence_chain,
     "leg_budget_floor": probe_leg_budget_floor,
     "sealed_files": probe_sealed_files,
     "forward_clock_monotone": probe_forward_clock_monotone,

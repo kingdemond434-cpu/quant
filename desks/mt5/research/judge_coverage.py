@@ -25,8 +25,16 @@ answered". The quantity this organ drives to zero is the UNJUDGED BACKLOG, per f
     backlog(family) = docket rows of that family carrying NO verdict in the gate ledger
 
 Every family holding backlog is given a quota of the hour -- a FLOOR first, so a family of nine
-cells is reached at all, then the remainder in proportion to its own backlog, so a family of
-55,190 is drained at the rate its size deserves. The docket is then emitted as a weighted
+cells is reached at all, and then THE REMAINDER GOES BY EXPECTED VALUE PER JUDGE-SECOND, not by
+who mined hardest. The floor is the breadth mandate and never moves; the remainder is where the
+return is, and spending it in proportion to backlog spends it on the desk's own output rather
+than on what an hour of judge is worth. The ranking is
+`p_optimistic x net-of-cost value if it passes x (1 + marginal breadth) / (seconds per cell x the
+family's bar cost)`, every term measured by an organ that already exists -- the decayed Beta
+posterior in `libs/research/research_priors` (which THIS organ also feeds, see `learn_priors`),
+`reports/NET_EDGE.json`, `reports/EFFECTIVE_BREADTH.json` cluster occupancy, and the bar ratios
+the sealed gauntlet budgets in. A family with no record yet ranks on the UPPER credible bound, so
+it is explored rather than buried. The docket is then emitted as a weighted
 interleave of the families, which makes EVERY PREFIX of it family-balanced: whatever slice of the
 docket the gauntlet's budget actually reaches this hour, that slice contains every family with
 backlog, at its quota. Nothing is truncated, nothing is deleted, nothing is deferred by this
@@ -49,7 +57,15 @@ this organ exists to make impossible. `scripts/check_judge_coverage.py` is that 
 
 WHAT IT PUBLISHES -- `reports/JUDGE_COVERAGE.json`, per family:
 `mined`, `queued` (this hour's realised quota in the head window), `judged_window`,
-`unjudged`, `oldest_unjudged_age_h`, `carried`, `drained`, `window_h`.
+`unjudged`, `oldest_unjudged_age_h`, `carried`, `drained`, `window_h`, plus the full
+`value_ranking` so the remainder's choice is inspectable and the fence can check it was followed.
+
+AND THE OPPORTUNITY COST, which is what makes this ROI rather than bookkeeping: `value_at_risk`
+(expected value sitting unjudged), `value_deferred` (the part this hour cannot reach),
+`value_forgone_per_hour` and `capacity_short`. Those go to `research/judging_throughput.py`,
+which is the organ that can answer them -- when the hour cannot reach the value at risk the box
+raises workers and cadence. The answer to a valuable backlog is always MORE JUDGE, never a
+smaller docket: nothing here throttles a miner to make a number look green.
 
 THE BANNED FAMILY IS ALREADY OUT, AND THIS ORGAN DOES NOT RE-DO IT. `merge_hypotheses` routes
 every row of a family banned from live capital (`mt5desk.live_policy.DEFAULT_BANNED_FAMILIES`)
@@ -255,13 +271,237 @@ def measured_capacity(judged_total: dict[str, int], ledger: Path | None = None,
     return max(best, CAPACITY_FLOOR, sum(judged_total.values()) // 24)
 
 
+#: Judge cost is BUDGETED IN BARS, not in cells -- the sealed gauntlet says so in its own
+#: docstring -- so one M5 cell costs about twelve H1 cells of the same hour. These are the bar
+#: ratios against H1, which is what makes "per judge-second" a real denominator rather than a
+#: constant that cancels out of the ranking.
+_BAR_COST = {"M1": 60.0, "M5": 12.0, "M15": 4.0, "M30": 2.0, "H1": 1.0, "H4": 0.25, "D1": 0.042}
+
+
+def _tf_of(row: dict[str, Any]) -> str:
+    params = row.get("params") or {}
+    tf = str(params.get("timeframe") or row.get("timeframe") or "H1").upper()
+    return tf if tf in _BAR_COST else "H1"
+
+
+def family_priors(families: list[str]) -> dict[str, dict[str, float]]:
+    """The desk's OWN learned pass probability per family, with its optimism kept.
+
+    `libs/research/research_priors.prior_for("family", fam)` is a decayed Beta posterior whose
+    unseen state is Beta(1,1) -- mean 0.5, never zero. The ranking below uses the UPPER credible
+    bound, not the mean, so a family with no record yet is EXPLORED rather than buried: optimism
+    under uncertainty is the only rule that can discover that a new family is good. A family with
+    a long record has a tight interval and is ranked on what it actually did.
+    """
+    out: dict[str, dict[str, float]] = {}
+    try:
+        root = str(BASE.parents[1])
+        if root not in sys.path:
+            sys.path.insert(0, root)
+        from libs.research.research_priors import prior_for
+    except Exception:
+        return {f: {"p": 0.5, "p_optimistic": 1.0, "n": 0.0, "status": 0.0} for f in families}
+    for fam in families:
+        try:
+            pr = prior_for("family", fam)
+            out[fam] = {"p": float(pr.mean), "p_optimistic": float(pr.interval()[1]),
+                        "n": float(pr.n), "status": 1.0 if pr.status == "POSTERIOR" else 0.0}
+        except Exception:
+            out[fam] = {"p": 0.5, "p_optimistic": 1.0, "n": 0.0, "status": 0.0}
+    return out
+
+
+def learn_priors(ledger: Path | None = None, *, since: str = "",
+                 limit: int = 20_000, state_dir: Path | None = None) -> dict[str, Any]:
+    """FEED THE PRIOR THE RANKING SPENDS. Every new gate verdict updates its family's posterior.
+
+    THE LOOP WAS OPEN AND THE RANKING WOULD HAVE BEEN FLAT FOREVER. Measured when this was
+    written: `data/research_priors/beta.json` held ZERO rows under the `family` dimension, so
+    `prior_for("family", ...)` returned Beta(1,1) for every family on the desk -- an allocator
+    ranking by a learned pass probability that nothing was teaching. Eight organs call
+    `record_outcome` and not one of them passes a family, so the dimension existed and was never
+    fed.
+
+    Each verdict is classified by `research_priors.classify` from its terminal gate, because WHY
+    a family failed is the part that matters: one killed by costs is not one with no edge, and
+    the two should move the next hour's allocation opposite ways. `since` is the previous
+    reading's high-water stamp, so a verdict is charged exactly once however often this runs --
+    double-counting a ledger is how a posterior becomes confident about nothing.
+    """
+    out: dict[str, Any] = {"recorded": 0, "families": 0, "cursor": since, "status": "OK"}
+    try:
+        root = str(BASE.parents[1])
+        if root not in sys.path:
+            sys.path.insert(0, root)
+        from libs.research.research_priors import load, record_outcome, save
+    except Exception as exc:
+        out.update(status="UNMEASURED", why=f"{type(exc).__name__}: {exc}")
+        return out
+    try:
+        with (ledger or GATE_LEDGER).open("r", encoding="utf-8", errors="replace") as fh:
+            lines = fh.readlines()[-limit:]
+    except OSError as exc:
+        out.update(status="UNMEASURED", why=f"{type(exc).__name__}: {exc}")
+        return out
+    state = load(state_dir)
+    seen_fams: set[str] = set()
+    high = since
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        if not isinstance(row, dict):
+            continue
+        at = str(row.get("at") or "")
+        fam = str(row.get("family") or "")
+        if not fam or not at or (since and at <= since):
+            continue
+        if str(row.get("downstream_status") or "").startswith(NOT_JUDGED_PREFIX):
+            continue
+        passed = row.get("passed")
+        survived = passed is True or str(passed).lower() == "true"
+        gate = str(row.get("terminal_gate") or "")
+        try:
+            record_outcome("survived" if survived else "REJECTED", family=fam,
+                           rejection_reason=gate, failure_class=gate, state=state,
+                           state_dir=state_dir, persist=False)
+        except Exception:
+            continue
+        seen_fams.add(fam)
+        out["recorded"] = int(out["recorded"]) + 1
+        high = max(high, at)
+    if out["recorded"]:
+        try:
+            save(state, state_dir)
+        except Exception as exc:                                         # pragma: no cover
+            out.update(status="UNMEASURED", why=f"save failed: {type(exc).__name__}: {exc}")
+    out["families"] = len(seen_fams)
+    out["cursor"] = high
+    return out
+
+
+def family_value(path: Path | None = None) -> tuple[dict[str, float], float]:
+    """What one PASS of this family is worth, net of cost: `reports/NET_EDGE.json`.
+
+    `forward_slot_ranking_by_net` is the desk's own net-of-cost slot value per (family, symbol),
+    already through the cost surface, the impact lab and the fusion cost model -- so nothing is
+    re-derived here. A family the ranker has never scored takes the MEDIAN of those it has, which
+    is the honest "no reason to think it is worse than typical"; zero would be a claim.
+    """
+    doc = _read(path or (REPORTS / "NET_EDGE.json"))
+    best: dict[str, float] = {}
+    if isinstance(doc, dict):
+        for row in doc.get("forward_slot_ranking_by_net") or []:
+            if not isinstance(row, dict):
+                continue
+            fam = str(row.get("family") or "")
+            try:
+                v = float(row.get("net_slot_value") or 0.0)
+            except (TypeError, ValueError):
+                continue
+            if fam and v > best.get(fam, 0.0):
+                best[fam] = v
+    vals = sorted(best.values())
+    median = vals[len(vals) // 2] if vals else 0.0
+    return best, median
+
+
+def family_breadth(path: Path | None = None) -> dict[str, float]:
+    """Marginal BREADTH per family, from the effective-breadth machinery's cluster occupancy.
+
+    `reports/EFFECTIVE_BREADTH.json` already answers "how many independent bets does this book
+    actually hold" by mapping every sleeve to a cluster; a family that occupies no cluster adds a
+    genuinely new bet and a family that already occupies six adds a sixth correlated one. The
+    gain is 1/(1+occupancy) -- the diminishing return the effective rank itself exhibits. An
+    absent artifact returns {} and every family scores the full gain, because an unmeasured
+    breadth must never quietly demote a family (L1.28a).
+    """
+    doc = _read(path or (REPORTS / "EFFECTIVE_BREADTH.json"))
+    occ: dict[str, float] = {}
+    if isinstance(doc, dict):
+        for sleeve in (doc.get("sleeve_clusters") or {}):
+            parts = str(sleeve).split("_")
+            if len(parts) >= 3:
+                fam = "_".join(parts[1:-1])
+                occ[fam] = occ.get(fam, 0.0) + 1.0
+    return occ
+
+
+def judge_seconds_per_cell(capacity: int) -> float:
+    """Measured seconds of judge per H1-equivalent cell: one hour divided by what it judges."""
+    return 3600.0 / float(max(capacity, 1))
+
+
+def rank_by_value(backlog: dict[str, int], rows: list[dict[str, Any]],
+                  capacity: int) -> list[dict[str, Any]]:
+    """EXPECTED VALUE PER JUDGE-SECOND, per family, published so the choice is inspectable.
+
+        ev_per_cell = p_optimistic * net_value_if_it_passes * (1 + marginal_breadth)
+        ev_per_s    = ev_per_cell / (seconds_per_cell * this family's bar cost)
+
+    Every term is something the desk already measures -- the learned prior, the net-of-cost slot
+    value, the cluster occupancy behind effective breadth, and the bar ratio the sealed gauntlet
+    budgets in. Nothing here is a preference; a family that ranks low ranks low on its own record,
+    and a family with NO record ranks on the optimistic bound, which is how it gets explored.
+    """
+    fams = [f for f, n in backlog.items() if n > 0]
+    priors = family_priors(fams)
+    values, median = family_value()
+    occ = family_breadth()
+    per_cell_s = judge_seconds_per_cell(capacity)
+    cost_units: dict[str, list[float]] = {}
+    for row in rows:
+        fam = str(row.get("family") or "")
+        if fam in backlog:
+            cost_units.setdefault(fam, []).append(_BAR_COST[_tf_of(row)])
+    out: list[dict[str, Any]] = []
+    for fam in fams:
+        pr = priors.get(fam) or {"p": 0.5, "p_optimistic": 1.0, "n": 0.0, "status": 0.0}
+        units = cost_units.get(fam) or [1.0]
+        bars = sum(units) / len(units)
+        cost_s = max(1e-6, per_cell_s * bars)
+        value = values.get(fam, median)
+        breadth = 1.0 / (1.0 + occ.get(fam, 0.0))
+        ev_cell = float(pr["p_optimistic"]) * value * (1.0 + breadth)
+        out.append({
+            "family": fam, "unjudged": backlog[fam],
+            "p": round(pr["p"], 6), "p_optimistic": round(pr["p_optimistic"], 6),
+            "prior_n": int(pr["n"]), "prior_status": "POSTERIOR" if pr["status"] else "PRIOR",
+            "net_value_if_pass": value, "value_source": "NET_EDGE" if fam in values else "median",
+            "breadth_gain": round(breadth, 4), "cluster_occupancy": occ.get(fam, 0.0),
+            "bar_cost_units": round(bars, 3), "cost_s_per_cell": round(cost_s, 4),
+            "ev_per_cell": ev_cell, "ev_per_judge_second": ev_cell / cost_s,
+        })
+    out.sort(key=lambda r: (-float(r["ev_per_judge_second"]), str(r["family"])))
+    for i, row in enumerate(out):
+        row["rank"] = i + 1
+    return out
+
+
 def allocate(backlog: dict[str, int], capacity: int,
-             floor_share: float = FLOOR_SHARE) -> dict[str, int]:
-    """Quota per family: an equal FLOOR for every family holding backlog, then proportional.
+             floor_share: float = FLOOR_SHARE,
+             ranking: list[dict[str, Any]] | None = None) -> dict[str, int]:
+    """Quota per family: an equal FLOOR for every family holding backlog, then BY VALUE.
+
+    THE FLOOR IS THE BREADTH MANDATE AND IT NEVER MOVES. Every family holding an unjudged cell
+    gets an equal share of the first `FLOOR_SHARE` of the hour, because starving a family is how
+    this desk reached a six-family concentration in the first place, and a ranking that could
+    zero a family would rebuild it inside a week.
+
+    THE REMAINDER IS WHERE THE RETURN IS. Spending it in proportion to backlog spends it on
+    whichever miner ran hardest, which is a measure of the desk's own output and not of what an
+    hour of judge is worth. So the remainder goes down the published ranking -- expected value per
+    judge-second, highest first -- each family capped at its own backlog, until the hour is gone.
+    Passing no ranking falls back to proportional, so a caller that cannot measure value still
+    allocates rather than stalling.
 
     Two properties are load-bearing and both are tested. EVERY family with backlog gets at least
-    one cell of the hour (coverage, not rotation), and no family is given more than its own
-    backlog (a quota is a promise to drain, not a licence to re-judge).
+    one cell of the hour, and no family is given more than its own backlog (a quota is a promise
+    to drain, not a licence to re-judge).
     """
     live = {f: n for f, n in backlog.items() if n > 0}
     if not live or capacity <= 0:
@@ -270,13 +510,26 @@ def allocate(backlog: dict[str, int], capacity: int,
     per_family_floor = max(1, floor_pool // len(live))
     quota = {f: min(n, per_family_floor) for f, n in live.items()}
     spare = capacity - sum(quota.values())
-    if spare > 0:
-        room = {f: live[f] - quota[f] for f in live if live[f] > quota[f]}
-        weight = sum(room.values())
-        if weight > 0:
-            for fam, r in sorted(room.items(), key=lambda kv: (-kv[1], kv[0])):
-                take = min(r, int(spare * r / weight))
-                quota[fam] += take
+    if spare <= 0:
+        return quota
+    if ranking:
+        for row in ranking:
+            fam = str(row.get("family") or "")
+            room = live.get(fam, 0) - quota.get(fam, 0)
+            if room <= 0:
+                continue
+            take = min(room, spare)
+            quota[fam] += take
+            spare -= take
+            if spare <= 0:
+                break
+        return quota
+    room_by_size = {f: live[f] - quota[f] for f in live if live[f] > quota[f]}
+    weight = sum(room_by_size.values())
+    if weight > 0:
+        for fam, r in sorted(room_by_size.items(), key=lambda kv: (-kv[1], kv[0])):
+            take = min(r, int(spare * r / weight))
+            quota[fam] += take
     return quota
 
 
@@ -358,6 +611,7 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
                 "why": "the judging docket is absent or empty -- nothing mined to cover",
                 "families": {}, "totals": {}, "quota": {}}
 
+    prior = _read(ratchet or RATCHET) or {}
     judged_cells, judged_total, judged_window = judged_index(ledger, now=at)
     for row in rows:
         row["_cell"] = _cell_id(row)
@@ -390,7 +644,11 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
             oldest.setdefault(fam, None)
 
     capacity = measured_capacity(judged_total, ledger, now=at)
-    quota = allocate(backlog, capacity)
+    # TEACH THE PRIOR BEFORE SPENDING IT: every verdict since the last reading updates its
+    # family's posterior, so the ranking below is spending a number this desk actually learned.
+    learned = learn_priors(ledger, since=str((prior or {}).get("priors_cursor") or ""))
+    ranking = rank_by_value(backlog, rows, capacity)
+    quota = allocate(backlog, capacity, ranking=ranking)
     judgeable = [r for r in rows if str(r.get("family") or "") not in banned]
     study_rows = [r for r in rows if str(r.get("family") or "") in banned]
     ordered = coverage_order(judgeable, quota, unjudged_ids) + study_rows
@@ -400,7 +658,6 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
         fam = str(row.get("family") or "")
         queued[fam] = queued.get(fam, 0) + 1
 
-    prior = _read(ratchet or RATCHET) or {}
     prior_fams = prior.get("families") if isinstance(prior, dict) else {}
     prior_fams = prior_fams if isinstance(prior_fams, dict) else {}
     prior_at = _ts(prior.get("at") if isinstance(prior, dict) else None)
@@ -467,6 +724,39 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
     # `mined: 0` until a miner reaches it, which is a measurement of the miners and not of this
     # organ. It is published, never failed on: intake allocates the judge, it does not mine.
     unmined = sorted(f for f in live_families() if f and table.get(f, {}).get("mined", 0) == 0)
+    # THE OPPORTUNITY COST, which is the number that makes this ROI rather than bookkeeping.
+    # `value_at_risk` is the expected value sitting unjudged right now; `value_deferred` is the
+    # part of it this hour cannot reach; `value_forgone_per_hour` is that deferred value spread
+    # over the hours the current capacity needs to drain it -- the rate at which waiting costs
+    # the desk. It is handed to `judging_throughput`, which is the organ that can DO something
+    # about it: when the value at risk exceeds what an hour can judge, the box raises workers and
+    # cadence. Nothing here throttles mining to make the number smaller.
+    ev_cell = {str(r["family"]): float(r["ev_per_cell"]) for r in ranking}
+    value_at_risk = sum(ev_cell.get(f, 0.0) * n for f, n in backlog.items())
+    value_deferred = sum(ev_cell.get(f, 0.0) * max(0, n - quota.get(f, 0))
+                         for f, n in backlog.items())
+    total_backlog = sum(backlog.values())
+    hours_to_drain = (total_backlog / float(capacity)) if capacity > 0 else None
+    forgone_per_hour = (value_deferred / max(hours_to_drain or 1.0, 1.0)
+                        if hours_to_drain else 0.0)
+    for row in ranking:
+        fam = str(row["family"])
+        row["quota"] = quota.get(fam, 0)
+        row["floor"] = min(backlog.get(fam, 0), max(1, int(capacity * FLOOR_SHARE) // max(
+            sum(1 for v in backlog.values() if v > 0), 1)))
+        row["remainder"] = max(0, row["quota"] - row["floor"])
+        row["value_at_risk"] = row["ev_per_cell"] * row["unjudged"]
+        row["value_deferred"] = row["ev_per_cell"] * max(0, row["unjudged"] - row["quota"])
+    for fam, row in table.items():
+        rk = next((r for r in ranking if r["family"] == fam), None)
+        if rk is not None:
+            row.update({"rank": rk["rank"], "ev_per_cell": rk["ev_per_cell"],
+                        "ev_per_judge_second": rk["ev_per_judge_second"],
+                        "p_optimistic": rk["p_optimistic"], "prior_status": rk["prior_status"],
+                        "value_at_risk": rk["value_at_risk"],
+                        "value_deferred": rk["value_deferred"],
+                        "floor": rk["floor"], "remainder": rk["remainder"]})
+
     covered = sum(1 for f, r in table.items() if r["unjudged"] > 0 and r["queued"] > 0)
     starved = sorted((f for f, r in table.items() if r["unjudged"] > 0 and r["queued"] == 0),
                      key=lambda f: -table[f]["unjudged"])
@@ -486,6 +776,11 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
         "prior_unjudged_total": (sum(int(v.get("unjudged", 0)) for v in prior_fams.values()
                                      if isinstance(v, dict)) if prior_at is not None else None),
         "capacity_measured": capacity,
+        "value_at_risk": value_at_risk,
+        "value_deferred": value_deferred,
+        "value_forgone_per_hour": forgone_per_hour,
+        "hours_to_drain": round(hours_to_drain, 3) if hours_to_drain else None,
+        "capacity_short": bool(hours_to_drain and hours_to_drain > 1.0),
         "oldest_unjudged_age_h": (round(max(v for v in oldest.values() if v is not None), 2)
                                   if any(v is not None for v in oldest.values()) else None),
     }
@@ -505,6 +800,16 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
         "quota": quota,
         "starved": starved[:20],
         "unmined_live_families": unmined[:40],
+        # THE RANKING IS PUBLISHED SO THE CHOICE IS INSPECTABLE -- and so the fence can check that
+        # the remainder actually followed it, which is what stops a future session quietly
+        # reverting this to round-robin.
+        "priors_learned": learned,
+        "value_ranking": ranking,
+        "value_rule": ("remainder after every family's floor goes down expected value per "
+                       "judge-second: p_optimistic (upper credible bound of the desk's own Beta "
+                       "prior, so an unseen family is explored) x net-of-cost slot value "
+                       "(NET_EDGE.json) x (1 + marginal breadth from EFFECTIVE_BREADTH cluster "
+                       "occupancy), divided by measured seconds per cell x the family's bar cost"),
         "worst_backlog": [
             {"family": f, "unjudged": table[f]["unjudged"], "queued": table[f]["queued"],
              "oldest_unjudged_age_h": table[f]["oldest_unjudged_age_h"],
@@ -570,6 +875,7 @@ def write(doc: dict[str, Any], *, report: Path | None = None,
                          "oldest_unjudged_age_h": r.get("oldest_unjudged_age_h")}
                      for f, r in fams.items()},
         "unjudged_total": (doc.get("totals") or {}).get("unjudged_total"),
+        "priors_cursor": (doc.get("priors_learned") or {}).get("cursor") or "",
         "why": ("the baseline the carried-cohort ratchet is measured against: rows already in "
                 "this backlog and still unjudged at the next reading were STARVED, because a "
                 "cell leaves a cohort exactly one way -- by being judged"),
@@ -585,6 +891,16 @@ def render(doc: dict[str, Any]) -> list[str]:
              f"  families mined {t.get('families_mined')} / with backlog "
              f"{t.get('families_with_backlog')} / queued this hour {t.get('families_queued')}; "
              f"unjudged {t.get('unjudged_total')} on capacity {t.get('capacity_measured')}"]
+    lines.append(f"  value at risk {t.get('value_at_risk'):.3e} of which "
+                 f"{t.get('value_deferred'):.3e} deferred; forgone "
+                 f"{t.get('value_forgone_per_hour'):.3e}/h; drain "
+                 f"{t.get('hours_to_drain')}h"
+                 + ("  CAPACITY SHORT" if t.get("capacity_short") else ""))
+    for row in (doc.get("value_ranking") or [])[:5]:
+        lines.append(f"  #{row['rank']} {row['family']}: ev/judge-s "
+                     f"{row['ev_per_judge_second']:.3e}"
+                     f" p*={row['p_optimistic']:.3f} ({row['prior_status']}) quota {row['quota']}"
+                     f" (floor {row['floor']} + {row['remainder']})")
     for row in (doc.get("worst_backlog") or [])[:5]:
         lines.append(f"  {row['family']}: mined {row['mined']} unjudged {row['unjudged']} "
                      f"queued {row['queued']} oldest {row['oldest_unjudged_age_h']}h")
@@ -612,8 +928,10 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-__all__ = ["allocate", "banned_from_capital", "build", "coverage_order", "judged_index",
-           "live_families", "main", "measured_capacity", "order_docket", "render", "write"]
+__all__ = ["allocate", "banned_from_capital", "build", "coverage_order", "family_breadth",
+           "family_priors", "family_value", "judge_seconds_per_cell", "judged_index",
+           "learn_priors", "live_families", "main", "measured_capacity", "order_docket",
+           "rank_by_value", "render", "write"]
 
 
 if __name__ == "__main__":                                              # pragma: no cover

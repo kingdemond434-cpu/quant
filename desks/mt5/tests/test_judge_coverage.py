@@ -201,3 +201,81 @@ def test_live_family_names_covers_more_than_the_decorated_registry() -> None:
     live = set(live_family_names())
     assert live >= set(get_all_family_names())
     assert len(live) > len(get_all_family_names())
+
+
+def test_the_floor_survives_the_value_ranking() -> None:
+    """THE BREADTH MANDATE IS NOT NEGOTIABLE: value orders the remainder, never the floor."""
+    backlog = {"rich": 900, "poor": 40, "tiny": 3}
+    ranking = [{"family": "rich"}, {"family": "poor"}, {"family": "tiny"}]
+    quota = jc.allocate(backlog, capacity=1_000, ranking=ranking)
+    assert all(quota[f] >= 1 for f in backlog), "every family with backlog keeps a floor"
+    assert quota["tiny"] == 3
+
+
+def test_the_remainder_goes_down_the_ranking() -> None:
+    """A lower-ranked family gets remainder only once every higher one is fully drained."""
+    backlog = {"best": 500, "worst": 500}
+    ranking = [{"family": "best"}, {"family": "worst"}]
+    quota = jc.allocate(backlog, capacity=600, ranking=ranking)
+    assert quota["best"] == 500, "the highest ev/judge-second family is drained first"
+    assert quota["worst"] < quota["best"]
+
+
+def test_an_unseen_family_ranks_on_the_optimistic_bound() -> None:
+    """Optimism under uncertainty: a new family is explored, never buried at zero."""
+    rows = _rows({"brand_new_family_xyz": 5})
+    ranking = jc.rank_by_value({"brand_new_family_xyz": 5}, rows, capacity=100)
+    assert ranking[0]["prior_status"] == "PRIOR"
+    assert ranking[0]["p_optimistic"] > ranking[0]["p"]
+    assert ranking[0]["ev_per_judge_second"] > 0
+
+
+def test_bar_cost_makes_the_denominator_real() -> None:
+    """A judge-second is spent in BARS: an M5 cell costs about twelve H1 cells."""
+    h1 = jc.rank_by_value({"f": 1}, [{"family": "f", "params": {}}], capacity=100)[0]
+    m5 = jc.rank_by_value({"f": 1}, [{"family": "f", "params": {"timeframe": "M5"}}],
+                          capacity=100)[0]
+    assert m5["cost_s_per_cell"] > 10 * h1["cost_s_per_cell"]
+    assert m5["ev_per_judge_second"] < h1["ev_per_judge_second"]
+
+
+def test_build_publishes_the_opportunity_cost(tmp_path: Path) -> None:
+    doc = jc.build(_rows({"alpha": 40, "beta": 6}), ledger=tmp_path / "no.jsonl",
+                   ratchet=tmp_path / "no.json", now=NOW)
+    t = doc["totals"]
+    for key in ("value_at_risk", "value_deferred", "value_forgone_per_hour", "hours_to_drain",
+                "capacity_short"):
+        assert key in t
+    assert doc["value_ranking"] and doc["value_ranking"][0]["rank"] == 1
+
+
+def test_learn_priors_charges_each_verdict_once(tmp_path: Path) -> None:
+    """A posterior fed the same ledger twice is confident about nothing."""
+    ledger = tmp_path / "gate.jsonl"
+    ledger.write_text("".join(json.dumps({
+        "at": f"2026-09-23T0{i}:00:00+00:00", "cell": f"c{i}", "family": "alpha",
+        "passed": False, "terminal_gate": "in_sample_screen"}) + "\n" for i in range(3)), "utf-8")
+    first = jc.learn_priors(ledger, since="", state_dir=tmp_path)
+    assert first["recorded"] == 3 and first["families"] == 1
+    again = jc.learn_priors(ledger, since=str(first["cursor"]), state_dir=tmp_path)
+    assert again["recorded"] == 0, "the cursor stops a verdict being charged twice"
+
+
+def test_fence_fails_a_remainder_that_ignored_the_ranking(tmp_path: Path) -> None:
+    report = tmp_path / "JUDGE_COVERAGE.json"
+    report.write_text(json.dumps({
+        "at": NOW.isoformat(),
+        "families": {"top": {"unjudged": 100, "queued": 5, "judged_window": 9, "quota": 5,
+                             "window_h": 20.0, "oldest_unjudged_age_h": 1.0},
+                     "low": {"unjudged": 100, "queued": 90, "judged_window": 9, "quota": 90,
+                             "window_h": 2.0, "oldest_unjudged_age_h": 1.0}},
+        "value_ranking": [
+            {"family": "top", "rank": 1, "unjudged": 100, "quota": 5, "remainder": 0,
+             "ev_per_judge_second": 9.0},
+            {"family": "low", "rank": 2, "unjudged": 100, "quota": 90, "remainder": 85,
+             "ev_per_judge_second": 1.0}],
+        "totals": {}}), "utf-8")
+    doc = fence.judge(report, now=NOW)
+    assert doc["verdict"] == "FAIL"
+    assert any(c["metric"] == "remainder_follows_ranking" and c["state"] == "FAIL"
+               for c in doc["checks"])

@@ -103,7 +103,8 @@ def stamp(key: str, identity: str, proposed: Any, *, path: Path = LEDGER) -> dic
     identity new       a NEW clock opens beside the old one, which is kept intact
     """
     doc = _read(path)
-    clocks: dict[str, Any] = doc.get("clocks") if isinstance(doc.get("clocks"), dict) else {}
+    _clocks = doc.get("clocks")
+    clocks: dict[str, Any] = dict(_clocks) if isinstance(_clocks, dict) else {}
     now = datetime.now(tz=UTC).isoformat(timespec="seconds")
     want = _iso(proposed) or now
     ident = str(identity or "")

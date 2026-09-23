@@ -42,7 +42,7 @@ import sys
 import time
 from collections.abc import Callable, Mapping, Sequence
 from contextlib import suppress
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -897,6 +897,14 @@ def sleeve_evidence(daily: pd.DataFrame, forward: dict[str, dict[str, float]],
             factor_load=(tuple(float(x) for x in fl.load) if fl is not None and fl.n >= 3
                          else ()),
             factor_resid_var=(float(fl.resid_var) if fl is not None and fl.n >= 3 else 0.0),
+            # THE THREE SAMENESS CHANNELS (Tier-1 B13). Measured here because this is where the
+            # sleeve's own trades are in hand: the input keys it reads, the UTC hours it actually
+            # entered in, and the mechanism it declares. `_structured_corr` charges a pair that
+            # shares them -- and CREDITS a same-instrument pair whose entry hours are disjoint,
+            # which is how the same heat comes to hold more independent bets rather than fewer.
+            inputs=_input_keys(name, parts[0], fam),
+            trade_hours=_trade_hours(name, trades_by_sleeve, broker_utc_offset_h),
+            mechanism=_mechanism_of(name, fam),
         ))
     mmeta = mctx.finish(len(out))
     _st = mmeta.get("state") or {}
@@ -996,6 +1004,94 @@ class _MacroContext:
         _MACRO_META.clear()
         _MACRO_META.update(self.meta)
         return self.meta
+
+
+#: Timeframe tokens a sleeve name or selector can carry. The input key is (instrument, bar), so
+#: two sleeves on one instrument at different bar sizes share the instrument and not the file.
+_TF_TOKENS = ("M1", "M5", "M15", "M30", "H1", "H4", "D1", "W1")
+
+
+def _breadth_channels_report(ev: Any) -> dict[str, Any]:
+    """The B13 census for the allocation artifact. Report-only: the arithmetic lives in
+    `robust_elog._structured_corr` and this never changes a fraction."""
+    try:
+        from libs.portfolio.robust_elog import breadth_channels
+        return dict(breadth_channels(list(ev)))
+    except Exception as exc:
+        return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
+
+
+def _regime_hierarchy_report() -> dict[str, Any]:
+    """The per-asset world model, recorded beside the book it did not size (Tier-1 B3)."""
+    try:
+        from regime_hierarchy import load as _load_rh
+        doc, why = _load_rh()
+    except Exception as exc:
+        return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
+    if not doc:
+        return {"status": "UNMEASURED", "why": why}
+    assets = doc.get("assets") if isinstance(doc.get("assets"), dict) else {}
+    return {"status": doc.get("status"), "at": doc.get("at"), "why": why,
+            "n_assets": doc.get("n_assets"), "n_classes": doc.get("n_classes"),
+            "state_now": {k: v.get("state_now") for k, v in list(assets.items())[:40]},
+            "liquidity": {k: (v.get("liquidity") or {}).get("state")
+                          for k, v in list(assets.items())[:40]},
+            "crowding": {k: (v.get("crowding") or {}).get("state")
+                         for k, v in list(assets.items())[:40]},
+            "authority": "information only: no fraction, floor or heat reads this"}
+
+
+def _input_keys(name: str, symbol: str, family: str) -> tuple[str, ...]:
+    """The data this sleeve reads, as opaque keys (Tier-1 B13).
+
+    MEASURED FROM WHAT THE DESK ALREADY KNOWS, never declared in a table: the instrument comes
+    from the sleeve's own name and the bar size from the timeframe token its selector carries.
+    An unknown timeframe yields the instrument key alone -- a weaker claim, which is the right
+    one when the desk cannot say which file was read.
+    """
+    sym = str(symbol or "").upper()
+    if not sym:
+        return ()
+    upper = f"{name}|{family}".upper()
+    tf = next((t for t in _TF_TOKENS if t in upper), "")
+    return (f"bars:{sym}:{tf}",) if tf else (f"bars:{sym}",)
+
+
+def _mechanism_of(name: str, family: str) -> str:
+    """The causal story the sleeve declares. The family IS the mechanism on this desk
+    (`mt5desk/families.py` names one per family); the selector narrows it and is carried so two
+    sleeves of one family on one instrument still read as the same story."""
+    fam = str(family or "").strip()
+    if not fam:
+        return ""
+    tail = str(name or "").split(".", 1)[-1] if "." in str(name or "") else ""
+    return f"{fam} {tail}".strip()
+
+
+def _trade_hours(name: str, trades_by_sleeve: dict[str, list[dict]] | None,
+                 broker_utc_offset_h: int) -> tuple[int, ...]:
+    """The UTC hours this sleeve's trades were ENTERED in, measured from its own fills.
+
+    EMPTY IS THE HONEST DEFAULT AND COSTS NOTHING. `_structured_corr` only relaxes a
+    same-instrument prior when BOTH sleeves carry at least `MIN_HOURS_FOR_RELAX` measured hours:
+    "no hours recorded" must never read as "no overlap", because that would hand a sleeve extra
+    breadth for having no evidence at all.
+    """
+    rows = (trades_by_sleeve or {}).get(name) or []
+    hours: set[int] = set()
+    for r in rows:
+        when = str(r.get("entry_time") or r.get("opened_at") or r.get("time") or "")
+        if not when:
+            continue
+        try:
+            dt = datetime.fromisoformat(when.replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        if dt.tzinfo is None:
+            # Broker-clock stamps are naive; the offset the caller already resolved converts them.
+            dt = dt.replace(tzinfo=UTC) - timedelta(hours=int(broker_utc_offset_h or 0))
+        hours.add(int(dt.astimezone(UTC).hour))
+    return tuple(sorted(hours))
 
 
 def _state_returns(name: str, phase: str | None,
@@ -1752,7 +1848,7 @@ def _live_state() -> tuple[str | None, dict[str, list[dict]], int]:
     # to "what time does the broker think it is" is how a cell gets certified in one clock and
     # traded in another.
     from session_phase import broker_utc_offset_h
-    off, off_source = broker_utc_offset_h()
+    off, _off_source = broker_utc_offset_h()
     if off is None:
         _log("state: broker UTC offset unknown -- solving unconditioned rather than assuming UTC")
         return None, {}, 0
@@ -4280,6 +4376,17 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         "state_vector": ({"id": state_vec.id, "at": state_vec.at, "why": sv_why,
                           **state_vec.to_dict()} if state_vec is not None
                          else {"id": None, "why": sv_why}),
+        # MULTIDIMENSIONAL BREADTH, BY CHANNEL (Tier-1 B13). Covariance, factor and tail n_eff
+        # are elsewhere in this document; this says which pairs were charged for SHARED INPUT
+        # DATA, a shared MECHANISM or overlapping TRADE TIMES, and -- the two-sided half --
+        # how many same-instrument pairs had their prior RELAXED because their entry hours are
+        # disjoint. `n_time_relaxed_pairs` is breadth the desk previously threw away.
+        "breadth_channels": _breadth_channels_report(ev),
+        # THE PER-ASSET WORLD MODEL, AS INFORMATION (Tier-1 B3). `regime_hierarchy` fits
+        # P(state|history) and transitions per instrument, shrunk toward its asset class, with a
+        # liquidity and a crowding state beside them. Nothing here sizes anything: it is
+        # recorded so the state a book was solved under can be read back.
+        "regime_hierarchy": _regime_hierarchy_report(),
         # What the crisis worlds assumed, and the measurement behind it. Recorded so the
         # correlation the book is being stressed at is a number anyone can check.
         "crisis_calibration": ({

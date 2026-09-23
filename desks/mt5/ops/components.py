@@ -167,15 +167,48 @@ def _producer_calls() -> dict[str, tuple[str, tuple[str, ...]]]:
     return out
 
 
+#: A ledger `artifact` field is PROSE written by humans: "A.json; B.json", "A.json gate_detail",
+#: "A.json (append-only) + B.json". Reading it whole as one path was the single largest source of
+#: false MISSING rows in the runtime attestation -- 35 organs on the trading box (2026-09-23) whose
+#: artifact was present and fresh, declared alongside a word. The declaration is not wrong; it was
+#: never parsed. This extracts every repo-relative path token from it and keeps the rest as prose.
+_ARTIFACT_TOKEN = re.compile(
+    r"[A-Za-z0-9_][A-Za-z0-9_./-]*\.(?:json|jsonl|md|csv|parquet|sqlite|txt|npz|lock|db)\b")
+
+
+def artifact_paths(declared: str) -> tuple[str, ...]:
+    """Every path token in a prose artifact declaration, in declaration order, de-duplicated.
+
+    A token with no directory separator ("x.json" on its own) is NOT a repo path and is dropped:
+    it is a filename inside someone's sentence, and promoting it to an output would make the
+    registry claim a file at the repo root that nothing writes.
+    """
+    seen: dict[str, None] = {}
+    for tok in _ARTIFACT_TOKEN.findall(declared or ""):
+        tok = tok.replace("\\", "/").strip("/")
+        if "/" in tok:
+            seen.setdefault(tok, None)
+    if not seen and (declared or "").strip():
+        # A declaration with no path in it at all ("data/lake/series", "registry rows"). It is
+        # UNUSABLE, and the honest rendering of that is an output nothing can satisfy -- which
+        # reads MISSING in the attestation and keeps the organ COUNTED. Dropping it to "declares
+        # no artifact" would quietly remove the organ from the census, and a ratchet with a hole
+        # in it is not a ratchet.
+        return (declared.strip()[:200],)
+    return tuple(seen)
+
+
 @lru_cache(maxsize=1)
-def _ledger_outputs() -> dict[str, dict[str, str]]:
-    """leg -> {artifact, consumer}, from the Tier-1 ledger's own `scheduled_by` claims.
+def _ledger_outputs() -> dict[str, dict[str, Any]]:
+    """leg -> {artifacts, declared, consumer}, from the Tier-1 ledger's own `scheduled_by` claims.
 
     The ledger is already the desk's declaration of what a leg OWNS and who reads it (the same
     source `hourly_cycle._leg_artifacts` uses for the provenance envelope), so reading it here
-    keeps one declaration instead of minting a second that can disagree with it.
+    keeps one declaration instead of minting a second that can disagree with it. `artifacts` is
+    the parsed path tuple; `declared` keeps the sentence verbatim so a reader can see what the
+    ledger actually said when a path in it turns out not to exist.
     """
-    out: dict[str, dict[str, str]] = {}
+    out: dict[str, dict[str, Any]] = {}
     try:
         doc = json.loads(LEDGER.read_text(encoding="utf-8-sig"))
     except (OSError, ValueError):
@@ -188,7 +221,7 @@ def _ledger_outputs() -> dict[str, dict[str, str]]:
             tok = tok.strip()
             if tok.startswith("hourly_cycle:"):
                 leg = tok.split(":", 1)[1].split()[0]
-                out.setdefault(leg, {"artifact": art,
+                out.setdefault(leg, {"artifacts": artifact_paths(art), "declared": art,
                                      "consumer": str(it.get("consumer") or UNMEASURED)})
     return out
 
@@ -211,26 +244,37 @@ def hourly_leg_specs() -> list[ComponentSpec]:
         department = dept.get(leg, "rest")
         script, args = producers.get(leg, ("", ()))
         code = ["desks/mt5/research/hourly_cycle.py"]
+        producer_file = ""
         if script:
             for root in (DESK, ROOT):
                 cand = root / script
                 if cand.exists():
                     code.append(cand.resolve().relative_to(ROOT).as_posix())
+                    producer_file = str(cand.resolve())
                     break
         timeout = int(budget.get(leg, default_budget))
         decl = ledger.get(leg, {})
         specs.append(ComponentSpec(
             component_id=f"leg:{leg}",
             kind="leg", host="box", code_paths=tuple(dict.fromkeys(code)),
-            outputs=(str(decl["artifact"]),) if decl.get("artifact") else (),
+            outputs=tuple(decl.get("artifacts") or ()),
             consumers=(str(decl["consumer"]),) if decl.get("consumer") else (),
             dependencies=(f"resident:dept_{department}",),
             cadence_s=3600, timeout_s=timeout,
             progress_metric="leg_completions",
             production_args=args,
-            expected_artifact_schema=decl.get("artifact") or UNMEASURED,
+            expected_artifact_schema=str(decl.get("declared") or UNMEASURED),
             owner=f"department:{department}",
-            restart_action=f"restart:resident:dept_{department}",
+            # A LEG'S REPAIR IS THE LEG. Restarting the whole department was the only action this
+            # plane knew, and it cannot fix a leg that has never fired inside a department that is
+            # running fine -- six legs on the trading box (math_lab, physics_lab,
+            # expression_factory, causal_invariance, queue_census and their resident) sat NEVER
+            # through healthy departments for exactly that reason. `run_once:` runs the leg's own
+            # producer and proves it by the artifact moving; a leg with no producer script of its
+            # own still falls back to its department.
+            restart_action=(
+                "run_once:" + "\x1f".join([sys.executable, "-W", "ignore", producer_file, *args])
+                if producer_file else f"restart:resident:dept_{department}"),
             criticality="optional",
             resource_budget={"budget_s": timeout, "cpu": "below_normal"},
             schedule=f"hourly_cycle:{leg}",
@@ -567,7 +611,14 @@ def federation_worker_specs() -> list[ComponentSpec]:
             component_id=f"federation:{sid}",
             kind="federation_worker", host="box",
             code_paths=("desks/mt5/research/external_federation.py",),
-            outputs=(f"desks/mt5/data/intelligence/external_federation/{sid}.json",),
+            # NOT `.../external_federation/{sid}.json`: nothing has ever written a per-system
+            # file. `external_federation.py` writes ONE state document with a row per system, one
+            # report, and timestamped donation batches -- so the worker's evidence is its row in
+            # that state, and `expected_artifact_schema` names the row. Declaring a file no organ
+            # writes read as 19 MISSING workers on the box while the federation was running fine.
+            outputs=("desks/mt5/data/external_federation.json",
+                     "desks/mt5/reports/EXTERNAL_FEDERATION.json"),
+            expected_artifact_schema=f"systems.{sid}",
             consumers=("leg:compile_candidates",),
             cadence_s=3_600, timeout_s=getattr(fed, "FEDERATION_BUDGET_S", 3_600),
             progress_metric="packets_drained",

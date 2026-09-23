@@ -29,9 +29,12 @@ that class implies (`FIRST_TEST`), which is what `falsifiers` runs first.
 """
 from __future__ import annotations
 
+import json
 import math
 from collections import Counter, defaultdict
 from collections.abc import Iterable
+from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
 CLASSES: tuple[str, ...] = ("COST_DEATH", "NO_EDGE", "SELECTION_BIAS", "STATE_FRAGILE",
@@ -74,7 +77,13 @@ CLASS_STAGE: dict[str, str] = {
     "NO_EDGE": "statistics", "SELECTION_BIAS": "statistics", "LOW_SAMPLE": "statistics",
     "STATE_FRAGILE": "forward", "TAIL_FAILURE": "forward",
     "COST_DEATH": "cost", "EXECUTION_FAILURE": "execution",
-    "CORRELATION_DUPLICATE": "capacity", "LEAKAGE": "pit", "UNKNOWN": "idea",
+    "CORRELATION_DUPLICATE": "capacity", "LEAKAGE": "pit",
+    # UNKNOWN IS NOT A STAGE AND MUST NOT BE GIVEN ONE. A cell judged FAILED with no gate detail
+    # did not die at `idea`; the desk simply did not record where it died. Forcing it into the
+    # first stage would make the histogram read "our research dies of bad ideas" when what it
+    # actually says is "our rejections do not carry their stage" -- the opposite instruction to
+    # whoever spends the next compute hour. It maps to "", counted as `unattributed`.
+    "UNKNOWN": "",
 }
 #: Stage names a gate or a refusal reason states OUTRIGHT, checked before the class mapping: a
 #: cell refused for a missing panel never reached statistics, whatever gate name it carries.
@@ -116,7 +125,7 @@ def failure_stage(gates: dict[str, Any] | None, why: str = "", klass: str = "") 
     for needle, stage in STAGE_NEEDLE:
         if needle in text:
             return stage
-    return CLASS_STAGE.get(klass or failure_class(gates, why), "idea")
+    return CLASS_STAGE.get(klass or failure_class(gates, why), "")
 
 
 def _asset_class(symbol: str) -> str:
@@ -132,13 +141,36 @@ def _asset_class(symbol: str) -> str:
     return "other"
 
 
+def _axis(row: dict[str, Any], *names: str) -> str:
+    """One AXIS_REGISTRY coordinate off a graph row, wherever the writer put it. C24.
+
+    Rows reach the graph from a dozen organs and the axis fields live at the top level on some
+    and inside `axes`/`meta` on others. An absent coordinate returns "" -- which the naive Bayes
+    treats as its own level -- rather than a guess, because "this row did not say which mechanism
+    it is" is itself predictive of how the row was written and how it died.
+    """
+    for holder in (row, row.get("axes"), row.get("meta"), row.get("params")):
+        if not isinstance(holder, dict):
+            continue
+        for n in names:
+            v = holder.get(n)
+            if isinstance(v, str) and v.strip():
+                return v.strip()[:40]
+    return ""
+
+
 def features_of(row: dict[str, Any]) -> dict[str, str]:
     sym = str(row.get("symbol") or "").upper()
     params = row.get("params") or {}
     return {"family": str(row.get("family") or ""), "symbol": sym,
             "source": str(row.get("source") or "").split(":")[0],
             "asset_class": _asset_class(sym),
-            "n_params": str(min(len(params), 6)) if isinstance(params, dict) else "0"}
+            "n_params": str(min(len(params), 6)) if isinstance(params, dict) else "0",
+            # THE AXES THE HYPOTHESIS IS ABOUT (C24), not the axes of the file it arrived in.
+            "mechanism": _axis(row, "mechanism", "mechanism_class", "actor"),
+            "information_source": _axis(row, "information_source", "info_source", "data_source"),
+            "session": _axis(row, "session", "window", "hour_bucket"),
+            "chart": _axis(row, "chart", "timeframe", "tf")}
 
 
 class GraveyardModel:
@@ -149,6 +181,8 @@ class GraveyardModel:
         self.survive_counts: Counter[str] = Counter()          # "CERTIFIED" | "FAILED"
         self.survive_feat: dict[str, dict[str, Counter[str]]] = defaultdict(
             lambda: defaultdict(Counter))
+        #: C24: the declared STAGE every rejection died at, counted beside the class.
+        self.stage_counts: Counter[str] = Counter()
         self.n = 0
 
     def fit(self, rows: Iterable[dict[str, Any]]) -> GraveyardModel:
@@ -169,6 +203,7 @@ class GraveyardModel:
             if outcome == "FAILED":
                 cls = failure_class(r.get("gates"), str(r.get("why") or ""))
                 self.class_counts[cls] += 1
+                self.stage_counts[failure_stage(r.get("gates"), str(r.get("why") or ""), cls)] += 1
                 for k, v in f.items():
                     self.feat_counts[cls][k][v] += 1
         return self
@@ -199,6 +234,10 @@ class GraveyardModel:
         top = max(cls, key=lambda c: cls[c])
         return {"p_survivor": round(surv.get("CERTIFIED", 0.0), 4),
                 "failure_class": top, "p_class": round(cls[top], 3),
+                # C24: the stage the model expects this cell to die at, which is what decides
+                # WHICH TEST IS WORTH RUNNING FIRST -- a cell expected to die at `data` should
+                # never reach a statistical gate at all.
+                "failure_stage": CLASS_STAGE.get(top, ""),
                 "first_test": FIRST_TEST.get(top, FIRST_TEST["UNKNOWN"]),
                 "classes": {c: round(p, 3) for c, p in sorted(cls.items(),
                                                               key=lambda kv: -kv[1])[:4]},
@@ -206,4 +245,89 @@ class GraveyardModel:
 
     def summary(self) -> dict[str, Any]:
         return {"n_judged": self.n, "survivors": self.survive_counts.get("CERTIFIED", 0),
-                "failure_classes": dict(self.class_counts.most_common())}
+                "failure_classes": dict(self.class_counts.most_common()),
+                # C24: the same deaths counted by STAGE, in pipeline order, so the reading is
+                # "where does this desk's research die" and not only "which gate said no".
+                "failure_stages": {s: self.stage_counts.get(s, 0) for s in STAGES},
+                # The rejections that carry no evidence of WHERE they died. A large number here
+                # is a defect in what the gates record, not a fact about the research.
+                "failure_stage_unattributed": self.stage_counts.get("", 0),
+                "stage_taxonomy": list(STAGES)}
+
+    def survival_by(self, feature: str) -> dict[str, dict[str, Any]]:
+        """P(survival) per level of one declared feature, with its counts. C24.
+
+        The raw material for the compute factor: `source` levels are the arms the budget can
+        actually move seconds between. Laplace-smoothed, so a level with one certified row out of
+        one does not read as certainty.
+        """
+        out: dict[str, dict[str, Any]] = {}
+        cert = self.survive_feat.get("CERTIFIED", {}).get(feature, Counter())
+        fail = self.survive_feat.get("FAILED", {}).get(feature, Counter())
+        for level in sorted(set(cert) | set(fail)):
+            c, f = cert.get(level, 0), fail.get(level, 0)
+            out[level] = {"certified": c, "failed": f,
+                          "p_survival": round((c + ALPHA) / (c + f + 2 * ALPHA), 6)}
+        return out
+
+
+# --------------------------------------------------------------------------------- the clock
+#: Where the hourly leg's reading lands. Repo-relative so both boxes write the same path.
+REPORT = Path(__file__).resolve().parents[2] / "desks" / "mt5" / "reports" / "GRAVEYARD_MODEL.json"
+
+
+def build(rows: Iterable[dict[str, Any]] | None = None) -> dict[str, Any]:
+    """Fit the model on the hypothesis graph and return the report. C24.
+
+    THE LEG HAD NO ARTIFACT. `hourly_cycle:graveyard_model` has run this module as a script since
+    it was wired, and the module was a library with no `main` -- so the leg exited 0 every hour
+    and left nothing behind, which is exactly the shape of III.16 ("done means RUNS on a schedule
+    and leaves an artifact"). The consumers (`deepening_worker`, `miner_candidate_compiler`,
+    `falsifier_run`, `revival_engine`) each re-fit the model in-process, so the fit was never the
+    problem; the MEASUREMENT of it was invisible, and nothing could be read, budgeted or argued
+    with by anything outside those four call sites.
+    """
+    if rows is None:
+        try:
+            from libs.research.hypothesis_graph import Graph
+            rows = Graph().rows()
+        except Exception as exc:                                        # pragma: no cover
+            return {"status": "UNMEASURED",
+                    "why": f"hypothesis graph unreadable: {type(exc).__name__}: {exc}"}
+    model = GraveyardModel().fit(rows)
+    if model.n == 0:
+        return {"status": "UNMEASURED", "why": "no judged row in the hypothesis graph",
+                "stage_taxonomy": list(STAGES)}
+    return {
+        "status": "MEASURED",
+        "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+        **model.summary(),
+        # P(survival) per level of each declared feature. `source` is the one the compute budget
+        # can act on, because a source IS an arm; the rest are published for the reader.
+        "survival_by": {f: model.survival_by(f) for f in FEATURES},
+        "consumer": ("research_budget._graveyard_factor (per-arm compute factor with an "
+                     "exploration floor), deepening_worker.voi_order, miner_candidate_compiler, "
+                     "falsifier_run, revival_engine"),
+        "authority": ("ZERO over capital. It orders RESEARCH compute only, and it may never take "
+                      "an arm below par -- the exploration floor is the arm that has not yet "
+                      "produced, and starving it is how a desk stops finding anything new"),
+    }
+
+
+def main(argv: list[str] | None = None) -> int:                         # pragma: no cover - clock
+    import argparse
+    ap = argparse.ArgumentParser(description="fit the graveyard model and publish it")
+    ap.add_argument("--once", action="store_true", help="one pass (the only mode)")
+    ap.add_argument("--budget-s", type=float, default=0.0, help="advisory; the fit is a count")
+    ap.add_argument("--out", type=Path, default=REPORT)
+    args = ap.parse_args(argv)
+    doc = build()
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    args.out.write_text(json.dumps(doc, indent=1), encoding="utf-8")
+    print(f"graveyard model: {doc.get('status')} n_judged={doc.get('n_judged')} "
+          f"stages={doc.get('failure_stages')}")
+    return 0
+
+
+if __name__ == "__main__":                                              # pragma: no cover
+    raise SystemExit(main())

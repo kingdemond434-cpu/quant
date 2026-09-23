@@ -149,7 +149,8 @@ def _history(state: dict[str, Any], sid: str) -> tuple[int, int, float | None]:
                or (1 if str(row.get("last_status") or "") not in (*OK_STATUSES, "") else 0))
     secs = row.get("seconds", row.get("ms"))
     try:
-        s = float(secs) / (1000.0 if "ms" in row and "seconds" not in row else 1.0)
+        s: float | None = float(secs) / (  # type: ignore[arg-type]
+            1000.0 if "ms" in row and "seconds" not in row else 1.0)
     except (TypeError, ValueError):
         s = None
     return ok, fail, (s if s and math.isfinite(s) and s > 0 else None)
@@ -180,9 +181,14 @@ def price(sources: list[dict[str, Any]], state: dict[str, Any],
         targets = [str(t).upper() for t in (s.get("targets") or []) if str(t).strip()]
         ok, fail, secs = _history(state, sid)
         novel = ([t for t in targets if covered.get(t, 0) == 0] if targets else [])
-        n_share = (len(novel) / len(targets)) if targets else 0.5
-        prior = ([sd.get(t) for t in targets if sd.get(t)] if targets else [])
-        u = (sum(p for p in prior if p) / len(prior)) if prior else 1.0
+        # A row that declares no instrument cannot claim novelty it has not named. Registered
+        # rows keep the neutral 0.5; a parser-derived endpoint with no declared target sits
+        # below every source that named one, so the collector never spends its budget on an
+        # unlabelled CDN URL before a central bank release it has a mechanism for.
+        n_share = ((len(novel) / len(targets)) if targets
+                   else (0.1 if s.get("derived") else 0.5))
+        prior: list[float] = [float(sd[t]) for t in targets if sd.get(t)]
+        u = (sum(prior) / len(prior)) if prior else 1.0
         p_usable = (1.0 + ok) / (2.0 + ok + fail)
         w = _lag_weight(s)
         cost = secs if secs is not None else (

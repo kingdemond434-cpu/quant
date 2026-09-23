@@ -16,6 +16,12 @@ WHAT THIS ASSERTS, against `desks/mt5/reports/JUDGE_COVERAGE.json`, which
     reading and STILL unjudged now are the carried cohort. A cell leaves it exactly one way -- by
     being judged -- so it can only fall, and a family whose carried count did not fall while it
     held backlog and held quota was starved in fact if not in the queue.
+  * THE REMAINDER FOLLOWS THE PUBLISHED RANKING.  The floor is the breadth mandate and is
+    covered by the starvation check; the remainder is where the return is, and it is spent
+    strictly down expected value per judge-second. A family given remainder while a HIGHER-ranked
+    family still held undrained backlog means the allocation stopped following its own ranking --
+    which is exactly how a future session would quietly revert this to round-robin with the
+    report still claiming value ordering.
   * NO FAMILY'S OLDEST UNJUDGED CELL EXCEEDS ITS OWN WINDOW.  A family's window is the hours its
     own quota needs to drain its own backlog, floored at the hour. A family of 55,190 cells is
     not failed for being large and a family of nine is not excused for being small.
@@ -67,7 +73,9 @@ STALE_H = 6.0
 WINDOW_SLACK = 2.0
 
 RULE = ("no family holding unjudged cells is absent from the hour's queue; each family's carried "
-        "backlog falls; no family's oldest unjudged cell sits past twice its own drain window")
+        "backlog falls; no family's oldest unjudged cell sits past twice its own drain window "
+        "without moving; and the remainder after every floor follows the published "
+        "expected-value-per-judge-second ranking")
 
 
 def _read(path: Path) -> Any:
@@ -211,11 +219,49 @@ def judge(report: Path | None = None, *, require_state: bool = False,
                           f"{stale_age[0]}) -- published, not failed: an age rises with the "
                           "clock and only its movement is the desk's to control"))})
 
+    # 4. THE REMAINDER FOLLOWED THE PUBLISHED RANKING. The floor is the breadth mandate and is
+    #    checked above by starvation; this checks the part that carries the return. Remainder is
+    #    spent strictly down expected value per judge-second, so a family that received remainder
+    #    while a HIGHER-ranked family still held undrained backlog means the allocation stopped
+    #    following its own ranking -- which is exactly how a future session would quietly revert
+    #    this to round-robin, with the report still claiming value ordering.
+    ranking = [r for r in (doc.get("value_ranking") or ()) if isinstance(r, dict)]
+    if not ranking:
+        out["checks"].append({"metric": "remainder_follows_ranking", "state": "UNMEASURED",
+                              "why": "the report publishes no value ranking"})
+    else:
+        starved_higher: list[str] = []
+        for i, row in enumerate(ranking):
+            if int(row.get("remainder") or 0) <= 0:
+                continue
+            for higher in ranking[:i]:
+                room = int(higher.get("unjudged") or 0) - int(higher.get("quota") or 0)
+                if int(higher.get("remainder") or 0) == 0 and room > 0:
+                    starved_higher.append(f"{row.get('family')} over {higher.get('family')}")
+                    break
+        if starved_higher:
+            failures.extend(starved_higher[:10])
+            out["checks"].append({
+                "metric": "remainder_follows_ranking", "state": "FAIL",
+                "why": ("the remainder did not follow the published expected-value-per-judge-"
+                        "second ranking: " + ", ".join(starved_higher[:5]))})
+        else:
+            top = ranking[0]
+            out["checks"].append({
+                "metric": "remainder_follows_ranking", "state": "OK",
+                "why": (f"remainder spent down the ranking, top {top.get('family')} at "
+                        f"{top.get('ev_per_judge_second')} ev/judge-s")})
+
     totals = doc.get("totals") or {}
     out["totals"] = {k: totals.get(k) for k in (
         "families_mined", "families_with_backlog", "families_queued", "families_starved",
         "unjudged_total", "carried_total", "study_only_total", "capacity_measured",
-        "oldest_unjudged_age_h")}
+        "oldest_unjudged_age_h", "value_at_risk", "value_deferred", "value_forgone_per_hour",
+        "hours_to_drain", "capacity_short")}
+    out["top_value"] = [{k: r.get(k) for k in ("rank", "family", "ev_per_judge_second",
+                                               "p_optimistic", "prior_status", "quota",
+                                               "floor", "remainder", "value_at_risk")}
+                        for r in ranking[:5]]
     out["worst_backlog"] = (doc.get("worst_backlog") or [])[:5]
     out["verdict"] = "FAIL" if failures else "PASS"
     out["why"] = (f"{len(set(failures))} family(ies) failed a coverage rule: "
@@ -229,6 +275,15 @@ def render(doc: Mapping[str, Any]) -> list[str]:
     lines = [f"judge coverage: {doc.get('verdict')} -- {doc.get('why')}"]
     for row in doc.get("checks") or ():
         lines.append(f"  [{row.get('state')}] {row.get('metric')}: {row.get('why')}")
+    t = doc.get("totals") or {}
+    if t.get("value_at_risk") is not None:
+        lines.append(f"  value at risk {t.get('value_at_risk')} / deferred "
+                     f"{t.get('value_deferred')} / forgone {t.get('value_forgone_per_hour')}/h"
+                     + ("  CAPACITY SHORT -> judging_throughput" if t.get("capacity_short")
+                        else ""))
+    for row in doc.get("top_value") or ():
+        lines.append(f"  #{row.get('rank')} {row.get('family')} ev/judge-s "
+                     f"{row.get('ev_per_judge_second')} quota {row.get('quota')}")
     for row in doc.get("worst_backlog") or ():
         lines.append(f"  worst: {row.get('family')} unjudged {row.get('unjudged')} "
                      f"queued {row.get('queued')} oldest {row.get('oldest_unjudged_age_h')}h")

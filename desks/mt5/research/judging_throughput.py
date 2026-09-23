@@ -290,7 +290,37 @@ def measure_queue() -> dict[str, Any]:
         swept_at=meas.get("swept_at", UNMEASURED),
         gates_per_hour=float(per_hour) if isinstance(per_hour, (int, float)) else UNMEASURED,
         gates_per_hour_window="24h")
+    out.update(_value_at_risk())
     return out
+
+
+#: Intake's own measurement of what the unjudged backlog is WORTH, published per hour by
+#: `research/judge_coverage.py`. Read here, never written here: that organ owns the number and
+#: this one owns the response to it.
+JUDGE_COVERAGE = BASE / "reports" / "JUDGE_COVERAGE.json"
+
+
+def _value_at_risk() -> dict[str, Any]:
+    """The expected value sitting unjudged, and whether one hour can reach it.
+
+    DEPTH IS NOT DEMAND -- VALUE IS. A queue of ten thousand cells nobody expects anything from
+    is not a reason to take cores from the live terminal, and a queue of two hundred carrying the
+    desk's best expected value per judge-second is. `judge_coverage` measures both from the
+    learned priors, the net-of-cost slot values and the breadth machinery; this organ is the only
+    one that can answer it, by raising workers and cadence. An absent report is UNMEASURED and
+    raises nothing -- a number nobody measured must never move the box.
+    """
+    doc = _read_json(JUDGE_COVERAGE, {}) or {}
+    tot = doc.get("totals") if isinstance(doc, dict) else None
+    if not isinstance(tot, dict):
+        return {"value_at_risk": UNMEASURED, "value_forgone_per_hour": UNMEASURED,
+                "capacity_short": UNMEASURED, "value_source": str(JUDGE_COVERAGE)}
+    return {"value_at_risk": tot.get("value_at_risk", UNMEASURED),
+            "value_deferred": tot.get("value_deferred", UNMEASURED),
+            "value_forgone_per_hour": tot.get("value_forgone_per_hour", UNMEASURED),
+            "hours_to_drain": tot.get("hours_to_drain", UNMEASURED),
+            "capacity_short": tot.get("capacity_short", UNMEASURED),
+            "value_source": str(JUDGE_COVERAGE)}
 
 
 def _breach_backlog() -> dict[str, Any]:
@@ -386,9 +416,19 @@ def plan(box: dict[str, Any], queue: dict[str, Any], costs: dict[str, float]) ->
     # buys nothing and the breach simply ages. So an overdue breach makes the queue DEEP, which
     # is what raises workers and cadence below. It never lowers either: this is one-way.
     breach_overdue = queue.get("clock_breach_overdue")
+    # VALUE AT RISK IS DEMAND ON THE JUDGE, and it is the honest trigger for capacity. When
+    # `judge_coverage` measures that one hour cannot reach the backlog it has priced -- expected
+    # value per judge-second, from the learned priors, the net-of-cost slot values and the
+    # breadth machinery -- the desk is choosing to forgo that value every hour it waits. The
+    # answer is MORE JUDGE, never a smaller docket: this raises workers and cadence exactly as a
+    # deep queue does, and like every other signal here it is one-way and can lower neither.
+    value_short = queue.get("capacity_short") is True
     if isinstance(breach_overdue, int) and breach_overdue > 0:
         deep = True
         limiting = "clock_certificate_breach"
+    elif value_short:
+        deep = True
+        limiting = "judge_value_at_risk"
     elif isinstance(depth, int) and not deep and not stood_down:
         limiting = "queue"
 
