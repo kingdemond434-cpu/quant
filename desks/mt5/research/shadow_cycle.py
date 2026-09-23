@@ -36,7 +36,10 @@ ENROLLED_ADMISSIONS = frozenset({
     "FULL_10_PASS",
 })
 
-SCALP_BAR_MAX_AGE_SECONDS = 30 * 60
+# The canonical bar producer runs hourly. Allow one cadence plus 15 minutes of scheduler jitter;
+# the replay is idempotent and catches every intervening M1/M5/M15 bar at the next snapshot.
+# A 30-minute consumer threshold made the second half of every healthy producer hour look failed.
+SCALP_BAR_MAX_AGE_SECONDS = 75 * 60
 
 
 def _fresh_authoritative_scalp_bars(now: datetime | None = None) -> bool:
