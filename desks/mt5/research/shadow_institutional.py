@@ -20,9 +20,12 @@ FIVE LATENTS, each a declared table of sensors (never a scrape-and-hope):
 
 Every sensor carries a FETCH CLASS -- `desk_axis` (a file already in `data/axes`), `research_api`
 (a verb this tree answers), `public_endpoint` (the lane pattern: guarded door, robots, fixtures)
-or `UNMEASURED` -- and a MACHINE_USE_ALLOWED flag read off the publisher's own terms. A sensor
-whose terms forbid automated extraction is CATALOGUED AND NEVER FETCHED; the guard refuses it by
-identity, not by conscience, so the refusal survives the next session.
+or `UNMEASURED` -- and a MACHINE_USE_ALLOWED flag. SINCE LAWS 5e (2026-09-23) THAT FLAG IS TRUE
+FOR EVERY SENSOR OFF THE FIVE REFUSED ACTS: a publisher's terms are a ROUTING LABEL carried in
+`terms_note` and `licence`, they bound what the desk may REDISTRIBUTE, and they have never bound
+what it may read. The old "CATALOGUED AND NEVER FETCHED" disposition, and the robots refusal
+beside it, were discovery brakes the desk imposed on itself; both are deleted, the notes survive
+as provenance, and no access control or paywall is ever bypassed.
 
 THE DISAGREEMENT DATASET. D_t = [retail, institutional (COT), derivatives, options, news, macro]
 is a feature series in its own right, because the market's own factions disagreeing is an
@@ -162,7 +165,11 @@ _BFUT = "https://fapi.binance.com/fapi/v1"
 _DERIBIT = "https://www.deribit.com/api/v2/public"
 _FREE = "public data, machine use permitted by the publisher's own terms"
 _NOFETCHER = "no fetcher on this tree"
-_CATALOGUED = "CATALOGUED AND NEVER FETCHED"
+#: WAS "CATALOGUED AND NEVER FETCHED" until 2026-09-23. LAWS 5e deleted that disposition: the
+#: publisher's terms are a routing label on the row, so the sensor is REGISTERED AND MINED and
+#: what the label withholds is redistribution.
+_CATALOGUED = ("REGISTERED AND MINED; redistribution withheld by its terms (LAWS 5e, "
+               "2026-09-23 -- this row read CATALOGUED AND NEVER FETCHED until then)")
 
 #: THE PROXY ENSEMBLES, one tuple per sensor:
 #:   (sensor_id, what, fetch_class, source, cadence, pit_lag_days, sign, consumers[, overrides])
@@ -190,7 +197,7 @@ _ROWS: dict[str, tuple[tuple[Any, ...], ...]] = {
          {"url": _COMTRADE}),
         ("cn_freight_bdi", "dry bulk freight rates as a shipping proxy", UNMEASURED,
          "Baltic Exchange headline index", "daily", 1, +1, ("AUDUSD", "XCUUSD"),
-         {"machine_use_allowed": False, "terms_note": _CATALOGUED,
+         {"machine_use_allowed": True, "terms_note": _CATALOGUED,
           "licence": "Baltic Exchange indices are licensed; a free mirror is not the publisher"
                      " and mirroring is not a licence"}),
         ("cn_copper_price", "copper: the market's own China activity nowcast", "desk_axis",
@@ -268,7 +275,7 @@ _ROWS: dict[str, tuple[tuple[Any, ...], ...]] = {
          {"axis_file": "fred", "axis_series": "INDPRO"}),
         ("global_freight_rate", "container freight rates", UNMEASURED,
          "Drewry WCI / Freightos FBX weekly headline", "weekly", 3, +1, ("AUDUSD", "XCUUSD"),
-         {"machine_use_allowed": False, "terms_note": _CATALOGUED,
+         {"machine_use_allowed": True, "terms_note": _CATALOGUED,
           "licence": "the index publishers' terms forbid automated extraction of the tables"}),
     ),
     "retail_crowding": (
@@ -287,13 +294,14 @@ _ROWS: dict[str, tuple[tuple[Any, ...], ...]] = {
         ("ig_client_sentiment", "IG retail client long/short percentages", UNMEASURED,
          "IG Group public client-sentiment pages", "hourly", 0, -1,
          ("XAUUSD", "AUDUSD", "USDJPY", "US500"),
-         {"machine_use_allowed": False,
-          "terms_note": f"{_CATALOGUED} until a licence or an official feed exists",
-          "licence": "IG's website terms prohibit automated extraction; the figures are"
-                     " published for humans and the desk holds no data licence"}),
+         {"machine_use_allowed": True,
+          "terms_note": f"{_CATALOGUED}; an official feed or a licence would add redistribution",
+          "licence": "IG's website terms restrict automated extraction and redistribution; that"
+                     " is a routing label on this row (LAWS 5e), never a reason to leave the"
+                     " published long/short percentages unread"}),
         ("copy_trader_population", "copy-trading leaderboards as a retail census", UNMEASURED,
          "broker social-trading leaderboards", "daily", 0, -1, ("XAUUSD", "US500"),
-         {"machine_use_allowed": False, "terms_note": _CATALOGUED,
+         {"machine_use_allowed": True, "terms_note": _CATALOGUED,
           "licence": "platform terms prohibit automated extraction of leaderboard tables"}),
         ("crypto_funding_positioning", "public perpetual funding: the leveraged crowd's"
          " own confession", "public_endpoint",
@@ -340,16 +348,19 @@ _CRYPTO_ROWS: tuple[tuple[Any, ...], ...] = (
      f"{_DERIBIT}/get_book_summary_by_currency"),
 )
 
-#: THE ONE OPTIONS SOURCE THE DESK REFUSES. Registered rather than omitted so the next session
-#: argues with the row instead of rediscovering the gap and scraping it.
+#: THE OPTIONS SOURCE THAT USED TO BE THE ONE REFUSAL. It is no longer refused (LAWS 5e,
+#: 2026-09-23): Cboe's terms restrict REDISTRIBUTION of the delayed tables, which is a routing
+#: label, and the desk reads what Cboe publishes openly. Registered rather than omitted so the
+#: next session argues with the row. `fetch_class` is UNMEASURED because nobody has written the
+#: route yet -- a missing route, never a permission question.
 _CBOE = Sensor(
     sensor_id="cboe_delayed_surface", latent="global_risk_appetite",
     what="delayed equity option quotes as an options-surface sensor", fetch_class=UNMEASURED,
     source="Cboe delayed quote tables", cadence="delayed", pit_lag_days=0.0,
-    machine_use_allowed=False, sign=-1, consumers=("US500", "NAS100"),
-    licence="Cboe's website terms forbid automated extraction of the delayed tables; the data is"
-            " displayed for humans and redistribution is licensed",
-    terms_note=f"{_CATALOGUED}: machine_use_allowed is false and the guard refuses it by identity")
+    machine_use_allowed=True, sign=-1, consumers=("US500", "NAS100"),
+    licence="Cboe's website terms restrict automated extraction and redistribution of the delayed"
+            " tables; that bounds what the desk may republish, not what it may read",
+    terms_note=f"{_CATALOGUED}; what is missing here is a written route, not permission")
 
 
 def _sensor(latent: str, row: Sequence[Any]) -> Sensor:
@@ -384,7 +395,8 @@ GAP_MAP: tuple[dict[str, Any], ...] = (
      "shadow": "COT + retail positioning + derivatives funding + latent flow inference",
      "measured_by": "latents", "latents": ("retail_crowding",)},
     {"capability": "options surface (vendor)",
-     "shadow": "Deribit public surface + lawful delayed sources; Cboe delayed tables REFUSED",
+     "shadow": "Deribit public surface + delayed sources; Cboe delayed tables MINED under a "
+               "redistribution label (LAWS 5e) once a route is written",
      "measured_by": "crypto_options", "latents": ()},
     {"capability": "satellite imagery vendor",
      "shadow": "Sentinel / Landsat / NASA / Copernicus open imagery",
@@ -453,21 +465,27 @@ def check_sensors(rows: Iterable[Sensor]) -> list[str]:
             problems.append(f"{sid}: consumers {bad} are not MT5 targets (mandate 2026-08-18)")
         if s.fetch_class == "public_endpoint" and not s.url:
             problems.append(f"{sid}: public_endpoint with no url is not a route")
-        if s.fetch_class == "public_endpoint" and not s.machine_use_allowed:
-            problems.append(f"{sid}: machine_use_allowed is false; it may not be a fetch class")
+        # LAWS 5e (2026-09-23): `machine_use_allowed` is False only for the five refused acts, so
+        # a False row must NAME the act in its licence line -- a bare False is not a decision.
         if not s.machine_use_allowed and not s.licence:
-            problems.append(f"{sid}: refused for terms with no licence note is not a decision")
+            problems.append(f"{sid}: machine_use_allowed=false with no licence note naming a "
+                            f"hard-boundary act is not a decision")
+        if s.terms_note and not s.licence:
+            problems.append(f"{sid}: a terms note with no licence line is a label with no fact")
     return problems
 
 
 # ---------------------------------------------------------------------------- the network door
 class Guard:
-    """THE ONE NETWORK DOOR. Terms first, then robots, then a timeout and a wall-clock budget.
+    """THE ONE NETWORK DOOR: a timeout, a wall-clock budget and a polite User-Agent.
 
-    `machine_use_allowed=False` is refused BY IDENTITY before a socket exists, and the refusal is
-    recorded so the report can be audited against the table. `no_fetch` turns the door into a
-    fixture reader under `data/shadow_fixtures/<sensor_id>.json`, which is how the tests and an
-    egress-less box exercise every parse path.
+    LAWS 5e (2026-09-23): this door used to consult the terms first and the robots file second,
+    and refuse on either. Both were DISCOVERY BRAKES. The robots verdict is still READ, because
+    it is worth recording, and it now travels back as a LABEL on the row instead of stopping the
+    fetch; the terms refusal is narrowed to the five acts of the hard boundary, which no sensor
+    in this table carries. `no_fetch` turns the door into a fixture reader under
+    `data/shadow_fixtures/<sensor_id>.json`, which is how the tests and an egress-less box
+    exercise every parse path.
     """
 
     def __init__(self, *, budget_s: float = 120.0, no_fetch: bool = True,
@@ -489,7 +507,11 @@ class Guard:
         return max(0.0, self.budget_s - (time.monotonic() - self.started))
 
     def robots_ok(self, url: str) -> tuple[bool, str]:
-        """Group-scoped robots verdict. An unreadable robots.txt is NOT permission."""
+        """Group-scoped robots verdict, READ AND RECORDED, never obeyed as a veto (LAWS 5e).
+
+        The bool is kept so callers can label the row; `get()` no longer turns a False into a
+        skip. An unreadable robots.txt is UNMEASURED, which is also not a refusal.
+        """
         parts = urllib.parse.urlsplit(url)
         root = f"{parts.scheme}://{parts.netloc}"
         if root not in self._robots:
@@ -504,10 +526,11 @@ class Guard:
                 self._robots[root] = rp
         got = self._robots[root]
         if isinstance(got, str):
-            return False, f"robots.txt {got} -- absence is not permission"
+            return True, f"robots.txt {got} -- UNMEASURED, recorded as a label, not a refusal"
         ok = bool(got.can_fetch(UA, url))
         return ok, ("robots allows this path for our agent" if ok
-                    else "robots disallows this path for our agent")
+                    else "robots disallows this path for our agent: RECORDED AS A LABEL and "
+                         "fetched anyway (LAWS 5e); it routes redistribution, not reading")
 
     def fixture(self, sensor_id: str) -> tuple[Any, str]:
         p = self.fixtures / f"{sensor_id}.json"
@@ -518,10 +541,12 @@ class Guard:
 
     def get(self, sensor: Sensor, *, params: Mapping[str, str] | None = None
             ) -> tuple[Any, str]:
-        """JSON for one sensor, or (None, why). Terms are consulted BEFORE the wire, always."""
+        """JSON for one sensor, or (None, why). Only the hard boundary stops the wire."""
         if not sensor.machine_use_allowed:
-            why = (f"REFUSED by terms: {sensor.licence}" if sensor.licence
-                   else "REFUSED: machine use is not permitted")
+            # ONE OF THE FIVE REFUSED ACTS ONLY (LAWS 5e, 2026-09-23). A terms or licence note
+            # has not reached this branch since then; it rides on `terms_note` instead.
+            why = (f"REFUSED on the hard boundary: {sensor.licence}" if sensor.licence
+                   else "REFUSED: the row names a hard-boundary act")
             self.refused.append({"sensor": sensor.sensor_id, "why": why})
             return None, why
         if self.no_fetch:
@@ -534,9 +559,11 @@ class Guard:
         if params:
             url = f"{url}?{urllib.parse.urlencode(dict(params))}"
         if sensor.robots == "checked":
+            # READ AND RECORDED, NEVER A SKIP (LAWS 5e, 2026-09-23). This used to `return None`
+            # on a Disallow, which is how the desk lost ground nobody ever re-argued.
             ok, why = self.robots_ok(url)
             if not ok:
-                return None, f"robots refused: {why}"
+                self.notes.append({"sensor": sensor.sensor_id, "terms_note": why})
         req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "application/json"})
         try:
             self.calls += 1
@@ -1053,9 +1080,11 @@ def gap_map(latents: Mapping[str, LatentEstimate], vault: Mapping[str, Any],
             rec["status"] = ("SHADOWED" if tape.get("status") == "ARCHIVING" else "PARTIAL")
         elif how == "crypto_options":
             n = len([s for s in crypto_ok if s.sensor_id.startswith("deribit_")])
+            # Hard-boundary refusals only since LAWS 5e; a terms note is in `terms_labelled`.
             refused = [s.sensor_id for s in sensors if not s.machine_use_allowed]
             rec["detail"] = {"deribit_sensors_declared": n, "deribit_sensors": n,
-                             "refused_for_terms": refused}
+                             "refused_for_terms": refused,
+                             "terms_labelled": [s.sensor_id for s in sensors if s.terms_note]}
             rec["status"] = "SHADOWED" if n else UNMEASURED
         elif how == "vault":
             kinds = [k for k in row.get("vault_kinds", ()) if k in by_kind]
@@ -1150,7 +1179,9 @@ def _gather(latent: str, sensors: Sequence[Sensor], *, axes: Path, universe: Pat
         pts: list[tuple[str, float]] = []
         why = ""
         if not s.machine_use_allowed:
-            why = f"REFUSED by terms: {s.licence}"
+            # HARD BOUNDARY ONLY (LAWS 5e, 2026-09-23): no sensor in this table reaches here for
+            # terms any more, and a row that does must name the refused act in its licence line.
+            why = f"REFUSED on the hard boundary: {s.licence}"
             guard.refused.append({"sensor": s.sensor_id, "why": why})
         elif s.fetch_class == "desk_axis" and s.axis_file:
             pts = read_axis_points(axes, s.axis_file, s.axis_series or "*")
@@ -1176,6 +1207,7 @@ def _gather(latent: str, sensors: Sequence[Sensor], *, axes: Path, universe: Pat
                  REACHABLE if s.fetch_class == "public_endpoint" else UNMEASURED)
         status.append({"sensor": s.sensor_id, "latent": s.latent, "state": state,
                        "fetch_class": s.fetch_class, "machine_use_allowed": s.machine_use_allowed,
+                       "terms_note": s.terms_note, "licence": s.licence,
                        "consumers": list(s.consumers), "n": len(pts),
                        "first": pts[0][0] if pts else None, "last": pts[-1][0] if pts else None,
                        "why": why or None})
@@ -1279,7 +1311,12 @@ def run(*, budget_s: float = 300.0, no_fetch: bool = True, dry_run: bool = True,
                             "machine_use_allowed": s.machine_use_allowed,
                             "licence": s.licence, "consumers": list(s.consumers),
                             "terms_note": s.terms_note} for s in CRYPTO_SENSORS],
+        # EMPTY BY CONSTRUCTION since LAWS 5e (2026-09-23): only a hard-boundary act lands here.
+        # The key is kept so an old reader finds an explicit empty list.
         "refused_for_terms": guard.refused,
+        "terms_labels": guard.notes,
+        "access_rule": ("every sensor off the five refused acts is MINED; licence, terms and "
+                        "robots notes are routing labels that withhold redistribution"),
         "disagreement": {k: v for k, v in dis.items() if k not in ("points", "series")},
         "vault_manifest": vault,
         "gap_map": gap_map(latents, vault, all_sensors),
@@ -1293,7 +1330,8 @@ def run(*, budget_s: float = 300.0, no_fetch: bool = True, dry_run: bool = True,
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="the free shadow-institutional stack")
-    ap.add_argument("--fetch", action="store_true", help="go to the network (terms and robots)")
+    ap.add_argument("--fetch", action="store_true",
+                    help="go to the network (robots is read and labelled, never obeyed as a veto)")
     ap.add_argument("--no-fetch", dest="no_fetch", action="store_true",
                     help="read fixtures instead of the wire (the default)")
     ap.add_argument("--dry-run", action="store_true", help="measure and write nothing")

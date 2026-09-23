@@ -352,14 +352,25 @@ def quoted_reading(info: dict[str, Any] | None, spreads: list[tuple[int, float]]
 
 def realised_reading(symbol: str, deals: list[dict[str, Any]], ledger: list[dict[str, Any]],
                      intents_by_ticket: dict[int, dict[str, Any]],
-                     meta: dict[str, Any] | None) -> dict[str, Any]:
+                     meta: dict[str, Any] | None,
+                     info: dict[str, Any] | None = None) -> dict[str, Any]:
     """What the account actually paid on this symbol: commission, swap, slippage, all in R.
 
-    Commission and swap come from the terminal's own deal records (account currency, the same
-    currency `live_ledger.pl_quote` and `risk_quote` are kept in, which is what makes the ratio
-    an R). Entry slippage is `fill - intended` against the desk's OWN decision reference, signed
-    so that POSITIVE is adverse. Exit slippage is measured only where the exit was at a recorded
-    SL/TP level -- a discretionary exit has no reference and reports nothing rather than zero.
+    Commission and swap come from the terminal's own deal records, which carry them in ACCOUNT
+    currency. The R denominator is built from the row's OWN stop distance through the terminal's
+    `trade_tick_value` / `trade_tick_size` -- account currency per tick per lot -- so numerator
+    and denominator are the same currency by construction.
+
+    `live_ledger.risk_quote` is NOT used and the reason is measured (2026-09-23): it holds a
+    stop distance in PRICE units on some rows (EURCHF 0.00034, XAUUSD 2.06) and a money amount
+    on others (EURGBP 5.67), and `r_multiple` is 0.0 on every row of the four symbols sampled.
+    Dividing a EUR commission by a price distance produced a 45R commission on EURCHF -- a
+    number that would have justified any refusal at all.
+
+    Entry slippage is `fill - intended` against the desk's OWN decision reference, signed so
+    POSITIVE is adverse; in R it is simply `slip / stop_distance`, in which the lot size and the
+    tick value cancel. Exit slippage is measured only where the exit was at a recorded SL/TP
+    level -- a discretionary exit has no reference and reports nothing rather than zero.
     """
     mine = [d for d in deals if d.get("sym") == symbol]
     entries = [d for d in mine if d.get("entry") == 0 and (_f(d.get("vol")) or 0) > 0]
@@ -380,22 +391,33 @@ def realised_reading(symbol: str, deals: list[dict[str, Any]], ledger: list[dict
     out["swap_total_account_ccy"] = round(sum(swaps), 4)
     out["swap_nonzero_deals"] = sum(1 for s in swaps if s != 0.0)
     # -- slippage against the desk's own decision reference
-    point = _f((meta or {}).get("tick_size")) or 0.0
+    point = (_f((info or {}).get("trade_tick_size"))
+             or _f((meta or {}).get("tick_size")) or 0.0)
+    tick_value = (_f((info or {}).get("trade_tick_value"))
+                  or _f((meta or {}).get("tick_value")) or 0.0)
     slip_entry: list[float] = []
     slip_exit: list[float] = []
     cost_rs: list[float] = []
     comm_rs: list[float] = []
+    stops_pts: list[float] = []
     for row in ledger:
         if row.get("symbol") != symbol:
             continue
-        risk = abs(_f(row.get("risk_quote")) or 0.0)
-        comm = abs(_f(row.get("commission")) or 0.0)
-        swap = -(_f(row.get("swap")) or 0.0)
-        if risk > 0:
-            comm_rs.append((comm + max(swap, 0.0)) / risk)
         direction = 1 if _f(row.get("side")) == 0 else -1
         entry_px = _f(row.get("entry_price"))
         fill_px = _f(row.get("fill_price"))
+        vol = _f(row.get("volume")) or 0.0
+        sl = _f(row.get("sl"))
+        # THE R DENOMINATOR: the row's own stop distance, through the terminal's tick value.
+        stop_px = abs(entry_px - sl) if (entry_px is not None and sl) else None
+        if stop_px and point > 0:
+            stops_pts.append(stop_px / point)
+        risk_acct = ((stop_px / point) * tick_value * vol
+                     if (stop_px and point > 0 and tick_value > 0 and vol > 0) else 0.0)
+        comm = abs(_f(row.get("commission")) or 0.0)
+        swap = -(_f(row.get("swap")) or 0.0)
+        if risk_acct > 0:
+            comm_rs.append((comm + max(swap, 0.0)) / risk_acct)
         intent = None
         for key in ("entry_order", "order", "position_id", "entry_deal"):
             ticket = row.get(key)
@@ -406,6 +428,9 @@ def realised_reading(symbol: str, deals: list[dict[str, Any]], ledger: list[dict
             want = _f(intent.get("intended"))
             if want is not None:
                 slip_entry.append((entry_px - want) * direction / point)
+                if stop_px:
+                    # lot size and tick value cancel: slip in R is slip over the stop
+                    cost_rs.append(abs(entry_px - want) / stop_px)
         # the exit reference is the recorded stop or target it was sent to
         if point > 0 and fill_px is not None:
             for level_key in ("sl", "tp"):
@@ -415,16 +440,11 @@ def realised_reading(symbol: str, deals: list[dict[str, Any]], ledger: list[dict
                 if abs(fill_px - level) / max(point, 1e-12) <= 500:
                     slip_exit.append((level - fill_px) * direction / point)
                     break
-        if risk > 0 and point > 0 and entry_px is not None and intent is not None:
-            want = _f(intent.get("intended"))
-            cs = _f((meta or {}).get("contract_size")) or 0.0
-            vol = _f(row.get("volume")) or 0.0
-            if want is not None and cs > 0 and vol > 0:
-                cost_rs.append(abs((entry_px - want) * direction) * cs * vol / risk)
     out["entry_slip_pts"] = pcts(slip_entry)
     out["exit_slip_pts"] = pcts(slip_exit)
     out["commission_swap_r"] = pcts(comm_rs)
     out["entry_slip_r"] = pcts(cost_rs)
+    out["stop_pts_realised"] = pcts(stops_pts)
     out["impact"] = {"status": UNMEASURED,
                      "why": "market impact needs matched fills at size and matched_fills is 0; "
                             "an unpriced term makes net a BOUND, never a zero"}
@@ -473,10 +493,12 @@ def compare(charged: dict[str, Any], quoted: dict[str, Any],
     pooled = tape.get("pooled") or {}
     quoted_p50 = _f(pooled.get("p50")) if pooled.get("status") == MEASURED else None
     quoted_p90 = _f(pooled.get("p90")) if pooled.get("status") == MEASURED else None
+    live = _f(quoted.get("live_spread_pts")) if isinstance(quoted, dict) else None
     fill_p50 = _f(at_fill.get("p50")) if at_fill.get("status") == MEASURED else None
     out["charged_pts"] = ch
     out["quoted_p50_pts"] = quoted_p50
     out["quoted_p90_pts"] = quoted_p90
+    out["quoted_live_pts"] = live
     out["quoted_at_fills_p50_pts"] = fill_p50
     reference = fill_p50 if fill_p50 is not None else quoted_p50
     out["reference_pts"] = reference
@@ -489,14 +511,28 @@ def compare(charged: dict[str, Any], quoted: dict[str, Any],
         out["spread_charged_over_quoted"] = round(ratio, 4)
         out["verdict"] = (OVERCHARGED if ratio > OVERCHARGE_TOL
                           else UNDERCHARGED if ratio < 1.0 / OVERCHARGE_TOL else OK)
-    elif ch > 0:
-        out["spread_charged_over_quoted"] = None
-        out["verdict"] = OVERCHARGED
-        out["why"] = (f"charged {ch} pts against a venue that quotes 0.0 at the median over "
-                      f"{pooled.get('n')} M1 bars: Fusion Zero is genuinely commission-only on "
-                      "this symbol, so the whole spread charge is manufactured")
-    else:
+    elif ch <= 0:
         out["verdict"] = OK
+    else:
+        # THE MEDIAN IS ZERO. MT5 stores a bar's spread as a WHOLE number of points, so a book
+        # quoting half a point reads 0 at the median and the charge can still be honest. The
+        # comparison falls to the widest readings the same tape holds -- p90, then the live
+        # tick -- and only calls the charge manufactured when EVERY one of them is zero too.
+        fallback = next((v for v in (quoted_p90, live) if v is not None and v > 0), None)
+        if fallback is None:
+            out["spread_charged_over_quoted"] = None
+            out["verdict"] = OVERCHARGED
+            out["why"] = (f"charged {ch} pts against a venue quoting 0.0 at the median, at the "
+                          f"p90 and live over {pooled.get('n')} M1 bars: Fusion Zero is "
+                          "genuinely commission-only here, so the spread charge is manufactured")
+        else:
+            ratio = ch / fallback
+            out["spread_charged_over_quoted"] = round(ratio, 4)
+            out["reference_pts"] = fallback
+            out["reference_basis"] = ("the median M1 spread is 0 at this venue's point "
+                                      "resolution; compared against the p90 / live quote")
+            out["verdict"] = (OVERCHARGED if ratio > OVERCHARGE_TOL
+                              else UNDERCHARGED if ratio < 1.0 / OVERCHARGE_TOL else OK)
     # -- the commission term, which is a median 98% of the charged cost on this account
     model_c, model_src = model_commission_per_side()
     real = (realised.get("commission_per_lot_per_side") or {}) if isinstance(realised, dict) \
@@ -619,11 +655,22 @@ def execution_surface(symbols: list[dict[str, Any]]) -> dict[str, Any]:
         if realised.get("status") != MEASURED:
             continue
         stop_pts = _f((sym.get("charged") or {}).get("stop_pts"))
+        stop_basis = "COST_TO_EDGE.json stop_pts"
+        if stop_pts is None or stop_pts <= 0:
+            # the desk's OWN stops on this symbol, when the cost report never priced the cell
+            own = realised.get("stop_pts_realised") or {}
+            stop_pts = _f(own.get("p50")) if own.get("status") == MEASURED else None
+            stop_basis = "median stop distance of this symbol's own live trades"
         ref = _f(cmp_.get("reference_pts"))
         if stop_pts is None or stop_pts <= 0 or ref is None:
             continue
         slip = (realised.get("entry_slip_r") or {})
-        slip_r = _f(slip.get("p50")) if slip.get("status") == MEASURED else None
+        # A SINGLE FILL IS NOT A SLIPPAGE READING. Measured 2026-09-23: EURGBP's one joinable
+        # intent slipped 14 pts on a 26 pt stop, which alone would have published a 0.54R
+        # execution cost and killed the symbol. Under MIN_DEALS the term stays UNMEASURED and
+        # the published cost is a LOWER BOUND -- which `net_edge` already models as a bound.
+        slip_r = (_f(slip.get("p50")) if slip.get("status") == MEASURED
+                  and int(slip.get("n") or 0) >= MIN_DEALS else None)
         cost_r = ref / stop_pts + (slip_r or 0.0)
         rows.append({"asset": sym["symbol"], "cost_basis": MEASURED,
                      "cost_r": round(float(cost_r), 8),
@@ -634,8 +681,11 @@ def execution_surface(symbols: list[dict[str, Any]]) -> dict[str, Any]:
                                     else "entry_slippage_UNMEASURED"],
                      "excludes": ["commission", "swap", "market_impact"],
                      "slippage_status": MEASURED if slip_r is not None else UNMEASURED,
+                     "slippage_n": int(slip.get("n") or 0),
+                     "cost_r_is_bound": slip_r is None,
+                     "stop_pts": round(float(stop_pts), 4), "stop_basis": stop_basis,
                      "why": (f"{ref} pts quoted at this symbol's own fill minutes over a "
-                             f"{stop_pts} pt stop"
+                             f"{stop_pts} pt stop ({stop_basis})"
                              + (f", plus a measured {slip_r:+.5f}R entry slip" if slip_r
                                 is not None else "; entry slippage is UNMEASURED and is not "
                                 "replaced by a default"))})
@@ -760,7 +810,8 @@ def build(universe: dict[str, Any], fusion: Any, cost_to_edge: Any, snapshot: di
         charged = charged_reading(symbol, meta, fusion_rows.get(symbol), cost_rows.get(symbol))
         quoted = quoted_reading(info if isinstance(info, dict) and info.get("status") != UNMEASURED
                                 else None, spreads, rollover)
-        realised = realised_reading(symbol, deals, ledger, intents_by_ticket, meta)
+        realised = realised_reading(symbol, deals, ledger, intents_by_ticket, meta,
+                                    info if isinstance(info, dict) else None)
         at_fill = realised_spread_at_fills(symbol, deals, bar_by_minute)
         cmp_ = compare(charged, quoted, realised, at_fill)
         by_symbol_cmp[symbol] = cmp_

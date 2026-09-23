@@ -43,6 +43,9 @@ THE DOWNSTREAM-STATE RULE (principal, 2026-09-17, permanent):
     "No qualified public/licensed datum is allowed to sit in storage without a defined
      downstream state."
 
+QUALIFIED WIDENED ON 2026-09-23 (LAWS 5e): it is now every access label off the five refused
+acts, ACCESS_UNCLEAR included, because the unclear-access quarantine was deleted.
+
 So every qualified datum carries EXACTLY ONE state from this enum, spelled exactly:
 WORLD_MODEL_INPUT, CANDIDATE_INPUT, INTERACTION_INPUT, EXECUTION_INPUT, PORTFOLIO_INPUT,
 NEGATIVE_KNOWLEDGE, AWAITING_EXPERIMENT, RETIRED_WITH_EVIDENCE. They are not a quality ladder:
@@ -65,10 +68,13 @@ THREE INDEPENDENT LABELS ON EVERY ROW, NEVER COLLAPSED INTO ONE ANOTHER:
 Legality of access, credibility and predictive value are three different questions about one row,
 and answering them with one number is how a desk ends up deleting its own evidence. A FRINGE or
 CONTRADICTED public claim is KEPT as an evidence object -- it may be a crowding or narrative
-feature -- and is never deleted for being unreliable. ACCESS_UNCLEAR is QUARANTINED: the metadata
-stays, the content is not consumed, and it is not handed to the compiler until the access question
-is resolved. PRIVATE, CONFIDENTIAL_MNPI and STOLEN_UNAUTHORIZED NEVER become an alpha input on any
-pass and are recorded in `refusals` with the reason. The vocabulary belongs to
+feature -- and is never deleted for being unreliable. ACCESS_UNCLEAR IS QUALIFIED AND EXPLOITED
+(LAWS 5e, 2026-09-23): it owes a downstream state like any other row and is handed to the
+compiler when it is stranded. The quarantine that used to hold it -- metadata kept, content not
+consumed -- was a discovery brake the desk imposed on itself and it is deleted; the unresolved
+access question is a PROVENANCE NOTE on the row. PRIVATE, CONFIDENTIAL_MNPI and
+STOLEN_UNAUTHORIZED carry the five refused ACTS, never become an alpha input on any pass, and are
+recorded in `refusals` with the reason. The vocabulary belongs to
 `libs/research/access_classifier`; that module is imported when it lands and its verdict wins,
 and until then the same spellings are carried here so the join is a rename, never a re-derivation.
 
@@ -195,8 +201,9 @@ CONTRACT_RULE = ("a dataset without a contract is recorded CONTRACT_MISSING as a
 DOWNSTREAM_STATES: tuple[str, ...] = (
     "WORLD_MODEL_INPUT", "CANDIDATE_INPUT", "INTERACTION_INPUT", "EXECUTION_INPUT",
     "PORTFOLIO_INPUT", "NEGATIVE_KNOWLEDGE", "AWAITING_EXPERIMENT", "RETIRED_WITH_EVIDENCE")
-DOWNSTREAM_RULE = ("No qualified public/licensed datum is allowed to sit in storage without a "
-                   "defined downstream state.")
+DOWNSTREAM_RULE = ("No qualified datum is allowed to sit in storage without a defined downstream "
+                   "state -- and since LAWS 5e (2026-09-23) QUALIFIED means every access label "
+                   "off the five refused acts, ACCESS_UNCLEAR included.")
 #: The order a datum's single state is decided in. Declared, because "exactly one" needs a
 #: tie-break that a reader can argue with rather than discover.
 DOWNSTREAM_ORDER: tuple[str, ...] = (
@@ -214,13 +221,19 @@ CREDIBILITY_LABELS: tuple[str, ...] = ("AUTHORITATIVE", "RELIABLE", "UNRELIABLE"
                                        "CONTRADICTED", "UNKNOWN")
 PREDICTIVE_STATES: tuple[str, ...] = ("UNTESTED", "PREDICTIVE", "NOT_PREDICTIVE",
                                       "NARRATIVE_FEATURE")
-#: QUALIFIED is the population the downstream-state rule binds.
+#: QUALIFIED is the population the downstream-state rule binds: EVERY label off the five refused
+#: acts (LAWS 5e, 2026-09-23). ACCESS_UNCLEAR joined it when the quarantine was deleted -- a row
+#: whose access path is unresolved is still ingested, still owes a downstream state, and is still
+#: handed to the compiler when it is stranded.
 QUALIFIED_ACCESS: frozenset[str] = frozenset({"PUBLIC", "PUBLIC_WITH_TERMS", "LICENSED",
                                               "OPEN_DATA", "PUBLIC_ARCHIVE", "PUBLIC_SOCIAL",
-                                              "USER_SUBMITTED"})
-#: Metadata kept, CONTENT NOT CONSUMED, until somebody resolves the access question.
-QUARANTINED_ACCESS: frozenset[str] = frozenset({"ACCESS_UNCLEAR"})
-#: Never an alpha input, on any pass, for any reason. Recorded as refused WITH the reason.
+                                              "USER_SUBMITTED", "ACCESS_UNCLEAR"})
+#: EMPTY BY CONSTRUCTION. The access quarantine was deleted on 2026-09-23; the name stays so an
+#: old reader finds an explicit empty set rather than an AttributeError, and so a fence can assert
+#: it never refills.
+QUARANTINED_ACCESS: frozenset[str] = frozenset()
+#: Never an alpha input, on any pass, for any reason -- the three labels that carry the five
+#: refused ACTS. Recorded as refused WITH the reason.
 REFUSED_ACCESS: frozenset[str] = frozenset({"PRIVATE", "CONFIDENTIAL_MNPI",
                                             "STOLEN_UNAUTHORIZED"})
 REFUSAL_REASON: dict[str, str] = {
@@ -421,6 +434,8 @@ class Unit:
 
     @property
     def quarantined(self) -> bool:
+        """ALWAYS FALSE (LAWS 5e, 2026-09-23). Kept so readers of the published artifact and of
+        this class find an explicit False rather than a missing attribute."""
         return self.access_label in QUARANTINED_ACCESS
 
     @property
@@ -972,8 +987,9 @@ def classify(unit: Unit, idx: Index) -> tuple[str, str, str]:
     Legality of access, credibility and predictive value are independent. A FRINGE or
     CONTRADICTED public claim keeps its PUBLIC access label and stays in the store as an evidence
     object: it may be a crowding or narrative feature, and deleting it for being unreliable would
-    destroy the only record that somebody said it. ACCESS_UNCLEAR is quarantined -- metadata kept,
-    content not consumed -- and the three refused labels never become an alpha input at all.
+    destroy the only record that somebody said it. ACCESS_UNCLEAR IS QUALIFIED AND EXPLOITED --
+    the quarantine was deleted on 2026-09-23 (LAWS 5e) -- and only the three refused labels, which
+    carry the five refused ACTS, never become an alpha input.
 
     The vocabulary belongs to `libs/research/access_classifier`; when that module lands its
     verdict wins, and until then the same spellings are carried here so the join is a rename.
@@ -1024,16 +1040,14 @@ def downstream_state(unit: Unit, idx: Index, macro: set[str],
                      consumers: dict[str, set[str]]) -> tuple[str | None, str]:
     """EXACTLY ONE state per qualified datum, decided in the declared DOWNSTREAM_ORDER.
 
-    A refused or quarantined datum gets NO state and says why: the rule binds qualified
-    public/licensed data, and giving a refused datum a downstream state would be a record of it
-    being used.
+    A REFUSED datum gets NO state and says why: giving one a downstream state would be a record
+    of it being used. Nothing else is parked -- the ACCESS_UNCLEAR quarantine that used to return
+    None here was deleted on 2026-09-23 (LAWS 5e), so an unclear-access row owes a downstream
+    state exactly like a PUBLIC one and its unresolved access is a note, not an exemption.
     """
     if unit.refused:
         return None, f"REFUSED ({unit.access_label}): " + REFUSAL_REASON.get(
             unit.access_label, "never an alpha input")
-    if unit.quarantined:
-        return None, ("QUARANTINED (ACCESS_UNCLEAR): metadata kept, content not consumed, until "
-                      "the access question is resolved")
     keys = unit.all_keys()
     narrow = unit.consumer_keys()
     live_hit = unit.kind in SYMBOL_KEYED and bool(
@@ -1100,9 +1114,11 @@ def hand_to_compiler(units: list[Unit], conn: Any, limit: int = MAX_STRANDED_HAN
     """
     new = seen = 0
     for unit in units[:limit]:
-        if unit.refused or unit.quarantined:
-            # CONTENT IS NOT CONSUMED HERE. A quarantined datum keeps its metadata and waits; a
-            # refused one never becomes an alpha input, and a discovery IS the road to one.
+        if unit.refused:
+            # A refused datum never becomes an alpha input, and a discovery IS the road to one.
+            # An ACCESS_UNCLEAR datum is NOT here any more (LAWS 5e, 2026-09-23): it is handed to
+            # the compiler with its label, because an unresolved access path is not a reason to
+            # leave an ingested-and-unexploited datum stranded.
             continue
         mechanism = f"ingested and unexploited: {unit.kind}"
         _did, created = R.record_discovery(

@@ -190,8 +190,24 @@ REGIONAL_FORESTS: tuple[Forest, ...] = (
                "official plane: PBoC, SAFE, 海关总署, the three futures exchanges"),
     _f("russia_cis", "Russia and the CIS", "regional",
        countries=("RU", "UA", "KZ", "BY", "AZ", "GE", "AM", "UZ", "KG"),
-       languages=("ru", "uk", "kk", "az", "ka"), packs=("ru", "kz", "az", "ge"),
-       grounds=("ru", "ua"),
+       # UKRAINE AND BELARUS JOIN THE ANSWERED SET (2026-09-23) through the `black_sea`
+       # pack, which declares both in its own JURISDICTIONS tuple. Both were NAMED on
+       # this roster and answered by nothing, so the parity fence counted them as gaps
+       # while `ru` and `kz` carried the region: the Black Sea grain corridor and the
+       # Belarusian potash route are one physical plane and neither is a copy of the
+       # Russian budget-rule mechanism.
+       # ARMENIA, UZBEKISTAN AND KYRGYZSTAN JOIN THE ANSWERED SET (2026-09-23) through the
+       # `caucasus_central_asia` pack, which declares them plus Tajikistan and Turkmenistan
+       # in its own JURISDICTIONS tuple. All three were NAMED on this roster and answered by
+       # nothing: the post-2022 re-export and remittance corridor is a mechanism of its own
+       # -- monthly transfers by origin, mirror statistics, sovereign gold sales and Turkmen
+       # gas volumes readable only in Chinese customs data -- and none of it is a copy of the
+       # Russian budget rule or of the Kazakh National Fund's FX sales. Tajikistan and
+       # Turkmenistan are answered by that pack and are NOT added to `countries` here: naming
+       # a country on the roster is the forest owner's call, and the pack says so itself.
+       languages=("ru", "uk", "be", "kk", "az", "ka", "hy", "uz", "ky", "tg", "tk"),
+       packs=("ru", "kz", "az", "ge", "black_sea", "caucasus_central_asia"),
+       grounds=("ru", "ua", "by"),
        mission="Habr, smart-lab, the RU failure vocabulary, the CBR and the CIS commodity plane"),
     _f("south_asia", "South Asia", "regional", countries=("IN", "PK", "BD", "LK", "NP"),
        languages=("en", "hi", "ur", "bn", "si", "ta"), packs=("ind", "pk", "bd", "lk"),
@@ -214,7 +230,7 @@ REGIONAL_FORESTS: tuple[Forest, ...] = (
                   "CH", "PT", "AT", "BE", "IE", "GR", "RO", "BG", "RS"),
        languages=("en", "de", "fr", "it", "es", "nl", "sv", "no", "da", "fi", "pl", "cs", "hu",
                   "pt", "ro", "bg", "sr"),
-       packs=("ea", "uk", "ch", "se", "no", "pl", "cee_balkans"),
+       packs=("ea", "uk", "ch", "se", "no", "pl", "dk", "is", "cee_balkans"),
        grounds=("de", "fr", "it", "es", "nl", "se", "dk", "no", "fi", "pl", "cz", "hu", "gb",
                 "ro", "bg", "rs"),
        mission="the euro-area and European national planes, each in its own language; Romania, "

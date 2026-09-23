@@ -1726,8 +1726,11 @@ ACTORS: tuple[dict[str, Any], ...] = (
              "promotion an offence",
      "information": ("enforcement intent before any announcement",
                      "the real size of the outbound channel it is closing"),
-     "constraints": ("a policy aimed at capital flight and corruption whose most visible public "
-                     "measurement happens to be a Macau revenue table"),
+     "constraints": ("a policy aimed at capital flight and corruption whose most visible "
+                     "public measurement happens to be a Macau revenue table",
+                     "enforcement that is announced by mainland regulators without reference to "
+                     "Macau at all",
+                     "a channel whose real size is unknown even to the authority closing it"),
      "instruments": ("USDCNH", "CHINAH", "XAUUSD"),
      "counterparties": ("the mainland visitor", "the promoters", "the banks and card networks"),
      "observables": ("the DICJ monthly print, which is the proxy",
@@ -1855,7 +1858,8 @@ ACTORS: tuple[dict[str, Any], ...] = (
      "when": "quota decisions are administrative and dated; the stock is published quarterly "
              "by DSEC",
      "information": ("the real staffing constraint on a peak weekend before it shows in "
-                     "occupancy"),
+                     "occupancy",
+                     "the quota applications in hand before the labour bureau decides them"),
      "constraints": ("a statutory preference for resident employment, especially for dealers",
                      "housing and transport capacity in a 30-square-kilometre territory"),
      "instruments": ("HK50", "CHINAH"),

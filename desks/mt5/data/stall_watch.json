@@ -1,55 +1,64 @@
 {
     "memory":  {
-                   "free_phys_mb":  77565,
-                   "total_commit_mb":  251842,
-                   "total_phys_mb":  98298,
+                   "free_phys_mb":  1654,
+                   "total_commit_mb":  37950,
+                   "total_phys_mb":  8186,
                    "top_commit":  [
                                       {
-                                          "pid":  6000,
-                                          "name":  "pf_allocator.py",
-                                          "commit_mb":  14355,
-                                          "rss_mb":  12945
+                                          "pid":  6564,
+                                          "name":  "external_gauntlet.py",
+                                          "commit_mb":  4133,
+                                          "rss_mb":  2130
                                       },
                                       {
-                                          "pid":  3180,
-                                          "name":  "pf_allocator.py",
-                                          "commit_mb":  3900,
-                                          "rss_mb":  2502
-                                      },
-                                      {
-                                          "pid":  6812,
+                                          "pid":  7368,
                                           "name":  "terminal64.exe",
-                                          "commit_mb":  2129,
-                                          "rss_mb":  113
+                                          "commit_mb":  2152,
+                                          "rss_mb":  36
                                       },
                                       {
-                                          "pid":  16804,
+                                          "pid":  8872,
+                                          "name":  "claude.exe",
+                                          "commit_mb":  1391,
+                                          "rss_mb":  780
+                                      },
+                                      {
+                                          "pid":  3636,
+                                          "name":  "svchost.exe",
+                                          "commit_mb":  830,
+                                          "rss_mb":  12
+                                      },
+                                      {
+                                          "pid":  6088,
                                           "name":  "hourly_cycle.py",
-                                          "commit_mb":  1240,
-                                          "rss_mb":  105
+                                          "commit_mb":  547,
+                                          "rss_mb":  14
                                       },
                                       {
-                                          "pid":  13404,
+                                          "pid":  7724,
                                           "name":  "pythonw.exe",
-                                          "commit_mb":  953,
-                                          "rss_mb":  234
-                                      },
-                                      {
-                                          "pid":  5676,
-                                          "name":  "macro_desk.py",
-                                          "commit_mb":  621,
-                                          "rss_mb":  46
+                                          "commit_mb":  504,
+                                          "rss_mb":  203
                                       }
                                   ],
-                   "free_commit_mb":  221416
+                   "free_commit_mb":  23970
                },
     "actions":  [
-                    "TASK MISSING: MT5-ShadowSync is not registered at all -- re-register from ops/ (deletion, not failure)"
+                    "FAILING MT5-Shadow: last result 1 twice in a row -- re-run",
+                    "TASK MISSING: MT5-Universe is not registered at all -- re-register from ops/ (deletion, not failure)",
+                    "TASK MISSING: MT5-TerminalBoot is not registered at all -- re-register from ops/ (deletion, not failure)"
                 ],
     "low_mem_strikes":  0,
-    "free_gb":  978.9,
+    "free_gb":  15.3,
     "procs":  {
-
+                  "external_gauntlet.4692":  {
+                                                 "cpu":  274.265625,
+                                                 "at":  "2026-09-16T18:21:24.3022232+02:00"
+                                             },
+                  "fail.MT5-Shadow":  {
+                                          "cpu":  1,
+                                          "at":  "2026-09-16T18:21:24.3022232+02:00"
+                                      }
               },
-    "checked_at":  "2026-09-12T12:20:06.4723472Z"
+    "checked_at":  "2026-09-16T16:30:39.7903532Z"
 }

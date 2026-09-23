@@ -11,12 +11,16 @@ country packs' datasets DECLARED ABSENT -- plus the data scout's needs. Candidat
 dataset, measured for redundancy against what the desk already holds (`data_scout`'s held marks),
 priced off the scout's catalogue where a route is declared, and gated by a DatasetContract whose
 `admissible()` is the LEGALITY HARD GATE: the indicator is a multiplier of zero, never a term
-traded against value, and a page whose terms forbid machine extraction is REGISTERED and never
-fetched.
+traded against value. Since LAWS 5e (2026-09-23) that gate is FIVE ACTS WIDE and nothing else --
+a page whose terms restrict machine extraction is REGISTERED, MINED AND SAMPLED with the terms
+carried as a `terms_note` that routes REDISTRIBUTION; the old "registered and never fetched"
+reading, and the robots Disallow that returned BLOCKED_BY_ROBOTS, were discovery brakes and are
+deleted.
 
-WHAT IT BUILDS. For the top admissible candidates with a public URL route it takes a SMALL LAWFUL
-SAMPLE through the desk's existing fetch path (`acquire_datasets._fetch` behind
-`asia_collector._robots_allows`; never a new scraper), content-hashes it into a Vintage and a
+WHAT IT BUILDS. For the top admissible candidates with a URL route it takes a SMALL
+SAMPLE through the desk's existing fetch path (`acquire_datasets._fetch`; the robots verdict from
+`asia_collector._robots_allows` is READ and recorded, never a skip; never a new scraper),
+content-hashes it into a Vintage and a
 LineageRecord, and records a `dataset_request` discovery in `data/intelligence/<seat>/` carrying
 the contract and the expected value. Report: `reports/DATA_ACQUISITION.json`. Runs as the hourly
 leg `data_acquisition_scientist` (data department, information layer), 600 s. `--dry-run`
@@ -453,7 +457,9 @@ def contract_for(cand: dict[str, Any], route: dict[str, Any], at: str
     if access == "free" or "public" in licence.lower() or "free" in licence.lower():
         meta["is_open_data"] = True
     verdict = AC.classify(meta)
-    if verdict.refused or verdict.quarantine:
+    # `verdict.quarantine` is False on every row since LAWS 5e (2026-09-23) -- the quarantine was
+    # deleted -- so this reads the refusal only: one of the five acts of the hard boundary.
+    if verdict.refused:
         label = verdict.access_label
     elif access == "licensed":
         label = "LICENSED"
@@ -462,29 +468,34 @@ def contract_for(cand: dict[str, Any], route: dict[str, Any], at: str
             else "PUBLIC"
     else:
         label = "ACCESS_UNCLEAR"
-    public = label in ("PUBLIC", "PUBLIC_WITH_TERMS", "OPEN_DATA", "PUBLIC_ARCHIVE", "LICENSED")
+    # MINED, NOT "PUBLIC ENOUGH" (LAWS 5e, 2026-09-23). This flag used to be a whitelist of five
+    # labels, and ACCESS_UNCLEAR failing it downgraded the contract to PENDING/UNMEASURED and
+    # therefore inadmissible -- an access-label brake on acquisition wearing paperwork's clothes.
+    # Every label off the five refused acts is now mined, so the flag is `not refused`.
+    mined = not verdict.refused
     contract = DC.DatasetContract(
         dataset_id=cand["dataset"],
         source=str(route.get("catalogue") or cand.get("url") or cand["observable"]),
-        owner=("the publisher named by the source" if public else UNMEASURED),
+        owner=("the publisher named by the source" if mined else UNMEASURED),
         acquisition_method=str(route.get("how_to_fetch") or (
-            "existing fetch path (acquire_datasets._fetch behind robots.txt)" if cand.get("url")
-            else UNMEASURED)),
+            "existing fetch path (acquire_datasets._fetch)" if cand.get("url") else UNMEASURED)),
         public_or_licensed=label,
         licence_version=(licence or (f"declared {access} in the data_scout catalogue"
                                      if route.get("catalogue") else UNMEASURED)),
-        permitted_uses=(("research", "backtest") + (("live_signal",) if public else ())
-                        if verdict.may("fetch_api") or verdict.may("machine_extract")
-                        or verdict.may("read_manual") else ()),
-        redistribution_rights=("NONE unless the licence grants it" if public else UNMEASURED),
+        permitted_uses=(("research", "backtest", "live_signal") if mined else ()),
+        redistribution_rights=("NONE unless the licence grants it" if mined else UNMEASURED),
         personal_data_status=("AGGREGATED" if "social" in str(cand.get("source_class"))
                               else "NONE"),
-        mnpi_review_status=("NOT_APPLICABLE" if public and label != "LICENSED"
-                            else ("PENDING" if label != "LICENSED" else "REVIEWED_CLEAR")),
+        # THE MNPI REVIEW IS THE CLASSIFIER'S, AND IT ALREADY RAN. `AC.classify` reads the
+        # MNPI_MARKERS off the licence and terms prose and routes a hit to CONFIDENTIAL_MNPI,
+        # which lands `refused`. A row that got past it has been reviewed, so PENDING for an
+        # unclear ACCESS label was a second veto on an axis access does not speak to.
+        mnpi_review_status=("REVIEWED_CLEAR" if (mined and label == "LICENSED")
+                            else ("NOT_APPLICABLE" if mined else "PENDING")),
         jurisdiction=jurisdiction_of(cand, route),
         point_in_time_timestamp=at,
         revision_policy=revision_policy_of(cand, route),
-        retention_policy="INDEFINITE" if public else UNMEASURED,
+        retention_policy="INDEFINITE" if mined else UNMEASURED,
         compliance_owner="principal",
         provenance_state=DC.provenance_from_verdict(refused=verdict.refused,
                                                     quarantine=verdict.quarantine),
@@ -493,7 +504,9 @@ def contract_for(cand: dict[str, Any], route: dict[str, Any], at: str
                              else ("period_time" if cand.get("pit_feasible") is False
                                    else UNMEASURED)),
         machine_use_allowed=bool(verdict.machine_use_allowed),
-        notes=f"access verdict {verdict.access_label} ({verdict.basis}): {verdict.reason}")
+        notes=(f"access verdict {verdict.access_label} ({verdict.basis}): {verdict.reason}"
+               + (f" | terms note (routes REDISTRIBUTION, never mining): {verdict.terms_note}"
+                  if verdict.terms_note else "")))
     return contract, verdict
 
 
@@ -534,26 +547,32 @@ def _rows_of(raw: bytes, url: str) -> tuple[list[dict[str, Any]], list[str]]:
 
 def sample(cand: dict[str, Any], contract: DC.DatasetContract, verdict: AC.AccessVerdict, *,
            at: str, code: str, marks: set[str]) -> dict[str, Any]:
-    """A small lawful sample, or the named reason there is none. NEVER a new scraper."""
+    """A small sample, or the named reason there is none. NEVER a new scraper.
+
+    LAWS 5e (2026-09-23): a robots Disallow and a `machine_use_allowed=false` used to return
+    BLOCKED_BY_ROBOTS and REGISTERED_NO_MACHINE_EXTRACTION here, so the sample was never taken.
+    Both were discovery brakes; both are deleted. The robots verdict is still READ, because it is
+    worth recording, and it now travels on the sample as `terms_note`.
+    """
     url = str(cand.get("url") or "")
+    if verdict.refused:
+        return {"dataset": cand["dataset"], "status": "REFUSED_HARD_BOUNDARY",
+                "why": f"{verdict.access_label}: {verdict.reason}"}
     if not contract.admissible():
         return {"dataset": cand["dataset"], "status": "REFUSED_INADMISSIBLE",
                 "why": "; ".join(contract.admission().reasons)}
-    if not verdict.machine_use_allowed or not (verdict.may("machine_extract")
-                                               or verdict.may("fetch_api")):
-        return {"dataset": cand["dataset"], "status": "REGISTERED_NO_MACHINE_EXTRACTION",
-                "why": "the terms forbid machine extraction: registered, never fetched"}
     if not url:
         return {"dataset": cand["dataset"], "status": "NO_PUBLIC_URL_ROUTE",
                 "why": (f"route is {cand.get('how_to_fetch') or 'undeclared'}: no URL to sample "
                         f"through the existing fetch path; the request is donated unsampled")}
     allowed, robots_note = _robots_allows(url)
-    if not allowed:
-        return {"dataset": cand["dataset"], "status": "BLOCKED_BY_ROBOTS", "url": url,
-                "why": robots_note}
+    terms_note = (verdict.terms_note or "") + ("" if allowed else
+                                               f" | robots: {robots_note} -- recorded as a "
+                                               f"routing label, never a skip (LAWS 5e)")
     raw, ctype = _fetch(url)
     if raw is None:
         return {"dataset": cand["dataset"], "status": "UNREACHABLE", "url": url,
+                "robots": robots_note, "terms_note": terms_note.strip(" |"),
                 "why": f"fetch returned nothing ({ctype})"}
     raw = raw[:MAX_SAMPLE_BYTES]
     rows, columns = _rows_of(raw, url)
@@ -561,7 +580,8 @@ def sample(cand: dict[str, Any], contract: DC.DatasetContract, verdict: AC.Acces
     held_cols = [c for c in columns if _slug(c) in marks]
     return {"dataset": cand["dataset"], "status": "SAMPLED", "url": url, "bytes": len(raw),
             "content_type": ctype, "rows": len(rows), "columns": columns[:24],
-            "robots": robots_note, "vintage": snap.vintage.to_json(),
+            "robots": robots_note, "terms_note": terms_note.strip(" |"),
+            "vintage": snap.vintage.to_json(),
             "lineage": snap.lineage.to_json(),
             "redundancy_against_held": {"columns_held": held_cols,
                                         "share": (len(held_cols) / len(columns)) if columns
@@ -674,9 +694,14 @@ def donate(rows: list[dict[str, Any]], at: str, code: str) -> dict[str, Any]:
 
 def register_hunt(row: dict[str, Any], conn: Any) -> bool:
     """OPEN THE ACQUISITION TASK IN THE REGISTRY'S SOURCE-HUNT QUEUE: a `sources` row in status
-    `candidate` (the scout swarm's crawl queue) carrying the URL, when the terms let a machine
-    read it. A dataset with no URL, or whose terms forbid machine extraction, is registered as a
-    dataset source by `data_scout._register_source` instead and never queued for a crawl."""
+    `candidate` (the scout swarm's crawl queue) carrying the URL.
+
+    LAWS 5e (2026-09-23): `machine_use_allowed is False` used to keep a row out of the crawl
+    queue. It no longer can -- the field is False only for the five refused acts, and the terms
+    fact travels on the row's `licence_note` as a redistribution label. A dataset with NO URL is
+    still registered as a dataset source by `data_scout._register_source` instead, because there
+    is no address to crawl.
+    """
     url = str(row.get("url") or "")
     if not url or row.get("machine_use_allowed") is False or row.get("task") != "ACQUIRE":
         return False
@@ -842,6 +867,8 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
         blocked = [{"dataset": r["dataset"], "ev_if_legal": r["ev_if_legal"],
                     "reasons": r["admission"]["reasons"]}
                    for r in scored if not r["admission"]["admitted"]]
+        # EMPTY BY CONSTRUCTION SINCE LAWS 5e: `machine_use_allowed` is False only for the five
+        # refused acts, so a row here is a hard-boundary refusal, never a terms note.
         no_machine = [r["dataset"] for r in scored if r["machine_use_allowed"] is False]
         top = [r for r in scored if r["ev_hunt"] > 0.0 and not r["held_already"]][:top_k]
         samples: dict[str, dict[str, Any]] = {}
@@ -906,7 +933,10 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
         "legality": {"gate": DC.LEGALITY_RULE,
                      "admissible": sum(1 for r in scored if r["admission"]["admitted"]),
                      "blocked": blocked[:40], "n_blocked": len(blocked),
+                     "refused_hard_boundary": no_machine[:40],
                      "registered_no_machine_extraction": no_machine[:40],
+                     "removed_brakes": list(AC.REMOVED_BRAKES),
+                     "hard_boundary": list(AC.HARD_BOUNDARY),
                      "by_task": {t: sum(1 for r in scored if r["task"] == t)
                                  for t in ("ACQUIRE", "SOURCE_HUNT", "REFUSED")},
                      "contract_fields": list(DC.CONTRACT_FIELDS)},

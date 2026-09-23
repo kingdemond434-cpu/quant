@@ -1,15 +1,15 @@
 {
- "checked_at": "2026-09-12T12:14:31+00:00",
- "enrolled": 69,
+ "checked_at": "2026-09-16T13:16:13+00:00",
+ "enrolled": 159,
  "enrolment_readable": true,
- "certified_clocks": 61,
- "certified_pairs": 30,
- "identity_unfrozen": 39,
+ "certified_clocks": 151,
+ "certified_pairs": 27,
+ "identity_unfrozen": 0,
  "unreachable_certified": {
-  "n": 0,
+  "n": null,
   "sources_readable": {
    "QQUANT_GATES": true,
-   "REAL_SURVIVORS": true
+   "REAL_SURVIVORS": false
   },
   "by_cause": {},
   "spec_tuple_sides": [
@@ -27,40 +27,40 @@
   "decides": "NOTHING -- MAX_FORWARD_SLOTS and every seat rule are unchanged; this publishes the per-family budget beside the flat cohort so tiering can be evaluated on measured cohorts",
   "flat_cohort": {
    "max_forward_slots": 12,
-   "m_enrolled": 69,
+   "m_enrolled": 159,
    "holm_bar_rank1_at_cap": 2.64,
    "bh_bar_rank1_at_cap": 2.64,
-   "holm_bar_rank1_at_enrolled": 3.18,
-   "bh_bar_rank1_at_enrolled": 3.18
+   "holm_bar_rank1_at_enrolled": 3.42,
+   "bh_bar_rank1_at_enrolled": 3.42
   },
   "families": {
    "correlated_core": {
-    "n_members": 6,
-    "effective_m": 6,
-    "bh_bar_rank1": 2.39,
-    "holm_bar_rank1": 2.39,
-    "floored_to_largest_declared": false
-   },
-   "overnight_gap_risk_premium": {
-    "n_members": 12,
-    "effective_m": 12,
-    "bh_bar_rank1": 2.64,
-    "holm_bar_rank1": 2.64,
-    "floored_to_largest_declared": false
-   },
-   "session_fix_liquidity": {
     "n_members": 15,
     "effective_m": 15,
     "bh_bar_rank1": 2.71,
     "holm_bar_rank1": 2.71,
     "floored_to_largest_declared": false
    },
-   "unclassified": {
-    "n_members": 36,
-    "effective_m": 36,
-    "bh_bar_rank1": 2.99,
-    "holm_bar_rank1": 2.99,
+   "overnight_gap_risk_premium": {
+    "n_members": 11,
+    "effective_m": 11,
+    "bh_bar_rank1": 2.61,
+    "holm_bar_rank1": 2.61,
     "floored_to_largest_declared": false
+   },
+   "session_fix_liquidity": {
+    "n_members": 70,
+    "effective_m": 70,
+    "bh_bar_rank1": 3.19,
+    "holm_bar_rank1": 3.19,
+    "floored_to_largest_declared": false
+   },
+   "unclassified": {
+    "n_members": 63,
+    "effective_m": 70,
+    "bh_bar_rank1": 3.19,
+    "holm_bar_rank1": 3.19,
+    "floored_to_largest_declared": true
    }
   },
   "clocks": {
@@ -68,133 +68,173 @@
     "family": "unclassified",
     "declared_from": "discovered",
     "declared_via": "engine",
-    "family_m": 36,
-    "bh_bar": 2.99,
-    "holm_bar": 2.99
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
    "AUDCAD.discovered.asia#band=[0.9, 1.0]_feature=ext_resid_EURDKK_z_horizon=1_side=-1": {
     "family": "unclassified",
     "declared_from": "discovered",
     "declared_via": "engine",
-    "family_m": 36,
-    "bh_bar": 2.99,
-    "holm_bar": 2.99
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
    "AUDCAD.discovered.asia#band=[0.9, 1.0]_feature=ext_resid_EURGBP_z_horizon=1_side=-1": {
     "family": "unclassified",
     "declared_from": "discovered",
     "declared_via": "engine",
-    "family_m": 36,
-    "bh_bar": 2.99,
-    "holm_bar": 2.99
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
    "AUDCHF.overnight_gap_decay.asia": {
     "family": "overnight_gap_risk_premium",
     "declared_from": "overnight_gap_decay",
     "declared_via": "engine",
-    "family_m": 12,
-    "bh_bar": 2.64,
-    "holm_bar": 2.64
-   },
-   "AUDNZD.discovered.asia#band=[0.75, 0.9]_feature=dd_24_horizon=1_side=-1": {
-    "family": "unclassified",
-    "declared_from": "discovered",
-    "declared_via": "engine",
-    "family_m": 36,
-    "bh_bar": 2.99,
-    "holm_bar": 2.99
+    "family_m": 11,
+    "bh_bar": 2.61,
+    "holm_bar": 2.61
    },
    "AUDNZD.discovered.asia#band=[0.75, 0.9]_feature=hour_horizon=6_side=-1": {
     "family": "unclassified",
     "declared_from": "discovered",
     "declared_via": "engine",
-    "family_m": 36,
-    "bh_bar": 2.99,
-    "holm_bar": 2.99
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
-   "AUDNZD.discovered.asia#band=[0.75, 1.0]_feature=hour_horizon=6_side=-1": {
+   "AUDSGD.vol_transition.continuous": {
     "family": "unclassified",
-    "declared_from": "discovered",
+    "declared_from": "vol_transition",
     "declared_via": "engine",
-    "family_m": 36,
-    "bh_bar": 2.99,
-    "holm_bar": 2.99
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
-   "AUDNZD.discovered.asia#band=[0.9, 1.0]_feature=ru_48_horizon=3_side=-1": {
-    "family": "unclassified",
-    "declared_from": "discovered",
+   "AUDUSD.asia": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
     "declared_via": "engine",
-    "family_m": 36,
-    "bh_bar": 2.99,
-    "holm_bar": 2.99
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
-   "AUDNZD.discovered.asia#band=[0.9, 1.0]_feature=ru_96_horizon=1_side=-1": {
-    "family": "unclassified",
-    "declared_from": "discovered",
+   "AUDUSD.asia#rr=1.5": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
     "declared_via": "engine",
-    "family_m": 36,
-    "bh_bar": 2.99,
-    "holm_bar": 2.99
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "AUDUSD.asia#rr=2.5": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
    "AUDUSD.discovered.asia#band=[0.75, 0.9]_feature=dd_12_horizon=3_side=-1": {
     "family": "unclassified",
     "declared_from": "discovered",
     "declared_via": "engine",
-    "family_m": 36,
-    "bh_bar": 2.99,
-    "holm_bar": 2.99
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
    "AUDUSD.discovered.asia#band=[0.75, 0.9]_feature=dd_24_horizon=1_side=-1": {
     "family": "unclassified",
     "declared_from": "discovered",
     "declared_via": "engine",
-    "family_m": 36,
-    "bh_bar": 2.99,
-    "holm_bar": 2.99
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
    "AUDUSD.discovered.asia#band=[0.9, 1.0]_feature=dd_240_horizon=1_side=-1": {
     "family": "unclassified",
     "declared_from": "discovered",
     "declared_via": "engine",
-    "family_m": 36,
-    "bh_bar": 2.99,
-    "holm_bar": 2.99
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
    "AUDUSD.discovered.asia#band=[0.9, 1.0]_feature=dd_240_horizon=6_side=-1": {
     "family": "unclassified",
     "declared_from": "discovered",
     "declared_via": "engine",
-    "family_m": 36,
-    "bh_bar": 2.99,
-    "holm_bar": 2.99
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
    "CADCHF.overnight_gap_decay.asia": {
     "family": "overnight_gap_risk_premium",
     "declared_from": "overnight_gap_decay",
     "declared_via": "engine",
-    "family_m": 12,
-    "bh_bar": 2.64,
-    "holm_bar": 2.64
+    "family_m": 11,
+    "bh_bar": 2.61,
+    "holm_bar": 2.61
    },
    "CADJPY.asia": {
     "family": "session_fix_liquidity",
     "declared_from": "session_range_breakout",
     "declared_via": "engine",
-    "family_m": 15,
-    "bh_bar": 2.71,
-    "holm_bar": 2.71
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
    "CADJPY.asia#rr=1.5": {
     "family": "session_fix_liquidity",
     "declared_from": "session_range_breakout",
     "declared_via": "engine",
-    "family_m": 15,
-    "bh_bar": 2.71,
-    "holm_bar": 2.71
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "CADJPY.asia#rr=1.5_wait_bars=8": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
    "CADJPY.asia#rr=2.5": {
     "family": "session_fix_liquidity",
     "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "CADJPY.asia#rr=2.5_wait_bars=8": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "CADJPY.asia#wait_bars=8": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "CADJPY.vol_transition.continuous": {
+    "family": "unclassified",
+    "declared_from": "vol_transition",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "CHFDKK.carry.continuous#input_symbol=CHFDKK": {
+    "family": "correlated_core",
+    "declared_from": "carry",
     "declared_via": "engine",
     "family_m": 15,
     "bh_bar": 2.71,
@@ -204,417 +244,1097 @@
     "family": "overnight_gap_risk_premium",
     "declared_from": "overnight_gap_decay",
     "declared_via": "engine",
-    "family_m": 12,
-    "bh_bar": 2.64,
-    "holm_bar": 2.64
+    "family_m": 11,
+    "bh_bar": 2.61,
+    "holm_bar": 2.61
+   },
+   "CHFJPY.asia": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "CHFJPY.asia#rr=1.5": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "CHFJPY.asia#rr=2.5": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "CHFJPY.asia#rr=2.5_wait_bars=8": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "CHFJPY.asia#wait_bars=8": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
    "CHFNOK.carry.asia#input_symbol=CHFNOK": {
     "family": "correlated_core",
     "declared_from": "carry",
     "declared_via": "engine",
-    "family_m": 6,
-    "bh_bar": 2.39,
-    "holm_bar": 2.39
+    "family_m": 15,
+    "bh_bar": 2.71,
+    "holm_bar": 2.71
    },
-   "EURAUD.discovered.asia#band=[0.0, 0.1]_feature=ext_residz_AUDCAD_horizon=6_side=1": {
-    "family": "unclassified",
-    "declared_from": "discovered",
+   "CHFNOK.carry.continuous#input_symbol=CHFNOK": {
+    "family": "correlated_core",
+    "declared_from": "carry",
     "declared_via": "engine",
-    "family_m": 36,
-    "bh_bar": 2.99,
-    "holm_bar": 2.99
+    "family_m": 15,
+    "bh_bar": 2.71,
+    "holm_bar": 2.71
+   },
+   "CHFSEK.carry.continuous#input_symbol=CHFSEK": {
+    "family": "correlated_core",
+    "declared_from": "carry",
+    "declared_via": "engine",
+    "family_m": 15,
+    "bh_bar": 2.71,
+    "holm_bar": 2.71
+   },
+   "CHFSGD.carry.continuous#input_symbol=CHFSGD": {
+    "family": "correlated_core",
+    "declared_from": "carry",
+    "declared_via": "engine",
+    "family_m": 15,
+    "bh_bar": 2.71,
+    "holm_bar": 2.71
+   },
+   "EURAUD.asia": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "EURAUD.asia#rr=1.5": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "EURAUD.asia#rr=2.5": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "EURAUD.vol_mean_reversion.continuous": {
+    "family": "unclassified",
+    "declared_from": "vol_mean_reversion",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
    "EURCHF.discovered.asia#band=[0.0, 0.1]_feature=hour_horizon=6_side=1": {
     "family": "unclassified",
     "declared_from": "discovered",
     "declared_via": "engine",
-    "family_m": 36,
-    "bh_bar": 2.99,
-    "holm_bar": 2.99
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
    "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_12_horizon=1_side=-1": {
     "family": "unclassified",
     "declared_from": "discovered",
     "declared_via": "engine",
-    "family_m": 36,
-    "bh_bar": 2.99,
-    "holm_bar": 2.99
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
    "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_12_horizon=6_side=-1": {
     "family": "unclassified",
     "declared_from": "discovered",
     "declared_via": "engine",
-    "family_m": 36,
-    "bh_bar": 2.99,
-    "holm_bar": 2.99
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
    "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_24_horizon=1_side=-1": {
     "family": "unclassified",
     "declared_from": "discovered",
     "declared_via": "engine",
-    "family_m": 36,
-    "bh_bar": 2.99,
-    "holm_bar": 2.99
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
    "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_24_horizon=6_side=-1": {
     "family": "unclassified",
     "declared_from": "discovered",
     "declared_via": "engine",
-    "family_m": 36,
-    "bh_bar": 2.99,
-    "holm_bar": 2.99
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
    "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=hour_horizon=3_side=-1": {
     "family": "unclassified",
     "declared_from": "discovered",
     "declared_via": "engine",
-    "family_m": 36,
-    "bh_bar": 2.99,
-    "holm_bar": 2.99
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
    "EURCHF.discovered.asia#band=[0.9, 1.0]_feature=hour_horizon=3_side=-1": {
     "family": "unclassified",
     "declared_from": "discovered",
     "declared_via": "engine",
-    "family_m": 36,
-    "bh_bar": 2.99,
-    "holm_bar": 2.99
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
    "EURCHF.discovered.asia#band=[0.9, 1.0]_feature=ru_24_horizon=1_side=-1": {
     "family": "unclassified",
     "declared_from": "discovered",
     "declared_via": "engine",
-    "family_m": 36,
-    "bh_bar": 2.99,
-    "holm_bar": 2.99
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "EURGBP.carry.continuous#input_symbol=EURGBP": {
+    "family": "correlated_core",
+    "declared_from": "carry",
+    "declared_via": "engine",
+    "family_m": 15,
+    "bh_bar": 2.71,
+    "holm_bar": 2.71
    },
    "EURGBP.discovered.asia#band=[0.1, 0.25]_feature=ru_24_horizon=3_side=1": {
     "family": "unclassified",
     "declared_from": "discovered",
     "declared_via": "engine",
-    "family_m": 36,
-    "bh_bar": 2.99,
-    "holm_bar": 2.99
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
    "EURGBP.discovered.asia#band=[0.75, 0.9]_feature=dd_12_horizon=3_side=-1": {
     "family": "unclassified",
     "declared_from": "discovered",
     "declared_via": "engine",
-    "family_m": 36,
-    "bh_bar": 2.99,
-    "holm_bar": 2.99
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
    "EURJPY.asia": {
     "family": "session_fix_liquidity",
     "declared_from": "session_range_breakout",
     "declared_via": "engine",
-    "family_m": 15,
-    "bh_bar": 2.71,
-    "holm_bar": 2.71
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
    "EURJPY.asia#rr=1.5": {
     "family": "session_fix_liquidity",
     "declared_from": "session_range_breakout",
     "declared_via": "engine",
-    "family_m": 15,
-    "bh_bar": 2.71,
-    "holm_bar": 2.71
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "EURJPY.asia#rr=1.5_wait_bars=8": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
    "EURJPY.asia#rr=2.5": {
     "family": "session_fix_liquidity",
     "declared_from": "session_range_breakout",
     "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "EURJPY.asia#rr=2.5_wait_bars=8": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "EURJPY.asia#wait_bars=8": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "EURJPY.carry.continuous#input_symbol=EURJPY": {
+    "family": "correlated_core",
+    "declared_from": "carry",
+    "declared_via": "engine",
     "family_m": 15,
     "bh_bar": 2.71,
     "holm_bar": 2.71
    },
-   "EURJPY.discovered.asia#band=[0.9, 1.0]_feature=dd_96_horizon=6_side=-1": {
+   "EURJPY.vol_mean_reversion.continuous": {
     "family": "unclassified",
-    "declared_from": "discovered",
+    "declared_from": "vol_mean_reversion",
     "declared_via": "engine",
-    "family_m": 36,
-    "bh_bar": 2.99,
-    "holm_bar": 2.99
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "EURMXN.carry.continuous#input_symbol=EURMXN": {
+    "family": "correlated_core",
+    "declared_from": "carry",
+    "declared_via": "engine",
+    "family_m": 15,
+    "bh_bar": 2.71,
+    "holm_bar": 2.71
+   },
+   "EURNOK.carry.continuous#input_symbol=EURNOK": {
+    "family": "correlated_core",
+    "declared_from": "carry",
+    "declared_via": "engine",
+    "family_m": 15,
+    "bh_bar": 2.71,
+    "holm_bar": 2.71
    },
    "EURNOK.overnight_gap_decay.asia": {
     "family": "overnight_gap_risk_premium",
     "declared_from": "overnight_gap_decay",
     "declared_via": "engine",
-    "family_m": 12,
-    "bh_bar": 2.64,
-    "holm_bar": 2.64
+    "family_m": 11,
+    "bh_bar": 2.61,
+    "holm_bar": 2.61
+   },
+   "EURNZD.vol_mean_reversion.continuous": {
+    "family": "unclassified",
+    "declared_from": "vol_mean_reversion",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "EURNZD.vol_transition.continuous": {
+    "family": "unclassified",
+    "declared_from": "vol_transition",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "EURUSD.asia": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "EURUSD.asia#rr=1.5": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "EURUSD.asia#rr=1.5_wait_bars=8": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "EURUSD.asia#rr=2.5": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "EURUSD.asia#rr=2.5_wait_bars=8": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "EURUSD.asia#wait_bars=8": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "EURUSD.clock_transition.continuous#hold_bars=2_label=broker_rollover_lead_bars=2_mode=out_of_side=1_stamp_hour=23": {
+    "family": "unclassified",
+    "declared_from": "clock_transition",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "EURUSD.clock_transition.continuous#hold_bars=2_label=cash_equity_close_lead_bars=2_mode=out_of_side=1_stamp_hour=23": {
+    "family": "unclassified",
+    "declared_from": "clock_transition",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "EURUSD.clock_transition.continuous#hold_bars=4_label=cme_fx_close_lead_bars=2_mode=into_side=1_stamp_hour=1": {
+    "family": "unclassified",
+    "declared_from": "clock_transition",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "EURUSD.clock_transition.continuous#hold_bars=4_label=tokyo_open_lead_bars=4_mode=into_side=1_stamp_hour=3": {
+    "family": "unclassified",
+    "declared_from": "clock_transition",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
    "EURUSD.discovered.asia#band=[0.0, 0.1]_feature=dd_48_horizon=12_side=1": {
     "family": "unclassified",
     "declared_from": "discovered",
     "declared_via": "engine",
-    "family_m": 36,
-    "bh_bar": 2.99,
-    "holm_bar": 2.99
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
    "EURUSD.discovered.asia#band=[0.0, 0.1]_feature=dd_96_horizon=6_side=1": {
     "family": "unclassified",
     "declared_from": "discovered",
     "declared_via": "engine",
-    "family_m": 36,
-    "bh_bar": 2.99,
-    "holm_bar": 2.99
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
    "EURZAR.overnight_gap_decay.asia": {
     "family": "overnight_gap_risk_premium",
     "declared_from": "overnight_gap_decay",
     "declared_via": "engine",
-    "family_m": 12,
-    "bh_bar": 2.64,
-    "holm_bar": 2.64
+    "family_m": 11,
+    "bh_bar": 2.61,
+    "holm_bar": 2.61
    },
-   "GBPAUD.discovered.asia#band=[0.0, 0.1]_feature=ext_residz_AUDUSD_horizon=3_side=1": {
-    "family": "unclassified",
-    "declared_from": "discovered",
+   "GBPAUD.asia": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
     "declared_via": "engine",
-    "family_m": 36,
-    "bh_bar": 2.99,
-    "holm_bar": 2.99
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "GBPAUD.asia#rr=1.5": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "GBPAUD.asia#rr=1.5_wait_bars=8": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "GBPAUD.asia#rr=2.5": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "GBPAUD.asia#rr=2.5_wait_bars=8": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "GBPAUD.asia#wait_bars=8": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "GBPAUD.vol_mean_reversion.continuous": {
+    "family": "unclassified",
+    "declared_from": "vol_mean_reversion",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
    "GBPCHF.overnight_gap_decay.asia": {
     "family": "overnight_gap_risk_premium",
     "declared_from": "overnight_gap_decay",
     "declared_via": "engine",
-    "family_m": 12,
-    "bh_bar": 2.64,
-    "holm_bar": 2.64
+    "family_m": 11,
+    "bh_bar": 2.61,
+    "holm_bar": 2.61
+   },
+   "GBPJPY.asia": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
    "GBPJPY.asia#rr=1.5": {
     "family": "session_fix_liquidity",
     "declared_from": "session_range_breakout",
     "declared_via": "engine",
-    "family_m": 15,
-    "bh_bar": 2.71,
-    "holm_bar": 2.71
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "GBPJPY.asia#rr=1.5_wait_bars=8": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
    "GBPJPY.asia#rr=2.5": {
     "family": "session_fix_liquidity",
     "declared_from": "session_range_breakout",
     "declared_via": "engine",
-    "family_m": 15,
-    "bh_bar": 2.71,
-    "holm_bar": 2.71
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "GBPJPY.asia#rr=2.5_wait_bars=8": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "GBPJPY.asia#wait_bars=8": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
    "GBPMXN.overnight_gap_decay.asia": {
     "family": "overnight_gap_risk_premium",
     "declared_from": "overnight_gap_decay",
     "declared_via": "engine",
-    "family_m": 12,
-    "bh_bar": 2.64,
-    "holm_bar": 2.64
+    "family_m": 11,
+    "bh_bar": 2.61,
+    "holm_bar": 2.61
    },
    "GBPNOK.overnight_gap_decay.asia": {
     "family": "overnight_gap_risk_premium",
     "declared_from": "overnight_gap_decay",
     "declared_via": "engine",
-    "family_m": 12,
-    "bh_bar": 2.64,
-    "holm_bar": 2.64
+    "family_m": 11,
+    "bh_bar": 2.61,
+    "holm_bar": 2.61
    },
    "GBPSEK.overnight_gap_decay.asia": {
     "family": "overnight_gap_risk_premium",
     "declared_from": "overnight_gap_decay",
     "declared_via": "engine",
-    "family_m": 12,
-    "bh_bar": 2.64,
-    "holm_bar": 2.64
+    "family_m": 11,
+    "bh_bar": 2.61,
+    "holm_bar": 2.61
+   },
+   "GBPUSD.asia": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "GBPUSD.asia#rr=1.5": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "GBPUSD.asia#rr=1.5_wait_bars=8": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "GBPUSD.asia#rr=2.5": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "GBPUSD.asia#rr=2.5_wait_bars=8": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "GBPUSD.asia#wait_bars=8": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "GBPUSD.clock_transition.continuous#hold_bars=2_label=broker_rollover_lead_bars=2_mode=out_of_side=1_stamp_hour=0": {
+    "family": "unclassified",
+    "declared_from": "clock_transition",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "GBPUSD.clock_transition.continuous#hold_bars=2_label=broker_rollover_lead_bars=2_mode=out_of_side=1_stamp_hour=23": {
+    "family": "unclassified",
+    "declared_from": "clock_transition",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "GBPUSD.clock_transition.continuous#hold_bars=2_label=cash_equity_close_lead_bars=2_mode=out_of_side=1_stamp_hour=0": {
+    "family": "unclassified",
+    "declared_from": "clock_transition",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "GBPUSD.clock_transition.continuous#hold_bars=2_label=cash_equity_close_lead_bars=2_mode=out_of_side=1_stamp_hour=23": {
+    "family": "unclassified",
+    "declared_from": "clock_transition",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "GBPUSD.clock_transition.continuous#hold_bars=2_label=cme_fx_close_lead_bars=2_mode=out_of_side=1_stamp_hour=0": {
+    "family": "unclassified",
+    "declared_from": "clock_transition",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "GBPUSD.clock_transition.continuous#hold_bars=2_label=comex_settle_lead_bars=2_mode=out_of_side=-1_stamp_hour=21": {
+    "family": "unclassified",
+    "declared_from": "clock_transition",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "GBPUSD.clock_transition.continuous#hold_bars=4_label=broker_rollover_lead_bars=1_mode=into_side=-1_stamp_hour=23": {
+    "family": "unclassified",
+    "declared_from": "clock_transition",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "GBPUSD.clock_transition.continuous#hold_bars=4_label=broker_rollover_lead_bars=2_mode=fade_side=1_stamp_hour=0": {
+    "family": "unclassified",
+    "declared_from": "clock_transition",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "GBPUSD.clock_transition.continuous#hold_bars=4_label=cash_equity_close_lead_bars=1_mode=into_side=-1_stamp_hour=23": {
+    "family": "unclassified",
+    "declared_from": "clock_transition",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "GBPUSD.clock_transition.continuous#hold_bars=4_label=cash_equity_close_lead_bars=2_mode=fade_side=1_stamp_hour=0": {
+    "family": "unclassified",
+    "declared_from": "clock_transition",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "GBPUSD.clock_transition.continuous#hold_bars=4_label=cme_fx_close_lead_bars=2_mode=fade_side=1_stamp_hour=0": {
+    "family": "unclassified",
+    "declared_from": "clock_transition",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "GBPUSD.clock_transition.continuous#hold_bars=4_label=cme_fx_close_lead_bars=2_mode=into_side=1_stamp_hour=1": {
+    "family": "unclassified",
+    "declared_from": "clock_transition",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "GBPUSD.clock_transition.continuous#hold_bars=4_label=tokyo_open_lead_bars=4_mode=into_side=1_stamp_hour=3": {
+    "family": "unclassified",
+    "declared_from": "clock_transition",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "GBPUSD.london_am": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
    "GBPZAR.overnight_gap_decay.asia": {
     "family": "overnight_gap_risk_premium",
     "declared_from": "overnight_gap_decay",
     "declared_via": "engine",
-    "family_m": 12,
-    "bh_bar": 2.64,
-    "holm_bar": 2.64
+    "family_m": 11,
+    "bh_bar": 2.61,
+    "holm_bar": 2.61
+   },
+   "GER40.vol_mean_reversion.continuous": {
+    "family": "unclassified",
+    "declared_from": "vol_mean_reversion",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "NAS100.asia": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "NAS100.asia#rr=2.5": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "NAS100.asia#rr=2.5_wait_bars=8": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "NAS100.asia#wait_bars=8": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "NAS100.vol_mean_reversion.continuous": {
+    "family": "unclassified",
+    "declared_from": "vol_mean_reversion",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
    "NZDCAD.discovered.asia#band=[0.9, 1.0]_feature=dd_48_horizon=3_side=-1": {
     "family": "unclassified",
     "declared_from": "discovered",
     "declared_via": "engine",
-    "family_m": 36,
-    "bh_bar": 2.99,
-    "holm_bar": 2.99
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "NZDUSD.asia": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "NZDUSD.asia#rr=1.5": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "NZDUSD.asia#rr=2.5": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "SGDJPY.vol_transition.continuous": {
+    "family": "unclassified",
+    "declared_from": "vol_transition",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "US30.vol_transition.continuous": {
+    "family": "unclassified",
+    "declared_from": "vol_transition",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "USDCAD.asia": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "USDCAD.asia#rr=1.5": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "USDCAD.asia#rr=2.5": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
    "USDCAD.discovered.asia#band=[0.9, 1.0]_feature=ru_240_horizon=6_side=-1": {
     "family": "unclassified",
     "declared_from": "discovered",
     "declared_via": "engine",
-    "family_m": 36,
-    "bh_bar": 2.99,
-    "holm_bar": 2.99
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
    "USDCAD.discovered.asia#band=[0.9, 1.0]_feature=ru_96_horizon=6_side=-1": {
     "family": "unclassified",
     "declared_from": "discovered",
     "declared_via": "engine",
-    "family_m": 36,
-    "bh_bar": 2.99,
-    "holm_bar": 2.99
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
    "USDCHF.discovered.asia#band=[0.9, 1.0]_feature=ext_residz_AUDCAD_horizon=3_side=-1": {
     "family": "unclassified",
     "declared_from": "discovered",
     "declared_via": "engine",
-    "family_m": 36,
-    "bh_bar": 2.99,
-    "holm_bar": 2.99
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
-   "USDCHF.discovered.asia#band=[0.9, 1.0]_feature=ru_240_horizon=6_side=-1": {
+   "USDDKK.vol_mean_reversion.continuous": {
     "family": "unclassified",
-    "declared_from": "discovered",
+    "declared_from": "vol_mean_reversion",
     "declared_via": "engine",
-    "family_m": 36,
-    "bh_bar": 2.99,
-    "holm_bar": 2.99
-   },
-   "USDCHF.discovered.asia#band=[0.9, 1.0]_feature=ru_48_horizon=3_side=-1": {
-    "family": "unclassified",
-    "declared_from": "discovered",
-    "declared_via": "engine",
-    "family_m": 36,
-    "bh_bar": 2.99,
-    "holm_bar": 2.99
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
    "USDJPY.asia": {
     "family": "session_fix_liquidity",
     "declared_from": "session_range_breakout",
     "declared_via": "engine",
-    "family_m": 15,
-    "bh_bar": 2.71,
-    "holm_bar": 2.71
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
    "USDJPY.asia#rr=1.5": {
     "family": "session_fix_liquidity",
     "declared_from": "session_range_breakout",
     "declared_via": "engine",
-    "family_m": 15,
-    "bh_bar": 2.71,
-    "holm_bar": 2.71
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "USDJPY.asia#rr=1.5_wait_bars=8": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
    "USDJPY.asia#rr=2.5": {
     "family": "session_fix_liquidity",
     "declared_from": "session_range_breakout",
     "declared_via": "engine",
-    "family_m": 15,
-    "bh_bar": 2.71,
-    "holm_bar": 2.71
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
-   "USDMXN.overnight_gap_decay.asia": {
-    "family": "overnight_gap_risk_premium",
-    "declared_from": "overnight_gap_decay",
+   "USDJPY.asia#rr=2.5_wait_bars=8": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
     "declared_via": "engine",
-    "family_m": 12,
-    "bh_bar": 2.64,
-    "holm_bar": 2.64
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "USDJPY.asia#wait_bars=8": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "USDJPY.vol_mean_reversion.continuous": {
+    "family": "unclassified",
+    "declared_from": "vol_mean_reversion",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "USDNOK.vol_mean_reversion.continuous": {
+    "family": "unclassified",
+    "declared_from": "vol_mean_reversion",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
    "USDZAR.overnight_gap_decay.asia": {
     "family": "overnight_gap_risk_premium",
     "declared_from": "overnight_gap_decay",
     "declared_via": "engine",
-    "family_m": 12,
-    "bh_bar": 2.64,
-    "holm_bar": 2.64
+    "family_m": 11,
+    "bh_bar": 2.61,
+    "holm_bar": 2.61
    },
    "XAUUSD.asia": {
     "family": "session_fix_liquidity",
     "declared_from": "session_range_breakout",
     "declared_via": "engine",
-    "family_m": 15,
-    "bh_bar": 2.71,
-    "holm_bar": 2.71
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
    "XAUUSD.asia#rr=1.5": {
     "family": "session_fix_liquidity",
     "declared_from": "session_range_breakout",
     "declared_via": "engine",
-    "family_m": 15,
-    "bh_bar": 2.71,
-    "holm_bar": 2.71
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
    "XAUUSD.asia#rr=1.5_wait_bars=8": {
     "family": "session_fix_liquidity",
     "declared_from": "session_range_breakout",
     "declared_via": "engine",
-    "family_m": 15,
-    "bh_bar": 2.71,
-    "holm_bar": 2.71
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
    "XAUUSD.asia#rr=2.5": {
     "family": "session_fix_liquidity",
     "declared_from": "session_range_breakout",
     "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "XAUUSD.asia#rr=2.5_wait_bars=8": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "XAUUSD.asia#wait_bars=8": {
+    "family": "session_fix_liquidity",
+    "declared_from": "session_range_breakout",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "XAUUSD.clock_transition.continuous#hold_bars=2_label=broker_rollover_lead_bars=2_mode=out_of_side=1_stamp_hour=23": {
+    "family": "unclassified",
+    "declared_from": "clock_transition",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "XAUUSD.clock_transition.continuous#hold_bars=2_label=cash_equity_close_lead_bars=2_mode=out_of_side=1_stamp_hour=23": {
+    "family": "unclassified",
+    "declared_from": "clock_transition",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "XAUUSD.clock_transition.continuous#hold_bars=4_label=cme_fx_close_lead_bars=1_mode=into_side=1_stamp_hour=1": {
+    "family": "unclassified",
+    "declared_from": "clock_transition",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "XAUUSD.trend_ma_cross.continuous": {
+    "family": "correlated_core",
+    "declared_from": "trend_ma_cross",
+    "declared_via": "engine",
     "family_m": 15,
     "bh_bar": 2.71,
     "holm_bar": 2.71
+   },
+   "XBRUSD.vol_mean_reversion.continuous": {
+    "family": "unclassified",
+    "declared_from": "vol_mean_reversion",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
+   },
+   "XTIUSD.vol_mean_reversion.continuous": {
+    "family": "unclassified",
+    "declared_from": "vol_mean_reversion",
+    "declared_via": "engine",
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
    "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY": {
     "family": "correlated_core",
     "declared_from": "dav_range_filter_adx",
     "declared_via": "certificate.shadow_spec.family",
-    "family_m": 6,
-    "bh_bar": 2.39,
-    "holm_bar": 2.39
+    "family_m": 15,
+    "bh_bar": 2.71,
+    "holm_bar": 2.71
    },
    "quarantined_candidates": {
     "family": "unclassified",
     "declared_from": "quarantined_candidates",
     "declared_via": "key",
-    "family_m": 36,
-    "bh_bar": 2.99,
-    "holm_bar": 2.99
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
    "sleeves": {
     "family": "unclassified",
     "declared_from": "sleeves",
     "declared_via": "key",
-    "family_m": 36,
-    "bh_bar": 2.99,
-    "holm_bar": 2.99
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
    "source": {
     "family": "unclassified",
     "declared_from": "source",
     "declared_via": "key",
-    "family_m": 36,
-    "bh_bar": 2.99,
-    "holm_bar": 2.99
+    "family_m": 70,
+    "bh_bar": 3.19,
+    "holm_bar": 3.19
    },
    "xau_m15_anti_breakout": {
     "family": "correlated_core",
     "declared_from": "anti_donchian_breakout",
     "declared_via": "row.choice.family",
-    "family_m": 6,
-    "bh_bar": 2.39,
-    "holm_bar": 2.39
+    "family_m": 15,
+    "bh_bar": 2.71,
+    "holm_bar": 2.71
    },
    "xau_m15_anti_momentum": {
     "family": "correlated_core",
     "declared_from": "anti_three_bar_momentum",
     "declared_via": "row.choice.family",
-    "family_m": 6,
-    "bh_bar": 2.39,
-    "holm_bar": 2.39
+    "family_m": 15,
+    "bh_bar": 2.71,
+    "holm_bar": 2.71
    },
    "xau_m5_anti_breakout_overlap": {
     "family": "correlated_core",
     "declared_from": "anti_donchian_breakout",
     "declared_via": "row.choice.family",
-    "family_m": 6,
-    "bh_bar": 2.39,
-    "holm_bar": 2.39
+    "family_m": 15,
+    "bh_bar": 2.71,
+    "holm_bar": 2.71
    },
    "xau_m5_anti_momentum_ny": {
     "family": "correlated_core",
     "declared_from": "anti_three_bar_momentum",
     "declared_via": "row.choice.family",
-    "family_m": 6,
-    "bh_bar": 2.39,
-    "holm_bar": 2.39
+    "family_m": 15,
+    "bh_bar": 2.71,
+    "holm_bar": 2.71
    }
   },
   "error_budget": {
@@ -628,367 +1348,19 @@
  },
  "actions": [
   {
-   "key": "XAUUSD.london_am",
-   "action": "IDENTITY_UNFROZEN",
-   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
+   "key": "xau_m5_anti_breakout_overlap",
+   "action": "AUTHORITY_REVOKED"
   },
   {
-   "key": "XAUUSD.london_am",
-   "action": "RETIRED_ORPHAN"
-  },
-  {
-   "key": "XAUUSD.afternoon",
-   "action": "IDENTITY_UNFROZEN",
-   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
-  },
-  {
-   "key": "XAUUSD.afternoon",
-   "action": "RETIRED_ORPHAN"
-  },
-  {
-   "key": "USDJPY.london_am",
-   "action": "IDENTITY_UNFROZEN",
-   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
-  },
-  {
-   "key": "USDJPY.london_am",
-   "action": "RETIRED_ORPHAN"
-  },
-  {
-   "key": "EURJPY.london_am",
-   "action": "IDENTITY_UNFROZEN",
-   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
-  },
-  {
-   "key": "EURJPY.london_am",
-   "action": "RETIRED_ORPHAN"
-  },
-  {
-   "key": "GBPJPY.asia",
-   "action": "IDENTITY_UNFROZEN",
-   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
-  },
-  {
-   "key": "GBPJPY.asia",
-   "action": "RETIRED_ORPHAN"
-  },
-  {
-   "key": "GBPJPY.london_am",
-   "action": "IDENTITY_UNFROZEN",
-   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
-  },
-  {
-   "key": "GBPJPY.london_am",
-   "action": "RETIRED_ORPHAN"
-  },
-  {
-   "key": "CADJPY.asia.FAILED_BREAK",
-   "action": "IDENTITY_UNFROZEN",
-   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
-  },
-  {
-   "key": "CADJPY.asia.FAILED_BREAK",
-   "action": "RETIRED_ORPHAN"
-  },
-  {
-   "key": "USDJPY.asia.FAILED_BREAK",
-   "action": "IDENTITY_UNFROZEN",
-   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
-  },
-  {
-   "key": "USDJPY.asia.FAILED_BREAK",
-   "action": "RETIRED_ORPHAN"
-  },
-  {
-   "key": "EURJPY.asia.FAILED_BREAK",
-   "action": "IDENTITY_UNFROZEN",
-   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
-  },
-  {
-   "key": "EURJPY.asia.FAILED_BREAK",
-   "action": "RETIRED_ORPHAN"
-  },
-  {
-   "key": "EURJPY.asia.NORMAL_DAY",
-   "action": "IDENTITY_UNFROZEN",
-   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
-  },
-  {
-   "key": "EURJPY.asia.NORMAL_DAY",
-   "action": "RETIRED_ORPHAN"
-  },
-  {
-   "key": "CADJPY.london_am.NORMAL_DAY",
-   "action": "IDENTITY_UNFROZEN",
-   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
-  },
-  {
-   "key": "CADJPY.london_am.NORMAL_DAY",
-   "action": "RETIRED_ORPHAN"
-  },
-  {
-   "key": "USDJPY.london_am.FAILED_BREAK",
-   "action": "IDENTITY_UNFROZEN",
-   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
-  },
-  {
-   "key": "USDJPY.london_am.FAILED_BREAK",
-   "action": "RETIRED_ORPHAN"
-  },
-  {
-   "key": "XAUUSD.asia.NORMAL_DAY",
-   "action": "IDENTITY_UNFROZEN",
-   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
-  },
-  {
-   "key": "XAUUSD.asia.NORMAL_DAY",
-   "action": "RETIRED_ORPHAN"
-  },
-  {
-   "key": "XAUUSD.asia.FAILED_BREAK",
-   "action": "IDENTITY_UNFROZEN",
-   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
-  },
-  {
-   "key": "XAUUSD.asia.FAILED_BREAK",
-   "action": "RETIRED_ORPHAN"
-  },
-  {
-   "key": "XAUUSD.london_am.NORMAL_DAY",
-   "action": "IDENTITY_UNFROZEN",
-   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
-  },
-  {
-   "key": "XAUUSD.london_am.NORMAL_DAY",
-   "action": "RETIRED_ORPHAN"
-  },
-  {
-   "key": "XAUUSD.asia.MACRO_FAV",
-   "action": "IDENTITY_UNFROZEN",
-   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
-  },
-  {
-   "key": "XAUUSD.asia.MACRO_FAV",
-   "action": "RETIRED_ORPHAN"
-  },
-  {
-   "key": "XAUUSD.london_am.MACRO_FAV",
-   "action": "IDENTITY_UNFROZEN",
-   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
-  },
-  {
-   "key": "XAUUSD.london_am.MACRO_FAV",
-   "action": "RETIRED_ORPHAN"
-  },
-  {
-   "key": "XAUUSD.afternoon.MACRO_FAV",
-   "action": "IDENTITY_UNFROZEN",
-   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
-  },
-  {
-   "key": "XAUUSD.afternoon.MACRO_FAV",
-   "action": "RETIRED_ORPHAN"
-  },
-  {
-   "key": "USDJPY.asia.MACRO_FAV",
-   "action": "IDENTITY_UNFROZEN",
-   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
-  },
-  {
-   "key": "USDJPY.asia.MACRO_FAV",
-   "action": "RETIRED_ORPHAN"
-  },
-  {
-   "key": "USDJPY.london_am.MACRO_FAV",
-   "action": "IDENTITY_UNFROZEN",
-   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
-  },
-  {
-   "key": "USDJPY.london_am.MACRO_FAV",
-   "action": "RETIRED_ORPHAN"
-  },
-  {
-   "key": "CADJPY.fair_value_gap",
-   "action": "IDENTITY_UNFROZEN",
-   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
-  },
-  {
-   "key": "CADJPY.fair_value_gap",
-   "action": "RETIRED_ORPHAN"
-  },
-  {
-   "key": "BTCUSD.monday_gap",
-   "action": "IDENTITY_UNFROZEN",
-   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
-  },
-  {
-   "key": "BTCUSD.monday_gap",
-   "action": "RETIRED_ORPHAN"
-  },
-  {
-   "key": "NZDJPY.dow_effect",
-   "action": "IDENTITY_UNFROZEN",
-   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
-  },
-  {
-   "key": "NZDJPY.dow_effect",
-   "action": "RETIRED_ORPHAN"
-  },
-  {
-   "key": "GBPJPY.level_breakout",
-   "action": "IDENTITY_UNFROZEN",
-   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
-  },
-  {
-   "key": "GBPJPY.level_breakout",
-   "action": "RETIRED_ORPHAN"
-  },
-  {
-   "key": "NZDJPY.fair_value_gap",
-   "action": "IDENTITY_UNFROZEN",
-   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
-  },
-  {
-   "key": "NZDJPY.fair_value_gap",
-   "action": "RETIRED_ORPHAN"
-  },
-  {
-   "key": "GBPJPY.fair_value_gap",
-   "action": "IDENTITY_UNFROZEN",
-   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
-  },
-  {
-   "key": "GBPJPY.fair_value_gap",
-   "action": "RETIRED_ORPHAN"
-  },
-  {
-   "key": "CADJPY.level_breakout",
-   "action": "IDENTITY_UNFROZEN",
-   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
-  },
-  {
-   "key": "CADJPY.level_breakout",
-   "action": "RETIRED_ORPHAN"
-  },
-  {
-   "key": "GBPAUD.session_range_breakout",
-   "action": "IDENTITY_UNFROZEN",
-   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
-  },
-  {
-   "key": "GBPAUD.session_range_breakout",
-   "action": "RETIRED_ORPHAN"
-  },
-  {
-   "key": "GBPUSD.session_range_breakout",
-   "action": "IDENTITY_UNFROZEN",
-   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
-  },
-  {
-   "key": "GBPUSD.session_range_breakout",
-   "action": "RETIRED_ORPHAN"
-  },
-  {
-   "key": "BTCUSD.session_range_breakout",
-   "action": "IDENTITY_UNFROZEN",
-   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
-  },
-  {
-   "key": "BTCUSD.session_range_breakout",
-   "action": "RETIRED_ORPHAN"
-  },
-  {
-   "key": "NZDJPY.session_range_breakout",
-   "action": "IDENTITY_UNFROZEN",
-   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
-  },
-  {
-   "key": "NZDJPY.session_range_breakout",
-   "action": "RETIRED_ORPHAN"
-  },
-  {
-   "key": "EURGBP.discovered.asia#band=[0.75, 0.9]_feature=dd_12_horizon=3_side=-1",
-   "action": "RETIREMENT_CLEARED",
-   "why": "row is certified and running; stale retirement metadata removed so the state is unambiguous"
-  },
-  {
-   "key": "USDSGD.overnight_gap_decay.asia",
-   "action": "RETIRED_ORPHAN"
-  },
-  {
-   "key": "AFG.discovered.asia#band=[0.0, 0.1]_feature=ext_lead_USDKRW_12_horizon=1_side=-1",
-   "action": "IDENTITY_UNFROZEN",
-   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
-  },
-  {
-   "key": "AFG.discovered.asia#band=[0.0, 0.1]_feature=ext_lead_USDKRW_12_horizon=1_side=-1",
-   "action": "RETIRED_ORPHAN"
-  },
-  {
-   "key": "AFG.discovered.asia#band=[0.0, 0.1]_feature=ext_lead_USDPLN_12_z_horizon=1_side=-1",
-   "action": "IDENTITY_UNFROZEN",
-   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
-  },
-  {
-   "key": "AFG.discovered.asia#band=[0.0, 0.1]_feature=ext_lead_USDPLN_12_z_horizon=1_side=-1",
-   "action": "RETIRED_ORPHAN"
-  },
-  {
-   "key": "AFG.discovered.asia#band=[0.9, 1.0]_feature=ext_lead_NETH25_12_horizon=1_side=-1",
-   "action": "IDENTITY_UNFROZEN",
-   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
-  },
-  {
-   "key": "AFG.discovered.asia#band=[0.9, 1.0]_feature=ext_lead_NETH25_12_horizon=1_side=-1",
-   "action": "RETIRED_ORPHAN"
-  },
-  {
-   "key": "AFG.discovered.asia#band=[0.9, 1.0]_feature=ext_lead_NZDCAD_12_z_horizon=1_side=-1",
-   "action": "IDENTITY_UNFROZEN",
-   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
-  },
-  {
-   "key": "AFG.discovered.asia#band=[0.9, 1.0]_feature=ext_lead_NZDCAD_12_z_horizon=1_side=-1",
-   "action": "RETIRED_ORPHAN"
-  },
-  {
-   "key": "AFG.discovered.asia#band=[0.9, 1.0]_feature=ext_lead_USDTRY_12_horizon=1_side=-1",
-   "action": "IDENTITY_UNFROZEN",
-   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
-  },
-  {
-   "key": "AFG.discovered.asia#band=[0.9, 1.0]_feature=ext_lead_USDTRY_12_horizon=1_side=-1",
-   "action": "RETIRED_ORPHAN"
-  },
-  {
-   "key": "AFG.discovered.asia#band=[0.9, 1.0]_feature=ext_resid_USDMXN_z_horizon=1_side=-1",
-   "action": "IDENTITY_UNFROZEN",
-   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
-  },
-  {
-   "key": "AFG.discovered.asia#band=[0.9, 1.0]_feature=ext_resid_USDMXN_z_horizon=1_side=-1",
-   "action": "RETIRED_ORPHAN"
-  },
-  {
-   "key": "AFL.discovered.asia#band=[0.9, 1.0]_feature=ext_lead_USDTRY_12_z_horizon=1_side=-1",
-   "action": "IDENTITY_UNFROZEN",
-   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
-  },
-  {
-   "key": "AFL.discovered.asia#band=[0.9, 1.0]_feature=ext_lead_USDTRY_12_z_horizon=1_side=-1",
-   "action": "RETIRED_ORPHAN"
-  },
-  {
-   "key": "AFL.discovered.asia#band=[0.9, 1.0]_feature=ext_resid_USDPLN_z_horizon=1_side=-1",
-   "action": "IDENTITY_UNFROZEN",
-   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
-  },
-  {
-   "key": "AFL.discovered.asia#band=[0.9, 1.0]_feature=ext_resid_USDPLN_z_horizon=1_side=-1",
-   "action": "RETIRED_ORPHAN"
+   "key": "xau_m5_anti_momentum_ny",
+   "action": "AUTHORITY_REVOKED"
   },
   {
    "key": "xau_m15_anti_breakout",
+   "action": "AUTHORITY_REVOKED"
+  },
+  {
+   "key": "xau_m15_anti_momentum",
    "action": "AUTHORITY_REVOKED"
   }
  ]
