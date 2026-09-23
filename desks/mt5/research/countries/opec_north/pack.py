@@ -1493,7 +1493,8 @@ TERMINOLOGY: dict[str, tuple[str, ...]] = {
                 "معدل السعر المتحقق", "SOMO official selling price", "Basrah Medium",
                 "Basrah Heavy", "Asia differential", "monthly lifting programme"),
     "OPECN-B": ("خط أنابيب كركوك جيهان", "إقليم كردستان", "وزارة الثروات الطبيعية",
-                "التحكيم الدولي", "غرفة التجارة الدولية", "إيقاف الضخ", "بۆری نەوتی کەرکووک", "هەناردەی نەوت", "وەزارەتی سامانە سروشتییەکان",
+                "التحكيم الدولي", "غرفة التجارة الدولية", "إيقاف الضخ",
+                "بۆری نەوتی کەرکووک", "هەناردەی نەوت", "وەزارەتی سامانە سروشتییەکان",
                 "هەرێمی کوردستان", "نەوت و گاز", "Herêma Kurdistanê", "boriya neftê",
                 "Kirkuk-Ceyhan pipeline", "ICC arbitration award", "KRG oil exports",
                 "pipeline shut-in"),
@@ -1587,8 +1588,11 @@ _ARABIC_RANGES = ((0x0600, 0x06FF), (0x0750, 0x077F), (0x08A0, 0x08FF), (0xFB50,
 #: Iran covered has read the wrong language: `پ چ ژ گ` are the cheapest possible proof that a
 #: Persian query is really Persian and not an Arabic transliteration of an Iranian subject.
 _PERSIAN_LETTERS = frozenset("پچژگ")
-#: The letters Sorani Kurdish adds. The KRG publishes its oil and budget positions in these.
-_KURDISH_LETTERS = frozenset("ڕڵێۆھ")
+#: The letters Sorani Kurdish adds, INCLUDING ARABIC LETTER AE (U+06D5), which neither
+#: Arabic nor Persian uses. The KRG publishes its own oil and budget positions in these and
+#: they differ from Baghdad's, which is itself the observable -- so detecting the script is
+#: not decoration.
+_KURDISH_LETTERS = frozenset("ڕڵێۆھە")
 
 
 def has_arabic(text: str) -> bool:

@@ -233,7 +233,7 @@ REGIONAL_FORESTS: tuple[Forest, ...] = (
     # carried the region, and not one of them answers for a country whose statistics
     # office stopped publishing. Three scripts joined with them -- Burmese, Khmer and Lao.
     _f("asean", "ASEAN", "regional",
-       countries=("SG", "VN", "TH", "ID", "MY", "PH", "MM", "KH", "LA"),
+       countries=("SG", "VN", "TH", "ID", "MY", "PH", "MM", "KH", "LA", "BN", "TL"),
        languages=("en", "vi", "th", "id", "ms", "tl", "my", "km", "lo"),
        packs=("sg", "vn", "th", "idn", "my", "ph", "mekong", "maritime_asia"),
        grounds=("sg", "vn", "th", "id", "my", "ph", "mm", "kh", "la"),
@@ -296,7 +296,8 @@ REGIONAL_FORESTS: tuple[Forest, ...] = (
        # the Suez end of the same waterway and its canal revenue is the published measure of
        # what the strait's disruption cost.
        countries=("SA", "AE", "QA", "TR", "IL", "KW", "OM", "BH", "MA",
-                  "YE", "DJ", "SD", "ER", "SO"),
+                  "YE", "DJ", "SD", "ER", "SO", "IQ", "IR", "JO", "LB", "SY",
+                  "DZ", "LY", "TN", "MR"),
        languages=("ar", "tr", "he", "en", "fr", "ti", "so"),
        packs=("sa", "ae", "il", "tr", "ma", "gulf", "red_sea", "maghreb_energy", "opec_north"),
        grounds=("sa", "ae", "tr", "il", "ma"),
@@ -333,7 +334,7 @@ REGIONAL_FORESTS: tuple[Forest, ...] = (
        # Namibian Orange Basin timetables and Angola's 2024 OPEC exit.
        countries=("EG", "ZA", "NG", "KE", "GH", "ET", "TZ", "UG", "CD", "ZM",
                   "CI", "GN", "ML", "BF", "SN",
-                  "ZW", "BW", "MZ", "AO", "NA"),
+                  "ZW", "BW", "MZ", "AO", "NA", "NE", "TG", "BJ", "SL", "LR", "GM", "GW", "CV"),
        languages=("en", "ar", "fr", "sw", "am", "af", "ln", "bem", "ny", "dyu", "bm",
                   "ff", "mos", "wo"),
        packs=("eg", "za", "ng", "ke", "gh", "east_africa", "copperbelt", "west_africa",

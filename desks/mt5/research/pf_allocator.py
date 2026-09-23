@@ -1911,16 +1911,24 @@ def apply_allocator_evidence(ev: list[SleeveEvidence], evidence_doc: dict[str, A
                              "financing_r_per_day_shift": round(shift, 8),
                              "mean_before": round(mean, 8),
                              "mean_after": round(float(arr[mask].mean()), 8)}
+    n_net_tilted = sum(
+        1 for e in ev
+        if abs(float((rows.get(e.name) or {}).get("net_of_cost_factor", 1.0))
+               - 1.0) >= 1e-9)
     return {
         "status": "APPLIED" if by_sleeve else "NEUTRAL",
         "evidence": ev_why, "roi": roi_why,
         "forward_posterior": post_why, "marginal_breadth": breadth_why, "factor_tier": tier_why,
+        # DECLARED, so a reader (and `research/allocator_liveness.py`) can see whether the pass
+        # conditioned on the net-of-cost spine at all, rather than inferring it from silence.
+        "net_of_cost": (
+            f"{n_net_tilted} of {len(rows)} evidence row(s) carry a net-of-cost tilt from "
+            f"reports/NET_EDGE.json" if rows
+            else "no evidence rows read: every net-of-cost factor neutral"),
         "n_posterior_tilted": sum(1 for e in ev if e.name in post_terms),
         "n_breadth_tilted": sum(1 for e in ev if e.name in breadth_terms),
         "n_tier_tilted": sum(1 for e in ev if e.name in tier_terms),
-        "n_net_of_cost_tilted": sum(
-            1 for e in ev
-            if abs(float((rows.get(e.name) or {}).get("net_of_cost_factor", 1.0)) - 1.0) >= 1e-9),
+        "n_net_of_cost_tilted": n_net_tilted,
         "n_sleeves": len(ev), "n_tilted": n_tilted, "n_shifted": n_shifted,
         "n_neutral": len(ev) - len(by_sleeve),
         "bounds": [TILT_LO, TILT_HI], "by_sleeve": by_sleeve,

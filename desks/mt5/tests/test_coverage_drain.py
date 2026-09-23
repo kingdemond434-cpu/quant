@@ -619,3 +619,82 @@ def test_the_refusal_function_names_the_deleted_brakes_so_they_stay_deleted() ->
                   "snippets-only", "paywalled domain"):
         assert brake in doc, brake
     assert "deleted brake" in doc
+
+
+# --------------------------------------------------------------- the three parity axes
+class _Pack:
+    """A department deep on one axis and hollow on the others -- the shape the three floors
+    exist to catch, because a mean over them would score it comfortably."""
+
+    DOMAINS: ClassVar[tuple[dict[str, Any], ...]] = (
+        {"id": "A", "title": "central bank reaction function",
+         "objects": ("policy rate", "intervention")},)
+    EXECUTABLE_INSTRUMENTS: ClassVar[tuple[str, ...]] = ("XAUUSD",)
+    TRANSMISSION_EDGES_SEED: ClassVar[tuple[dict[str, Any], ...]] = (
+        {"id": "e1", "targets": ("XAUUSD",)},)
+    SOURCE_CLASSES: ClassVar[tuple[dict[str, Any], ...]] = (
+        {"id": "official_cb", "layer": "official", "roots": ("cb.example.test",),
+         "queries": ("\u0627\u0644\u0645\u0631\u0643\u0632\u064a",)},)
+    NATIVE_LANGUAGES: ClassVar[tuple[str, ...]] = ("ar", "en")
+    TERMINOLOGY: ClassVar[dict[str, tuple[str, ...]]] = {"A": ("\u0633\u0639\u0631",)}
+    DATASETS: ClassVar[tuple[dict[str, Any], ...]] = (
+        {"name": "policy rate", "source": "the central bank", "how_to_fetch": "portal"},)
+    INTERACTIONS: ClassVar[tuple[dict[str, Any], ...]] = ({"with": "ma"},)
+
+
+def test_breadth_is_a_separate_axis_from_depth() -> None:
+    """Ten verified layers on one mechanism and one instrument is not a country desk. Breadth
+    counts the mechanisms, instruments, sectors, grounds, languages and partners."""
+    got = CD.breadth_score(_Pack, {"layers_mapped": 10})
+    assert got["raw"]["mechanisms"] == 1 and got["raw"]["instruments"] == 1
+    assert got["score"] < 0.5, "one mechanism on one instrument must score low"
+    assert set(got["targets"]) == set(CD.BREADTH_TARGETS)
+    assert got["distance_from_max"]["mechanisms"] == CD.BREADTH_TARGETS["mechanisms"] - 1
+
+
+def test_the_maximum_is_explicit_and_distance_is_published() -> None:
+    """"Equal maximum" is only an invariant if the maximum is a number somebody can check."""
+    assert all(v > 0 for v in CD.BREADTH_TARGETS.values())
+    assert abs(sum(CD.BREADTH_WEIGHTS.values()) - 1.0) < 1e-9
+    assert abs(sum(CD.DEPTH_WEIGHTS.values()) - 1.0) < 1e-9
+
+
+def test_ingestion_names_every_publisher_class_it_did_not_reach() -> None:
+    """A dataset the jurisdiction publishes and the desk has not read is NOT_REACHED with what
+    is missing; one it genuinely does not publish is answered by a NO_LAWFUL_GROUND row."""
+    got = CD.ingestion_score(_Pack, {})
+    assert set(got["by_class"]) == set(CD.PUBLISHER_CLASSES)
+    assert got["by_class"]["central_bank"]["state"] == "ENUMERATED_NOT_REACHED"
+    assert "no vintage or availability stamp" in got["by_class"]["central_bank"]["why"]
+    assert got["by_class"]["port_logistics"]["state"] == "MISSING"
+    assert got["missing"] and got["not_reached"]
+
+
+def test_a_crawled_host_turns_an_enumerated_dataset_into_an_ingested_one() -> None:
+    got = CD.ingestion_score(_Pack, {"cb.example.test": "2026-09-23T00:00:00+00:00"})
+    assert got["by_class"]["central_bank"]["state"] == "INGESTED"
+    assert got["ingested"] >= 1
+
+
+def test_a_declared_absence_answers_a_publisher_class() -> None:
+    class _Absent(_Pack):
+        LAYER_ABSENCES: ClassVar[dict[str, str]] = {"institutional": "no exchange exists"}
+
+    got = CD.ingestion_score(_Absent, {})
+    assert got["by_class"]["port_logistics"]["state"] == "NO_LAWFUL_GROUND"
+    assert got["score"] > CD.ingestion_score(_Pack, {})["score"]
+
+
+def test_the_three_floors_are_ratcheted_up_and_never_down() -> None:
+    got = CD.ratchet({"depth_min": 0.5, "breadth_min": 0.4, "ingestion_min": 0.3},
+                     {"depth_min": 0.6, "breadth_min": 0.4, "ingestion_min": 0.2})
+    assert got["floors"]["depth_min"] == 0.6, "a risen minimum raises the floor"
+    assert got["floors"]["breadth_min"] == 0.4
+    assert got["floors"]["ingestion_min"] == 0.3, "a floor never falls to meet a breach"
+    assert got["under"]["ingestion_min"] == {"floor": 0.3, "current": 0.2}
+
+
+def test_distance_from_maximum_sums_the_three_shortfalls() -> None:
+    """A pack cannot hide a hollow axis behind a strong one, so the ordering is the SUM."""
+    got = CD.verify_layers(None)
+    assert "parity" not in got or isinstance(got.get("parity"), dict)

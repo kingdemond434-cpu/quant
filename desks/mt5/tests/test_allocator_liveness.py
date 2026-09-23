@@ -274,3 +274,62 @@ def test_pf_allocator_records_a_named_stand_down_on_every_silent_path() -> None:
     for reason in ('"MEMORY"', '"LOCK"', '"FAILED"'):
         assert reason in src
     assert "_clear_stand_down(args.mode)" in src
+
+
+# ---------------------------------------------------- the join: the book must reach the rows
+
+
+def _gateway_book_key():
+    """`gateway._book_key` lifted out of the module, so the test needs no MetaTrader5 package.
+
+    The fence keeps a COPY of this function on purpose (it must run on a box with no MT5), and a
+    copy that drifts is exactly the defect the fence exists to catch -- so the two are compared
+    here rather than trusted.
+    """
+    import re as _re
+    import textwrap
+    src = (DESK / "mt5desk" / "gateway.py").read_text(encoding="utf-8")
+    start = src.index("def _book_key(")
+    end = src.index("\ndef ", start + 1)
+    ns: dict = {"re": _re}
+    exec(textwrap.dedent(src[start:end]), ns)
+    return ns["_book_key"]
+
+
+@pytest.mark.parametrize("row,book,expect", [
+    # the version suffix: the live rows carry it, the allocator prices the window
+    ({"name": "gold_afternoon_v3"}, {"gold_afternoon": 0.02}, "gold_afternoon"),
+    ({"name": "gold_london_am_v2"}, {"gold_london_am": 0.03}, "gold_london_am"),
+    # an exact name still wins, so a book that carries its own version is untouched
+    ({"name": "gold_afternoon_v3"}, {"gold_afternoon_v3": 0.02, "gold_afternoon": 0.01},
+     "gold_afternoon_v3"),
+    # a genuine miss stays a miss: m5 and m15 are different sleeves, not a suffix apart
+    ({"name": "xau_m5_anti_breakout_overlap"}, {"xau_m15_anti_breakout": 0.03}, None),
+    # the derived SYMBOL_family_selector key still works
+    ({"name": "chfnok_carry_asia_p_98d7", "symbol": "chfnok", "family": "carry",
+      "selector": "asia"}, {"CHFNOK_carry_asia": 0.02}, "CHFNOK_carry_asia"),
+    ({"name": "x"}, {}, None),
+])
+def test_book_key_joins_versioned_rows_and_the_two_copies_agree(row, book, expect) -> None:
+    from scripts.check_allocator_join import _book_key as fence_key
+    gw_key = _gateway_book_key()
+    assert fence_key(row, book) == expect
+    assert gw_key(row, book) == expect
+
+
+def test_the_join_fix_can_only_raise_a_live_row_never_lower_it() -> None:
+    """NEVER REDUCE AGGRESSIVENESS (principal, standing order).
+
+    `clamp_risk_frac` FLOORS at BASE_RISK_FRAC, so a row that newly joins a book fraction BELOW
+    the base is sized exactly as it was, and one that joins a fraction above it goes UP. The
+    join can therefore only raise the live book. Measured on the box 2026-09-23: 0/7 rows joined
+    at sum_risk_frac 0.2100 became 6/7 at 0.2272.
+    """
+    from mt5desk.sizing import BASE_RISK_FRAC, clamp_risk_frac
+    from scripts.check_allocator_join import _book_key
+    row = {"name": "gold_afternoon_v3", "risk_frac": BASE_RISK_FRAC}
+    for book_frac in (0.0001, 0.005, BASE_RISK_FRAC, 0.0357, 0.09):
+        key = _book_key(row, {"gold_afternoon": book_frac})
+        assert key == "gold_afternoon"
+        assert clamp_risk_frac(book_frac) >= clamp_risk_frac(row["risk_frac"]) - 1e-12 or \
+            clamp_risk_frac(book_frac) == BASE_RISK_FRAC

@@ -269,7 +269,7 @@ def measure_queue() -> dict[str, Any]:
     doc = _read_json(BACKPRESSURE, {}) or {}
     out: dict[str, Any] = {"status": UNMEASURED, "depth": UNMEASURED,
                            "gates_per_hour": UNMEASURED, "workers_last_sweep": UNMEASURED,
-                           "source": str(BACKPRESSURE)}
+                           "source": str(BACKPRESSURE), **_breach_backlog()}
     if not isinstance(doc, dict) or not doc:
         out["why"] = f"{BACKPRESSURE.name} absent or unreadable: queue depth is UNMEASURED"
         return out
@@ -290,23 +290,26 @@ def measure_queue() -> dict[str, Any]:
         swept_at=meas.get("swept_at", UNMEASURED),
         gates_per_hour=float(per_hour) if isinstance(per_hour, (int, float)) else UNMEASURED,
         gates_per_hour_window="24h")
-    # CLOCK IMPLIES CERTIFICATE (principal 2026-09-23). A cell whose forward clock is running
-    # UNCERTIFIED is the desk's only currently-breached law, and `research/clock_certificate.py`
-    # queues those cells at the FRONT of the judge's queue every hour. The judge's SIZING has to
-    # honour that or the priority is decorative: a breach backlog is demand on the judge exactly
-    # as queue depth is, so it is counted here and read by `plan` below. UNMEASURED when the
-    # docket is absent -- a breach count nobody measured is never read as zero.
-    doc2 = _read_json(BREACH_DOCKET, None)
-    if isinstance(doc2, dict):
-        n_breach = doc2.get("breached")
-        out.update(clock_breach_cells=n_breach if isinstance(n_breach, int) else UNMEASURED,
-                   clock_breach_overdue=doc2.get("overdue_beyond_one_judging_cycle", UNMEASURED),
-                   clock_breach_source=str(BREACH_DOCKET.name))
-    else:
-        out.update(clock_breach_cells=UNMEASURED,
-                   clock_breach_why=f"{BREACH_DOCKET.name} absent: the breach backlog is "
-                                    f"UNMEASURED, which is never zero")
     return out
+
+
+def _breach_backlog() -> dict[str, Any]:
+    """CLOCK IMPLIES CERTIFICATE (principal 2026-09-23): cells whose forward clocks run with no
+    certificate, from `research/clock_certificate.py`'s docket. Read here, never written here.
+
+    The judge's SIZING has to honour the priority or the priority is decorative: a breach backlog
+    is demand on the judge exactly as queue depth is. Read ABOVE the backpressure early-return on
+    purpose -- a host with no backpressure artifact must not also lose the breach count.
+    """
+    doc = _read_json(BREACH_DOCKET, None)
+    if not isinstance(doc, dict):
+        return {"clock_breach_cells": UNMEASURED,
+                "clock_breach_why": (f"{BREACH_DOCKET.name} absent: the breach backlog is "
+                                     f"UNMEASURED, which is never zero")}
+    n = doc.get("breached")
+    return {"clock_breach_cells": n if isinstance(n, int) else UNMEASURED,
+            "clock_breach_overdue": doc.get("overdue_beyond_one_judging_cycle", UNMEASURED),
+            "clock_breach_source": str(BREACH_DOCKET.name)}
 
 
 def sealed_baseline(box: dict[str, Any], costs: dict[str, float]) -> dict[str, Any]:

@@ -30,6 +30,7 @@ import argparse
 import json
 import re
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 DESK = ROOT / "desks" / "mt5"
@@ -43,7 +44,7 @@ SLEEVES = DESK / "data" / "sleeves.json"
 MIN_JOINED = 1
 
 
-def _book_key(row: dict, book: dict) -> str | None:
+def _book_key(row: dict[str, object], book: dict[str, object]) -> str | None:
     """Mirror of `mt5desk.gateway._book_key`, kept here so the fence needs no MT5 import.
 
     Deliberately a copy and not an import: this fence must run on a box with no MetaTrader5
@@ -64,7 +65,7 @@ def _book_key(row: dict, book: dict) -> str | None:
             return base
         folded_base = {k.lower(): k for k in book}
         if base.lower() in folded_base:
-            return folded_base[base.lower()]
+            return str(folded_base[base.lower()])
     sym = str(row.get("symbol") or "").upper()
     fam = str(row.get("family") or "")
     sel = str(row.get("selector") or "")
@@ -77,7 +78,7 @@ def _book_key(row: dict, book: dict) -> str | None:
     return folded.get(derived.lower())
 
 
-def measure() -> dict:
+def measure() -> dict[str, Any]:
     try:
         art = json.loads(ALLOC.read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
@@ -95,7 +96,8 @@ def measure() -> dict:
     books = {"dynamic": art.get("book") or {},
              "fallback": (art.get("book_fallback") or {}).get("book") or {}}
 
-    out: dict = {"n_live": len(live), "books": {}, "status": "OK", "why": ""}
+    out: dict[str, Any] = {"n_live": len(live), "books": {}, "status": "OK",
+                           "why": ""}
     broken = []
     for label, bk in books.items():
         bk = {str(k): v for k, v in bk.items()}
