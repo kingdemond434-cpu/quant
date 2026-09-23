@@ -68,6 +68,7 @@ from libs.ops.control_plane import edges as edg  # noqa: E402
 from libs.ops.control_plane import fingerprints as fp  # noqa: E402
 from libs.ops.control_plane import lease  # noqa: E402
 from libs.ops.control_plane import watermarks as wm  # noqa: E402
+from libs.research import path_refs as _path_refs  # noqa: E402
 
 REPORT = DESK / "reports" / "PLUMBING_WATCHDOG.json"
 #: What `Adopt-Release.ps1` writes on EVERY pass, refusal or not: the paths that still differ
@@ -629,6 +630,30 @@ def check_processes(reaper: Any = None) -> tuple[list[dict[str, Any]], dict[str,
 
 
 # ------------------------------------------------------- 5. every declared clock still exists
+def superseded_by(name: str, present: Mapping[str, str]) -> str | None:
+    """The RESIDENT that has taken a disabled clock's work over, or None.
+
+    A DISABLED CLOCK WHOSE JOB A RUNNING RESIDENT ALREADY DOES IS NOT A DEFECT, and reporting it
+    as one is worse than silence. Measured 2026-09-23: `MT5-Gateway` is a superseded per-minute
+    runner whose registration had drifted to SYSTEM -- which cannot reach MetaTrader's IPC from
+    Session 0 -- while `MT5-GatewayResident` holds the runner role under an interactive principal
+    with the terminal up 51 h and ten live sleeves. So this check's own repair,
+    `Enable-ScheduledTask`, would have added a per-minute task that cannot initialise and would
+    contend for the live loop's PID lock: the remedy was wrong as well as the verdict. A permanent
+    CRITICAL that is in fact correct behaviour is how a desk learns to scroll past CRITICALs, and
+    that is the defect this whole organ exists to prevent.
+
+    STRUCTURAL, NEVER A LIST OF NAMES: `X` is superseded when `XResident` is registered and is not
+    itself disabled. The heir and its state are recorded as the evidence, so the claim can be
+    checked rather than believed.
+    """
+    heir = f"{name}Resident"
+    state = str(present.get(heir) or "").strip().lower()
+    if not state or state in ("disabled", "1"):
+        return None
+    return f"{heir} ({state})"
+
+
 def check_declared_tasks(present: Mapping[str, str] | None = None,
                          declared: Sequence[str] | None = None) -> tuple[list[dict[str, Any]],
                                                                         dict[str, Any]]:
@@ -661,10 +686,13 @@ def check_declared_tasks(present: Mapping[str, str] | None = None,
     facts["measured"] = True
     rows: list[dict[str, Any]] = []
     absent = [n for n in want if have.get(n) is None]
-    disabled = [n for n in want
-                if str(have.get(n) or "").strip().lower() in ("disabled", "1")]
+    disabled_raw = [n for n in want
+                    if str(have.get(n) or "").strip().lower() in ("disabled", "1")]
+    superseded = {n: h for n in disabled_raw if (h := superseded_by(n, have))}
+    disabled = [n for n in disabled_raw if n not in superseded]
     live = [n for n in want if have.get(n) is not None]
-    facts.update({"absent": absent, "disabled": disabled, "present_declared": len(live)})
+    facts.update({"absent": absent, "disabled": disabled, "superseded": superseded,
+                  "present_declared": len(live)})
     for name in absent:
         rows.append(defect("scheduled_task", name,
                            f"{name} is declared by the installer and ABSENT from the scheduler",
@@ -721,18 +749,75 @@ def leg_scripts(root: Path | None = None) -> dict[str, str]:
     return dict(_LEG_SCRIPT.findall(text))
 
 
+#: An import of one of THIS repository's modules, from which the one-hop source closure is built.
+#: The NAME LIST matters as much as the package: the desk's house style is
+#: `from libs.moat import registry`, so resolving only `libs.moat` reaches the package __init__
+#: and never the module that owns the file -- which is precisely the case that made
+#: `leg:moat_miner` look like it could not be writing the registry it writes through.
+_REPO_IMPORT = re.compile(
+    r"^\s*(?:from\s+((?:libs|desks|research|scripts|ops)[A-Za-z0-9_.]*)\s+import\s+"
+    r"([A-Za-z0-9_, ]+)|import\s+((?:libs|desks|research|scripts|ops)[A-Za-z0-9_.]*))", re.M)
+
+
+def _module_file(dotted: str, root: Path) -> Path | None:
+    """The file a dotted import names, or None when it is not a module of this repository."""
+    rel = dotted.replace(".", "/")
+    for cand in (root / f"{rel}.py", root / rel / "__init__.py",
+                 root / "desks" / "mt5" / f"{rel}.py",
+                 root / "desks" / "mt5" / rel / "__init__.py"):
+        if cand.exists():
+            return cand
+    return None
+
+
+def _source_closure(path: Path, root: Path, *, hops: int = 1) -> str:
+    """A component's own source PLUS the sources of the repo modules it imports, one hop.
+
+    WRITING THROUGH A LIBRARY IS STILL WRITING (2026-09-23). `leg:moat_miner` was reported as
+    unable to be the writer of `data/alpha_registry.sqlite` because the literal is in
+    `libs/moat/registry.py` -- which is the module the miner imports precisely so that nothing
+    beside the registry owns that file. Judging a component by its own file alone makes every
+    organ that respects a library boundary look like a liar, which trains the desk to discount
+    this check exactly where its house style is strongest.
+
+    ONE HOP, AND ONLY THIS REPOSITORY'S MODULES. The closure is deliberately shallow: two hops
+    would reach half the tree through `libs.ops`, and a path named anywhere in half the tree
+    proves nothing. A component that reaches its artifact through two libraries still reports,
+    and that is a real finding about the wiring rather than a limitation hidden by a wider net.
+    """
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return ""
+    if hops <= 0:
+        return text
+    parts = [text]
+    seen: set[Path] = {path}
+    for m in _REPO_IMPORT.finditer(text):
+        pkg = m.group(1) or m.group(3) or ""
+        cands = [pkg] + [f"{pkg}.{n.strip()}" for n in (m.group(2) or "").split(",")
+                         if n.strip() and m.group(1)]
+        for dotted in cands:
+            f = _module_file(dotted, root)
+            if f is None or f in seen:
+                continue
+            seen.add(f)
+            try:
+                parts.append(f.read_text(encoding="utf-8", errors="replace"))
+            except OSError:
+                continue
+    return "\n".join(parts)
+
+
 def _component_source(component: str, legs: Mapping[str, str],
                       root: Path) -> tuple[Path | None, str]:
-    """The file behind a `leg:x` / `task:X` component id, and its text. ('', '') when unknown."""
+    """The file behind a `leg:x` / `task:X` component id, and its ONE-HOP source closure."""
     if component.startswith("leg:"):
         script = legs.get(component.split(":", 1)[1])
         if script:
             for cand in (root / "desks" / "mt5" / script, root / script):
                 if cand.exists():
-                    try:
-                        return cand, cand.read_text(encoding="utf-8", errors="replace")
-                    except OSError:
-                        return cand, ""
+                    return cand, _source_closure(cand, root)
     return None, ""
 
 
@@ -778,8 +863,9 @@ def check_edge_paths(root: Path | None = None) -> tuple[list[dict[str, Any]], di
         _cp, ctext = _component_source(e.consumer, legs, base)
         if ptext and name not in ptext:
             rows.append(defect("path_pair", e.edge_id,
-                               f"{e.producer}'s source never names {name}, so it cannot be the "
-                               f"writer of {e.artifact} the pipeline declares it to be",
+                               f"neither {e.producer}'s source nor the modules it imports "
+                               f"names {name}, so it cannot be the writer of {e.artifact} the "
+                               f"pipeline declares it to be",
                                f"either {e.producer} writes {e.artifact}, or edges.py names the "
                                f"path it really writes -- a producer and a declaration "
                                f"disagreeing about a path is how RESEARCH_BANDIT.json went weeks "
@@ -787,8 +873,8 @@ def check_edge_paths(root: Path | None = None) -> tuple[list[dict[str, Any]], di
                                key=f"path_pair:{e.edge_id}:producer"))
         if ctext and name not in ctext:
             rows.append(defect("path_pair", e.edge_id,
-                               f"{e.consumer}'s source never names {name}, so it cannot be "
-                               f"reading {e.artifact}",
+                               f"neither {e.consumer}'s source nor the modules it imports "
+                               f"names {name}, so it cannot be reading {e.artifact}",
                                f"point {e.consumer} at {e.artifact}, or correct the edge",
                                key=f"path_pair:{e.edge_id}:consumer"))
     # `edges_declared` is published beside `edges_checked` so the two can be COMPARED. A checker
@@ -817,61 +903,85 @@ SCAN_ROOTS: tuple[str, ...] = (
     "libs/research", "libs/ops", "libs/moat", "libs/portfolio",
 )
 
+#: WHERE A WRITER MAY LIVE. Wider than SCAN_ROOTS on purpose: whose wires are judged is a
+#: question about the live desk, but whether a file has a producer is a question about the whole
+#: repository. A path written by `scripts/` or `libs/execution` and read by two desk organs is
+#: wired, and reporting it orphaned states the opposite of what is measured.
+WRITER_ROOTS: tuple[str, ...] = ("desks", "libs", "scripts", "ops")
+
 
 def check_orphan_artifact_paths(root: Path | None = None,
                                 limit_files: int = 4000) -> tuple[list[dict[str, Any]],
                                                                   dict[str, Any]]:
     """PATHS THAT ARE READ BY SEVERAL ORGANS AND WRITTEN BY NONE.
 
-    The generalisation of failure 5. A path literal that appears in two or more modules, in none
-    of them beside a write verb, is a file every one of those readers expects and nobody creates.
-    Two readers is the threshold on purpose: one module naming a path it does not write is an
-    ordinary consumer of somebody else's artifact; two, with no writer anywhere, is a wire that
-    was never connected.
+    A path literal that two or more modules read, that nothing writes and that is not on disk, is
+    a wire that was never connected. Two readers is the threshold on purpose: one module naming a
+    path it does not write is an ordinary consumer of somebody else's artifact.
 
-    THE WRITE IS USUALLY NOT BESIDE THE LITERAL, and pretending otherwise is how this check first
-    reported 128 false positives on its own repo: the desk's house style is
-    `OUT = DESK / "reports" / "X.json"` at the top of the module and `OUT.write_text(...)` four
-    hundred lines down. So when a literal is bound to a constant, the WHOLE module is searched for
-    a write through that constant. A check whose first output is mostly noise is a check the next
-    session switches off, and then the one true row it would have found is lost with it.
+    RESOLVED FROM THE SYNTAX TREE, NOT FROM LINE TEXT (2026-09-23). This check used to match
+    literals with a regex and a 220-character window, and `libs/research/path_refs.py` exists
+    because the desk already paid for that mistake once: the same detector, line-based, measured
+    26 reported paths against 7 genuine, and its own docstring records why a fence at 50% noise
+    "gets acknowledged into silence". Three of its four blind spots were live in the rows this
+    check was publishing:
+
+        A PROVENANCE LABEL IS NOT A READ. `"source": "reports/real_campaign.json"` inside a dict
+        that gets serialised opens nothing, and neither does a path named in a docstring
+        explaining why it is empty -- five of the sixteen rows were prose.
+
+        A SPLIT LITERAL IS STILL A PATH. `_OUT = _ROOT / "reports" / "x.json"` never matched the
+        one-string regex, so its WRITER was invisible and its readers were reported orphaned.
+
+        A WRITER OUTSIDE THE SCAN IS STILL A WRITER. Readers stay bounded to the live desk
+        (SCAN_ROOTS), because that is whose wires are being judged; but a path written by
+        `scripts/` or `libs/execution` is written, and calling it orphaned says the opposite of
+        what is true. The writer census now covers the whole tree.
+
+    What survives all three is the real thing: several organs reading a file no producer anywhere
+    creates and that has never existed on this box.
     """
     base = root or ROOT
-    files: list[Path] = []
+    refs = _path_refs
+    readers: dict[str, set[str]] = {}
+    labels: dict[str, set[str]] = {}
+    writers: dict[str, set[str]] = {}
+    n_read_files = 0
     for rel_root in SCAN_ROOTS:
         sub = base / rel_root
-        if sub.exists():
-            files.extend(sorted(sub.rglob("*.py"))[:limit_files])
-    readers: dict[str, set[str]] = {}
-    writers: dict[str, set[str]] = {}
-    for f in files[:limit_files]:
-        try:
-            text = f.read_text(encoding="utf-8", errors="replace")
-        except OSError:
+        if not sub.exists():
             continue
-        for m in _JSON_LITERAL.finditer(text):
-            rel = m.group(1)
-            line_start = text.rfind("\n", 0, m.start()) + 1
-            const = re.match(r"\s*([A-Za-z_][A-Za-z0-9_]*)\s*(?::[^=]+)?=",
-                             text[line_start:m.start()])
-            window = text[max(0, m.start() - 220): m.end() + 220]
-            wrote = bool(_WRITE_VERBS.search(window))
-            if not wrote and const:
-                nm = re.escape(const.group(1))
-                wrote = bool(re.search(
-                    rf"\b{nm}\s*\.\s*(?:write_text|write_bytes|open\(\s*['\"][wax]|parent\.mkdir)"
-                    rf"|(?:write_report|stamp_sidecar|_atomic_write|os\.replace|json\.dump)"
-                    rf"\([^)]*\b{nm}\b"
-                    rf"|\bto_(?:json|csv|parquet)\(\s*{nm}\b", text))
-            (writers if wrote else readers).setdefault(rel, set()).add(f.name)
+        for f in sorted(sub.rglob("*.py"))[:limit_files]:
+            rd, wr, lb = refs.scan_file(f)
+            n_read_files += 1
+            for p in rd:
+                readers.setdefault(p, set()).add(f.name)
+            for p in wr:
+                writers.setdefault(p, set()).add(f.name)
+            for p in lb:
+                labels.setdefault(p, set()).add(f.name)
+    n_write_files = 0
+    for rel_root in WRITER_ROOTS:
+        sub = base / rel_root
+        if not sub.exists():
+            continue
+        for f in sorted(sub.rglob("*.py")):
+            if any(part in ("__pycache__", "_retired") for part in f.parts):
+                continue
+            _rd, wr, _lb = refs.scan_file(f)
+            n_write_files += 1
+            for p in wr:
+                writers.setdefault(p, set()).add(f.name)
+    # `path_refs` resolves store paths PREFIX-RELATIVE ("data/x.json"), and the desk keeps its
+    # own copies under `desks/mt5/`, so a file that plainly exists there would otherwise be
+    # reported as never produced. Both roots are checked, and existence at either is existence.
+    orphans = sorted(p for p, who in readers.items()
+                     if len(who) >= 2 and refs.is_store(p) and not writers.get(p)
+                     and not (base / p).exists()
+                     and not (base / "desks" / "mt5" / p).exists())
     rows: list[dict[str, Any]] = []
-    orphans: list[str] = []
-    for rel, who in sorted(readers.items()):
-        if writers.get(rel) or len(who) < 2:
-            continue
-        if (base / rel).exists() or (base / "desks" / "mt5" / rel).exists():
-            continue
-        orphans.append(rel)
+    for rel in orphans:
+        who = readers[rel]
         rows.append(defect("orphan_artifact_path", rel,
                            f"{len(who)} module(s) read {rel} -- {', '.join(sorted(who)[:6])} -- "
                            f"no module in this tree writes it and no such file exists. This is "
@@ -880,8 +990,10 @@ def check_orphan_artifact_paths(root: Path | None = None,
                            f"reports/RESEARCH_BANDIT.json.",
                            f"make one producer write {rel}, or repoint the readers at the path "
                            f"the producer really writes"))
-    return rows, {"paths_scanned": len(readers) + len(writers), "orphan_paths": orphans[:40],
-                  "files_scanned": len(files)}
+    return rows, {"paths_read": len(readers), "paths_written": len(writers),
+                  "paths_labelled_only": len(labels), "orphan_paths": orphans[:40],
+                  "reader_files": n_read_files, "writer_files": n_write_files,
+                  "resolver": "libs/research/path_refs.py (AST)"}
 
 
 # ------------------------------------------------------------- 7. every fence has actually run
