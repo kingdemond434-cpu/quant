@@ -7684,6 +7684,117 @@
     "forward enrolment, no quota 2026-09-23"
    ],
    "notes": "Measured 2026-09-23: 170 certificates, 170 enrolled, 0 missing, 0 overdue; latency UNMEASURED on the existing roster because enrolled_at did not exist before this pass -- an unstamped clock reports UNMEASURED, never zero -- and every clock written from now carries the stamp the fence reads. Forward clocks deploy no capital, so removing the quota raises evidence throughput without touching risk."
+  },
+  {
+   "id": "U75",
+   "domain": "U",
+   "phase": "U",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "THE SANDBOX SUPPLY LINE (LAWS 5h/5m). Measured 2026-09-23: the runner planned 63 federated systems and could run 7 -- 55 read UNMEASURED because their pinned library was not importable, each carrying an INSTALL TASK row that no organ ever executed. \"Recorded as a task\" is not a disposition; it is a defect with a to-do list (LAWS 7). sandbox_provision.py IS the organ that executes them: ONE shared venv at <sandbox root>/_shared/venv built with --system-site-packages over the desk's own interpreter (per-system venvs would each re-install the scientific core, ~500 MB apiece against MEASURED free disk, so the line would stop on disk long before it stopped on capability, and the gateway's interpreter is never mutated), ROI order (measured ROI, then declared yield -- candidates and datasets outrank a representation -- then light before heavy), one pinned requirement at a time, the module PROVED to import, and the licence read at the same pin the wheel came from. pip's own words classify the failure: no matching distribution, a Requires-Python this interpreter fails, a resolution conflict, or a source build needing a C toolchain are PERMANENTLY_UNAVAILABLE -- written once with the exact error and the cover that carries the capability, and NEVER retried, because retrying an interpreter incompatibility hourly forever is a lie about effort. Everything else is RETRYABLE on a 30-minute doubling backoff to a week. The ledger is written after EVERY attempt so a killed pass forgets nothing",
+   "evidence": [
+    "desks/mt5/research/sandbox_provision.py:303 - provision_pass: ROI order, per-attempt ledger write, licence read at the pin, measured free-disk headroom per weight",
+    "desks/mt5/research/sandbox_provision.py:133 - classify: pip's words -> PERMANENTLY_UNAVAILABLE (final) or RETRYABLE, each with its reason",
+    "desks/mt5/research/sandbox_provision.py:159 - ensure_shared: ONE venv with --system-site-packages over the desk interpreter; the gateway's python is never touched",
+    "libs/research/sandbox.py:310 - shared_python / shared_modules: what the runner executes adapters with and how availability is read without a subprocess per system",
+    "desks/mt5/research/sandbox_runner.py:283 - plan_adapter: importable here, or in the shared venv, or a per-system venv -- three ways to be RUNNABLE instead of one",
+    "tests/test_sandbox_federation.py:132 - pip failures classified final vs retryable, a settled row never retried, backoff doubling, every unpinned system names its cover"
+   ],
+   "scheduled_by": "leg:sandbox_provision (desks/mt5/research/hourly_cycle.py:3370, hourly)",
+   "artifact": "desks/mt5/reports/SANDBOX_PROVISION.json + desks/mt5/data/sandbox_install_ledger.json",
+   "consumer": "desks/mt5/research/sandbox_runner.py (availability and the interpreter), desks/mt5/research/sandbox_roster.py (the disposition column), scripts/check_sandbox_liveness.py (a stale UNMEASURED reason is a fence failure)",
+   "landed": [
+    "sandbox supply line 2026-09-23"
+   ],
+   "notes": "A library that cannot be hosted here is never silently absent: the row carries the exact pip error and names the REBUILT cell or the adapter's own numpy implementation that carries the capability instead."
+  },
+  {
+   "id": "U76",
+   "domain": "U",
+   "phase": "U",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "SANDBOX ROTATION AND MEASURED BREADTH (LAWS 5h, L1.32). The runner allocated the hour ROI-proportionally over everything it could run, which is a ratchet: the systems that produced kept producing and a system that had never run could wait forever without anybody deciding it should -- a frontier switched off by arithmetic rather than by evidence. TWO LANES now. SCOUT: the most OVERDUE runnable systems get a floor share FIRST, ordered by age ALONE with no ROI test and no breadth test in it, enough slots that the whole roster fits inside a 24h window, never more than half the pass; a system that has never run is infinitely overdue and is therefore always a scout, and the proposer seat may reorder the exploit lane but the scouts are pinned back to the front afterwards. EXPLOIT: the rest is ROI-proportional REWEIGHTED by MEASURED marginal breadth -- each system's donated (family|symbol|horizon) cells are one row of an indicator matrix and libs.risk.fx_exposure.effective_rank (the participation ratio of its singular-value spectrum, the same arithmetic the book uses for n_effective) says how many independent directions the federation spans; a system's marginal breadth is the DROP when its row is removed, so a system that re-donates a crowded corner reads ~0 and the sole holder of a direction reads a whole one. This adds compute to the orthogonal systems; it takes the hour from nobody -- the floor is what stops that",
+   "evidence": [
+    "libs/research/sandbox_rotation.py:129 - plan: scouts by age, exploit by ROI x (1 + marginal breadth), every share floored",
+    "libs/research/sandbox_rotation.py:99 - breadth: effective rank of the system x cell indicator matrix and each system's marginal contribution to it",
+    "libs/research/sandbox_rotation.py:71 - scout_slots: slots DERIVED from the pass budget and the roster size, capped at half the pass",
+    "desks/mt5/research/sandbox_runner.py:563 - the runner's order and shares come from the rotation plan; the scouts are re-pinned after the proposer seat",
+    "desks/mt5/research/sandbox_runner.py:651 - the donated cells recorded per system so breadth is MEASURED rather than asserted",
+    "tests/test_sandbox_federation.py:71 - a simulated day of hourly passes leaves no runnable system past its window; the duplicate reads 0 marginal breadth and the orthogonal reads a direction"
+   ],
+   "scheduled_by": "leg:sandbox_runner (desks/mt5/research/hourly_cycle.py:3357, hourly)",
+   "artifact": "desks/mt5/reports/SANDBOX_RUNNER.json (the rotation block: order, shares, scouts, ages, breadth)",
+   "consumer": "scripts/check_sandbox_liveness.py, desks/mt5/research/sandbox_roster.py",
+   "landed": [
+    "sandbox rotation + measured breadth 2026-09-23"
+   ],
+   "notes": "NEVER a throttle: the scout lane can only ever hand an hour to a system that was not getting one. Nothing in this item reduces any system's floor."
+  },
+  {
+   "id": "U77",
+   "domain": "U",
+   "phase": "U",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "THE SANDBOX LIVENESS FENCE (LAWS 5h, L1.28c, L1.32): a runnable federated system that has not run inside its rotation window (x1.5 grace, so one skipped pass is not a breach) FAILS the law gate by name and age; and an UNMEASURED reason that is byte-identical for seven days FAILS unless the install ledger shows the task moving -- an attempt inside the week, or a settled PERMANENTLY_UNAVAILABLE row that names its exact error AND the cover that carries its capability. A settled row is an answer; a stale retryable row is a stall. The fence keeps its own record of WHEN each reason last changed, because a reason is a string in a report rewritten every hour and \"unchanged for a week\" is only knowable if something remembers the string and its date. An absent runner report is UNMEASURED, which fails: a gate that never ran is a claim the desk cannot cash (L1.49)",
+   "evidence": [
+    "scripts/check_sandbox_liveness.py:131 - build_report: dark rows from the rotation window, stalled rows from the reason clock crossed with the install ledger",
+    "scripts/check_sandbox_liveness.py:108 - task_moved: what counts as an install task moving, and why a terminal row without an error and a cover is still a stall",
+    "scripts/check_sandbox_liveness.py:84 - reason_ages: the reason clock the fence maintains",
+    "libs/research/sandbox_rotation.py:180 - due_violations: the rotation-window breach list",
+    "scripts/run_law_gate.py:188 - registered in the STATE fences beside check_external_federation",
+    "tests/test_sandbox_federation.py:196 - dark fails, a week-old unchanged reason fails, a settled row with its error and cover passes, a missing report is UNMEASURED"
+   ],
+   "scheduled_by": "leg:fence_battery (desks/mt5/research/hourly_cycle.py, hourly) via scripts/run_law_gate.py",
+   "artifact": "desks/mt5/reports/SANDBOX_LIVENESS.json",
+   "consumer": "scripts/run_law_gate.py state battery (exit 1 on DARK/STALLED/UNMEASURED)",
+   "landed": [
+    "sandbox liveness fence 2026-09-23"
+   ],
+   "notes": "The fence demands MORE federation, never less: every failure path is answered by running a system or provisioning a library, and none by removing one from the roster."
+  },
+  {
+   "id": "U78",
+   "domain": "U",
+   "phase": "U",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "THE GENERATED SANDBOX ROSTER (LAWS 5h): one table that answers \"are they all there and working\" -- every one of the 123 roster seeds, all 58 adapters and every REBUILT cell in one row each, with name, disposition (DIRECT / WRAPPED / REBUILT / REJECTED_WITH_EVIDENCE / ADAPTER_ONLY), the licence as READ at a pin, capability family, whether it runs on this host and why not when it does not, its last run and that run's age, what it produced (runs, candidates, information gain, last packet status) and its marginal independent breadth. GENERATED, never hand-written: every column is read from the artifact that owns it -- the install ledger, the runner state, the runner report, the federation state -- and the Markdown view is derived from the JSON in the same pass",
+   "evidence": [
+    "desks/mt5/research/sandbox_roster.py:107 - build: seeds, adapters and cells joined to the install ledger, the runner state and the measured breadth",
+    "desks/mt5/research/sandbox_roster.py:224 - render: the derived Markdown view",
+    "docs/research/SANDBOX_ROSTER.md - the rendered table (DERIVED; never edited by hand)",
+    "tests/test_sandbox_federation.py:266 - every seed, every adapter and every cell has exactly one row; every row carries the columns the question asked for; the Markdown names them all"
+   ],
+   "scheduled_by": "leg:sandbox_roster (desks/mt5/research/hourly_cycle.py:3376, hourly)",
+   "artifact": "desks/mt5/reports/SANDBOX_ROSTER.json + docs/research/SANDBOX_ROSTER.md",
+   "consumer": "scripts/check_sandbox_liveness.py, any session asking whether the federation is real",
+   "landed": [
+    "sandbox roster 2026-09-23"
+   ],
+   "notes": "A system that runs nowhere still has a row, and the row says why and what covers it."
+  },
+  {
+   "id": "U79",
+   "domain": "U",
+   "phase": "U",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "THREE ZERO-PRODUCTION BINDINGS FIXED, each with its measured cause (LAWS 5h, RESEARCH 10). (1) cell:rl_execution_challenger donated a learned execution policy and three QUBO slicing schedules every pass and scored information_gain 0.0, because the runner's gain formula counted candidates, representations, mechanisms and datasets and NOT research methods -- so a producing cell read ROI 0.0 and sank to the bottom of every allocation. Measured research-method rows now count like representations; route and note rows still count nothing, which is the TEXT_ONLY case. (2) numerai_method declares yields=(research_methods, candidates) and donated no candidate at all: every per-era out-of-sample rank correlation it measured stayed a research-method row that no gate ever judged. Each model's measured correlation against the 24-bar forward return is now donated as a hypothesis, family chosen by the SIGN (positive -> trend_ma_cross, negative -> mean_reversion_rsi, because a consistently negative correlation is mean reversion and not a null), with the gauntlet judging. (3) bridgewater_pat_aia returned its six-stage architecture map as a route row and nothing else, so it was recorded TEXT_ONLY -- never a resting state; it now MEASURES the mapping against this tree (organ file present, artifact written, artifact age) and donates the coverage as a representation, so a stage whose organ dies shows up as a number. cell:edgar_transmission was UNMEASURED for \"no cached filings and no fetch this pass\": the hourly leg now passes --allow-network, which is what its own declared public host was for",
+   "evidence": [
+    "desks/mt5/research/sandbox_runner.py:631 - the gain formula counts MEASURED research methods; ROUTE_KINDS and UNMEASURED still count zero",
+    "libs/research/adapters/numerai_method.py:98 - the gauntlet exit: one candidate per model, family by the sign of the measured correlation, evidence carried",
+    "libs/research/adapters/bridgewater_pat_aia.py:20 - STAGES measured against the tree; coverage donated as a representation instead of asserted as text",
+    "desks/mt5/research/hourly_cycle.py:3357 - the sandbox_runner leg passes --allow-network so the EDGAR cell's declared public source is reachable"
+   ],
+   "scheduled_by": "leg:sandbox_runner (desks/mt5/research/hourly_cycle.py:3357, hourly)",
+   "artifact": "desks/mt5/reports/SANDBOX_RUNNER.json (systems_tried[].counts and ingested)",
+   "consumer": "libs/moat/registry.py research_candidates -> desks/mt5/scripts/external_gauntlet.py",
+   "landed": [
+    "sandbox production bindings 2026-09-23"
+   ],
+   "notes": "Every fix ADDS donations to the one gauntlet with provenance and charged trials; none of them adds a filter, a threshold or a veto."
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."
