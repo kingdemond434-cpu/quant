@@ -773,7 +773,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     "release_authority", "residual_map", "failure_prior", "scientist_standings",
     "frontier_ceo", "evig_acquisition",
     "stamp_freshness", "time_joins", "layer_census", "opportunity_cost", "dead_architecture",
-    "producer_census",
+    "producer_census", "productivity_census",
     "cycle_pricing", "causal_invariance",
     # THE CLOSED-LOOP ORGANS (Tier-1 B14-B25): all cheap readers of artifacts that already exist,
     # so they belong on the core clock rather than the heavy one. `actor_pressure` and
@@ -918,7 +918,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "ingestion_exploitation", "coverage_tensor", "research_evolution",
                      "compute_economics", "control_plane", "attribution_reconcile",
                      "fence_battery", "organ_battery", "research_artifacts", "engine_registry",
-                     "search_paradigm_census", "producer_census",
+                     "search_paradigm_census", "producer_census", "productivity_census",
                      # Tier-1 B1/B7/B10/B11: the release bit, the scientists' league table, the
                      # failure prior and the unified EVIG acquisition are all the machine
                      # measuring and scheduling itself.
@@ -1364,12 +1364,16 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # every repair; the cap sits above 6*240 so a pass is never cut inside a repair it has
     # already started, which would leave a producer half-run and the census judging the stub.
     "producer_census": 1_600,
+    # The productivity census is a read-only sweep of two rosters, the alpha registry and the
+    # compute ledger; it finishes in seconds and its own --budget-s 300 bounds a pathological
+    # registry, so the cap only has to sit above that.
+    "productivity_census": 400,
     # The sandbox runner stops itself at --budget-s 900 (each system inside its ROI share) and
     # writes SANDBOX_RUNNER.json; the cap sits above it so it is never cut at the same prefix.
     "sandbox_runner": 1_000,
     # The supply line stops itself at --budget-s 600 (one pinned wheel at a time, ROI order) and
     # the roster generator at 120; both caps sit above their own budgets for the same reason.
-    "sandbox_provision": 700,
+    "sandbox_provision": 1_600,
     "sandbox_roster": 200,
     # The physics lab stops itself at --budget-s 600 and writes PHYSICS_LAB.json; the cap sits
     # above it so the institution's pass is never cut at the same prefix every hour.
@@ -3580,7 +3584,7 @@ def main() -> None:
     # interpreter can never host as PERMANENTLY_UNAVAILABLE with its exact error and its cover.
     sbp = _costed("sandbox_provision", lambda: _producer("sandbox_provision",
                                                          "research/sandbox_provision.py",
-                                                         "--once", "--budget-s", "600"))
+                                                         "--once", "--budget-s", "1500"))
     # THE SANDBOX RUNNER (LAWS 5h): the federation's execution layer. Runs the highest-ROI
     # runnable adapters in their sandboxes and the desk's own rebuilt cells over the desk's PIT
     # bars, converts every packet into registry candidates with provenance and charged trials,
@@ -4179,6 +4183,14 @@ def main() -> None:
     prdc = _costed("producer_census", lambda: _producer(
         "producer_census", "scripts/check_seat_health.py",
         "--census", "--relight", "--budget-s", "240", "--max-repairs", "6"))
+    # WHICH ORGANS EARN THEIR COMPUTE (external reviewer, 2026-09-23). `producer_census` above
+    # proves every producer has a CLOCK; this one measures whether it produces CELLS -- the
+    # eleven-stage funnel (sources -> documents -> claims -> mechanisms -> raw cells -> unique
+    # cells -> submitted -> survivors -> certificates -> forward -> live), the four marginal
+    # ratios, the region roll-up that answers "is the world crawler alpha or noise", and the list
+    # of producers that burned compute for no unique cell, ranked by compute.
+    prodc = _costed("productivity_census", lambda: _producer(
+        "productivity_census", "research/productivity_census.py", "--once", "--budget-s", "300"))
     # THE BARS THE VERDICTS WERE MEASURED ON (Tier-1 item V16). The release seal pins the code a
     # verdict came from; this pins its inputs, so a re-run can tell a code change from a data one.
     iid = _costed("input_identity", lambda: _producer(
@@ -4324,7 +4336,8 @@ def main() -> None:
                     "shortfall_model": shm, "counterfactual_timeframes": ctf, "meta_rnd": mrd,
                     "edge_reliability": erl, "arena": ar, "session_capital": scap,
                     "prosecutor": pc, "scaling_laws": slw,
-                    "dead_architecture": dac, "producer_census": prdc, "input_identity": iid,
+                    "dead_architecture": dac, "producer_census": prdc,
+                    "productivity_census": prodc, "input_identity": iid,
                     "publish_state": pub,
                     "enrol_clocks": ecl, "requeue_unrunnable": rq, "reclaim_disk": dd,
                     "miner_conversion": mc, "moat_miner": mo, "archive_tape": ta,
