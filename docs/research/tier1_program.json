@@ -6615,46 +6615,6 @@
    "gap": "LANDED 2026-09-22: 11 factory tests including a no-LLM end-to-end pass on synthetic bars under tmp_path that writes the artifact and the state files and reconciles PROPOSED / SCREENED / QUEUED against the cheap layer, the survivors and the registry rows. Debts by name: proposer_common.donate refuses symbols outside the hypothesis lane by design, so the registry queue is the adapter's door and the donation is the compiler's; the artifact has not yet been produced on the trading box (LANDED is build coverage, not operational proof); the campaign's FORWARD state is the gauntlet's `survived`, not a forward-clock enrolment, which the promoter owns."
   },
   {
-   "id": "CT1",
-   "domain": "CT",
-   "phase": "0",
-   "status": "LANDED",
-   "gate": "none",
-   "item": "ONE CERTIFICATE TRUTH (principal 2026-09-22): desks/mt5/research/certificate_truth.py audits every store that claims a certificate or a clock -- UNIVERSAL_SURVIVORS.json and its seal, POWER_CURE_CANDIDATES.json, SURVIVORS_LEDGER.json, sleeve_registry.json, shadow_state.json and every lane state, sleeves.json, forward_reconcile.json -- against the ONE lane (external_gauntlet.py writes, promoter.py reads, exact ten-gate attestation) and publishes every divergence by store, key and kind: banned-family (discovered) certificates, cure candidates, claims, clocks and live sleeves; ledger claims the canon no longer holds; LIVE registry rows and running shadow clocks no certificate or power-cure candidate backs (the promoter's PARTS join, exact sources before parsing); rows it cannot parse (published, never acted on); an unreadable attestation while clocks run; a reconciler count the canon contradicts",
-   "evidence": [
-    "desks/mt5/research/certificate_truth.py:312",
-    "desks/mt5/research/certificate_truth.py:420",
-    "desks/mt5/research/certificate_truth.py:473",
-    "desks/mt5/research/hourly_cycle.py",
-    "libs/research/layers.py",
-    "desks/mt5/tests/test_certificate_truth.py"
-   ],
-   "scheduled_by": "hourly_cycle:certificate_truth",
-   "artifact": "desks/mt5/reports/CERTIFICATE_TRUTH.json",
-   "consumer": "scripts/check_certificate_truth.py (law gate, both halves); the coordinator's one-time --apply migration reads the same audit",
-   "gap": "LANDED 2026-09-22: leg certificate_truth in the validate department, --once --budget-s 120 (cap 150 s), layer meta; measured on the build box: canon EXACT n=32 of 58 rows (24 discovered, 2 not ten-gate), cure lane 232 parts, 56 banned certificates (canon + seal), 21 banned cure candidates, 36 banned claims, 46 banned clocks, 24 banned live sleeves, 58 unbacked clocks, 4 unparsed scalp rows, 315 clocks backed by the cure lane that a certificate-only join would have called orphans"
-  },
-  {
-   "id": "CT2",
-   "domain": "CT",
-   "phase": "0",
-   "status": "LANDED",
-   "gate": "none",
-   "item": "THE CERTIFICATE-TRUTH MIGRATION AND FENCE: `certificate_truth.py --once --apply` (one-time, run by the coordinator on the box, never on the clock) moves discovered-family certificates and cure candidates out of the writer's files into data/certificate_history.jsonl (status RETIRED, reason 'discovered family banned from live capital; certificate discovery banned'), retires discovered-family clocks in the registry, the shadow state, every lane state and the live book in each store's own vocabulary (promoter.retire_banned / sleeve_registry.mark), marks ledger claims the canon no longer holds RETIRED as history, and retires every remaining unbacked clock with the lane's reason -- never a clock on a symbol the live book trades under a principal override (LAWS 5j), never a row it cannot parse, and never anything but banned rows when the attestation is unreadable; idempotent. scripts/check_certificate_truth.py fails the law gate on any fatal divergence (law half passes with UNMEASURED on a tree without desk state; the state half runs --require-state)",
-   "evidence": [
-    "desks/mt5/research/certificate_truth.py:687",
-    "scripts/check_certificate_truth.py:1",
-    "scripts/run_law_gate.py",
-    "docs/LAWS.md",
-    "docs/desk_lessons.jsonl",
-    "desks/mt5/tests/test_certificate_truth.py"
-   ],
-   "scheduled_by": "hourly_cycle:certificate_truth",
-   "artifact": "desks/mt5/reports/CERTIFICATE_TRUTH.json",
-   "consumer": "scripts/run_law_gate.py (_LAW_FENCES and _STATE_FENCES); data/certificate_history.jsonl is the migration's record",
-   "gap": "LANDED 2026-09-22: fence in both halves of the law gate; LAWS 5j and 7 bullets; desk lesson recorded via scripts/learn.py (enforced by test_the_fence_fails_on_residue_and_passes_once_the_lane_is_the_truth); the box migration command is `python desks/mt5/research/certificate_truth.py --once --apply`"
-  },
-  {
    "id": "T5-1",
    "domain": "U",
    "phase": "D",
@@ -7795,6 +7755,69 @@
     "sandbox production bindings 2026-09-23"
    ],
    "notes": "Every fix ADDS donations to the one gauntlet with provenance and charged trials; none of them adds a filter, a threshold or a veto."
+  },
+  {
+   "id": "CT1",
+   "domain": "C",
+   "phase": "C",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "COST TRUTH: the desk measures what it CHARGES itself against what the broker QUOTES and what the account has PAID (principal 2026-09-23, 'double check if the costs are actually Fusion costs, spreads etc, accurate -- just in case we dismissed edges net based on overcharged false costs'). Three independent readings per symbol from the live terminal on the trading box: symbol_info (point, digits, contract size, swap long/short, stop level, tick value) and the M1 tape's own spread column bucketed by SESSION with the rollover hour derived from the MEASURED server offset (+3, so 21:00 UTC); history_deals_get over all 433 deals of account 495044 for commission and swap in account currency; and the desk's own live_ledger/order_intents join for entry and exit slippage against the decision price. MEASURED: commission is 2.00 EUR per lot per side on every one of the 12 traded symbols, gold included, against a model that charges 2.25 (1.125x); the registry charges GBPCHF 165.0 points against a book whose own tape quotes a median 0.0 and a p90 of 1.0, CADCHF 98.0 against 0.0/1.0, AUDCHF 110.5 against a live 2.0, and XAUUSD 14.5 against 5.0 at the desk's own fill minutes. The R denominator is the row's own stop distance through the terminal's tick value, NOT live_ledger.risk_quote, which holds a price distance on some rows and money on others and produced a 45R commission on EURCHF.",
+   "evidence": [
+    "desks/mt5/research/cost_truth.py:263 - charged_reading: the model's bill, with the RAW regime multiplier divided back out of the spine's commission ratio",
+    "desks/mt5/research/cost_truth.py:374 - realised_reading: commission, swap and slippage in R off the row's own stop distance, with the risk_quote defect measured in the docstring",
+    "desks/mt5/research/cost_truth.py:353 - position_direction: long/short from the bracket, measured 112 SHORT at side==0 and 35 LONG at side==1 over the ledger",
+    "desks/mt5/research/cost_truth.py:505 - compare: charged vs quoted vs realised, with the zero-median fallback to p90/live before a charge is called manufactured"
+   ],
+   "scheduled_by": "hourly_cycle:cost_truth (desks/mt5/research/hourly_cycle.py:3353, hourly)",
+   "artifact": "desks/mt5/reports/COST_TRUTH.json + docs/research/COST_TRUTH.md",
+   "consumer": "scripts/check_cost_truth.py (law gate) and desks/mt5/research/net_edge_spine.py through desks/mt5/reports/EXECUTION_COST_SURFACE.json",
+   "landed": [
+    "cost truth measured on the live terminal 2026-09-23"
+   ],
+   "notes": "It vetoes nothing and sizes nothing. Every correction moves a charge toward the measured MEDIAN; an unmeasured term stays UNMEASURED and makes net a BOUND."
+  },
+  {
+   "id": "CT2",
+   "domain": "C",
+   "phase": "C",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "THE REALISED EXECUTION SURFACE REACHES ITS CONSUMER. net_edge_spine.exec_cell_index reads reports/EXECUTION_COST_SURFACE.json and NOTHING on this desk ever wrote that name -- cost_surface.py writes reports/COST_SURFACE.json -- so the spine's own inputs block read 'EXECUTION_COST_SURFACE.json: absent' and 212 of 273 priced rows fell back to a modelled scalar or to no spread at all. cost_truth now writes it, from the broker's quoted spread at the desk's own fill minutes plus the SIGNED median entry slip, excluding commission and swap (the spine charges those as their own terms; cost_surface.deal_costs builds a cost_r that is commission+swap ONLY, which the spine would have charged a second time in its spread slot). A cell whose slippage is unmeasured is DEFERRED rather than published: the consumer marks what it finds MEASURED and stops asking, and a 0.0 in the spread slot is the number this desk's own cost modules name as the one that manufactures survivors.",
+   "evidence": [
+    "desks/mt5/research/cost_truth.py:683 - execution_surface: the net_alpha shape the spine indexes, with the deferral rule and the zero floor both named",
+    "desks/mt5/research/cost_truth.py:943 - consumer_defects: the four defects in files this organ does not own, each with its one-line fix and its owner",
+    "desks/mt5/research/net_edge_spine.py:341 - exec_cell_index, the consumer that reads it",
+    "tests/research/test_cost_truth.py:1 - 32 cases in tmp_path, including the deferral, the zero floor and the two-sided re-judge"
+   ],
+   "scheduled_by": "hourly_cycle:cost_truth (desks/mt5/research/hourly_cycle.py:3353, hourly)",
+   "artifact": "desks/mt5/reports/EXECUTION_COST_SURFACE.json (net_alpha[] with cost_basis)",
+   "consumer": "desks/mt5/research/net_edge_spine.py:341 exec_cell_index -> spread_term",
+   "landed": [
+    "execution surface bridged to its consumer 2026-09-23"
+   ],
+   "notes": "The spine and net_edge.py belong to another builder and were not edited. The two producers of this shape must be reconciled to one name; both are named in the artifact's consumer_defects block."
+  },
+  {
+   "id": "CT3",
+   "domain": "C",
+   "phase": "C",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "THE COST-TRUTH FENCE, and the re-judge it rests on. Re-pricing the spine's OWN published rows with the measured commission and the measured execution cost: of the 14 COST_DEAD rows 13 carried a modelled commission and 4 flip back to positive; across the published cost_dead and ranked rows 26 re-price and 6 are restored to the queue, each with a missed-growth line on rail cost_truth_overcharge for the period the refusal stood (GROWTH GOVERNANCE Rule 1). The re-judge is TWO-SIDED and has to be: EURCHF's measured execution cost is HIGHER than the model charged (real slippage the model never priced) while its commission was 5.625x too high. The fence fails on a NEW overcharged symbol, on a RISING commission overcharge and on an artifact older than its own cadence, and lowers its own declaration when the debt shrinks. The five known overcharged symbols are DECLARED with their owners rather than failing the tree on day one -- a fence that cries wolf gets disabled.",
+   "evidence": [
+    "scripts/check_cost_truth.py:111 - judge: OK / UNMEASURED / OVERCHARGED / RATCHET-UP / STALE",
+    "scripts/check_cost_truth.py:166 - rewrite_ratchet: the declaration may only shrink",
+    "scripts/run_law_gate.py:221 - the fence in _STATE_FENCES",
+    "desks/mt5/research/cost_truth.py:584 - rejudge, and cost_truth.py:660 missed_lines"
+   ],
+   "scheduled_by": "hourly_cycle:cost_truth (desks/mt5/research/hourly_cycle.py:3353, hourly)",
+   "artifact": "desks/mt5/data/cost_truth_ratchet.json + the rejudge block of desks/mt5/reports/COST_TRUTH.json + desks/mt5/data/missed_growth.jsonl",
+   "consumer": "scripts/run_law_gate.py:221 (state fences) and the intake, through restored cells",
+   "landed": [
+    "cost-truth fence on the law gate 2026-09-23"
+   ],
+   "notes": "The biggest single overcharge is not new work: repair_universe_spreads.py already computed GBPCHF 165->3 and CADCHF 98->3 on 2026-09-16 and has sat at apply_mode=report_only ever since. The declaration names that as the owner and the one command."
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."

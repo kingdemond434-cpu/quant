@@ -348,6 +348,10 @@ LEG_LAYER: dict[str, str] = {
     # of having searched for the cell at all, charged at the cell's own size and state. It ranks
     # and it attributes; it places nothing, so execution is its layer and not sizing.
     "net_edge": "execution",
+    # COST TRUTH (principal 2026-09-23): what the model charges against what the broker quotes
+    # and what the account paid. It measures the price of reaching the venue -- spread, session
+    # structure, commission, swap, slippage -- so its layer is the same as the spine it audits.
+    "cost_truth": "execution",
     # THE INGESTION-EXPLOITATION CONTRACT (LAWS 5c, 2026-09-17). The ledger inventories the
     # desk's information estate and gives every ingested datum a downstream state: information.
     # The fusion turns that estate into regime posteriors and nowcasts: prediction. The gate
