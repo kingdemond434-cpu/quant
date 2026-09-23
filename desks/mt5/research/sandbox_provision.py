@@ -375,6 +375,9 @@ def provision_pass(*, budget_s: float = 900.0, root: Path | None = None,
             licence_reads.append(read_licence(sid, fed_rows, root))
         attempted.append(rec)
         rows_ledger[sid] = rec
+        #: The ledger is written after EVERY attempt, not at the end of the pass: a heavy wheel
+        #: can outlast the budget and a killed pass must not forget the twenty rows before it.
+        _write(ledger_path, {"at": now(), "generator": GENERATOR, "systems": rows_ledger})
 
     for sid, spec in A.SPECS.items():
         if sid in rows_ledger:

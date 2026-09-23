@@ -929,6 +929,27 @@ def q6_donate(res: dict, donor: Donor) -> None:
 
 
 # ------------------------------------------------------------------------------- run
+def _seat_questions(asked: list[str]) -> dict[str, Any]:
+    """THE PROPOSER SEAT, OPTIONAL: a SEVENTH question worth asking the desk's own data.
+
+    The six questions here are hard-coded on purpose -- they are the unknown-unknown generator,
+    and a question that changes every hour measures nothing. So a proposed question is published
+    in the report as a CANDIDATE for a human or a later builder to implement: it runs nothing,
+    donates nothing, and cannot add a row to this pass. That is the correct weight for a
+    suggestion about what to measure next. {} on a box with no panel.
+    """
+    try:
+        from libs.research import proposer_seat as ps
+        return ps.ask(
+            "standing_questions", "terms",
+            task=("Propose a question a quant desk could ask its OWN hourly bar and tape data "
+                  "that would surface an effect nobody looked for. One clause each, no sites."),
+            context=[f"already asked every hour: {q}" for q in asked[:12]],
+            n=6).to_row()
+    except Exception as exc:                              # pragma: no cover - optional seat
+        return {"verdict": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
+
+
 def run(*, n_symbols: int = 25, budget_s: float = 240.0, dry_run: bool = False) -> dict:
     _BARS.clear()
     _CACHE.clear()
@@ -975,6 +996,7 @@ def run(*, n_symbols: int = 25, budget_s: float = 240.0, dry_run: bool = False) 
               "symbols": syms, "budget_s": float(budget_s),
               "elapsed_s": round(time.monotonic() - started, 2),
               "donation_file": str(donated_path) if donated_path else None,
+              "proposer_seat": _seat_questions(list(out)),
               "axes_skipped": _CACHE.get("axes_skipped", {})}
     if not dry_run:
         _atomic_json(REPORT, report)

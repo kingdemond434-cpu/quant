@@ -772,6 +772,30 @@ def record_registry(rows: list[dict[str, Any]], conn: Any) -> dict[str, Any]:
 
 
 # ------------------------------------------------------------------------------- the pass
+def _seat_datasets(ranked: list[dict[str, Any]]) -> dict[str, Any]:
+    """THE PROPOSER SEAT, OPTIONAL: which dataset to seek next, BY NAME.
+
+    A dataset NAME is not an acquisition. Everything proposed here is published in the report and
+    has to enter through the same door every other candidate dataset does -- the contract fields,
+    the legality gate (DC.LEGALITY_RULE), the admission check and the request ledger -- so the
+    seat cannot acquire anything, cannot name a route, and cannot move a blocked dataset into
+    ACQUIRE. The seat's own validator refuses anything shaped like a URL for the same reason.
+    {} on a box with no panel, and the ranking above is untouched either way.
+    """
+    try:
+        from libs.research import proposer_seat as ps
+        have = [str(r.get("dataset") or "") for r in ranked][:20]
+        return ps.ask(
+            "data_acquisition_scientist", "terms",
+            task=("Name PUBLIC datasets or data products that would explain hourly moves in FX, "
+                  "metals, energy or index futures and that are not in the list below. Names "
+                  "only -- the desk's own registry decides what may be fetched."),
+            context=[f"already ranked: {d}" for d in have],
+            n=8).to_row()
+    except Exception as exc:                              # pragma: no cover - optional seat
+        return {"verdict": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
+
+
 def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None,
           packs: dict[str, Any] | None = None, catalogue: Any = None,
           axes_dir: Path | None = None, value_path: Path | None = None,
@@ -898,6 +922,7 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
                                "it, by the delay from first request and the source-yield "
                                "posteriors of what it then produced"},
         "state": {"path": str(STATE), "known_requests": len(state)},
+        "proposer_seat": _seat_datasets(public[:top_k]),
         "unmeasured": unmeasured,
     }
     if not dry_run:

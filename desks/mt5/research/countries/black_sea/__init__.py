@@ -28,6 +28,7 @@ the pack's own data, where a miner can read it.
 """
 from __future__ import annotations
 
-from .pack import pack
-
+#: `pack()` lives in `pack.py` and is NOT re-exported here on purpose: re-exporting it would
+#: shadow the `pack` SUBMODULE for every `from countries.black_sea import pack` in the tests and
+#: in the miners, which is the one import this department actually does.
 __all__ = ["pack"]

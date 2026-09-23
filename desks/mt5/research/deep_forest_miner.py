@@ -11,7 +11,7 @@ frontier links to. Most of the deep forest -- Chinese, Japanese, Korean, Vietnam
 Polish, Turkish, Russian ... -- is not linked from anywhere the crawler has been: it is indexed
 by search engines, sits behind JavaScript shells, or lives on platforms with their own APIs. This
 miner reaches those by ROUTE -- search-engine `site:` queries in the ground's own locale for
-grounds that refuse direct fetches, platform APIs where they exist (Qiita, Zenn, Habr, arXiv,
+grounds a link walk never reaches, platform APIs where they exist (Qiita, Zenn, Habr, arXiv,
 Gitee, Bilibili ...), RSS where a site publishes one, the Wayback Machine for archives that are
 gone, public Telegram previews, nitter mirrors when one is up, a rendered fetch where a shell
 hides the listing -- and then hands every URL it finds to the crawler's frontier, so the forest
@@ -38,6 +38,15 @@ that is the principal's point -- and the gauntlet, not the miner, decides what i
 
 EVERY GROUND RECORDS ITS OWN STATUS, re-measured each run. Off the box the network is usually
 absent; then the miner rebuilds the queue from its claims ledger and says so.
+
+EVERY REGISTERED GROUND IS MINED (LAWS 5e, 2026-09-23). This miner used to hold two discovery
+brakes of its own: a `snippets_only` flag that read the search index and REFUSED to fetch the
+site, and a `route: unreachable` that recorded a ground and never reached for it -- both keyed on
+robots, terms or a paywall. Both are deleted. A robots note, a terms note or a paywall is now a
+ROUTING LABEL (`terms_note`) carried on every claim the ground produces: it says what the desk may
+REDISTRIBUTE, never what it may read and test. The open surface of a paywalled domain is mined and
+the wall itself is never bypassed -- that is hard-boundary act 2 and it is the only thing here
+that still says no. Machine-translated and forum ground is FIRST CLASS.
 """
 from __future__ import annotations
 
@@ -99,14 +108,18 @@ GRADE = {"competition": "COMPETITION_RECORD", "interview": "INTERVIEW",
          "archive": "COMMUNITY_POST"}
 
 #: Every route a ground may declare. A ground naming anything else is a configuration error the
-#: grounds-file test catches before a run does; "unreachable" is a recorded gap, never a route.
+#: grounds-file test catches before a run does. "unreachable" is a LEGACY value kept so an old
+#: grounds file still loads: since LAWS 5e it is no longer a refusal -- `work()` re-routes such a
+#: ground to search (or http) and mines it, because "unreachable" was almost always robots, terms
+#: or a paywall wearing a measurement's clothes.
 ROUTES: frozenset[str] = frozenset({
     "http", "render", "search", "juejin", "sogou", "bilibili", "gitee", "foreign", "papers",
     "rss", "reddit", "wayback", "nitter", "youtube", "telegram", "unreachable",
 })
 #: libs.data.foreign_sources functions a ground may name. `coinpan` (a crypto forum) is fenced
-#: out by the standing order; `dcinside` and `note` are excluded because their robots.txt names
-#: this agent family (OP-041) -- those grounds ride the search-index route, snippets only.
+#: out by the standing order -- the ONLY exclusion here, and it is the MT5 universe mandate, not
+#: an access brake. `dcinside` and `note` ride the search route because that is where their
+#: content is indexed, not because their robots.txt says anything (LAWS 5e: it is a label).
 FOREIGN_FNS: frozenset[str] = frozenset({
     "qiita", "zenn", "hatena", "velog", "habr", "vcru", "smartlab", "tinhte", "eksisozluk",
 })
@@ -134,6 +147,32 @@ REGION_CLUSTER: dict[str, str] = {
     "ua": "east_eu", "ru": "ru", "br": "latam", "mx": "latam", "cl": "latam", "co": "latam",
     "pe": "latam", "ar": "latam", "institutional": "institutional",
 }
+
+
+def terms_label(g: dict[str, Any]) -> str:
+    """THE ROUTING LABEL A GROUND CARRIES, never a reason to skip it (LAWS 5e, 2026-09-23).
+
+    A robots note, a declared terms note, a paywall or a legacy `snippets_only` / `unreachable`
+    flag lands here as free text and rides along on every claim the ground produces. It says what
+    the desk may REDISTRIBUTE and how the row is provenanced; it has nothing to say about whether
+    the desk may read, extract or test the page, and no caller may read it as a veto.
+    """
+    bits: list[str] = []
+    note = str(g.get("terms_note") or "").strip()
+    if note:
+        bits.append(note)
+    if g.get("snippets_only"):
+        bits.append("registered snippets_only (robots or paywall): MINED IN FULL, "
+                    "redistribution withheld")
+    if str(g.get("route") or "") == "unreachable":
+        bits.append("registered route=unreachable: re-routed and mined, the note kept as "
+                    "provenance")
+    if g.get("machine_use_allowed") is False:
+        bits.append("ground declares machine_use_allowed=false: mined, redistribution withheld")
+    why = str(g.get("why") or "")
+    if bits and why:
+        bits.append(why[:200])
+    return "; ".join(bits)
 
 
 def cluster_of(g: dict[str, Any]) -> str:
@@ -655,6 +694,9 @@ class _Run:
                    # the page states, when the desk could first have read it, when it wrote it.
                    "published_time": meta["published_time"], "available_time": now,
                    "ingested_time": now, "revision": meta["revision"], "source_hash": src_hash,
+                   # THE LABEL, NOT A BRAKE: robots/terms/paywall provenance rides with the
+                   # claim so redistribution can be routed later. It never gates the claim.
+                   "terms_note": terms_label(ground),
                    "fetched_utc": now, "score": mc.claim_score(c), **(extra or {})}
             if c.get("mechanism_key") in self.mech_keys:
                 self.counts["duplicate_mechanisms"] += 1
@@ -755,7 +797,6 @@ class _Run:
 
     def ground_search(self, g: dict[str, Any]) -> dict[str, Any]:
         site = str(g.get("site") or "")
-        snippets_only = bool(g.get("snippets_only"))
         claims = pages = 0
         engines: dict[str, int] = {}
         errors: list[str] = []
@@ -776,9 +817,11 @@ class _Run:
                 claims += self.take(text, ground=g, url=url, title=r.get("title", ""),
                                     route=f"search:{engine}")
                 self.follow(url, r.get("title", ""), via=f"{SOURCE}:{g.get('name')}")
-                # SNIPPETS ONLY where the ground's robots.txt names this agent family (OP-041):
-                # the engine's index is read, the site itself is never fetched.
-                if not snippets_only and fetched < PAGE_FETCH_PER_QUERY and not self.over():
+                # THE SITE ITSELF IS ALSO READ (LAWS 5e, 2026-09-23). The old `snippets_only`
+                # flag stopped here whenever a ground's robots.txt named this agent family or a
+                # paywall was declared; that was a discovery brake, not a legal requirement, and
+                # it is deleted. The note now travels as `terms_note` on every claim instead.
+                if fetched < PAGE_FETCH_PER_QUERY and not self.over():
                     body = self.page(url)
                     if len(html_text(body)) >= MIN_PAGE_TEXT:
                         fetched += 1
@@ -1104,11 +1147,20 @@ class _Run:
 
     def work(self, g: dict[str, Any], share_s: float | None = None) -> None:
         name, route = str(g.get("name")), str(g.get("route") or "http")
+        label = terms_label(g)
+        # LEGACY `unreachable` IS NOT A REFUSAL ANY MORE (LAWS 5e, 2026-09-23). It was recorded
+        # for a paywall or a robots Disallow, which are labels; so the ground is RE-ROUTED to the
+        # route its own fields support and mined, with the old reason kept as `terms_note`.
+        # Only a ground that names neither a site nor a url has nothing to reach for.
+        if route == "unreachable":
+            route = "search" if g.get("site") else ("http" if g.get("url") else "unreachable")
         row: dict[str, Any] = {"ground": name, "route": route, "kind": g.get("kind"),
                                "region": g.get("region"), "cluster": cluster_of(g),
-                               "language": g.get("language")}
+                               "language": g.get("language"),
+                               "terms_note": label}
         if route == "unreachable":
-            self.status.append({**row, "status": "UNREACHABLE", "why": g.get("why")})
+            self.status.append({**row, "status": "NO_ADDRESS",
+                                "why": f"no site and no url to reach for: {g.get('why')}"})
             return
         if not self.fetch:
             self.status.append({**row, "status": "SKIPPED", "why": "--no-fetch"})

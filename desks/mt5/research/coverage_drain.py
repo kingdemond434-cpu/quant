@@ -277,12 +277,14 @@ def crawled_hosts(conn: sqlite3.Connection) -> dict[str, str]:
 
 
 def refused_hosts(conn: sqlite3.Connection) -> dict[str, str]:
-    """{host: the refusal reason} over every source registered and lawfully refused.
+    """{host: the refusal reason} over every source refused at the five-act hard boundary.
 
     A layer whose only declared hosts are refused is NOT unverified work: the desk has done
     everything it lawfully can and the answer is a registered legal fact. That is a different
     state from "nobody has got round to it", and conflating the two hides the one the desk can
-    actually act on.
+    actually act on. Rows stamped by an earlier build with the now-deleted `refused-machine-use`
+    and `refused-robots` statuses are counted here too -- they are not evidence of a fetch, and
+    re-crawling them is the drain's ordinary work once they are re-cleared.
     """
     out: dict[str, str] = {}
     for url, status, _stamp, why in _stamped_rows(conn):
@@ -658,7 +660,7 @@ def seed_grounds(conn: sqlite3.Connection, grounds: Sequence[Mapping[str, Any]],
     fails the law gate is on the OVERDUE backlog for exactly this reason.
     """
     out: dict[str, Any] = {"considered": len(grounds), "inserted": 0, "already": 0,
-                           "refused_machine_use": 0, "errors": 0}
+                           "refused_hard_boundary": 0, "terms_labelled": 0, "errors": 0}
     if not _has_sources(conn):
         out["errors"] = len(grounds)
         return out
@@ -675,12 +677,16 @@ def seed_grounds(conn: sqlite3.Connection, grounds: Sequence[Mapping[str, Any]],
         if sid in have:
             out["already"] += 1
             continue
-        # A ground the pack itself declares unfetchable is REGISTERED AND REFUSED IN ONE STEP --
-        # written down so the desk holds the fact that it exists, stamped so it never queues.
-        refused = not bool(row.get("machine_use_allowed", True))
+        # A GROUND WHOSE TERMS WITHHOLD REDISTRIBUTION IS STILL MINED (LAWS 5e). It is seeded
+        # like any other and its terms note is written onto the row, where the republication
+        # decision will read it. An earlier build of this organ stamped such rows as refused in
+        # the same step it registered them -- 113 of them on the first live pass, every one a
+        # discovery brake the law names as deleted.
+        note = terms_note(row)
+        refused = str(row.get("access_label") or "").strip().upper() in _refused_labels()
         meta = {"seeded_by": SOURCE, "pack": row.get("pack") or "",
                 "label": row.get("label") or "", "alt": list(row.get("alt") or ()),
-                "layer": row.get("kind") or ""}
+                "layer": row.get("kind") or "", "terms_note": note}
         try:
             conn.execute(
                 "INSERT INTO sources(source_id, url, kind, language, country, "
@@ -692,22 +698,25 @@ def seed_grounds(conn: sqlite3.Connection, grounds: Sequence[Mapping[str, Any]],
                  str(row.get("language") or ""), str(row.get("country") or ""),
                  json.dumps([]), SOURCE, "coverage_drain seed", stamp,
                  stamp if refused else None,
-                 "refused-machine-use" if refused else CLEARED,
-                 str(row.get("licence") or "")[:900],
+                 "refused-hard-boundary" if refused else CLEARED,
+                 "; ".join(x for x in (str(row.get("licence") or ""), note) if x)[:900],
                  json.dumps(meta, sort_keys=True, default=str),
                  str(row.get("access_label") or "") or None,
                  str(row.get("credibility") or "") or None, "UNTESTED", 0,
                  stamp if refused else None,
-                 ("MACHINE_USE_REFUSED: the pack declares machine_use_allowed=false; registered "
-                  f"so the ground is known, never fetched [registered {stamp} by {SOURCE}]")
-                 if refused else None))
+                 (f"HARD_BOUNDARY: access_label={row.get('access_label')} carries one of the "
+                  f"five refused ACTS (LAWS 5e); registered so the ground is known, never "
+                  f"fetched [registered {stamp} by {SOURCE}]")
+                 if refused else (note or None)))
         except sqlite3.Error:
             out["errors"] += 1
             continue
         have.add(sid)
         out["inserted"] += 1
         if refused:
-            out["refused_machine_use"] += 1
+            out["refused_hard_boundary"] += 1
+        elif note:
+            out["terms_labelled"] += 1
     with suppress(sqlite3.Error):
         conn.commit()
     return out
@@ -861,7 +870,7 @@ def verify_layers(conn: sqlite3.Connection | None) -> dict[str, Any]:
         out["why"] = "UNMEASURED: the countries package is not importable"
         out["measured"] = False
         return out
-    tot = dict.fromkeys(("mapped", "absent_declared", "refused_lawful",
+    tot = dict.fromkeys(("mapped", "absent_declared", "refused_hard_boundary",
                          "declared_unverified", "unmapped"), 0)
     for code in pkg.codes():
         mod = _pack_module(code)
@@ -887,9 +896,10 @@ def verify_layers(conn: sqlite3.Connection | None) -> dict[str, Any]:
                 state = "ABSENT_DECLARED"
                 why = str(absent[0].get("notes") or "declared absent with a reason")[:220]
             elif barred and len(barred) == len(hosts):
-                state = "REFUSED_LAWFUL"
-                why = (f"every declared host in this layer is registered and lawfully refused "
-                       f"({walled[barred[0]][:140]}); the desk has done what it lawfully can")
+                state = "REFUSED_HARD_BOUNDARY"
+                why = (f"every declared host in this layer sits behind one of the five refused "
+                       f"ACTS ({walled[barred[0]][:140]}); the desk has done what it lawfully "
+                       f"can and the answer is a registered legal fact, not undone work")
             elif declared:
                 state = "DECLARED_UNVERIFIED"
                 why = (f"{len(declared)} source(s) over {len(hosts)} host(s) declared and none "
@@ -1188,12 +1198,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     return 0
 
 
-__all__ = ["LEASE_H", "REPORT", "RULE", "SOURCE_LAYERS", "budget_seconds", "build_root_index",
-           "connect", "crawled_hosts", "drain", "drain_order", "forest_grounds", "host_keys",
-           "host_of", "largest_gap", "lawful_grounds", "load_ledger", "main", "measure_backlog",
-           "pack_sources", "pending_rows", "ratchet", "refusal_for", "refused_hosts",
-           "register_refusal", "registry_grounds", "resolve_root", "run", "save_ledger",
-           "seed_grounds", "verify_layers"]
+__all__ = ["CLEARED", "INTERNAL_PREFIXES", "LAYER_SETTLED", "LEASE_H", "REFUSAL_STATUSES",
+           "REFUSED_LABELS", "REPORT", "RULE", "SOURCE_LAYERS", "budget_seconds",
+           "build_root_index", "connect", "crawled_hosts", "drain", "drain_order",
+           "forest_grounds", "host_keys", "host_of", "largest_gap", "lawful_grounds",
+           "load_ledger", "main", "measure_backlog", "pack_sources", "pending_rows", "ratchet",
+           "refusal_for", "refused_hosts", "register_refusal", "registry_grounds",
+           "resolve_root", "run", "save_ledger", "seed_grounds", "terms_note", "verify_layers"]
 
 
 if __name__ == "__main__":                                              # pragma: no cover

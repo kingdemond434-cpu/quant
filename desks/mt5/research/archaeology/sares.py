@@ -727,6 +727,24 @@ def _plausibility(feats: Mapping[str, float | None], b: Branch
     return (None if den <= 0 else round(num / den, 4)), used, missing
 
 
+def _seat_branch_names(branches: list[dict[str, Any]]) -> dict[str, Any]:
+    """THE PROPOSER SEAT, OPTIONAL: a candidate NAME for what the dig found.
+
+    A dig reconstructs a behaviour and scores plausibility over declared branches. The seat may
+    propose what the behaviour IS -- a name and a falsifier -- and may not touch a plausibility,
+    a rank, a branch list or a contract. Every branch keeps its own falsifier and the ranking
+    above is computed exactly as it is with the seat dark. {} on a box with no panel.
+    """
+    try:
+        from libs.research import proposer_seat as ps
+        return ps.ask("archaeology", "names",
+                      records=[{"key": str(b.get("name") or ""),
+                                "claim": str(b.get("what") or "")[:180]}
+                               for b in branches[:10]]).to_row()
+    except Exception as exc:                              # pragma: no cover - optional seat
+        return {"verdict": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
+
+
 def latent_mechanism_inferencer(profile: Mapping[str, Any], *,
                                 rules: Mapping[str, Any] | None = None) -> dict[str, Any]:
     """AGENT 3. A HYPOTHESIS TREE over fifteen mechanism classes. Every branch stays on the tree
@@ -751,6 +769,7 @@ def latent_mechanism_inferencer(profile: Mapping[str, Any], *,
         x["rank"] = i + 1
     return {"agent": "latent_mechanism_inferencer",
             "status": "measured" if scored else UNMEASURED,
+            "proposer_seat": _seat_branch_names(branches),
             "root": {"behaviour_id": profile.get("behaviour_id"),
                      "system_id": profile.get("system_id")},
             "n_branches": len(branches), "n_scored": len(scored),

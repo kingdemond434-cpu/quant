@@ -41,6 +41,16 @@ KINDS = (
     "CLOCKS_ENROLLED", "PROMOTION_DECIDED", "ALLOCATION_DECIDED",
     "RELEASE_IDENTIFIED", "STATE_PUBLISHED",
     "EXPRESSIONS_SCREENED", "MATH_CARDS_JUDGED",
+    # THE PLUMBING SPEAKS HERE TOO (principal 2026-09-23). A plumbing defect that survives a pass
+    # escalates to three surfaces a human meets without asking, and this log is one of them: the
+    # dashboard renders `plumbing`, docs/research/PLUMBING_ALERTS.md lists it, and a
+    # PLUMBING_DEFECT row lands here with the organ, its age and its evidence. PLUMBING_CLEAR is
+    # written on a clean pass so the absence of defects is itself recorded rather than inferred
+    # from an absence of rows -- which is the silence the watchdog exists to end.
+    "PLUMBING_DEFECT", "PLUMBING_CLEAR",
+    # The 24/7 maximiser's verdict: which of the four standing bottlenecks bound this hour, and
+    # by how much its owning department's compute was raised.
+    "BOTTLENECK_BOUND",
 )
 
 #: Legs whose completion IS a domain transition. Every other leg emits only LEG_DONE.

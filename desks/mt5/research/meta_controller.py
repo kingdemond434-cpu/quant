@@ -631,12 +631,30 @@ def build() -> dict[str, Any]:
                            "most, and the unit is carried so it cannot be read as a ratio "
                            "against another resource.")}
 
+    # THE PROPOSER SEAT, OPTIONAL: an ORDER over the curriculum this controller already holds.
+    # The actions are the ones upstream organs published and priced; the seat may say which of
+    # THOSE to look at first and can add none, remove none, and change no price, no info gain and
+    # no delta-E[log W]. The boards above are untouched -- this is published beside them as a
+    # hint, so nothing downstream can mistake a model's ordering for the desk's own valuation.
+    seat_hint: dict[str, Any] = {"verdict": "UNMEASURED"}
+    try:
+        from libs.research import proposer_seat as _ps
+        _targets = [str(a.get("target") or a.get("kind") or "") for a in priced[:24]]
+        seat_hint = _ps.ask(
+            "meta_controller", "order", options=[t for t in _targets if t],
+            task=("Order these research actions by which is most likely to REDUCE the desk's "
+                  "uncertainty about whether a tradeable mechanism exists. Return the full "
+                  "list, best first.")).to_row()
+    except Exception as _exc:                             # pragma: no cover - optional seat
+        seat_hint = {"verdict": "UNMEASURED", "why": f"{type(_exc).__name__}: {_exc}"}
+
     return {
         "at": now.isoformat(timespec="seconds"),
         "status": "OK",
         "n_actions": len(priced),
         "prices": prices,
         "binding_resource": binding,
+        "proposer_seat": seat_hint,
         "base_rate": base,
         "boards": {
             "delta_elog": {

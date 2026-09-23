@@ -156,8 +156,8 @@ def measure_memory() -> dict[str, Any]:
 
             st = _MS()
             st.dwLength = ctypes.sizeof(_MS)
-            ok = ctypes.windll.kernel32.GlobalMemoryStatusEx(  # type: ignore[attr-defined]
-                ctypes.byref(st))
+            kernel32 = ctypes.windll.kernel32   # type: ignore[attr-defined,unused-ignore]
+            ok = kernel32.GlobalMemoryStatusEx(ctypes.byref(st))
             if ok:
                 mb = 1024 * 1024
                 out.update(source="GlobalMemoryStatusEx",
@@ -245,8 +245,8 @@ def declared_costs() -> dict[str, float]:
 
     def _f(key: str, fallback: float) -> float:
         try:
-            v = float(dec.get(key))
-        except Exception:
+            v = float(dec.get(key))  # type: ignore[arg-type]
+        except (TypeError, ValueError):
             return fallback
         return v if v > 0 else fallback
 
@@ -414,15 +414,33 @@ def env_for(decision: dict[str, Any]) -> dict[str, str]:
     }
 
 
-def write_env(decision: dict[str, Any], path: Path | None = None) -> dict[str, Any]:
-    """Publish the decision where every launcher reads it (atomic, never partial)."""
+def write_env(decision: dict[str, Any], path: Path | None = None,
+              box: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Publish the decision where every launcher reads it (atomic, never partial).
+
+    ONLY A RAISE IS EVER WRITTEN, and this is the rail that keeps one box from sizing another.
+    This file is repo state and travels between machines; a build box that measured four cores
+    would otherwise hand the 18-core judge `GAUNTLET_WORKERS=1` the moment the release landed --
+    the desk's oldest recurring defect, a floor sized off the wrong machine. So when the plan
+    equals the sealed baseline there is nothing to say and the env is written EMPTY: the sealed
+    file then derives its own numbers exactly as it always did, which is what the launcher's own
+    contract already promises for a missing file. The box fingerprint is recorded beside it so a
+    reader can refuse an env measured on a machine of a different shape.
+    """
     p = Path(path or ENV_FILE)
-    payload = {"at": _now().isoformat(timespec="seconds"), "env": env_for(decision),
+    raising = int(decision.get("raised_by", 0)) > 0
+    payload = {"at": _now().isoformat(timespec="seconds"),
+               "env": env_for(decision) if raising else {},
+               "raised_by": int(decision.get("raised_by", 0)),
+               "measured_on": ({"cores": box.get("cores"),
+                                "total_phys_mb": box.get("total_phys_mb")} if box else None),
                "cadence_minutes": int(decision["cadence_minutes"]),
                "why": ("written by research/judging_throughput.py; read by "
                        "scripts/RunGauntlet.cmd, by research/hourly_cycle.py through "
                        "judging_throughput.apply_env(), and by whatever else launches the "
-                       "sealed gauntlet. external_gauntlet.py is never edited.")}
+                       "sealed gauntlet. external_gauntlet.py is never edited. An EMPTY env "
+                       "means the measured plan equalled the sealed baseline, so there was "
+                       "nothing to raise -- never that the judge should be cut.")}
     p.parent.mkdir(parents=True, exist_ok=True)
     tmp = p.with_suffix(p.suffix + ".tmp")
     tmp.write_text(json.dumps(payload, indent=1), encoding="utf-8")
@@ -440,6 +458,16 @@ def apply_env(path: Path | None = None, env: dict[str, str] | None = None) -> di
     """
     doc = _read_json(Path(path or ENV_FILE), {}) or {}
     vals = dict((doc.get("env") or {}) if isinstance(doc, dict) else {})
+    # AN ENV MEASURED ON ANOTHER MACHINE IS REFUSED. `desks/mt5/data/` travels with the release,
+    # so this file can arrive from a box of a different shape; applying its numbers here is the
+    # "sized off the other box" failure with extra steps. A fingerprint that disagrees is
+    # ignored, which leaves the sealed file to derive its own count -- never a cut.
+    stamp = doc.get("measured_on") if isinstance(doc, dict) else None
+    if isinstance(stamp, dict) and vals:
+        here = measure_memory()
+        if (stamp.get("cores") != (os.cpu_count() or 1)
+                or stamp.get("total_phys_mb") != here.get("total_phys_mb")):
+            return {}
     target = os.environ if env is None else env
     applied: dict[str, str] = {}
     for k in ENV_KEYS:
@@ -507,7 +535,7 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True) -> 
     applied: dict[str, Any] = {"env_file": UNMEASURED, "machine_env": UNMEASURED,
                                "cadence": UNMEASURED, "process_env": {}}
     if write:
-        write_env(decision)
+        write_env(decision, box=box)
         applied["env_file"] = str(ENV_FILE)
         applied["process_env"] = apply_env()
     if apply:

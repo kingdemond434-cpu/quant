@@ -20,6 +20,11 @@ MAX_SYMBOLS = 8
 N_MODELS = 3
 RIDGE = 1.0
 NEUTRALISE = 0.5
+TARGET_BARS = 24
+#: A model needs this many out-of-sample eras before its correlation is a measurement rather
+#: than an artefact of one week. NOT a strength threshold: the sign is what picks the family, and
+#: a weak correlation is donated as a hypothesis exactly like a strong one.
+MIN_ERAS_OOS = 3
 
 
 def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
@@ -29,7 +34,7 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
         return A.unmeasured(SYSTEM, bundle, "fewer than two H1 frames long enough")
     X_all, y_all, era_all, sym_all = [], [], [], []
     for f in frames:
-        X, y24, eras = A.lagged_design(f, target_bars=24, era_bars=120)
+        X, y24, eras = A.lagged_design(f, target_bars=TARGET_BARS, era_bars=120)
         X_all.append(X)
         y_all.append(y24)
         era_all.append(eras)
@@ -90,7 +95,37 @@ def run(bundle: A.ResearchBundle) -> ExternalResearchPacket:
                                                     "meta-model contribution"})
     last = era == era.max()
     ranking = {str(s): float(v) for s, v in zip(sym[last], meta[last], strict=True)}
-    return A.packet(SYSTEM, bundle, trials=trials, research_methods=rows, representations=[
+    #: THE GAUNTLET EXIT. The spec declares this system yields candidates and the adapter used to
+    #: donate none: every measurement left as a research_method row that no gate ever judged.
+    #: Each model's per-era out-of-sample rank correlation between lagged returns/vol and the
+    #: next-`TARGET_BARS` return IS a testable hypothesis about these instruments, in EITHER
+    #: direction -- a consistently negative correlation is mean reversion, not a null (never read
+    #: "weak" as a reason to donate nothing). The family is chosen by the SIGN of the measured
+    #: correlation and the gauntlet judges it; nothing here ranks, sizes or approves.
+    symbols = sorted({str(s) for s in sym.tolist()})
+    cands: list[dict[str, Any]] = []
+    for row in rows:
+        corr = row.get("corr_mean")
+        if corr is None or not symbols or int(row.get("eras_oos") or 0) < MIN_ERAS_OOS:
+            continue
+        family = "trend_ma_cross" if float(corr) > 0 else "mean_reversion_rsi"
+        sharpe = row.get("corr_sharpe")
+        cands.append(A.candidate(
+            family, symbols,
+            f"{row['model']}: a ridge model on lagged-return features {row['features']} scores "
+            f"a per-era out-of-sample rank correlation of {float(corr):+.4f} "
+            f"(sharpe {sharpe if sharpe is None else round(float(sharpe), 3)}, "
+            f"{row['eras_oos']} eras, contribution {row.get('mmc_mean')}) against the "
+            f"{TARGET_BARS}-bar forward return -- "
+            f"{'momentum' if float(corr) > 0 else 'mean reversion'} at that horizon, "
+            f"feature-neutralised at {NEUTRALISE}",
+            horizon=bundle.horizons[-1], source=SYSTEM,
+            evidence={"corr_mean": float(corr), "corr_sharpe": sharpe,
+                      "mmc_mean": row.get("mmc_mean"), "eras_oos": row.get("eras_oos"),
+                      "features": row.get("features"), "neutralisation": NEUTRALISE,
+                      "method": row.get("method")}))
+    return A.packet(SYSTEM, bundle, trials=trials, research_methods=rows, candidates=cands,
+                    representations=[
         {"kind": "meta_model_ranking", "era": int(era.max()), "ranking": ranking,
          "representation": "the meta-model's cross-sectional rank this era; a state, not a "
                            "signal, until the gauntlet says otherwise"}])

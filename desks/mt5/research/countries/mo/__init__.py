@@ -26,6 +26,7 @@ whole legal layer.
 """
 from __future__ import annotations
 
+#: The submodule this department is. NOT imported here on purpose: `countries.load("mo")`
+#: imports `countries.mo.pack` by name, and binding the module's own `pack()` FUNCTION onto this
+#: package would shadow the module for every `from countries.mo import pack` in the tests.
 __all__ = ["pack"]
-
-from .pack import pack

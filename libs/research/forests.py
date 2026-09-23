@@ -235,8 +235,16 @@ REGIONAL_FORESTS: tuple[Forest, ...] = (
        grounds=("br", "mx", "cl", "co", "pe", "ar"),
        mission="the Brazilian, Andean and Southern-Cone commodity and FX planes"),
     _f("mena", "Middle East and North Africa", "regional",
+       # QATAR, KUWAIT, OMAN AND BAHRAIN JOIN THE ANSWERED SET (2026-09-23) through the `gulf`
+       # pack, which declares all four in its own JURISDICTIONS tuple. All four were NAMED on
+       # this roster and answered by nothing, so the parity fence counted them as gaps while
+       # `sa` and `ae` carried the region: one pack now answers the four the two siblings do
+       # not, because the Qatari LNG schedule, the Kuwaiti undisclosed basket, the Omani
+       # non-OPEC OPEC+ quota and the Bahraini guaranteed peg are four different mechanisms
+       # rather than four copies of the Saudi one.
        countries=("SA", "AE", "QA", "TR", "IL", "KW", "OM", "BH", "MA"),
-       languages=("ar", "tr", "he", "en", "fr"), packs=("sa", "ae", "il", "tr", "ma"),
+       languages=("ar", "tr", "he", "en", "fr"),
+       packs=("sa", "ae", "il", "tr", "ma", "gulf"),
        grounds=("sa", "ae", "tr", "il", "ma"),
        mission="the Gulf energy plane, the CBRT and the Israeli tech/FX ecology; Morocco "
                "(Bank Al-Maghrib, phosphates, the MRE remittance and tourism planes) as the "
@@ -244,8 +252,13 @@ REGIONAL_FORESTS: tuple[Forest, ...] = (
     _f("africa", "Sub-Saharan Africa and Egypt", "regional",
        # MOROCCO IS MENA HERE (2026-09-22): its `ma` pack is on the mena roster, and a country
        # belongs to exactly one forest, so it is no longer listed under africa.
-       countries=("EG", "ZA", "NG", "KE", "GH", "ET", "TZ"),
-       languages=("en", "ar", "fr", "sw", "af"), packs=("eg", "za", "ng", "ke", "gh"),
+       # UGANDA JOINS THE ROSTER (2026-09-23) with the `east_africa` pack that answers for it:
+       # ET and TZ were named here and unanswered, UG was on no forest's roster at all, and one
+       # pack now answers all three (EACOP makes UG and TZ one physical system, so splitting
+       # them would split a mechanism).
+       countries=("EG", "ZA", "NG", "KE", "GH", "ET", "TZ", "UG"),
+       languages=("en", "ar", "fr", "sw", "am", "af"),
+       packs=("eg", "za", "ng", "ke", "gh", "east_africa"),
        grounds=("eg", "za", "ng", "ke"),
        mission="the South African, Nigerian, Kenyan and North African planes: metals, energy, "
                "agriculture and the frontier-FX ecology"),

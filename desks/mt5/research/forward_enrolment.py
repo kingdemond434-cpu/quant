@@ -165,7 +165,7 @@ def certificates() -> tuple[list[dict[str, Any]], list[dict[str, str]], str]:
         from shadow_admission import DROPPED_CERTIFICATES, authorized_runs
     except ImportError:
         try:
-            from research.shadow_admission import (  # type: ignore[no-redef]
+            from research.shadow_admission import (  # type: ignore[no-redef,unused-ignore]
                 DROPPED_CERTIFICATES,
                 authorized_runs,
             )
@@ -185,7 +185,7 @@ def _run_key(run: dict[str, Any]) -> str | None:
         from shadow_admission import run_key
     except ImportError:
         try:
-            from research.shadow_admission import run_key  # type: ignore[no-redef]
+            from research.shadow_admission import run_key  # type: ignore[no-redef,unused-ignore]
         except Exception:
             return None
     except Exception:
