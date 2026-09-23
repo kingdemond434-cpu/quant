@@ -719,23 +719,51 @@ def judge_seconds_per_cell(capacity: int) -> float:
     return 3600.0 / float(max(capacity, 1))
 
 
+def producer_signals(path: Path | None = None) -> dict[str, dict[str, Any]]:
+    """The two measured per-producer signals from `orthogonality_yield`, or {} when unmeasured.
+
+    Read as a published ARTIFACT rather than imported, for the reason `research_budget` reads
+    every one of its factors that way: a missing or unmeasured report must leave every producer at
+    par, and an import that raised would be an outage in the ranking instead of a par reading.
+    """
+    for mod in ("research.orthogonality_yield", "orthogonality_yield"):
+        try:
+            oy = __import__(mod, fromlist=["published_factors"])
+            table = oy.published_factors(path)
+            return {str(k): v for k, v in table.items() if isinstance(v, dict)}
+        except Exception:
+            continue
+    return {}
+
+
 def rank_by_value(backlog: dict[str, int], rows: list[dict[str, Any]],
                   capacity: int) -> list[dict[str, Any]]:
     """EXPECTED VALUE PER JUDGE-SECOND, per family, published so the choice is inspectable.
 
         ev_per_cell = p_optimistic * net_value_if_it_passes * (1 + marginal_breadth)
+                                   * orthogonality_factor * certificate_factor
         ev_per_s    = ev_per_cell / (seconds_per_cell * this family's bar cost)
 
     Every term is something the desk already measures -- the learned prior, the net-of-cost slot
     value, the cluster occupancy behind effective breadth, and the bar ratio the sealed gauntlet
     budgets in. Nothing here is a preference; a family that ranks low ranks low on its own record,
     and a family with NO record ranks on the optimistic bound, which is how it gets explored.
+
+    THE LAST TWO TERMS ARE THE PRINCIPAL'S ORDER OF 2026-09-23 -- "compute should always go more to
+    discovering things which produce orthogonality along with ones who produce the most certis."
+    `orthogonality_yield` measures both per producer: the LEAVE-ONE-OUT drop in the candidate
+    grid's effective rank when that producer's cells are removed, and certificates per judge-hour
+    from the gate ledger. Both arrive as one-sided multipliers at or above 1.0, so they can lift a
+    producer and can never demote one, and a producer no judge has reached sits at par on the
+    certificate axis rather than being scored as a measured zero (L1.28a). Absent report, both are
+    1.0 and this function is exactly what it was.
     """
     fams = [f for f, n in backlog.items() if n > 0]
     realised = realised_pass_rates()
     priors = family_priors(fams, realised)
     values, median = family_value()
     occ = family_breadth()
+    signals = producer_signals()
     per_cell_s = judge_seconds_per_cell(capacity)
     cost_units: dict[str, list[float]] = {}
     for row in rows:
@@ -750,7 +778,10 @@ def rank_by_value(backlog: dict[str, int], rows: list[dict[str, Any]],
         cost_s = max(1e-6, per_cell_s * bars)
         value = values.get(fam, median)
         breadth = 1.0 / (1.0 + occ.get(fam, 0.0))
-        ev_cell = float(pr["p_optimistic"]) * value * (1.0 + breadth)
+        sig = signals.get(fam) or {}
+        ortho_f = float(sig.get("orthogonality_factor") or 1.0)
+        cert_f = float(sig.get("certificate_factor") or 1.0)
+        ev_cell = float(pr["p_optimistic"]) * value * (1.0 + breadth) * ortho_f * cert_f
         rl = realised.get(fam) or {}
         out.append({
             "family": fam, "unjudged": backlog[fam],
@@ -765,6 +796,19 @@ def rank_by_value(backlog: dict[str, int], rows: list[dict[str, Any]],
             "stored_prior_n": int(pr.get("stored_n", pr["n"])),
             "net_value_if_pass": value, "value_source": "NET_EDGE" if fam in values else "median",
             "breadth_gain": round(breadth, 4), "cluster_occupancy": occ.get(fam, 0.0),
+            # THE TWO SIGNALS THE PRINCIPAL ORDERED COMPUTE STEERED BY (2026-09-23), measured per
+            # producer in `orthogonality_yield` and published here beside the number they moved.
+            # `breadth_gain` above stays exactly as it was -- it reads the LIVE BOOK's clusters and
+            # belongs to the effective-breadth lane -- but it is measured to be ANTI-correlated
+            # with true marginal orthogonality, which is the defect these two factors correct.
+            # Both are one-sided (>= 1.0), so no family's ev is ever REDUCED by them and the
+            # 25% floor below is untouched: this re-orders the remainder, it never starves.
+            "orthogonality_factor": round(ortho_f, 4), "certificate_factor": round(cert_f, 4),
+            "marginal_rank": sig.get("marginal_rank"),
+            "certs_per_judge_hour": sig.get("certs_per_judge_hour"),
+            # BANNED / UNMEASURED / UNDER_JUDGED / MEASURED_ZERO / CERTIFYING -- a zero pass rate
+            # is not one thing, and an UNMEASURED producer is never scored as a failing one.
+            "producer_state": sig.get("state") or "UNMEASURED",
             "bar_cost_units": round(bars, 3), "cost_s_per_cell": round(cost_s, 4),
             "ev_per_cell": ev_cell, "ev_per_judge_second": ev_cell / cost_s,
         })

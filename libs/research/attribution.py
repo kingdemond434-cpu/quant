@@ -37,6 +37,7 @@ scoreboard, whose `_region_for` delegates here so there is one rule), and
 """
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -58,10 +59,12 @@ BIRTH_OBLIGATION_FROM = "2026-09-23T00:00:00+00:00"
 
 ATTRIBUTION_RULE = (
     "producer = the organ that CAUSED the row (its generator, else the discovery it compiled, "
-    "else its origin), lowercased; region = that producer's regional ground token, else the "
-    "country of the source its lineage names, else NOT_REGIONAL for a method/desk organ, else "
-    "UNATTRIBUTABLE with the reason -- stamped by libs/research/attribution.attribute() at the "
-    "two registry doors, never inferred by a later sweep")
+    "else its origin), lowercased and read THROUGH its filing namespace (miner:/seat:/src:/"
+    "ground:); region = that producer's regional ground token, else the country of the source its "
+    "lineage names, else the country its own DECLARED source URL stands in (asia_sources.json), "
+    "else its parent's region, else NOT_REGIONAL for a method, a desk organ or a declared seat, "
+    "else UNATTRIBUTABLE with the reason -- stamped by libs/research/attribution.attribute() at "
+    "the two registry doors, never inferred by a later sweep")
 
 # --------------------------------------------------------------------------- the region tables
 #: The twelve regions plus the institutional bucket. A `global`/`institutional` ground is NOT
@@ -86,6 +89,34 @@ REGION_OF_CODE: dict[str, str] = {
     "qa": "MENA", "kw": "MENA",
     "za": "Africa", "ng": "Africa", "ke": "Africa", "gh": "Africa", "tz": "Africa",
     "global": "Global/institutional", "institutional": "Global/institutional",
+    # THE CODES THE DESK'S OWN GROUNDS CARRY AND THIS TABLE DID NOT NAME (measured 2026-09-23 on
+    # the trading box: 29 of the 92 distinct `sources.country` values reached no region, so every
+    # ground standing on them was UNATTRIBUTABLE for want of a row here). Adding a code only ever
+    # ADDS a region a cell can be counted in; no code is ever removed and no region is ever
+    # dropped from REGIONS, because a coverage ratio improved by shrinking its denominator is a
+    # lie (LAWS: never improve a ratio by removing rows from the denominator).
+    "by": "Russia/CIS", "md": "Russia/CIS", "kz": "Russia/CIS", "kg": "Russia/CIS",
+    "uz": "Russia/CIS", "tm": "Russia/CIS", "tj": "Russia/CIS", "az": "Russia/CIS",
+    "am": "Russia/CIS", "ge": "Russia/CIS",
+    "is": "Europe", "ee": "Europe", "lv": "Europe", "lt": "Europe", "sk": "Europe",
+    "si": "Europe", "hr": "Europe", "rs": "Europe", "ba": "Europe", "mk": "Europe",
+    "al": "Europe", "bg": "Europe", "cy": "Europe", "mt": "Europe", "lu": "Europe",
+    "me": "Europe", "li": "Europe",
+    "ec": "LatAm", "bo": "LatAm", "gy": "LatAm", "sr": "LatAm", "py": "LatAm",
+    "ve": "LatAm", "cr": "LatAm", "gt": "LatAm", "hn": "LatAm", "ni": "LatAm",
+    "sv": "LatAm", "do": "LatAm", "cu": "LatAm", "jm": "LatAm", "tt": "LatAm",
+    "bs": "LatAm", "bz": "LatAm",
+    "dz": "MENA", "tn": "MENA", "ly": "MENA", "iq": "MENA", "ye": "MENA", "jo": "MENA",
+    "lb": "MENA", "om": "MENA", "bh": "MENA", "ir": "MENA", "sy": "MENA", "ps": "MENA",
+    "et": "Africa", "cd": "Africa", "ci": "Africa", "ne": "Africa", "zw": "Africa",
+    "zm": "Africa", "ug": "Africa", "sn": "Africa", "cm": "Africa", "ml": "Africa",
+    "bf": "Africa", "mu": "Africa", "mz": "Africa", "ao": "Africa", "bw": "Africa",
+    "na": "Africa", "rw": "Africa",
+    "mm": "SEA", "bn": "SEA", "kh": "SEA", "la": "SEA", "tl": "SEA",
+    "np": "India", "bt": "India", "mv": "India", "af": "India",
+    "pg": "Oceania", "fj": "Oceania", "nc": "Oceania",
+    "mo": "China",
+    "eu": "Europe", "ea": "Europe",
 }
 REGIONS: tuple[str, ...] = ("Japan", "Korea", "China", "SEA", "Russia/CIS", "India", "Europe",
                             "North America", "LatAm", "Oceania", "MENA", "Africa",
@@ -109,6 +140,37 @@ NAME_TO_CODE: dict[str, str] = {
     "turkey": "tr", "israel": "il", "saudi": "sa", "uae": "ae", "mena": "ae", "egypt": "eg",
     "gulf": "ae", "africa": "za", "southafrica": "za", "nigeria": "ng", "kenya": "ke",
 }
+
+#: THE SECOND REGION VOCABULARY, CROSSWALKED RATHER THAN COLLAPSED. The 75 country packs under
+#: `desks/mt5/research/countries/` each declare a `REGION_COMMAND`, and `pack_cells.py` publishes
+#: its whole world lane in that vocabulary (14 buckets) while this module publishes in its own
+#: (13). Two tables with no join is how one artifact could read `EUROPE: 281 grounds` while the
+#: other read `Europe: 0 cells` on the same hour and neither was wrong. The crosswalk is consulted
+#: for a WHOLE declared token only -- never for a name fragment -- so `miner:asia:rba_tables` can
+#: never become "SEA" by splitting on a colon. Both vocabularies keep every bucket they had.
+REGION_COMMAND_TO_REGION: dict[str, str] = {
+    "ASIA": "China", "CHINA": "China", "JAPAN": "Japan", "KOREA": "Korea",
+    "SOUTHEAST_ASIA": "SEA", "SEA": "SEA", "ASEAN": "SEA",
+    "SOUTH_ASIA": "India", "INDIA": "India",
+    "RUSSIA_CIS": "Russia/CIS", "CIS": "Russia/CIS",
+    "EUROPE": "Europe", "UK": "Europe", "CEE": "Europe", "CEE_BALKANS": "Europe",
+    "NORDIC": "Europe", "BLACK_SEA": "Europe", "EA": "Europe", "EAST_EU": "Europe",
+    "NORTH_AMERICA": "North America", "LATAM": "LatAm",
+    "OCEANIA": "Oceania", "ANZ": "Oceania",
+    "MIDDLE_EAST": "MENA", "MENA": "MENA", "GULF": "MENA",
+    "AFRICA": "Africa", "MEA": "Africa",
+    "GLOBAL": "Global/institutional", "INSTITUTIONAL": "Global/institutional",
+}
+
+#: Namespaces a producer string may be filed under before its own name begins. `miner:` is the
+#: hypothesis graph's scientist vocabulary (`libs/research/lead_schema.py:318`,
+#: `miner_candidate_compiler.py:416`), `seat:`/`src:`/`ground:` the source registry's
+#: (`source_registry._resolve`). MEASURED 2026-09-23: 216,641 of 323,542 candidates on the trading
+#: box carried a `miner:` prefix, and because neither `region_of` nor `is_non_regional` looked past
+#: it, `miner:discovery_compiler` (190,766 rows of the desk's own compiler) read UNATTRIBUTABLE
+#: instead of NOT_REGIONAL and `miner:asia:rba_tables` (the Reserve Bank of Australia) read
+#: UNATTRIBUTABLE instead of Oceania. One prefix, two thirds of the desk's output.
+NAMESPACE_PREFIXES: tuple[str, ...] = ("miner:", "seat:", "src:", "ground:", "exe:", "author:")
 
 #: Producer name prefixes that are METHODS or desk organs by construction. A row from one of
 #: these is NOT_REGIONAL, which is a verdict; it is never counted as an attribution gap.
@@ -151,6 +213,25 @@ def normalise_producer(name: object) -> str | None:
     return None if raw in NULL_PRODUCERS else raw
 
 
+def strip_namespace(name: object) -> list[str]:
+    """`miner:asia:rba_tables` -> that name and every suffix its namespace hides.
+
+    The whole string first, so a producer that IS its own answer is never overtaken by a fragment
+    of itself. Only the declared namespaces are peeled: `discovery_compiler:interaction` keeps its
+    sub-producer, because that colon separates a lane from its organ and not a filing prefix.
+    """
+    raw = str(name or "").strip().lower()
+    out = [raw] if raw else []
+    while True:
+        hit = next((p for p in NAMESPACE_PREFIXES if raw.startswith(p)), None)
+        if not hit:
+            break
+        raw = raw[len(hit):]
+        if raw and raw not in out:
+            out.append(raw)
+    return out
+
+
 def region_of(token: object) -> str | None:
     """The region a producer name, generator prefix or source country names, else None.
 
@@ -161,16 +242,134 @@ def region_of(token: object) -> str | None:
     if not raw or raw in NULL_PRODUCERS:
         return None
     seen: list[str] = []
-    for part in (raw, raw.split(":")[0], raw.split("_")[0], raw.split("-")[0],
-                 raw.replace(" ", ""), raw.split(".")[0]):
-        if not part or part in seen:
+    for base in strip_namespace(raw) or [raw]:
+        # A TWO-LETTER MATCH IS NEVER TAKEN FROM AN UNDERSCORE SPLIT. `is`, `na`, `no` and `in`
+        # are ISO codes AND the first word of ordinary producer names, so `is_regional` would read
+        # as Iceland. The head of a `:`, `-` or `.` filing IS a code position; the head of a
+        # `snake_case` name is a word. This narrows nothing that ever resolved: no producer on the
+        # desk's roster has a two-letter underscore head.
+        for part, code_ok in ((base, True), (base.split(":")[0], True),
+                              (base.split("_")[0], False), (base.split("-")[0], True),
+                              (base.replace(" ", ""), True), (base.split(".")[0], True)):
+            if not part or part in seen or part in NULL_PRODUCERS:
+                continue
+            seen.append(part)
+            if part in REGION_OF_CODE and (code_ok or len(part) > 2):
+                return REGION_OF_CODE[part]
+            code = NAME_TO_CODE.get(part)
+            if code:
+                return REGION_OF_CODE.get(code)
+    return None
+
+
+def region_of_command(token: object) -> str | None:
+    """A pack's own `REGION_COMMAND` (`EUROPE`, `RUSSIA_CIS`, `MEA`, ...) -> this module's region.
+
+    WHOLE TOKEN ONLY. The crosswalk is never applied to a fragment, so nothing in a producer name
+    can reach it by accident; `pack_cells.py` and the country packs speak it and this is the join.
+    """
+    raw = str(token or "").strip().upper().replace(" ", "_").replace("-", "_")
+    if not raw or raw in ("UNMAPPED", "UNMEASURED", UNATTRIBUTABLE, NOT_REGIONAL):
+        return None
+    return REGION_COMMAND_TO_REGION.get(raw)
+
+
+# ------------------------------------------------------------ the ground the producer stands on
+#: THE JOIN THAT EXISTED AND WAS NEVER MADE. `miner:asia:<pack>` names a row of
+#: `desks/mt5/data/asia_sources.json`, every one of which declares the URL it is fetched from, and
+#: the host's country code IS the ground -- `rba.gov.au` is Oceania, `boj.or.jp` is Japan,
+#: `riksbank.se` is Europe. That is the same rule `pack_cells.resolve_ground` already applies to a
+#: crawled ground's documents; this is it applied to the producer's own declared source. DERIVED,
+#: never typed: adding a row to that registry attributes its cells with nobody editing this file.
+#: Measured 2026-09-23 on the trading box: 1,873 of 2,558 `miner:asia:*` candidates resolve, across
+#: Europe, Japan, China, Oceania, LatAm, Africa, Russia/CIS, SEA and Korea.
+_GROUND_INDEX: dict[str, str] | None = None
+_SEATS: frozenset[str] | None = None
+#: Registries read to build the index. A missing file is UNMEASURED and contributes nothing; it
+#: never raises and never turns a resolvable producer into a wrong answer.
+_ROOT = Path(__file__).resolve().parents[2]
+GROUND_REGISTRIES: tuple[Path, ...] = (
+    _ROOT / "desks" / "mt5" / "data" / "asia_sources.json",
+)
+#: Seat donation roots. A `miner:<seat>` whose name is a declared seat directory is desk
+#: machinery, not a gap -- the seats are the desk's own producers (`data/intelligence/<seat>/`).
+SEAT_ROOTS: tuple[Path, ...] = (
+    _ROOT / "desks" / "mt5" / "data" / "intelligence",
+    _ROOT / "data" / "intelligence",
+)
+
+
+def host_of(url: object) -> str:
+    """The bare host of a URL. Shared with `pack_cells._host_of` in shape so the two agree."""
+    raw = str(url or "").strip()
+    if "://" in raw:
+        raw = raw.split("://", 1)[1]
+    return raw.split("/", 1)[0].split("@")[-1].split(":")[0].strip().lower()
+
+
+def region_of_url(url: object) -> str | None:
+    """The region a URL's host stands in, when its last label IS a country code.
+
+    A generic top-level domain has no jurisdiction and returns None, which is a measurement about
+    the host rather than a guess about the ground.
+    """
+    host = host_of(url)
+    label = host.rsplit(".", 1)[-1] if "." in host else ""
+    if len(label) != 2 or not label.isalpha():
+        return None
+    return REGION_OF_CODE.get(label)
+
+
+def ground_index() -> dict[str, str]:
+    """Every source id the desk declares -> the region its declared URL stands in. Cached."""
+    global _GROUND_INDEX
+    if _GROUND_INDEX is not None:
+        return _GROUND_INDEX
+    idx: dict[str, str] = {}
+    for path in GROUND_REGISTRIES:
+        try:
+            doc = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue                                  # UNMEASURED: contributes nothing, never a 0
+        rows = doc.get("sources") if isinstance(doc, dict) else doc
+        for row in rows if isinstance(rows, list) else []:
+            if not isinstance(row, dict):
+                continue
+            sid = str(row.get("id") or row.get("source_id") or "").strip().lower()
+            where = (region_of(row.get("country")) or region_of_command(row.get("region"))
+                     or region_of(row.get("region")) or region_of_url(row.get("url")))
+            if sid and where:
+                idx.setdefault(sid, where)
+                idx.setdefault(f"asia:{sid}", where)
+    _GROUND_INDEX = idx
+    return idx
+
+
+def seats() -> frozenset[str]:
+    """The seat names the desk declares on disk. A seat is desk machinery, never a region."""
+    global _SEATS
+    if _SEATS is not None:
+        return _SEATS
+    found: set[str] = set()
+    for root in SEAT_ROOTS:
+        try:
+            found.update(p.name.strip().lower() for p in root.iterdir() if p.is_dir())
+        except OSError:
             continue
-        seen.append(part)
-        if part in REGION_OF_CODE:
-            return REGION_OF_CODE[part]
-        code = NAME_TO_CODE.get(part)
-        if code:
-            return REGION_OF_CODE.get(code)
+    _SEATS = frozenset(found)
+    return _SEATS
+
+
+def region_of_ground(producer: object) -> str | None:
+    """The region the producer's own declared source stands on, else None.
+
+    Namespace-aware: `miner:asia:rba_tables`, `asia:rba_tables` and `rba_tables` are one producer
+    filed three ways, and all three reach the same ground.
+    """
+    for base in strip_namespace(producer):
+        hit = ground_index().get(base)
+        if hit:
+            return hit
     return None
 
 
@@ -181,12 +380,24 @@ def is_non_regional(producer: str | None) -> bool:
     compiler, not a regional department, and reporting its 3,691 cells as an attribution gap
     would overstate the gap by more than the whole of Europe. A department that IS regional never
     reaches this test -- `region_of()` matches its name first.
+
+    THE FILING PREFIX COUNTS TOO, and that is two thirds of the desk's output: the hypothesis
+    graph files the same compiler as `miner:discovery_compiler`, and reading the prefix as part of
+    the name reported 190,766 rows of the desk's own compiler as an attribution GAP rather than as
+    the NOT_REGIONAL verdict they are. A declared seat (`data/intelligence/<seat>/`) is desk
+    machinery by the same argument -- it is one of the desk's own producers. A seat or organ whose
+    name IS regional never reaches this test: `region_of()` matches `japan:gotobi` first.
     """
     if not producer:
         return False
-    base = producer.split(":")[0]
-    return (producer in NON_REGIONAL_NAMES or base in NON_REGIONAL_NAMES
-            or producer.startswith(NON_REGIONAL_PREFIXES))
+    for base in strip_namespace(producer):
+        stem = base.split(":")[0]
+        if (base in NON_REGIONAL_NAMES or stem in NON_REGIONAL_NAMES
+                or base.startswith(NON_REGIONAL_PREFIXES)):
+            return True
+        if base != producer and (base in seats() or stem in seats()):
+            return True                       # filed under a namespace AND a declared seat name
+    return False
 
 
 @dataclass(frozen=True)
@@ -248,18 +459,24 @@ def attribute(*, producer: object = None, generator: object = None, origin: obje
     if explicit in REGIONS or explicit in (NOT_REGIONAL, UNATTRIBUTABLE):
         where, route_r = explicit, "declared"
     elif explicit:
-        where = region_of(explicit)
+        where = region_of_command(explicit) or region_of(explicit)
         route_r = "declared" if where else ""
     if where is None:
         where = region_of(who)
         route_r = "producer_name" if where else ""
     if where is None and source_country is not None:
-        where = region_of(source_country)
+        where = region_of(source_country) or region_of_command(source_country)
         route_r = "source_country" if where else ""
+    if where is None:
+        # THE GROUND THE PRODUCER STANDS ON. Consulted after the producer's own name and the
+        # lineage's source country, before the parent: a producer that names a declared source is
+        # answering about ITSELF, which outranks what it inherited.
+        where = region_of_ground(who)
+        route_r = "producer_ground" if where else ""
     if where is None and parent is not None and parent.regional:
         where, route_r = parent.region, "lineage"
     if where is None and department is not None:
-        where = region_of(department)
+        where = region_of(department) or region_of_command(department)
         route_r = "department" if where else ""
     why = ""
     if who is None:
@@ -316,3 +533,49 @@ def coverage(rows: list[dict[str, Any]]) -> dict[str, Any]:
     out["region_coverage"] = (round((out["regional"] + out["not_regional"]) / total, 4)
                               if total else UNMEASURED)
     return out
+
+
+def region_spread(counts: dict[str, Any]) -> dict[str, Any]:
+    """THE PRINCIPAL'S MEASURE: equal maximum depth, not a few strong regions and a tail of zeros.
+
+    A total says nothing about whether every region is mined "like it's their native country
+    quants". This publishes the SPREAD over the regions the desk names -- how many hold anything,
+    the weakest, the strongest, and the ratio between them -- with the empty ones listed by name so
+    a zero is a work order rather than a silence.
+
+    `counts` is region -> n for any per-region number (unique cells, judged cells). Regions absent
+    from it are counted as zero: the denominator is always every region the desk NAMES, because a
+    ratio improved by dropping a region from the denominator is a lie (L1.50).
+    """
+    per = {r: int(counts.get(r) or 0) for r in REGIONS}
+    vals = sorted(per.values())
+    held = [r for r, n in per.items() if n > 0]
+    empty = [r for r, n in per.items() if n <= 0]
+    total = sum(vals)
+    return {
+        "regions_named": len(REGIONS),
+        "regions_holding": len(held),
+        "regions_empty": empty,
+        "total": total,
+        "min": vals[0] if vals else 0,
+        "median": vals[len(vals) // 2] if vals else 0,
+        "max": vals[-1] if vals else 0,
+        # EVENNESS, so "equal maximum depth" is a number and not an adjective. 1.0 is every named
+        # region equally deep; it falls as the distribution concentrates. Normalised Shannon
+        # evenness over the named regions, UNMEASURED when nothing has been produced at all.
+        "evenness": _evenness(vals) if total > 0 else UNMEASURED,
+        "by_region": dict(sorted(per.items(), key=lambda kv: -kv[1])),
+        "rule": ("the denominator is every region in attribution.REGIONS, always; an empty region "
+                 "is listed by name so it reads as a work order and never as an absence"),
+    }
+
+
+def _evenness(vals: list[int]) -> float:
+    """Normalised Shannon evenness of a per-region distribution, 0..1."""
+    import math
+    total = sum(vals)
+    nz = [v for v in vals if v > 0]
+    if total <= 0 or len(vals) < 2 or len(nz) < 2:
+        return 0.0
+    h = -sum((v / total) * math.log(v / total) for v in nz)
+    return round(h / math.log(len(vals)), 4)

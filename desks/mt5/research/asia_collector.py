@@ -285,6 +285,68 @@ def _resolve_url(src: dict[str, Any]) -> str:
                .replace("{yyyy}", f"{d:%Y}").replace("{mm}", f"{d:%m}").replace("{dd}", f"{d:%d}"))
 
 
+#: Date tokens a source may write into its `form` values. The vocabulary is the one `_resolve_url`
+#: already uses, plus the two a WINDOWED endpoint needs: a start and an end that move with the
+#: clock. Sized by the source's own declared `window_days_back` / `window_days_fwd`.
+def _window_dates(src: dict[str, Any]) -> tuple[str, str]:
+    from datetime import timedelta
+    back = src.get("window_days_back")
+    fwd = src.get("window_days_fwd")
+    back_d = int(back) if isinstance(back, (int, float)) else 30
+    fwd_d = int(fwd) if isinstance(fwd, (int, float)) else 1
+    today = datetime.now(UTC).date()
+    return ((today - timedelta(days=back_d)).isoformat(),
+            (today + timedelta(days=fwd_d)).isoformat())
+
+
+def _resolve_token(text: str, src: dict[str, Any]) -> str:
+    """Date placeholders inside a DECLARED form value. Same vocabulary as `_resolve_url`."""
+    if "{" not in text:
+        return text
+    from datetime import timedelta
+    lag = src.get("url_lag_days")
+    days = int(lag) if isinstance(lag, (int, float)) else 1
+    d = (datetime.now(UTC) - timedelta(days=days)).date()
+    start, end = _window_dates(src)
+    return (text.replace("{from_date}", start).replace("{to_date}", end)
+                .replace("{yyyymm}", f"{d:%Y%m}").replace("{yyyy-mm-dd}", f"{d:%Y-%m-%d}")
+                .replace("{yyyy}", f"{d:%Y}").replace("{mm}", f"{d:%m}")
+                .replace("{dd}", f"{d:%d}"))
+
+
+def _declared_form(src: dict[str, Any]) -> bytes | None:
+    """The POST body a source DECLARES, or None -- and None is every source written before this.
+
+    SOME PUBLIC ENDPOINTS ARE POST-ONLY AND THAT IS NOT A WALL. MetaQuotes' own economic calendar
+    -- the one the MT5 terminal renders, fully public, no login, no paywall, no credential --
+    answers `POST /en/economic-calendar/content` with a form naming the window, and answers 404
+    to the same query as GET. A GET-only collector reads it as a dead route, which is exactly the
+    false verdict this file exists to prevent: the endpoint is reachable and carrying data.
+
+    The body is DECLARED, never guessed: a source names every field in `form`, and the only
+    expansion is the date vocabulary above. Nothing is sent that the registry did not write.
+    This is not an access control being bypassed -- there is no credential, no session and no
+    paywall in a form that says which dates to return (hard boundary 2 is untouched).
+    """
+    form = src.get("form")
+    if not isinstance(form, dict) or not form:
+        return None
+    return urllib.parse.urlencode(
+        {str(k): _resolve_token(str(v), src) for k, v in form.items()}).encode()
+
+
+def _declared_headers(src: dict[str, Any]) -> dict[str, str]:
+    """Extra request headers a source DECLARES. Never a credential: `Authorization`, `Cookie` and
+    friends are refused here, so a registry row can name a content-negotiation header (the
+    `X-Requested-With` an endpoint's own page sends) and can never smuggle a secret."""
+    hdr = src.get("request_headers")
+    if not isinstance(hdr, dict):
+        return {}
+    banned = {"authorization", "cookie", "proxy-authorization", "x-api-key", "api-key"}
+    return {str(k): _resolve_token(str(v), src) for k, v in hdr.items()
+            if str(k).lower() not in banned}
+
+
 def collect_one(src: dict[str, Any], timeout: float = 25.0,
                 validators: dict[str, str] | None = None) -> dict[str, Any]:
     """One source, one verdict. Never raises: an unfetched source is named, never assumed empty."""
@@ -329,7 +391,9 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
             headers["If-None-Match"] = str(validators["etag"])
         if validators.get("last_modified"):
             headers["If-Modified-Since"] = str(validators["last_modified"])
-    req = urllib.request.Request(url, headers=headers)
+    headers.update(_declared_headers(src))
+    body_out = _declared_form(src)
+    req = urllib.request.Request(url, data=body_out, headers=headers)
     try:
         with urllib.request.urlopen(req, timeout=timeout, context=_TLS) as r:
             status = int(getattr(r, "status", 0) or 0)

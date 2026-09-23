@@ -120,6 +120,7 @@ for _p in (str(BASE), str(BASE / "research"), str(REPO)):
 
 from libs.moat import registry as R  # noqa: E402
 from libs.research import experiment_spec as XS  # noqa: E402
+from libs.research import set_aside as sa  # noqa: E402
 
 # --------------------------------------------------------------------------------- constants
 OUT = BASE / "reports" / "CONVERSION_MAXIMISER.json"
@@ -225,6 +226,12 @@ DEFECT_OWNER: dict[str, str] = {
     "EVENT_LANE": "desks/mt5/research/universe_policy.py -- single names are traded on news, "
                   "never hunted for statistical hypotheses; never converted",
     "UNREADABLE": "the generator that wrote the row (named per row in `refusals`)",
+    # NOT A PROPERTY OF THE ROW. Measured on the trading box 2026-09-23: 1,957 of 2,000 repairs
+    # in one pass failed here, so the pass landed 43 and this class -- which names no defect in
+    # any row -- was 97.85% of the hour's output. It is contention on one SQLite file, and it is
+    # answered by waiting longer (`LOCK_WAIT_MS`, `_enqueue`), never by converting fewer rows.
+    "ENQUEUE_FAILED": "libs/moat/registry.py enqueue_candidate -- the registry write lock; "
+                      "contention between organs, never a defect in the row",
 }
 
 #: Classes that are REFUSALS, not repairs. A row in one of these is retired with its reason.
@@ -265,11 +272,33 @@ def _atomic_write(path: Path, doc: Any) -> Path:
 
 
 def _free_bytes() -> int | None:
-    """Free physical memory on THIS box, or None when it cannot be read -- never a zero."""
+    """Free physical memory on THIS box, or None when it cannot be read -- never a zero.
+
+    TWO PROBES, BECAUSE ONE OF THEM CANNOT ANSWER ON THE BOX THAT RUNS THIS ORGAN (measured
+    2026-09-23). `libs.ops.host_resources.mem_available_mb` reads `/proc/meminfo` and is
+    deliberately pure-stdlib, so on Windows it returns None -- ALWAYS, by construction. Both the
+    build box and the trading box are Windows, so `max_rows_per_pass` had never once derived
+    anything: it returned `MAX_ROWS_FLOOR` on every pass the desk has ever run, while the
+    docstring above it claimed the cap was "DERIVED from measured free memory, never from a
+    machine size". Measured on the trading box the same day: psutil reads 57,132 MB available, so
+    the honest cap is 1,462,579 rows and the organ was taking 2,000 -- a 731x under-read that
+    looked exactly like a tuned floor. This is the CLAUDE.md 96 GB lesson with the failure moved
+    one layer down: not a stale claim about a machine, an instrument that cannot read THIS one.
+
+    psutil is the desk's standing memory probe on the box (MEMORY.md: "probe the box with psutil
+    never CIM"); it is tried second so the Linux reading stays authoritative where it works, and
+    None still means None so the floor is the answer when neither probe can read.
+    """
     try:
         from libs.ops.host_resources import mem_available_mb
         mb = mem_available_mb()
-        return None if mb is None else int(mb) * 1024 * 1024
+        if mb is not None:
+            return int(mb) * 1024 * 1024
+    except Exception:
+        pass
+    try:
+        import psutil  # type: ignore[import-untyped,unused-ignore]
+        return int(psutil.virtual_memory().available)
     except Exception:
         return None
 
@@ -281,6 +310,25 @@ def max_rows_per_pass() -> int:
     if free is None:
         return MAX_ROWS_FLOOR
     return max(MAX_ROWS_FLOOR, int(free * FREE_MEMORY_SHARE / BYTES_PER_ROW))
+
+
+def max_rows_basis() -> dict[str, Any]:
+    """WHERE THE CAP CAME FROM, published every pass.
+
+    A cap at the floor is either a small box or a memory probe that cannot read this one, and for
+    a year those two were indistinguishable in the artifact. They are opposite defects: the first
+    is the floor doing its job, the second is a 731x under-read wearing the floor's clothes.
+    """
+    free = _free_bytes()
+    derived = None if free is None else int(free * FREE_MEMORY_SHARE / BYTES_PER_ROW)
+    return {"free_bytes": free, "free_mb": None if free is None else free // (1024 * 1024),
+            "share": FREE_MEMORY_SHARE, "bytes_per_row": BYTES_PER_ROW,
+            "derived_rows": derived, "floor": MAX_ROWS_FLOOR,
+            "cap": MAX_ROWS_FLOOR if derived is None else max(MAX_ROWS_FLOOR, derived),
+            "basis": ("floor: free memory is UNMEASURED on this box, which is a gap in the "
+                      "instrument and never a fact about the machine"
+                      if free is None else
+                      "derived from measured free physical memory on THIS box")}
 
 
 class Budget:
@@ -324,6 +372,31 @@ _DEBT_SQL: tuple[tuple[str, str, str], ...] = (
      "AND COALESCE(falsifier,'')='' AND created_at<:cut",
      "on the queue but missing the falsifier the compile contract requires (LAWS 5k)"),
 )
+
+#: WHICH ORGAN DRAINS EACH DEBT COMPONENT. Three of the five are `research_candidates` rows and
+#: this organ's own population; `silent_discoveries` and `unreasoned_blocks` are rows of the
+#: `discoveries` table, which `_debt_rows` does not read and this organ therefore never converts.
+#: That was invisible: the fence named "the owner of the largest class" and the artifact could not
+#: say that the largest class belonged to a different organ. Measured 2026-09-23 after four
+#: passes, `silent_discoveries` was 691 of a 1,203 debt -- 57% of what remains, none of it here.
+COMPONENT_OWNER: dict[str, str] = {
+    "silent_discoveries": "desks/mt5/research/discovery_compiler.py (hourly leg "
+                          "`discovery_compiler`, --max-discoveries 200 a pass) -- NOT this organ: "
+                          "these are `discoveries` rows and this organ's population is "
+                          "`research_candidates`",
+    "unreasoned_blocks": "desks/mt5/research/discovery_compiler.py -- NOT this organ: a BLOCKED "
+                         "discovery with no reason is a refusal its blocker must justify",
+    "donated_never_cell": "desks/mt5/research/conversion_maximiser.py -- this organ, repaired and "
+                          "re-enqueued every pass",
+    "untestable_queued": "desks/mt5/research/conversion_maximiser.py -- this organ, the standing "
+                         "re-judgement falsifier is supplied and the row re-enqueued",
+    "parked_past_grace": "whichever organ set status `routed` and never collected -- not drained "
+                         "here: this organ parks nothing and measures it so a regression shows",
+}
+
+#: The components `_debt_rows` actually draws from, so "the owner of the largest class" can be
+#: read off the artifact instead of inferred from the prose.
+DRAINED_HERE: frozenset[str] = frozenset({"donated_never_cell", "untestable_queued"})
 
 #: IN FLIGHT IS NOT DEBT, AND IT IS NOT HIDDEN EITHER. A row minted minutes ago has not yet had
 #: its turn: the compiler mints cells on one hourly leg and this organ drains them on the next,
@@ -372,6 +445,7 @@ def measure_debt(conn: sqlite3.Connection, *, grace_days: float = GRACE_DAYS,
                            "why": f"{type(exc).__name__}: {exc}"})
     total = sum(parts.values())
     return {"measured_at": _now(), "components": parts, "why": why,
+            "component_owner": COMPONENT_OWNER, "drained_here": sorted(DRAINED_HERE),
             "total_debt": total if not unmeasured else None,
             "status": UNMEASURED if unmeasured else "MEASURED",
             "unmeasured": unmeasured, "grace_days": float(grace_days),
@@ -917,6 +991,116 @@ def judged_vs_docket(*, limit: int = 40) -> dict[str, Any]:
                     "order is selection, so the least-judged family goes to the gates first"}
 
 
+#: The leg's cadence, in hours. The drain verdict below compares what one pass removes with what
+#: arrives between two passes, so the cadence is part of the measurement rather than a guess.
+PASS_CADENCE_H = 1.0
+
+
+def arrival_rate(conn: sqlite3.Connection, *, hours: float = 6.0) -> dict[str, Any]:
+    """ROWS PER HOUR ARRIVING AT THE CONVERSION DOOR, from the registry's own stamps.
+
+    Half of "is conversion keeping up" is a number nothing measured: the debt total says how far
+    behind the desk is, never whether the gap is opening or closing. Measured on the build box
+    2026-09-23, the hour 18:00-19:00 delivered 2,010 donated candidates and 2,241 queued rows with
+    no falsifier -- 4,251 arrivals against a pass that could take 2,000. At that ratio the debt
+    grows by construction and no amount of draining catches it, which is a fact about the CAP and
+    not about the backlog. Publishing it is how that can never again be inferred from a plateau.
+
+    TWO BOUNDS, BOTH PUBLISHED, BECAUSE NEITHER IS THE NUMBER ON ITS OWN. Every arriving row is
+    an UPPER bound on what conversion may have to handle -- most arrive already testable and were
+    never debt. The arrivals still sitting in a debt class are a LOWER bound -- the ones this pass
+    converted are not among them. Reporting either alone as "the arrival rate" would be a model
+    wearing a measurement's clothes, so both are named and the drain verdict below uses neither:
+    it compares this pass's debt with the LAST pass's, which needs no model at all.
+    """
+    cut = (datetime.now(tz=UTC) - timedelta(hours=float(hours))).isoformat()
+    counts: dict[str, int] = {}
+    debt_counts: dict[str, int] = {}
+    for name, sql, debt_sql in (
+        ("research_candidates", "SELECT COUNT(*) FROM research_candidates WHERE created_at>=?",
+         "SELECT COUNT(*) FROM research_candidates WHERE created_at>=? AND (status='donated' OR "
+         "(status IN ('queued','claimed') AND COALESCE(falsifier,'')=''))"),
+        ("discoveries", "SELECT COUNT(*) FROM discoveries WHERE created_at>=?",
+         "SELECT COUNT(*) FROM discoveries WHERE created_at>=? AND (state='UNPROCESSED' OR "
+         "(state='BLOCKED' AND COALESCE(blocked_reason,'')=''))"),
+    ):
+        try:
+            counts[name] = int(conn.execute(sql, (cut,)).fetchone()[0])
+            debt_counts[name] = int(conn.execute(debt_sql, (cut,)).fetchone()[0])
+        except sqlite3.Error as exc:
+            return {"status": UNMEASURED, "why": f"{name}: {type(exc).__name__}: {exc}",
+                    "window_h": float(hours)}
+    total = sum(counts.values())
+    debt_total = sum(debt_counts.values())
+    return {"status": "MEASURED", "window_h": float(hours), "counts": counts,
+            "rows_per_hour": round(total / max(hours, 1e-9), 2),
+            "debt_counts": debt_counts,
+            "debt_rows_per_hour": round(debt_total / max(hours, 1e-9), 2),
+            "basis": "rows stamped created_at inside the window, over the whole registry; "
+                     "`rows_per_hour` is every arrival (the upper bound on conversion work) and "
+                     "`debt_rows_per_hour` is the arrivals still unconverted (the lower bound)"}
+
+
+def drain_verdict(debt_before: Mapping[str, Any], debt_after: Mapping[str, Any],
+                  arrivals: Mapping[str, Any], *, previous: Mapping[str, Any] | None = None,
+                  cadence_h: float = PASS_CADENCE_H) -> dict[str, Any]:
+    """IS THE DRAIN WINNING, AND IN HOW MANY PASSES -- measured, never modelled.
+
+    TWO DIFFERENT NUMBERS, AND ONLY ONE OF THEM IS THE ANSWER. `drained_this_pass` is the gross
+    work: the debt at the top of the pass minus the debt at the bottom. It says nothing about
+    whether the desk is catching up, because rows keep arriving while the pass runs.
+
+    THE NET IS MEASURED PASS OVER PASS, against this organ's OWN LAST ARTIFACT. Last pass's
+    `debt_after` minus this pass's `debt_after` is the gap trend with no arrival model in it at
+    all -- every arrival, converted or not, is already inside both numbers. A model of the
+    arrival rate would have to guess which arrivals were ever debt, and a guess in the numerator
+    of "are we winning" is how a plateau gets read as progress. UNMEASURED with no prior pass:
+    one reading is not a trend, and an absence is never a clean verdict (L1.28a).
+    """
+    before, after = debt_before.get("total_debt"), debt_after.get("total_debt")
+    if before is None or after is None:
+        return {"status": UNMEASURED,
+                "why": "a debt component could not be counted, so no drain rate exists"}
+    out: dict[str, Any] = {"status": "MEASURED", "debt_before": int(before),
+                           "debt_after": int(after),
+                           "drained_this_pass": int(before) - int(after),
+                           "cadence_h": float(cadence_h),
+                           "arrivals_per_hour_all": arrivals.get("rows_per_hour"),
+                           "arrivals_per_hour_still_debt": arrivals.get("debt_rows_per_hour")}
+    prior = (previous or {}).get("debt_after")
+    prior_at = (previous or {}).get("at")
+    if not isinstance(prior, (int, float)):
+        out.update({"verdict": UNMEASURED, "net_since_last_pass": None, "passes_to_clear": None,
+                    "why": "no previous pass to compare against, so the gap has no trend yet -- "
+                           "one reading is a level, never a direction"})
+        return out
+    net = int(prior) - int(after)
+    out.update({"previous_debt_after": int(prior), "previous_pass_at": prior_at,
+                "net_since_last_pass": net})
+    if net > 0:
+        out.update({"verdict": "DRAINING",
+                    "passes_to_clear": int(-(-int(after) // net)),
+                    "why": f"the debt was {int(prior)} at the end of the last pass and {int(after)}"
+                           f" at the end of this one: the gap closes by {net} a pass, so the "
+                           f"remaining {int(after)} clears in {-(-int(after) // net)} passes"})
+    else:
+        out.update({"verdict": "LOSING", "passes_to_clear": None,
+                    "why": f"the debt was {int(prior)} at the end of the last pass and "
+                           f"{int(after)} at the end of this one: the gap opens by {-net} a pass, "
+                           f"which is a fact about the pass budget and the clock, never about "
+                           f"the backlog"})
+    return out
+
+
+def previous_pass(path: Path | None = None) -> dict[str, Any]:
+    """This organ's own last artifact, reduced to the two fields the trend needs."""
+    doc = _read_json(path or OUT)
+    if not isinstance(doc, Mapping):
+        return {}
+    after = (doc.get("debt_after") or {}) if isinstance(doc.get("debt_after"), Mapping) else {}
+    return {"at": doc.get("generated_utc"), "debt_after": after.get("total_debt")}
+
+
 def _read_carry(path: Path | None = None) -> list[str]:
     doc = _read_json(path or CARRY)
     ids = doc.get("ids") if isinstance(doc, Mapping) else None
@@ -930,6 +1114,9 @@ def _write_carry(ids: Sequence[str], path: Path | None = None) -> None:
     the defect the registry exists to prevent. This holds names, so the next pass re-reads the
     rows from the one store and a row deleted meanwhile simply is not found.
     """
+    if len(ids) > MAX_CARRY:
+        sa.note(SEAT, "carry_overflow", kept=MAX_CARRY, considered=len(ids),
+                ordering="carry first, then oldest created_at, then thinnest grid_cell")
     _atomic_write(path or CARRY, {
         "generated_utc": _now(), "ids": list(ids)[:MAX_CARRY], "n": min(len(ids), MAX_CARRY),
         "rule": "no queues: a pass that ran out of budget hands its remainder to the next pass "
@@ -947,8 +1134,15 @@ def _rank_key(row: Mapping[str, Any], counts: Mapping[str, int]) -> tuple[float,
     return (float(counts.get(cell, 0)), str(row.get("id") or row.get("discovery_id") or ""))
 
 
+#: How many bound variables one `id IN (...)` read may carry. SQLite's historic
+#: SQLITE_MAX_VARIABLE_NUMBER is 999; 900 leaves room for the statement's own parameters. The
+#: carry is read in chunks OF this size -- it is never truncated TO it.
+_ID_CHUNK = 900
+
+
 def _debt_rows(conn: sqlite3.Connection, pool: int, *,
-               carry: Sequence[str] = ()) -> list[dict[str, Any]]:
+               carry: Sequence[str] = (), offset: int = 0,
+               exclude: Sequence[str] = ()) -> list[dict[str, Any]]:
     """The debt population this pass may work on. LAST PASS'S LEFTOVER COMES FIRST.
 
     "Nothing should be queued ... all immediate tested" (principal 2026-09-23): a row the last
@@ -956,33 +1150,51 @@ def _debt_rows(conn: sqlite3.Connection, pool: int, *,
     then does the pass draw fresh rows, the donated backlog first.
     """
     rows: list[dict[str, Any]] = []
-    seen: set[str] = set()
-    if carry:
-        head = list(carry)[:900]
-        marks = ",".join("?" * len(head))
-        try:
-            cur = conn.execute(
-                f"SELECT * FROM research_candidates WHERE id IN ({marks}) "  # noqa: S608
-                "AND (status='donated' OR (status IN ('queued','claimed') "
-                "AND COALESCE(falsifier,'')=''))", head)
-            cols = [c[0] for c in cur.description]
-            for r in cur.fetchall():
-                row = dict(zip(cols, r, strict=False))
-                rows.append(row)
-                seen.add(str(row.get("id") or ""))
-        except sqlite3.Error:
-            pass
+    seen: set[str] = set(exclude or ())
+    carried = list(carry)
+    if carried:
+        # THE WHOLE CARRY, IN CHUNKS -- NOT ITS HEAD (measured 2026-09-23). This read used to be
+        # `carry[:900]`, one SQL statement's worth of bound variables. `_write_carry` then wrote
+        # the CURRENT population's tail, so every carried id past the 900th was not re-read and
+        # not re-carried: it fell out of the hand silently, which is the one thing a carry exists
+        # to prevent. Measured the same day: the build box carried 2,904 ids and the trading box
+        # 6,016, so 69% and 85% of each hand were being dropped every pass. The variable limit is
+        # real, so the remedy is to CHUNK the read rather than to truncate the hand.
+        for i in range(0, len(carried), _ID_CHUNK):
+            chunk = [c for c in carried[i:i + _ID_CHUNK] if c and c not in seen]
+            if not chunk:
+                continue
+            marks = ",".join("?" * len(chunk))
+            try:
+                cur = conn.execute(
+                    f"SELECT * FROM research_candidates WHERE id IN ({marks}) "  # noqa: S608
+                    "AND (status='donated' OR (status IN ('queued','claimed') "
+                    "AND COALESCE(falsifier,'')=''))", chunk)
+                cols = [c[0] for c in cur.description]
+                for r in cur.fetchall():
+                    row = dict(zip(cols, r, strict=False))
+                    rows.append(row)
+                    seen.add(str(row.get("id") or ""))
+            except sqlite3.Error:
+                continue
     # THE DONATED BACKLOG IS THE TARGET (principal's addendum 2026-09-23: "the 234,996 donated
     # candidates that never reached the judge are the target"), so it takes two thirds of the
     # pool. The queued-but-untestable rows take the rest: they are already on the queue and a
     # judge will reach them the moment their falsifier exists.
+    #
+    # OLDEST FIRST, NOT NEWEST FIRST. These two draws used to be `ORDER BY updated_at DESC`, so
+    # the moment arrivals exceeded the pass cap the pass re-read this hour's arrivals forever and
+    # the tail was never reached again. That is not a slow drain, it is a starved one, and the
+    # organ's own stall detector was already reporting it: `oldest_unconverted` read 6.68 days on
+    # the trading box and rises one day per day under exactly this ordering. LAWS 5e says
+    # leftovers go FIRST with their age published, so the age is the sort key.
     donated = max(1, (pool * 2) // 3)
     for sql, args in (
         ("SELECT * FROM research_candidates WHERE status='donated' "
-         "ORDER BY updated_at DESC LIMIT ?", (donated,)),
+         "ORDER BY created_at ASC LIMIT ? OFFSET ?", (donated, int(offset))),
         ("SELECT * FROM research_candidates WHERE status IN ('queued','claimed') "
-         "AND COALESCE(falsifier,'')='' ORDER BY updated_at DESC LIMIT ?",
-         (max(1, pool - donated),)),
+         "AND COALESCE(falsifier,'')='' ORDER BY created_at ASC LIMIT ? OFFSET ?",
+         (max(1, pool - donated), int(offset))),
     ):
         try:
             cur = conn.execute(sql, args)
@@ -991,9 +1203,89 @@ def _debt_rows(conn: sqlite3.Connection, pool: int, *,
                 row = dict(zip(cols, r, strict=False))
                 if str(row.get("id") or "") not in seen:
                     rows.append(row)
+                    seen.add(str(row.get("id") or ""))
         except sqlite3.Error:
             continue
     return rows
+
+
+class _Waves:
+    """THE PASS'S ROW SUPPLY: this wave, then the next, until a draw comes back empty.
+
+    A pass is bounded by its wall clock and its row cap. It is NOT bounded by how many rows one
+    SELECT happened to return, and treating that as a bound is how an organ reports a full hour's
+    work having spent 76% of its budget. When the drawn wave is exhausted this asks for the next
+    one at the next offset; a draw that returns nothing means the debt population really is
+    finished, which is the only honest reason to stop early.
+
+    `remaining()` is the rows of the CURRENT wave the pass never reached. They are the leftover
+    the carry hands to the next pass as its first work (LAWS 5e) -- never a queue, never dropped.
+    """
+
+    def __init__(self, draw: Any, first: Sequence[Mapping[str, Any]], pool: int) -> None:
+        self.draw = draw
+        self.pool = max(1, int(pool))
+        self.buf: list[Any] = list(first)
+        self.i = 0
+        self.offset = 0
+        self.waves = 1
+        self.drawn = len(self.buf)
+
+    def next_row(self) -> Any:
+        while True:
+            if self.i < len(self.buf):
+                row = self.buf[self.i]
+                self.i += 1
+                return row
+            self.offset += self.pool
+            nxt = list(self.draw(self.offset))
+            if not nxt:
+                return None
+            self.buf, self.i = nxt, 0
+            self.waves += 1
+            self.drawn += len(nxt)
+
+    def remaining(self) -> list[str]:
+        return [str(r.get("id") or "") for r in self.buf[self.i:] if str(r.get("id") or "")]
+
+
+#: How long a write waits for the registry's write lock before it gives up. The default is 30 s
+#: (`libs/moat/registry.connect`), and MEASURED ON THE TRADING BOX 2026-09-23 that was not enough:
+#: 1,957 of 2,000 repairs in one pass died on `OperationalError: database is locked`, so the pass
+#: landed 43 rows and filed the other 97.85% as ENQUEUE_FAILED. That is not a class the desk
+#: cannot convert -- it is a writer queueing behind other organs on one SQLite file. Waiting
+#: longer converts MORE, never less, so this is a widening and not a throttle.
+LOCK_WAIT_MS = 180_000
+ENQUEUE_RETRIES = 3
+
+
+def _widen_lock_window(conn: sqlite3.Connection) -> int | None:
+    """Give this pass's writes a long busy window. Returns the ms set, or None if it would not."""
+    try:
+        conn.execute(f"PRAGMA busy_timeout={int(LOCK_WAIT_MS)}")
+        return int(LOCK_WAIT_MS)
+    except (sqlite3.Error, AttributeError):
+        return None
+
+
+def _enqueue(spec: Any, conn: sqlite3.Connection) -> tuple[str, bool]:
+    """`XS.enqueue` with the lock treated as CONTENTION, not as a verdict.
+
+    A `database is locked` is a statement about who else is writing this second. Retrying it is
+    the difference between a 2.15% and a ~100% repair rate on the box that trades, and a row lost
+    to it would otherwise be filed under a blocker class that names no real defect in the row.
+    """
+    last: Exception | None = None
+    for attempt in range(ENQUEUE_RETRIES):
+        try:
+            return XS.enqueue(spec, conn=conn)
+        except sqlite3.OperationalError as exc:
+            if "locked" not in str(exc).lower() and "busy" not in str(exc).lower():
+                raise
+            last = exc
+            time.sleep(min(2.0, 0.25 * (2 ** attempt)))
+            _widen_lock_window(conn)
+    raise last if last is not None else sqlite3.OperationalError("enqueue failed")
 
 
 def _age_days(row: Mapping[str, Any]) -> float | None:
@@ -1081,22 +1373,36 @@ def _acquisition_tasks(rows: Sequence[Mapping[str, Any]], seat_dir: Path | None 
 
 def run(*, budget: Budget, conn: sqlite3.Connection, max_rows: int, dry_run: bool,
         universe_dir: Path | None = None, seat_dir: Path | None = None,
-        carry_path: Path | None = None,
+        carry_path: Path | None = None, out_path: Path | None = None,
         grace_days: float = GRACE_DAYS) -> dict[str, Any]:
     """One pass: measure, classify, prioritise by breadth, act, re-enqueue, measure again."""
+    # Read the last pass's debt BEFORE this one overwrites the artifact: the gap trend is measured
+    # against it, and it is the only number that says whether the desk is catching up.
+    prior_pass = previous_pass(out_path)
     debt_before = measure_debt(conn, grace_days=grace_days)
     breadth_before = measure_breadth(conn)
     counts = cell_counts(conn)
 
+    _widen_lock_window(conn)
     pool = min(POOL_CEILING, max(max_rows, max_rows * POOL_FACTOR))
     carried = _read_carry(carry_path)
-    population = _debt_rows(conn, pool, carry=carried)
     # THE LEFTOVER KEEPS ITS PLACE AT THE FRONT. Within each half the order is by the breadth a
     # conversion adds, but a row the last pass could not reach is not re-ranked against fresh
     # arrivals -- that is how a tail starves while the report says the backlog is being worked.
     carried_set = set(carried)
-    population.sort(key=lambda r: (str(r.get("id") or "") not in carried_set,
-                                   *_rank_key(r, counts)))
+    handled: set[str] = set()
+
+    def _draw(offset: int) -> list[dict[str, Any]]:
+        """One wave of the debt population, oldest first, with what this pass already touched
+        excluded. The exclusion matters: a row that stays blocked keeps its status, so without it
+        the next wave would re-read the same rows and the drain would run in place."""
+        pop = _debt_rows(conn, pool, carry=carried if offset == 0 else (),
+                         offset=offset, exclude=tuple(handled))
+        pop.sort(key=lambda r: (str(r.get("id") or "") not in carried_set,
+                                *_rank_key(r, counts)))
+        return pop
+
+    population = _draw(0)
 
     histogram: dict[str, int] = {}
     per_source: dict[str, dict[str, int]] = {}
@@ -1117,13 +1423,22 @@ def run(*, budget: Budget, conn: sqlite3.Connection, max_rows: int, dry_run: boo
                                            "still_blocked": 0, "ages_days": []})
 
     leftover: list[str] = []
-    for index, row in enumerate(population):
+    # THE PASS DRAINS UNTIL A BOUND, NOT UNTIL ONE POOL RUNS OUT (2026-09-23). A wave that ended
+    # with budget and cap to spare used to end the pass, so a pass could finish its 5,404-row pool
+    # in 252 s of a 330 s budget with 2,904 rows still waiting and call that an hour's work. The
+    # bounds are the wall clock and the (now genuinely derived) row cap; running out of DRAWN rows
+    # is not a bound, it is a reason to draw the next wave.
+    supply = _Waves(_draw, population, pool)
+    while True:
+        row = supply.next_row()
+        if row is None:
+            break
         if examined >= max_rows or not budget.ok("convert", reserve=5.0):
-            leftover = [str(r.get("id") or "") for r in population[index:]
-                        if str(r.get("id") or "")]
+            leftover = [str(row.get("id") or ""), *supply.remaining()]
             break
         examined += 1
         cid = str(row.get("id") or "")
+        handled.add(cid)
         origin = str(row.get("origin") or row.get("generator") or "unknown")
         stat = per_source.setdefault(origin, {"examined": 0, "repaired": 0, "refused": 0,
                                               "still_blocked": 0})
@@ -1211,7 +1526,7 @@ def run(*, budget: Budget, conn: sqlite3.Connection, max_rows: int, dry_run: boo
         if dry_run:
             continue
         try:
-            new_id, was_new = XS.enqueue(spec, conn=conn)
+            new_id, was_new = _enqueue(spec, conn)
             enqueued += 1
             created += int(was_new)
             if cid and new_id != cid:
@@ -1241,6 +1556,14 @@ def run(*, budget: Budget, conn: sqlite3.Connection, max_rows: int, dry_run: boo
     naming_path = "" if dry_run else _naming_requests(naming, seat_dir)
     acq_path = "" if dry_run else _acquisition_tasks(acquisitions, seat_dir)
 
+    # THE LEFTOVER IS A NAMED REFUSAL, NOT A SILENT SKIP (LAWS 7, libs/research/set_aside.py).
+    # A pass bounded by its clock or its cap has set rows aside; the ledger records the organ, the
+    # stage, how many were considered, how many were kept and the ORDERING that chose them, so a
+    # reader can tell a principled drain from an arbitrary top-N. The budget is unchanged -- this
+    # writes down what the budget did.
+    sa.note(SEAT, "unconverted_leftover", kept=examined,
+            considered=examined + len(leftover),
+            ordering="carry first, then oldest created_at, then thinnest grid_cell")
     if not dry_run:
         _write_carry(leftover, carry_path)
     # THE WHOLE HYPOTHESIS-LANE UNIVERSE, not only the symbols this pass happened to touch: the
@@ -1252,8 +1575,13 @@ def run(*, budget: Budget, conn: sqlite3.Connection, max_rows: int, dry_run: boo
                             backfill_bars(coverage, budget=budget, universe_dir=universe_dir))
     debt_after = measure_debt(conn, grace_days=grace_days)
     breadth_after = measure_breadth(conn)
+    arrivals = arrival_rate(conn)
     return {
-        "examined": examined, "pool": len(population), "max_rows": max_rows,
+        "examined": examined, "pool": supply.drawn, "waves": supply.waves,
+        "max_rows": max_rows, "max_rows_basis": max_rows_basis(),
+        "arrival_rate": arrivals,
+        "drain": drain_verdict(debt_before, debt_after, arrivals, previous=prior_pass),
+        "lock_wait_ms": LOCK_WAIT_MS,
         "blocker_histogram": dict(sorted(histogram.items(), key=lambda kv: -kv[1])),
         "blocker_owner": {k: DEFECT_OWNER.get(k, "unassigned") for k in histogram},
         "per_blocker_class": _class_table(per_class),
@@ -1379,6 +1707,8 @@ _ATTACK: dict[str, str] = {
     "OFF_UNIVERSE": "retire: the universe mandate forbids this ground",
     "EVENT_LANE": "retire from the hypothesis lane: single names are traded on news",
     "UNREADABLE": "fix the generator that wrote the row",
+    "ENQUEUE_FAILED": "wait longer for the registry write lock and retry; a locked database is "
+                      "another organ writing, not a row that cannot be converted",
 }
 
 
@@ -1401,7 +1731,7 @@ def main(argv: list[str] | None = None) -> int:
     conn = R.connect()
     try:
         body = run(budget=budget, conn=conn, max_rows=max_rows, dry_run=a.dry_run,
-                   carry_path=a.carry, grace_days=a.grace_days)
+                   carry_path=a.carry, out_path=a.out or OUT, grace_days=a.grace_days)
     finally:
         with contextlib.suppress(sqlite3.Error):
             conn.close()
@@ -1438,6 +1768,12 @@ def main(argv: list[str] | None = None) -> int:
     print(f"  oldest unconverted row: {oldest.get('age_days')} days "
           f"({oldest.get('id') or oldest.get('status')}); carried in {doc['carried_in']}, "
           f"out {doc['carried_out']} -- the leftover is the next pass's first work")
+    drain = doc.get("drain") or {}
+    cap = doc.get("max_rows_basis") or {}
+    print(f"  DRAIN: {drain.get('verdict')} -- net {drain.get('net_since_last_pass')} a pass, "
+          f"{drain.get('passes_to_clear')} passes to clear; {drain.get('why')}")
+    print(f"  cap {doc.get('max_rows')} rows ({cap.get('basis')}); bound by "
+          f"{doc.get('stopped_at') or 'nothing -- the debt population ran out'}")
     return 0
 
 

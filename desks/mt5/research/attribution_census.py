@@ -159,6 +159,106 @@ def unique_cells_by_region(conn: sqlite3.Connection) -> dict[str, Any]:
             "by_region": {str(r[0]): int(r[1] or 0) for r in rows}}
 
 
+#: A CELL IS JUDGED WHEN A JUDGE RECORDED A VERDICT AGAINST IT. Three registers can carry one and
+#: the union is the honest measure -- the same union `pack_cells.JUDGED_SQL` uses, spelled here
+#: against the candidate's OWN region stamp rather than against its ground.
+#:
+#: WHY THAT DIFFERENCE IS THE WHOLE OF STEP 3 (measured 2026-09-23 on the trading box).
+#: `PACK_CELLS.json` reported `0 of 14 regions holds a judged cell`, and it was counting judged
+#: cells PER GROUND: `sources.source_id -> research_candidates.source_id -> a verdict`. But 1,210
+#: of the 1,228 judged candidates were produced by `external`, which carries NO source_id at all,
+#: so no ground could ever be credited with them and every region read zero by construction. The
+#: cells were judged; the ground join was the wrong key. A cell's REGION is stamped on the cell,
+#: so this counts what was actually judged, by the region that actually produced it.
+JUDGED_PREDICATE = ("(c.judged_at is not null or coalesce(c.terminal_gate,'') != '' "
+                    "or t.candidate_id is not null)")
+
+
+def judged_by_region(conn: sqlite3.Connection) -> dict[str, Any]:
+    """Per-region JUDGED cells, keyed on the cell's own attribution stamp.
+
+    A region with no judged cell cannot contribute an edge however deep its mining goes, so this
+    is published beside the unique-cell count and never folded into it.
+    """
+    if not _has_columns(conn, "research_candidates"):
+        return {"available": False, "why": f"{A.UNMEASURED}: no attribution columns"}
+    try:
+        rows = conn.execute(
+            f"select coalesce(nullif(c.{A.REGION_FIELD},''),'{A.UNMEASURED}') r, "  # noqa: S608
+            "count(distinct coalesce(nullif(c.grid_cell,''), c.content_hash)) "
+            "from research_candidates c left join trials_ledger t on t.candidate_id = c.id "
+            f"where {JUDGED_PREDICATE} group by 1 order by 2 desc").fetchall()
+    except sqlite3.Error as exc:
+        return {"available": False, "why": f"{A.UNMEASURED}: {type(exc).__name__}: {exc}"}
+    by = {str(r[0]): int(r[1] or 0) for r in rows}
+    out: dict[str, Any] = {"available": True,
+                           "basis": "distinct grid_cell else content_hash, over candidates "
+                                    "carrying judged_at, a terminal_gate, or a trials_ledger row",
+                           "by_region": by, "spread": A.region_spread(by)}
+    out["regions_with_a_judged_cell"] = sorted(r for r in A.REGIONS if by.get(r, 0) > 0)
+    out["regions_with_no_judged_cell"] = sorted(r for r in A.REGIONS if by.get(r, 0) <= 0)
+    return out
+
+
+# ------------------------------------------------------------------------------- the ratchet
+RATCHET = DESK / "reports" / "REGION_RATCHET.json"
+#: The two measures this organ ratchets. `scripts/check_region_ratchet.py` reads the same names,
+#: and a test pins the two lists equal so the fence can never be checking a measure the organ
+#: stopped publishing (that is how a gate goes quietly green on nothing).
+MEASURES_ARE: tuple[str, ...] = ("unique_cells", "judged_cells")
+
+RATCHET_LAW = (
+    "PER-REGION UNIQUE CELLS AND PER-REGION JUDGED CELLS RATCHET UP ONLY (L1.50). The high-water "
+    "mark per region is kept here and never lowered; a region that once held cells and now holds "
+    "NONE is a regression and the fence fails on it, as does a fall in the COUNT OF REGIONS THE "
+    "DESK NAMES -- a coverage ratio may never be improved by removing a region from the "
+    "denominator. A non-zero dip is published as a named regression row rather than failing the "
+    "gate, because the unique-cell basis can move under a row without the desk losing ground; the "
+    "fall to zero cannot.")
+
+
+def ratchet(current: dict[str, dict[str, int]], *, path: Path | None = None) -> dict[str, Any]:
+    """Update and return the per-region high-water marks. Monotone by construction."""
+    out_path = path if path is not None else RATCHET
+    try:
+        prev = json.loads(out_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        prev = {}
+    prev = prev if isinstance(prev, dict) else {}
+    doc: dict[str, Any] = {"at": _now(), "law": RATCHET_LAW, "regions_named": len(A.REGIONS),
+                           "regions": list(A.REGIONS), "measures": {}}
+    prev_named = int(prev.get("regions_named") or 0)
+    doc["regions_named_high_water"] = max(prev_named, len(A.REGIONS))
+    doc["regions_named_fell"] = len(A.REGIONS) < prev_named
+    fallen_any = bool(doc["regions_named_fell"])
+    prev_measures = prev.get("measures")
+    prev_measures = prev_measures if isinstance(prev_measures, dict) else {}
+    for name, counts in current.items():
+        raw_old = prev_measures.get(name)
+        old: dict[str, Any] = raw_old if isinstance(raw_old, dict) else {}
+        raw_high = old.get("high_water")
+        high_prev: dict[str, Any] = raw_high if isinstance(raw_high, dict) else {}
+        now = {r: int(counts.get(r) or 0) for r in A.REGIONS}
+        high = {r: max(int(high_prev.get(r) or 0), now[r]) for r in A.REGIONS}
+        to_zero = sorted(r for r in A.REGIONS if high[r] > 0 and now[r] <= 0)
+        dips = [{"region": r, "high_water": high[r], "now": now[r]}
+                for r in A.REGIONS if 0 < now[r] < high[r]]
+        total_now, total_high = sum(now.values()), max(int(old.get("total_high_water") or 0),
+                                                       sum(now.values()))
+        fallen_any = fallen_any or bool(to_zero) or total_now < int(old.get(
+            "total_high_water") or 0)
+        doc["measures"][name] = {
+            "current": dict(sorted(now.items(), key=lambda kv: -kv[1])),
+            "high_water": high, "fell_to_zero": to_zero, "regressions": dips,
+            "total": total_now, "total_high_water": total_high,
+            "total_fell": total_now < int(old.get("total_high_water") or 0),
+            "spread": A.region_spread(now),
+        }
+    doc["status"] = "FALLEN" if fallen_any else "OK"
+    _atomic(out_path, doc)
+    return doc
+
+
 def producer_region(conn: sqlite3.Connection) -> dict[str, Any]:
     """producer -> the region its OWN rows carry, and how many of them.
 
@@ -416,10 +516,15 @@ def run(*, budget_s: float = 240.0, do_backfill: bool = True,
         doc["after"] = {"candidates": measure(ro, "research_candidates"),
                         "discoveries": measure(ro, "discoveries")}
         doc["unique_cells_by_region"] = unique_cells_by_region(ro)
+        doc["judged_cells_by_region"] = judged_by_region(ro)
         doc["producer_region"] = producer_region(ro)
         doc["certificates"] = certificates(ro)
     finally:
         ro.close()
+    cells = (doc["unique_cells_by_region"] or {}).get("by_region") or {}
+    judged = (doc["judged_cells_by_region"] or {}).get("by_region") or {}
+    doc["unique_cells_by_region"]["spread"] = A.region_spread(cells)
+    doc["ratchet"] = ratchet(dict(zip(MEASURES_ARE, (cells, judged), strict=True)))
     doc["available"] = True
     before = doc["before"]["candidates"]
     after = doc["after"]["candidates"]
@@ -466,6 +571,19 @@ def render(doc: dict[str, Any]) -> list[str]:
     cells = (doc.get("unique_cells_by_region") or {}).get("by_region") or {}
     top = ", ".join(f"{k}={v}" for k, v in list(cells.items())[:8])
     lines.append(f"  unique cells by region  {top}")
+    for name in ("unique_cells_by_region", "judged_cells_by_region"):
+        sp = (doc.get(name) or {}).get("spread") or {}
+        if sp:
+            lines.append(f"  spread {name.split('_')[0]:<6}  {sp.get('regions_holding')}/"
+                         f"{sp.get('regions_named')} regions hold cells, min {sp.get('min')} "
+                         f"median {sp.get('median')} max {sp.get('max')}, evenness "
+                         f"{sp.get('evenness')}; empty: {', '.join(sp.get('regions_empty') or [])}")
+    rat = doc.get("ratchet") or {}
+    if rat:
+        fell = {k: v.get("fell_to_zero") for k, v in (rat.get("measures") or {}).items()
+                if v.get("fell_to_zero")}
+        lines.append(f"  ratchet     {rat.get('status')}"
+                     + (f" -- REGIONS FELL TO ZERO: {fell}" if fell else ""))
     return lines
 
 

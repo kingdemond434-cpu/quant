@@ -66,16 +66,43 @@ def run_step(name: str, fn) -> dict:
     and an unmeasured failure is the thing this desk is least willing to have.
     """
     started = datetime.now(UTC)
+    # THE WRITE-OR-EXPLAIN CONTRACT (2026-09-23), at the daily cycle's own leg boundary. This is
+    # the second of the desk's two cycles and it is the one with a real runner loop, so a single
+    # pair of calls here covers every step in `STEPS` -- see `libs/ops/write_or_explain.py`.
+    _woe, _raised = _woe_before(name), ""
     try:
         fn()
         out = {"ok": True}
         dlog(f"{name}: ok")
     except Exception as exc:
         out = {"ok": False, "error": f"{type(exc).__name__}: {exc}"}
+        _raised = str(out["error"])
         dlog(f"{name}: FAILED -- {out['error']}")
         dlog(traceback.format_exc().rstrip())
     out["seconds"] = round((datetime.now(UTC) - started).total_seconds(), 1)
+    _woe_after(name, _woe, out, raised=_raised, wall_s=float(out["seconds"]))
     return out
+
+
+def _woe_before(name: str) -> dict:
+    """Stat step `name`'s DECLARED artifact(s) before it runs. Never fails the step."""
+    try:
+        from libs.ops.write_or_explain import before_leg
+        return before_leg(name)
+    except Exception:
+        return {}
+
+
+def _woe_after(name: str, before: dict, out: object, *, raised: str = "",
+               wall_s: float | None = None) -> None:
+    """Did the step write what it declared, or say why not? Prints the defect; never raises."""
+    try:
+        from libs.ops.write_or_explain import DEFECTS, observe
+        rec = observe(name, before, out, raised=raised, wall_s=wall_s)
+        if str(rec.get("verdict")) in DEFECTS:
+            dlog(f"  {rec['verdict']} {rec.get('detail', '')}")
+    except Exception as exc:
+        dlog(f"  write-or-explain not recorded for {name}: {type(exc).__name__}: {exc}")
 
 
 def _scalp_gauntlet() -> None:

@@ -187,5 +187,7 @@ class ThresholdBook:
             self.log.parent.mkdir(parents=True, exist_ok=True)
             with self.log.open("a", encoding="utf-8") as fh:
                 fh.write(json.dumps(entry) + "\n")
-        except Exception:
-            pass
+        except Exception as exc:
+            # LOUD, NOT SILENT (2026-09-23 swallowed-write audit).
+            print(f"adaptive_thresholds: entry NOT written to {self.log} "
+                  f"({type(exc).__name__}: {exc})", flush=True)

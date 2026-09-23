@@ -36,6 +36,7 @@ Artifact: `docs/research/birth_obligations.json` (the floors, committed).
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import re
 import subprocess
@@ -49,6 +50,35 @@ from typing import Any
 ROOT = Path(__file__).resolve().parent.parent
 UNMEASURED = "UNMEASURED"
 FLOORS = ROOT / "docs" / "research" / "birth_obligations.json"
+
+
+def _name_safe_stdout() -> None:
+    """THIS FENCE MUST BE ABLE TO NAME A CHINESE SOURCE (measured on the trading box 2026-09-23).
+
+    WHY NAMES AND NOT COUNTS is this fence's own design rule (see the module docstring), and on
+    Windows it could not honour it. The law gate spawns every fence with a PIPE for stdout, so
+    the child's encoding is the locale's -- `cp1252` on the trading box, not utf-8. The DEEP-FOREST
+    mandate (principal 2026-09-04) makes this desk mine the Chinese, Japanese, Korean and Russian
+    webs by standing order, so the `source` axis is GUARANTEED to hold names outside cp1252. The
+    first one it reached, U+548C in a source name, raised UnicodeEncodeError inside `print` at the
+    `FAILED` loop -- which killed the process BEFORE the remaining failures printed and before the
+    fence returned its own exit code. The 2 the law gate recorded was the traceback's, not the
+    fence's verdict: the gate could not tell "93 executables arrived incomplete" from "this fence
+    crashed", which is exactly the false reading L1.49 forbids.
+
+    `backslashreplace` is chosen over `replace` deliberately: it never loses information -- the
+    exact codepoint stays recoverable from the output -- so a name the console cannot render is
+    still a name the next session can look up, not a row of question marks. Nothing here changes
+    WHAT is judged; it changes only whether the verdict can be uttered. Best-effort by
+    construction: a stream that cannot be reconfigured leaves the fence exactly as it was.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        enc = (getattr(stream, "encoding", "") or "").lower().replace("-", "")
+        if enc in {"utf8", "utf8mb4"}:
+            continue
+        # not a reconfigurable stream -- judge anyway, never refuse to speak
+        with contextlib.suppress(AttributeError, OSError, ValueError):
+            stream.reconfigure(errors="backslashreplace")   # type: ignore[union-attr]
 
 #: At most this many names per axis in the committed floor. The file must hold the WHOLE
 #: incomplete set or the names it dropped would read as arrivals on the next pass, so the bound is
@@ -405,6 +435,7 @@ def main(argv: list[str] | None = None) -> int:
                     help="record today's incomplete set as the floor (a first install, or after "
                          "an arrival has been given its obligation)")
     a = ap.parse_args(argv)
+    _name_safe_stdout()             # before the first print: this fence's job is to NAME things
     root = Path(a.root or ROOT)
     doc = measure(root)
     if a.with_fences:

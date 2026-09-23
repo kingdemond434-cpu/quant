@@ -1570,8 +1570,11 @@ def build() -> dict[str, Any]:
                         "window_days": 7, "coverage": _cov,
                         "newest_tape_write": (_newest.isoformat(timespec="seconds")
                                               if _newest else None)}, indent=1), "utf-8")
-    except Exception:
-        pass
+    except Exception as exc:
+        # LOUD, NOT SILENT (2026-09-23 swallowed-write audit). A dashboard input that silently
+        # fails to rebuild is a dashboard reporting a stale desk with full confidence.
+        print(f"zentech: tape coverage block NOT written ({type(exc).__name__}: {exc})",
+              flush=True)
     # The stall watchdog's latest verdict travels to the dashboard: healing nobody can see
     # is healing nobody can trust (principal 2026-08-27: "nothing should ever be stalled,
     # I won't be here to tell you").

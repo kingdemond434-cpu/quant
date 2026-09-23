@@ -174,22 +174,62 @@ JUDGED_SQL = (
     "(c.terminal_gate IS NOT NULL AND c.terminal_gate != '')) GROUP BY c.source_id")
 
 
+#: WHY A REGIONAL CELL IS NEVER JUDGED. Traced end to end 2026-09-23 on the trading box; every
+#: clause is a file and a line, and NOT ONE of them is this organ's to change. Published here so
+#: the next session inherits a work order with an owner instead of a mystery.
+WHY_REGIONAL_CELLS_ARE_NOT_JUDGED: dict[str, str] = {
+    "0_the_judge_does_not_read_this_registry": (
+        "desks/mt5/scripts/external_gauntlet.py:2602 main() reads ONE file, "
+        "data/hypotheses/external_survivors.json. It never opens data/alpha_registry.sqlite. The "
+        "registry table is the record written AFTER a verdict, never the judge's work queue, so "
+        "minting a cell into it does not put that cell in front of a judge."),
+    "1_the_docket_is_built_from_json_not_from_the_registry": (
+        "desks/mt5/research/merge_hypotheses.py (leg `merge_docket`) is the only writer of "
+        "external_survivors.json and it reads seven JSON files under data/intelligence/ and "
+        "data/hypotheses/. The ONLY door out of sqlite into those files is "
+        "moat_candidate_compiler.claim_and_donate -> proposer_common.donate, leased by "
+        "libs/moat/registry.claim_candidates at CLAIM_PER_DEPARTMENT=12 x 5 departments = 60 rows "
+        "an hour against 323,542 candidates. pack_cells, discovery_compiler and the miner:* "
+        "producers all call enqueue_candidate DIRECTLY and donate nothing."),
+    "2_the_families_are_not_implemented": (
+        "miner_candidate_compiler._registered_family requires family_<name> in mt5desk/families.py "
+        "or membership of families_orthogonal.ORTHOGONAL_FAMILIES. Neither "
+        "`regional_information` (this organ's world lane) nor `exogenous_conditioner` (its pack "
+        "lane) exists in either, so a donated regional row exits compile_row as "
+        "NEEDS_EXACT_RULE_EXTRACTION into miner_deepening_queue.json and never reaches a docket."),
+    "3_a_verdict_can_only_land_on_the_oldest_row_of_its_identity": (
+        "libs/moat/registry.candidate_identity_index builds symbol|family|session with "
+        "setdefault() over ORDER BY seq, so the LOWEST-seq row permanently owns each identity and "
+        "every later candidate with the same triple is structurally unreachable by a verdict. "
+        "Measured: 4,539 distinct identities against 323,542 candidates, and ~40% of gauntlet "
+        "verdicts resolve to `cell_name_unjoined` and update zero rows. That ceiling -- not a "
+        "slow clock and not this organ's output -- is why 1,228 candidates carry judged_at."),
+    "4_this_organ_runs_after_the_judge": (
+        "in desks/mt5/research/hourly_cycle.py the legs run in source order: merge_docket then "
+        "external_gauntlet, and `pack_cells` several hundred lines later. A cell minted this hour "
+        "cannot be in this hour's docket even in principle."),
+    "owners": (
+        "hourly_cycle leg order; mt5desk/families*.py; the donation path "
+        "(moat_candidate_compiler / proposer_common); libs/moat/registry."
+        "candidate_identity_index. pack_cells owns NONE of them: it mints, it measures, and it "
+        "publishes this. desks/mt5/scripts/external_gauntlet.py is SEALED."),
+}
+
+
 def judged_registers() -> dict[str, Any]:
     """WHY THE END OF THE CHAIN IS OPEN, measured in the three registers that could close it.
 
-    MEASURED 2026-09-23 on this box: `trials_ledger` holds 140 rows and **not one of them carries
-    a candidate_id** -- every row is NULL there -- so the join this organ (and `source_drain`)
-    counts judged cells with can never return a row, whatever the gauntlet does. `judged_at` and
-    `terminal_gate` are NULL on all 26,777 candidates. The 6,676 `retired` rows are not verdicts
-    either: their `rejection_reason` reads "superseded: repaired by conversion_maximiser into
-    cell ...", which is a supersession, not a judgment.
+    THE EARLIER READING HERE IS SUPERSEDED AND IS LEFT DESCRIBED SO THE CHANGE IS VISIBLE. It said
+    `trials_ledger` held 140 rows with not one candidate_id, and concluded that "the one write that
+    closes it" was passing a candidate_id. That write LANDED -- measured 2026-09-23 on the trading
+    box, trials_ledger holds 25,824 rows, 25,592 of them carrying a candidate_id and 7,819 joining
+    a registry candidate, and 1,228 candidates now carry judged_at and a terminal_gate. So the
+    register is no longer the blocker and this function no longer says it is.
 
-    So cells_judged is zero for a REASON THAT IS NOT THE GAUNTLET'S CLOCK, and no amount of
-    minting moves it. The write that closes it is one field: whatever records a verdict must pass
-    the registry's `candidate_id` when it appends to `trials_ledger` (libs/research/trial_ledger.py
-    already treats candidate_id as an identity key) or set `research_candidates.judged_at` /
-    `terminal_gate` on the row it judged. This organ never writes it: it mints, and it publishes
-    the open end so the next session inherits a named job instead of a mystery.
+    WHAT IS STILL OPEN IS ROUTING, NOT RECORDING, and it is a different defect with different
+    owners: see `WHY_REGIONAL_CELLS_ARE_NOT_JUDGED`. A regional cell never enters the judge's
+    docket at all, so no register can record a verdict that was never reached. This organ mints and
+    measures; it owns none of the four clauses and edits none of those files.
     """
     try:
         from libs.moat.registry import connect
@@ -259,16 +299,61 @@ def judged_registers() -> dict[str, Any]:
                     "every region, and minting more cells cannot move it"
                     if total <= 0 else "verdicts are recorded against candidate ids"),
             "the_one_write_that_closes_it": (
+                "SUPERSEDED AND LANDED: this said `pass the registry candidate_id when appending "
+                f"to trials_ledger`, and that write now happens -- {n_with_cand} of {n_trials} "
+                f"trial rows carry one and {n_joined} join a registry candidate. Recording is no "
+                "longer the blocker."
+                if n_with_cand > 0 else
                 "pass the registry candidate_id when appending to trials_ledger (it is already "
                 "an identity key in libs/research/trial_ledger.py:283), or set "
-                "research_candidates.judged_at + terminal_gate on the judged row. Owner: "
-                "whichever organ records the terminal verdict; desks/mt5/scripts/"
-                "external_gauntlet.py is SEALED, so this is a principal-gated change there and a "
-                "free one in any unsealed judge."),
+                "research_candidates.judged_at + terminal_gate on the judged row."),
+            "what_is_still_open_is_routing_not_recording": WHY_REGIONAL_CELLS_ARE_NOT_JUDGED,
         }
     finally:
         with contextlib.suppress(Exception):
             conn.close()
+
+
+def judged_by_stamped_region() -> dict[str, Any]:
+    """JUDGED CELLS PER REGION, keyed on the CELL's own attribution stamp, not on its ground.
+
+    WHY THE OTHER KEY READS ZERO FOR EVERY REGION AND ALWAYS WILL. `judged_by_region` below counts
+    a region's judged cells through its GROUNDS: `sources.source_id -> research_candidates.
+    source_id -> a verdict`. Measured 2026-09-23 on the trading box, 1,210 of the 1,228 judged
+    candidates were produced by `external`, which carries NO source_id at all -- so no ground could
+    be credited with them and all fourteen regions read zero BY CONSTRUCTION, whatever the judge
+    did. The cells were judged; the join used the wrong key.
+
+    A cell's region is stamped on the cell (`libs/research/attribution.py`), so this counts what
+    was actually judged by the region that actually produced it. Both numbers are published: the
+    per-ground one still answers "which GROUND has earned a verdict", which is a different and
+    also useful question, and neither is allowed to stand in for the other.
+    """
+    try:
+        from libs.moat.registry import connect
+        from libs.research import attribution as attr
+        conn = connect()
+    except Exception as exc:
+        return {"status": "UNMEASURED", "why": f"registry unavailable: {type(exc).__name__}: {exc}"}
+    try:
+        rows = conn.execute(
+            "SELECT COALESCE(NULLIF(c.region,''),'UNMEASURED'), "
+            "COUNT(DISTINCT COALESCE(NULLIF(c.grid_cell,''), c.content_hash)) "
+            "FROM research_candidates c LEFT JOIN trials_ledger t ON t.candidate_id = c.id "
+            "WHERE c.judged_at IS NOT NULL OR (c.terminal_gate IS NOT NULL AND "
+            "c.terminal_gate != '') OR t.candidate_id IS NOT NULL GROUP BY 1 ORDER BY 2 DESC"
+        ).fetchall()
+    except Exception as exc:
+        return {"status": "UNMEASURED", "why": f"query failed: {type(exc).__name__}: {exc}"}
+    finally:
+        with contextlib.suppress(Exception):
+            conn.close()
+    by = {str(r[0]): int(r[1] or 0) for r in rows}
+    return {"status": "OK", "by_region": by, "spread": attr.region_spread(by),
+            "basis": ("distinct grid_cell else content_hash over candidates carrying judged_at, a "
+                      "terminal_gate, or a trials_ledger row -- keyed on the CELL's own region"),
+            "regions_with_a_judged_cell": sorted(r for r in attr.REGIONS if by.get(r, 0) > 0),
+            "regions_with_no_judged_cell": sorted(r for r in attr.REGIONS if by.get(r, 0) <= 0)}
 
 
 def _registry_counts() -> tuple[dict[str, dict[str, int]], str]:
@@ -308,6 +393,15 @@ _PACK_CACHE: dict[str, tuple[tuple[str, ...], str]] = {}
 #: Claims read per source per pass. A ground with three hundred documents is not more important
 #: than one with three; the cursor advances so the rest are read next pass.
 CLAIMS_PER_SOURCE = 4
+
+#: HOW THE ONE WALL CLOCK IS SHARED, and it is a share, never a cap. Both lanes carry a cursor, so
+#: a lane stopped by the clock leads the next pass and nothing it would have minted is refused.
+#: Measured 2026-09-23 on the trading box: the pack lane and the world lane's own mapping ladder
+#: consumed the entire 240s budget and the world lane -- the ONLY lane that mints a cell carrying a
+#: region -- reached 0 grounds with 425 in its backlog. A first-come clock is not neutral between
+#: two lanes; it silently gives everything to whichever runs first, and the regional lane ran
+#: second. This reserves the rest of the hour for it rather than reducing anything.
+PACK_LANE_SHARE = 0.5
 
 
 def country_pack(code: str) -> tuple[tuple[str, ...], str]:
@@ -530,7 +624,8 @@ def resolve_ground(row: dict[str, Any]) -> dict[str, Any]:
                    "verbatim in the documents held, so the ground names no instrument yet"))}
 
 
-def world_rows() -> tuple[list[dict[str, Any]], str]:
+def world_rows(resolved: dict[str, dict[str, Any]] | None = None
+               ) -> tuple[list[dict[str, Any]], str]:
     """Every registered world ground with the documents it already holds and the cells it owes.
 
     `n_documents` is the crawler's own claim count for that ground -- documents ALREADY FETCHED,
@@ -576,11 +671,21 @@ def world_rows() -> tuple[list[dict[str, Any]], str]:
     # THE LADDER, and only where rung 1 left nothing. A ground that already names instruments is
     # never re-resolved, and a ground holding no document costs nothing here: the whole ladder is
     # one bounded claims read per UNMAPPED ground that has something to convert.
+    # THE LADDER IS PAID FOR ONCE PER PASS, NOT TWICE. `build()` calls this function a second time
+    # after emission so its numbers are POST-pass, and each `resolve_ground` opens its own registry
+    # connection for one bounded claims read: 425 unmapped grounds holding documents cost 850 of
+    # them per pass. Measured 2026-09-23 on the trading box that was enough to consume the whole
+    # 240s budget inside the diagnostics, so the world lane reached ZERO grounds with a backlog of
+    # 425 -- the regional lane starved by its own measurement. The caller now hands back what the
+    # first pass resolved; nothing is skipped and no ground is dropped.
+    cache = resolved if isinstance(resolved, dict) else None
     for w in rows_out:
         w["mapped_by"] = "country_pack" if w["targets"] else "none"
         if w["targets"] or w["n_documents"] <= 0:
             continue
-        res = resolve_ground(w)
+        res = (cache or {}).get(w["id"]) or resolve_ground(w)
+        if cache is not None:
+            cache.setdefault(w["id"], res)
         w["mapped_by"] = res["mapped_by"]
         w["hosts"] = res["hosts"]
         if res.get("next_job"):
@@ -673,6 +778,13 @@ def emit_world(row: dict[str, Any], *, dry_run: bool = False,
                     params={"source": sid, "region": row["region"],
                             "country": row["country"], "kind": row["kind"]},
                     origin="pack_cells", mechanism=mech_src, chart=chart, horizon=chart,
+                    # THE REGION IS STAMPED AT BIRTH, not left in `params` where no reader looks.
+                    # `pack_cells.world` is desk machinery by name, so without this the cell the
+                    # REGIONAL lane exists to mint was stamped NOT_REGIONAL -- the one producer
+                    # whose whole purpose is a region, filed as belonging to none.
+                    # `attribution.region_of_command` crosswalks the pack vocabulary (EUROPE,
+                    # RUSSIA_CIS, MEA, ...) onto the census's regions, so both stay whole.
+                    region=row["region"],
                     source_id=sid, generator="pack_cells.world", department="information",
                     transformation="world_ground", pit_status="UNMEASURED",
                     causal_rationale=mech_src,
@@ -865,7 +977,7 @@ def build(budget_s: float = 240.0, *, dry_run: bool = False) -> dict[str, Any]:
     emitted_this_pass = created_this_pass = 0
     reached: list[str] = []
     for p, sigs, targets, off in order:
-        if time.monotonic() - t0 > budget_s:
+        if time.monotonic() - t0 > budget_s * PACK_LANE_SHARE:
             break
         res = emit_for(p, sigs, targets, dry_run=dry_run, offset=off)
         pid = res["id"]
@@ -890,7 +1002,8 @@ def build(budget_s: float = 240.0, *, dry_run: bool = False) -> dict[str, Any]:
     # that has never produced a cell is the cheapest cell on the desk; one that holds nothing is
     # a crawl problem, not a conversion one. The order IS the ranking, so a pass cut short leaves
     # the next one starting at the top of the list rather than searching for it.
-    wrows, world_why = world_rows()
+    ladder_cache: dict[str, dict[str, Any]] = {}
+    wrows, world_why = world_rows(ladder_cache)
     woffsets: dict[str, int] = dict(cursor.get("world_offsets") or {})
     backlog = sorted([w for w in wrows if w["n_documents"] > 0 and w["cells_emitted"] <= 0],
                      key=lambda w: (-w["n_documents"], w["id"]))
@@ -924,7 +1037,7 @@ def build(budget_s: float = 240.0, *, dry_run: bool = False) -> dict[str, Any]:
             r["reason"] = ("cells are in the registry and the one gauntlet has not reached them "
                            "yet; trials_ledger holds no trial for this pack's candidates")
     # re-read the world lane after emission, so its numbers are POST-pass like the packs'
-    wrows_after, _ = world_rows() if not dry_run else (wrows, "")
+    wrows_after, _ = world_rows(ladder_cache) if not dry_run else (wrows, "")
     for w in wrows_after:
         prev = next((x for x in wrows if x["id"] == w["id"]), None)
         if prev is not None and prev.get("reason"):
@@ -988,6 +1101,10 @@ def build(budget_s: float = 240.0, *, dry_run: bool = False) -> dict[str, Any]:
     regions_none = sorted(k for k, v in judged_by_region.items() if v <= 0)
     jr = judged_registers()
     dr = drain_reachability(st)
+    # THE SAME QUESTION ON THE KEY THAT CAN ANSWER IT. `judged_by_region` above is per GROUND and
+    # is structurally zero for every region while the judged cells carry no source_id; this is per
+    # CELL, off its own birth stamp. Both are published so neither can stand in for the other.
+    jstamped = judged_by_stamped_region()
 
     n_emit = sum(1 for r in rows if r["cells_emitted"] > 0)
     n_judged = sum(1 for r in rows if r["cells_judged"] > 0)
@@ -1017,6 +1134,13 @@ def build(budget_s: float = 240.0, *, dry_run: bool = False) -> dict[str, Any]:
                                      key=lambda kv: -kv[1]["documents"])),
             "mapping": mapping,
             "judged_by_region": dict(sorted(judged_by_region.items(), key=lambda kv: -kv[1])),
+            "judged_by_region_basis": (
+                "PER GROUND: sources.source_id -> research_candidates.source_id -> a verdict. A "
+                "judged cell that carries no source_id can never be credited to a ground, so this "
+                "number is zero for every region while the judges' output has no ground key -- "
+                "which is a fact about the key, not about the regions. "
+                "`judged_by_stamped_region` is the same question keyed on the cell's own region."),
+            "judged_by_stamped_region": jstamped,
             "regions_with_a_judged_cell": regions_judged,
             "regions_with_no_judged_cell": regions_none,
             "judged_by_source": {w["id"]: int(w["cells_judged"]) for w in wrows_after
@@ -1106,6 +1230,12 @@ def main(argv: list[str] | None = None) -> int:
               f"by rung {m.get('by_rung')}; still unmapped {m.get('n_still_unmapped')}")
         print(f"   JUDGED regions with a judged cell {w.get('regions_with_a_judged_cell')}; "
               f"without {len(w.get('regions_with_no_judged_cell') or [])}")
+        js = w.get("judged_by_stamped_region") or {}
+        sp = js.get("spread") or {}
+        print(f"   JUDGED BY CELL STAMP {js.get('status')}: "
+              f"{sp.get('regions_holding')}/{sp.get('regions_named')} regions hold a judged "
+              f"cell, total {sp.get('total')}, evenness {sp.get('evenness')}; "
+              f"{js.get('regions_with_a_judged_cell')}")
         for row in (w.get("remaining_ranked_by_documents_held") or [])[:6]:
             print(f"    NEXT {str(row['id'])[:38]:<38} docs {row['n_documents']:<4} "
                   f"{row['region']}")

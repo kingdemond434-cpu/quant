@@ -177,7 +177,10 @@ def _poll_replies(topic: str) -> None:
             _REPLY_STATE.write_text(
                 json.dumps({"last_id": last_id,
                             "polled": datetime.now(tz=UTC).isoformat()}), "utf-8")
-    except Exception:
+    except Exception as exc:
+        # LOUD, NOT SILENT (2026-09-23 swallowed-write audit). A reply cursor that fails to write
+        # re-delivers every alert next poll, and nothing said why.
+        print(f"alerts: reply cursor NOT written ({type(exc).__name__}: {exc})", flush=True)
         return
 
 

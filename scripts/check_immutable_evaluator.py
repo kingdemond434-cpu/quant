@@ -106,7 +106,44 @@ def _records(path: Path, mode: str) -> list[str] | None:
     rows = doc if isinstance(doc, list) else (doc.get("rows") if isinstance(doc, dict) else None)
     if not isinstance(rows, list):
         return None
-    return [json.dumps(r, sort_keys=True, separators=(",", ":")) for r in rows]
+    return [json.dumps(_evidence(r), sort_keys=True, separators=(",", ":")) for r in rows]
+
+
+#: FACTS ABOUT THE PASS, NOT ABOUT THE RECORD (measured on the trading box 2026-09-23).
+#:
+#: `shadow_forward` RE-DERIVES each forward ledger from bars on every pass and re-stamps EVERY
+#: row with that pass's fetch time. Measured: 50 of 50 shadow ledgers carry exactly ONE distinct
+#: `bars_fetched_utc` across all of their rows, including rows for trades that closed on
+#: 2026-08-17 -- a month before the stamp. So the canonical form of an untouched August trade
+#: changed every pass, the sealed prefix hash changed with it, and this fence reported
+#: "a record was rewritten" on 22+ ledgers continuously.
+#:
+#: THAT IS THE WORST FAILURE MODE A SEAL CAN HAVE, and it is why this is a ruler fix and not a
+#: relaxation. While every ledger is red on every pass, a ledger whose r_multiple was ACTUALLY
+#: rewritten is indistinguishable from the other 21 -- the fence had lost the ability to detect
+#: the one thing it exists for, and a permanent red trains the desk to stop reading it (L1.43).
+#:
+#: Excluded are exactly the three stamps that describe the DERIVATION RUN: when it fetched bars,
+#: how fresh the freshest was, and whether it judged them stale. Everything that is the EVIDENCE
+#: stays sealed -- entry_time, exit_time, side, entry, exit, r_multiple, reason, phase -- and so
+#: do `bar_source`, `evidence_venue`, `promotion_authority` and `h1_source_version`, which are
+#: provenance the record's CLAIM rests on and which do not move pass to pass. A venue swap or a
+#: flipped promotion_authority still BREACHES, as it must.
+#:
+#: `mode="lines"` is untouched: `live_ledger.jsonl` holds real execution records that are
+#: genuinely appended, never re-derived, and every byte of those stays under seal.
+_PASS_STAMPS: frozenset[str] = frozenset({
+    "bars_fetched_utc",     # when THIS pass fetched bars
+    "bars_freshest",        # the freshest bar THIS pass saw
+    "bars_stale",           # whether THIS pass judged its input stale
+})
+
+
+def _evidence(row: object) -> object:
+    """A record's sealed form: everything it claims, minus the stamps of the run that derived it."""
+    if not isinstance(row, dict):
+        return row
+    return {k: v for k, v in row.items() if k not in _PASS_STAMPS}
 
 
 def _prefix_sha(records: Sequence[str], n: int) -> str:
