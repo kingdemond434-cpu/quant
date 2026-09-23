@@ -3510,8 +3510,14 @@ def main() -> None:
     try:
         from research.judging_throughput import apply_env as _apply_judging_env
         _apply_judging_env()
-    except Exception as _exc:                       # noqa: BLE001 - measurement, never a blocker
+    except Exception as _exc:
         print(f"judging_throughput env not applied: {type(_exc).__name__}: {_exc}", flush=True)
+    # EVERY CERTIFICATE GETS ITS CLOCK THE MOMENT IT EXISTS, with no quota and no waiting queue
+    # (principal 2026-09-23: forward evidence is never rationed; forward clocks gather evidence
+    # and deploy no capital, so the only thing a slot cap bought was a slower desk). It runs
+    # immediately after the judge so a certificate minted this hour is enrolled this hour.
+    fen = _costed("forward_enrolment", lambda: _producer(
+        "forward_enrolment", "research/forward_enrolment.py", "--once", "--budget-s", "300"))
     gt = _costed("external_gauntlet", lambda: _producer(
         "external_gauntlet", "scripts/external_gauntlet.py"))
     # THE FALSIFIERS RUN AGAINST THE FRESH CANON (Tier-1 item V4, 2026-09-09). libs/validation/
@@ -3823,8 +3829,8 @@ def main() -> None:
     # now; no orphaned pool worker is holding commit; every declared clock is present; every
     # producer/consumer pair agrees about its path; every registered fence has run. It also has a
     # fifteen-minute clock of its own (MT5-PlumbingWatchdog) -- this leg is the hourly witness so
-    # the cycle's own record shows the plumbing was checked, and `scripts/check_plumbing_watchdog.py`
-    # wedges the law gate while any defect outlives its escalation window.
+    # the cycle's own record shows the plumbing was checked, and the fence
+    # `scripts/check_plumbing_watchdog.py` wedges the law gate while a defect outlives its window.
     pwd_ = _costed("plumbing_watchdog", lambda: _producer(
         "plumbing_watchdog", "research/plumbing_watchdog.py", "--once", "--budget-s", "180"))
     # THE 24/7 MAXIMISER (principal 2026-09-23). Four standing bottlenecks measured every hour --
