@@ -430,8 +430,14 @@ foreach ($t in $tasks) {
 
     try {
         Unregister-ScheduledTask -TaskName $t.Name -Confirm:$false -ErrorAction SilentlyContinue
-        $principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME `
-            -LogonType Interactive -RunLevel Limited
+        # Research, collection, validation and reporting must remain alive after
+        # the RDP session ends.  An Interactive principal silently turns every
+        # such task into a no-op on a headless box (2147946720: no logon
+        # session).  The terminal gateway is deliberately installed separately
+        # above because the MetaTrader IPC endpoint really is session-bound;
+        # nothing in this table is allowed to inherit that limitation.
+        $principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" `
+            -LogonType ServiceAccount -RunLevel Highest
         Register-ScheduledTask -TaskName $t.Name -Action $action `
             -Trigger (& $t.Trigger) -Settings $settings `
             -Description $t.Desc -Principal $principal | Out-Null
@@ -463,8 +469,10 @@ if (Test-Path $supervisor) {
                 -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable `
                 -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1) `
                 -ExecutionTimeLimit (New-TimeSpan -Hours 72) -MultipleInstances IgnoreNew
-            $supPrincipal = New-ScheduledTaskPrincipal -UserId $env:USERNAME `
-                -LogonType Interactive -RunLevel Limited
+            # This is a queue and experiment worker, not a terminal client.
+            # It must survive logoff just like the one-shot research workers.
+            $supPrincipal = New-ScheduledTaskPrincipal -UserId "SYSTEM" `
+                -LogonType ServiceAccount -RunLevel Highest
             Unregister-ScheduledTask -TaskName "MT5-ResearchSupervisor" `
                 -Confirm:$false -ErrorAction SilentlyContinue
             Register-ScheduledTask -TaskName "MT5-ResearchSupervisor" -Action $supAction `
