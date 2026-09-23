@@ -160,16 +160,15 @@ def main(argv: list[str] | None = None) -> int:
                                                   scanned=rep["scanned"], of="required call sites",
                                                   fence="check_write_or_explain.py --wiring-only")
     if a.probe:
-        bad = 0
-        for spec in a.probe:
-            rec = probe(spec)
-            print(f"  {rec['verdict']:<15} {rec.get('detail', '')}")
-            if rec.get("stderr_tail"):
-                for line in str(rec["stderr_tail"]).strip().splitlines()[-6:]:
-                    print(f"      stderr| {line[:160]}")
-            bad += int(woe.is_defect(rec.get("verdict")))
+        recs = [probe(spec) for spec in a.probe]
         if a.json:
-            print(json.dumps([probe(s) for s in []], indent=1))
+            print(json.dumps(recs, indent=1, default=str))
+        else:
+            for rec in recs:
+                print(f"  {rec['verdict']:<15} {rec.get('detail', '')}")
+                for line in str(rec.get("stderr_tail") or "").strip().splitlines()[-6:]:
+                    print(f"      stderr| {line[:160]}")
+        bad = sum(int(woe.is_defect(r.get("verdict"))) for r in recs)
         return 0 if a.report_only else (FAIL if bad else 0)
 
     rep = build_report(window_h=float(a.window_h))
