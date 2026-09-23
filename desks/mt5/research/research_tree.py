@@ -69,6 +69,10 @@ UNKNOWNS = DESK / "reports" / "UNKNOWN_UNKNOWNS.json"
 SLEEVES = DESK / "data" / "sleeves.json"
 TREE = DESK / "data" / "research_tree.json"
 OUT = DESK / "reports" / "RESEARCH_TREE.json"
+#: The meta-evolution layer's active variants: the `mcts_tree` variant, when one is
+#: published, sets the beam, the roots, the iterations and the PUCT constant this pass
+#: searches with. Every value is clamped into the ranges the search was designed for.
+ACTIVE_VARIANTS = DESK / "data" / "research_evolution" / "active_variants.json"
 
 #: The node kinds, in the principal's own order. The order matters: a child kind may only be
 #: spawned by the kind before it, so a tree cannot grow execution variants of a mechanism whose
@@ -121,6 +125,36 @@ PRIOR_N = 2.0
 
 
 # ------------------------------------------------------------------------------ the evidence
+
+def search_policy(path: Path | None = None) -> dict[str, Any]:
+    """The search policy this pass runs under: the module defaults, or the `mcts_tree` variant
+    the meta-evolution layer activated -- with the variant's id recorded so the tree's yield can
+    be credited back to it (research_roi.variant_roi)."""
+    pol: dict[str, Any] = {"roots": MCTS_ROOTS, "iterations": MCTS_ITER, "beam": BEAM,
+                           "c_puct": None, "variant": None,
+                           "basis": "module defaults (no active mcts_tree variant)"}
+    try:
+        doc = json.loads((path or ACTIVE_VARIANTS).read_text(encoding="utf-8-sig"))
+        var = (doc.get("variants") or {}).get("mcts_tree") if isinstance(doc, dict) else None
+    except (OSError, ValueError, AttributeError):
+        var = None
+    if not isinstance(var, dict) or not isinstance(var.get("config"), dict):
+        return pol
+    cfg = var["config"]
+
+    def _int_knob(key: str, lo: int, hi: int, default: int) -> int:
+        v = cfg.get(key)
+        return int(min(hi, max(lo, v))) if isinstance(v, (int, float)) else default
+
+    c = cfg.get("c_puct")
+    pol.update({"roots": _int_knob("roots", 1, 4, MCTS_ROOTS),
+                "iterations": _int_knob("iterations", 6, 48, MCTS_ITER),
+                "beam": _int_knob("beam", 6, 24, BEAM),
+                "c_puct": float(min(3.0, max(0.5, c))) if isinstance(c, (int, float)) else None,
+                "variant": str(var.get("id")),
+                "basis": f"active_variants.json mcts_tree ({var.get('basis')})"})
+    return pol
+
 
 def _counts() -> dict[str, Any]:
     """Certificates and docket trials, by family. The desk's own record, nothing invented."""
@@ -438,10 +472,12 @@ def build() -> dict[str, Any]:
                          "gain_per_cell": round(sc["info_gain"] / cost, 6)})
     frontier.sort(key=lambda r: -float(r["gain_per_cell"]))
 
+    # THE SEARCH POLICY IS THE META-EVOLUTION LAYER'S TO SET, within the designed ranges.
+    pol = search_policy()
     # EXPAND the beam: best-first, and expanding means SPAWNING THE NEXT KIND DOWN.
     expanded: list[str] = []
     added = 0
-    for row in frontier[:BEAM]:
+    for row in frontier[:pol["beam"]]:
         node = tree["nodes"][row["id"]]
         kids = _children_for(node, symbols)
         node["expanded"] = now.isoformat(timespec="seconds")
@@ -473,13 +509,16 @@ def build() -> dict[str, Any]:
             return kids
 
         reports = []
-        for row in frontier[:MCTS_ROOTS]:
-            rep = _mcts.run(tree["nodes"], row["id"], _spawn, _screen, iterations=MCTS_ITER,
-                            seed=int(tree.get("passes") or 0) + 1)
+        for row in frontier[:pol["roots"]]:
+            rep = _mcts.run(tree["nodes"], row["id"], _spawn, _screen,
+                            iterations=int(pol["iterations"]),
+                            seed=int(tree.get("passes") or 0) + 1,
+                            **({"c_puct": float(pol["c_puct"])} if pol["c_puct"] else {}))
             reports.append(rep.to_dict())
         if reports:
-            mcts_doc = {"status": "OK", "roots": [r["id"] for r in frontier[:MCTS_ROOTS]],
-                        "iterations_per_root": MCTS_ITER, "reports": reports,
+            mcts_doc = {"status": "OK", "roots": [r["id"] for r in frontier[:pol["roots"]]],
+                        "iterations_per_root": int(pol["iterations"]), "reports": reports,
+                        "search_policy": pol,
                         "rule": "PUCT with a subtree-visit penalty; attempts, not visits, in the "
                                 "denominator so an unscreenable branch cannot buy the budget; an "
                                 "UNMEASURED rollout updates nothing"}

@@ -90,6 +90,10 @@ if [ "$FULL" = "1" ]; then
   run "tests (pytest)"      $PY -m pytest -q --cov=libs --cov-branch \
                                 --cov-report=json:coverage.json
   run "coverage floors"     $PY scripts/check_coverage_floors.py --report coverage.json
+  # THE MONEY PATH HAS ITS OWN FLOOR, and until 2026-09-23 it ran on no clock at all: the
+  # ratchet over the files that move capital was a script nothing invoked (LAWS 7 -- unwired
+  # is a defect; L1.49 -- a gate that never ran is a claim the desk cannot cash).
+  run "mt5 money-path floor" $PY scripts/check_mt5_coverage_floor.py
 else
   echo "  (--full adds the suite + coverage floors; the floors are a RATCHET and a push that"
   echo "   lowers them is a breach, so run it before any commit that touches libs/)"

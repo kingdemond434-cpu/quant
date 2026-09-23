@@ -406,6 +406,10 @@ def _candidate(symbol: str, family: str, params: dict, source: str, row: dict,
     gid = _genome_id(symbol, family, params)
     return {
         **({"genome_id": gid} if gid else {}),
+        # THE FEATURE GENOME RIDES ONTO THE CANDIDATE (LAWS 5m), guarded: a donated row built on
+        # a forged representation carries its chain, and the candidate keeps it as lineage_json
+        # so an independence reading can see the shared dataset behind two cells.
+        **({"lineage_json": row["genome"]} if isinstance(row.get("genome"), dict) else {}),
         "symbol": symbol,
         "family": family,
         "params": params,
@@ -447,10 +451,32 @@ def _charts_with_bars(symbol: str) -> list[str]:
     return [tf for tf in INTRADAY_CHARTS if (UNIVERSE / f"{symbol}_{tf}.parquet").exists()]
 
 
+def _invariance(symbol: str, family: str) -> dict | None:
+    """The causal organ's invariance verdict for this mechanism, or None when nothing judged it.
+
+    THE ONE PLACE A CAUSAL LABEL CHANGES ANYTHING (Tier-1 B16). `research/causal_invariance.py`
+    measures whether a cell's effect survives a change of session, year and volatility regime
+    against a permutation null; a mechanism that is an environment-specific fit sorts LATER here
+    and is never dropped, because a refusal on a statistic computed from the desk's own past
+    would destroy candidates the ten gates never judged (principal's never-reduce-aggressiveness
+    order; L1.25; L1.60 forbids a screen applying a bar of its own in either direction).
+
+    Absence is UNMEASURED and changes nothing -- the organ not having run is never a demotion.
+    """
+    try:
+        import causal_invariance
+        return causal_invariance.verdict_for(symbol, family)
+    except Exception:
+        return None
+
+
 def expand_axes(cands: list[dict]) -> list[dict]:
     """Every candidate on every intraday chart with bars, in every session; H1 kept, ranked
     last (`priority` 1 against 0). A candidate whose params already name a chart or a session
-    is returned as it is."""
+    is returned as it is.
+
+    A mechanism the causal organ found NON_INVARIANT carries its verdict and sorts one step
+    later still (`priority` + 1). Nothing is ever removed from the queue by this."""
     out: list[dict] = []
     for c in cands:
         base = dict(c.get("params") or {})
@@ -458,6 +484,8 @@ def expand_axes(cands: list[dict]) -> list[dict]:
             out.append(c)
             continue
         sym, fam = str(c.get("symbol") or ""), str(c.get("family") or "")
+        inv = _invariance(sym, fam)
+        demote = 1 if (inv or {}).get("verdict") == "NON_INVARIANT" else 0
         for tf in [*_charts_with_bars(sym), "H1"]:
             for sess in SESSION_AXIS:
                 p = dict(base)
@@ -471,7 +499,11 @@ def expand_axes(cands: list[dict]) -> list[dict]:
                 if gid:
                     v["genome_id"] = gid
                 v["axis"] = {"chart": tf, "session": sess}
-                v["priority"] = 1 if tf == "H1" else 0
+                v["priority"] = (1 if tf == "H1" else 0) + demote
+                if inv:
+                    v["causal_invariance"] = {"verdict": inv.get("verdict"),
+                                              "broken_axes": inv.get("broken_axes") or [],
+                                              "why": str(inv.get("why") or "")[:200]}
                 out.append(v)
     return out
 

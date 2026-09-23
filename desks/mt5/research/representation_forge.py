@@ -99,6 +99,26 @@ COMPOSITIONS: tuple[tuple[str, str], ...] = (
     ("seasonal_expectation", "diff"), ("lead_lag", "zscore"),
 )
 INTERACTIONS: tuple[str, ...] = ("ratio", "product")
+#: Two-input transforms proposed over dataset PAIRS, with the parameters the plan asks for.
+#: `cross_country_spread` derives its pairing INSIDE the transform, from the region each series
+#: was declared with -- there is no country list here and there must never be one: a pair table
+#: in this file would have to be edited for every newly ingested country, and the pairs nobody
+#: remembered would silently never be built.
+PAIR_TRANSFORMS: tuple[tuple[str, dict[str, Any]], ...] = (
+    ("ratio", {}),
+    ("product", {}),
+    ("cross_country_spread", {"mode": "difference"}),
+    ("rolling_beta", {"window": 60}),
+)
+#: PANEL transforms: breadth and a learned coordinate are properties of a PANEL, not of a pair,
+#: so they are proposed once per pass over the admissible series (bounded -- the embedding fits
+#: a covariance whose width is the panel, and an unbounded panel would spend the hour on it).
+PANEL_TRANSFORMS: tuple[tuple[str, dict[str, Any]], ...] = (
+    ("diffusion", {"window": 12}),
+    ("embedding", {"window": 120, "components": 2, "component": 0}),
+    ("embedding", {"window": 120, "components": 2, "component": 1}),
+)
+MAX_PANEL = 6
 
 MIN_POINTS = 24
 MAX_NEW = 60
@@ -250,16 +270,29 @@ def propose(series: list[R.Series], existing: set[str], history: dict[str, dict[
             if left.dataset == right.dataset or len(left.points) < MIN_POINTS \
                     or len(right.points) < MIN_POINTS:
                 continue
-            for name in INTERACTIONS:
-                transform = R.Transform(name=name, params={})
-                rid = R.representation_id(f"{dataset_key(left)}x{dataset_key(right)}", name, {})
-                plan.append({"id": rid, "family": transform.family, "chain": [name], "params": {},
+            for name, params in PAIR_TRANSFORMS:
+                transform = R.Transform(name=name, params=params)
+                merged = {**dict(R.TRANSFORMS[name].defaults), **params}
+                rid = R.representation_id(f"{dataset_key(left)}x{dataset_key(right)}", name,
+                                          merged)
+                plan.append({"id": rid, "family": transform.family, "chain": [name],
+                             "params": params,
                              "inputs": [left.series_id, right.series_id], "arity": 2})
             pairs += 1
             if pairs >= max_pairs:
                 break
         if pairs >= max_pairs:
             break
+
+    panel = [s for s in series if len(s.points) >= MIN_POINTS][:MAX_PANEL]
+    if len(panel) >= 2:
+        key = "+".join(dataset_key(s) for s in panel)
+        for name, params in PANEL_TRANSFORMS:
+            transform = R.Transform(name=name, params=params)
+            merged = {**dict(R.TRANSFORMS[name].defaults), **params}
+            plan.append({"id": R.representation_id(key, name, merged), "family": transform.family,
+                         "chain": [name], "params": params,
+                         "inputs": [s.series_id for s in panel], "arity": 2, "panel": True})
 
     seen: set[str] = set()
     unique: list[dict[str, Any]] = []
@@ -393,6 +426,10 @@ def run(*, budget_s: float = 900.0, dry_run: bool = False, max_new: int = MAX_NE
                    "unmeasured": source.unmeasured},
         "grammar": {"base_transforms": len(BASE_TRANSFORMS), "compositions": len(COMPOSITIONS),
                     "interactions": list(INTERACTIONS),
+                    "pair_transforms": [n for n, _ in PAIR_TRANSFORMS],
+                    "panel_transforms": [n for n, _ in PANEL_TRANSFORMS],
+                    "max_panel": MAX_PANEL,
+                    "registered": sorted(R.TRANSFORMS),
                     "proposals": len(full_plan), "selected": len(selected),
                     "budget": max_new,
                     "why": "novelty x expected value, ties broken on the id so the same tree and "

@@ -37,10 +37,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import sys
 import time
 from collections import Counter, defaultdict
+from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -170,6 +172,92 @@ def _evidence(row: dict[str, Any], judged: dict[str, bool]) -> tuple[str, float,
     return UNMEASURED, frac, "registry:score" if frac > 0 else UNMEASURED
 
 
+#: THE CAMPAIGN CONTINUATION DECISIONS. A decision is read off an anytime-valid object, so the
+#: same stream gives the same answer whenever it is read (optional stopping is legal): CONTINUE
+#: while neither boundary is crossed, STOP_DISCOVERED when the family's e-process reaches
+#: 1/alpha, STOP_FUTILE when the confidence sequence on the excess pass rate lies wholly below
+#: zero. A decision is a REPORT (LAWS 5k): nothing here dequeues, retires or lowers a gate.
+CONTINUE, STOP_DISCOVERED, STOP_FUTILE = "CONTINUE", "STOP_DISCOVERED", "STOP_FUTILE"
+CONTINUATION_RULE = ("a campaign continues until an anytime-valid boundary is crossed: the "
+                     "e-process at 1/alpha stops it as DISCOVERED, a confidence sequence on the "
+                     "excess pass rate wholly below zero stops it as FUTILE; the verdict is the "
+                     "same whenever it is read, so optional stopping is legal; it is a report, "
+                     "never a brake on mining")
+
+
+def _log_mixture_lr(k: int, n: int, level: float, alts: Sequence[float]) -> float:
+    """log of the MIXTURE likelihood ratio of k passes in n Bernoulli trials against the sealed
+    level, over the alternative pass rates `alts`. Each ratio is a test martingale under
+    H0: P(pass) = level, and a mixture of test martingales is one, so its running value is an
+    e-process and the first time it reaches 1/alpha is a legal stopping time (Ville)."""
+    logs: list[float] = []
+    for p1 in alts:
+        if p1 <= 0.0:
+            logs.append(-math.inf if k > 0 else n * math.log((1.0 - p1) / (1.0 - level)))
+        elif p1 >= 1.0:
+            logs.append(-math.inf if k < n else n * math.log(p1 / level))
+        else:
+            logs.append(k * math.log(p1 / level) + (n - k) * math.log((1.0 - p1) / (1.0 - level)))
+    top = max(logs)
+    if top == -math.inf:
+        return -math.inf
+    return top + math.log(sum(math.exp(v - top) for v in logs) / len(logs))
+
+
+def continuation_of(stream: Sequence[bool], gate_level: float, alpha: float,
+                    wealth_state: str = "OPEN") -> dict[str, Any]:
+    """One family's campaign decision from its pass/fail stream at the sealed gate level.
+
+    TWO E-PROCESSES, ONE STREAM. The discovery process tests H0: P(pass) = level against
+    higher pass rates (2x, 4x, 8x the level and one half); the futility process tests the same
+    null against lower ones (zero, an eighth, a quarter, a half of the level). Each is a
+    mixture of Bernoulli likelihood ratios, so each is a test martingale under the null and
+    Ville's inequality bounds the chance it EVER reaches 1/alpha. The decision is the first
+    boundary crossed and is final: reading more of the stream never reverses it, reading less
+    cannot manufacture it -- optional stopping is legal. The interval is a time-uniform
+    confidence sequence on the excess pass rate with the range-1 sub-Gaussian variance (n/4),
+    valid at every n for bounded increments; it is deliberately conservative and is a report.
+    An empty stream is UNMEASURED and continues: a campaign nobody has judged has produced no
+    evidence either way.
+    """
+    level = max(1e-9, min(0.999999, float(gate_level)))
+    a = max(1e-12, min(0.999999, float(alpha)))
+    thr = 1.0 / a
+    up = tuple(sorted({min(0.999, 2.0 * level), min(0.999, 4.0 * level),
+                       min(0.999, 8.0 * level), max(min(0.999, 2.0 * level), 0.5)}))
+    down = (0.0, level / 8.0, level / 4.0, level / 2.0)
+    k = n = 0
+    decision, decided_at = CONTINUE, None
+    e_disc = e_fut = 1.0
+    max_disc = max_fut = 1.0
+    for passed in stream:
+        n += 1
+        k += 1 if passed else 0
+        e_disc = math.exp(min(_log_mixture_lr(k, n, level, up), 700.0))
+        e_fut = math.exp(min(_log_mixture_lr(k, n, level, down), 700.0))
+        max_disc, max_fut = max(max_disc, e_disc), max(max_fut, e_fut)
+        if decided_at is None:
+            if e_disc >= thr:
+                decision, decided_at = STOP_DISCOVERED, n
+            elif e_fut >= thr:
+                decision, decided_at = STOP_FUTILE, n
+    s = float(k) - n * level
+    lo, hi = A.confidence_sequence(s, n / 4.0, n, alpha=a) if n else (-math.inf, math.inf)
+    return {"decision": decision, "n": n, "passes": k,
+            "discovery_e": round(e_disc, 6), "discovery_max_e": round(max_disc, 6),
+            "futility_e": round(e_fut, 6), "futility_max_e": round(max_fut, 6),
+            "anytime_p_discovery": round(min(1.0, 1.0 / max_disc), 8),
+            "anytime_p_futility": round(min(1.0, 1.0 / max_fut), 8),
+            "excess_pass_rate_cs": [None if not math.isfinite(lo) else round(lo, 6),
+                                    None if not math.isfinite(hi) else round(hi, 6)],
+            "decided_at": decided_at, "gate_level": level, "alpha": a,
+            "wealth_state": str(wealth_state),
+            "why": (f"{decision}: discovery e={e_disc:.3g} futility e={e_fut:.3g} vs "
+                    f"1/alpha={thr:.0f}; {k}/{n} passed at level {level:.3g}; excess pass rate "
+                    f"CS [{lo:.3g}, {hi:.3g}]" if n else
+                    f"{decision}: {UNMEASURED} -- nothing judged yet")}
+
+
 def build(*, registry_conn: Any | None = None, gate_ledger: Path | None = None,
           gates_report: Path | None = None, budget_s: float = 600.0,
           alpha: float = A.ALPHA, floor: float = A.ALPHA_FLOOR) -> dict[str, Any]:
@@ -254,12 +342,16 @@ def build(*, registry_conn: Any | None = None, gate_ledger: Path | None = None,
     events.sort(key=lambda e: e["at"])
     per_fam: dict[str, dict[str, Any]] = defaultdict(lambda: {
         "launches": 0, "judged": 0, "passes_at_gate": 0, "discoveries": 0,
-        "passes_unaffordable": 0, "dsr_measured": 0, "stream": []})
+        "passes_unaffordable": 0, "dsr_measured": 0, "stream": [], "judged_stream": []})
     for e in events:
         fid = e["family_id"]
         st = per_fam[fid]
         launch = ctrl.launch(fid, 1.0)
         st["launches"] += 1
+        if e["passed"] is not None:
+            # every verdict the sealed gate handed down, granted or BLOCKED by the wealth,
+            # is evidence about the family's pass rate: the continuation reads all of it
+            st["judged_stream"].append(bool(e["passed"]))
         if not launch.granted or e["passed"] is None:
             continue
         st["judged"] += 1
@@ -281,7 +373,7 @@ def build(*, registry_conn: Any | None = None, gate_ledger: Path | None = None,
     for fid in all_fids:
         st = per_fam.get(fid) or {"launches": 0, "judged": 0, "passes_at_gate": 0,
                                   "discoveries": 0, "passes_unaffordable": 0,
-                                  "dsr_measured": 0, "stream": []}
+                                  "dsr_measured": 0, "stream": [], "judged_stream": []}
         e_val = A.indicator_e_value(st["stream"], gate_level) if st["stream"] else 1.0
         fam_c = census.families.get(fid)
         wealth = ctrl.lineages[fid].to_dict() if fid in ctrl.lineages else None
@@ -301,6 +393,8 @@ def build(*, registry_conn: Any | None = None, gate_ledger: Path | None = None,
             "wealth": wealth["wealth"] if wealth else None,
             "next_alpha": wealth["next_alpha"] if wealth else None,
             "state": wealth["state"] if wealth else "OPEN",
+            "continuation": continuation_of(st["judged_stream"], gate_level, alpha,
+                                            str(wealth["state"]) if wealth else "OPEN"),
         })
     fam_rows.sort(key=lambda r: (-int(r["members"]) - int(r["trials_raw"]), r["family_id"]))
 
@@ -332,9 +426,24 @@ def build(*, registry_conn: Any | None = None, gate_ledger: Path | None = None,
             blocked.append({"candidate_id": g.candidate_id, "family_id": fid,
                             "family": g.family, "symbol": g.symbol, "reason": reason})
         stamps.append((json.dumps(g.to_dict(), sort_keys=True), fid, state, g.candidate_id))
+    decisions = Counter(str(r["continuation"]["decision"]) for r in fam_rows)
     elapsed = time.monotonic() - t0
     report = {
         "at": _now(), "organ": "science_controller", "rule": RULE,
+        "campaigns": {"rule": CONTINUATION_RULE, "alpha": alpha, "gate_level": gate_level,
+                      "n_families": len(fam_rows),
+                      "decisions": {k: int(decisions.get(k, 0))
+                                    for k in (CONTINUE, STOP_DISCOVERED, STOP_FUTILE)},
+                      "judged_families": sum(1 for r in fam_rows if r["continuation"]["n"]),
+                      "stop_discovered": sorted(r["family_id"] for r in fam_rows
+                                                if r["continuation"]["decision"]
+                                                == STOP_DISCOVERED)[:TOP_FAMILIES],
+                      "stop_futile": sorted(r["family_id"] for r in fam_rows
+                                            if r["continuation"]["decision"]
+                                            == STOP_FUTILE)[:TOP_FAMILIES],
+                      "consumer": "desks/mt5/research/meta_controller.py reads the decisions "
+                                  "and the empty high-value cells as ranked actions",
+                      "boundary": "a report; nothing is dequeued, retired or re-gated"},
         "budget_s": budget_s, "elapsed_s": round(elapsed, 3),
         "budget_exhausted": elapsed > budget_s,
         "parameters": {"alpha": alpha, "w0": alpha / 2.0, "alpha_floor": floor,
@@ -415,6 +524,11 @@ def summary(report: dict[str, Any], target: str) -> list[str]:
         f"  archive cells_filled={a['cells_filled']} of {a['cells_possible']} "
         f"(unmeasured-heavy {a['unmeasured_cells']})  empty high-value "
         f"{len(report['empty_high_value_cells'])}",
+        f"  campaigns continue={report['campaigns']['decisions'][CONTINUE]} "
+        f"stop_discovered={report['campaigns']['decisions'][STOP_DISCOVERED]} "
+        f"stop_futile={report['campaigns']['decisions'][STOP_FUTILE]} "
+        f"(judged {report['campaigns']['judged_families']} of "
+        f"{report['campaigns']['n_families']}; anytime-valid, optional stopping legal)",
         f"  BLOCKED {report['blocked']['count']} queued launches in "
         f"{report['blocked']['families']} families -> {target}",
         "  UNMEASURED  " + ("; ".join(f"{k}: {v}" for k, v in inp["unmeasured"].items())

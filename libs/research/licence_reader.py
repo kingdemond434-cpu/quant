@@ -450,14 +450,33 @@ def apply(row: dict[str, Any], reading: LicenceReading) -> None:
     row.pop("licence_why", None)
 
 
+#: Terms under which upstream code may be neither run nor vendored. A DIRECT roster row cannot
+#: be honoured under them and is REJECTED_WITH_EVIDENCE -- the reading (basis, pin) IS the
+#: evidence, and the reopening condition is named; a WRAPPED row reaches a licensed installation
+#: by API and stands; anything else is REBUILT, the lawful route for a mechanism.
+REJECTED_LICENCES: frozenset[str] = frozenset({"Proprietary"})
+
+
 def dispose(system: fed.ExternalSystem, reading: LicenceReading) -> tuple[str, str]:
     """(disposition, why) once the licence is read: the principal's integration mode when the
-    terms permit running it, REBUILT with the reason when they do not, UNDISPOSED when unread."""
+    terms permit running it, REBUILT with the reason when they do not, REJECTED_WITH_EVIDENCE
+    (evidence string: licence, basis, pin, reopening condition) when a DIRECT row's upstream
+    may be neither run nor copied, UNDISPOSED when unread."""
     if not reading.read:
         return "UNDISPOSED", f"licence unread: {reading.why}"
     if reading.runnable:
         mode = system.integration if system.integration in fed.RUNNING_DISPOSITIONS else "WRAPPED"
         return mode, f"licence {reading.licence} read from {reading.basis} at {reading.pin}"
+    if reading.licence in REJECTED_LICENCES:
+        if system.integration == "WRAPPED":
+            return "WRAPPED", (f"licence {reading.licence!r} read from {reading.basis} at "
+                               f"{reading.pin}: reached by the API of a licensed installation "
+                               f"only, never vendored")
+        return "REJECTED_WITH_EVIDENCE", (
+            f"licence {reading.licence!r} read from {reading.basis} at {reading.pin}: upstream "
+            f"code may be neither run nor vendored under these terms; REOPEN when the terms "
+            f"change at a later pin or a licensed installation becomes reachable by API "
+            f"(WRAPPED)")
     return "REBUILT", (f"licence {reading.licence!r} is not on the runnable list "
                        f"{sorted(sb.RUNNABLE_LICENCES)}: REBUILT is the lawful route "
                        f"(read from {reading.basis} at {reading.pin})")

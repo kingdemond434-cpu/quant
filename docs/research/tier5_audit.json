@@ -1,0 +1,3152 @@
+{
+ "version": 1,
+ "updated": "2026-09-23",
+ "source": "the principal's two Tier-5 blueprints, 2026-09-22: the COMPLETE TIER-5 AUTONOMOUS QUANT INSTITUTION BLUEPRINT (I-CII) and the FINAL MAXIMUM-AGGRESSIVE TIER-5 QUANT RESEARCH CIVILIZATION (1-170)",
+ "rule": "every non-MISSING row cites a file that exists; every EXISTS+WIRED+LIVE row names a clock this repo knows and an artifact it writes. Verified by scripts/check_tier5_audit.py at every law-gate run; docs/research/TIER5_AUDIT.md is derived from this file with --render.",
+ "expected_counts": {
+  "BLUEPRINT I-CII": 102,
+  "FINAL MAXIMUM-AGGRESSIVE 1-170": 170
+ },
+ "sections": [
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "I",
+   "title": "GLOBAL INFORMATION ORGANISM",
+   "files": [
+    "desks/mt5/research/moat_collectors.py",
+    "desks/mt5/research/source_frontier.py",
+    "desks/mt5/research/market_intelligence.py"
+   ],
+   "gap": "on a clock and it DECLARES desks/mt5/reports/MOAT_COLLECTORS.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:moat_collectors"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "II",
+   "title": "DATA LIFECYCLE",
+   "files": [
+    "desks/mt5/research/lake_promote.py",
+    "desks/mt5/research/ingestion_ledger.py",
+    "libs/data/lake.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:lake_promote",
+   "artifact": "desks/mt5/reports/LAKE_PROMOTION.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "III",
+   "title": "DATA-ADVANTAGE GOVERNOR",
+   "files": [
+    "desks/mt5/research/value_of_data.py",
+    "desks/mt5/research/data_acquisition_scientist.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:value_of_data",
+   "artifact": "desks/mt5/reports/VALUE_OF_DATA.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "IV",
+   "title": "WORLD MODEL / STATE ENGINE",
+   "files": [
+    "desks/mt5/research/world_model.py",
+    "desks/mt5/research/state_vector_build.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:world_model",
+   "artifact": "desks/mt5/reports/WORLD_MODEL.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "V",
+   "title": "REPRESENTATION DISCOVERY",
+   "files": [
+    "desks/mt5/research/representation_forge.py",
+    "desks/mt5/research/representation_discovery.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:representation_forge",
+   "artifact": "desks/mt5/reports/REPRESENTATION_FORGE.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "VI",
+   "title": "MATHEMATICS SCIENTIFIC FACTORY",
+   "files": [
+    "desks/mt5/research/math_lab.py"
+   ],
+   "gap": "on a clock and it DECLARES desks/mt5/reports/MATH_LAB.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:math_lab"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "VII",
+   "title": "PHYSICS SCIENTIFIC FACTORY",
+   "files": [
+    "desks/mt5/research/physics_lab.py"
+   ],
+   "gap": "on a clock and it DECLARES desks/mt5/reports/PHYSICS_LAB.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:physics_lab"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "VIII",
+   "title": "COMPUTATIONAL SCIENCE ENGINE",
+   "files": [
+    "desks/mt5/research/expression_factory.py",
+    "desks/mt5/research/math_lab.py"
+   ],
+   "gap": "on a clock and it DECLARES desks/mt5/reports/MATH_LAB.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:expression_factory"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "IX",
+   "title": "MATHEMATICAL EXPRESSION LANGUAGE",
+   "files": [
+    "desks/mt5/research/expression_factory.py",
+    "libs/research/alpha_grammar.py"
+   ],
+   "gap": "on a clock; this audit could not name a report of its own -- the organ's hour lands in the registry or a shared state file, so there is no per-organ artifact to read it back from (LAWS III.16)",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:expression_factory"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "X",
+   "title": "PRIMITIVE-INVENTION ENGINE",
+   "files": [
+    "desks/mt5/research/representation_forge.py",
+    "desks/mt5/research/expression_factory.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:representation_forge",
+   "artifact": "desks/mt5/reports/REPRESENTATION_FORGE.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XI",
+   "title": "SYMBOLIC REGRESSION",
+   "files": [
+    "desks/mt5/research/math_lab.py"
+   ],
+   "gap": "on a clock and it DECLARES desks/mt5/reports/MATH_LAB.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:math_lab"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XII",
+   "title": "GENETIC PROGRAMMING",
+   "files": [
+    "desks/mt5/research/alpha_evolution.py",
+    "desks/mt5/research/program_alpha_lane.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:alpha_evolution",
+   "artifact": "desks/mt5/reports/alpha_evolution.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XIII",
+   "title": "QUALITY-DIVERSITY SEARCH",
+   "files": [
+    "desks/mt5/research/qd_frontier.py"
+   ],
+   "gap": "on a clock; this audit could not name a report of its own -- the organ's hour lands in the registry or a shared state file, so there is no per-organ artifact to read it back from (LAWS III.16)",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:qd_frontier"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XIV",
+   "title": "SYSTEM IDENTIFICATION",
+   "files": [
+    "desks/mt5/research/math_lab.py",
+    "desks/mt5/research/physics_lab.py"
+   ],
+   "gap": "on a clock and it DECLARES desks/mt5/reports/MATH_LAB.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:math_lab"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XV",
+   "title": "STOCHASTIC-PROCESS DISCOVERY",
+   "files": [
+    "desks/mt5/research/physics_lab.py"
+   ],
+   "gap": "on a clock and it DECLARES desks/mt5/reports/PHYSICS_LAB.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:physics_lab"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XVI",
+   "title": "STATISTICAL-PHYSICS DISCOVERY",
+   "files": [
+    "desks/mt5/research/physics_lab.py"
+   ],
+   "gap": "on a clock and it DECLARES desks/mt5/reports/PHYSICS_LAB.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:physics_lab"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XVII",
+   "title": "NETWORK SCIENCE",
+   "files": [
+    "desks/mt5/research/cross_asset_graph.py",
+    "desks/mt5/research/world_causal_graph.py"
+   ],
+   "why": "the code exists (desks/mt5/research/cross_asset_graph.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT",
+   "artifact": "desks/mt5/reports/CROSS_ASSET_GRAPH.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XVIII",
+   "title": "INFORMATION-THEORY LAB",
+   "files": [
+    "desks/mt5/research/information_value.py"
+   ],
+   "why": "the code exists (desks/mt5/research/information_value.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XIX",
+   "title": "SCALING / MULTISCALE LAB",
+   "files": [
+    "desks/mt5/research/physics_lab.py",
+    "libs/ops/scaling_laws.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:physics_lab",
+   "artifact": "desks/mt5/reports/scaling_laws.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XX",
+   "title": "DIMENSIONLESS DISCOVERY",
+   "files": [
+    "desks/mt5/research/physics_lab.py"
+   ],
+   "gap": "on a clock and it DECLARES desks/mt5/reports/PHYSICS_LAB.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:physics_lab"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XXI",
+   "title": "SYMMETRY / INVARIANCE",
+   "files": [
+    "desks/mt5/research/formal_invariants.py"
+   ],
+   "why": "the code exists (desks/mt5/research/formal_invariants.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT",
+   "artifact": "desks/mt5/reports/UNIVERSAL_SURVIVORS.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XXII",
+   "title": "DIFFERENTIABLE SCIENTIFIC COMPUTING",
+   "files": [
+    "desks/mt5/research/math_lab.py"
+   ],
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:math_lab",
+   "gap": "numpy-first by law (no autodiff dependency in the research path); gradients are finite-difference, not traced"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XXIII",
+   "title": "PROBABILISTIC SCIENTIFIC MODELS",
+   "files": [
+    "desks/mt5/research/market_posteriors.py",
+    "desks/mt5/research/posterior_alpha.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:posterior_alpha",
+   "artifact": "desks/mt5/reports/POSTERIOR_ALPHA.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XXIV",
+   "title": "COMPRESSION / MDL SCIENCE",
+   "files": [
+    "desks/mt5/research/simplifier.py"
+   ],
+   "why": "the code exists (desks/mt5/research/simplifier.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT",
+   "artifact": "desks/mt5/reports/SIMPLIFIER.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XXV",
+   "title": "LATENT REPRESENTATION DISCOVERY",
+   "files": [
+    "desks/mt5/research/representation_discovery.py"
+   ],
+   "why": "the code exists (desks/mt5/research/representation_discovery.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XXVI",
+   "title": "SIMULATION LAB",
+   "files": [
+    "desks/mt5/research/synthetic_regimes.py",
+    "desks/mt5/research/digital_twin.py"
+   ],
+   "gap": "on a clock and it DECLARES desks/mt5/reports/SYNTHETIC_REGIMES.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:synthetic_regimes"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XXVII",
+   "title": "COUNTERFACTUAL WORLD ENGINE",
+   "files": [
+    "desks/mt5/research/counterfactual_replay.py",
+    "desks/mt5/research/action_counterfactuals.py"
+   ],
+   "why": "the code exists (desks/mt5/research/counterfactual_replay.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT",
+   "artifact": "desks/mt5/reports/COUNTERFACTUAL_WORLD.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XXVIII",
+   "title": "AUTOMATIC EXPERIMENT DESIGN",
+   "files": [
+    "desks/mt5/research/experiment_design.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:experiment_design",
+   "artifact": "desks/mt5/reports/EXPERIMENT_DESIGN.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XXIX",
+   "title": "SYNTHETIC CALIBRATION LAB",
+   "files": [
+    "desks/mt5/research/synthetic_regimes.py",
+    "desks/mt5/research/forward_calibration.py"
+   ],
+   "gap": "on a clock and it DECLARES desks/mt5/reports/SYNTHETIC_REGIMES.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:synthetic_regimes"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XXX",
+   "title": "ADVERSARIAL SYNTHETIC WORLDS",
+   "files": [
+    "desks/mt5/research/adversary.py",
+    "desks/mt5/research/adversary_evolution.py"
+   ],
+   "why": "the code exists (desks/mt5/research/adversary.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT",
+   "artifact": "desks/mt5/reports/ADVERSARY.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XXXI",
+   "title": "DISCOVERERS VS DESTROYERS",
+   "files": [
+    "desks/mt5/research/adversary_evolution.py",
+    "desks/mt5/research/blind_reviewer.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:blind_reviewer",
+   "artifact": "desks/mt5/reports/BLIND_REVIEW.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XXXII",
+   "title": "HYPOTHESIS CONTRACT",
+   "files": [
+    "desks/mt5/research/discovery_compiler.py",
+    "libs/moat/registry.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:discovery_compiler",
+   "artifact": "desks/mt5/reports/DISCOVERY_COMPILER.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XXXIII",
+   "title": "CONSEQUENCE ENGINE",
+   "files": [
+    "desks/mt5/research/deepening_worker.py",
+    "desks/mt5/research/miner_candidate_compiler.py"
+   ],
+   "why": "the code exists (desks/mt5/research/deepening_worker.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT",
+   "artifact": "desks/mt5/data/hypotheses/deepened_candidates.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XXXIV",
+   "title": "MECHANISM GRAPH",
+   "files": [
+    "desks/mt5/research/knowledge_graph.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:knowledge_graph",
+   "artifact": "desks/mt5/data/hypothesis_graph.jsonl"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XXXV",
+   "title": "NOVELTY ENGINE",
+   "files": [
+    "desks/mt5/research/novelty_gate.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:novelty_gate",
+   "artifact": "desks/mt5/reports/NOVELTY_GATE.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XXXVI",
+   "title": "GLOBAL MULTIPLICITY LEDGER",
+   "files": [
+    "libs/research/trial_ledger.py",
+    "desks/mt5/research/multiplicity.py"
+   ],
+   "why": "the code exists (libs/research/trial_ledger.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XXXVII",
+   "title": "PREREGISTRATION",
+   "files": [
+    "libs/research/preregistration.py",
+    "docs/RESEARCH.md"
+   ],
+   "why": "the code exists (libs/research/preregistration.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XXXVIII",
+   "title": "CHEAP FALSIFICATION",
+   "files": [
+    "desks/mt5/research/falsifier_run.py"
+   ],
+   "gap": "on a clock and it DECLARES desks/mt5/reports/FALSIFIER_VERDICTS.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:falsifier_run"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XXXIX",
+   "title": "UNIVERSAL GAUNTLET",
+   "files": [
+    "desks/mt5/scripts/external_gauntlet.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:external_gauntlet",
+   "artifact": "desks/mt5/data/hypotheses/gate_verdict_index.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XL",
+   "title": "BLIND LOCKBOX",
+   "files": [
+    "desks/mt5/research/blind_reviewer.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:blind_reviewer",
+   "artifact": "desks/mt5/reports/BLIND_REVIEW.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XLI",
+   "title": "INDEPENDENT REPLICATION",
+   "files": [
+    "desks/mt5/research/replication_civilization.py",
+    "desks/mt5/research/lead_replication.py"
+   ],
+   "gap": "on a clock and it DECLARES desks/mt5/reports/REPLICATION.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:replication_civilization"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XLII",
+   "title": "FORWARD EVIDENCE",
+   "files": [
+    "desks/mt5/research/shadow_forward.py"
+   ],
+   "gap": "on a clock; this audit could not name a report of its own -- the organ's hour lands in the registry or a shared state file, so there is no per-organ artifact to read it back from (LAWS III.16)",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:enrol_clocks"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XLIII",
+   "title": "FAILURE SCIENTIST",
+   "files": [
+    "desks/mt5/research/gauntlet_backpressure.py",
+    "desks/mt5/research/negative_knowledge.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:gauntlet_backpressure",
+   "artifact": "desks/mt5/reports/GAUNTLET_BACKPRESSURE.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XLIV",
+   "title": "NEGATIVE KNOWLEDGE",
+   "files": [
+    "desks/mt5/research/negative_knowledge.py"
+   ],
+   "why": "the code exists (desks/mt5/research/negative_knowledge.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XLV",
+   "title": "EMPIRICAL-LAW LIBRARY",
+   "files": [
+    "desks/mt5/research/alpha_periodic_table.py"
+   ],
+   "gap": "on a clock; this audit could not name a report of its own -- the organ's hour lands in the registry or a shared state file, so there is no per-organ artifact to read it back from (LAWS III.16)",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:alpha_periodic_table"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XLVI",
+   "title": "LINEAGE GRAPH",
+   "files": [
+    "desks/mt5/research/alpha_lineage_search.py"
+   ],
+   "gap": "on a clock and it DECLARES desks/mt5/reports/ALPHA_LINEAGE.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:alpha_lineage"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XLVII",
+   "title": "EDGE-BREADTH ENGINE",
+   "files": [
+    "desks/mt5/research/alpha_breadth.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:alpha_breadth",
+   "artifact": "desks/mt5/reports/EFFECTIVE_BREADTH.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XLVIII",
+   "title": "ORTHOGONALITY SEEKER",
+   "files": [
+    "desks/mt5/research/orthogonality.py",
+    "desks/mt5/research/orthogonal_sweep.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:orthogonality",
+   "artifact": "desks/mt5/reports/ORTHOGONALITY.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XLIX",
+   "title": "PORTFOLIO WORLD ENGINE",
+   "files": [
+    "desks/mt5/research/pf_allocator.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:pf_allocator",
+   "artifact": "desks/mt5/reports/pf_allocation.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "L",
+   "title": "ROBUST E[LOG W] PORTFOLIO BRAIN",
+   "files": [
+    "desks/mt5/research/pf_allocator.py",
+    "libs/portfolio/rails.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:pf_allocator",
+   "artifact": "desks/mt5/reports/pf_allocation.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "LI",
+   "title": "DYNAMIC KELLY",
+   "files": [
+    "desks/mt5/research/pf_allocator.py",
+    "libs/portfolio/capital_modifiers.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:pf_allocator",
+   "artifact": "desks/mt5/reports/pf_allocation.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "LII",
+   "title": "NO-TRADE REGION",
+   "files": [
+    "desks/mt5/research/rebalance_trigger.py",
+    "desks/mt5/research/pf_allocator.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:rebalance_trigger",
+   "artifact": "desks/mt5/reports/REBALANCE_TRIGGER.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "LIII",
+   "title": "CAPACITY ENGINE",
+   "files": [
+    "desks/mt5/research/capacity.py",
+    "desks/mt5/research/capacity_frontier.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:capacity",
+   "artifact": "desks/mt5/reports/CAPACITY.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "LIV",
+   "title": "ALPHA DECAY ENGINE",
+   "files": [
+    "desks/mt5/research/decay_monitor.py",
+    "desks/mt5/research/alpha_replenishment.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:alpha_replenishment",
+   "artifact": "desks/mt5/reports/ALPHA_REPLENISHMENT.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "LV",
+   "title": "OPPORTUNITY-DENSITY ENGINE",
+   "files": [
+    "desks/mt5/research/opportunity_curve.py",
+    "desks/mt5/research/opportunity_forecast.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:opportunity_forecast",
+   "artifact": "desks/mt5/reports/opportunity_forecast.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "LVI",
+   "title": "EXECUTION SCIENCE",
+   "files": [
+    "desks/mt5/research/execution_science.py",
+    "desks/mt5/research/execution_resolver.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:execution_resolver",
+   "artifact": "desks/mt5/reports/execution_resolver.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "LVII",
+   "title": "MULTI-VENUE / BROKER INTELLIGENCE",
+   "files": [
+    "desks/mt5/research/measure_broker_clock.py",
+    "desks/mt5/research/provider_reverse.py"
+   ],
+   "status": "PARTIAL",
+   "artifact": "desks/mt5/data/broker_clock_measured.json",
+   "gap": "one venue (Fusion/MT5) is measured; there is no second live venue to compare against, so cross-venue choice is UNMEASURED, not chosen"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "LVIII",
+   "title": "TRADE-PATH SCIENCE",
+   "files": [
+    "desks/mt5/research/excursions.py"
+   ],
+   "why": "the code exists (desks/mt5/research/excursions.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT",
+   "artifact": "desks/mt5/reports/EXCURSIONS.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "LIX",
+   "title": "LIVE ATTRIBUTION",
+   "files": [
+    "desks/mt5/research/fill_attribution.py",
+    "desks/mt5/research/allocator_attribution.py",
+    "desks/mt5/research/trade_autopsy.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:fill_attribution",
+   "artifact": "desks/mt5/reports/FILL_ATTRIBUTION.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "LX",
+   "title": "REALITY-GAP ENGINE",
+   "files": [
+    "desks/mt5/research/book_reality.py",
+    "desks/mt5/research/forward_calibration.py"
+   ],
+   "why": "the code exists (desks/mt5/research/book_reality.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "LXI",
+   "title": "RISK ORGANISM",
+   "files": [
+    "libs/portfolio/rails.py",
+    "desks/mt5/tests/test_margin_use_reaches_the_envelope.py"
+   ],
+   "status": "REFUSED_CONSERVATIVE",
+   "why": "the organism EXISTS (rails, heat floor, deadman); the one arrow this section asks for that is NOT fed is the broker's margin clause into the survival envelope (Tier-1 P13). pf_allocator MEASURES margin_use and passes None: feeding it would size the book BELOW what it gets today, and the principal's standing order of 2026-09-08 is that the desk never reduces its aggressiveness. Measured, published, not fed; turning it on needs the principal's explicit yes."
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "LXII",
+   "title": "TAIL / CRISIS ENGINE",
+   "files": [
+    "desks/mt5/research/tail_alpha_search.py",
+    "desks/mt5/research/drawdown_alpha_miner.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:drawdown_alpha_miner",
+   "artifact": "desks/mt5/reports/DRAWDOWN_ALPHA_MINER.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "LXIII",
+   "title": "INFRASTRUCTURE",
+   "files": [
+    "desks/mt5/research/hourly_cycle.py",
+    "desks/mt5/ops/box_tasks.manifest"
+   ],
+   "why": "the code exists (desks/mt5/research/hourly_cycle.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "LXIV",
+   "title": "SUBEXPRESSION CACHE",
+   "files": [
+    "desks/mt5/research/experiment_cache.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:experiment_cache",
+   "artifact": "desks/mt5/reports/EXPERIMENT_CACHE.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "LXV",
+   "title": "REPRODUCIBILITY",
+   "files": [
+    "libs/ops/release.py",
+    "desks/mt5/data/release_identity.json"
+   ],
+   "why": "the code exists (libs/ops/release.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "LXVI",
+   "title": "EVENT BUS",
+   "files": [
+    "libs/ops/events.py"
+   ],
+   "why": "the code exists (libs/ops/events.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT",
+   "artifact": "desks/mt5/data/events.jsonl"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "LXVII",
+   "title": "24/7 SUPERVISION",
+   "files": [
+    "desks/mt5/research/department_resident.py",
+    "desks/mt5/ops/box_tasks.manifest"
+   ],
+   "why": "the code exists (desks/mt5/research/department_resident.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "LXVIII",
+   "title": "RESEARCH CIO",
+   "files": [
+    "desks/mt5/research/frontier_ceo.py",
+    "desks/mt5/research/meta_controller.py"
+   ],
+   "gap": "on a clock and it DECLARES desks/mt5/reports/META_CONTROLLER.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:meta_controller"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "LXIX",
+   "title": "META-SCIENCE",
+   "files": [
+    "desks/mt5/research/research_evolution.py",
+    "desks/mt5/research/meta_rnd.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:research_evolution",
+   "artifact": "desks/mt5/reports/RESEARCH_EVOLUTION.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "LXX",
+   "title": "SEARCH-ALGORITHM EVOLUTION",
+   "files": [
+    "desks/mt5/research/research_evolution.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:research_evolution",
+   "artifact": "desks/mt5/reports/RESEARCH_EVOLUTION.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "LXXI",
+   "title": "SCIENTIST CREDIT ASSIGNMENT",
+   "files": [
+    "desks/mt5/research/credit_assignment.py"
+   ],
+   "gap": "on a clock and it DECLARES desks/mt5/reports/CREDIT_ASSIGNMENT.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:credit_assignment"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "LXXII",
+   "title": "RESEARCH STAGNATION DETECTOR",
+   "files": [
+    "desks/mt5/research/bottleneck_law.py",
+    "desks/mt5/research/research_debt.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:bottleneck_law",
+   "artifact": "desks/mt5/reports/BOTTLENECK_LAW.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "LXXIII",
+   "title": "SERENDIPITY RESEARCH",
+   "files": [
+    "desks/mt5/research/unknown_unknowns.py",
+    "libs/research/search_strategy.py"
+   ],
+   "why": "the code exists (desks/mt5/research/unknown_unknowns.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "LXXIV",
+   "title": "GLOBAL RESEARCH INTELLIGENCE",
+   "files": [
+    "desks/mt5/research/global_research_os.py"
+   ],
+   "gap": "on a clock and it DECLARES desks/mt5/reports/GLOBAL_RESEARCH_OS.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:global_research_os"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "LXXV",
+   "title": "COMPETITOR / PUBLIC STRATEGY REVERSE ENGINEERING",
+   "files": [
+    "desks/mt5/research/scalp_reverse_engineering.py",
+    "desks/mt5/research/provider_reverse.py",
+    "desks/mt5/research/repo_miner.py"
+   ],
+   "why": "the code exists (desks/mt5/research/scalp_reverse_engineering.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT",
+   "artifact": "desks/mt5/reports/REPO_MINER.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "LXXVI",
+   "title": "MODEL GOVERNANCE",
+   "files": [
+    "desks/mt5/research/model_role_benchmark.py",
+    "desks/mt5/research/model_zoo.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:model_role_benchmark",
+   "artifact": "desks/mt5/reports/MODEL_ROLE_BENCHMARK.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "LXXVII",
+   "title": "SECURITY",
+   "files": [
+    "scripts/moneypath_precommit_guard.py",
+    "ops/githooks/pre-commit"
+   ],
+   "why": "the code exists (scripts/moneypath_precommit_guard.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "LXXVIII",
+   "title": "DISASTER RECOVERY",
+   "files": [
+    "desks/mt5/research/desk_self_heal.py"
+   ],
+   "why": "the code exists (desks/mt5/research/desk_self_heal.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "LXXIX",
+   "title": "OBSERVABILITY",
+   "files": [
+    "desks/mt5/research/live_system_state.py",
+    "desks/mt5/research/issue_board.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:live_system_state",
+   "artifact": "desks/mt5/reports/ISSUE_BOARD.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "LXXX",
+   "title": "WIRING AUDIT",
+   "files": [
+    "scripts/check_dead_architecture.py",
+    "desks/mt5/research/wiring_ceo.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:dead_architecture",
+   "artifact": "desks/mt5/reports/dead_architecture.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "LXXXI",
+   "title": "INSTITUTIONAL GOVERNANCE",
+   "files": [
+    "scripts/run_law_gate.py",
+    "docs/LAWS.md"
+   ],
+   "why": "the code exists (scripts/run_law_gate.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "LXXXII",
+   "title": "COMPLIANCE / LEGALITY",
+   "files": [
+    "desks/mt5/research/evidence_router.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:evidence_router",
+   "artifact": "desks/mt5/data/evidence_quarantine.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "LXXXIII",
+   "title": "ACCOUNTING / RECONCILIATION",
+   "files": [
+    "desks/mt5/research/conservation_ledger.py",
+    "desks/mt5/research/exit_accounts.py"
+   ],
+   "why": "the code exists (desks/mt5/research/conservation_ledger.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT",
+   "artifact": "desks/mt5/reports/EXIT_ACCOUNTS.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "LXXXIV",
+   "title": "LIVE CAPITAL LADDER",
+   "files": [
+    "desks/mt5/research/promoter.py",
+    "desks/mt5/tests/test_min_lot_floor.py"
+   ],
+   "status": "REFUSED_CONSERVATIVE",
+   "clock": "hourly_cycle:promoter",
+   "artifact": "desks/mt5/data/sleeves.json",
+   "why": "the ladder runs -- promotion is automatic on a matured clock -- but the rung this section implies, routing the gold book through the allocator's fraction (Tier-1 P1), is REFUSED: it would size gold below the 0.02-lot floor the principal fixed. The desk reduces its dynamicness, never its aggressiveness."
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "LXXXV",
+   "title": "PORTFOLIO MEASUREMENT",
+   "files": [
+    "desks/mt5/research/portfolio_evidence.py"
+   ],
+   "why": "the code exists (desks/mt5/research/portfolio_evidence.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT",
+   "artifact": "desks/mt5/reports/portfolio_evidence.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "LXXXVI",
+   "title": "EFFECTIVE BREADTH",
+   "files": [
+    "desks/mt5/research/alpha_breadth.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:alpha_breadth",
+   "artifact": "desks/mt5/reports/EFFECTIVE_BREADTH.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "LXXXVII",
+   "title": "UNKNOWN-UNKNOWN DISCOVERY",
+   "files": [
+    "desks/mt5/research/unknown_unknowns.py",
+    "desks/mt5/research/unseen_frontier.py"
+   ],
+   "gap": "on a clock; this audit could not name a report of its own -- the organ's hour lands in the registry or a shared state file, so there is no per-organ artifact to read it back from (LAWS III.16)",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:unseen_frontier"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "LXXXVIII",
+   "title": "RESIDUAL SCIENCE",
+   "files": [
+    "desks/mt5/research/residual_hunt.py",
+    "desks/mt5/research/factor_residual_engine.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:residual_hunt",
+   "artifact": "desks/mt5/reports/RESIDUAL_HUNT.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "LXXXIX",
+   "title": "CROSS-ASSET TRANSMISSION",
+   "files": [
+    "desks/mt5/research/transmission_engine.py",
+    "desks/mt5/research/asia_transmission.py"
+   ],
+   "why": "the code exists (desks/mt5/research/transmission_engine.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT",
+   "artifact": "desks/mt5/reports/ASIA_TRANSMISSION.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XC",
+   "title": "EVENT REACTION ATLAS",
+   "files": [
+    "desks/mt5/research/event_response_atlas.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:event_response_atlas",
+   "artifact": "desks/mt5/reports/EVENT_RESPONSE_ATLAS.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XCI",
+   "title": "MARKET MODEL ERROR ENGINE",
+   "files": [
+    "desks/mt5/research/drift_monitor.py",
+    "desks/mt5/research/market_posteriors.py"
+   ],
+   "why": "the code exists (desks/mt5/research/drift_monitor.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT",
+   "artifact": "desks/mt5/reports/DRIFT.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XCII",
+   "title": "COUNTERFACTUAL PORTFOLIO LEARNER",
+   "files": [
+    "desks/mt5/research/action_counterfactuals.py",
+    "desks/mt5/research/modifier_counterfactuals.py"
+   ],
+   "why": "the code exists (desks/mt5/research/action_counterfactuals.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT",
+   "artifact": "desks/mt5/reports/ACTION_COUNTERFACTUALS.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XCIII",
+   "title": "ALPHA STACK",
+   "files": [
+    "desks/mt5/research/alpha_genome.py",
+    "desks/mt5/research/alpha_periodic_table.py"
+   ],
+   "gap": "on a clock; this audit could not name a report of its own -- the organ's hour lands in the registry or a shared state file, so there is no per-organ artifact to read it back from (LAWS III.16)",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:alpha_periodic_table"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XCIV",
+   "title": "HIERARCHICAL DECISION SYSTEM",
+   "files": [
+    "desks/mt5/research/session_allocator.py",
+    "desks/mt5/research/chart_allocator.py"
+   ],
+   "why": "the code exists (desks/mt5/research/session_allocator.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT",
+   "artifact": "desks/mt5/reports/SESSION_ALLOCATION.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XCV",
+   "title": "HUMAN OVERSIGHT",
+   "files": [
+    "desks/mt5/research/issue_board.py",
+    "docs/LAWS.md"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:issue_board",
+   "artifact": "desks/mt5/reports/ISSUE_BOARD.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XCVI",
+   "title": "KEY PERFORMANCE METRICS",
+   "files": [
+    "desks/mt5/research/research_dashboard.py",
+    "desks/mt5/research/tier1_scorecard.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:research_dashboard",
+   "artifact": "desks/mt5/reports/RESEARCH_DASHBOARD.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XCVII",
+   "title": "FACTORY HEALTH",
+   "files": [
+    "desks/mt5/research/control_plane.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:control_plane",
+   "artifact": "desks/mt5/reports/CONTROL_PLANE.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XCVIII",
+   "title": "INSTITUTIONAL MATURITY LADDER",
+   "files": [
+    "desks/mt5/research/tier1_scorecard.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:tier1_scorecard",
+   "artifact": "desks/mt5/reports/TIER1_SCORECARD.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "XCIX",
+   "title": "FINAL CLOSED LOOP",
+   "files": [
+    "desks/mt5/research/hourly_cycle.py",
+    "desks/mt5/research/research_dashboard.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:research_dashboard",
+   "artifact": "desks/mt5/reports/RESEARCH_DASHBOARD.json"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "C",
+   "title": "WHAT “TIER-5” ACTUALLY MEANS",
+   "files": [
+    "scripts/check_tier5_audit.py",
+    "docs/research/tier5_audit.json"
+   ],
+   "why": "the code exists (scripts/check_tier5_audit.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "CI",
+   "title": "FINAL BUILDER INSTRUCTION",
+   "files": [
+    "scripts/check_tier1_program.py",
+    "docs/research/tier1_program.json"
+   ],
+   "why": "the code exists (scripts/check_tier1_program.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT"
+  },
+  {
+   "source": "BLUEPRINT I-CII",
+   "id": "CII",
+   "title": "DEFINITION OF ARCHITECTURAL COMPLETION",
+   "files": [
+    "scripts/check_tier5_audit.py",
+    "scripts/check_acceptance_properties.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:acceptance",
+   "artifact": "desks/mt5/reports/acceptance_properties.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "1",
+   "title": "SUPREME ECONOMIC OBJECTIVE",
+   "files": [
+    "desks/mt5/research/pf_allocator.py",
+    "docs/GROWTH_GOVERNANCE.md"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:pf_allocator",
+   "artifact": "desks/mt5/reports/pf_allocation.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "2",
+   "title": "SUPREME RESEARCH OBJECTIVE",
+   "files": [
+    "desks/mt5/research/alpha_breadth.py",
+    "desks/mt5/research/orthogonality.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:alpha_breadth",
+   "artifact": "desks/mt5/reports/EFFECTIVE_BREADTH.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "3",
+   "title": "ALWAYS-ON RULE",
+   "files": [
+    "desks/mt5/research/hourly_cycle.py",
+    "desks/mt5/research/department_resident.py"
+   ],
+   "why": "the code exists (desks/mt5/research/hourly_cycle.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "4",
+   "title": "NO DORMANT-CAPABILITY RULE",
+   "files": [
+    "scripts/check_dead_architecture.py",
+    "desks/mt5/research/wiring_ceo.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:dead_architecture",
+   "artifact": "desks/mt5/reports/dead_architecture.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "5",
+   "title": "ONE ORGANISM",
+   "files": [
+    "desks/mt5/research/hourly_cycle.py"
+   ],
+   "why": "the code exists (desks/mt5/research/hourly_cycle.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "6",
+   "title": "ONE CANONICAL RESEARCH TRUTH",
+   "files": [
+    "libs/moat/registry.py"
+   ],
+   "why": "the code exists (libs/moat/registry.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT",
+   "artifact": "data/alpha_registry.sqlite"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "7",
+   "title": "WORLD CRAWLER",
+   "files": [
+    "desks/mt5/research/moat_miner.py",
+    "desks/mt5/research/source_frontier.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:moat_miner",
+   "artifact": "desks/mt5/data/hypotheses/moat_candidates.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "8",
+   "title": "OPEN-ONTOLOGY RULE",
+   "files": [
+    "desks/mt5/research/axis_registry.py",
+    "desks/mt5/research/axis_proposer.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:axis_registry",
+   "artifact": "desks/mt5/reports/AXIS_REGISTRY.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "9",
+   "title": "GLOBAL COUNTRY GRAPH",
+   "files": [
+    "desks/mt5/research/region_department.py",
+    "desks/mt5/research/source_civilizations.py"
+   ],
+   "gap": "on a clock and it DECLARES desks/mt5/reports/SOURCE_CIVILIZATIONS.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:japan_department"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "10",
+   "title": "COUNTRY PROFILES",
+   "files": [
+    "desks/mt5/research/region_department.py"
+   ],
+   "gap": "on a clock; this audit could not name a report of its own -- the organ's hour lands in the registry or a shared state file, so there is no per-organ artifact to read it back from (LAWS III.16)",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:japan_department"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "11",
+   "title": "COUNTRY MINERS SEARCH STRUCTURE, NOT CULTURE",
+   "files": [
+    "desks/mt5/research/universe_policy.py",
+    "desks/mt5/research/region_department.py"
+   ],
+   "gap": "on a clock; this audit could not name a report of its own -- the organ's hour lands in the registry or a shared state file, so there is no per-organ artifact to read it back from (LAWS III.16)",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:japan_department"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "12",
+   "title": "MULTILINGUAL NATIVE SEARCH",
+   "files": [
+    "desks/mt5/research/understanding_seat.py",
+    "libs/research/polyglot.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:understanding_seat",
+   "artifact": "desks/mt5/reports/UNDERSTANDING.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "13",
+   "title": "QUERY EVOLUTION",
+   "files": [
+    "desks/mt5/research/scout_swarm.py",
+    "desks/mt5/research/source_frontier.py"
+   ],
+   "gap": "on a clock and it DECLARES desks/mt5/reports/SCOUT_SWARM.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:scout_swarm"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "14",
+   "title": "SEARCH-POLICY SWARMS",
+   "files": [
+    "desks/mt5/research/scout_swarm.py",
+    "desks/mt5/research/moat_swarms.py"
+   ],
+   "gap": "on a clock and it DECLARES desks/mt5/reports/SCOUT_SWARM.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:scout_swarm"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "15",
+   "title": "UNIVERSAL COVERAGE TENSOR",
+   "files": [
+    "desks/mt5/research/coverage_tensor.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:coverage_tensor",
+   "artifact": "desks/mt5/reports/COVERAGE_TENSOR.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "16",
+   "title": "COVERAGE ENTROPY",
+   "files": [
+    "desks/mt5/research/coverage_tensor.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:coverage_tensor",
+   "artifact": "desks/mt5/reports/COVERAGE_TENSOR.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "17",
+   "title": "EXPLORATION FLOORS",
+   "files": [
+    "desks/mt5/research/gauntlet_backpressure.py",
+    "desks/mt5/research/coverage_tensor.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:gauntlet_backpressure",
+   "artifact": "desks/mt5/reports/GAUNTLET_BACKPRESSURE.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "18",
+   "title": "GLOBAL MACRO INTELLIGENCE",
+   "files": [
+    "desks/mt5/research/macro_intelligence.py",
+    "desks/mt5/research/fetch_fred.py"
+   ],
+   "gap": "on a clock and it DECLARES desks/mt5/reports/MACRO_INTELLIGENCE.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:macro_intelligence"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "19",
+   "title": "MACRO TIMESTAMP CONTRACT",
+   "files": [
+    "desks/mt5/research/macro_intelligence.py",
+    "desks/mt5/research/pit_audit.py"
+   ],
+   "gap": "on a clock and it DECLARES desks/mt5/reports/MACRO_INTELLIGENCE.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:macro_intelligence"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "20",
+   "title": "MACRO SURPRISE SCIENCE",
+   "files": [
+    "desks/mt5/research/macro_intelligence.py",
+    "desks/mt5/research/event_response_atlas.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:macro_intelligence",
+   "artifact": "desks/mt5/reports/EVENT_RESPONSE_ATLAS.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "21",
+   "title": "CROSS-COUNTRY MACRO CONSTRUCTS",
+   "files": [
+    "desks/mt5/research/macro_intelligence.py",
+    "desks/mt5/research/cross_asset_graph.py"
+   ],
+   "gap": "on a clock and it DECLARES desks/mt5/reports/MACRO_INTELLIGENCE.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:macro_intelligence"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "22",
+   "title": "GLOBAL EVENT ATLAS",
+   "files": [
+    "desks/mt5/research/event_response_atlas.py",
+    "desks/mt5/research/news_event_stream.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:event_response_atlas",
+   "artifact": "desks/mt5/reports/EVENT_RESPONSE_ATLAS.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "23",
+   "title": "PHYSICAL-WORLD INTELLIGENCE",
+   "files": [
+    "desks/mt5/research/forced_flow_calendar.py"
+   ],
+   "gap": "on a clock; this audit could not name a report of its own -- the organ's hour lands in the registry or a shared state file, so there is no per-organ artifact to read it back from (LAWS III.16)",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:forced_flow_calendar"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "24",
+   "title": "OFFICIAL-SOURCE SWARM",
+   "files": [
+    "desks/mt5/research/source_registry.py",
+    "desks/mt5/research/moat_collectors.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:source_registry",
+   "artifact": "desks/mt5/reports/SOURCE_REGISTRY.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "25",
+   "title": "PUBLIC-STRATEGY MINERS",
+   "files": [
+    "desks/mt5/research/scalp_reverse_engineering.py",
+    "desks/mt5/research/repo_miner.py"
+   ],
+   "why": "the code exists (desks/mt5/research/scalp_reverse_engineering.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT",
+   "artifact": "desks/mt5/reports/REPO_MINER.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "26",
+   "title": "TRACK-RECORD REVERSE ENGINE",
+   "files": [
+    "desks/mt5/research/provider_reverse.py",
+    "desks/mt5/research/institutional_cards.py"
+   ],
+   "why": "the code exists (desks/mt5/research/provider_reverse.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT",
+   "artifact": "desks/mt5/reports/INSTITUTIONAL_CARDS.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "27",
+   "title": "CODE ARCHAEOLOGY",
+   "files": [
+    "desks/mt5/research/repo_miner.py"
+   ],
+   "why": "the code exists (desks/mt5/research/repo_miner.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT",
+   "artifact": "desks/mt5/reports/REPO_MINER.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "28",
+   "title": "LITERATURE MINER",
+   "files": [
+    "desks/mt5/research/deep_forest_miner.py",
+    "desks/mt5/research/analyst_pipeline.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:analyst_pipeline",
+   "artifact": "desks/mt5/reports/ANALYST_PIPELINE.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "29",
+   "title": "HISTORICAL ARCHAEOLOGY",
+   "files": [
+    "desks/mt5/research/mined_ground.py",
+    "desks/mt5/research/graveyard_resurrection.py"
+   ],
+   "gap": "on a clock and it DECLARES desks/mt5/reports/GRAVEYARD_RESURRECTION.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:graveyard_resurrection"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "30",
+   "title": "FAILURE CIVILIZATION",
+   "files": [
+    "desks/mt5/research/negative_knowledge.py",
+    "desks/mt5/research/gauntlet_backpressure.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:gauntlet_backpressure",
+   "artifact": "desks/mt5/reports/GAUNTLET_BACKPRESSURE.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "31",
+   "title": "DATA AXIS FACTORY",
+   "files": [
+    "desks/mt5/research/axis_proposer.py",
+    "desks/mt5/research/data_axis_miner.py"
+   ],
+   "gap": "on a clock; this audit could not name a report of its own -- the organ's hour lands in the registry or a shared state file, so there is no per-organ artifact to read it back from (LAWS III.16)",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:axis_proposer"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "32",
+   "title": "DATA PROXY FACTORY",
+   "files": [
+    "desks/mt5/research/data_prospector.py",
+    "desks/mt5/research/free_data.py"
+   ],
+   "why": "the code exists (desks/mt5/research/data_prospector.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT",
+   "artifact": "desks/mt5/reports/DATA_PROSPECTOR.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "33",
+   "title": "DATA → HYPOTHESIS LOOP",
+   "files": [
+    "desks/mt5/research/miner_candidate_compiler.py",
+    "desks/mt5/research/discovery_compiler.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:discovery_compiler",
+   "artifact": "desks/mt5/reports/DISCOVERY_COMPILER.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "34",
+   "title": "HYPOTHESIS → DATA LOOP",
+   "files": [
+    "desks/mt5/research/data_acquisition_scientist.py",
+    "desks/mt5/research/value_of_data.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:data_acquisition_scientist",
+   "artifact": "desks/mt5/reports/DATA_ACQUISITION.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "35",
+   "title": "MATHEMATICS CIVILIZATION",
+   "files": [
+    "desks/mt5/research/math_lab.py"
+   ],
+   "gap": "on a clock and it DECLARES desks/mt5/reports/MATH_LAB.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:math_lab"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "36",
+   "title": "PHYSICS CIVILIZATION",
+   "files": [
+    "desks/mt5/research/physics_lab.py"
+   ],
+   "gap": "on a clock and it DECLARES desks/mt5/reports/PHYSICS_LAB.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:physics_lab"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "37",
+   "title": "EXPRESSION FACTORY",
+   "files": [
+    "desks/mt5/research/expression_factory.py"
+   ],
+   "gap": "on a clock; this audit could not name a report of its own -- the organ's hour lands in the registry or a shared state file, so there is no per-organ artifact to read it back from (LAWS III.16)",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:expression_factory"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "38",
+   "title": "PROGRAM EVOLUTION",
+   "files": [
+    "desks/mt5/research/program_alpha_lane.py",
+    "desks/mt5/research/alpha_evolution.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:program_alpha_lane",
+   "artifact": "desks/mt5/reports/PROGRAM_ALPHA_LANE.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "39",
+   "title": "QUALITY-DIVERSITY",
+   "files": [
+    "desks/mt5/research/qd_frontier.py"
+   ],
+   "gap": "on a clock; this audit could not name a report of its own -- the organ's hour lands in the registry or a shared state file, so there is no per-organ artifact to read it back from (LAWS III.16)",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:qd_frontier"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "40",
+   "title": "SYMBOLIC REGRESSION",
+   "files": [
+    "desks/mt5/research/math_lab.py"
+   ],
+   "gap": "on a clock and it DECLARES desks/mt5/reports/MATH_LAB.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:math_lab"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "41",
+   "title": "SYSTEM IDENTIFICATION",
+   "files": [
+    "desks/mt5/research/math_lab.py",
+    "desks/mt5/research/physics_lab.py"
+   ],
+   "gap": "on a clock and it DECLARES desks/mt5/reports/MATH_LAB.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:math_lab"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "42",
+   "title": "STOCHASTIC-PROCESS SEARCH",
+   "files": [
+    "desks/mt5/research/physics_lab.py"
+   ],
+   "gap": "on a clock and it DECLARES desks/mt5/reports/PHYSICS_LAB.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:physics_lab"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "43",
+   "title": "INFORMATION-THEORY SCIENCE",
+   "files": [
+    "desks/mt5/research/information_value.py"
+   ],
+   "why": "the code exists (desks/mt5/research/information_value.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "44",
+   "title": "NETWORK SCIENCE",
+   "files": [
+    "desks/mt5/research/cross_asset_graph.py",
+    "desks/mt5/research/world_causal_graph.py"
+   ],
+   "why": "the code exists (desks/mt5/research/cross_asset_graph.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT",
+   "artifact": "desks/mt5/reports/CROSS_ASSET_GRAPH.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "45",
+   "title": "MULTISCALE SCIENCE",
+   "files": [
+    "desks/mt5/research/physics_lab.py",
+    "libs/ops/scaling_laws.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:physics_lab",
+   "artifact": "desks/mt5/reports/scaling_laws.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "46",
+   "title": "DIMENSIONLESS SEARCH",
+   "files": [
+    "desks/mt5/research/physics_lab.py"
+   ],
+   "gap": "on a clock and it DECLARES desks/mt5/reports/PHYSICS_LAB.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:physics_lab"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "47",
+   "title": "REPRESENTATION DISCOVERY",
+   "files": [
+    "desks/mt5/research/representation_forge.py",
+    "desks/mt5/research/representation_discovery.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:representation_forge",
+   "artifact": "desks/mt5/reports/REPRESENTATION_FORGE.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "48",
+   "title": "PRIMITIVE INVENTION",
+   "files": [
+    "desks/mt5/research/representation_forge.py",
+    "desks/mt5/research/expression_factory.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:representation_forge",
+   "artifact": "desks/mt5/reports/REPRESENTATION_FORGE.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "49",
+   "title": "SEARCH-METHOD INVENTION",
+   "files": [
+    "desks/mt5/research/research_evolution.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:research_evolution",
+   "artifact": "desks/mt5/reports/RESEARCH_EVOLUTION.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "50",
+   "title": "SIMULATION CIVILIZATION",
+   "files": [
+    "desks/mt5/research/synthetic_regimes.py",
+    "desks/mt5/research/digital_twin.py"
+   ],
+   "gap": "on a clock and it DECLARES desks/mt5/reports/SYNTHETIC_REGIMES.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:synthetic_regimes"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "51",
+   "title": "SYNTHETIC CALIBRATION",
+   "files": [
+    "desks/mt5/research/synthetic_regimes.py",
+    "desks/mt5/research/forward_calibration.py"
+   ],
+   "gap": "on a clock and it DECLARES desks/mt5/reports/SYNTHETIC_REGIMES.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:synthetic_regimes"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "52",
+   "title": "ADVERSARIAL SYNTHETIC WORLDS",
+   "files": [
+    "desks/mt5/research/adversary.py",
+    "desks/mt5/research/adversary_evolution.py"
+   ],
+   "why": "the code exists (desks/mt5/research/adversary.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT",
+   "artifact": "desks/mt5/reports/ADVERSARY.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "53",
+   "title": "DISCOVERERS VS DESTROYERS",
+   "files": [
+    "desks/mt5/research/adversary_evolution.py",
+    "desks/mt5/research/blind_reviewer.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:blind_reviewer",
+   "artifact": "desks/mt5/reports/BLIND_REVIEW.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "54",
+   "title": "SANDBOX-FIRST AUTONOMY",
+   "files": [
+    "desks/mt5/research/sandbox_runner.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:sandbox_runner",
+   "artifact": "desks/mt5/reports/SANDBOX_RUNNER.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "55",
+   "title": "ALL PARALLEL RESEARCH CAPACITY MUST BE EXPLOITED",
+   "files": [
+    "desks/mt5/research/research_auction.py",
+    "desks/mt5/research/research_departments.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:research_auction",
+   "artifact": "desks/mt5/reports/RESEARCH_AUCTION.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "56",
+   "title": "RESOURCE-SPECIALIZED WORKER POOLS",
+   "files": [
+    "desks/mt5/research/research_departments.py",
+    "desks/mt5/research/department_resident.py"
+   ],
+   "gap": "on a clock and it DECLARES desks/mt5/reports/RESEARCH_DEPARTMENTS.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:research_departments"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "57",
+   "title": "DYNAMIC CONCURRENCY",
+   "files": [
+    "desks/mt5/research/research_budget.py",
+    "desks/mt5/research/compute_economics.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:compute_economics",
+   "artifact": "desks/mt5/data/compute_policy.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "58",
+   "title": "RESEARCH COMPUTE SEPARATION",
+   "files": [
+    "desks/mt5/research/research_departments.py",
+    "desks/mt5/research/compute_economics.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:research_departments",
+   "artifact": "desks/mt5/data/compute_policy.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "59",
+   "title": "SANDBOX POPULATION DIVERSITY",
+   "files": [
+    "desks/mt5/research/sandbox_runner.py",
+    "desks/mt5/research/research_departments.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:sandbox_runner",
+   "artifact": "desks/mt5/reports/SANDBOX_RUNNER.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "60",
+   "title": "BLIND SANDBOXES",
+   "files": [
+    "desks/mt5/research/blind_reviewer.py",
+    "desks/mt5/research/sandbox_runner.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:blind_reviewer",
+   "artifact": "desks/mt5/reports/BLIND_REVIEW.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "61",
+   "title": "SANDBOX OUTPUT SCHEMA",
+   "files": [
+    "desks/mt5/research/sandbox_runner.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:sandbox_runner",
+   "artifact": "desks/mt5/reports/SANDBOX_RUNNER.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "62",
+   "title": "MINER → MECHANISM COMPILER",
+   "files": [
+    "desks/mt5/research/miner_candidate_compiler.py"
+   ],
+   "why": "the code exists (desks/mt5/research/miner_candidate_compiler.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT",
+   "artifact": "desks/mt5/data/hypotheses/miner_candidates.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "63",
+   "title": "FULL §33 AUTOMATION",
+   "files": [
+    "desks/mt5/research/miner_candidate_compiler.py",
+    "desks/mt5/research/discovery_compiler.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:discovery_compiler",
+   "artifact": "desks/mt5/reports/DISCOVERY_COMPILER.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "64",
+   "title": "CANONICAL HYPOTHESIS CARD",
+   "files": [
+    "libs/moat/registry.py",
+    "desks/mt5/research/discovery_compiler.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:discovery_compiler",
+   "artifact": "desks/mt5/reports/DISCOVERY_COMPILER.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "65",
+   "title": "HYPOTHESIS EXPANSION",
+   "files": [
+    "desks/mt5/research/moat_card_explosion.py",
+    "desks/mt5/research/scalp_family_expansion.py"
+   ],
+   "gap": "on a clock and it DECLARES desks/mt5/reports/MOAT_CARD_EXPLOSION.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:card_explosion"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "66",
+   "title": "CROSS-COUNTRY TRANSFER",
+   "files": [
+    "desks/mt5/research/region_department.py",
+    "desks/mt5/research/transmission_engine.py"
+   ],
+   "gap": "on a clock; this audit could not name a report of its own -- the organ's hour lands in the registry or a shared state file, so there is no per-organ artifact to read it back from (LAWS III.16)",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:japan_department"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "67",
+   "title": "CROSS-ASSET TRANSFER",
+   "files": [
+    "desks/mt5/research/transmission_engine.py",
+    "desks/mt5/research/asia_transmission.py"
+   ],
+   "why": "the code exists (desks/mt5/research/transmission_engine.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT",
+   "artifact": "desks/mt5/reports/ASIA_TRANSMISSION.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "68",
+   "title": "CROSS-SCIENCE TRANSFER",
+   "files": [
+    "desks/mt5/research/math_lab.py",
+    "desks/mt5/research/physics_lab.py"
+   ],
+   "gap": "on a clock and it DECLARES desks/mt5/reports/MATH_LAB.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:math_lab"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "69",
+   "title": "MASSIVE RAW CANDIDATE PRODUCTION",
+   "files": [
+    "desks/mt5/research/compile_anomalies.py",
+    "desks/mt5/research/miner_candidate_compiler.py"
+   ],
+   "why": "the code exists (desks/mt5/research/compile_anomalies.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT",
+   "artifact": "desks/mt5/data/hypotheses/anomaly_candidates.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "70",
+   "title": "EFFECTIVE HYPOTHESIS COUNT",
+   "files": [
+    "desks/mt5/research/alpha_breadth.py",
+    "libs/research/trial_ledger.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:alpha_breadth",
+   "artifact": "desks/mt5/reports/EFFECTIVE_BREADTH.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "71",
+   "title": "GLOBAL MULTIPLICITY",
+   "files": [
+    "libs/research/trial_ledger.py",
+    "desks/mt5/research/multiplicity.py"
+   ],
+   "why": "the code exists (libs/research/trial_ledger.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "72",
+   "title": "CHEAP PRE-GAUNTLET",
+   "files": [
+    "desks/mt5/research/falsifier_run.py",
+    "desks/mt5/research/novelty_gate.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:falsifier_run",
+   "artifact": "desks/mt5/reports/NOVELTY_GATE.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "73",
+   "title": "ONE UNIVERSAL GAUNTLET",
+   "files": [
+    "desks/mt5/scripts/external_gauntlet.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:external_gauntlet",
+   "artifact": "desks/mt5/data/hypotheses/gate_verdict_index.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "74",
+   "title": "GAUNTLET",
+   "files": [
+    "desks/mt5/scripts/external_gauntlet.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:external_gauntlet",
+   "artifact": "desks/mt5/data/hypotheses/gate_verdict_index.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "75",
+   "title": "BLIND LOCKBOX",
+   "files": [
+    "desks/mt5/research/blind_reviewer.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:blind_reviewer",
+   "artifact": "desks/mt5/reports/BLIND_REVIEW.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "76",
+   "title": "INDEPENDENT REPLICATION",
+   "files": [
+    "desks/mt5/research/replication_civilization.py",
+    "desks/mt5/research/lead_replication.py"
+   ],
+   "gap": "on a clock and it DECLARES desks/mt5/reports/REPLICATION.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:replication_civilization"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "77",
+   "title": "FORWARD CLOCKS",
+   "files": [
+    "desks/mt5/research/shadow_forward.py"
+   ],
+   "gap": "on a clock; this audit could not name a report of its own -- the organ's hour lands in the registry or a shared state file, so there is no per-organ artifact to read it back from (LAWS III.16)",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:enrol_clocks"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "78",
+   "title": "CAPITAL LADDER",
+   "files": [
+    "desks/mt5/research/promoter.py",
+    "desks/mt5/research/session_capital.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:promoter",
+   "artifact": "desks/mt5/data/sleeves.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "79",
+   "title": "WORLD MODEL",
+   "files": [
+    "desks/mt5/research/world_model.py",
+    "desks/mt5/research/world_lab.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:world_model",
+   "artifact": "desks/mt5/reports/WORLD_MODEL.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "80",
+   "title": "STATE MIXTURES",
+   "files": [
+    "desks/mt5/research/regime_monitor.py",
+    "libs/regime/state_admission.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:regime_monitor",
+   "artifact": "desks/mt5/data/regime_state.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "81",
+   "title": "ROBUST E[LOG W] ALLOCATOR",
+   "files": [
+    "desks/mt5/research/pf_allocator.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:pf_allocator",
+   "artifact": "desks/mt5/reports/pf_allocation.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "82",
+   "title": "MULTI-PERIOD CONTROL",
+   "files": [
+    "desks/mt5/research/pf_allocator.py",
+    "desks/mt5/research/rebalance_trigger.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:pf_allocator",
+   "artifact": "desks/mt5/reports/pf_allocation.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "83",
+   "title": "CONDITIONAL EDGE DISTRIBUTIONS",
+   "files": [
+    "desks/mt5/research/market_posteriors.py",
+    "desks/mt5/research/posterior_alpha.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:posterior_alpha",
+   "artifact": "desks/mt5/reports/POSTERIOR_ALPHA.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "84",
+   "title": "POSTERIOR UNCERTAINTY",
+   "files": [
+    "desks/mt5/research/posterior_alpha.py",
+    "desks/mt5/research/edge_confidence.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:posterior_alpha",
+   "artifact": "desks/mt5/reports/POSTERIOR_ALPHA.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "85",
+   "title": "DEPENDENCE MODEL",
+   "files": [
+    "desks/mt5/research/orthogonality.py",
+    "desks/mt5/research/cross_asset_graph.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:orthogonality",
+   "artifact": "desks/mt5/reports/ORTHOGONALITY.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "86",
+   "title": "OPPORTUNITY-DENSITY CONTROL",
+   "files": [
+    "desks/mt5/research/opportunity_curve.py",
+    "desks/mt5/research/opportunity_forecast.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:opportunity_forecast",
+   "artifact": "desks/mt5/reports/opportunity_forecast.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "87",
+   "title": "NO-TRADE REGION",
+   "files": [
+    "desks/mt5/research/rebalance_trigger.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:rebalance_trigger",
+   "artifact": "desks/mt5/reports/REBALANCE_TRIGGER.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "88",
+   "title": "CAPACITY SCIENCE",
+   "files": [
+    "desks/mt5/research/capacity.py",
+    "desks/mt5/research/capacity_frontier.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:capacity",
+   "artifact": "desks/mt5/reports/CAPACITY.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "89",
+   "title": "ALPHA DECAY",
+   "files": [
+    "desks/mt5/research/decay_monitor.py",
+    "desks/mt5/research/alpha_replenishment.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:alpha_replenishment",
+   "artifact": "desks/mt5/reports/ALPHA_REPLENISHMENT.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "90",
+   "title": "PORTFOLIO BOUNTY SYSTEM",
+   "files": [
+    "desks/mt5/research/portfolio_bounty.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:portfolio_bounty",
+   "artifact": "desks/mt5/reports/PORTFOLIO_BOUNTY.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "91",
+   "title": "TWO SEARCH STREAMS ALWAYS",
+   "files": [
+    "desks/mt5/research/research_departments.py",
+    "desks/mt5/research/portfolio_bounty.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:research_departments",
+   "artifact": "desks/mt5/reports/PORTFOLIO_BOUNTY.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "92",
+   "title": "EXECUTION SCIENCE",
+   "files": [
+    "desks/mt5/research/execution_science.py",
+    "desks/mt5/research/execution_resolver.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:execution_resolver",
+   "artifact": "desks/mt5/reports/execution_resolver.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "93",
+   "title": "TRADE-PATH SCIENCE",
+   "files": [
+    "desks/mt5/research/excursions.py"
+   ],
+   "why": "the code exists (desks/mt5/research/excursions.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT",
+   "artifact": "desks/mt5/reports/EXCURSIONS.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "94",
+   "title": "MULTI-VENUE INTELLIGENCE",
+   "files": [
+    "desks/mt5/research/measure_broker_clock.py"
+   ],
+   "status": "PARTIAL",
+   "artifact": "desks/mt5/data/broker_clock_measured.json",
+   "gap": "one live venue; the comparison is UNMEASURED until a second venue exists, and nothing is chosen on an unmeasured comparison"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "95",
+   "title": "LIVE ATTRIBUTION",
+   "files": [
+    "desks/mt5/research/fill_attribution.py",
+    "desks/mt5/research/allocator_attribution.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:fill_attribution",
+   "artifact": "desks/mt5/reports/FILL_ATTRIBUTION.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "96",
+   "title": "REALITY GAP ENGINE",
+   "files": [
+    "desks/mt5/research/book_reality.py",
+    "desks/mt5/research/forward_calibration.py"
+   ],
+   "why": "the code exists (desks/mt5/research/book_reality.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "97",
+   "title": "LIVE-LOSS AUTOPSY",
+   "files": [
+    "desks/mt5/research/trade_autopsy.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:trade_autopsy",
+   "artifact": "desks/mt5/reports/TRADE_AUTOPSY.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "98",
+   "title": "WIN AUTOPSY",
+   "files": [
+    "desks/mt5/research/trade_autopsy.py"
+   ],
+   "status": "DUPLICATIVE",
+   "clock": "hourly_cycle:trade_autopsy",
+   "artifact": "desks/mt5/reports/TRADE_AUTOPSY.json",
+   "canonical": "trade_autopsy (one organ writes both: a win and a loss get the same attribution/counterfactual/lesson row)"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "99",
+   "title": "RISK ORGANISM",
+   "files": [
+    "libs/portfolio/rails.py",
+    "desks/mt5/tests/test_heat_floor_is_not_negotiable.py"
+   ],
+   "status": "REFUSED_CONSERVATIVE",
+   "why": "the risk organism is live; what is refused is the conservative half of this section. The 20% heat floor, the 0.02-lot gold floor and the daily-loss parameters are the principal's and no organ lowers them by fiat (2026-09-08, given three times); a cap or shrink added because a reviewer called the book aggressive is refused, not deferred (GROWTH_GOVERNANCE Rule 1)."
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "100",
+   "title": "AGGRESSIVENESS GOVERNOR",
+   "files": [
+    "desks/mt5/research/pf_allocator.py",
+    "libs/portfolio/capital_modifiers.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:pf_allocator",
+   "artifact": "desks/mt5/reports/pf_allocation.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "101",
+   "title": "CRISIS WORLD ENGINE",
+   "files": [
+    "desks/mt5/research/synthetic_regimes.py",
+    "desks/mt5/research/drawdown_alpha_miner.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:synthetic_regimes",
+   "artifact": "desks/mt5/reports/DRAWDOWN_ALPHA_MINER.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "102",
+   "title": "FAILURE SCIENTIST",
+   "files": [
+    "desks/mt5/research/gauntlet_backpressure.py",
+    "desks/mt5/research/negative_knowledge.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:gauntlet_backpressure",
+   "artifact": "desks/mt5/reports/GAUNTLET_BACKPRESSURE.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "103",
+   "title": "DESCENDANT GENERATION",
+   "files": [
+    "desks/mt5/research/descendants.py",
+    "desks/mt5/research/alpha_recombination.py"
+   ],
+   "gap": "on a clock and it DECLARES desks/mt5/reports/DESCENDANTS.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:descendants"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "104",
+   "title": "NEGATIVE KNOWLEDGE",
+   "files": [
+    "desks/mt5/research/negative_knowledge.py"
+   ],
+   "why": "the code exists (desks/mt5/research/negative_knowledge.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "105",
+   "title": "SURVIVOR DESCENDANTS",
+   "files": [
+    "desks/mt5/research/descendants.py",
+    "desks/mt5/research/survivor_neighbourhood.py"
+   ],
+   "gap": "on a clock and it DECLARES desks/mt5/reports/DESCENDANTS.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:descendants"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "106",
+   "title": "RESIDUAL SCIENCE",
+   "files": [
+    "desks/mt5/research/factor_residual_engine.py"
+   ],
+   "why": "the code exists (desks/mt5/research/factor_residual_engine.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT",
+   "artifact": "desks/mt5/reports/factor_residual.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "107",
+   "title": "WORLD MODEL ERROR MINING",
+   "files": [
+    "desks/mt5/research/drift_monitor.py",
+    "desks/mt5/research/market_posteriors.py"
+   ],
+   "why": "the code exists (desks/mt5/research/drift_monitor.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT",
+   "artifact": "desks/mt5/reports/DRIFT.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "108",
+   "title": "COUNTERFACTUAL PORTFOLIO LEARNING",
+   "files": [
+    "desks/mt5/research/action_counterfactuals.py",
+    "desks/mt5/research/modifier_counterfactuals.py"
+   ],
+   "why": "the code exists (desks/mt5/research/action_counterfactuals.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT",
+   "artifact": "desks/mt5/reports/ACTION_COUNTERFACTUALS.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "109",
+   "title": "RESEARCH CIO",
+   "files": [
+    "desks/mt5/research/frontier_ceo.py",
+    "desks/mt5/research/meta_controller.py"
+   ],
+   "gap": "on a clock and it DECLARES desks/mt5/reports/META_CONTROLLER.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:meta_controller"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "110",
+   "title": "RESEARCH AUCTION",
+   "files": [
+    "desks/mt5/research/research_auction.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:research_auction",
+   "artifact": "desks/mt5/reports/RESEARCH_AUCTION.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "111",
+   "title": "COMPUTE RESERVES",
+   "files": [
+    "desks/mt5/research/research_budget.py",
+    "desks/mt5/research/compute_economics.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:compute_economics",
+   "artifact": "desks/mt5/data/compute_policy.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "112",
+   "title": "RESEARCH TWIN",
+   "files": [
+    "desks/mt5/research/digital_twin.py"
+   ],
+   "gap": "on a clock and it DECLARES desks/mt5/reports/DIGITAL_TWIN.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:digital_twin"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "113",
+   "title": "SUBEXPRESSION CACHING",
+   "files": [
+    "desks/mt5/research/experiment_cache.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:experiment_cache",
+   "artifact": "desks/mt5/reports/EXPERIMENT_CACHE.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "114",
+   "title": "FEATURE CACHE",
+   "files": [
+    "desks/mt5/research/feature_compiler.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:feature_compiler",
+   "artifact": "desks/mt5/reports/FEATURE_COMPILER.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "115",
+   "title": "VECTORIZED COMPUTE",
+   "files": [
+    "libs/research/bar_span.py",
+    "desks/mt5/research/feature_compiler.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:feature_compiler",
+   "artifact": "desks/mt5/reports/FEATURE_COMPILER.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "116",
+   "title": "REPRODUCIBILITY",
+   "files": [
+    "libs/ops/release.py"
+   ],
+   "why": "the code exists (libs/ops/release.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "117",
+   "title": "CRASH RECOVERY",
+   "files": [
+    "desks/mt5/research/job_lock.py"
+   ],
+   "why": "the code exists (desks/mt5/research/job_lock.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "118",
+   "title": "EVENT BUS",
+   "files": [
+    "libs/ops/events.py"
+   ],
+   "why": "the code exists (libs/ops/events.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT",
+   "artifact": "desks/mt5/data/events.jsonl"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "119",
+   "title": "SELF-HEALING MINERS",
+   "files": [
+    "desks/mt5/research/desk_self_heal.py"
+   ],
+   "why": "the code exists (desks/mt5/research/desk_self_heal.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "120",
+   "title": "RESEARCH HEARTBEAT",
+   "files": [
+    "desks/mt5/research/live_system_state.py",
+    "desks/mt5/research/control_plane.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:live_system_state",
+   "artifact": "desks/mt5/reports/CONTROL_PLANE.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "121",
+   "title": "MINER ECONOMICS",
+   "files": [
+    "desks/mt5/research/miner_specialisation.py",
+    "desks/mt5/research/research_roi.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:miner_specialisation",
+   "artifact": "desks/mt5/reports/MINER_SPECIALISATION.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "122",
+   "title": "SANDBOX ECONOMICS",
+   "files": [
+    "desks/mt5/research/sandbox_runner.py",
+    "desks/mt5/research/research_roi.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:sandbox_runner",
+   "artifact": "desks/mt5/reports/SANDBOX_RUNNER.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "123",
+   "title": "SCIENTIST ECONOMICS",
+   "files": [
+    "desks/mt5/research/credit_assignment.py",
+    "desks/mt5/research/scientist_tournament.py"
+   ],
+   "gap": "on a clock and it DECLARES desks/mt5/reports/CREDIT_ASSIGNMENT.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:credit_assignment"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "124",
+   "title": "SEARCH-METHOD TOURNAMENTS",
+   "files": [
+    "desks/mt5/research/scientist_tournament.py",
+    "desks/mt5/research/model_role_benchmark.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:model_role_benchmark",
+   "artifact": "desks/mt5/reports/MODEL_ROLE_BENCHMARK.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "125",
+   "title": "SEARCH-METHOD EVOLUTION",
+   "files": [
+    "desks/mt5/research/research_evolution.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:research_evolution",
+   "artifact": "desks/mt5/reports/RESEARCH_EVOLUTION.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "126",
+   "title": "ARCHITECTURE-GAP MINER",
+   "files": [
+    "desks/mt5/research/research_gap_map.py",
+    "desks/mt5/research/research_debt.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:research_gap_map",
+   "artifact": "desks/mt5/reports/RESEARCH_GAP_MAP.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "127",
+   "title": "UNKNOWN-UNKNOWN BUDGET",
+   "files": [
+    "desks/mt5/research/unknown_unknowns.py",
+    "desks/mt5/research/unseen_frontier.py"
+   ],
+   "gap": "on a clock; this audit could not name a report of its own -- the organ's hour lands in the registry or a shared state file, so there is no per-organ artifact to read it back from (LAWS III.16)",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:unseen_frontier"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "128",
+   "title": "SERENDIPITY BUDGET",
+   "files": [
+    "desks/mt5/research/unknown_unknowns.py",
+    "libs/research/search_strategy.py"
+   ],
+   "why": "the code exists (desks/mt5/research/unknown_unknowns.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "129",
+   "title": "MAXIMUM PARALLELISM RULE",
+   "files": [
+    "desks/mt5/research/research_departments.py",
+    "desks/mt5/research/department_resident.py"
+   ],
+   "gap": "on a clock and it DECLARES desks/mt5/reports/RESEARCH_DEPARTMENTS.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:research_departments"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "130",
+   "title": "ANTI-DUPLICATE PARALLELISM",
+   "files": [
+    "desks/mt5/research/novelty_gate.py",
+    "desks/mt5/research/job_lock.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:novelty_gate",
+   "artifact": "desks/mt5/reports/NOVELTY_GATE.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "131",
+   "title": "PIPELINE BACKPRESSURE",
+   "files": [
+    "desks/mt5/research/gauntlet_backpressure.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:gauntlet_backpressure",
+   "artifact": "desks/mt5/reports/GAUNTLET_BACKPRESSURE.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "132",
+   "title": "FACTORY BOTTLENECK LAW",
+   "files": [
+    "desks/mt5/research/bottleneck_law.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:bottleneck_law",
+   "artifact": "desks/mt5/reports/BOTTLENECK_LAW.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "133",
+   "title": "RESEARCH-LATENCY METRICS",
+   "files": [
+    "desks/mt5/research/research_latency.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:research_latency",
+   "artifact": "desks/mt5/reports/RESEARCH_LATENCY.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "134",
+   "title": "ALPHA REPLENISHMENT",
+   "files": [
+    "desks/mt5/research/alpha_replenishment.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:alpha_replenishment",
+   "artifact": "desks/mt5/reports/ALPHA_REPLENISHMENT.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "135",
+   "title": "ORTHOGONALITY OBJECTIVE",
+   "files": [
+    "desks/mt5/research/orthogonality.py",
+    "desks/mt5/research/alpha_breadth.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:orthogonality",
+   "artifact": "desks/mt5/reports/ORTHOGONALITY.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "136",
+   "title": "DRAWDOWN-ALPHA MINER",
+   "files": [
+    "desks/mt5/research/drawdown_alpha_miner.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:drawdown_alpha_miner",
+   "artifact": "desks/mt5/reports/DRAWDOWN_ALPHA_MINER.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "137",
+   "title": "EFFECTIVE BREADTH",
+   "files": [
+    "desks/mt5/research/alpha_breadth.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:alpha_breadth",
+   "artifact": "desks/mt5/reports/EFFECTIVE_BREADTH.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "138",
+   "title": "MINIMUM DESCRIPTION / COMPRESSION SCIENCE",
+   "files": [
+    "desks/mt5/research/simplifier.py"
+   ],
+   "why": "the code exists (desks/mt5/research/simplifier.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT",
+   "artifact": "desks/mt5/reports/SIMPLIFIER.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "139",
+   "title": "THEORY COMPETITION",
+   "files": [
+    "desks/mt5/research/scientist_tournament.py",
+    "desks/mt5/research/model_role_benchmark.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:model_role_benchmark",
+   "artifact": "desks/mt5/reports/MODEL_ROLE_BENCHMARK.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "140",
+   "title": "ACTIVE EXPERIMENT DESIGN",
+   "files": [
+    "desks/mt5/research/experiment_design.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:experiment_design",
+   "artifact": "desks/mt5/reports/EXPERIMENT_DESIGN.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "141",
+   "title": "DATA-ACQUISITION EXPERIMENT DESIGN",
+   "files": [
+    "desks/mt5/research/data_acquisition_scientist.py",
+    "desks/mt5/research/acquire_datasets.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:data_acquisition_scientist",
+   "artifact": "desks/mt5/reports/DATA_ACQUISITION.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "142",
+   "title": "PROPRIETARY INFORMATION FACTORY",
+   "files": [
+    "desks/mt5/research/moat_series.py",
+    "desks/mt5/research/moat_collectors.py"
+   ],
+   "gap": "on a clock and it DECLARES desks/mt5/reports/MOAT_SERIES.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:moat_series"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "143",
+   "title": "SELF-FOOTPRINT MOAT",
+   "files": [
+    "desks/mt5/research/moat_series.py",
+    "desks/mt5/research/evidence_vault.py"
+   ],
+   "gap": "on a clock and it DECLARES desks/mt5/reports/MOAT_SERIES.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:moat_series"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "144",
+   "title": "EXECUTION MOAT",
+   "files": [
+    "desks/mt5/research/execution_alpha_miner.py",
+    "desks/mt5/research/execution_intelligence.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:execution_alpha",
+   "artifact": "desks/mt5/reports/EXECUTION_ALPHA.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "145",
+   "title": "LIVE CALIBRATION",
+   "files": [
+    "desks/mt5/research/forward_calibration.py",
+    "desks/mt5/research/book_reality.py"
+   ],
+   "why": "the code exists (desks/mt5/research/forward_calibration.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "146",
+   "title": "MODEL ENSEMBLES",
+   "files": [
+    "desks/mt5/research/model_zoo.py",
+    "desks/mt5/research/ml_layer.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:ml_layer",
+   "artifact": "desks/mt5/reports/ML_LAYER.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "147",
+   "title": "AGENT AUTHORITY CONSTITUTION",
+   "files": [
+    "docs/LAWS.md",
+    "scripts/run_law_gate.py"
+   ],
+   "why": "the code exists (docs/LAWS.md) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "148",
+   "title": "COMPLIANCE AS BOUNDARY, NOT RESEARCH OBJECTIVE",
+   "files": [
+    "desks/mt5/research/evidence_router.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:evidence_router",
+   "artifact": "desks/mt5/data/evidence_quarantine.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "149",
+   "title": "PRODUCTION FIREWALL",
+   "files": [
+    "scripts/moneypath_precommit_guard.py",
+    "ops/githooks/pre-commit"
+   ],
+   "why": "the code exists (scripts/moneypath_precommit_guard.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "150",
+   "title": "CANONICAL BRANCH / INTEGRATION",
+   "files": [
+    "desks/mt5/scripts/Adopt-And-Seal.ps1",
+    "libs/ops/release.py"
+   ],
+   "why": "the code exists (desks/mt5/scripts/Adopt-And-Seal.ps1) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "151",
+   "title": "CAPABILITY MATURITY STATES",
+   "files": [
+    "desks/mt5/research/tier1_scorecard.py",
+    "docs/research/tier1_program.json"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:tier1_scorecard",
+   "artifact": "desks/mt5/reports/TIER1_SCORECARD.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "152",
+   "title": "ARCHITECTURAL COMPLETION TEST",
+   "files": [
+    "scripts/check_tier5_audit.py",
+    "scripts/check_tier1_program.py"
+   ],
+   "why": "the code exists (scripts/check_tier5_audit.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "153",
+   "title": "24/7 ACCEPTANCE TEST",
+   "files": [
+    "scripts/check_acceptance_properties.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:acceptance",
+   "artifact": "desks/mt5/reports/acceptance_properties.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "154",
+   "title": "NO-LLM ACCEPTANCE TEST",
+   "files": [
+    "tests/research/test_tier5_acceptance.py"
+   ],
+   "gap": "on a clock; this audit could not name a report of its own -- the organ's hour lands in the registry or a shared state file, so there is no per-organ artifact to read it back from (LAWS III.16)",
+   "status": "PARTIAL",
+   "clock": "law_gate:check_tier5_audit.py"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "155",
+   "title": "PARALLEL-CAPACITY ACCEPTANCE TEST",
+   "files": [
+    "tests/research/test_tier5_acceptance.py"
+   ],
+   "gap": "on a clock; this audit could not name a report of its own -- the organ's hour lands in the registry or a shared state file, so there is no per-organ artifact to read it back from (LAWS III.16)",
+   "status": "PARTIAL",
+   "clock": "law_gate:check_tier5_audit.py"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "156",
+   "title": "MONOCULTURE ACCEPTANCE TEST",
+   "files": [
+    "tests/research/test_tier5_acceptance.py"
+   ],
+   "gap": "on a clock; this audit could not name a report of its own -- the organ's hour lands in the registry or a shared state file, so there is no per-organ artifact to read it back from (LAWS III.16)",
+   "status": "PARTIAL",
+   "clock": "law_gate:check_tier5_audit.py"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "157",
+   "title": "MULTIPLICITY ACCEPTANCE TEST",
+   "files": [
+    "libs/research/trial_ledger.py",
+    "desks/mt5/research/multiplicity.py"
+   ],
+   "why": "the code exists (libs/research/trial_ledger.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "158",
+   "title": "NOISE-WORLD ACCEPTANCE TEST",
+   "files": [
+    "desks/mt5/research/adversary.py",
+    "desks/mt5/research/synthetic_regimes.py"
+   ],
+   "gap": "on a clock and it DECLARES desks/mt5/reports/SYNTHETIC_REGIMES.json, which is ABSENT on this tree: the leg has not produced its report here, so the section is UNMEASURED rather than delivered",
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:synthetic_regimes"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "159",
+   "title": "KNOWN-LAW ACCEPTANCE TEST",
+   "files": [
+    "desks/mt5/research/math_lab.py",
+    "desks/mt5/research/physics_lab.py"
+   ],
+   "status": "PARTIAL",
+   "clock": "hourly_cycle:math_lab",
+   "gap": "the labs rediscover mechanisms on the desk's own bars; no planted known-law world is injected and recovered as a standing acceptance test"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "160",
+   "title": "PORTFOLIO-BRAIN ACCEPTANCE TEST",
+   "files": [
+    "desks/mt5/research/pf_allocator.py",
+    "libs/portfolio/allocator_proof.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:pf_allocator",
+   "artifact": "desks/mt5/reports/pf_allocation.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "161",
+   "title": "AGGRESSION ACCEPTANCE TEST",
+   "files": [
+    "tests/research/test_tier5_acceptance.py"
+   ],
+   "gap": "on a clock; this audit could not name a report of its own -- the organ's hour lands in the registry or a shared state file, so there is no per-organ artifact to read it back from (LAWS III.16)",
+   "status": "PARTIAL",
+   "clock": "law_gate:check_tier5_audit.py"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "162",
+   "title": "FINAL RESEARCH DASHBOARD",
+   "files": [
+    "desks/mt5/research/research_dashboard.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:research_dashboard",
+   "artifact": "desks/mt5/reports/RESEARCH_DASHBOARD.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "163",
+   "title": "MAXIMUM-AGGRESSIVE OPERATING LAW",
+   "files": [
+    "docs/GROWTH_GOVERNANCE.md",
+    "scripts/check_growth_governance.py"
+   ],
+   "why": "the code exists (docs/GROWTH_GOVERNANCE.md) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "164",
+   "title": "FINAL RESEARCH LAW",
+   "files": [
+    "docs/RESEARCH.md",
+    "desks/mt5/research/hourly_cycle.py"
+   ],
+   "why": "the code exists (docs/RESEARCH.md) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "165",
+   "title": "FINAL DISCOVERY LAW",
+   "files": [
+    "docs/RESEARCH.md",
+    "desks/mt5/research/coverage_tensor.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:coverage_tensor",
+   "artifact": "desks/mt5/reports/COVERAGE_TENSOR.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "166",
+   "title": "FINAL SELF-IMPROVEMENT LAW",
+   "files": [
+    "desks/mt5/research/research_evolution.py",
+    "desks/mt5/research/compute_economics.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:research_evolution",
+   "artifact": "desks/mt5/reports/RESEARCH_EVOLUTION.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "167",
+   "title": "WHAT “MAXED” MEANS",
+   "files": [
+    "scripts/check_tier5_audit.py",
+    "docs/research/tier5_audit.json"
+   ],
+   "why": "the code exists (scripts/check_tier5_audit.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "168",
+   "title": "FINAL CLOSED-LOOP OBJECTIVE",
+   "files": [
+    "desks/mt5/research/hourly_cycle.py",
+    "desks/mt5/research/research_dashboard.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:research_dashboard",
+   "artifact": "desks/mt5/reports/RESEARCH_DASHBOARD.json"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "169",
+   "title": "FINAL BUILDER PRIORITY",
+   "files": [
+    "docs/research/tier1_program.json",
+    "scripts/check_tier1_program.py"
+   ],
+   "why": "the code exists (docs/research/tier1_program.json) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
+   "status": "DORMANT"
+  },
+  {
+   "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
+   "id": "170",
+   "title": "ULTIMATE TARGET",
+   "files": [
+    "docs/research/tier5_audit.json",
+    "desks/mt5/research/research_dashboard.py"
+   ],
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:research_dashboard",
+   "artifact": "desks/mt5/reports/RESEARCH_DASHBOARD.json"
+  }
+ ]
+}

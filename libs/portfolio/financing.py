@@ -802,6 +802,62 @@ def borrow(symbol: str | None = None) -> dict[str, Any]:
                     "swap_short and is priced there, never here")}
 
 
+def counterparty(sheet: BalanceSheet | None, positions: Sequence[OpenPosition],
+                 *, venue: str = "", account_kind: str = "",
+                 segregated: bool | None = None) -> dict[str, Any]:
+    """THE COUNTERPARTY LEG: how much of the desk's capital one venue can fail with.
+
+    A CFD is a bilateral contract. The position is not held at a clearing house and the equity
+    is not held by the desk -- both sit on ONE broker's balance sheet, so the exposure is the
+    whole account, and the frictions that matter are concentration (what share of capital is at
+    this venue), the distance to a margin call (how much adverse move it takes before the venue
+    acts on its own terms rather than the desk's), and whether client money is segregated, which
+    the desk can only DECLARE from the venue's licence and never measure from a tape.
+
+    IT IS REPORTED AND NOT CHARGED, deliberately. Pricing a counterparty haircut into the
+    posterior would shrink the book by an unmeasured constant, which GROWTH_GOVERNANCE Rule 1
+    forbids: a risk reduction must first prove it raises robust forward E[log W], and a haircut
+    on a single-venue account raises nothing -- it is the same bet, smaller. What this returns
+    is the exposure with its name on it, so the answer to concentration is a SECOND venue
+    (more independent capacity, Rule 2), never a smaller book at the first one.
+    """
+    equity = getattr(sheet, "equity", None) if sheet is not None else None
+    gross = None
+    if positions:
+        vals = [abs(float(getattr(p, "volume", 0.0) or 0.0)) for p in positions]
+        gross = float(sum(vals)) if vals else None
+    out: dict[str, Any] = {
+        "venue": venue or "UNMEASURED",
+        "account_kind": account_kind or "UNMEASURED",
+        "n_venues": 1,
+        "capital_share_at_venue": 1.0,
+        "capital_share_status": DECLARED_STATUS,
+        "capital_share_why": ("a CFD account holds the desk's cash AND its positions at one "
+                              "broker: the share is 1.0 by the structure of the instrument, "
+                              "not by a measurement"),
+        "equity_at_risk": None if equity is None else float(equity),
+        "gross_lots": gross,
+        "client_money_segregated": segregated,
+        "segregation_status": (UNMEASURED_STATUS if segregated is None else DECLARED_STATUS),
+        "segregation_why": ("readable from the venue's licence and the desk's own account "
+                            "paperwork, never from the tape"),
+        "priced_into_elog": False,
+        "why_not_priced": ("GROWTH_GOVERNANCE Rule 1: a counterparty haircut on a single-venue "
+                           "account is the same bet made smaller and proves no rise in robust "
+                           "forward E[log W]; the two-sided answer to concentration is a second "
+                           "venue, which ADDS capacity"),
+    }
+    if equity is None:
+        out["unmeasured"] = ["equity: no terminal and no account_state.json on this host"]
+    return out
+
+
+#: Status words this module publishes beside a number, so a declared value is never read as a
+#: measured one.
+DECLARED_STATUS = "DECLARED"
+UNMEASURED_STATUS = "UNMEASURED"
+
+
 # -------------------------------------------------------------------- after-financing growth
 
 

@@ -84,6 +84,10 @@ ALLOC_OUT = DATA / "research_allocation.json"
 FOREST_OUT = DATA / "forest_allocation.json"
 CAPITAL_OUT = DATA / "roi_capital_evidence.json"
 REPORT = REPORTS / "RESEARCH_ROI.json"
+#: The meta-evolution layer's population: each research-machinery variant names the host
+#: generator it configured and when it was activated; its fitness is that host's delayed
+#: credit since then, computed HERE so the variant never scores itself.
+EVOLUTION_POPULATION = DATA / "research_evolution" / "population.json"
 
 UNMEASURED = "UNMEASURED"
 
@@ -103,6 +107,10 @@ SCOUT_FLOOR_WORKERS = 1
 MAX_WORKERS = 12
 MIN_BUDGET_S = 600
 MAX_BUDGET_S = 9000
+#: The largest raise REGIONAL PARITY's coverage debt may add to a forest's workers and seconds.
+#: 2.0 is the top of `FACTOR_CLIP` and the debt is bounded in [0, 1], so `1 + debt` reaches it
+#: exactly when a region owes the whole depth rule -- no separate knob, the same clip.
+PARITY_MAX_BONUS = 2.0
 
 #: Two-sided clip on every factor this organ publishes. Symmetric about 1.0 on purpose: the same
 #: evidence that can halve a share must be able to double it (GROWTH_GOVERNANCE Rule 2).
@@ -644,6 +652,52 @@ def scientist_roi(rows: dict[str, list[dict[str, Any]]], credit: dict[str, Any],
     return out
 
 
+def variant_roi(scientists: dict[str, Any],
+                unmeasured: list[dict[str, str]]) -> dict[str, Any]:
+    """DELAYED REAL YIELD PER RESEARCH-MACHINERY VARIANT (LAWS 5m, the meta-evolution layer).
+
+    A variant of the research machinery (a PUCT constant, a grammar's immigrant share, an
+    operator vocabulary) is credited with the value its HOST generator produced while the
+    variant was active: the host's scientist ROI value (credited survivors + independent
+    survivors + dE[log W]) now, less the value recorded when the variant was activated. The
+    variant never scores itself -- `research_evolution` reads this block as fitness and MEASURED
+    means the host has a scientist row and this report is newer than the activation; anything
+    else is UNMEASURED by name, and an unmeasured variant displaces nothing in the archive.
+    """
+    pop = _read_json(EVOLUTION_POPULATION)
+    if not isinstance(pop, dict) or not isinstance(pop.get("genomes"), list):
+        unmeasured.append({"what": "research-machinery variants",
+                           "why": f"no population at {EVOLUTION_POPULATION}: the meta-evolution "
+                                  f"layer has applied no variant on this box"})
+        return {"status": UNMEASURED, "variants": {}, "n": 0,
+                "basis": "scientist_roi[host].value delta since activation"}
+    out: dict[str, Any] = {}
+    n_measured = 0
+    for g in pop["genomes"]:
+        if not isinstance(g, dict) or not g.get("id"):
+            continue
+        host = str(g.get("host") or "")
+        row = scientists.get(host)
+        activated = str(g.get("activated_at") or "")
+        baseline = _f((g.get("fitness") or {}).get("baseline_value"))
+        if not isinstance(row, dict) or not activated:
+            out[str(g["id"])] = {"status": UNMEASURED, "host": host, "value": None,
+                                 "why": (f"no scientist row for host {host!r}"
+                                         if not isinstance(row, dict)
+                                         else "variant never activated")}
+            continue
+        value = _f(row.get("value")) - baseline
+        out[str(g["id"])] = {"status": "MEASURED", "host": host,
+                             "value": round(value, 8), "host_value": row.get("value"),
+                             "baseline_value": baseline, "activated_at": activated,
+                             "basis": "scientist_roi[host].value - baseline at activation"}
+        n_measured += 1
+    return {"status": "MEASURED" if n_measured else UNMEASURED, "variants": out,
+            "n": len(out), "n_measured": n_measured,
+            "basis": "scientist_roi[host].value delta since activation",
+            "consumer": "desks/mt5/research/research_evolution.py (fitness)"}
+
+
 def region_roi(src_roi: dict[str, Any], rows: dict[str, list[dict[str, Any]]],
                datasets: dict[str, Any], fam: dict[str, dict[str, int]],
                api: dict[str, int], api_why: str | None,
@@ -822,6 +876,80 @@ def forest_allocation(regions: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def parity_overlay(forest: dict[str, Any], *, conn: sqlite3.Connection | None = None,
+                   reports_dir: Path | None = None) -> dict[str, Any]:
+    """Fold REGIONAL PARITY's coverage debt into the forest allocation, as a BONUS only.
+
+    THE LAW (docs/LAWS.md 5n, principal 2026-09-19) prices compute at
+
+        Priority = P(useful) x Orthogonality x InformationGain x CoverageDebt
+                   / (Compute + DataCost + TrialBurden)
+
+    and `libs/research/regional_parity.py` is the pure half that measures every term. This is the
+    consumer: the region that owes the most depth -- unmapped source layers, nothing discovered in
+    its trailing window, nothing in its lattice, nobody resident -- gets MORE workers and MORE
+    seconds, never fewer.
+
+    WHY IT IS ONE-SIDED WHEN THE FORMULA IS NOT. The debt term enters `priority_of` as (1 + debt),
+    which is already a bonus; the terms that could pull a region DOWN (its own past yield) are
+    already priced by `forest_allocation`'s ROI factor two lines above, and pricing them twice
+    would be the starvation loop the scout floor exists to prevent -- a region defunded to silence
+    can never produce the evidence that would refund it. So the overlay is `max(1.0, 1 + debt)`,
+    clipped, and GROWTH_GOVERNANCE Rule 1 is satisfied without a missed-growth ledger line because
+    nothing here reduces anything: `workers_before`/`budget_before` are carried beside every row so
+    the raise is auditable rather than asserted.
+
+    GUARDED. `regional_parity` is a pure library with no desk import, but this organ must not die
+    if it is mid-landing on a tree; an import or measurement failure records `UNMEASURED` by name
+    in the returned block and leaves every allocation exactly as `forest_allocation` set it.
+    """
+    forests = forest.get("forests") or {}
+    try:
+        from libs.research import regional_parity as RP
+    except Exception as exc:
+        forest["parity"] = {"status": UNMEASURED,
+                            "why": f"libs.research.regional_parity: {type(exc).__name__}: {exc}"}
+        return forest
+    try:
+        roi = {r: (forest["forests"].get(r) or {}).get("roi") for r in forests}
+        doc = RP.parity_report(conn=conn, region_roi=roi, reports_dir=reports_dir)
+    except Exception as exc:
+        forest["parity"] = {"status": UNMEASURED,
+                            "why": f"parity_report raised {type(exc).__name__}: {exc}"}
+        return forest
+    raised: list[str] = []
+    for fid, row in forests.items():
+        got = (doc.get("regions") or {}).get(fid)
+        if not isinstance(got, dict):
+            row["parity"] = {"status": UNMEASURED, "why": f"{fid} is not a declared forest"}
+            continue
+        debt = float((got.get("coverage_debt") or {}).get("debt") or 0.0)
+        factor = max(1.0, min(PARITY_MAX_BONUS, 1.0 + debt))
+        before_w, before_b = int(row["workers"]), int(row["budget_s"])
+        row["workers"] = max(SCOUT_FLOOR_WORKERS, min(MAX_WORKERS, round(before_w * factor)))
+        row["budget_s"] = max(MIN_BUDGET_S, min(MAX_BUDGET_S, round(before_b * factor)))
+        row["parity"] = {"status": "ok", "coverage_debt": round(debt, 6),
+                         "bonus": round(factor, 4), "priority": got.get("priority"),
+                         "depth_score": got.get("depth_score"),
+                         "flags": list(got.get("flags") or ()),
+                         "workers_before": before_w, "budget_before_s": before_b,
+                         "why": (got.get("coverage_debt") or {}).get("why", "")}
+        if row["workers"] > before_w or row["budget_s"] > before_b:
+            raised.append(fid)
+    forest["parity"] = {
+        "status": "ok", "law": "docs/LAWS.md 5n", "rule": RP.RULE,
+        "at": doc.get("at"), "median_depth": doc.get("median_depth"),
+        "flag_counts": doc.get("flag_counts"), "flagged": doc.get("flagged"),
+        "raised": sorted(raised), "max_bonus": PARITY_MAX_BONUS,
+        "direction": ("BONUS ONLY: the coverage debt raises a neglected region's workers and "
+                      "seconds and lowers nobody's; the yield half is already priced by the ROI "
+                      "factor and is not charged twice"),
+        "source": "libs/research/regional_parity.py parity_report()",
+        "fence": "scripts/check_regional_parity.py",
+    }
+    return forest
+
+
 def trial_budget(mechanisms: dict[str, Any]) -> dict[str, Any]:
     """Trial budget per mechanism family, two-sided and floored. Consumed by
     `gauntlet_backpressure` and `mining_objective`, both of which READ it and neither of which may
@@ -926,6 +1054,7 @@ def run(*, budget_s: float = BUDGET_S, dry_run: bool = False,
         datasets = dataset_roi(rows, credit)
         mechanisms, negative = mechanism_roi(fam, rows, surv)
         scientists = scientist_roi(rows, credit, hours)
+        variants = variant_roi(scientists, unmeasured)
         regions = region_roi(src, rows, datasets, fam, api, api_why, hours)
         reps = representation_roi(unmeasured)
     finally:
@@ -933,7 +1062,7 @@ def run(*, budget_s: float = BUDGET_S, dry_run: bool = False,
             c.close()
 
     depts = department_shares(scientists, hours, unmeasured)
-    forest = forest_allocation(regions)
+    forest = parity_overlay(forest_allocation(regions), conn=conn)
     trials = trial_budget(mechanisms)
     slots = forward_slot_weights(mechanisms, src)
     capital = capital_evidence(mechanisms, scientists, credit)
@@ -971,6 +1100,7 @@ def run(*, budget_s: float = BUDGET_S, dry_run: bool = False,
                                      "consumer": capital["consumer"]["status"],
                                      "boundary": capital["boundary"]}},
         "delta_elogw_basis": elog_basis,
+        "variant_roi": variants,
         "counts": {"sources": len(rows["sources"]), "source_yield": len(rows["source_yield"]),
                    "generators": len(rows["generator_yield"]),
                    "discoveries": len(rows["discoveries"]),

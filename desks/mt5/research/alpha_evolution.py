@@ -100,6 +100,34 @@ SIDE_MODES = ("follow", "fade")
 #: re-screens). Everything above them in the ranking is decided on the eight cheap terms, which
 #: is the same successive-halving argument the stage-0 screen already makes.
 REFINE_TOP = 6
+#: The meta-evolution layer's active variants (LAWS 5m): a `grammar_evolution` variant sets the
+#: fresh-immigrant share this run breeds with, clamped into the range the search was designed
+#: for, and its id is recorded on the report so the run's yield can be credited back to it.
+ACTIVE_VARIANTS = _DESK / "data" / "research_evolution" / "active_variants.json"
+
+
+def search_policy(path: Path | None = None) -> dict:
+    """{fresh_frac, refine_top, variant, basis}: the module defaults or the activated variant."""
+    pol: dict = {"fresh_frac": FRESH_FRAC, "refine_top": REFINE_TOP, "variant": None,
+                 "basis": "module defaults (no active grammar_evolution variant)"}
+    try:
+        doc = json.loads((path or ACTIVE_VARIANTS).read_text(encoding="utf-8-sig"))
+        var = ((doc.get("variants") or {}).get("grammar_evolution")
+               if isinstance(doc, dict) else None)
+    except (OSError, ValueError, AttributeError):
+        var = None
+    if not isinstance(var, dict) or not isinstance(var.get("config"), dict):
+        return pol
+    cfg = var["config"]
+    ff, rt = cfg.get("fresh_frac"), cfg.get("refine_top")
+    if isinstance(ff, (int, float)):
+        pol["fresh_frac"] = float(min(0.6, max(0.05, ff)))
+    if isinstance(rt, (int, float)):
+        pol["refine_top"] = int(min(12, max(2, rt)))
+    pol["variant"] = str(var.get("id")) if var.get("id") else None
+    pol["basis"] = f"active_variants.json grammar_evolution ({var.get('basis')})"
+    return pol
+
 #: A cheaper world population for SEARCH-time growth scoring. The allocator's own pass uses its
 #: full draw; this one only has to rank candidates against each other, and a 256-world solve per
 #: candidate would buy one generation an hour.
@@ -705,9 +733,10 @@ def evolve(sym: str, d: pd.DataFrame, cost: float, drivers: dict[str, pd.DataFra
         # holds keeps contributing its genetic material rather than being forgotten.
         parents = _parents(ev, elite)
         children: list[tuple[ag.Expr, str]] = list(elite)
-        fresh = _draw(max(1, int(pop * FRESH_FRAC))) if elite else []
+        _pol = search_policy()
+        fresh = _draw(max(1, int(pop * _pol["fresh_frac"]))) if elite else []
         while len(children) < pop and time.monotonic() - started <= budget_s:
-            if fresh and rng.random() < FRESH_FRAC:
+            if fresh and rng.random() < _pol["fresh_frac"]:
                 e, origin = fresh.pop()
                 sm = str(rng.choice(SIDE_MODES))
             else:
@@ -947,6 +976,7 @@ def run(symbols: list[str] | None = None, budget_s: float = 1500.0, seed: int = 
               "generator_yield": generator_yield(rows),
               "population_yield": pops,
               "generator_weights": generator_weights,
+              "search_policy": search_policy(),
               "generator_failures": generator_failures,
               # THE FITNESS, NAMED. Which terms could be measured this sweep and which could
               # not: a fitness computed on an empty desk must never read like one computed

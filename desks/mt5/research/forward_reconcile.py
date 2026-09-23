@@ -715,6 +715,30 @@ def anytime_monitor(enrolled: set[str] | None, rows: dict[str, dict], fam: dict 
     }
 
 
+def _invariance_rows() -> dict:
+    """The causal organ's per-mechanism invariance verdicts, for publication beside the
+    certificates. Never raises and never blocks: a missing organ is UNMEASURED with its reason.
+
+    Kept to the counts plus the mechanisms that FAILED, because the whole table is the causal
+    organ's own artifact and duplicating it here would create a second copy to drift."""
+    try:
+        import causal_invariance
+        doc = json.loads(causal_invariance.OUT.read_text(encoding="utf-8-sig"))
+    except Exception as exc:
+        return {"status": "UNMEASURED",
+                "why": f"reports/CAUSAL_INVARIANCE.json unreadable: {type(exc).__name__}"}
+    pairs = doc.get("by_pair") if isinstance(doc.get("by_pair"), dict) else {}
+    broken = {k: v for k, v in pairs.items()
+              if isinstance(v, dict) and v.get("verdict") == "NON_INVARIANT"}
+    return {"status": "OK", "at": doc.get("at"), "counts": doc.get("counts"),
+            "n_pairs": len(pairs), "non_invariant": broken,
+            "source": "desks/mt5/reports/CAUSAL_INVARIANCE.json",
+            "note": ("a certificate is a claim that ten gates passed; this is a claim that the "
+                     "effect did not change with session, year or volatility regime. It gates "
+                     "nothing -- the sealed promoter does not read it."),
+            }
+
+
 def certified_clock_keys() -> set[str] | None:
     """The exact keys of clocks that are BOTH certified and runnable, or None if unreadable.
 
@@ -1108,6 +1132,14 @@ def main() -> int:
          # THE PEEK-SAFE READING OF THE SAME COHORT. `looks` is how many times the fixed-sample
          # bar beside it has been re-read -- alpha it spends and does not price.
          "anytime_valid": _anytime,
+         # THE INVARIANCE VERDICT, PUBLISHED BESIDE THE CERTIFICATE (Tier-1 B16). A certificate
+         # says the cell cleared ten gates; this says whether its effect was the SAME number in
+         # Asia and in London, in 2023 and in 2025, in a calm tape and a violent one. The two are
+         # different claims and the second one was nowhere on the forward row. It gates nothing
+         # here -- the promoter is sealed and reads none of this -- and an absent organ leaves
+         # the field UNMEASURED rather than absent, so a reader can tell "stable" from "nobody
+         # looked" (L1.28a).
+         "causal_invariance": _invariance_rows(),
          "actions": actions}, indent=1), "utf-8")
     counts: dict[str, int] = {}
     for a in actions:

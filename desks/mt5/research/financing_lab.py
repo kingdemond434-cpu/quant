@@ -614,6 +614,10 @@ def run(*, budget_s: float = BUDGET_S, dry_run: bool = False) -> dict[str, Any]:
         "terms_source": terms_src, "prices_read": len(prices),
         "stress": stress_out, "tape_event_2026": tape_dates,
         "borrow": F.borrow(),
+        # THE COUNTERPARTY LEG (the mandate's fourth friction beside funding, margin and
+        # settlement): reported with its name on it, never charged into the posterior.
+        "counterparty": F.counterparty(sheet, positions, venue=acct.get("server") or "",
+                                       account_kind=acct.get("account_kind") or ""),
         "evidence": {"n_sleeves": len(vectors), "book": book_ev,
                      "after_financing_growth": after, **ev_meta},
         "unmeasured": unmeasured,

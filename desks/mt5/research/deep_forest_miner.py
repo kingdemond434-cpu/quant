@@ -1368,6 +1368,19 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
         write: bool = True, region: str | None = None) -> dict[str, Any]:
     cfg = _load_sources()
     grounds = list(cfg.get("grounds") or [])
+    # THE CRAWL BUDGET IS THE SOURCE REGISTRY'S SHARES (Tier-1 W17). `schedule()` sorts on
+    # `weight` and the loop below divides `budget_s` by it, so reweighting the grounds IN MEMORY
+    # makes both the order and the seconds follow measured intel ROI. Guarded and reversible:
+    # an absent, empty or stale SOURCE_REGISTRY.json returns the grounds untouched and says so,
+    # which is exactly today's behaviour. The registered weight on disk is never rewritten.
+    share_meta: dict[str, Any] = {"status": "unavailable", "why": "source_shares not importable"}
+    try:
+        from research import source_shares
+        _share_state = source_shares.load()
+        grounds, share_meta = source_shares.weight_grounds(grounds, _share_state)
+    except Exception as exc:
+        share_meta = {"status": "unavailable", "why": f"{type(exc).__name__}: {exc}"}
+        _share_state = None
     r = _Run(budget_s, fetch, set(only or []) or None, region)
     cursor = int(r.seen.get("cursor") or 0) if not (only or region) else 0
     order = schedule(grounds, cursor, only=r.only, region=region)
@@ -1393,6 +1406,20 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
                 fh.write(json.dumps(row, ensure_ascii=False) + "\n")
     discoveries = _write_discoveries(r.datasets) if write else None
     frontier_added = _feed_frontier(r.frontier) if write else 0
+    # SOURCE EXPANSION: a ground whose ROI share ROSE has the links it actually served promoted
+    # to candidate grounds in the REGISTERED grounds file -- authors, linked forums, archives,
+    # citations, code repos, adjacent terminology. `r.frontier` is (url, via, lang); `via` is the
+    # page that served it, which is the parent this expansion is about. Nothing is invented and
+    # nothing is hard-coded: the registry prices the new grounds on its next pass.
+    expansion: dict[str, Any] = {"status": "unavailable", "why": "source_shares not importable"}
+    try:
+        from research import source_shares as _ss
+        _obs: dict[str, list[tuple[str, str]]] = {}
+        for _url, _via, _ in r.frontier:
+            _obs.setdefault(str(_via), []).append((str(_url), ""))
+        expansion = _ss.expand(_obs, _share_state, apply=write)
+    except Exception as exc:
+        expansion = {"status": "unavailable", "why": f"{type(exc).__name__}: {exc}"}
     all_rows = _claims_rows() if write else list(r.new)
     try:
         from research.deepening_worker import worked_ids
@@ -1481,6 +1508,8 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
                src: sum(1 for t in tasks if t.get("source") == src)
                for src in sorted({str(t.get("source")) for t in tasks})},
            "frontier_added": frontier_added,
+           "source_shares": share_meta,
+           "source_expansion": expansion,
            "fetch_notes": [s for s in r.status if "url" in s][:40],
            "top_claims": [{k: t.get(k) for k in ("title", "symbols", "channel", "mechanism_class",
                                                  "n_tellings", "evidence_grade",

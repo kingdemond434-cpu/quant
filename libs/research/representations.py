@@ -606,6 +606,303 @@ def event_window_aggregate(series: Series, events: Sequence[str], *, window_days
                                                {"days": window_days, "how": how}))
 
 
+# ------------------------------------------------------- the panel: many members, one clock
+def _panel_label(members: Sequence[Series]) -> str:
+    """A bounded, deterministic name for a panel, so its representations have stable ids."""
+    text = "+".join(m.dataset or m.series_id[-8:] for m in members)
+    if len(text) <= MAX_PARAM_CHARS:
+        return text
+    return "panel" + hashlib.sha256(text.encode("utf-8")).hexdigest()[:12]
+
+
+def _panel_region(members: Sequence[Series]) -> str:
+    regions = sorted({m.region for m in members if m.region})
+    text = "|".join(regions)
+    return text if len(text) <= MAX_PARAM_CHARS else f"{len(regions)}regions"
+
+
+def _panel_scan(members: Sequence[Series]) -> list[tuple[Point, tuple[float, ...]]]:
+    """The members joined on the union of their availability stamps, last value carried forward.
+
+    One row per distinct `available_time`, holding each member's newest value whose OWN
+    availability is at or before it, and emitted only once every member has published one. That
+    is the module's single invariant stated for many series instead of two: no member ever
+    contributes a number the desk could not have read at t.
+
+    A merge over the sorted event list, not a lookup per member per stamp -- `_pairwise` records
+    why (the pair version of that mistake cost 196 million steps on two real axes).
+    """
+    events: list[tuple[str, int, int, Point]] = []
+    for idx, member in enumerate(members):
+        for order, point in enumerate(member.sorted().points):
+            if _finite(point.value):
+                events.append((point.available_time, idx, order, point))
+    events.sort(key=lambda e: (e[0], e[1], e[2]))
+    latest: list[float | None] = [None] * len(members)
+    rows: list[tuple[Point, tuple[float, ...]]] = []
+    i = 0
+    while i < len(events):
+        stamp = events[i][0]
+        carrier = events[i][3]
+        while i < len(events) and events[i][0] == stamp:
+            latest[events[i][1]] = events[i][3].value
+            carrier = events[i][3]
+            i += 1
+        if all(v is not None for v in latest):
+            rows.append((Point(available_time=stamp, period_time=carrier.period_time, value=0.0),
+                         tuple(float(v) for v in latest if v is not None)))
+    return rows
+
+
+def _difference(a: float, b: float) -> float | None:
+    return a - b
+
+
+def _ratio_op(a: float, b: float) -> float | None:
+    return None if abs(b) <= EPS else a / b
+
+
+def cross_country_spread(left: Series, right: Series, *, mode: str = "difference") -> Series:
+    """THE SAME MEASURE IN TWO PLACES, differenced -- and the pairing comes from the data.
+
+    The country is not a list in this file. It is the `region` each series was DECLARED with, so
+    a pairing exists exactly when both sides carry a region and the two differ. A hard-coded pair
+    table would need editing every time an axis is ingested for a new country, and the pairs
+    nobody remembered to add would silently never be built -- the difference between a grammar
+    and a lookup table.
+
+    When no pairing can be derived the result is an EMPTY series whose id says `undeclared`:
+    UNMEASURED, named in the id, never a zero (L1.28a).
+    """
+    lhs, rhs = left.region.strip(), right.region.strip()
+    pair = f"{lhs}-{rhs}" if lhs and rhs and lhs != rhs else "undeclared"
+    label = f"{left.dataset or right.dataset or 'cross'}@{pair}"
+    rid = representation_id(label, "cross_country_spread", {"mode": mode})
+    if pair == "undeclared":
+        return Series(series_id=rid, points=(), dataset=label,
+                      region=left.region or right.region,
+                      information_type=left.information_type or right.information_type)
+    out = _pairwise(left, right, _ratio_op if mode == "ratio" else _difference,
+                    "cross_country_spread")
+    return replace(out, dataset=label, region=pair, series_id=rid)
+
+
+def diffusion(*panel: Series, window: int = 12, min_prior: int = MIN_PRIOR) -> Series:
+    """THE BREADTH INDEX: the share of the panel currently above its OWN trailing level.
+
+    The question an aggregate cannot answer -- whether a move is the whole panel or one member
+    carrying it. Each member is compared to the mean of its own last `window` values STRICTLY
+    BEFORE the current row, so members with different units and levels are each judged against
+    themselves and nothing is ever compared across members. A member with too short a history
+    does not vote, and a row with fewer than two voters produces nothing rather than a 0 or a 1
+    manufactured from one series.
+    """
+    if len(panel) < 2:
+        raise ValueError("diffusion needs at least two panel members")
+    prior: list[deque[float]] = [deque(maxlen=max(2, window)) for _ in panel]
+    out: list[Point] = []
+    for carrier, values in _panel_scan(panel):
+        voters = above = 0
+        for k, value in enumerate(values):
+            hist = prior[k]
+            if len(hist) >= min_prior:
+                voters += 1
+                if value > sum(hist) / len(hist):
+                    above += 1
+        if voters >= 2:
+            out.append(carrier.with_value(above / voters))
+        for k, value in enumerate(values):
+            prior[k].append(value)
+    label = _panel_label(panel)
+    return Series(series_id=representation_id(label, "diffusion", {"window": window}),
+                  points=tuple(out), dataset=label, region=_panel_region(panel),
+                  information_type=panel[0].information_type)
+
+
+def rolling_beta(series: Series, benchmark: Series, *, window: int = 60,
+                 min_prior: int = MIN_PRIOR) -> Series:
+    """The series' rolling OLS beta to a NAMED benchmark, over the trailing `window` changes.
+
+    ON CHANGES, NEVER ON LEVELS. Two trending levels regress beautifully on each other and the
+    slope means nothing; the beta a desk can use is the one between their increments. The
+    benchmark is joined point-in-time (its newest value whose own availability is at or before
+    the point), and the window ENDS at the current observation -- data the desk has, not data it
+    will have. The window is in the id, because a beta whose window nobody recorded cannot be
+    reproduced, and the benchmark is in the dataset label for the same reason.
+    """
+    points = series.sorted().points
+    other = benchmark.sorted().points
+    xs: deque[float] = deque(maxlen=max(2, window))
+    ys: deque[float] = deque(maxlen=max(2, window))
+    sx = sy = sxx = sxy = 0.0
+    pointer = 0
+    state: float | None = None
+    prev_x: float | None = None
+    prev_y: float | None = None
+    floor = max(2, min_prior // 2)
+    out: list[Point] = []
+    for point in points:
+        while pointer < len(other) and other[pointer].available_time <= point.available_time:
+            if _finite(other[pointer].value):
+                state = other[pointer].value
+            pointer += 1
+        if state is None or not _finite(point.value):
+            continue
+        if prev_x is not None and prev_y is not None:
+            dx, dy = state - prev_x, point.value - prev_y
+            if len(xs) == xs.maxlen:
+                old_x, old_y = xs[0], ys[0]
+                sx -= old_x
+                sy -= old_y
+                sxx -= old_x * old_x
+                sxy -= old_x * old_y
+            xs.append(dx)
+            ys.append(dy)
+            sx += dx
+            sy += dy
+            sxx += dx * dx
+            sxy += dx * dy
+            n = len(xs)
+            if n >= floor:
+                var = sxx - sx * sx / n
+                if var > EPS:
+                    out.append(point.with_value((sxy - sx * sy / n) / var))
+        prev_x, prev_y = state, point.value
+    dataset = f"{series.dataset}x{benchmark.dataset}" if series.dataset and benchmark.dataset \
+        else "beta"
+    return Series(series_id=representation_id(dataset, "rolling_beta", {"window": window}),
+                  points=tuple(out), dataset=dataset, region=series.region,
+                  information_type=series.information_type)
+
+
+#: Rows between refits of the embedding. `regime_conditioned` records the same argument: refitting
+#: at every point is quadratic and the loadings do not move between neighbours. The block is
+#: projected on loadings fitted STRICTLY BEFORE it began, so causality is unchanged.
+EMBED_RECUT: Final[int] = 32
+#: Power iterations per component. The panels here are a handful of series; this converges long
+#: before it, and a fixed count keeps a fit reproducible byte for byte.
+EMBED_ITERS: Final[int] = 48
+
+
+def _fit_components(rows: Sequence[Sequence[float]], k: int
+                    ) -> tuple[list[float], list[float], list[list[float]], list[float], float]:
+    """Leading `k` eigenvectors of the panel's covariance, by DEFLATED POWER ITERATION.
+
+    No numpy, no learned weights, no new dependency, and -- the part that matters for a
+    representation -- NO RANDOM START: the start vector is fixed and the sign of each component
+    is pinned to its first non-zero loading, so the same history always produces the same
+    loadings and the same id means the same numbers. Returns (mean, sd, loadings, eigenvalues,
+    total variance); the eigenvalue over the total is the explained variance the forge publishes.
+    """
+    n, m = len(rows), len(rows[0])
+    mean = [sum(r[j] for r in rows) / n for j in range(m)]
+    sd = [_sd([r[j] for r in rows]) for j in range(m)]
+    z = [[(r[j] - mean[j]) / sd[j] if sd[j] > EPS else 0.0 for j in range(m)] for r in rows]
+    cov = [[sum(z[i][a] * z[i][b] for i in range(n)) / (n - 1) for b in range(m)]
+           for a in range(m)]
+    total = sum(cov[j][j] for j in range(m))
+    loadings: list[list[float]] = []
+    values: list[float] = []
+    for _ in range(max(1, min(k, m))):
+        vec = [1.0 / math.sqrt(m)] * m
+        value = 0.0
+        for _ in range(EMBED_ITERS):
+            w = [sum(cov[a][b] * vec[b] for b in range(m)) for a in range(m)]
+            norm = math.sqrt(sum(x * x for x in w))
+            if norm <= EPS:
+                break
+            vec = [x / norm for x in w]
+            value = norm
+        for x in vec:
+            if abs(x) > EPS:
+                if x < 0:
+                    vec = [-y for y in vec]
+                break
+        loadings.append(vec)
+        values.append(value)
+        cov = [[cov[a][b] - value * vec[a] * vec[b] for b in range(m)] for a in range(m)]
+    return mean, sd, loadings, values, total
+
+
+def _embed(panel: Sequence[Series], window: int, components: int, component: int,
+           min_prior: int) -> tuple[list[Point], dict[str, Any]]:
+    rows = _panel_scan(panel)
+    history: deque[list[float]] = deque(maxlen=max(4, window))
+    fit: tuple[list[float], list[float], list[list[float]], list[float], float] | None = None
+    explained: list[float] = []
+    out: list[Point] = []
+    since = 0
+    fits = 0
+    need = max(min_prior, len(panel) + 1)
+    for carrier, values in rows:
+        if len(history) >= need:
+            if fit is None or since >= EMBED_RECUT:
+                fit = _fit_components(list(history), components)
+                since = 0
+                fits += 1
+                total = fit[4]
+                explained = [round(v / total, 6) for v in fit[3]] if total > EPS else []
+            since += 1
+            mean, sd, loadings, _values, _total = fit
+            if component < len(loadings):
+                z = [(values[j] - mean[j]) / sd[j] if sd[j] > EPS else 0.0
+                     for j in range(len(values))]
+                score = sum(z[j] * loadings[component][j] for j in range(len(z)))
+                if _finite(score):
+                    out.append(carrier.with_value(score))
+        history.append(list(values))
+    status = "measured" if out else "unmeasured"
+    why = ("fitted on the trailing window strictly before each row" if out else
+           f"fewer than {need} joint rows in the panel, or a component that never converged")
+    return out, {"status": status, "why": why, "components": components,
+                 "component": component, "fit_window": window, "n_members": len(panel),
+                 "n_rows": len(rows), "n_points": len(out), "n_fits": fits,
+                 "explained_variance": explained,
+                 "explained_variance_total": round(sum(explained), 6),
+                 "fitted_on": "the standardized panel history up to, and not including, each row"}
+
+
+def embedding(*panel: Series, window: int = 120, components: int = 2, component: int = 0,
+              min_prior: int = MIN_PRIOR) -> Series:
+    """A LEARNED low-dimensional coordinate of the panel: its rolling principal component.
+
+    The one transform here that FITS something, and therefore the one where a look-ahead would
+    poison everything downstream: a component fitted on the whole sample and then projected back
+    over it is a feature that knows how the sample ended. So the loadings and the standardisation
+    at every row come from the trailing `window` rows STRICTLY BEFORE it, refitted every
+    `EMBED_RECUT` rows and used only forward. `embedding_fit` publishes the number of components
+    and the variance each explains, because an embedding whose explained variance nobody recorded
+    is a number with no claim attached.
+
+    No LLM and no new dependency: `_fit_components` is a deflated power iteration in plain
+    Python over a matrix whose width is the size of the panel.
+    """
+    if len(panel) < 2:
+        raise ValueError("embedding needs at least two panel members")
+    out, _diag = _embed(panel, window, components, component, min_prior)
+    label = _panel_label(panel)
+    return Series(series_id=representation_id(label, "embedding",
+                                              {"window": window, "components": components,
+                                               "component": component}),
+                  points=tuple(out), dataset=label, region=_panel_region(panel),
+                  information_type=panel[0].information_type)
+
+
+def embedding_fit(*panel: Series, window: int = 120, components: int = 2, component: int = 0,
+                  min_prior: int = MIN_PRIOR) -> dict[str, Any]:
+    """The embedding's published fit: components, explained variance, window, and how many fits.
+
+    Kept out of the series id on purpose. An id is a NAME -- two passes over the same data must
+    produce the same one -- and explained variance is a MEASUREMENT that moves with the data. A
+    measurement inside a name would mint a new representation every hour and credit none of them.
+    """
+    if len(panel) < 2:
+        return {"status": "unmeasured", "why": "a panel needs at least two members",
+                "components": components, "n_members": len(panel), "explained_variance": []}
+    _out, diag = _embed(panel, window, components, component, min_prior)
+    return diag
+
+
 # ------------------------------------------------------------------------------- the registry
 @dataclass(frozen=True)
 class TransformSpec:
@@ -617,6 +914,10 @@ class TransformSpec:
     fn: Callable[..., Series]
     defaults: Mapping[str, Any]
     needs_events: bool = False
+    #: A PANEL transform: `arity` is its MINIMUM and every input after the first is a member,
+    #: not a second operand. `diffusion` over three series is a three-member breadth index, and
+    #: passing only the first two would have measured a different thing silently.
+    variadic: bool = False
 
 
 #: The FAMILY is the unit ROI is tracked by. Two parameterisations of `zscore` are one bet about
@@ -643,6 +944,13 @@ TRANSFORMS: Final[dict[str, TransformSpec]] = {
                                         {"buckets": 3}),
     "ratio": TransformSpec("ratio", "interaction", 2, ratio, {}),
     "product": TransformSpec("product", "interaction", 2, product, {}),
+    "cross_country_spread": TransformSpec("cross_country_spread", "interaction", 2,
+                                          cross_country_spread, {"mode": "difference"}),
+    "rolling_beta": TransformSpec("rolling_beta", "dynamics", 2, rolling_beta, {"window": 60}),
+    "diffusion": TransformSpec("diffusion", "state", 2, diffusion, {"window": 12},
+                               variadic=True),
+    "embedding": TransformSpec("embedding", "interaction", 2, embedding,
+                               {"window": 120, "components": 2, "component": 0}, variadic=True),
     "event_window_aggregate": TransformSpec("event_window_aggregate", "event", 1,
                                             event_window_aggregate,
                                             {"window_days": 3.0, "how": "mean"},
@@ -706,7 +1014,10 @@ def apply(transform: Transform, *inputs: Series, events: Sequence[str] = ()) -> 
     if spec.arity == 2:
         if len(inputs) < 2:
             raise ValueError(f"{transform.name} needs two series")
-        out = spec.fn(primary, inputs[1], **params)
+        # A PANEL TRANSFORM GETS THE WHOLE PANEL. Handing `diffusion` only `inputs[1]` would run
+        # silently and measure the breadth of two members while the plan said six.
+        out = spec.fn(primary, *inputs[1:], **params) if spec.variadic \
+            else spec.fn(primary, inputs[1], **params)
     elif spec.needs_events:
         out = spec.fn(primary, events, **params)
     else:

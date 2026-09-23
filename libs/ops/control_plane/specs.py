@@ -46,8 +46,10 @@ HOSTS: tuple[str, ...] = ("box", "vps", "any")
 
 #: The kinds of executable organ this desk has. The birth fence does not care which; the
 #: scheduler generator does (only `task` and `timer` kinds own a schedule row).
+#: `library` is an executable file (it has a main()) that a CLOCKED organ imports: it runs every
+#: time that organ runs, so it is reached rather than scheduled, and it is never "unclocked".
 KINDS: tuple[str, ...] = ("leg", "daily_step", "task", "timer", "resident", "actuator",
-                          "federation_worker", "executable")
+                          "federation_worker", "executable", "library")
 
 #: The floor under a derived max_silence. Below this, ordinary scheduler jitter and a slow disk
 #: read as a fault, and a fixer that restarts healthy organs is worse than no fixer at all.

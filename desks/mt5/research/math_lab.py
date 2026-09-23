@@ -57,9 +57,13 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
         sys.path.insert(0, _p)
 
 from research.mathlab import burden as B  # noqa: E402
+from research.mathlab import engines as E  # noqa: E402
 from research.mathlab import grammar as G  # noqa: E402
+from research.mathlab import institution as I  # noqa: E402
 from research.mathlab import scientists as S  # noqa: E402
 from research.mathlab.objects import REGISTRY_KIND, MathObject, Panel, Variable  # noqa: E402
+from research.mathlab.physics import PHYSICS_CORE_REGISTRY  # noqa: E402
+from research.mathlab.physics_ext import PHYSICS_EXT_REGISTRY  # noqa: E402
 
 DATA = DESK / "data"
 UNIVERSE = DATA / "universe"
@@ -70,6 +74,16 @@ ALLOCATION = DATA / "math_allocation.json"
 DONATED = DATA / "mathlab_donated.json"
 OUT = DESK / "reports" / "MATH_LAB.json"
 SOURCE = "mathlab"
+
+#: THE PHYSICS WING (2026-09-22): nineteen physical traditions run beside the twenty-eight
+#: mathematical ones, inside this leg's budget, as their own DEPARTMENT. The department split
+#: is two-sided by measured ROI with a floor (`engines.distributed_science`), and the share
+#: allocation inside each department is the same two-sided rule as before.
+PHYSICS_REGISTRY: dict[str, type[Any]] = {**PHYSICS_CORE_REGISTRY, **PHYSICS_EXT_REGISTRY}
+PHYSICS_TRADITIONS: tuple[str, ...] = tuple(PHYSICS_REGISTRY)
+#: The engines' slice of the pass budget (law discovery, model competition, MDL, primitive
+#: invention, ... on the first panel with this pass's admitted objects).
+ENGINE_SHARE = 0.08
 
 SEED = 20260917
 #: Compute share floor per tradition. Two-sided above it; never zero, so a tradition that stops
@@ -557,9 +571,20 @@ def read_allocation() -> dict[str, Any]:
     return doc if isinstance(doc, dict) else {}
 
 
-def tradition_roi() -> tuple[dict[str, float | None], dict[str, Any]]:
+def all_traditions() -> tuple[str, ...]:
+    """Every tradition this leg runs: the mathematical cohorts, then the physics wing."""
+    return (*S.TRADITIONS, *[t for t in PHYSICS_TRADITIONS if t not in S.TRADITIONS])
+
+
+def department_of(tradition: str) -> str:
+    return "physics" if tradition in PHYSICS_REGISTRY else "mathematics"
+
+
+def tradition_roi(traditions: tuple[str, ...] | list[str] | None = None
+                  ) -> tuple[dict[str, float | None], dict[str, Any]]:
     """Per-tradition ROI in `research_roi.scientist_roi`'s own shape, from `generator_yield`."""
-    out: dict[str, float | None] = dict.fromkeys(S.TRADITIONS)
+    names = tuple(traditions) if traditions is not None else all_traditions()
+    out: dict[str, float | None] = dict.fromkeys(names)
     detail: dict[str, Any] = {"source": "libs/moat/registry.py generator_yield",
                               "shape": "research_roi.scientist_roi"}
     try:
@@ -571,7 +596,7 @@ def tradition_roi() -> tuple[dict[str, float | None], dict[str, Any]]:
         return out, detail
     detail["status"] = "MEASURED"
     detail["rows"] = {}
-    for tradition in S.TRADITIONS:
+    for tradition in names:
         row = rows.get(f"math:{tradition}") or {}
         compute_h = float(row.get("compute_s") or 0.0) / 3600.0
         value = (float(row.get("independent_survivors") or 0.0)
@@ -589,8 +614,8 @@ def tradition_roi() -> tuple[dict[str, float | None], dict[str, Any]]:
     return out, detail
 
 
-def allocation(roi: dict[str, float | None], previous: dict[str, Any] | None = None
-               ) -> dict[str, Any]:
+def allocation(roi: dict[str, float | None], previous: dict[str, Any] | None = None,
+               traditions: tuple[str, ...] | list[str] | None = None) -> dict[str, Any]:
     """Compute shares per tradition: two-sided, floored at 2%, and never zero.
 
     AN UNPRICED TRADITION KEEPS THE DEFAULT. Pricing the unknown at zero defunds the frontier by
@@ -599,12 +624,13 @@ def allocation(roi: dict[str, float | None], previous: dict[str, Any] | None = N
     default share, worse than average earns less, and the floor stops the worse case reaching
     silence so a tradition can still detect that conditions changed (LAWS 5f).
     """
+    names = tuple(traditions) if traditions is not None else (tuple(roi) or S.TRADITIONS)
     prior = (previous or {}).get("traditions") or {}
-    measured = {k: v for k, v in roi.items() if isinstance(v, (int, float))}
+    measured = {k: v for k, v in roi.items() if k in names and isinstance(v, (int, float))}
     scale = float(np.mean([abs(v) for v in measured.values()])) if measured else 0.0
     raw: dict[str, float] = {}
     why: dict[str, str] = {}
-    for tradition in S.TRADITIONS:
+    for tradition in names:
         value = roi.get(tradition)
         if value is None or scale <= 0:
             raw[tradition] = 1.0
@@ -615,19 +641,89 @@ def allocation(roi: dict[str, float | None], previous: dict[str, Any] | None = N
             why[tradition] = (f"ROI {value:+.6f} against a mean absolute ROI of {scale:.6f}: "
                               f"two-sided around the default, floored at {FLOOR_SHARE:.0%}")
     total = sum(raw.values()) or float(len(raw))
-    free = max(0.0, 1.0 - FLOOR_SHARE * len(S.TRADITIONS))
-    shares = {t: round(FLOOR_SHARE + free * raw[t] / total, 6) for t in S.TRADITIONS}
+    free = max(0.0, 1.0 - FLOOR_SHARE * len(names))
+    shares = {t: round(FLOOR_SHARE + free * raw[t] / total, 6) for t in names}
     return {
         "at": now_iso(), "rule": RULE, "floor": FLOOR_SHARE,
         "traditions": {t: {"share": shares[t], "roi": roi.get(t),
                            "roi_status": "MEASURED" if roi.get(t) is not None else UNMEASURED,
                            "lifetime_trials": int((prior.get(t) or {}).get("lifetime_trials", 0)),
-                           "why": why[t]}
-                       for t in S.TRADITIONS},
+                           "department": department_of(t), "why": why[t]}
+                       for t in names},
         "sum": round(sum(shares.values()), 6),
         "two_sided": ("every share moves up AND down with measured ROI; the floor is a floor, "
                       "never a target, and no tradition is ever set to zero"),
     }
+
+
+def department_plan(roi: dict[str, float | None], previous: dict[str, Any] | None,
+                    budget_s: float) -> dict[str, Any]:
+    """Two departments, each allocated by the two-sided rule above, under a department split
+    that is itself two-sided by the departments' mean measured ROI with a floor
+    (`engines.distributed_science`). Each tradition's `budget_share` is its share of the WHOLE
+    pass: department share x share within the department."""
+    maths = [t for t in all_traditions() if department_of(t) == "mathematics"]
+    physics = [t for t in all_traditions() if department_of(t) == "physics"]
+    plan = allocation(roi, previous, maths)
+    plan_p = allocation(roi, previous, physics) if physics else {"traditions": {}}
+    dept_roi: dict[str, float | None] = {}
+    for dept, names in (("mathematics", maths), ("physics", physics)):
+        measured = [v for t, v in roi.items() if t in names and isinstance(v, (int, float))]
+        dept_roi[dept] = float(np.mean(measured)) if measured else None
+    split = E.run_engine("distributed_science", E.distributed_science,
+                         budget_s * (1.0 - ENGINE_SHARE), dept_roi)
+    dept_share = split.summary.get("shares") or {"mathematics": 0.5, "physics": 0.5}
+    if not physics:
+        dept_share = {"mathematics": 1.0, "physics": 0.0}
+    plan["traditions"].update(plan_p["traditions"])
+    for t, row in plan["traditions"].items():
+        row["budget_share"] = round((1.0 - ENGINE_SHARE) * float(dept_share.get(
+            department_of(t), 0.0)) * float(row["share"]), 6)
+    plan["departments"] = {"shares": dept_share, "roi": dept_roi, "engine_share": ENGINE_SHARE,
+                           "budgets_s": {k: round(budget_s * (1.0 - ENGINE_SHARE) * v, 1)
+                                         for k, v in dept_share.items()},
+                           "engines_s": round(budget_s * ENGINE_SHARE, 1),
+                           "rule": split.summary.get("two_sided")}
+    plan["sum"] = round(sum(v["share"] for v in plan["traditions"].values()), 6)
+    return plan
+
+
+#: The engines that run inside THIS leg's budget; the full set runs in `physics_lab`.
+MATHLAB_ENGINES: tuple[str, ...] = ("law_discovery", "model_competition", "mdl_score",
+                                    "counterfactual_simulator", "experimental_discrimination",
+                                    "formal_maths", "differentiable_science",
+                                    "primitive_invention")
+
+
+def run_engines(panel: Panel, objects: list[MathObject], budget_s: float
+                ) -> dict[str, E.EngineResult]:
+    """The engine slice of the pass: each engine bounded, none fatal, keyed for the proof."""
+    slice_s = max(0.5, budget_s / len(MATHLAB_ENGINES))
+    rng = np.random.default_rng(SEED + 3)
+    out: dict[str, E.EngineResult] = {}
+    out["law_discovery"] = E.run_engine("law_discovery", E.law_discovery, panel,
+                                        budget_s=slice_s, rng=rng)
+    out["model_competition"] = E.run_engine("model_competition", E.model_competition, panel,
+                                            budget_s=slice_s, rng=rng)
+    out["mdl_score"] = E.run_engine("mdl_score", E.mdl_competition, panel, objects,
+                                    budget_s=slice_s, rng=rng)
+    out["counterfactual_simulator"] = E.run_engine(
+        "counterfactual_simulator", E.counterfactual_simulator, panel,
+        (out["law_discovery"].summary or {}).get("best"), budget_s=slice_s, rng=rng)
+    out["experimental_discrimination"] = E.run_engine(
+        "experimental_discrimination", E.experimental_discrimination, panel,
+        (out["model_competition"].summary or {}).get("predictions") or {}, budget_s=slice_s,
+        rng=rng)
+    out["formal_maths"] = E.run_engine("formal_maths", E.formal_maths,
+                                       [o.expression for o in objects[:50]], budget_s=slice_s,
+                                       rng=rng)
+    out["differentiable_science"] = E.run_engine("differentiable_science",
+                                                 E.differentiable_science, panel,
+                                                 budget_s=slice_s, rng=rng)
+    out["primitive_invention"] = E.run_engine("primitive_invention", E.primitive_invention,
+                                              objects, budget_s=slice_s, rng=rng)
+    out["model_competition"].summary.pop("predictions", None)
+    return out
 
 
 # --------------------------------------------------------------------------------- the pass
@@ -898,13 +994,13 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
         permutations: int = B.PERMUTATIONS) -> dict[str, Any]:
     """One pass of the mathematics civilization. Returns the report it also writes."""
     started = time.monotonic()
-    chosen = [t for t in (traditions or list(S.TRADITIONS)) if t in S.REGISTRY]
+    chosen = [t for t in (traditions or list(all_traditions())) if t in S.REGISTRY]
     unknown = [t for t in (traditions or []) if t not in S.REGISTRY]
     panels, panel_status = build_panels(max_targets)
     workers, memory = max_workers()
     roi, roi_detail = tradition_roi()
     previous = read_allocation()
-    plan = allocation(roi, previous)
+    plan = department_plan(roi, previous, budget_s)
 
     if not panels:
         report = _report(started, chosen, unknown, panel_status, memory, plan, roi_detail,
@@ -915,7 +1011,8 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
         return report
 
     census = _operator_census([])
-    budgets = {t: max(5.0, budget_s * float(plan["traditions"][t]["share"])) for t in chosen}
+    budgets = {t: max(5.0, budget_s * float(plan["traditions"][t].get(
+        "budget_share", plan["traditions"][t]["share"]))) for t in chosen}
     results: dict[str, dict[str, Any]] = {}
     with ThreadPoolExecutor(max_workers=max(1, min(workers, len(chosen)))) as pool:
         futures = {pool.submit(_run_tradition, t, panels, budgets[t], roi, census): t
@@ -934,7 +1031,7 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
     judged: list[MathObject] = []
     minted: list[tuple[str, Panel, MathObject]] = []
     lifetime = {t: int((previous.get("traditions", {}).get(t) or {}).get("lifetime_trials", 0))
-                for t in S.TRADITIONS}
+                for t in all_traditions()}
 
     for tradition in chosen:
         result = results.get(tradition, {})
@@ -1011,10 +1108,15 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
             plan["traditions"][tradition]["lifetime_trials"] = (
                 lifetime.get(tradition, 0) + int(row.get("distinct", 0)))
         _atomic(ALLOCATION, plan)
+    engines = run_engines(panels[0], admitted, max(4.0, budget_s * ENGINE_SHARE))
+    wiring = I.wiring_proof(
+        {t: {**row, "passed": row.get("passed_burden", 0)} for t, row in per_tradition.items()},
+        engines, chosen, list(MATHLAB_ENGINES))
 
     report = _report(started, chosen, unknown, panel_status, memory, plan, roi_detail,
                      per_tradition, admitted, dedup_status, donation, representations, registry,
-                     dry_run, [], simplified_away=simplified_away)
+                     dry_run, [], simplified_away=simplified_away, engines=engines,
+                     wiring=wiring)
     if not dry_run:
         _atomic(OUT, report)
     return report
@@ -1025,7 +1127,9 @@ def _report(started: float, chosen: list[str], unknown: list[str], panel_status:
             per_tradition: dict[str, dict[str, Any]], objects: list[MathObject],
             dedup_status: dict[str, Any], donation: dict[str, Any],
             representations: dict[str, Any], registry: dict[str, Any], dry_run: bool,
-            extra_unmeasured: list[str], simplified_away: int = 0) -> dict[str, Any]:
+            extra_unmeasured: list[str], simplified_away: int = 0,
+            engines: dict[str, E.EngineResult] | None = None,
+            wiring: dict[str, Any] | None = None) -> dict[str, Any]:
     interpreted = sum(1 for o in objects if o.interpretation.status == "interpreted")
     by_kind: dict[str, int] = {}
     for obj in objects:
@@ -1037,8 +1141,14 @@ def _report(started: float, chosen: list[str], unknown: list[str], panel_status:
         "at": now_iso(), "rule": RULE, "dry_run": dry_run,
         "elapsed_s": round(time.monotonic() - started, 2),
         "traditions_run": chosen, "unknown_traditions": unknown,
+        "departments": {"mathematics": [t for t in chosen if department_of(t) == "mathematics"],
+                        "physics": [t for t in chosen if department_of(t) == "physics"],
+                        **(plan.get("departments") or {})},
         "panel": panel_status, "memory": memory,
         "allocation": plan, "roi": roi_detail,
+        "engines": {k: v.to_row() for k, v in (engines or {}).items()},
+        "wiring_proof": wiring or I.wiring_proof(
+            {}, {}, chosen, list(MATHLAB_ENGINES)),
         "per_tradition": {
             t: {**row,
                 "share": plan["traditions"][t]["share"],

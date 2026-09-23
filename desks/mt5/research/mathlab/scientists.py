@@ -44,6 +44,8 @@ from .base import (
     _z,
 )
 from .objects import MathObject, Panel, Variable
+from .physics import PHYSICS_CORE_REGISTRY
+from .physics_ext import PHYSICS_EXT_REGISTRY
 from .scientists_ext import EXTRA_REGISTRY, EXTRA_TRADITIONS
 
 #: The principal's fourteen, in his order, then the second cohort from his sandbox lists
@@ -1561,6 +1563,13 @@ REGISTRY: dict[str, type[Scientist]] = {
 
 
 REGISTRY.update(EXTRA_REGISTRY)
+# THE PHYSICS WING (2026-09-22) is registered here so `build` is the one door every leg uses;
+# it is NOT appended to TRADITIONS, which stays the twenty-eight mathematical traditions --
+# `math_lab.all_traditions()` and `physics_lab` read `PHYSICS_TRADITIONS` as their own
+# department, allocated and budgeted beside the mathematics, never diluted into it.
+REGISTRY.update(PHYSICS_CORE_REGISTRY)
+REGISTRY.update(PHYSICS_EXT_REGISTRY)
+PHYSICS_TRADITIONS: tuple[str, ...] = (*PHYSICS_CORE_REGISTRY, *PHYSICS_EXT_REGISTRY)
 
 
 def build(tradition: str, **kwargs: Any) -> Scientist:

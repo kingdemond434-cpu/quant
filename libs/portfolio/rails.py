@@ -143,6 +143,15 @@ RAILS: tuple[Rail, ...] = (
     Rail("factor_k_floor", "cap", "independence._floor_by_factor", "measure_factor_floor"),
     Rail("ruin_guard", "integrity", "pf_allocator: book wiped out in a sampled world -> zero",
          "measure_ruin_guard"),
+    # THE INVARIANCE GATE (Tier-1 B16, 2026-09-22). It is a `gate` by kind and a DELAY by effect:
+    # `miner_candidate_compiler.expand_axes` sorts a NON_INVARIANT mechanism's cells one step
+    # later and drops nothing, so what it costs is queue position, never a candidate. It is
+    # registered here because GROWTH_GOVERNANCE requires a missed-growth line for every new
+    # refusal and a deprioritisation is a refusal measured in hours -- an unbilled reordering of
+    # the research queue is exactly the timid mechanism that hides from the ledger.
+    Rail("causal_invariance", "gate",
+         "miner_candidate_compiler.expand_axes <- causal_invariance.verdict_for",
+         "measure_causal_invariance"),
 )
 
 _CACHE: dict[str, Any] = {"mtime": None, "doc": {}}
