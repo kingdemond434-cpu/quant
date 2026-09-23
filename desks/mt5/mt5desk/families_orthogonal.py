@@ -2163,3 +2163,26 @@ from mt5desk.family_forced_flow import family_forced_flow  # noqa: E402
 ORTHOGONAL_FAMILIES["forced_flow"] = family_forced_flow
 FAMILY_INPUTS["forced_flow"] = ("price only + the rule-generated forced-flow calendar",
                                 "data/forced_flow_calendar.json")
+
+# HIGHER-TIMEFRAME ANCHOR + CONDITIONAL EXITS (2026-09-23), converted from a public video
+# walkthrough in which an agent searched ~200 variations of a trend follower. Two things the
+# desk's 65 families did not carry: an anchor on a SLOWER chart gating a trigger on the chart in
+# hand (`multi_speed_trend` TIMES on a daily clock, it does not GATE an independent trigger), and
+# an exit conditioned on volatility relative to its own value AT ENTRY (`volatility_squeeze`,
+# `vol_transition` and `vol_mean_reversion` all condition ENTRY on volatility, never an exit).
+# The video's 1.87 Sharpe was the MAXIMUM of ~200 variations with no multiplicity charge, on one
+# single-name equity; its own Monte Carlo put the median near 1.30. Registered as a hypothesis
+# with exactly the privilege every other hypothesis gets, which is none.
+from mt5desk.family_exit_operated import family_exit_operated  # noqa: E402
+from mt5desk.family_htf_anchor_trend import family_htf_anchor_trend  # noqa: E402
+
+ORTHOGONAL_FAMILIES["htf_anchor_trend"] = family_htf_anchor_trend
+FAMILY_INPUTS["htf_anchor_trend"] = ("price only", "data/universe/*_H1.parquet")
+
+# The exit operator is not an entry claim, so it composes over the entries the desk already owns
+# rather than being locked inside one trend family. Its cell identity is (base_family,
+# base_params, expansion_mult, exit_on_anchor_flip); the un-operated base cell is the control arm
+# and is already an ordinary candidate in the docket.
+ORTHOGONAL_FAMILIES["exit_operated"] = family_exit_operated
+FAMILY_INPUTS["exit_operated"] = ("price only; rebuilds its base family from bars and params",
+                                  "data/universe/*_H1.parquet")
