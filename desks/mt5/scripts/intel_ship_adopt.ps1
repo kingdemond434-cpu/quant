@@ -48,7 +48,8 @@ while ((Get-ScheduledTask -TaskName "MT5-ShadowSync" -ErrorAction SilentlyContin
 }
 
 # 2. the mutex every git writer on this box takes
-$script:GitWriterMutex = New-Object System.Threading.Mutex($false, "Local\MT5-GitWriter")
+. (Join-Path $PSScriptRoot "GitWriterMutex.ps1")
+$script:GitWriterMutex = (Open-GitWriterMutex).Mutex
 $gotLock = $false
 try { $gotLock = $script:GitWriterMutex.WaitOne(540000) }
 catch [System.Threading.AbandonedMutexException] { $gotLock = $true }

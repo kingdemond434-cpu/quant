@@ -124,7 +124,8 @@ if ($dirtyCode) {
 # cadence the right move when the lock is busy is to leave and come back, not to queue behind
 # the writer that starved it.
 $mutex = $null
-try { $mutex = New-Object System.Threading.Mutex($false, "Local\MT5-GitWriter") }
+. (Join-Path $PSScriptRoot "GitWriterMutex.ps1")
+try { $mutex = (Open-GitWriterMutex).Mutex }
 catch { Log "cannot open Local\MT5-GitWriter ($($_.Exception.GetType().Name)); not sealing"; exit 5 }
 
 $got = $false
