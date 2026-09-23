@@ -524,7 +524,13 @@ def run(*, budget_s: float = 240.0, do_backfill: bool = True,
     cells = (doc["unique_cells_by_region"] or {}).get("by_region") or {}
     judged = (doc["judged_cells_by_region"] or {}).get("by_region") or {}
     doc["unique_cells_by_region"]["spread"] = A.region_spread(cells)
-    doc["ratchet"] = ratchet(dict(zip(MEASURES_ARE, (cells, judged), strict=True)))
+    # THE RATCHET FOLLOWS THE REGISTRY IT MEASURED, NEVER THE PRODUCTION PATH BY DEFAULT. A pass
+    # run against another database -- a test fixture, a restored backup, a second box's copy -- was
+    # writing its counts into the desk's real high-water file, which is how a synthetic registry of
+    # three rows reported every region as having fallen to zero (observed the hour this landed,
+    # R0748's hazard in a new place). An off-registry run is now self-contained.
+    rpath = RATCHET if path == REGISTRY else path.parent / RATCHET.name
+    doc["ratchet"] = ratchet(dict(zip(MEASURES_ARE, (cells, judged), strict=True)), path=rpath)
     doc["available"] = True
     before = doc["before"]["candidates"]
     after = doc["after"]["candidates"]
