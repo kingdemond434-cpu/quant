@@ -115,13 +115,10 @@ from collections.abc import Iterable, Mapping
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
-# ruff: noqa: RUF001, RUF002, RUF003
-# RUF001/2/3 flag characters that LOOK like Latin ones, to catch homoglyph attacks in
-# IDENTIFIERS. This file deliberately carries Jawi, Thaana, Tibetan, Dari and Pashto text as
-# DATA, because a miner that cannot match ދިވެހިރާއްޖެ or འབྲུག་ཡུལ། or د افغانستان بانک cannot find
-# the release it is looking for. Suppressed file-wide and explained here rather than scattered as
-# per-line noqa; NO identifier in this module is non-ASCII. Same decision `ru` and
-# `caucasus_central_asia` took, for the same reason.
+# THIS FILE DELIBERATELY CARRIES NON-LATIN TEXT AS DATA -- Jawi, Thaana, Tibetan, Dari and
+# Pashto -- because a miner that cannot match ދިވެހިރާއްޖެ or འབྲུག་ཡུལ། or د افغانستان بانک cannot find
+# the release it is looking for. NO IDENTIFIER in this module is non-ASCII -- every non-Latin
+# string here is a search term, a holiday name or a glossary entry, never a name Python binds.
 
 # --------------------------------------------------------------------------- identity
 CODE = "MARITIME_ASIA"
@@ -1017,7 +1014,7 @@ def _julian_to_datetime(jd: float) -> datetime:
     day = int(day_with_frac)
     month = e - 1 if e < 14 else e - 13
     year = c - 4716 if month > 2 else c - 4715
-    seconds = int(round((day_with_frac - day) * 86400.0))
+    seconds = round((day_with_frac - day) * 86400.0)
     return datetime(year, month, day, tzinfo=UTC) + timedelta(seconds=seconds)
 
 
@@ -2654,7 +2651,8 @@ ACTORS: tuple[dict[str, Any], ...] = (
      "forced_to": ("buy in rupees", "hold savings in a currency pegged to a currency it does "
                    "not control", "absorb Indian inflation directly"),
      "when": "continuously",
-     "information": ("local price conditions ahead of the CPI"),
+     "information": ("local price conditions ahead of the CPI",
+                     "cross-border purchasing behaviour before the trade data sees it"),
      "constraints": ("IMPORTED INFLATION BY CONSTRUCTION: the peg means India's price level is "
                      "Bhutan's", "capital controls that an open border makes partly notional",
                      "no domestic savings instrument beyond bank deposits"),
@@ -2744,7 +2742,8 @@ ACTORS: tuple[dict[str, Any], ...] = (
                    "per cent of cultivation area",
                    "meet food needs from a market whose prices it does not set"),
      "when": "from the April 2022 ban; measured in the 2023 survey and after",
-     "information": ("planting intentions before the survey sees them"),
+     "information": ("planting intentions before the survey sees them",
+                     "local farm-gate prices months before UNODC publishes them"),
      "constraints": ("no credit system to smooth the transition",
                      "a wheat price set regionally", "drought and water availability"),
      "instruments": ("XAUUSD", "USDINR"),
@@ -2767,7 +2766,8 @@ ACTORS: tuple[dict[str, Any], ...] = (
                    "reconcile four partners who disagree",
                    "declare the residual rather than smoothing it"),
      "when": "monthly, on each partner's own publication clock",
-     "information": ("nothing privileged; every input is a published national statistic"),
+     "information": ("nothing privileged; every input is a published national statistic",
+                     "the four reporters' own revision histories, which are also published"),
      "constraints": ("valuation and timing differences between reporters",
                      "transit trade double-counted or missed",
                      "a partner's own political incentives in what it reports"),
@@ -2789,7 +2789,8 @@ ACTORS: tuple[dict[str, Any], ...] = (
                    "survive the observation that the five share no geography, no currency bloc "
                    "and no trade agreement"),
      "when": "on each jurisdiction's own publication clock, which is why MAR-L is quarterly",
-     "information": ("nothing; this actor is the pack's own hypothesis wearing a row"),
+     "information": ("nothing; this actor is the pack's own hypothesis wearing a row",
+                     "the five dominant series, all of which are public"),
      "constraints": ("FIVE JURISDICTIONS IS A TINY CROSS-SECTION and the pack says so",
                      "the five factors are genuinely unrelated, so a common response would "
                      "itself be evidence of a global factor rather than of this property",

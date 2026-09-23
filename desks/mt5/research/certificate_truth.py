@@ -115,11 +115,41 @@ TERMINAL = frozenset({"KILL", "KILLED", "PROMOTED", "DEAD", "REJECTED", "RETIRED
 SESSION_WINDOWS = ("asia", "london_am", "ny_open", "afternoon")
 SRB = "session_range_breakout"
 
+# ------------------------------------------------------------------ THE ONE CANONISED LANE
+# The principal, 2026-09-23: "all certificates and clocks must be ONE canonised lane, not
+# separate; all other claimed ones must be tested canonically -- the splits on the research
+# system are the problem." So the lane is NAMED here, in code, and the fence fails on any re-split.
+#
+#: THE ONE certificate store. Written by the sealed gauntlet under the ten-gate attestation, read
+#: by the promoter for capital. Nothing else may be a certificate store.
+CANONICAL_CERTIFICATE_STORE = "reports/UNIVERSAL_SURVIVORS.json"
+#: THE ONE clock store. Every forward clock in every lane has its row here.
+CANONICAL_CLOCK_STORE = "data/sleeve_registry.json"
+#: DERIVED VIEWS: {store: what generates it}. A derived store is never written independently --
+#: it is regenerated from its canonical source, and a writer that edits one directly is a defect.
+DERIVED_VIEWS = {
+    "data/UNIVERSAL_SURVIVORS.canon.json": CANONICAL_CERTIFICATE_STORE,
+    "data/forward_reconcile.json": CANONICAL_CLOCK_STORE,
+}
+#: CLAIM STORES: they may PROPOSE, never certify. Every row here that the canon does not hold is
+#: submitted to the ONE judge (the sealed gauntlet) and is honoured by nobody until it comes back
+#: with a ten-gate attestation. Self-declaration confers nothing -- the scalp lane's included.
+CLAIM_STORES = ("reports/SURVIVORS_LEDGER.json", "reports/POWER_CURE_CANDIDATES.json",
+                "reports/SCALP_GAUNTLET.json", "reports/QQUANT_GATES.json")
+#: One judging cycle: the sealed gauntlet's clock. A claim older than this that reached no queue
+#: is a claim nobody will ever judge, which is the split the principal named.
+JUDGING_CYCLE_S = 24 * 3600.0
+QUEUE_REASON = ("claim submitted to the ONE judge (desks/mt5/scripts/external_gauntlet.py): no "
+                "store certifies by declaring, and a claim the canon does not hold is a "
+                "hypothesis until the ten gates say otherwise")
+
 #: The divergence kinds the fence fails on. UNPARSED and LANE_UNBACKED are published, never fatal.
 FATAL_KINDS = frozenset({"BANNED_CERTIFICATE", "BANNED_CLAIM", "BANNED_CLOCK", "BANNED_SLEEVE",
                          "BANNED_CURE_CANDIDATE", "CLAIM_NOT_IN_CANON", "UNBACKED_CLOCK",
                          "CANON_UNMEASURED_WITH_LIVE_CLOCKS",
                          "CANON_EMPTY_WITH_RESTORABLE_EVIDENCE",
+                         "SECOND_CERTIFICATE_STORE", "DERIVED_STORE_WRITTEN_DIRECTLY",
+                         "CLAIM_NOT_SUBMITTED_TO_JUDGE",
                          "RECONCILE_CERTIFIED_CLOCKS_ON_EMPTY_CANON"})
 
 
@@ -144,6 +174,7 @@ class Paths:
     qq_gates: Path
     scalp_gates: Path
     universe: Path
+    queue: Path
     canon_rel: str = "reports/UNIVERSAL_SURVIVORS.json"
     extra: dict[str, Any] = field(default_factory=dict)
 
@@ -158,6 +189,7 @@ class Paths:
             qq_gates=base / "reports" / "QQUANT_GATES.json",
             scalp_gates=base / "reports" / "SCALP_GAUNTLET.json",
             universe=base / "data" / "universe" / "universe.json",
+            queue=base / "data" / "hypotheses" / "certification_queue.jsonl",
             ledger=base / "reports" / "SURVIVORS_LEDGER.json",
             registry=base / "data" / "sleeve_registry.json",
             reconcile=base / "data" / "forward_reconcile.json",
@@ -772,6 +804,37 @@ def audit(paths: Paths, now: str | None = None) -> dict[str, Any]:
             f"forward_reconcile.json counts {rec_certified} certified clock(s) while the "
             f"canonical lane holds no ten-gate certificate", certified_clocks=rec_certified)
 
+    # ------------------------------------------------- ONE CANONISED LANE: the re-split fence
+    census = lane_census(paths, lane)
+    for rel, view in census["derived"].items():
+        if int(view.get("n_independent") or 0) > 0:
+            add("DERIVED_STORE_WRITTEN_DIRECTLY", rel, ",".join(view["rows_source_does_not_hold"]
+                                                                [:6]) or rel,
+                f"{rel} is a DERIVED VIEW of {view['generated_from']} and holds "
+                f"{view['n_independent']} row(s) its source does not: a derived store is "
+                f"regenerated, never written independently", n_independent=view["n_independent"])
+    for rel, claim in census["claims"].items():
+        if claim.get("confers_certification"):
+            add("SECOND_CERTIFICATE_STORE", rel, rel,
+                f"{rel} confers certification of its own; {CANONICAL_CERTIFICATE_STORE} is the "
+                f"ONE certificate store and every other is a claim store", rows=claim["rows"])
+    queued: set[str] = set()
+    queue_readable = paths.queue.exists()
+    if queue_readable:
+        for line in paths.queue.read_text(encoding="utf-8", errors="replace").splitlines():
+            try:
+                queued.add(str(json.loads(line).get("key")))
+            except ValueError:
+                continue
+    stale = _stale_claims(paths, lane, queued, stamp) if queue_readable else []
+    for rel, key, age in stale:
+        add("CLAIM_NOT_SUBMITTED_TO_JUDGE", rel, key,
+            f"claim is {age/3600:.1f}h old, older than one judging cycle "
+            f"({JUDGING_CYCLE_S/3600:.0f}h), the canon does not hold it and it reached no "
+            f"judge: {QUEUE_REASON}", age_s=round(age))
+    census["queued"] = len(queued)
+    census["stale_unjudged"] = len(stale)
+
     live_clocks = sum(int(v.get("live_rows") or 0) for k, v in stores.items()
                       if k in ("sleeve_registry", "shadow_state"))
     if lane["status"] == "UNMEASURED" and live_clocks:
@@ -796,6 +859,7 @@ def audit(paths: Paths, now: str | None = None) -> dict[str, Any]:
         "state_present": state_present,
         "canon": lane_out,
         "stores": stores,
+        "one_lane": census,
         "n_divergences": len(divergences), "by_kind": by_kind,
         "n_fatal": len(fatal),
         "divergences": divergences[:2000],
@@ -818,6 +882,132 @@ def audit(paths: Paths, now: str | None = None) -> dict[str, Any]:
 
 
 # ----------------------------------------------------------------------------- the repair
+def _stale_claims(paths: Paths, lane: dict[str, Any], queued: set[str],
+                  stamp: str) -> list[tuple[str, str, float]]:
+    """Claims older than one judging cycle that the canon does not hold and no queue carries."""
+    out: list[tuple[str, str, float]] = []
+    now = _parse(stamp)
+    for rel, container, ts_key in (("reports/SURVIVORS_LEDGER.json", "claims", "updated_at"),
+                                   ("reports/POWER_CURE_CANDIDATES.json", "candidates",
+                                    "listed_at"),
+                                   ("reports/SCALP_GAUNTLET.json", "candidates", "swept_at")):
+        doc = _read(paths.base / rel)
+        rows = doc.get(container) if isinstance(doc, dict) else None
+        if not isinstance(rows, dict):
+            continue
+        fallback = _parse(str((doc or {}).get("swept_at") or "")) if doc else None
+        for key, row in rows.items():
+            k = str(key)
+            if k in lane["certificates"] or k in queued:
+                continue
+            fam = str(_dict((row or {}).get("shadow_spec")).get("family") or "").strip().lower()
+            if fam and fam in set(lane["banned_families"]):
+                continue
+            at = _parse(str((row or {}).get(ts_key) or "")) or fallback
+            if at is None or now is None:
+                continue                      # unstamped is UNMEASURED, never a stale verdict
+            age = (now - at).total_seconds()
+            if age > JUDGING_CYCLE_S:
+                out.append((rel, k, age))
+    return out
+
+
+def _parse(value: str) -> datetime | None:
+    try:
+        d = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+    return d if d.tzinfo else d.replace(tzinfo=UTC)
+
+
+def lane_census(paths: Paths, lane: dict[str, Any]) -> dict[str, Any]:
+    """Every store that holds a certificate, a clock or a claim, classified against the ONE lane.
+
+    Before this existed the desk had eleven stores and eleven answers; each was internally
+    consistent and nothing compared them. The census is the comparison, and it is what the fence
+    fails on: a SECOND certificate store, a DERIVED view written independently of its source, or a
+    CLAIM that reached no judge inside one judging cycle."""
+    out: dict[str, Any] = {"canonical": {"certificates": CANONICAL_CERTIFICATE_STORE,
+                                         "clocks": CANONICAL_CLOCK_STORE},
+                           "derived": {}, "claims": {}, "n_stores": 0}
+    auth = _read(paths.canon) or {}
+    seal = _read(paths.seal) or {}
+    a_rows, s_rows = _rows_of(auth, "survivors"), _rows_of(seal, "survivors")
+    a_ret, s_ret = _rows_of(auth, "retired_certificates"), _rows_of(seal, "retired_certificates")
+    # the seal is a VIEW of the authority file: it may lag a write, never diverge from it
+    extra = sorted(set(s_rows) - set(a_rows) - set(a_ret))
+    out["derived"]["data/UNIVERSAL_SURVIVORS.canon.json"] = {
+        "generated_from": CANONICAL_CERTIFICATE_STORE, "rows": len(s_rows),
+        "rows_source_does_not_hold": extra[:50], "n_independent": len(extra),
+        "retired": len(s_ret)}
+    rec = _read(paths.reconcile) or {}
+    out["derived"]["data/forward_reconcile.json"] = {
+        "generated_from": CANONICAL_CLOCK_STORE, "certified_clocks": rec.get("certified_clocks"),
+        "enrolled": rec.get("enrolled"), "n_independent": 0}
+    for rel, container, key_of in (
+            ("reports/SURVIVORS_LEDGER.json", "claims", None),
+            ("reports/POWER_CURE_CANDIDATES.json", "candidates", None),
+            ("reports/SCALP_GAUNTLET.json", "candidates", None),
+            ("reports/QQUANT_GATES.json", "verdicts", "id")):
+        doc = _read(paths.base / rel)
+        rows = doc.get(container) if isinstance(doc, dict) else None
+        if isinstance(rows, dict):
+            keys = list(rows)
+        elif isinstance(rows, list):
+            keys = [str((r or {}).get(key_of or "id") or i) for i, r in enumerate(rows)]
+        else:
+            keys = []
+        held = [k for k in keys if k in lane["certificates"]]
+        out["claims"][rel] = {"rows": len(keys), "held_by_canon": len(held),
+                              "not_held": len(keys) - len(held),
+                              "confers_certification": False}
+    out["n_stores"] = 2 + len(out["derived"]) + len(out["claims"])
+    return out
+
+
+def submit_to_judge(paths: Paths, lane: dict[str, Any], stamp: str) -> dict[str, Any]:
+    """Queue every claim the canon does not hold to the ONE judge -- append-only, idempotent.
+
+    A claim is not honoured and not discarded: it is TESTED. The queue is the desk's standing
+    contract with the sealed gauntlet, and the fence fails on a claim older than one judging
+    cycle that never reached it, because that claim is a split by another name."""
+    already: set[str] = set()
+    if paths.queue.exists():
+        for line in paths.queue.read_text(encoding="utf-8", errors="replace").splitlines():
+            try:
+                already.add(str(json.loads(line).get("key")))
+            except ValueError:
+                continue
+    fresh: list[dict[str, Any]] = []
+    for rel, container in (("reports/SURVIVORS_LEDGER.json", "claims"),
+                           ("reports/POWER_CURE_CANDIDATES.json", "candidates"),
+                           ("reports/SCALP_GAUNTLET.json", "candidates")):
+        doc = _read(paths.base / rel)
+        rows = doc.get(container) if isinstance(doc, dict) else None
+        if not isinstance(rows, dict):
+            continue
+        for key, row in rows.items():
+            k = str(key)
+            if k in lane["certificates"] or k in already:
+                continue
+            spec = _dict((row or {}).get("shadow_spec")) if isinstance(row, dict) else {}
+            fam = str(spec.get("family") or "").strip().lower()
+            if fam and fam in set(lane["banned_families"]):
+                continue                      # a ban is a decision; it is never re-judged
+            already.add(k)
+            fresh.append({"at": stamp, "key": k, "store": rel, "status": "QUEUED",
+                          "judge": "desks/mt5/scripts/external_gauntlet.py",
+                          "reason": QUEUE_REASON, "shadow_spec": spec,
+                          "sym": (row or {}).get("sym") if isinstance(row, dict) else None})
+    if fresh:
+        paths.queue.parent.mkdir(parents=True, exist_ok=True)
+        with paths.queue.open("a", encoding="utf-8") as fh:
+            for r in fresh:
+                fh.write(json.dumps(r, default=str, separators=(",", ":")) + "\n")
+    return {"submitted": len(fresh), "queue": _rel(paths, paths.queue),
+            "queued_total": len(already)}
+
+
 def _rows_of(doc: dict[str, Any], key: str) -> dict[str, Any]:
     """`doc[key]` as a row map -- {} when the key is absent or holds anything else."""
     rows = doc.get(key)
@@ -1031,6 +1221,10 @@ def repair(paths: Paths, now: str | None = None) -> dict[str, Any]:
         acts["seal_healed_from_authority"] = len(a_rows) - len(s_rows)
         acts["wrote"].append(_rel(paths, paths.seal))
 
+    # ---- 4. every claim the canon does not hold goes to the ONE judge -------------------
+    # Not honoured and not discarded: TESTED. This is the act that ends the split -- a
+    # store may propose for ever, but only the sealed gauntlet's ten gates admit anything.
+    acts["judge"] = submit_to_judge(paths, canon(paths), stamp)
     acts["canon_n"] = len(a_rows)
     acts["restored_keys"] = acts["restored_keys"][:200]
     return acts
