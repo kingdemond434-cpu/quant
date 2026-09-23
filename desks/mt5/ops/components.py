@@ -29,6 +29,7 @@ is COUNTABLE (`scripts/check_component_registry.py` ratchets that count down) in
 from __future__ import annotations
 
 import ast
+import hashlib
 import importlib.util
 import json
 import re
@@ -927,13 +928,79 @@ def _area_files(root: Path | None = None) -> dict[str, Path]:
     return _AREA_FILES[key]
 
 
+#: THE REGISTRY'S HOT SPOT, MEASURED (2026-09-23). `producer_census` -- the leg that proves no
+#: producer is dark -- took 163 s, and 128 s of that was `build_registry`, and 110 s of THAT was
+#: this one function: `reach_specs` parses all 1,511 python files in the tree and walks 4.5 M AST
+#: nodes, every run. The census leg runs it TWICE (before and after its relight), so one pass cost
+#: over 245 s against a leg budget it then overran -- which is how the census came to be published
+#: once and then left 680 minutes stale.
+#:
+#: CONTENT-KEYED, so the cache cannot be wrong. The key is the SHA-256 of the file's own text and
+#: the value is what this pure function returns for that text; a file that changes by one byte
+#: gets a new key and is re-parsed. There is no mtime, no path and no invalidation rule to get
+#: wrong -- a stale entry is unreachable rather than merely unlikely.
+#:
+#: A CACHE IS NEVER LOAD-BEARING. Every read and write is best-effort: an unreadable, corrupt or
+#: unwritable cache costs the parse it would have saved and changes no answer. It is gitignored
+#: for the reason the .gitignore already states -- a cache is reconstructible from its source, and
+#: tracking machine-rewritten files made both hosts unpullable.
+_STEMS_CACHE_FILE = ROOT / "desks" / "mt5" / "data" / "import_stems_cache.json"
+_STEMS_CACHE: dict[str, list[str]] = {}
+_STEMS_STATE: dict[str, bool] = {"loaded": False, "dirty": False}
+#: Entries are ~60 bytes each and the tree holds ~1,500 files; the bound is here so a long-lived
+#: box cannot accumulate a cache of every version of every file it ever held.
+_STEMS_CACHE_MAX = 20_000
+
+
+def _stems_cache_load() -> None:
+    """Best-effort read of the content-keyed stem cache. Any failure leaves it empty."""
+    if _STEMS_STATE["loaded"]:
+        return
+    _STEMS_STATE["loaded"] = True
+    try:
+        doc = json.loads(_STEMS_CACHE_FILE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return
+    if isinstance(doc, dict):
+        for k, v in doc.items():
+            if isinstance(k, str) and isinstance(v, list):
+                _STEMS_CACHE[k] = [str(x) for x in v]
+
+
+def stems_cache_flush() -> None:
+    """Best-effort write-back, called once the registry is built. Never raises."""
+    if not _STEMS_STATE["dirty"]:
+        return
+    _STEMS_STATE["dirty"] = False
+    try:
+        items = list(_STEMS_CACHE.items())[-_STEMS_CACHE_MAX:]
+        _STEMS_CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        tmp = _STEMS_CACHE_FILE.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(dict(items)), encoding="utf-8")
+        tmp.replace(_STEMS_CACHE_FILE)
+    except OSError:
+        return
+
+
 def _import_stems(text: str) -> set[str]:
     """Module stems a file imports: `import x`, `from pkg.x import y` (both `x` and `y`, since
-    `from research import x` binds a module) -- the wide form, because the question is REACH."""
+    `from research import x` binds a module) -- the wide form, because the question is REACH.
+
+    Memoised on the SHA-256 of `text`; see `_STEMS_CACHE_FILE` for why that key and not a path.
+    """
+    _stems_cache_load()
+    key = hashlib.sha256(text.encode("utf-8", "replace")).hexdigest()
+    hit = _STEMS_CACHE.get(key)
+    if hit is not None:
+        return set(hit)
     out: set[str] = set()
     try:
         tree = ast.parse(text)
     except (SyntaxError, ValueError):
+        # Cached too: an unparseable file is unparseable every time, and re-proving it each run
+        # is the same wasted second as re-parsing a good one.
+        _STEMS_CACHE[key] = []
+        _STEMS_STATE["dirty"] = True
         return out
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
@@ -942,6 +1009,8 @@ def _import_stems(text: str) -> set[str]:
             if node.module:
                 out.add(node.module.split(".")[-1])
             out |= {a.name.split(".")[0] for a in node.names}
+    _STEMS_CACHE[key] = sorted(out)
+    _STEMS_STATE["dirty"] = True
     return out
 
 
@@ -1115,6 +1184,9 @@ def build_registry(root: Path | None = None) -> Registry:
             reg.add(s, replace=True)
     reg.add_all(reach_specs(reg, root, dynamic_reach_roots(root)), replace=True)
     reg.add_all(discovered_specs(reg.claimed_paths(), root), replace=True)
+    # The reach walk just parsed every python file it had not seen before; write what it learned
+    # so the next build -- including the census's own second pass -- does not repeat the work.
+    stems_cache_flush()
     return reg
 
 
