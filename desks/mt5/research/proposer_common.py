@@ -546,7 +546,7 @@ def _record_in_registry(source: str, candidates: list[dict]) -> None:
             # causes, both here: `discoveries.content_hash` had no index (a 231.9 ms table scan
             # per row) and each row paid three WAL commits (84% of what was left). Neither
             # changes a single row that is written, so nothing is minted or judged less.
-            with reg.batch(conn, every=500):
+            with reg.batch(conn, every=2000):
                 for c in candidates:
                     symbol = str(c.get("symbol") or "")
                     family = str(c.get("family") or "")

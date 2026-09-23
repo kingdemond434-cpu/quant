@@ -158,6 +158,60 @@ def test_batch_takes_the_write_lock_up_front(db: None) -> None:
         b.close()
 
 
+# ------------------------------------------------------------------ the hourly organ's report
+def test_busiest_hour_is_the_demonstrated_capacity() -> None:
+    from desks.mt5.research import throughput_ledger as tl
+
+    got = tl._busiest_hour({"2026-09-22T22": 44310, "2026-09-23T05": 36293})
+    assert got["status"] == "MEASURED"
+    assert got["best_hour_rows"] == 44310
+    assert got["rows_per_day_at_100pct"] == 44310 * 24
+    assert tl._busiest_hour({})["status"] == "UNMEASURED"
+
+
+def test_judged_is_counted_from_the_judges_own_ledger(tmp_path: Path) -> None:
+    """The gauntlet appends a verdict row per judged cell but does not flip a candidate's
+    status, so counting status reported 2,584 for a day the ledger recorded 98,863."""
+    from desks.mt5.research import throughput_ledger as tl
+
+    led = tmp_path / "gate_verdict_ledger.jsonl"
+    led.write_text("\n".join(json.dumps({"at": f"2026-09-22T22:{i:02d}:00+00:00"})
+                             for i in range(30)), "utf-8")
+    tl.GATE_LEDGER = led
+    got = tl.judged_stage()
+    assert got["status"] == "MEASURED"
+    assert got["best_hour_rows"] == 30
+    assert got["verdicts_in_ledger"] == 30
+    assert tl._ledger_rows_since("2026-09-22T22:10") == 20
+    tl.GATE_LEDGER = tmp_path / "absent.jsonl"
+    assert tl.judged_stage()["status"] == "UNMEASURED"
+    assert tl._ledger_rows_since("2026-01-01") is None, "absence is UNMEASURED, never zero"
+
+
+def test_report_names_the_binding_stage_and_the_shortfall(tmp_path: Path) -> None:
+    from desks.mt5.research import throughput_ledger as tl
+
+    s, rep = tmp_path / "s.jsonl", tmp_path / "THROUGHPUT.json"
+    throughput.SAMPLES = s
+    throughput.record("registry_write", 10_000, 1.0)      # far above the target
+    led = tmp_path / "led.jsonl"
+    led.write_text("\n".join(json.dumps({"at": "2026-09-22T22:00:00+00:00"})
+                             for _ in range(100)), "utf-8")
+    tl.GATE_LEDGER, tl.REPORT = led, rep
+    tl.REGISTRY = tmp_path / "absent.sqlite"              # mint unmeasurable here
+    tl.GAUNTLET_REPORT = tmp_path / "absent.json"
+    tl.COVERAGE = tmp_path / "absent.json"
+    tl.throughput.SAMPLES = s
+    doc = tl.build()
+    assert doc["stages"]["judge"]["status"] == "MEASURED"
+    assert "why" not in doc["stages"]["judge"], "a measured stage carries no absence excuse"
+    assert doc["binding_stage"] == "judge"               # 100/h x 24 = 2,400/day
+    assert doc["chain_rows_per_day"] == 2400
+    assert doc["target_verdict"] == "SHORT"
+    assert doc["shortfall_factor"] == pytest.approx(416.67, abs=0.1)
+    assert "mint" in doc["unmeasured_stages"]
+
+
 def test_columns_cache_follows_a_schema_change(db: None) -> None:
     """The cached column list is keyed by schema_version, so DDL invalidates it by construction."""
     conn = reg.connect()
