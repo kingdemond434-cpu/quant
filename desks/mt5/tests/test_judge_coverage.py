@@ -377,3 +377,17 @@ def test_an_unmeasured_verdict_moves_no_pass_probability(tmp_path: Path) -> None
     pr = prior_for("family", "alpha", state_dir=tmp_path)
     assert pr.mean == 0.5, "an unmeasured cell must not move the Beta"
     assert pr.outcomes.get("unmeasured", 0) > 0, "but it is recorded in the Dirichlet"
+
+
+def test_fence_does_not_call_it_a_stall_when_the_judge_did_not_run(tmp_path: Path) -> None:
+    """The sealed judge's verdict file does not move between its sweeps; that is not a stall."""
+    report = tmp_path / "JUDGE_COVERAGE.json"
+    report.write_text(json.dumps({
+        "at": NOW.isoformat(),
+        "families": {"a": {"unjudged": 1, "queued": 1, "judged_window": 0, "quota": 1,
+                           "window_h": 1.0}},
+        "totals": {"unknown_total": 100, "unknown_share": 0.5, "unknown_unnamed": 0,
+                   "prior_unknown_share": 0.5, "unrunnable_bank": 40}}), "utf-8")
+    doc = fence.judge(report, now=NOW)
+    assert doc["verdict"] == "PASS"
+    assert any(c["metric"] == "unknown_ratchet" and c["state"] == "OK" for c in doc["checks"])
