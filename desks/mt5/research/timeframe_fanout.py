@@ -129,10 +129,12 @@ def docket_parents(limit: int = 4000) -> tuple[list[dict[str, Any]], str]:
     try:
         q_surv = ("SELECT id, family, symbol, params_json, chart, session, regime, horizon, "
                   "mechanism, asset_class FROM research_candidates WHERE survived=1 LIMIT ?")
+        # SQLite's bare-column-with-MAX idiom: one pass, the row carrying each family's best
+        # score. The correlated `WHERE score = (SELECT MAX...)` form is an O(n^2) scan and took
+        # longer than the whole pass budget on this box's 18,201 candidates.
         q_best = ("SELECT id, family, symbol, params_json, chart, session, regime, horizon, "
-                  "mechanism, asset_class FROM research_candidates c WHERE c.score = "
-                  "(SELECT MAX(score) FROM research_candidates x WHERE x.family = c.family) "
-                  "GROUP BY c.family LIMIT ?")
+                  "mechanism, asset_class, MAX(score) AS _s FROM research_candidates "
+                  "GROUP BY family LIMIT ?")
         for lane, q in (("docket_survivor", q_surv), ("docket_family_best", q_best)):
             for r in conn.execute(q, (limit,)):
                 cid = str(r["id"])
