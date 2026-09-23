@@ -1,5 +1,5 @@
 {
- "merged_at": "2026-09-22T21:29:30+00:00",
+ "merged_at": "2026-09-23T10:18:23+00:00",
  "pipeline_started_at": null,
  "per_source": {
   "external_backtest_results.json": 147,
@@ -19,7 +19,7 @@
   "moat_candidates.json": "FRESH",
   "requeue_named.json": "FRESH"
  },
- "total": 21117,
+ "total": 3811,
  "families": {
   "asia_momentum": 15,
   "calendar_month": 3,
@@ -29,7 +29,6 @@
   "cot_positioning": 10,
   "cross_asset_residual": 776,
   "dav_range_filter_adx": 4,
-  "discovered": 17354,
   "drawdown_conditional": 10,
   "event_reaction": 113,
   "formula": 4,
@@ -51,7 +50,7 @@
   "relative_value": 339,
   "retail_overlap_reversal": 1,
   "session_handoff": 17,
-  "session_range_breakout": 816,
+  "session_range_breakout": 864,
   "spread_state": 3,
   "trend_ma_cross": 2,
   "turn_of_month": 144,
@@ -59,5 +58,27 @@
   "vol_transition": 101,
   "volatility_squeeze": 3
  },
- "note": "no threshold applied here (L1.60) -- every discovered candidate reaches the ten-gate gauntlet, which is the only arbiter"
+ "study_bank": {
+  "rows": 1462,
+  "families": [
+   "discovered"
+  ],
+  "path": "C:\\opt\\quant\\desks\\mt5\\data\\hypotheses\\study_bank.json",
+  "why": "banned from live capital, so a gate-second spent here buys an outcome the desk has already forbidden; kept for study"
+ },
+ "judge_order": {
+  "basis": "unjudged backlog per family: an equal floor to every family holding one, the remainder in proportion, interleaved so every prefix of the docket is family-balanced",
+  "families_ordered": 36,
+  "applied": true,
+  "fallback_basis": "judgements already spent per docket row, least first",
+  "coverage": {
+   "families_with_backlog": 19,
+   "families_queued": 19,
+   "families_starved": 0,
+   "unjudged_total": 1450,
+   "capacity_measured": 1591
+  },
+  "report": "desks/mt5/reports/JUDGE_COVERAGE.json"
+ },
+ "note": "no threshold applied here (L1.60) -- every candidate of a family that CAN reach live capital reaches the ten-gate gauntlet, which is the only arbiter; a live-banned family is routed to the study bank, never judged and never deleted"
 }

@@ -337,6 +337,9 @@ LEG_LAYER: dict[str, str] = {
     # ONE CERTIFICATE TRUTH: the audit of every certificate/clock store against the one lane is a
     # fence over the machine's own bookkeeping -- meta, like every other fence.
     "certificate_truth": "meta",
+    # THE RUNTIME ATTESTATION publishes what ran on this host, hashed -- a fence over the desk's
+    # own bookkeeping and its only evidence outside the box, so meta like every other fence.
+    "runtime_attestation": "meta",
     # THE TWO STANDING BATTERIES rotate rosters that span every layer -- fences over the
     # machine's own bookkeeping, standing fixers, region organs. Billing the rotation to one
     # strategy layer would misattribute every other one, so the wiring mechanism is meta and the

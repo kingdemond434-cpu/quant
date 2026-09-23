@@ -8367,6 +8367,28 @@
     "measured on the box 2026-09-23: 8 named stores, 2 canonical / 2 derived (0 independent rows) / 4 claim; 1,288 claims submitted to the judge; 0 stale unjudged; canon 28, 0 fatal"
    ],
    "notes": "The judge is sealed, so the queue is the contract with it rather than a call into it; the gauntlet's docket reads the queue's specs."
+  },
+  {
+   "id": "JC1",
+   "item": "Judge coverage by unjudged backlog: intake allocates the hour so every family holding an unjudged cell is judged every hour, proportional to its backlog with a floor for small families; the banned family is routed out of judging intake; the family set is the live registry, never a fixed tuple",
+   "domain": "I",
+   "phase": 0,
+   "status": "LANDED",
+   "gate": "none",
+   "evidence": [
+    "MEASURED on the box from 120,000 gate verdicts: 60 families judged, `discovered` 22,009 (18% of capacity, 0 passes, BANNED from live capital) while the largest mined populations waited -- cross_asset_residual 55,190, overnight_drift 26,721, clock_transition 20,081",
+    "desks/mt5/research/judge_coverage.py:1-66 (why order IS selection upstream of the sealed gauntlet), :271-300 allocate (equal floor then proportional, never above a family's own backlog), :302-341 coverage_order (weighted fair queueing, so every prefix the judge's budget reaches is family-balanced, no row dropped)",
+    "desks/mt5/research/judge_coverage.py:143-161 banned_from_capital -- a family refused at both live doors gets no quota; merge_hypotheses routes its rows to the study bank, kept and never deleted, mining unrestricted",
+    "desks/mt5/mt5desk/families.py:124-156 live_family_names -- the union of the decorated registry, hunt16, the orthogonal population and the edge queue; judge_coverage reads it so a family registered tomorrow has a table row the same hour (families_live 79 vs the decorated 27 on this tree)",
+    "desks/mt5/research/merge_hypotheses.py:437-456 -- intake calls order_docket before writing the one file the sealed gauntlet reads; breadth_order stays as the fallback",
+    "MEASURED on this tree after landing: 19 of 19 families holding backlog queued, 0 starved, 16,356 `discovered` cells routed to study-only, unjudged backlog 1,450 on measured capacity 1,591"
+   ],
+   "scheduled_by": "hourly_cycle:judge_coverage",
+   "artifact": "desks/mt5/reports/JUDGE_COVERAGE.json",
+   "consumer": "desks/mt5/research/merge_hypotheses.py (order_docket writes the docket the sealed gauntlet reads), scripts/check_judge_coverage.py (law gate, both halves)",
+   "gap": "",
+   "next_step": "",
+   "landed": []
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."
