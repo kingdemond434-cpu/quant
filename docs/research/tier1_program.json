@@ -7882,6 +7882,163 @@
     "the cost-basis fence repointed and wired 2026-09-23"
    ],
    "notes": "cost_truth's symbol universe now includes every LIVE sleeve, so the audit covers what it audits and the 36 UNRESOLVED sleeves fall as its cursor reaches them."
+  },
+  {
+   "id": "U80",
+   "domain": "U",
+   "phase": "U",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "THE COVERAGE DRAIN: THE UNCRAWLED SET FALLS EVERY HOUR, OR THE LAW GATE SAYS WHY. The desk held two different quantities and read only one. WHAT IT HOLDS was 241 rows in the registry's `sources` table; WHAT IT COULD LAWFULLY HOLD was every root its forty-odd country packs declare, every ground in deep_forest_sources.json and every row in source_registry.json -- and none of those had ever been written where the crawlers look. `loop_liveness` called the whole `sources_ingested` stage STALLED (148 uncrawled, oldest waiting 134 hours) and nothing owned the number. This organ owns it: it SEEDS every lawful ground into the registry, RESOLVES the 60 rows the evidence router minted with no url against the registered grounds' own hosts, REFUSES only the principal's five ACTS, crawls the rest through the existing `moat_collectors` machinery, and publishes the day's single largest information gap by expected value. MEASURED over its first two live passes: lawful grounds known 0 -> 1,626; OVERDUE backlog 123 -> 63 -> 0; oldest wait 134.7h -> 6.0h; 95 grounds crawled in the second pass alone. The fence ratchets the overdue backlog and the oldest wait DOWN and the cumulative drained count UP; the headline uncrawled count may rise ONLY in a pass that registered new lawful ground, because seeding what the registry had never heard of is the organ's first duty and a fence that punished it would teach the next session to stop seeding.",
+   "evidence": [
+    "desks/mt5/research/coverage_drain.py:1114 - run(): seed, resolve, refuse, drain, verify, publish",
+    "desks/mt5/research/coverage_drain.py:697 - seed_grounds(): every pack root becomes a registry row",
+    "desks/mt5/research/coverage_drain.py:461 - refusal_for(): the five ACTS, and the deleted brakes named",
+    "scripts/check_coverage_drain.py:109 - judge(): the three ratchets and the seeding exception",
+    "scripts/run_law_gate.py:186 - the fence in the portable gate",
+    "scripts/run_law_gate.py:286 - the --require-state half in the box gate",
+    "desks/mt5/research/hourly_cycle.py:3083 - the costed leg",
+    "libs/research/layers.py:266 - LEG_LAYER: information",
+    "desks/mt5/tests/test_coverage_drain.py:1 - 38 tests",
+    "tests/scripts/test_check_coverage_drain.py:1 - 23 tests, both failure directions pinned"
+   ],
+   "scheduled_by": "hourly_cycle:coverage_drain (desks/mt5/research/hourly_cycle.py:3083, hourly)",
+   "artifact": "desks/mt5/reports/COVERAGE_DRAIN.json + desks/mt5/data/coverage_drain_ledger.json",
+   "consumer": "scripts/check_coverage_drain.py in scripts/run_law_gate.py (both halves); the drained rows feed research/moat_collectors.py and the deep-forest miner",
+   "landed": [
+    "the coverage drain written, wired and ratcheted 2026-09-23"
+   ],
+   "notes": "the drain does not re-implement a crawler: it clears the path and `moat_collectors` does the fetching, so there is one set of manners against every host."
+  },
+  {
+   "id": "U81",
+   "domain": "U",
+   "phase": "U",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "EVERY COUNTRY THE DESK'S OWN MACHINERY NAMES IS ANSWERED BY A PACK. The parity fence read 50 of 76 named countries answered, with 26 UNANSWERED and the euro-area pack covering eleven members while declaring none of them. Fourteen new departments landed 2026-09-23 -- cz, hu, dk, is, pe, bo, mo, np and the four multi-jurisdiction packs gulf (qa/kw/om/bh), caucasus_central_asia (am/uz/kg/tj/tm), black_sea (ua/by), east_africa (et/tz/ug) -- each at the au/ma depth: ten source layers with native-script query territories, its own mechanisms, a data plane, interaction miners naming the sibling packs, transmission candidates against broker-executable symbols only, and a holiday calendar DERIVED from its statute rather than typed. `ea` gained the JURISDICTIONS tuple the fence itself asked for, plus a JURISDICTION_DEPTH map saying which five members have a national fiscal sub-lab and which fifteen are covered by the single monetary plane alone -- honest at both ends. The roster widened with the coverage rather than ahead of it: IS, TJ and TM joined `Forest.countries` only once a pack declared them. MEASURED: countries answered 50/76 -> 81/81, NO_PACK flags 0.",
+   "evidence": [
+    "scripts/check_regional_parity.py:97 - country_coverage(), the roster it reads",
+    "desks/mt5/research/countries/ea/pack.py:60 - the JURISDICTIONS tuple and JURISDICTION_DEPTH",
+    "libs/research/forests.py:192 - the russia_cis roster and its packs",
+    "desks/mt5/research/countries/gulf/pack.py:1 - qa/kw/om/bh",
+    "desks/mt5/research/countries/caucasus_central_asia/pack.py:1 - am/uz/kg/tj/tm",
+    "desks/mt5/research/countries/black_sea/pack.py:1 - ua/by",
+    "desks/mt5/research/countries/east_africa/pack.py:1 - et/tz/ug",
+    "desks/mt5/reports/regional_parity.json:1 - countries 81/81 answered"
+   ],
+   "scheduled_by": "hourly_cycle:coverage_drain (desks/mt5/research/hourly_cycle.py:3083, hourly) verifies the packs' layers; scripts/check_regional_parity.py runs in scripts/run_law_gate.py",
+   "artifact": "desks/mt5/reports/regional_parity.json",
+   "consumer": "scripts/check_regional_parity.py (the NO_PACK fence) and research_roi.forest_allocation, which folds the published priority in as a bonus",
+   "landed": [
+    "fourteen country departments and the ea JURISDICTIONS tuple, 2026-09-23"
+   ],
+   "notes": "a country answered by a pack and absent from the roster is coverage the fence cannot see; the three off-roster jurisdictions were added only after their pack declared them."
+  },
+  {
+   "id": "U82",
+   "domain": "U",
+   "phase": "U",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "THE TEN SOURCE LAYERS ARE MEASURED FROM THE OUTSIDE, NOT DECLARED BY THE PACK. Every pack writes `verified: False` into its own source rows and always will -- a pack has no way of knowing whether anything ever fetched the root it named -- so `coverage.covered()` read DECLARED_UNVERIFIED for almost every layer on the desk and the ten-layer depth claim was an assertion rather than a measurement. `coverage_drain.verify_layers` decides it from the registry instead: a layer is MAPPED when a row whose host matches one of that layer's declared roots carries a real `last_crawled` stamp, ABSENT_DECLARED when the pack named the layer absent with a reason, REFUSED_HARD_BOUNDARY when every declared host sits behind one of the five refused ACTS, DECLARED_UNVERIFIED when roots exist and none has been fetched, and UNMAPPED when the pack said nothing at all. Five states and no quiet zero. MEASURED across 59 packs: 168 MAPPED, 2 ABSENT_DECLARED, 420 DECLARED_UNVERIFIED, 0 UNMAPPED -- and the 420 is the artifact's own named largest gap, with the worst packs listed, which is what makes it work rather than a number. A REFUSAL IS EXCLUDED FROM MAPPED: the first live pass stamped 113 pack sources as refused in the same step it registered them, which moved layers_mapped 57 -> 184 without a page having been read; `crawled_hosts` now excludes refusals and `reopen_deleted_brakes` returned all 113 to the queue, because the brake that refused them was deleted by LAWS 5e the same day and leaving them stamped would have made the repeal cosmetic.",
+   "evidence": [
+    "desks/mt5/research/coverage_drain.py:892 - verify_layers(): the five states, measured",
+    "desks/mt5/research/coverage_drain.py:660 - reopen_deleted_brakes(): a repealed brake leaves its damage in the data",
+    "desks/mt5/research/coverage_drain.py:971 - largest_gap(): expected value across three gap families",
+    "libs/research/coverage.py:686 - covered(): the two-condition rule this feeds",
+    "desks/mt5/tests/test_coverage_drain.py:1 - the layer states and the deleted-brake regression"
+   ],
+   "scheduled_by": "hourly_cycle:coverage_drain (desks/mt5/research/hourly_cycle.py:3083, hourly)",
+   "artifact": "desks/mt5/reports/COVERAGE_DRAIN.json (layers.packs, layers.totals, verdict)",
+   "consumer": "scripts/check_coverage_drain.py publishes the largest gap every morning; libs/research/coverage.covered() consumes the same layer inventory",
+   "landed": [
+    "ten-layer verification measured rather than asserted, 2026-09-23"
+   ],
+   "notes": "declaring a layer ABSENT with a reason is a measurement and counts as settled; leaving it blank is work, and the two are now different states."
+  },
+  {
+   "id": "AR1",
+   "domain": "C",
+   "phase": "C",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "THE LAWFUL-GROUND PRE-FILTER IS DELETED; CLASSIFICATION NOW ROUTES USE AND NEVER STOPS MINING (principal's order 2026-09-23). LAWS 5e carried six brakes the desk had imposed on ITSELF, none of which was a legal requirement: an ACCESS_UNCLEAR QUARANTINE that kept a row's metadata and threw its claim away (allowed_uses = one entry, register, at evidence_weight_cap 0.0); a machine-extraction veto that stripped machine_extract and store_raw from every PUBLIC_WITH_TERMS row; a robots.txt Disallow read as that same refusal; machine_use_allowed=false read as 'registered, never scraped'; an eight-domain clone allowlist in the research sandbox; and a licence gate that refused to RUN public research code, which the module's own text called 'the single reason every seed is UNDISPOSED today'. Things published on the open internet are lawful to read. Licence, robots, source class and credibility are now ROUTING AND PROVENANCE LABELS -- they say what may be REDISTRIBUTED (redistribute_allowed, terms_note) and how much WEIGHT the evidence carries -- and they never stop discovery, ingestion, representation or testing. Every label but the refused three grants the full MINING_USES vocabulary at a non-zero cap; quarantine is False on every routing row and the ledger it fed is empty by construction. What remains is about ACTS, not content, and is exactly five (HARD_BOUNDARY, pinned by HARD_BOUNDARY_COUNT): no credential theft or logging in as someone else; no bypassing an access control or a paywall; no material non-public information; no stolen or leaked private data; no personal data harvesting or doxxing. A page behind a login or paywall is never broken into and its open surface is mined like any other. The six deleted brakes are named as DATA in REMOVED_BRAKES and in the law text, so a later session cannot re-derive the old caution from silence. ONE FIX WENT THE OTHER WAY, and it is the one that had to: the hard-boundary marker scan never read `claim`, the router's OWN primary content key, so a credential dump or an MNPI line arriving in the exact shape route() builds reached none of the marker scans and was labelled on its url alone. Widening the boundary's reach is the single direction that module may still move.",
+   "evidence": [
+    "libs/research/access_classifier.py:66 - PRINCIPLE: labels never stop mining",
+    "libs/research/access_classifier.py:74 - HARD_BOUNDARY, the five acts, with HARD_BOUNDARY_COUNT pinning the count at 5",
+    "libs/research/access_classifier.py:88 - REMOVED_BRAKES, all six named as data",
+    "libs/research/access_classifier.py:196 - ROUTING ACCESS_UNCLEAR: the full mining vocabulary at cap 1.0, quarantine False",
+    "libs/research/access_classifier.py:355 - AccessVerdict.redistribute_allowed and terms_note: where the terms fact went",
+    "libs/research/access_classifier.py:389 - classify() reads `claim`: the boundary gap",
+    "libs/research/access_classifier.py:420 - robots/terms/paywall are labels, not brakes",
+    "libs/research/sandbox.py:144 - provenance_notes replaces the host and licence gates",
+    "libs/research/data_contract.py:259 - may(): the machine-extraction veto is gone",
+    "desks/mt5/research/evidence_router.py:452 - the quarantine ledger, empty by construction, with the five acts written into its rule",
+    "docs/LAWS.md:431 - section 5e, rewritten in full",
+    "tests/research/test_access_routing.py:1 - 27 tests: the three cases the principal named, the five acts, and one test per deleted brake"
+   ],
+   "scheduled_by": "hourly_cycle:evidence_router (desks/mt5/research/hourly_cycle.py, hourly) -- it walks every registry source through these functions",
+   "artifact": "desks/mt5/reports/EVIDENCE_ROUTER.json + desks/mt5/data/evidence_quarantine.json (now empty by construction)",
+   "consumer": "desks/mt5/research/evidence_router.py, libs/moat/registry.py sources table (access_label / credibility / predictive_state / quarantine columns), libs/research/data_contract.py, libs/research/sandbox.py",
+   "landed": [
+    "the access brakes removed and the law rewritten 2026-09-23"
+   ],
+   "notes": "Evidence WEIGHT caps (PUBLIC_SOCIAL 0.6, USER_SUBMITTED 0.5) deliberately STAY: they are statements about truth, never about permission, and they never stop a row being mined or tested. NOT YET PROPAGATED, and named here rather than left silent: the ~211 machine_use_allowed=False rows across the 46 country packs and the source-registry JSONs still carry the old value, so consumers keyed on that field still skip them. The law and the classifier are the authority; the leaf data is a mechanical follow-up."
+  },
+  {
+   "id": "AR2",
+   "domain": "C",
+   "phase": "C",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "NOTHING IS QUEUED: THE QUEUE CENSUS AND ITS FENCE (principal's order 2026-09-23, 'keep no queues ... nothing should be queued in the research system, all immediate tested'). A row is processed ON ARRIVAL; where a budget genuinely runs out the leftover is the FIRST work of the next pass and its AGE IS PUBLISHED, never an indefinite park. The desk had no idea how much of its own work was parked, because each organ knew its own number, in its own unit, and no artifact put them side by side. queue_census.py measures every queue in the desk -- depth, the age of the OLDEST ROW, and a drain rate DIFFERENCED against the previous census rather than declared -- and check_no_queues.py fails when any queue's oldest row is older than ONE CYCLE of the organ that owns it, when a queue has open rows and NO DRAINER at all (PARKED), or when rows carry no enqueue timestamp so their age cannot be measured (UNMEASURED, which fails: L1.28a). It CONSUMES the artifacts other builders own -- CONVERSION_MAXIMISER.json, GAUNTLET_BACKPRESSURE.json, COVERAGE_DRAIN.json, FORWARD_ENROLMENT.json, QUEUE.json -- and never opens their stores or second-guesses their numbers. THE FIRST PASS SHIPS RED AND THE RED IS THE WORK: 14 queues, 63,110 rows waiting, 6 BREACH, 1 PARKED, 2 UNMEASURED, oldest row 654 h (27 days). research_queue.json holds 21,373 open rows with NO SCHEDULED DRAINER -- its only readers are report builders and an archive restorer that puts rows BACK. registry.claim_candidates(), the lease meant to drain 5,769 queued sqlite candidates, has zero callers outside registry.py. miner_deepening_queue.json holds 28,450 rows carrying no per-row timestamp, so their age was literally unknowable. A fence tuned to pass on today's backlog would pin that backlog in place (L1.43), so it is not tuned.",
+   "evidence": [
+    "desks/mt5/research/queue_census.py:99 - QUEUES, every queue in the desk as data with its writer, its drainer (None where there is none) and its owner's cycle",
+    "desks/mt5/research/queue_census.py:243 - _byte_budget derived from measured free physical memory, floored, never from a machine size",
+    "desks/mt5/research/queue_census.py:430 - drain_rate differenced against the previous census; None is UNMEASURED, never a comfortable zero",
+    "desks/mt5/research/queue_census.py:455 - verdict(): BREACH / PARKED / UNMEASURED",
+    "scripts/check_no_queues.py:84 - build_report, and why STALE and DARK both fail",
+    "scripts/run_law_gate.py:187 - the fence in _STATE_FENCES",
+    "desks/mt5/research/hourly_cycle.py:2723 - the _costed('queue_census') leg",
+    "libs/research/layers.py:176 - LEG_LAYER queue_census = meta",
+    "tests/scripts/test_check_no_queues.py:1 - 14 tests, including the owner's-cycle rule in both directions and the wiring assertions"
+   ],
+   "scheduled_by": "hourly_cycle:queue_census (desks/mt5/research/hourly_cycle.py:2723, hourly, --once --budget-s 120)",
+   "artifact": "desks/mt5/reports/QUEUE_CENSUS.json + desks/mt5/data/queue_census_history.jsonl",
+   "consumer": "scripts/check_no_queues.py, registered in scripts/run_law_gate.py _STATE_FENCES",
+   "landed": [
+    "the queue census and its fence wired 2026-09-23"
+   ],
+   "notes": "The census MEASURES; it does not drain. Draining research_queue.json and wiring registry.claim_candidates() are the follow-ups the red names, and both belong to the organs that own those stores (conversion_maximiser, coverage_drain, the forward-enrolment organ) rather than to the census."
+  },
+  {
+   "id": "CT7",
+   "domain": "C",
+   "phase": "C",
+   "status": "LANDED",
+   "gate": "none",
+   "item": "ONE CANON, RESTORED BY THE ORGAN ITSELF (principal 2026-09-23: 'everything remains empty -- open, close, all automatic, don't just report'; LAWS 7 A REPORT IS NOT A REMEDY). The certificate lane had TWO pens: the sealed gauntlet, and its unfixed fork desks/mt5/side_channels/ug_remote.py, wired as the hourly leg auto_ug_remote, which rewrote reports/UNIVERSAL_SURVIVORS.json from an empty dict with no gate_policy key. The canon went 56 -> 0 on 2026-09-17 and was still being re-emptied hourly six days later while 13 sleeves traded and 855 forward clocks ran. Losing the ATTESTATION was the worse half: every reader fell through to the seal, and the sealed gauntlet's own restore loop reads retired_certificates out of the file the wipe had just emptied, so it could restore nothing for ever. The fork now carries the same three guards its sealed twin got in 2026-08-25 (retain, attest, refuse empty, refuse shrink), and certificate_truth.repair() closes the damage on its OWN hourly clock with no --apply and no hand, through the lane's own rules only: the authority ratchet's seal restore (whose only clock is a VPS systemd timer, on the wrong machine), a git harvest for what a bad writer overwrote in place, and the sealed gauntlet's own restore predicate re-asking each retirement its own question. It can only ADD evidence the desk already earned: it never retires a row, never lowers a count, never touches sleeves.json or the gateway. And an EMPTY canon is now UNMEASURED, never 'nothing is certified' -- apply() withholds every retirement unless the lane is SETTLED, because the migration of 2026-09-23 08:37 retired 597 forward clocks and 73 ledger claims against an authority file a second writer had emptied.",
+   "evidence": [
+    "desks/mt5/side_channels/ug_remote.py:368 - the certifier wipe, the second copy: retain + attest + refuse empty + refuse shrink, retention imported from the sealed twin so the two cannot drift again",
+    "desks/mt5/research/certificate_truth.py:897 - repair(), the three rules and the three things it will never do",
+    "desks/mt5/research/certificate_truth.py:832 - _git_attested_rows, the only store that holds what a bad writer overwrote IN PLACE; scanned only when the live file is damaged (3.8s measured)",
+    "desks/mt5/research/certificate_truth.py:442 - restorable_retirements, the sealed gauntlet's own restore rule measured where its own loop could no longer see it",
+    "desks/mt5/research/certificate_truth.py:407 - _tradeable_now: external_gauntlet.symbol_is_tradeable IMPORTED, never re-implemented; unreachable is UNMEASURED",
+    "desks/mt5/research/certificate_truth.py:637 - CANON_EMPTY_WITH_RESTORABLE_EVIDENCE, the fatal kind that names the state nothing named",
+    "desks/mt5/research/certificate_truth.py:1067 - lane_settled: an empty or degraded authority file never grounds a retirement",
+    "desks/mt5/research/certificate_truth.py:383 - _scalp_declared: the scalp writer's own declaration backs its four clocks instead of leaving them UNPARSED for ever",
+    "desks/mt5/research/hourly_cycle.py:3306 - the _costed('certificate_truth') leg, --once --budget-s 120, repair on by default",
+    "libs/research/layers.py:335 - LEG_LAYER certificate_truth = meta",
+    "desks/mt5/tests/test_certificate_truth.py:362 - 15 tests, five of them new: the wipe repaired, the expired retirement restored and the banned one never, the drift made fatal and closed, the scalp declaration, and the source-level guard on the fork"
+   ],
+   "scheduled_by": "hourly_cycle:certificate_truth (desks/mt5/research/hourly_cycle.py:3306, hourly, --once --budget-s 120)",
+   "artifact": "desks/mt5/reports/CERTIFICATE_TRUTH.json (repaired block) + desks/mt5/data/certificate_history.jsonl",
+   "consumer": "scripts/check_certificate_truth.py, registered in scripts/run_law_gate.py:163 and :272 (--require-state on the box)",
+   "landed": [
+    "measured on the trading box 2026-09-23: canon n=0 -> 28, divergences 14 -> 6, fatal 1 -> 0, 32 banned rows left retired, seal healed to 28, fence --require-state exit 0"
+   ],
+   "notes": "Two findings published rather than acted on. (1) The six remaining divergences are all LIVE_BOOK_UNBACKED_CLOCK on XAUUSD -- the principal's gold windows, protected by LAWS 5j, non-fatal by design and never retired here; changing what the live book trades is reserved to the principal. (2) The gauntlet printed 'Updated UNIVERSAL_SURVIVORS.json: 7 total (+7)' on 2026-09-23 05:43 for seven rows that FAIL all_ten_pass; the writer is sealed, so the rows are correctly refused by the lane's own test and the misleading print is reported, not patched."
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."

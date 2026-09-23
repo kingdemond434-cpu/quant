@@ -287,7 +287,14 @@ def test_an_unmeasured_canon_retires_only_banned_rows(desk: Path):
     assert "external.EURCHF.discovered.p=1" not in _r(paths.canon)["survivors"]
 
 
-def test_an_empty_canon_is_a_verdict_and_the_reconciler_is_caught_lying(desk: Path):
+def test_an_empty_canon_is_unmeasured_and_never_the_ground_for_retiring_a_clock(desk: Path):
+    """The principal, 2026-09-23: "an empty canon is UNMEASURED, not 'nothing is certified', and
+    it must never be the authority that retires a fresh certificate."
+
+    This test asserted the opposite until that day, and the opposite is what happened on the
+    trading box: the migration retired 597 forward clocks and 73 ledger claims against an
+    authority file a second writer had emptied, while the evidence that backed them sat in the
+    seal and in git. The reconciler is still caught lying; the clocks are no longer destroyed."""
     paths = CT.Paths.at(desk)
     for p in (paths.canon, paths.seal):
         d = _r(p)
@@ -300,9 +307,14 @@ def test_an_empty_canon_is_a_verdict_and_the_reconciler_is_caught_lying(desk: Pa
     assert kinds["UNBACKED_CLOCK"] == 4            # CADJPY's clock is unbacked now, on both stores
     out = CT.apply(paths, doc)
     reg = _r(paths.registry)["sleeves"]
-    assert reg["CADJPY.asia"]["status"] == "RETIRED"
+    assert out["lane_settled"] is False
+    assert reg["CADJPY.asia"]["status"] == "LIVE"              # withheld, not retired
     assert reg["USDSGD.overnight_gap_decay.continuous"]["status"] == "LIVE"
-    assert out["moved"] == 14
+    assert out["retirement_withheld"]["unbacked_clocks_not_retired"] == 4
+    assert "UNMEASURED" in out["retirement_withheld"]["reason"]
+    assert out["skipped"]["unbacked_on_unmeasured_canon"] == 4
+    # the ban is a decision, not a measurement: banned rows still leave on an empty canon
+    assert reg["EURCHF.discovered.asia#band=[0.9, 1.0]_feature=ru_24"]["status"] == "RETIRED"
 
 
 def test_the_fence_fails_on_residue_and_passes_once_the_lane_is_the_truth(desk: Path, capsys):
@@ -339,3 +351,128 @@ def test_the_leg_the_layer_the_gate_and_the_lesson_are_wired():
     assert '("check_certificate_truth.py", ("--require-state",))' in gate
     lessons = (_ROOT / "docs" / "desk_lessons.jsonl").read_text(encoding="utf-8")
     assert "certificate_truth" in lessons and "discovery" in lessons.lower()
+
+
+# ---------------------------------------------------------------------- the automatic repair
+def _tradeable_all(paths) -> object:
+    """Every symbol is tradeable today: the sealed writer's predicate, stubbed."""
+    return lambda sym: True
+
+
+def test_a_second_writer_that_empties_the_authority_file_is_repaired_on_the_next_pass(
+        desk: Path, monkeypatch) -> None:
+    """The exact shape measured on the trading box, 2026-09-23 08:39:16: 183 bytes, n=0, no
+    `gate_policy`, no `retired_certificates` -- written hourly by `side_channels/ug_remote.py`
+    over an authority file that had held 56 certificates. The organ must hand them back on its
+    own hourly pass, with no --apply and no human."""
+    monkeypatch.setattr(CT, "_tradeable_now", _tradeable_all)
+    monkeypatch.setattr(CT, "_git_attested_rows", lambda *a, **k: ({}, {}, "UNMEASURED"))
+    paths = CT.Paths.at(desk)
+    _w(paths.canon, {"n": 0, "survivors": {},
+                     "note": "UNIVERSAL 10-GATE PASS ONLY. Placebo null + fragility "
+                             "apply before portfolio entry.",
+                     "swept_at": "2026-09-23T08:39:16.996369+00:00"})
+    # one of the fixture's three rows is banned and one is not a ten-gate pass, so the lane
+    # counts ONE certificate -- read through the seal, because the wiped file has no attestation
+    assert CT.audit(paths)["canon"]["n"] == 1
+    assert CT.audit(paths)["canon"]["source"] == "data/UNIVERSAL_SURVIVORS.canon.json"
+    acts = CT.repair(paths)
+    assert acts["authority_restored_from_seal"] == 3      # raw rows handed back
+    back = _r(paths.canon)
+    assert back["n"] == 3
+    assert set(back["survivors"]) == {"external.CADJPY.session_range_breakout",
+                                      "external.EURCHF.discovered.p=1",
+                                      "external.AUDCAD.carry.p=2"}
+    assert back["gate_policy"] == dict(ATTESTATION)          # the attestation came back too
+    assert CT.repair(paths)["authority_restored_from_seal"] == 0      # idempotent
+
+
+def test_a_retirement_whose_reason_expired_comes_back_and_a_banned_one_never_does(
+        desk: Path, monkeypatch) -> None:
+    """The sealed gauntlet's own restore rule, on the rows its own loop could no longer see."""
+    monkeypatch.setattr(CT, "_tradeable_now", _tradeable_all)
+    monkeypatch.setattr(CT, "_git_attested_rows", lambda *a, **k: ({}, {}, "UNMEASURED"))
+    paths = CT.Paths.at(desk)
+    doc = _r(paths.canon)
+    doc["retired_certificates"] = {
+        "external.USDJPY.session_range_breakout.rr=1.5_wb=12": {
+            **_cert("USDJPY", "session_range_breakout", "asia"),
+            "retired_at": "2026-09-21T10:08:50+00:00",
+            "retired_reason": "symbol 'USDJPY' has no USDJPY_H1.parquet; no forward clock "
+                              "can replay"},
+        "external.AFG.discovered.p=fff3": {
+            **_cert("AFG", "discovered", "asia"),
+            "retired_reason": "symbol 'AFG' is absent from the universe registry"},
+        "external.NOGATES.session_range_breakout": {
+            "sym": "NOGATES", "gates": {}, "retired_reason": "x",
+            "shadow_spec": {"symbol": "NOGATES", "family": "session_range_breakout"}},
+    }
+    _w(paths.canon, doc)
+    _w(paths.seal, doc)
+    acts = CT.repair(paths)
+    surv = _r(paths.canon)["survivors"]
+    assert acts["certificates_restored"] == 1
+    assert acts["banned_not_restored"] == 1
+    assert "external.USDJPY.session_range_breakout.rr=1.5_wb=12" in surv
+    row = surv["external.USDJPY.session_range_breakout.rr=1.5_wb=12"]
+    assert row["restored_at"] and "parquet" in row["restored_from"]["retired_reason"]
+    assert "external.AFG.discovered.p=fff3" not in surv          # banned family, never back
+    assert "external.NOGATES.session_range_breakout" not in surv  # no ten-gate record, never back
+    still = _r(paths.canon)["retired_certificates"]
+    assert set(still) == {"external.AFG.discovered.p=fff3",
+                          "external.NOGATES.session_range_breakout"}
+    assert CT.repair(paths)["certificates_restored"] == 0        # idempotent
+
+
+def test_the_canon_and_the_clock_census_cannot_drift_apart_silently(desk: Path,
+                                                                    monkeypatch, capsys) -> None:
+    """A canon holding nothing while its own retired lane holds cashable ten-gate passes is a
+    FATAL divergence with a name, not a quiet zero -- and the organ closes it unasked."""
+    monkeypatch.setattr(CT, "_tradeable_now", _tradeable_all)
+    monkeypatch.setattr(CT, "_git_attested_rows", lambda *a, **k: ({}, {}, "UNMEASURED"))
+    paths = CT.Paths.at(desk)
+    dead = {"n": 0, "gate_policy": dict(ATTESTATION), "survivors": {},
+            "retired_certificates": {
+                "external.CADJPY.session_range_breakout": {
+                    **_cert("CADJPY", "session_range_breakout", "asia"),
+                    "retired_reason": "symbol 'CADJPY' has no CADJPY_H1.parquet"}}}
+    _w(paths.canon, dead)
+    _w(paths.seal, dead)
+    doc = CT.audit(paths)
+    assert doc["canon"]["status"] == "EMPTY" and doc["canon"]["restorable_n"] == 1
+    assert _kinds(doc)["CANON_EMPTY_WITH_RESTORABLE_EVIDENCE"] == 1
+    assert "CANON_EMPTY_WITH_RESTORABLE_EVIDENCE" in CT.FATAL_KINDS
+    assert FENCE.main(["--base", str(desk)]) == 2
+    assert "CANON_EMPTY_WITH_RESTORABLE_EVIDENCE" in capsys.readouterr().out
+    CT.repair(paths)                                   # the hourly pass, no --apply
+    after = CT.audit(paths)
+    assert after["canon"]["n"] == 1 and after["canon"]["restorable_n"] == 0
+    assert _kinds(after).get("CANON_EMPTY_WITH_RESTORABLE_EVIDENCE", 0) == 0
+    assert _r(paths.seal)["n"] == 1                    # the seal is never left behind
+
+
+def test_the_scalp_writers_declaration_backs_its_own_clocks_instead_of_leaving_them_unparsed(
+        desk: Path) -> None:
+    """Four scalp clocks were UNPARSED for ever: their keys have no grammar this desk writes and
+    their certificate field is prose. Their own writer declares them; that is the backing."""
+    paths = CT.Paths.at(desk)
+    assert _kinds(CT.audit(paths)).get("UNPARSED_CLOCK", 0) == 1
+    _w(paths.scalp_gates, {"gate_policy": dict(ATTESTATION), "n_certified": 0,
+                           "candidates": {"xau_m5_anti_breakout_overlap": {"sym": "XAUUSD"}}})
+    doc = CT.audit(paths)
+    assert doc["canon"]["scalp_n"] == 1 and doc["canon"]["scalp_status"] == "EXACT"
+    assert _kinds(doc).get("UNPARSED_CLOCK", 0) == 0
+    assert doc["stores"]["scalp_shadow_state"]["cure_backed"] == 1
+
+
+def test_the_side_channel_gate_can_never_empty_the_authority_file_again() -> None:
+    """`universal_gate.py` was taught this on 2026-08-25; its fork `side_channels/ug_remote.py`
+    was not, and kept wiping the file hourly for six days. Source-level, because the defect is
+    the ABSENCE of the guard and only the source can prove it is there."""
+    src = (_DESK / "side_channels" / "ug_remote.py").read_text(encoding="utf-8")
+    assert "retained_exact_survivors" in src           # retains what already stands
+    assert "ATTESTATION" in src and '"gate_policy": ATTESTATION' in src
+    assert "REFUSING to write an EMPTY authority file" in src
+    assert "REFUSING to write: merge would shrink" in src
+    # and no writer of this file may drop the attestation again
+    assert 'json.dumps({"n": len(survivors_all), "survivors": survivors_all,\n' not in src

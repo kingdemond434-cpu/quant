@@ -91,6 +91,16 @@ UNBACKED_REASON = ("no ten-gate certificate in the canonical lane (reports/UNIVE
 CURE_REASON = ("power-cure candidate: every validity gate passed, a power gate is being cured by "
                "forward evidence (gate_spec.yaml power_cure_via_forward) -- backed by the lane's "
                "writer, not yet a certificate")
+SCALP_DECLARED_REASON = ("declared candidate of the scalp lane's writer (scripts/scalp_gauntlet.py"
+                         " -> reports/SCALP_GAUNTLET.json, whose canon_rows() the gauntlet merges "
+                         "into the authority file): judged daily, gathering forward evidence -- "
+                         "backed by the lane's writer, not yet a certificate")
+RESTORE_REASON = ("retirement reason no longer holds under the sealed writer's own predicate "
+                  "(external_gauntlet.symbol_is_tradeable against data/universe/universe.json); "
+                  "restored to the canonical lane with its gates record intact")
+SEAL_RESTORE_REASON = ("authority file degraded against its own seal with no revocation record: "
+                       "the seal is the recovery source by definition "
+                       "(scripts/check_authority_ratchet.restore_authority)")
 HISTORY_REASON = "certificate no longer held by the canonical lane; claim kept as history"
 RETIRED_BY = "certificate_truth"
 
@@ -109,6 +119,7 @@ SRB = "session_range_breakout"
 FATAL_KINDS = frozenset({"BANNED_CERTIFICATE", "BANNED_CLAIM", "BANNED_CLOCK", "BANNED_SLEEVE",
                          "BANNED_CURE_CANDIDATE", "CLAIM_NOT_IN_CANON", "UNBACKED_CLOCK",
                          "CANON_UNMEASURED_WITH_LIVE_CLOCKS",
+                         "CANON_EMPTY_WITH_RESTORABLE_EVIDENCE",
                          "RECONCILE_CERTIFIED_CLOCKS_ON_EMPTY_CANON"})
 
 
@@ -131,6 +142,8 @@ class Paths:
     events: Path
     cure: Path
     qq_gates: Path
+    scalp_gates: Path
+    universe: Path
     canon_rel: str = "reports/UNIVERSAL_SURVIVORS.json"
     extra: dict[str, Any] = field(default_factory=dict)
 
@@ -143,6 +156,8 @@ class Paths:
             seal=base / "data" / "UNIVERSAL_SURVIVORS.canon.json",
             cure=base / "reports" / "POWER_CURE_CANDIDATES.json",
             qq_gates=base / "reports" / "QQUANT_GATES.json",
+            scalp_gates=base / "reports" / "SCALP_GAUNTLET.json",
+            universe=base / "data" / "universe" / "universe.json",
             ledger=base / "reports" / "SURVIVORS_LEDGER.json",
             registry=base / "data" / "sleeve_registry.json",
             reconcile=base / "data" / "forward_reconcile.json",
@@ -349,7 +364,13 @@ def canon(paths: Paths) -> dict[str, Any]:
     for key, c in certs.items():
         by_parts.setdefault(parts(c["symbol"], c["family"], c["selector"]), []).append(key)
     cure_by_parts, banned_cure, cure_status = _cure_lane(paths, is_exact, banned)
+    scalp_declared, scalp_status = _scalp_declared(paths, is_exact)
+    restorable, restorable_status = restorable_retirements(paths, all_ten, is_exact, banned)
     return {"status": status, "source": source, "policy_readable": all_ten is not None,
+            "scalp_declared": scalp_declared, "scalp_status": scalp_status,
+            "scalp_n": len(scalp_declared),
+            "restorable": restorable, "restorable_n": len(restorable),
+            "restorable_status": restorable_status,
             "n": len(certs), "certificates": certs, "by_parts": by_parts,
             "banned_certificates": banned_certs, "rows_in_file": len(rows),
             "rows_not_ten_gate": not_ten, "banned_families": sorted(banned),
@@ -357,6 +378,108 @@ def canon(paths: Paths) -> dict[str, Any]:
             "cure_by_parts": cure_by_parts, "banned_cure_candidates": banned_cure,
             "writer": "desks/mt5/scripts/external_gauntlet.py",
             "consumer": "desks/mt5/research/promoter.py"}
+
+
+def _scalp_declared(paths: Paths, is_exact: Any) -> tuple[dict[str, str], str]:
+    """The scalp lane's DECLARED evidence-gathering clocks, by the name its own state uses.
+
+    `scripts/scalp_gauntlet.py` is part of the lane's writer set -- `external_gauntlet` merges its
+    `canon_rows()` into the authority file under the same attestation -- and it declares, in
+    `reports/SCALP_GAUNTLET.json`, the candidates it judges daily on M5/M15 bars. Those rows sit
+    in `reports/shadow/scalp_shadow_state.json` under keys like `xau_m5_anti_breakout_overlap`,
+    which no clock-key grammar this desk writes can parse, and which name their certificate in
+    prose ("forward_clock (no ten-gate certificate for this cell yet ...)").
+
+    Reported as UNPARSED they were four permanent divergences that no evidence could ever close:
+    the parse was never going to succeed, and the rows are not unbacked -- they are the scalp
+    lane's own power-cure equivalent, declared by the writer, gathering the forward evidence its
+    gauntlet judges. So the writer's declaration is read as the backing it is, by name, under the
+    exact attestation only. A name the report does not declare is still UNPARSED."""
+    out: dict[str, str] = {}
+    doc = _read(paths.scalp_gates)
+    if doc is None or is_exact is None or not is_exact(doc.get("gate_policy")):
+        return out, "UNMEASURED"
+    for key in (doc.get("candidates") or {}):
+        out[str(key)] = SCALP_DECLARED_REASON
+    return out, "EXACT"
+
+
+def _tradeable_now(paths: Paths) -> Any:
+    """The SEALED writer's own predicate `symbol_is_tradeable(sym, meta)`, bound to this desk's
+    registry -- or None when it cannot be reached, which is UNMEASURED and never a verdict.
+
+    Imported, never re-implemented: the question "may this certificate be cashed today" has one
+    owner (`desks/mt5/scripts/external_gauntlet.py`), and a second copy of that rule here is how
+    two stores start disagreeing again. Heavy imports are guarded; a desk without the writer or
+    without a universe registry simply restores nothing (L1.28a)."""
+    try:
+        meta = json.loads(paths.universe.read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(meta, dict) or not meta:
+        return None
+    try:
+        import external_gauntlet as eg  # type: ignore[import-not-found]
+    except Exception:
+        try:
+            from scripts import external_gauntlet as eg
+        except Exception:
+            return None
+    fn = getattr(eg, "symbol_is_tradeable", None)
+    if fn is None:
+        return None
+
+    def predicate(sym: str) -> bool:
+        try:
+            ok, _why = fn(sym, meta)
+        except Exception:
+            return False
+        return bool(ok)
+
+    return predicate
+
+
+def restorable_retirements(paths: Paths, all_ten: Any, is_exact: Any,
+                           banned: set[str]) -> tuple[dict[str, dict[str, Any]], str]:
+    """Certificates sitting in `retired_certificates` that the lane's own rules say must come BACK.
+
+    The sealed writer already owns this rule (`external_gauntlet.py`, the restore loop beside the
+    purge): "every retired row is re-asked the question that retired it, on every pass, and one
+    whose reason no longer holds goes back -- with its gates record intact, and stamped". Its
+    conditions are a full ten-gate record, a symbol that is tradeable TODAY, and a key not already
+    standing. Two are added here because the principal added them after that loop was written: the
+    family may not be banned, and the attestation on the file the row came from must be exact.
+
+    WHY THIS HAD TO BE MEASURED SOMEWHERE ELSE. That restore loop reads `retired_certificates`
+    out of `reports/UNIVERSAL_SURVIVORS.json`. When a writer overwrites that file without the key
+    -- which `side_channels/ug_remote.py` did hourly from 2026-09-17 -- the loop sees an empty
+    retired dict and restores nothing, for ever, while the evidence sits intact in the seal that
+    nothing reads back. Fifty-two ten-gate passes were invisible that way for six days."""
+    out: dict[str, dict[str, Any]] = {}
+    tradeable = _tradeable_now(paths)
+    if all_ten is None or tradeable is None:
+        return out, "UNMEASURED"
+    for p in (paths.canon, paths.seal):
+        doc = _read(p)
+        if doc is None:
+            continue
+        if is_exact is not None and not is_exact(doc.get("gate_policy")):
+            continue
+        standing = _rows_of(doc, "survivors")
+        retired = doc.get("retired_certificates")
+        if not isinstance(retired, dict):
+            continue
+        for key, row in retired.items():
+            if not isinstance(row, dict) or str(key) in standing or str(key) in out:
+                continue
+            fam = str(_dict(row.get("shadow_spec")).get("family") or "").strip().lower()
+            if fam in banned or not all_ten(row.get("gates")):
+                continue
+            sym = str(row.get("sym") or "")
+            if not sym or not tradeable(sym):
+                continue
+            out[str(key)] = row
+    return out, "EXACT"
 
 
 def _cure_lane(paths: Paths, is_exact: Any,
@@ -428,6 +551,9 @@ def classify(ident: dict[str, Any], lane: dict[str, Any]) -> tuple[str, str]:
     cert = ident.get("certificate")
     if cert and cert in lane["certificates"]:
         return "BACKED", f"certificate {cert} is in the canonical lane"
+    declared = lane.get("scalp_declared") or {}
+    if str(ident.get("key") or "") in declared:
+        return "CURE", declared[str(ident["key"])]
     if not ident.get("symbol") or not fam:
         return "UNPARSED", ("the row declares no symbol/family and its key has no shape this "
                             "desk writes")
@@ -496,7 +622,21 @@ def audit(paths: Paths, now: str | None = None) -> dict[str, Any]:
                 banned_here += 1
                 add("BANNED_CERTIFICATE", name, str(key), BAN_REASON, family=fam)
         stores[name] = {"path": _rel(paths, p), "readable": doc is not None, "rows": len(rows),
-                        "banned": banned_here}
+                        "banned": banned_here,
+                        "retired": len((doc or {}).get("retired_certificates") or {}),
+                        "attested": bool(_policy()[1] and _policy()[1]((doc or {}).get(
+                            "gate_policy"))) if doc is not None else False}
+
+    # THE STATE NOTHING NAMED (2026-09-23). The canon can be EMPTY while the lane's own retired
+    # rows hold ten-gate passes whose retirement reason no longer holds -- evidence the desk has
+    # earned, is entitled to cash, and cannot see. Measured on the trading box that day: n=0 with
+    # 28 such rows in the seal, three of them the certificates behind LIVE sleeves. Fatal,
+    # because `repair()` closes it on every pass with no --apply and no hand: a divergence the
+    # organ can close and has not is a defect of the organ, not a finding (LAWS 7).
+    for key in sorted(lane["restorable"]):
+        add("CANON_EMPTY_WITH_RESTORABLE_EVIDENCE", "UNIVERSAL_SURVIVORS", key, RESTORE_REASON,
+            family=str(_dict(lane["restorable"][key].get("shadow_spec")).get("family") or ""),
+            symbol=lane["restorable"][key].get("sym"))
     # the writer's second output, the power-cure candidates: banned-family rows are residue too
     cure_doc = _read(paths.cure)
     for key, fam in sorted(lane["banned_cure_candidates"].items()):
@@ -646,8 +786,11 @@ def audit(paths: Paths, now: str | None = None) -> dict[str, Any]:
     for d in divergences:
         by_kind[d["kind"]] = by_kind.get(d["kind"], 0) + 1
     lane_out = {k: v for k, v in lane.items()
-                if k not in ("certificates", "by_parts", "cure_by_parts")}
+                if k not in ("certificates", "by_parts", "cure_by_parts", "restorable",
+                             "scalp_declared")}
     lane_out["certificate_keys"] = sorted(lane["certificates"])[:500]
+    lane_out["restorable_keys"] = sorted(lane["restorable"])[:500]
+    lane_out["scalp_declared_keys"] = sorted(lane["scalp_declared"])[:100]
     return {
         "at": stamp, "elapsed_s": round(time.monotonic() - t0, 3),
         "state_present": state_present,
@@ -674,6 +817,225 @@ def audit(paths: Paths, now: str | None = None) -> dict[str, Any]:
     }
 
 
+# ----------------------------------------------------------------------------- the repair
+def _rows_of(doc: dict[str, Any], key: str) -> dict[str, Any]:
+    """`doc[key]` as a row map -- {} when the key is absent or holds anything else."""
+    rows = doc.get(key)
+    return {str(k): v for k, v in rows.items()} if isinstance(rows, dict) else {}
+
+
+def _params_n(rows: dict[str, Any]) -> int:
+    return sum(1 for v in rows.values()
+               if isinstance(v, dict) and _dict(v.get("shadow_spec")).get("params"))
+
+
+def _git_attested_rows(paths: Paths, all_ten: Any, is_exact: Any, banned: set[str],
+                       depth: int = 60) -> tuple[dict[str, Any], dict[str, Any], str]:
+    """Every attested ten-gate certificate this repository has ever committed to the authority
+    file, from its last `depth` revisions -- the recovery source the lane already names.
+
+    `check_authority_ratchet` says it in its own breach message ("restore from the canon copy or
+    git before the next writer overwrites it again") and already implements it for cohorts
+    (`restore_cohorts_from_git`). It is the ONLY source that can return a certificate a bad writer
+    overwrote in place, because the seal is a copy of the same file and goes with it.
+
+    MEASURED 2026-09-23: the gauntlet minted 7 fresh certificates at 05:43 and printed "Updated
+    UNIVERSAL_SURVIVORS.json: 7 total (+7)"; `side_channels/ug_remote.py` overwrote the file at
+    08:39:16 with n=0 and no attestation. Neither the seal (0 survivors) nor `retired_certificates`
+    (they were never retired -- they were erased) held them. Git did, in 4ed3e11d0, and the union
+    across the last revisions held 67, which is more than either live store.
+
+    Returns (rows that STOOD as certificates, rows that were RETIRED, status) -- the two are kept
+    apart so a row retired for a reason that still holds is never resurrected as a certificate;
+    it re-enters `retired_certificates` and is re-asked its own question by rule 2, exactly as if
+    it had never been overwritten.
+
+    A revision without the exact attestation contributes nothing; a row without a full ten-gate
+    record contributes nothing; a banned family contributes nothing. Git unreachable is
+    UNMEASURED, and restores nothing."""
+    out: dict[str, Any] = {}
+    retired_out: dict[str, Any] = {}
+    if all_ten is None or is_exact is None:
+        return out, retired_out, "UNMEASURED"
+    root = paths.base.parents[1] if len(paths.base.parents) >= 2 else paths.base
+    rel = f"{paths.base.name}/reports/UNIVERSAL_SURVIVORS.json"
+    import contextlib
+    with contextlib.suppress(ValueError):       # desks/mt5/reports/... under the repo root
+        rel = (paths.canon.relative_to(root)).as_posix()
+    import subprocess
+    try:
+        log = subprocess.run(["git", "-C", str(root), "log", "--format=%H", f"-{depth}",
+                              "--", rel], capture_output=True, text=True, timeout=60)
+        shas = [s for s in log.stdout.split() if s]
+    except (OSError, subprocess.SubprocessError):
+        return out, retired_out, "UNMEASURED"
+    if not shas:
+        return out, retired_out, "UNMEASURED"
+    for sha in shas:
+        try:
+            blob = subprocess.run(["git", "-C", str(root), "show", f"{sha}:{rel}"],
+                                  capture_output=True, text=True, timeout=60).stdout
+            doc = json.loads(blob)
+        except (OSError, ValueError, subprocess.SubprocessError):
+            continue
+        if not isinstance(doc, dict) or not is_exact(doc.get("gate_policy")):
+            continue
+        for container, sink in (("survivors", out), ("retired_certificates", retired_out)):
+            rows = doc.get(container)
+            if not isinstance(rows, dict):
+                continue
+            for key, row in rows.items():
+                if not isinstance(row, dict) or str(key) in out or str(key) in retired_out:
+                    continue
+                fam = str(_dict(row.get("shadow_spec")).get("family") or "").strip().lower()
+                if fam in banned or not all_ten(row.get("gates")):
+                    continue
+                sink[str(key)] = row
+    return out, retired_out, "EXACT"
+
+
+def repair(paths: Paths, now: str | None = None) -> dict[str, Any]:
+    """Make the two authority files ONE truth again, on every pass, with no --apply and no hand.
+
+    A REPORT IS NOT A REMEDY (LAWS 7). Publishing "the canon is empty" for six days while the
+    evidence to refill it sat in the seal is the defect, not the finding. This closes every
+    divergence the LANE'S OWN RULES close, and nothing else:
+
+      1. AUTHORITY FROM SEAL -- `scripts/check_authority_ratchet.restore_authority`'s rule, run
+         here because that script's only clock is a systemd timer on the VPS and the canon lives
+         on the Windows box. A shrunken authority file with no revocation record of its own is an
+         interrupted or bad writer, and in that state the seal is the recovery source by
+         definition. The merge is a UNION -- presence wins over retirement, so it can only ever
+         grow -- and it carries `retired_certificates` and the attestation back with it, which is
+         what the bad writer dropped and what rule 2 and every downstream reader need.
+      2. REASON EXPIRED -> RESTORE -- the sealed gauntlet's own restore loop, applied to the rows
+         rule 1 just made visible: a full ten-gate pass, of no banned family, on a symbol its own
+         `symbol_is_tradeable` accepts today, goes back to `survivors` stamped `restored_at` and
+         `restored_from`, so the round trip is visible rather than silent.
+      3. SEAL FROM AUTHORITY -- `check_authority_ratchet.heal_canon`'s rule: the seal may never be
+         worse than the authority file, since it exists purely as the known-good copy of it.
+
+    WHAT IT WILL NOT DO, ever, on any clock. It never retires a certificate, a clock or a sleeve;
+    it never lowers a count; it never writes a row the lane does not back; and it never touches
+    `sleeves.json`, the registry or the gateway. Retirement stays in `apply()` behind --apply, and
+    the two acts reserved to the principal by name -- re-signing the sealed evaluator, and
+    anything that changes what the live book trades -- stay reserved. This organ can only ever
+    hand the desk back evidence it had already earned."""
+    stamp = now or _now()
+    all_ten, is_exact = _policy()
+    banned = banned_families(paths)
+    acts: dict[str, Any] = {"at": stamp, "authority_restored_from_seal": 0,
+                            "authority_restored_from_git": 0, "git_status": "UNMEASURED",
+                            "certificates_restored": 0, "seal_healed_from_authority": 0,
+                            "restored_keys": [], "banned_not_restored": 0,
+                            "predicate": "EXACT", "wrote": []}
+
+    auth: dict[str, Any] = _read(paths.canon) or {}
+    seal: dict[str, Any] = _read(paths.seal) or {}
+    a_rows, a_ret = _rows_of(auth, "survivors"), _rows_of(auth, "retired_certificates")
+    s_rows, s_ret = _rows_of(seal, "survivors"), _rows_of(seal, "retired_certificates")
+    a_exact = bool(is_exact and is_exact(auth.get("gate_policy")))
+    s_exact = bool(is_exact and is_exact(seal.get("gate_policy")))
+
+    # ---- 1. authority from seal ------------------------------------------------------------
+    degraded = (len(a_rows) < len(s_rows) or _params_n(a_rows) < _params_n(s_rows)
+                or len(a_ret) < len(s_ret) or (s_exact and not a_exact))
+    if degraded and s_exact:
+        merged = dict(s_rows)
+        merged.update(a_rows)                     # union: this can only ever grow
+        merged_ret = {k: v for k, v in {**s_ret, **a_ret}.items() if k not in merged}
+        acts["authority_restored_from_seal"] = len(merged) - len(a_rows)
+        auth = dict(auth)
+        auth.update({"survivors": merged, "retired_certificates": merged_ret,
+                     "gate_policy": seal.get("gate_policy") if not a_exact
+                     else auth.get("gate_policy"),
+                     "n": len(merged), "restored_at": stamp, "restored_by": RETIRED_BY,
+                     "restored_reason": SEAL_RESTORE_REASON})
+        a_rows, a_ret, a_exact = merged, merged_ret, True
+
+    # ---- 1b. what a bad writer overwrote IN PLACE, from git --------------------------------
+    # The seal cannot answer this: it is a copy of the same file, so a writer that erases a
+    # certificate erases both. Git is the only store that still holds it, and the ratchet already
+    # names git as the recovery source. Union again -- what stands always wins over what git has.
+    # Scanned only when the live file is DAMAGED -- not attested, or attested and holding no
+    # certificate at all. That is precisely the shape an in-place wipe leaves (the measured one
+    # was n=0 with the `gate_policy` key gone), and it keeps ~60 `git show` calls off a healthy
+    # hourly pass. A partial loss keeps its attestation and is caught by the seal rule above.
+    healthy = a_exact and any(isinstance(v, dict) and all_ten and all_ten(v.get("gates"))
+                              for v in a_rows.values())
+    git_surv: dict[str, Any] = {}
+    git_ret: dict[str, Any] = {}
+    git_status = "SKIPPED_LANE_HEALTHY"
+    if not healthy:
+        git_surv, git_ret, git_status = _git_attested_rows(paths, all_ten, is_exact, banned)
+    acts["git_status"] = git_status
+    if git_surv or git_ret:
+        gained = {k: v for k, v in git_surv.items() if k not in a_rows and k not in a_ret}
+        a_rows = {**gained, **a_rows}
+        a_ret = {**{k: v for k, v in git_ret.items()
+                    if k not in a_rows and k not in a_ret}, **a_ret}
+        acts["authority_restored_from_git"] = len(gained)
+
+    # ---- 2. a retirement whose reason no longer holds --------------------------------------
+    tradeable = _tradeable_now(paths)
+    if tradeable is None or all_ten is None:
+        acts["predicate"] = "UNMEASURED"          # absence of the predicate is never a verdict
+    else:
+        a_rows, a_ret = dict(a_rows), dict(a_ret)
+        for key, row in sorted(a_ret.items()):
+            if not isinstance(row, dict) or key in a_rows:
+                continue
+            fam = str(_dict(row.get("shadow_spec")).get("family") or "").strip().lower()
+            if fam in banned:
+                acts["banned_not_restored"] += 1
+                continue
+            sym = str(row.get("sym") or "")
+            if not all_ten(row.get("gates")) or not sym or not tradeable(sym):
+                continue
+            back = dict(row)
+            back["restored_at"] = stamp
+            back["restored_by"] = RETIRED_BY
+            back["restored_from"] = {"retired_at": back.pop("retired_at", None),
+                                     "retired_reason": back.pop("retired_reason", None),
+                                     "why": RESTORE_REASON}
+            a_rows[key] = back
+            del a_ret[key]
+            acts["certificates_restored"] += 1
+            acts["restored_keys"].append(key)
+
+    if (acts["authority_restored_from_seal"] or acts["certificates_restored"]
+            or acts["authority_restored_from_git"]):
+        auth = dict(auth)
+        auth.update({"survivors": a_rows, "retired_certificates": a_ret, "n": len(a_rows),
+                     "note": "UNIVERSAL 10-GATE PASS ONLY.", "repaired_at": stamp,
+                     "repaired_by": RETIRED_BY})
+        if not a_exact and s_exact:
+            auth["gate_policy"] = seal.get("gate_policy")
+        _atomic(paths.canon, auth, indent=2)
+        acts["wrote"].append(_rel(paths, paths.canon))
+        _history(paths, [{"at": stamp, "store": "UNIVERSAL_SURVIVORS", "key": k,
+                          "from_status": "RETIRED", "to_status": "UNIVERSAL",
+                          "reason": RESTORE_REASON, "by": RETIRED_BY,
+                          "row": {k2: a_rows[k].get(k2)
+                                  for k2 in ("sym", "cell", "hunt", "shadow_spec")}}
+                         for k in acts["restored_keys"]])
+
+    # ---- 3. the seal may never be worse than the authority file ----------------------------
+    if len(a_rows) > len(s_rows) or (len(a_rows) == len(s_rows)
+                                     and _params_n(a_rows) > _params_n(s_rows)):
+        seal_out = dict(seal)
+        seal_out.update({"survivors": a_rows, "retired_certificates": a_ret, "n": len(a_rows),
+                         "gate_policy": auth.get("gate_policy") or seal.get("gate_policy"),
+                         "healed_at": stamp, "healed_by": RETIRED_BY})
+        _atomic(paths.seal, seal_out, indent=2)
+        acts["seal_healed_from_authority"] = len(a_rows) - len(s_rows)
+        acts["wrote"].append(_rel(paths, paths.seal))
+
+    acts["canon_n"] = len(a_rows)
+    acts["restored_keys"] = acts["restored_keys"][:200]
+    return acts
+
+
 # --------------------------------------------------------------------------- the migration
 def _history(paths: Paths, rows: list[dict[str, Any]]) -> None:
     if not rows:
@@ -690,6 +1052,27 @@ def apply(paths: Paths, doc: dict[str, Any] | None = None,
     stamp = now or _now()
     doc = doc or audit(paths, stamp)
     lane_status = doc["canon"]["status"]
+    # AN EMPTY CANON IS UNMEASURED, NEVER "NOTHING IS CERTIFIED" (2026-09-23, the principal).
+    # This migration once retired 597 forward clocks and 73 ledger claims against an authority
+    # file holding 7 certificates -- while 52 more ten-gate passes sat in the seal's
+    # `retired_certificates` under a reason that had stopped being true, and 56 more had been
+    # overwritten in place by `side_channels/ug_remote.py` and survived only in git. Every one of
+    # those clocks was genuinely backed; the file that judged them was the damaged store.
+    #
+    # So retirement now needs a SETTLED lane, not merely a readable one: the attestation exact,
+    # at least one certificate standing, and nothing left that `repair()` would hand back. Any
+    # other state retires nothing and says so -- absence of evidence is not evidence of absence
+    # (L1.28a), and it is certainly not grounds to destroy a clock that took forward weeks to
+    # earn. Banned-family rows are unaffected: a ban is a decision, not a measurement.
+    lane_settled = (lane_status == "EXACT" and int(doc["canon"].get("n") or 0) > 0
+                    and int(doc["canon"].get("restorable_n") or 0) == 0)
+    if not lane_settled:
+        doc = {**doc, "retirement_withheld": {
+            "reason": ("the canonical lane is not settled (status "
+                       f"{lane_status}, n={doc['canon'].get('n')}, "
+                       f"restorable={doc['canon'].get('restorable_n')}); an empty or degraded "
+                       "authority file is UNMEASURED and never the ground for retiring a clock"),
+            "unbacked_clocks_not_retired": doc["by_kind"].get("UNBACKED_CLOCK", 0)}}
     by_store: dict[str, list[dict[str, Any]]] = {}
     for d in doc["divergences"]:
         by_store.setdefault(d["store"], []).append(d)
@@ -757,8 +1140,7 @@ def apply(paths: Paths, doc: dict[str, Any] | None = None,
         for d in by_store.get(store, ()):
             if d["kind"] == "BANNED_CLOCK":
                 reason = BAN_REASON
-            elif d["kind"] == "UNBACKED_CLOCK" and not d.get("protected") \
-                    and lane_status in ("EXACT", "EMPTY"):
+            elif d["kind"] == "UNBACKED_CLOCK" and not d.get("protected") and lane_settled:
                 reason = UNBACKED_REASON
             else:
                 continue
@@ -811,11 +1193,13 @@ def apply(paths: Paths, doc: dict[str, Any] | None = None,
     after = audit(paths, stamp)
     return {"at": stamp, "moved": len(moved), "by_store": counts,
             "history": _rel(paths, paths.history), "lane_status": lane_status,
+            "lane_settled": lane_settled,
+            "retirement_withheld": doc.get("retirement_withheld"),
             "skipped": {
                 "unbacked_protected": doc["migration"]["planned"]["unbacked_clocks_protected"],
                 "unbacked_on_unmeasured_canon": (
                     doc["migration"]["planned"]["unbacked_clocks_to_retire"]
-                    if lane_status == "UNMEASURED" else 0)},
+                    if not lane_settled else 0)},
             "after": {"n_divergences": after["n_divergences"], "n_fatal": after["n_fatal"],
                       "by_kind": after["by_kind"], "ok": after["ok"]}}
 
@@ -827,15 +1211,24 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--budget-s", type=float, default=120.0)
     ap.add_argument("--apply", action="store_true",
                     help="run the one-time migration (never on the hourly clock)")
+    ap.add_argument("--no-repair", action="store_true",
+                    help="audit only; do not restore evidence the lane's own rules restore")
     ap.add_argument("--base", type=Path, default=DESK, help="desk root (tests)")
     ap.add_argument("--json", action="store_true")
     a = ap.parse_args(argv)
     paths = Paths.at(Path(a.base))
+    # THE REPAIR RUNS ON THE CLOCK, NOT BEHIND A FLAG. It only ever hands back evidence the desk
+    # already earned -- it cannot retire a row, lower a count or change what the gateway trades --
+    # so there is nothing for a human to approve, and six days of an empty canon is what waiting
+    # for one costs. `--apply` still gates every act that REMOVES something.
+    repaired = None if a.no_repair else repair(paths)
     doc = audit(paths)
+    doc["repaired"] = repaired
     doc["budget_s"] = float(a.budget_s)
     if a.apply:
         doc["applied"] = apply(paths, doc)
-        doc = {**audit(paths), "applied": doc["applied"], "budget_s": float(a.budget_s)}
+        doc = {**audit(paths), "applied": doc["applied"], "repaired": repaired,
+               "budget_s": float(a.budget_s)}
     try:
         _atomic(paths.out, doc)
     except OSError as exc:
@@ -852,9 +1245,15 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(doc, indent=1, default=str))
     else:
         c = doc["canon"]
+        r = repaired or {}
         print(f"certificate_truth: canon {c['status']} n={c['n']} from {c['source']}; "
               f"{doc['n_divergences']} divergence(s), {doc['n_fatal']} fatal "
               f"{doc['by_kind']}"
+              + (f"; repaired: +{r.get('authority_restored_from_seal', 0)} from seal, "
+                 f"{r.get('certificates_restored', 0)} certificate(s) restored, "
+                 f"{r.get('banned_not_restored', 0)} banned left retired "
+                 f"(predicate {r.get('predicate')})" if r.get("wrote") or r.get(
+                     "certificates_restored") else "")
               + (f"; applied: moved {doc['applied']['moved']} {doc['applied']['by_store']}"
                  if a.apply else ""))
     return 0
