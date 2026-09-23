@@ -4,14 +4,14 @@
 > `reports/SANDBOX_ROSTER.json`. Never edit this file: edit the organs that write the
 > artifacts it reads.
 
-Generated 2026-09-23T19:00:38+00:00. 128 rows: 123 roster seeds, 123 adapters, 5 rebuilt cells.
+Generated 2026-09-23T19:08:41+00:00. 128 rows: 123 roster seeds, 123 adapters, 5 rebuilt cells.
 
-- **Runs on this host:** 38 / 128
-- **Has ever run:** 40  |  **has produced:** 32  |  **candidates donated:** 528
+- **Runs on this host:** 40 / 128
+- **Has ever run:** 42  |  **has produced:** 34  |  **candidates donated:** 681
 - **Library installed and imported:** 32  |  **permanently unavailable (with evidence):** 15  |  **no wheel pinned:** 11  |  **not yet attempted:** 65
 - **Licence read at a pin:** 38 / 128
 - **Roster seeds still waiting for an adapter:** 0 (named in the table; nothing can run them until one exists)
-- **Federation effective rank (independent cells spanned):** 5.9835 over 142 cells
+- **Federation effective rank (independent cells spanned):** 6.4516 over 180 cells
 
 Disposition census: DIRECT 82, REBUILT 29, WRAPPED 17
 
@@ -19,84 +19,84 @@ Disposition census: DIRECT 82, REBUILT 29, WRAPPED 17
 
 | system | disposition | licence | capability family | runs here | last run (h) | runs | candidates | breadth | status / why |
 |---|---|---|---|---|---|---|---|---|---|
-| `pyextremes` | DIRECT | MIT | extreme_value | yes | 0.97 | 7 | 56 | 0.985 | PRODUCED: already importable in the shared venv |
-| `numerai_method` | REBUILT | UNVERIFIED | portfolio_research | yes | 0.97 | 9 | 21 | 0.795 | PRODUCED: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
-| `aeon` | DIRECT | BSD-3-Clause | time_series_mining | yes | 9.17 | 6 | 67 | 0.593 | PRODUCED: already importable in the shared venv |
-| `cell:coevolution_cell` | REBUILT | desk (own code; mechanism rebuilt from alphagen, openevolve, pyribs) | factor_model_coevolution | yes | 0.96 | 9 | 105 | 0.569 | PRODUCED: fallback: numpy factor grammar x numpy model zoo, alternating coevolution, walk-forward; upstream available: [] |
-| `ray` | DIRECT | Apache-2.0 | distributed_compute | yes | 0.97 | 6 | 60 | 0.519 | PRODUCED: already importable in the shared venv |
-| `nevergrad` | DIRECT | MIT | evolutionary_search | yes | 0.95 | 7 | 63 | 0.484 | PRODUCED: already importable in the shared venv |
-| `cell:path_signature_lab` | REBUILT | desk (own code; mechanism rebuilt from roughpy) | rough_paths | yes | 0.96 | 9 | 27 | 0.465 | PRODUCED: fallback: numpy truncated signature (Chen's identity, level <= 3) over discrete increments; upstream available: [] |
-| `stumpy` | DIRECT | BSD-3-Clause | time_series_mining | yes | 0.98 | 2 | 40 | 0.450 | PRODUCED: already importable in the shared venv |
-| `pymoo` | DIRECT | Apache-2.0 | multiobjective_search | yes | 0.95 | 6 | 80 | 0.261 | PRODUCED: already importable in the shared venv |
-| `ripser` | DIRECT | MIT | topology | yes | 0.94 | 6 | 6 | 0.137 | PRODUCED: already importable in the shared venv |
-| `ruptures` | DIRECT | BSD-2-Clause | change_point | yes | 0.9 | 5 | 3 | 0.070 | UNMEASURED: already importable in the shared venv |
-| `causal_learn` | DIRECT | MIT | causal_discovery | yes | 14.18 | 5 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `cell:conformal_calibration` | REBUILT | desk (own code; mechanism rebuilt from mapie) | conformal_uncertainty | yes | 14.17 | 7 | 0 | 0.000 | PRODUCED:  |
-| `cell:edgar_transmission` | REBUILT | desk (own code; mechanism rebuilt from the desk's own method) | financial_nlp | yes | 14.17 | 7 | 0 | 0.000 | UNMEASURED:  |
-| `cell:rl_execution_challenger` | REBUILT | desk (own code; mechanism rebuilt from ray, openspiel) | execution_engine | yes | 14.17 | 7 | 0 | 0.000 | PRODUCED:  |
-| `dowhy` | DIRECT | MIT | causal_discovery | yes | 14.17 | 5 | 0 | 0.000 | UNMEASURED: already importable in the shared venv |
-| `dspy` | DIRECT | MIT | prompt_optimization | yes | 14.17 | 5 | 0 | 0.000 | TEXT_ONLY: already importable in the shared venv |
-| `easytpp` | DIRECT | Apache-2.0 | point_process | yes | 14.17 | 5 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `featuretools` | DIRECT | BSD-3-Clause | feature_synthesis | yes | 14.16 | 5 | 0 | 0.000 | PRODUCED: installed and imported |
-| `mapie` | DIRECT | BSD-3-Clause | conformal_uncertainty | yes | 14.16 | 5 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `openevolve` | DIRECT | Apache-2.0 | program_evolution | yes | 14.16 | 5 | 0 | 0.000 | TEXT_ONLY: already importable in the shared venv |
-| `pgmpy` | DIRECT | MIT | graphical_models | yes | 14.16 | 5 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `pydmd` | DIRECT | MIT | dynamical_systems | yes | 14.15 | 5 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `pymc` | DIRECT | Apache-2.0 | probabilistic_programming | yes | 14.31 | 4 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `pysindy` | DIRECT | MIT | dynamical_systems | yes | 14.31 | 4 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `pysr` | DIRECT | Apache-2.0 | symbolic_regression | yes | 14.28 | 4 | 0 | 0.000 | UNMEASURED: installed and imported |
-| `pyvinecopulib` | DIRECT | MIT | copula_dependence | yes | 14.5 | 2 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `quantconnect_cloud` | WRAPPED | Apache-2.0 | research_reliability | yes | 14.5 | 2 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `quantrocket` | WRAPPED | Apache-2.0 | data_tooling | yes | 14.5 | 2 | 0 | 0.000 | TEXT_ONLY: already importable in the shared venv |
-| `reservoirpy` | DIRECT | MIT | reservoir_computing | yes | 14.49 | 2 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `river` | DIRECT | BSD-3-Clause | online_learning | yes | 14.49 | 2 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `roughpy` | DIRECT | BSD-3-Clause | rough_paths | yes | 14.49 | 2 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `sbi` | DIRECT | Apache-2.0 | simulation_based_inference | yes | 14.25 | 2 | 0 | 0.000 | UNMEASURED: installed and imported |
-| `scikit_mine` | DIRECT | BSD-3-Clause | pattern_mining | yes | 9.22 | 2 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `tensorly` | DIRECT | BSD-3-Clause | tensor_methods | yes | 14.74 | 1 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `tigramite` | DIRECT | GPL-3.0 | causal_discovery | yes | 14.58 | 1 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `tsfresh` | DIRECT | MIT | feature_synthesis | yes | 14.57 | 1 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `tslearn` | DIRECT | BSD-2-Clause | time_series_mining | yes | 14.4 | 1 | 0 | 0.000 | UNMEASURED: already importable in the shared venv |
+| `pyextremes` | DIRECT | MIT | extreme_value | yes | 0.12 | 8 | 79 | 0.924 | PRODUCED: already importable in the shared venv |
+| `agonalpha` | DIRECT | UNVERIFIED | artifact_search | yes | 0.12 | 1 | 40 | 0.803 | PRODUCED: REBUILT method in desk code; runs in-process |
+| `numerai_method` | REBUILT | UNVERIFIED | portfolio_research | yes | 0.12 | 10 | 24 | 0.599 | PRODUCED: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `stumpy` | DIRECT | BSD-3-Clause | time_series_mining | yes | 0.05 | 3 | 41 | 0.570 | PRODUCED: already importable in the shared venv |
+| `cell:coevolution_cell` | REBUILT | desk (own code; mechanism rebuilt from alphagen, openevolve, pyribs) | factor_model_coevolution | yes | 0.1 | 10 | 117 | 0.535 | PRODUCED: fallback: numpy factor grammar x numpy model zoo, alternating coevolution, walk-forward; upstream available: [] |
+| `ray` | DIRECT | Apache-2.0 | distributed_compute | yes | 0.09 | 7 | 72 | 0.466 | PRODUCED: already importable in the shared venv |
+| `nevergrad` | DIRECT | MIT | evolutionary_search | yes | 0.08 | 8 | 72 | 0.441 | PRODUCED: already importable in the shared venv |
+| `cell:path_signature_lab` | REBUILT | desk (own code; mechanism rebuilt from roughpy) | rough_paths | yes | 0.08 | 10 | 29 | 0.390 | PRODUCED: fallback: numpy truncated signature (Chen's identity, level <= 3) over discrete increments; upstream available: [] |
+| `aeon` | DIRECT | BSD-3-Clause | time_series_mining | yes | 0.11 | 7 | 104 | 0.387 | PRODUCED: already importable in the shared venv |
+| `pymoo` | DIRECT | Apache-2.0 | multiobjective_search | yes | 0.05 | 7 | 94 | 0.253 | PRODUCED: already importable in the shared venv |
+| `ripser` | DIRECT | MIT | topology | yes | 0.04 | 7 | 6 | 0.110 | PRODUCED: already importable in the shared venv |
+| `ruptures` | DIRECT | BSD-2-Clause | change_point | yes | 0.01 | 6 | 3 | 0.056 | UNMEASURED: already importable in the shared venv |
+| `ai_berkshire` | DIRECT | UNVERIFIED | multi_agent_debate | yes | 0.12 | 1 | 0 | 0.000 | PRODUCED: REBUILT method in desk code; runs in-process |
+| `causal_learn` | DIRECT | MIT | causal_discovery | yes | 14.32 | 5 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `cell:conformal_calibration` | REBUILT | desk (own code; mechanism rebuilt from mapie) | conformal_uncertainty | yes | 14.31 | 7 | 0 | 0.000 | PRODUCED:  |
+| `cell:edgar_transmission` | REBUILT | desk (own code; mechanism rebuilt from the desk's own method) | financial_nlp | yes | 14.31 | 7 | 0 | 0.000 | UNMEASURED:  |
+| `cell:rl_execution_challenger` | REBUILT | desk (own code; mechanism rebuilt from ray, openspiel) | execution_engine | yes | 14.31 | 7 | 0 | 0.000 | PRODUCED:  |
+| `dowhy` | DIRECT | MIT | causal_discovery | yes | 14.3 | 5 | 0 | 0.000 | UNMEASURED: already importable in the shared venv |
+| `dspy` | DIRECT | MIT | prompt_optimization | yes | 14.3 | 5 | 0 | 0.000 | TEXT_ONLY: already importable in the shared venv |
+| `easytpp` | DIRECT | Apache-2.0 | point_process | yes | 14.3 | 5 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `featuretools` | DIRECT | BSD-3-Clause | feature_synthesis | yes | 14.3 | 5 | 0 | 0.000 | PRODUCED: installed and imported |
+| `mapie` | DIRECT | BSD-3-Clause | conformal_uncertainty | yes | 14.3 | 5 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `openevolve` | DIRECT | Apache-2.0 | program_evolution | yes | 14.29 | 5 | 0 | 0.000 | TEXT_ONLY: already importable in the shared venv |
+| `pgmpy` | DIRECT | MIT | graphical_models | yes | 14.29 | 5 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `pydmd` | DIRECT | MIT | dynamical_systems | yes | 14.29 | 5 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `pymc` | DIRECT | Apache-2.0 | probabilistic_programming | yes | 14.44 | 4 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `pysindy` | DIRECT | MIT | dynamical_systems | yes | 14.44 | 4 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `pysr` | DIRECT | Apache-2.0 | symbolic_regression | yes | 14.42 | 4 | 0 | 0.000 | UNMEASURED: installed and imported |
+| `pyvinecopulib` | DIRECT | MIT | copula_dependence | yes | 14.63 | 2 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `quantconnect_cloud` | WRAPPED | Apache-2.0 | research_reliability | yes | 14.63 | 2 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `quantrocket` | WRAPPED | Apache-2.0 | data_tooling | yes | 14.63 | 2 | 0 | 0.000 | TEXT_ONLY: already importable in the shared venv |
+| `reservoirpy` | DIRECT | MIT | reservoir_computing | yes | 14.62 | 2 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `river` | DIRECT | BSD-3-Clause | online_learning | yes | 14.62 | 2 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `roughpy` | DIRECT | BSD-3-Clause | rough_paths | yes | 14.62 | 2 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `sbi` | DIRECT | Apache-2.0 | simulation_based_inference | yes | 14.39 | 2 | 0 | 0.000 | UNMEASURED: installed and imported |
+| `scikit_mine` | DIRECT | BSD-3-Clause | pattern_mining | yes | 9.35 | 2 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `tensorly` | DIRECT | BSD-3-Clause | tensor_methods | yes | 14.87 | 1 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `tigramite` | DIRECT | GPL-3.0 | causal_discovery | yes | 14.72 | 1 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `tsfresh` | DIRECT | MIT | feature_synthesis | yes | 14.7 | 1 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `tslearn` | DIRECT | BSD-2-Clause | time_series_mining | yes | 14.54 | 1 | 0 | 0.000 | UNMEASURED: already importable in the shared venv |
 | `abides` | DIRECT | UNVERIFIED | market_simulation | NO | - | 0 | 0 | 0.000 | NEVER_RUN: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
-| `agonalpha` | DIRECT | UNVERIFIED | artifact_search | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
-| `ai_berkshire` | DIRECT | UNVERIFIED | multi_agent_debate | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
-| `ai_hedge_fund` | DIRECT | UNVERIFIED | multi_agent_debate | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
+| `ai_hedge_fund` | DIRECT | UNVERIFIED | multi_agent_debate | NO | - | 0 | 0 | 0.000 | NEVER_RUN: ai_hedge_fund is not importable here and no sandbox venv exists |
 | `ai_quant_agent` | WRAPPED | UNVERIFIED | data_source | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
 | `ai_scientist` | DIRECT | UNVERIFIED | automated_science | NO | - | 0 | 0 | 0.000 | NEVER_RUN: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
 | `ai_trader` | WRAPPED | UNVERIFIED | multi_agent_debate | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
 | `aitradingarena` | REBUILT | UNVERIFIED | telemetry_source | NO | - | 0 | 0 | 0.000 | NEVER_RUN: respect its access rules; observations are hypothesis priors |
-| `akshare` | DIRECT | UNVERIFIED | data_source | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
+| `akshare` | DIRECT | UNVERIFIED | data_source | NO | - | 0 | 0 | 0.000 | NEVER_RUN: akshare is not importable here and no sandbox venv exists |
 | `alpha101` | REBUILT | UNVERIFIED | dsl_program_search | NO | - | 0 | 0 | 0.000 | NEVER_RUN: public formulas only; WorldQuant BRAIN data, private alphas and any platform extraction are excluded by its terms and by LAWS 5h |
 | `alpha_search` | DIRECT | UNVERIFIED | multi_agent_debate | NO | - | 0 | 0 | 0.000 | NEVER_RUN: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
 | `alphaagent` | DIRECT | UNVERIFIED | structural_novelty | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
 | `alphacrafter` | DIRECT | UNVERIFIED | regime_selection | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
 | `alphagen` | DIRECT | UNVERIFIED | evolutionary_search | NO | - | 0 | 0 | 0.000 | NEVER_RUN: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
-| `alphaquanter` | DIRECT | UNVERIFIED | rl_policy_search | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
-| `arcticdb` | DIRECT | UNVERIFIED | data_tooling | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
+| `alphaquanter` | DIRECT | UNVERIFIED | rl_policy_search | NO | - | 0 | 0 | 0.000 | NEVER_RUN: alphaquanter is not importable here and no sandbox venv exists |
+| `arcticdb` | DIRECT | UNVERIFIED | data_tooling | NO | - | 0 | 0 | 0.000 | NEVER_RUN: arcticdb is not importable here and no sandbox venv exists |
 | `ashare_agents` | WRAPPED | UNVERIFIED | data_source | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
 | `astockarena` | WRAPPED | UNVERIFIED | multi_agent_debate | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
-| `atlas_gic` | DIRECT | UNVERIFIED | trajectory_evolution | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
-| `autohedge` | REBUILT | UNVERIFIED | multi_agent_debate | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
-| `autohypothesis` | DIRECT | UNVERIFIED | evolutionary_search | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
+| `atlas_gic` | DIRECT | UNVERIFIED | trajectory_evolution | NO | - | 0 | 0 | 0.000 | NEVER_RUN: atlas_gic is not importable here and no sandbox venv exists |
+| `autohedge` | REBUILT | UNVERIFIED | multi_agent_debate | NO | - | 0 | 0 | 0.000 | NEVER_RUN: rostered REBUILT: upstream code never runs here |
+| `autohypothesis` | DIRECT | UNVERIFIED | evolutionary_search | NO | - | 0 | 0 | 0.000 | NEVER_RUN: autohypothesis is not importable here and no sandbox venv exists |
 | `bl888m` | REBUILT | UNVERIFIED | information_acquisition | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
 | `botorch` | DIRECT | UNVERIFIED | bayesian_optimization | NO | - | 0 | 0 | 0.000 | NEVER_RUN: the wheel installed but the module does not import on this host: a native dependency's DLL refuses to initialise on this host -- covered by: UNCOVERED |
-| `bridgewater_pat_aia` | REBUILT | UNVERIFIED | institutional_capability | NO | 14.19 | 7 | 0 | 0.000 | PRODUCED: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `bridgewater_pat_aia` | REBUILT | UNVERIFIED | institutional_capability | NO | 14.32 | 7 | 0 | 0.000 | PRODUCED: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
 | `chronos2` | DIRECT | UNVERIFIED | foundation_model | NO | - | 0 | 0 | 0.000 | NEVER_RUN: the wheel installed but the module does not import on this host: a native dependency's DLL refuses to initialise on this host -- covered by: UNCOVERED |
 | `contesttrade` | WRAPPED | UNVERIFIED | multi_agent_debate | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
 | `cvxportfolio` | DIRECT | UNVERIFIED | portfolio_optimization | NO | - | 0 | 0 | 0.000 | NEVER_RUN: the wheel installed but the module does not import on this host: importing the module crashes the interpreter on this host -- covered by: UNCOVERED: c |
 | `darts` | DIRECT | UNVERIFIED | forecast_zoo | NO | - | 0 | 0 | 0.000 | NEVER_RUN: the wheel installed but the module does not import on this host: a native dependency's DLL is missing on this host -- covered by: UNCOVERED: capabilit |
 | `darwin_godel_machine` | REBUILT | UNVERIFIED | agent_evolution | NO | - | 0 | 0 | 0.000 | NEVER_RUN: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
 | `deshaw_tools` | DIRECT | UNVERIFIED | data_tooling | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
-| `dexter` | DIRECT | UNVERIFIED | information_acquisition | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
+| `dexter` | DIRECT | UNVERIFIED | information_acquisition | NO | - | 0 | 0 | 0.000 | NEVER_RUN: dexter is not importable here and no sandbox venv exists |
 | `dso` | DIRECT | UNVERIFIED | symbolic_regression | NO | - | 0 | 0 | 0.000 | NEVER_RUN: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
-| `fingpt` | DIRECT | UNVERIFIED | financial_nlp | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
-| `finrl` | DIRECT | UNVERIFIED | rl_policy_search | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
-| `finrobot` | DIRECT | UNVERIFIED | information_acquisition | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
+| `fingpt` | DIRECT | UNVERIFIED | financial_nlp | NO | - | 0 | 0 | 0.000 | NEVER_RUN: fingpt is not importable here and no sandbox venv exists |
+| `finrl` | DIRECT | UNVERIFIED | rl_policy_search | NO | - | 0 | 0 | 0.000 | NEVER_RUN: finrl is not importable here and no sandbox venv exists |
+| `finrobot` | DIRECT | UNVERIFIED | information_acquisition | NO | - | 0 | 0 | 0.000 | NEVER_RUN: finrobot is not importable here and no sandbox venv exists |
 | `hithink` | WRAPPED | UNVERIFIED | data_source | NO | - | 0 | 0 | 0.000 | NEVER_RUN: terms must be read before any machine access |
 | `hubble` | REBUILT | UNVERIFIED | dsl_program_search | NO | - | 0 | 0 | 0.000 | NEVER_RUN: REBUILT until usable public code is confirmed; never recorded as DIRECT on the strength of a paper |
 | `hummingbot` | REBUILT | UNVERIFIED | microstructure | NO | - | 0 | 0 | 0.000 | NEVER_RUN: venue connectors are crypto-exchange ground and are NEVER hunted (LAWS 1); only execution mechanisms transfer to Fusion |
 | `idtxl` | DIRECT | UNVERIFIED | information_theory | NO | - | 0 | 0 | 0.000 | NEVER_RUN: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
-| `inalpha` | DIRECT | UNVERIFIED | evolutionary_search | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
+| `inalpha` | DIRECT | UNVERIFIED | evolutionary_search | NO | - | 0 | 0 | 0.000 | NEVER_RUN: inalpha is not importable here and no sandbox venv exists |
 | `inst_citadel` | REBUILT | UNVERIFIED | institutional_capability | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
 | `inst_deshaw` | REBUILT | UNVERIFIED | institutional_capability | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
 | `inst_highflyer` | REBUILT | UNVERIFIED | institutional_capability | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
@@ -107,46 +107,46 @@ Disposition census: DIRECT 82, REBUILT 29, WRAPPED 17
 | `inst_ubiquant_lingjun_minghong` | REBUILT | UNVERIFIED | institutional_capability | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
 | `inst_xtx` | REBUILT | UNVERIFIED | institutional_capability | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
 | `kats` | DIRECT | UNVERIFIED | change_point | NO | - | 0 | 0 | 0.000 | NEVER_RUN: the distribution's build backend does not run on this interpreter -- a source-only dependency pinned to a numpy this Python has no wheel for -- covere |
-| `kronos` | DIRECT | UNVERIFIED | foundation_model | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
-| `kymatio` | DIRECT | BSD-3-Clause | signal_scattering | NO | 14.86 | 1 | 0 | 0.000 | UNMEASURED: the wheel installed but the module does not import on this host: the distribution calls an API the desk's own scientific core has removed (measured on |
+| `kronos` | DIRECT | UNVERIFIED | foundation_model | NO | - | 0 | 0 | 0.000 | NEVER_RUN: kronos is not importable here and no sandbox venv exists |
+| `kymatio` | DIRECT | BSD-3-Clause | signal_scattering | NO | 15.0 | 1 | 0 | 0.000 | UNMEASURED: the wheel installed but the module does not import on this host: the distribution calls an API the desk's own scientific core has removed (measured on |
 | `l1vsun` | REBUILT | UNVERIFIED | information_acquisition | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
-| `lean` | DIRECT | UNVERIFIED | replay_parity | NO | - | 0 | 0 | 0.000 | NEVER_RUN: already absorbed as the live/backtest parity guard; the engine itself remains a research-only sandbox |
+| `lean` | DIRECT | UNVERIFIED | replay_parity | NO | - | 0 | 0 | 0.000 | NEVER_RUN: lean is not importable here and no sandbox venv exists |
 | `merlion` | DIRECT | UNVERIFIED | anomaly_detection | NO | - | 0 | 0 | 0.000 | NEVER_RUN: the source build failed on this host -- covered by: UNCOVERED: capability family 'anomaly_detection' needs a REBUILT cell under research/sandboxes/ wh |
-| `ml_quant_trading` | DIRECT | UNVERIFIED | representation_learning | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
+| `ml_quant_trading` | DIRECT | UNVERIFIED | representation_learning | NO | - | 0 | 0 | 0.000 | NEVER_RUN: ml_quant_trading is not importable here and no sandbox venv exists |
 | `moment` | DIRECT | UNVERIFIED | foundation_model | NO | - | 0 | 0 | 0.000 | NEVER_RUN: a build-time dependency is source-only and does not build on this interpreter -- covered by: UNCOVERED: capability family 'foundation_model' needs a R |
-| `nautilus` | DIRECT | UNVERIFIED | replay_parity | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
+| `nautilus` | DIRECT | UNVERIFIED | replay_parity | NO | - | 0 | 0 | 0.000 | NEVER_RUN: nautilus_trader is not importable here and no sandbox venv exists |
 | `neuralforecast` | DIRECT | UNVERIFIED | forecast_zoo | NO | - | 0 | 0 | 0.000 | NEVER_RUN: the wheel installed but the module does not import on this host: a native dependency's DLL refuses to initialise on this host -- covered by: UNCOVERED |
-| `nexquant` | DIRECT | UNVERIFIED | evolutionary_search | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
-| `openbb` | DIRECT | UNVERIFIED | data_source | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
+| `nexquant` | DIRECT | UNVERIFIED | evolutionary_search | NO | - | 0 | 0 | 0.000 | NEVER_RUN: nexquant is not importable here and no sandbox venv exists |
+| `openbb` | DIRECT | UNVERIFIED | data_source | NO | - | 0 | 0 | 0.000 | NEVER_RUN: openbb is not importable here and no sandbox venv exists |
 | `openfr` | WRAPPED | UNVERIFIED | multi_agent_debate | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
 | `openspiel` | DIRECT | UNVERIFIED | game_theory | NO | - | 0 | 0 | 0.000 | NEVER_RUN: the wheel installed but the module does not import on this host: importing the module crashes the interpreter on this host -- covered by: REBUILT cell |
 | `pyg_temporal` | DIRECT | UNVERIFIED | graph_learning | NO | - | 0 | 0 | 0.000 | NEVER_RUN: a build-time dependency is source-only and does not build on this interpreter -- covered by: UNCOVERED: capability family 'graph_learning' needs a REB |
 | `pyribs` | DIRECT | UNVERIFIED | quality_diversity | NO | - | 0 | 0 | 0.000 | NEVER_RUN: the wheel installed but the module does not import on this host: a native dependency's DLL refuses to initialise on this host -- covered by: REBUILT c |
 | `pyrqa` | DIRECT | UNVERIFIED | recurrence_analysis | NO | - | 0 | 0 | 0.000 | NEVER_RUN: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
-| `qlib` | DIRECT | UNVERIFIED | representation_learning | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
+| `qlib` | DIRECT | UNVERIFIED | representation_learning | NO | - | 0 | 0 | 0.000 | NEVER_RUN: qlib is not importable here and no sandbox venv exists |
 | `quantaalpha` | DIRECT | UNVERIFIED | trajectory_evolution | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
-| `quantagent` | DIRECT | UNVERIFIED | multi_agent_debate | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
+| `quantagent` | DIRECT | UNVERIFIED | multi_agent_debate | NO | - | 0 | 0 | 0.000 | NEVER_RUN: quantagent is not importable here and no sandbox venv exists |
 | `quantharness` | WRAPPED | UNVERIFIED | walk_forward_harness | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
 | `quanti` | WRAPPED | UNVERIFIED | regime_selection | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
 | `quantifact` | DIRECT | UNVERIFIED | research_reliability | NO | - | 0 | 0 | 0.000 | NEVER_RUN: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
 | `quantmind` | WRAPPED | UNVERIFIED | data_source | NO | - | 0 | 0 | 0.000 | NEVER_RUN: performance claims are hypotheses; only the data layer is evidence |
 | `quantsplaybook` | REBUILT | UNVERIFIED | research_reproduction | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
-| `rd_agent` | DIRECT | UNVERIFIED | factor_model_coevolution | NO | - | 0 | 0 | 0.000 | NEVER_RUN: already absorbed as METHODS (hypothesis->feedback, novelty screen); the law now also requires it as a running worker |
+| `rd_agent` | DIRECT | UNVERIFIED | factor_model_coevolution | NO | - | 0 | 0 | 0.000 | NEVER_RUN: rdagent is not importable here and no sandbox venv exists |
 | `riskfolio` | DIRECT | UNVERIFIED | portfolio_optimization | NO | - | 0 | 0 | 0.000 | NEVER_RUN: the wheel installed but the module does not import on this host: importing the module crashes the interpreter on this host -- covered by: UNCOVERED: c |
 | `rohonchain` | REBUILT | UNVERIFIED | causal_discovery | NO | - | 0 | 0 | 0.000 | NEVER_RUN: IDEAS ONLY by the principal's order: public papers, code and references are read; the account itself is never monitored or mined |
 | `timesfm` | DIRECT | UNVERIFIED | foundation_model | NO | - | 0 | 0 | 0.000 | NEVER_RUN: the wheel installed but the module does not import on this host: a native dependency's DLL refuses to initialise on this host -- covered by: UNCOVERED |
 | `tpot` | DIRECT | UNVERIFIED | program_evolution | NO | - | 0 | 0 | 0.000 | NEVER_RUN: the wheel installed but the module does not import on this host: a native dependency's DLL is missing on this host -- covered by: UNCOVERED: capabilit |
-| `tradingagents` | DIRECT | UNVERIFIED | multi_agent_debate | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
+| `tradingagents` | DIRECT | UNVERIFIED | multi_agent_debate | NO | - | 0 | 0 | 0.000 | NEVER_RUN: tradingagents is not importable here and no sandbox venv exists |
 | `tradingagents_cn` | WRAPPED | UNVERIFIED | multi_agent_debate | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
 | `tradingagents_kr` | WRAPPED | UNVERIFIED | multi_agent_debate | NO | - | 0 | 0 | 0.000 | NEVER_RUN: admitted for its KOREAN DATA STACK, not for its reasoning topology |
-| `tushare` | DIRECT | UNVERIFIED | data_source | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
+| `tushare` | DIRECT | UNVERIFIED | data_source | NO | - | 0 | 0 | 0.000 | NEVER_RUN: tushare is not importable here and no sandbox venv exists |
 | `valuecell` | WRAPPED | UNVERIFIED | multi_agent_debate | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
 | `verumtrade` | WRAPPED | UNVERIFIED | multi_agent_debate | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
 | `vietnam_alpha` | WRAPPED | UNVERIFIED | trajectory_evolution | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
-| `vnpy` | REBUILT | UNVERIFIED | execution_engine | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
+| `vnpy` | REBUILT | UNVERIFIED | execution_engine | NO | - | 0 | 0 | 0.000 | NEVER_RUN: rostered REBUILT: upstream code never runs here |
 | `worldquant_brain_public` | REBUILT | UNVERIFIED | dsl_program_search | NO | - | 0 | 0 | 0.000 | NEVER_RUN: terms prohibit automated extraction: documentation is read, the platform is never scraped |
 | `wq_research_engine` | REBUILT | UNVERIFIED | dsl_program_search | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
-| `zvt` | DIRECT | UNVERIFIED | data_tooling | NO | - | 0 | 0 | 0.000 | NEVER_RUN:  |
+| `zvt` | DIRECT | UNVERIFIED | data_tooling | NO | - | 0 | 0 | 0.000 | NEVER_RUN: zvt is not importable here and no sandbox venv exists |
 
 ## What each column means
 
