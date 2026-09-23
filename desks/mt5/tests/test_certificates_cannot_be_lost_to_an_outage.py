@@ -268,9 +268,18 @@ def test_every_git_writer_on_the_box_takes_the_same_process_level_lock() -> None
     # principal's default descriptor could not be opened by the next, so every adoption refused
     # for four days with "Access to the path 'Local\MT5-GitWriter' is denied". GitWriterMutex.ps1
     # creates it with a DACL the whole machine can open, and falls back to OpenExisting.
+    # AND THE NAME MOVED (2026-09-23, second measurement): creating the SAME name with a
+    # permissive descriptor fails too -- a create on an existing name is an open, and the DACL
+    # already on the live object decides. The lock is now MT5-GitWriter-v2, created openably; the
+    # legacy name is taken BEST EFFORT so old code still coordinates, and a legacy name that
+    # cannot be opened is a note, never a refusal.
     helper = (_DESK / "scripts" / "GitWriterMutex.ps1").read_text("utf-8")
     assert "MutexSecurity" in helper and "WorldSid" in helper
     assert "OpenExisting" in helper
+    assert "MT5-GitWriter-v2" in helper
+    assert "$LegacyName" in helper and "LegacyWhy" in helper
+    legacy_at = helper.index("$LegacyName = ")
+    assert "exit" not in helper[legacy_at:legacy_at + 400], "a legacy miss must never refuse"
     for src, name in ((SYNC, "sync"), (ADOPT_CODE, "adopt"),
                       ((_DESK / "scripts" / "Seal-IfClean.ps1").read_text("utf-8"), "seal"),
                       ((_DESK / "scripts" / "intel_ship_adopt.ps1").read_text("utf-8"), "intel")):
