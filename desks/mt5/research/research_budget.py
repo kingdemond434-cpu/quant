@@ -127,6 +127,94 @@ def _engine_factor(leg: str) -> tuple[float, str]:
         return 1.0, f"engine registry unread ({type(exc).__name__}); par"
 
 
+def _meta_factor(leg: str) -> tuple[float, str]:
+    """The meta-controller's per-ACTION-KIND price, folded onto the leg that executes that kind.
+
+    THE THIRD FACTOR THE LEDGER ASKED FOR (Tier-1 Q12). The bandit prices research ACTIONS and
+    the ladder prices BREADTH; `meta_controller` ranks the nine action kinds in dE[log W] per day
+    (or, while the compute price is UNMEASURED, in information gain per cell) and until now
+    nothing read that ranking to decide what runs. `meta_controller.KIND_LEGS` already declares
+    which hourly leg executes each kind, so the join is the controller's own table, not a new one.
+
+    ONE-SIDED, FOR THE REASON `ENGINE_FLOOR` RECORDS. The ledger's own next_step said a leg
+    priced below the median should get FEWER seconds. That is a shrink on research, and the
+    principal's standing order of 2026-09-08 is that no session lowers the desk's aggressiveness
+    by fiat; nothing else claims the seconds it would free, so the leg would simply do less work
+    for no measured gain. A kind priced ABOVE the median is funded above par; a kind priced below
+    it runs at par and its price is published in META_CONTROLLER.json for a human to argue with.
+    """
+    try:
+        import meta_controller
+        doc = _read(DESK / "reports" / "META_CONTROLLER.json")
+        boards = doc.get("boards")
+        if not isinstance(boards, dict):
+            return 1.0, "meta controller: no boards published; par"
+        board = None
+        for name, key in (("delta_elog", "delta_elog_per_day"), ("information", "info_per_cell"),
+                          ("information", "info_gain_nats")):
+            cand = boards.get(name)
+            if isinstance(cand, dict) and cand.get("status") == "OK" and cand.get("rows"):
+                board, value_key = cand, key
+                break
+        if board is None:
+            return 1.0, "meta controller: no board is OK this epoch; par"
+        best: dict[str, float] = {}
+        for row in board.get("rows") or []:
+            if not isinstance(row, dict):
+                continue
+            v = row.get(value_key)
+            if isinstance(v, (int, float)):
+                k = str(row.get("kind"))
+                best[k] = max(best.get(k, float("-inf")), float(v))
+        if not best:
+            return 1.0, f"meta controller: no row carries {value_key!r}; par"
+        kinds = [k for k, legs in meta_controller.KIND_LEGS.items() if leg in legs]
+        mine = [best[k] for k in kinds if k in best]
+        if not mine:
+            return 1.0, f"meta controller: leg {leg!r} executes no priced kind; par"
+        ranked = sorted(best.values())
+        median = ranked[len(ranked) // 2] if len(ranked) % 2 else (
+            (ranked[len(ranked) // 2 - 1] + ranked[len(ranked) // 2]) / 2.0)
+        raw = (max(mine) / median) if median > 0 else 1.0
+        f = max(1.0, min(2.0, raw))
+        return f, (f"meta controller: leg {leg!r} serves kind(s) {kinds} priced "
+                   f"{max(mine):.4g} on the {value_key} board vs median {median:.4g} = x{raw:.2f}"
+                   f" -> x{f:.2f} (one-sided: it may fund above par and never below it)")
+    except Exception as exc:
+        return 1.0, f"meta controller unread ({type(exc).__name__}); par"
+
+
+def _paradigm_factor(leg: str) -> tuple[float, str]:
+    """The bandit's PARADIGM share for the paradigm this leg belongs to (Tier-1 Q18).
+
+    `bandit.paradigm_shares` prices a paradigm by its volume x its INDEPENDENCE -- one minus the
+    share of its cells some other paradigm also proposed -- so two searches that keep rediscovering
+    each other are one search with two bills, and the budget stops paying twice. The join is the
+    census's own `legs` column, never a list maintained here.
+
+    ONE-SIDED, for the reason `ENGINE_FLOOR` records: a paradigm priced below par runs at par and
+    its redundancy is published in SEARCH_PARADIGMS.json. Nothing here starves a search.
+    """
+    try:
+        from libs.research import bandit as _bandit
+        doc = _bandit.paradigm_shares()
+        arms = doc.get("arms") or {}
+        shares_ = doc.get("shares") or {}
+        if not arms:
+            return 1.0, f"paradigm census unmeasured ({doc.get('why', '')[:80]}); par"
+        mine = [n for n, row in arms.items() if leg in (row.get("legs") or ())]
+        if not mine:
+            return 1.0, f"paradigm census: leg {leg!r} belongs to no paradigm; par"
+        baseline = 1.0 / max(1, len(shares_))
+        raw = max(float(shares_.get(n, 0.0)) for n in mine) / baseline if baseline > 0 else 1.0
+        f = max(1.0, min(2.0, raw))
+        return f, (f"paradigm census: leg {leg!r} is {mine} at share "
+                   f"{max(float(shares_.get(n, 0.0)) for n in mine):.4f} vs equal share "
+                   f"{baseline:.4f} = x{raw:.2f} -> x{f:.2f} (one-sided)")
+    except Exception as exc:
+        return 1.0, f"paradigm census unread ({type(exc).__name__}); par"
+
+
 def _auction_factor(leg: str) -> tuple[float, str]:
     """The research auction's cleared share for this leg's DEPARTMENT (Tier-5 mandate 110).
 
@@ -173,8 +261,10 @@ def budget_s(leg: str, base: float) -> tuple[int, dict[str, Any]]:
     archive = _archive_factor(leg)
     auction, auction_why = _auction_factor(leg)
     engine, engine_why = _engine_factor(leg)
+    meta, meta_why = _meta_factor(leg)
+    para, para_why = _paradigm_factor(leg)
     factor = max(FLOOR, min(CEIL, (share / baseline if baseline > 0 else 1.0) * ladder * dept
-                            * archive * auction * engine))
+                            * archive * auction * engine * meta * para))
     applied = round(base * factor)
     rec.update({"share": round(share, 4), "baseline": round(baseline, 4),
                 "ladder_factor": round(ladder, 3), "department_factor": round(dept, 3),
@@ -191,6 +281,12 @@ def budget_s(leg: str, base: float) -> tuple[int, dict[str, Any]]:
                 # P(certified | method, domain) and normalises it onto legs; this is the leg's
                 # share of that, at par when the table is absent or does not name it.
                 "engine_factor": round(engine, 3), "engine_why": engine_why,
+                # E[dElogW] PER ACTION KIND, FOLDED ONTO THE LEG THAT EXECUTES IT (Tier-1 Q12).
+                # The third factor: compute follows the meta-controller's own ranking, not only
+                # the bandit's arms and the breadth ladder.
+                "meta_factor": round(meta, 3), "meta_why": meta_why,
+                # WHICH PARADIGM THIS LEG IS, AND HOW INDEPENDENT IT IS (Tier-1 Q18).
+                "paradigm_factor": round(para, 3), "paradigm_why": para_why,
                 "factor": round(factor, 3), "applied_s": applied, "applied": True,
                 "why": f"share {share:.3f} of arms {list(arms)} vs equal-share baseline "
                        f"{baseline:.3f} -> x{factor:.2f}, clipped to [{FLOOR}, {CEIL}]"

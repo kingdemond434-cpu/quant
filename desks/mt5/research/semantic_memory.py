@@ -50,6 +50,7 @@ CLI: build [--limit-per-kind N] | query TEXT [--k --kinds --symbol --family] | f
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import math
 import os
@@ -57,7 +58,7 @@ import re
 import subprocess
 import sys
 from collections import Counter, deque
-from collections.abc import Callable, Iterable, Iterator
+from collections.abc import Callable, Iterable, Iterator, Sequence
 from dataclasses import dataclass, field, fields
 from datetime import UTC, datetime
 from functools import lru_cache
@@ -699,6 +700,147 @@ def _print(hits: list[Hit]) -> None:
         print(f"          {h.text[:150]}")
 
 
+# ================================================== THE EXPERIENCE SPLIT (Tier-1 Q17)
+#: THE SIX NEGATIVE CLASSES, DERIVED FROM THE GATE A CELL DIED AT -- never from prose. A verdict
+#: ledger row names its terminal gate; this maps that name onto the class of MISTAKE it records,
+#: so "what kind of thing goes wrong here" is a count rather than an impression. `other` is a
+#: real class: a death nothing here recognises must be visible, not filed under the nearest label.
+NEGATIVE_CLASSES: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("leakage", ("pit", "point_in_time", "lookahead", "leak", "survivorship")),
+    ("cost_killed", ("stress_cost", "cost", "net_edge", "spread", "slippage", "impact")),
+    ("parameter_fragility", ("pbo", "walk_forward", "cpcv", "stability", "fragility",
+                             "deflated_sharpe", "overfit")),
+    ("duplicate_family", ("novelty", "orthogonality", "redundan", "correlation", "duplicate")),
+    ("regime_failure", ("regime", "invariance", "state_admission", "conditional")),
+    ("forward_failure", ("forward", "shadow", "live", "reconcile", "enrol")),
+)
+#: What `distil` writes. Read by the deepening worker BEFORE it generates (see `experience`).
+EXPERIENCE = "experience_memory.json"
+
+
+def negative_class(stage: str) -> str:
+    """The class of mistake a terminal gate name records. `other` when nothing matches."""
+    s = str(stage or "").strip().lower()
+    if not s:
+        return "other"
+    for name, needles in NEGATIVE_CLASSES:
+        if any(n in s for n in needles):
+            return name
+    return "other"
+
+
+def _pos_neg(docs: Sequence[Doc]) -> tuple[list[Doc], list[Doc]]:
+    pos: list[Doc] = []
+    neg: list[Doc] = []
+    for d in docs:
+        if d.kind == "survivor":
+            pos.append(d)
+        elif d.kind == "hypothesis":
+            fate = str(d.meta.get("fate") or "").upper()
+            (neg if fate in DEAD_FATES else pos if fate == "CERTIFIED" else []).append(d)  # type: ignore[arg-type]
+        elif d.kind == "verdict":
+            (pos if d.meta.get("passed") else neg).append(d)
+        elif d.kind == "trade_outcome":
+            with contextlib.suppress(TypeError, ValueError):
+                (pos if float(d.meta.get("sum_r") or 0.0) > 0.0 else neg).append(d)
+        elif d.kind == "lesson":
+            neg.append(d)
+    return pos, neg
+
+
+def positive(docs: Sequence[Doc] | None = None) -> list[Doc]:
+    """MECHANISMS THAT SURVIVED: certificates, passed gates, certified hypotheses, sleeves whose
+    live R is positive. The half of experience a generator should imitate."""
+    return _pos_neg(list(docs) if docs is not None else _loaded_docs())[0]
+
+
+def negative(docs: Sequence[Doc] | None = None) -> list[Doc]:
+    """WHAT WENT WRONG: failed gate verdicts, buried hypotheses, the lesson corpus, sleeves whose
+    live R is negative. The half a generator should refuse to repeat."""
+    return _pos_neg(list(docs) if docs is not None else _loaded_docs())[1]
+
+
+def _loaded_docs() -> list[Doc]:
+    try:
+        return list(Memory.load().docs)
+    except (OSError, ValueError, KeyError) as exc:
+        raise RuntimeError(f"semantic index unreadable: {type(exc).__name__}: {exc}") from exc
+
+
+def distil(docs: Sequence[Doc] | None = None, *, top: int = 12,
+           out: Path | None = None) -> dict[str, Any]:
+    """POSITIVE and NEGATIVE experience, distilled to `data/experience_memory.json`.
+
+    FactorMiner's split (Tier-1 Q17): retrieve -> generate -> evaluate -> DISTIL. The index
+    answers "what is similar to this"; this answers the two questions a generator asks before it
+    has a candidate at all -- what construction has worked here, and what class of mistake keeps
+    killing things here. Per negative class: how many cells died that way, and the exemplars with
+    the gate they died at. Per positive family: how many survived, in which asset classes, and
+    the conditions the certificate declared. An empty class is a MEASURED zero, never a gap.
+    """
+    rows = list(docs) if docs is not None else _loaded_docs()
+    pos, neg = _pos_neg(rows)
+    by_class: dict[str, dict[str, Any]] = {name: {"n": 0, "examples": []}
+                                           for name, _ in NEGATIVE_CLASSES}
+    by_class["other"] = {"n": 0, "examples": []}
+    for d in neg:
+        stage = str(d.meta.get("stage") or d.meta.get("terminal_gate") or d.kind)
+        slot = by_class[negative_class(stage)]
+        slot["n"] += 1
+        if len(slot["examples"]) < top:
+            slot["examples"].append({"doc_id": d.doc_id, "kind": d.kind, "stage": stage,
+                                     "symbol": d.meta.get("symbol"),
+                                     "family": d.meta.get("family"),
+                                     "mechanism": d.meta.get("mechanism"),
+                                     "text": d.text[:220]})
+    by_family: dict[str, dict[str, Any]] = {}
+    for d in pos:
+        fam = str(d.meta.get("family") or "UNDECLARED")
+        slot = by_family.setdefault(fam, {"n": 0, "asset_classes": {}, "constructions": []})
+        slot["n"] += 1
+        klass = str(d.meta.get("asset_class") or "UNCLASSIFIED")
+        slot["asset_classes"][klass] = int(slot["asset_classes"].get(klass, 0)) + 1
+        if len(slot["constructions"]) < top:
+            slot["constructions"].append({"doc_id": d.doc_id, "kind": d.kind,
+                                          "symbol": d.meta.get("symbol"),
+                                          "mechanism": d.meta.get("mechanism"),
+                                          "text": d.text[:220]})
+    doc = {
+        "at": datetime.now(UTC).isoformat(timespec="seconds"),
+        "n_docs": len(rows), "n_positive": len(pos), "n_negative": len(neg),
+        "status": "MEASURED" if rows else "UNMEASURED",
+        "negative": dict(sorted(by_class.items())),
+        "positive": dict(sorted(by_family.items(), key=lambda kv: -int(kv[1]["n"]))),
+        "negative_classes": [n for n, _ in NEGATIVE_CLASSES] + ["other"],
+        "rule": ("POSITIVE = survivors, passed gate verdicts, certified hypotheses, sleeves with "
+                 "positive live R. NEGATIVE = failed verdicts, buried hypotheses, the lesson "
+                 "corpus, sleeves with negative live R, classed by the GATE they died at. "
+                 "Written every `semantic_memory build`; read by the deepening worker before it "
+                 "generates (Tier-1 Q17)"),
+        "consumer": "desks/mt5/research/deepening_worker.py (retrieval before generation)",
+    }
+    target = out if out is not None else (_desk() / "data" / EXPERIENCE)
+    try:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        _atomic(target, lambda p: p.write_text(json.dumps(doc, indent=1, ensure_ascii=False),
+                                               "utf-8"))
+    except OSError as exc:                                    # pragma: no cover - disk
+        doc["write_error"] = f"{type(exc).__name__}: {exc}"
+    return doc
+
+
+def experience(path: Path | None = None) -> dict[str, Any]:
+    """The distilled experience, or an UNMEASURED verdict. The retrieval side of Q17."""
+    p = path if path is not None else (_desk() / "data" / EXPERIENCE)
+    try:
+        doc = json.loads(p.read_text("utf-8"))
+        return doc if isinstance(doc, dict) else {"status": "UNMEASURED",
+                                                  "why": f"{p.name} is not an object"}
+    except (OSError, ValueError) as exc:
+        return {"status": "UNMEASURED",
+                "why": f"{p.name} unreadable ({type(exc).__name__}); no experience to retrieve"}
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="semantic institutional memory (local, no service)")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -722,6 +864,15 @@ def main(argv: list[str] | None = None) -> int:
 
     if a.cmd == "build":
         man = build(a.limit_per_kind)
+        # THE EXPERIENCE SPLIT RIDES THE SAME PASS (Tier-1 Q17). Building the index and then
+        # leaving the positive/negative views to a second clock is how an organ goes dark; the
+        # distillation is cheap beside the vectoriser and lands on every build.
+        try:
+            exp = distil()
+            print(f"  experience: {exp['n_positive']} positive / {exp['n_negative']} negative "
+                  f"-> {_desk() / 'data' / EXPERIENCE}")
+        except (RuntimeError, OSError, ValueError) as exc:
+            print(f"  experience: UNMEASURED ({type(exc).__name__}: {exc})")
         print(f"SEMANTIC MEMORY  {man.n_docs} docs  vocab {man.vocab_hash}  -> {home()}")
         for kind in KINDS:
             print(f"  {kind:<15} {man.by_kind.get(kind, 0):>7}  "

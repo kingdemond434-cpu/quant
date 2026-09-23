@@ -471,6 +471,19 @@ def main(argv: list[str] | None = None) -> int:
     # A TRANSPORT CARRIES OTHER SOURCES AND HAS NO ENDPOINT OF ITS OWN TO COLLECT.
     todo = [s for s in sources
             if str(s.get("role") or "mechanism") != "transport" and (args.id or due(s, state, now))]
+    # FETCH IN EXPECTED-INFORMATION-GAIN ORDER (Tier-1 B14). The pass budget is spent in registry
+    # order otherwise, so whichever sources sat late in a hand-written file were the ones deferred
+    # every hour. `source_evig` prices each source BEFORE it is fetched -- prior uncertainty on the
+    # instruments it declares, the share of those no collected source already covers, its own
+    # usable rate, its publication lag, over its measured cost -- and this sorts by that price.
+    # Nothing is dropped or refused: an unpriced source keeps its place after the priced ones, and
+    # a missing artifact leaves the order exactly as it was.
+    try:
+        from research.source_evig import fetch_order
+        _rank = {sid: i for i, sid in enumerate(fetch_order([str(s.get("id")) for s in todo]))}
+        todo.sort(key=lambda s: _rank.get(str(s.get("id")), 10**6))
+    except Exception:                                          # absence is never a demotion
+        pass
 
     if args.dry_run:
         print(f"asia collector: {len(todo)} of {len(sources)} source(s) due")

@@ -500,6 +500,22 @@ def _sizing_term(forecasts: list[dict[str, Any]]) -> dict[str, Any]:
                    f"not growth")
     else:
         reading = f"inside the band: {heat:.2%} held, floor {floor:.0%}, ceiling {ceiling:.0%}"
+    # P12's CONSUMER. Growth foregone by holding under the floor is one half of the sizing
+    # question; the other half is WHICH EDGES THIS ACCOUNT SIZE CAN STILL HARVEST. The allocator
+    # now republishes capacity's per-sleeve E[log W] curve, so the sleeve whose minimum-lot floor
+    # stops binding soonest is named here beside the shortfall -- that is the edge whose
+    # small-account advantage expires first, and pressing it is a growth act, never a cut.
+    cap = (_read_json(_report("pf_allocation.json")) or {}).get("capacity_growth")
+    cap_block: dict[str, Any] = (
+        {"status": (cap or {}).get("status"),
+         "harvest_first": (cap or {}).get("harvest_first"),
+         "binding_now": sorted(n for n, v in ((cap or {}).get("by_sleeve") or {}).items()
+                               if isinstance(v, dict) and v.get("binding_now")),
+         "why": ((cap or {}).get("why")
+                 or "per-sleeve E[log W] as a function of capital (reports/CAPACITY.json)")}
+        if isinstance(cap, dict) else
+        {"status": UNMEASURED,
+         "why": "pf_allocation.json carries no capacity_growth block on this host"})
     return _gterm(round(foregone, 8), basis,
                   "(heat_floor - heat_realised) x expected_log_per_day / heat_realised when the "
                   "book sat under the floor, else 0; positive = deployed less than the growth "
@@ -507,7 +523,8 @@ def _sizing_term(forecasts: list[dict[str, Any]]) -> dict[str, Any]:
                   heat_realised=round(heat, 6), heat_floor=floor, heat_ceiling=ceiling,
                   expected_log_per_day=round(elog, 8),
                   growth_per_unit_heat=round(per_heat, 8), under_floor=under,
-                  above_ceiling=bool(heat > ceiling + 1e-9), reading=reading)
+                  above_ceiling=bool(heat > ceiling + 1e-9), reading=reading,
+                  capacity_growth=cap_block)
 
 
 def _diversification_term() -> dict[str, Any]:
@@ -576,14 +593,35 @@ def _cost_term() -> dict[str, Any]:
     """
     rel = "FILL_SURFACE.json"
     doc = _read_json(_report(rel))
-    if doc is None:
-        return _gterm(UNMEASURED, f"reports/{rel} (absent)",
-                      f"reports/{rel} is not on this host; needs mean_slip_modelled and "
-                      "mean_slip_measured (fractions of price)")
-    modelled = _num(doc.get("mean_slip_modelled", doc.get("modelled_slip_frac")))
-    measured = _num(doc.get("mean_slip_measured", doc.get("measured_slip_frac")))
-    n_fills = doc.get("n_fills")
+    modelled = _num((doc or {}).get("mean_slip_modelled", (doc or {}).get("modelled_slip_frac")))
+    measured = _num((doc or {}).get("mean_slip_measured", (doc or {}).get("measured_slip_frac")))
+    n_fills = (doc or {}).get("n_fills")
     if modelled is None or measured is None:
+        # C(w) IS THE OTHER HALF OF THIS QUESTION AND IT IS ALWAYS AVAILABLE (C17). The fill
+        # surface answers "did the model price the slip right", which needs fills. The allocator
+        # now publishes what the book PAYS to be held -- the heat-weighted R per trade the replay
+        # never charged -- and that is a cost this decomposition owes whether or not a fill has
+        # ever landed. Negative, like every other cost term here.
+        alloc = _read_json(_report("pf_allocation.json")) or {}
+        cw = ((alloc.get("objective_terms") or {}).get("cost_of_w")
+              if isinstance(alloc.get("objective_terms"), dict) else None)
+        total = _num((cw or {}).get("total"))
+        if total is not None:
+            return _gterm(round(-total, 8),
+                          "reports/pf_allocation.json objective_terms.cost_of_w",
+                          "C(w): the heat-weighted R per trade the replay did not charge "
+                          "(each sleeve's own fill-hour spread against the pooled scalar); "
+                          "negative because it is a subtraction from edge",
+                          n_priced=(cw or {}).get("n_priced"),
+                          n_unpriced=(cw or {}).get("n_unpriced"),
+                          unpriced=(cw or {}).get("unpriced"),
+                          uncertainty_of_w=_num(((alloc.get("objective_terms") or {})
+                                                 .get("uncertainty_of_w") or {}).get("total")))
+        if doc is None:
+            return _gterm(UNMEASURED, f"reports/{rel} (absent)",
+                          f"reports/{rel} is not on this host and pf_allocation.json carries no "
+                          "objective_terms.cost_of_w; needs mean_slip_modelled and "
+                          "mean_slip_measured (fractions of price)")
         return _gterm(UNMEASURED, f"reports/{rel}",
                       f"reports/{rel} carries the fitted surface (n_fills={n_fills}, "
                       f"slip_resid_sd={doc.get('slip_resid_sd')}) but no modelled-vs-measured "

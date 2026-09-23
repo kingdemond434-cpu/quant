@@ -40,7 +40,7 @@ import math
 import os
 import sys
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Mapping, Sequence
 from contextlib import suppress
 from datetime import UTC, datetime
 from pathlib import Path
@@ -1304,6 +1304,138 @@ def _capacity_ceiling() -> float | None:
     if not isinstance(h, (int, float)) or not math.isfinite(float(h)) or float(h) <= 0.0:
         return None
     return float(h)
+
+
+def _capacity_growth() -> dict[str, Any]:
+    """E[log W] as a FUNCTION of account capital, per sleeve, read from CAPACITY.json. P12.
+
+    THE CURVE WAS PUBLISHED AND NOBODY READ IT. `capacity.elog_at_capital` sweeps the equity
+    ladder for every sleeve and reports where growth PEAKS and where the venue's minimum lot
+    drags it NEGATIVE, and the only thing this file read out of that artifact was a ceiling that
+    is refused on purpose -- so the capacity question reached the allocator as a permanent None.
+
+    IT SIZES NOTHING AND IT IS NOT A CAP. `harvest_first` orders the sleeves by how much room is
+    left before their floor stops binding, which is the SMALL-ACCOUNT ADVANTAGE stated as a
+    number: an edge whose floor stops binding just above this account is one this desk can still
+    harvest and a larger book cannot, so it is the edge to press NOW. Published for the reader
+    and for `allocator_attribution`; nothing downstream is permitted to shrink a fraction with it.
+    """
+    try:
+        doc = json.loads((BASE / "reports" / "CAPACITY.json").read_text("utf-8"))
+    except (OSError, ValueError) as exc:
+        return {"status": "UNMEASURED",
+                "why": f"reports/CAPACITY.json unreadable ({type(exc).__name__}); the capacity "
+                       f"curve is absent, which is not the same as flat"}
+    rows = doc.get("rows") if isinstance(doc, dict) else None
+    if not isinstance(rows, list) or not rows:
+        return {"status": "UNMEASURED", "why": "CAPACITY.json carries no sleeve rows"}
+    by_sleeve: dict[str, Any] = {}
+    for row in rows:
+        if not isinstance(row, dict) or row.get("status") != "MEASURED":
+            continue
+        curve = row.get("elog_at_capital") if isinstance(row.get("elog_at_capital"), dict) else {}
+        by_sleeve[str(row.get("sleeve"))] = {
+            "peak_equity_eur": curve.get("peak_equity_eur"),
+            "peak_elog_per_trade": curve.get("peak_elog_per_trade"),
+            "negative_at_or_below_eur": curve.get("negative_at_or_below_eur"),
+            "elog_now": row.get("elog_now"),
+            "headroom_multiple": row.get("headroom_multiple"),
+            "binding_now": row.get("binding_now"),
+        }
+    if not by_sleeve:
+        return {"status": "UNMEASURED",
+                "why": f"{len(rows)} capacity row(s), none MEASURED"}
+    ranked = sorted(((n, v.get("headroom_multiple")) for n, v in by_sleeve.items()),
+                    key=lambda kv: (kv[1] is None, kv[1]))
+    return {"status": "MEASURED", "equity_eur": doc.get("equity_eur"),
+            "by_sleeve": by_sleeve,
+            "harvest_first": [n for n, _ in ranked],
+            "rule": ("ordered by headroom_multiple ascending: the sleeve whose minimum-lot floor "
+                     "stops binding SOONEST is the one whose small-account advantage expires "
+                     "first. An ordering, never a cap -- no fraction is reduced by this block")}
+
+
+def _objective_terms(book: Mapping[str, float], ev: Sequence[Any]) -> dict[str, Any]:
+    """C(w) and U(w), as EXPLICIT terms of max E[log(1+w'r)] - C(w) - U(w). C17.
+
+    BOTH TERMS WERE ALREADY BEING PAID AND NEITHER WAS WRITTEN DOWN. Cost enters through the
+    replayed R multiples and the world sampler's per-sleeve cost scale; uncertainty enters
+    through the posterior shrink and the robust score. Folded in that way they are real and
+    unreadable: nothing in the artifact said what this book pays to be held, or what it gives up
+    for the width of its own posterior, so no reader could check either against a measurement.
+
+        C(w) = sum_i w_i * cost_bias_r_i     the R per trade the replay did NOT charge (the
+                                             sleeve's own fill-hour spread against the pooled
+                                             scalar), which is cost the objective owes
+        U(w) = sum_i w_i * sd(mean_i)        the posterior standard error of each sleeve's daily
+                                             mean, weighted by the heat it holds
+
+    PUBLISHED, NOT SUBTRACTED. Turning either into a live deduction would shrink the book, and the
+    principal's standing order (2026-09-08) is that the desk never reduces its aggressiveness --
+    a growth cut needs a proof that robust forward E[log W] RISES, which a penalty term is not.
+    A sleeve the desk cannot price contributes UNMEASURED to the count and 0 to the sum, and the
+    count is published beside the total so a small C(w) built on ignorance is visible as such.
+    """
+    cost_terms: dict[str, float] = {}
+    unc_terms: dict[str, float] = {}
+    unpriced: list[str] = []
+    by_symbol: dict[str, float] = {}
+    by_family: dict[str, float] = {}
+    for e in ev:
+        name = str(getattr(e, "name", ""))
+        w = float(book.get(name, 0.0) or 0.0)
+        if w <= 0.0:
+            continue
+        by_symbol[str(getattr(e, "symbol", "?"))] = (
+            by_symbol.get(str(getattr(e, "symbol", "?")), 0.0) + w)
+        by_family[str(getattr(e, "family", "?"))] = (
+            by_family.get(str(getattr(e, "family", "?")), 0.0) + w)
+        bias = getattr(e, "cost_bias_r", None)
+        if isinstance(bias, (int, float)) and math.isfinite(float(bias)):
+            cost_terms[name] = w * float(bias)
+        else:
+            unpriced.append(name)
+        hist = getattr(e, "daily_r", None)
+        try:
+            arr = np.asarray(hist, dtype=float)
+            arr = arr[np.isfinite(arr)]
+        except (TypeError, ValueError):
+            arr = np.asarray([], dtype=float)
+        if arr.size >= 2:
+            unc_terms[name] = w * float(arr.std(ddof=1) / math.sqrt(arr.size))
+    return {
+        "cost_of_w": {
+            "total": round(sum(cost_terms.values()), 8),
+            "by_sleeve": {k: round(v, 8) for k, v in sorted(cost_terms.items())},
+            "n_priced": len(cost_terms), "n_unpriced": len(unpriced),
+            "unpriced": sorted(unpriced),
+            "units": "R per trade, heat-weighted",
+            "basis": "SleeveEvidence.cost_bias_r -- the spread the replay did not charge",
+        },
+        "uncertainty_of_w": {
+            "total": round(sum(unc_terms.values()), 8),
+            "by_sleeve": {k: round(v, 8) for k, v in sorted(unc_terms.items())},
+            "n_measured": len(unc_terms),
+            "units": "R per day, heat-weighted",
+            "basis": "standard error of each sleeve's own daily mean (sd/sqrt(n))",
+        },
+        # THE TIERS, MEASURED. The hierarchy the objective is written over -- trade, sleeve,
+        # mechanism, factor, instrument, asset class, portfolio -- reached the artifact at the
+        # mechanism level and stopped. These two are the instrument and mechanism tiers as
+        # DECOMPOSITIONS of the heat already resolved: they redistribute nothing on their own,
+        # and by the standing order a tier may only ever move heat WITHIN the resolved total.
+        "tiers": {
+            "instrument": {k: round(v, 6) for k, v in
+                           sorted(by_symbol.items(), key=lambda kv: -kv[1])},
+            "mechanism": {k: round(v, 6) for k, v in
+                          sorted(by_family.items(), key=lambda kv: -kv[1])},
+            "total_heat": round(sum(book.values()), 6),
+        },
+        "binding": False,
+        "why": ("published as explicit terms of the objective; neither is subtracted from a "
+                "fraction. NEVER REDUCE AGGRESSIVENESS (principal, 2026-09-08): a penalty that "
+                "shrinks the book needs a proof that robust forward E[log W] rises"),
+    }
 
 
 def no_trade(current: dict[str, float], proposed: dict[str, float],
@@ -4205,6 +4337,12 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             },
         },
         "solver": {"iterations": book.iterations, "converged": book.converged},
+        # C17: the objective's two non-growth terms, written down instead of folded in, plus the
+        # instrument and mechanism tiers as decompositions of the heat already resolved.
+        "objective_terms": _objective_terms(funded, ev),
+        # P12: E[log W] as a function of capital per sleeve, and which edges this account's size
+        # is still able to harvest. Read from CAPACITY.json; sizes nothing.
+        "capacity_growth": _capacity_growth(),
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(art, indent=2, default=str), encoding="utf-8")

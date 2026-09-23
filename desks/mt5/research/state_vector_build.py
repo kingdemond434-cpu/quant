@@ -54,14 +54,22 @@ for p in (str(BASE), str(BASE / "research"), str(ROOT)):
     if p not in sys.path:
         sys.path.insert(0, p)
 
-from libs.regime.asset_state import (                                       # noqa: E402
-    CLOCKS, AssetState, FitCache, fit_asset_state, observations_at,
+from mt5desk.economic_drivers import ROLES  # noqa: E402
+
+from libs.regime.asset_state import (  # noqa: E402
+    CLOCKS,
+    AssetState,
+    FitCache,
+    fit_asset_state,
+    observations_at,
 )
-from libs.regime.state_vector import StateVector                            # noqa: E402
-from libs.research.information_decay import (                               # noqa: E402
-    REGISTRY, STALE_WEIGHT, decay, state_freshness,
+from libs.regime.state_vector import StateVector  # noqa: E402
+from libs.research.information_decay import (  # noqa: E402
+    REGISTRY,
+    STALE_WEIGHT,
+    decay,
+    state_freshness,
 )
-from mt5desk.economic_drivers import ROLES                                  # noqa: E402
 
 UNI = BASE / "data" / "universe"
 OUT = BASE / "data" / "state_vector.json"
@@ -186,7 +194,7 @@ def session_state(now: datetime) -> tuple[dict, str]:
                     "session: broker UTC offset unknown -- refusing to assume UTC")
         return {"phase": phase_at(now, broker_utc_offset_h=off), "broker_utc_offset_h": off,
                 "broker_utc_offset_source": source}, ""
-    except Exception as exc:                                    # noqa: BLE001
+    except Exception as exc:
         return {}, f"session: {type(exc).__name__}: {exc}"
 
 
@@ -200,7 +208,6 @@ def event_state(now: datetime, symbols: list[str]) -> tuple[dict, str]:
     """
     try:
         from libs.regime.event_state import NORMAL, classify, parse_rows, relevant
-        from research import orthogonal_sweep as inputs
 
         rows = parse_rows(_calendar_rows())
         if not rows:
@@ -223,7 +230,7 @@ def event_state(now: datetime, symbols: list[str]) -> tuple[dict, str]:
         worst = min(per.values(), key=lambda d: order.get(str(d.get("phase")), 99))
         return {"phase": worst["phase"], "n_calendar_rows": len(rows),
                 "per_symbol": per}, ""
-    except Exception as exc:                                    # noqa: BLE001
+    except Exception as exc:
         return {}, f"event: {type(exc).__name__}: {exc}"
 
 
@@ -329,7 +336,7 @@ def liquidity_state(symbols: list[str], now: datetime,
         worst = min(per.values(), key=lambda d: order.get(str(d.get("state")), 99))
         return {"state": worst["state"], "broker_hour": broker_hour,
                 "per_symbol": per}, ""
-    except Exception as exc:                                    # noqa: BLE001
+    except Exception as exc:
         return {}, f"liquidity: {type(exc).__name__}: {exc}"
 
 
@@ -404,14 +411,27 @@ def world_conditioning(symbols: list[str]) -> tuple[dict[str, list[dict]], str]:
             from libs.research.causal_graph import CausalGraph
             from research.world_causal_graph import conditioning_hints
             hints = conditioning_hints(CausalGraph.load(WORLD_GRAPH))
-        except Exception as exc:                                # noqa: BLE001
+        except Exception as exc:
             return {}, f"world causal graph: {type(exc).__name__}: {exc}"
+    # THE LATENT ACTOR POPULATIONS (Tier-1 B15). `actor_pressure` estimates five populations --
+    # trend followers, vol-control books, a dealer-gamma PROXY, calendar rebalancers and the
+    # carry chasers the venue's own swap pays -- from the tape the desk already owns, and names
+    # which of them the desk's live side is standing beside. They ride here for the same reason
+    # the causal hints do and under the same law: INFORMATION, NEVER AUTHORITY. Their weights are
+    # their own |pressure| rather than a decay class, so `_hint_weight` is not applied to them.
+    actor_rows: dict[str, list[dict]] = {}
+    try:
+        from research.actor_pressure import hints_for
+        actor_rows = hints_for(list(symbols))
+    except Exception:                                    # absence is UNMEASURED, never a demotion
+        actor_rows = {}
     out: dict[str, list[dict]] = {}
     for sym in symbols:
         rows = [dict(r) for r in (hints.get(sym) or []) if isinstance(r, dict)]
         for r in rows:
             r["weight"] = _hint_weight(r)
             r["stale"] = bool(r["weight"] < STALE_WEIGHT)
+        rows.extend(dict(r) for r in (actor_rows.get(sym) or []) if isinstance(r, dict))
         if rows:
             out[sym] = rows
     return out, ""

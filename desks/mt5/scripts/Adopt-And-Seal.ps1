@@ -274,5 +274,20 @@ if ($LASTEXITCODE -ne 0) { Log "seal commit failed (exit $LASTEXITCODE)"; exit 5
 New-Item -ItemType File -Path (Join-Path $desk "data\GATEWAY_RECYCLE") -Force | Out-Null
 Start-ScheduledTask -TaskName "MT5-GatewayResident" -ErrorAction SilentlyContinue
 Start-ScheduledTask -TaskName "MT5-GateAttest" -ErrorAction SilentlyContinue
+
+# ------------------------------------------- 5. THE ONE BIT, RECORDED BY THE ACT THAT SEALS
+# Tier-1 B1: "may this code create new exposure". The seal, the gate attestation and the runtime
+# drift check each held a piece and nothing joined them, so `tested_sha` read UNMEASURED for
+# weeks while the gates were green. `release_authority` joins all three on the CODE TREE -- the
+# only subject that survives a box committing its own ledgers on top of the code it runs -- and
+# publishing it HERE makes the seal and the bit one act rather than two hopes.
+#
+# IT REPORTS, IT DOES NOT REFUSE. Refusing to seal without a green attestation was the obvious
+# next step and it is the wrong one: the tree is already adopted in place by the time this runs,
+# so an unsealed tree means `release_identity` refuses NEW risk on every gateway pass -- a halt
+# bought from a slow or unrelated-red gate. That reduces the book by fiat, which the principal's
+# standing order (2026-09-08) forbids. The bit is measured, logged and published; turning it
+# into a veto is the principal's call, not this script's.
+& $py @pyArgs (Join-Path $desk "research\release_authority.py") --once 2>&1 | ForEach-Object { Log "  $_" }
 Log "sealed $($head.Substring(0,12)) from $Branch; resident asked to recycle; gate attestation triggered"
 exit 0

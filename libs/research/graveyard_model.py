@@ -59,7 +59,38 @@ FIRST_TEST: dict[str, str] = {
     "EXECUTION_FAILURE": "refuse artifact-hour fills and re-screen",
     "UNKNOWN": "the standard gauntlet order",
 }
-FEATURES: tuple[str, ...] = ("family", "symbol", "source", "asset_class", "n_params")
+#: THE DECLARED FAILURE-STAGE TAXONOMY (C24). A failure CLASS says what killed the cell; a
+#: STAGE says HOW FAR IT GOT BEFORE DYING, and those are different questions with different
+#: consequences. Ten thousand cells dying at `statistics` means the miners are producing noise;
+#: ten thousand dying at `execution` means the miners are finding real structure this venue
+#: cannot be made to trade. The class alone cannot tell those apart, and the desk was spending
+#: its compute as if it could. Ordered EARLIEST-FIRST, which is also cheapest-first: a stage
+#: index is how much of the pipeline the cell consumed before it was refused.
+STAGES: tuple[str, ...] = ("idea", "data", "pit", "statistics", "cost", "capacity",
+                           "execution", "forward", "decay")
+#: class -> the stage a cell of that class died at. One mapping, declared, so a rejection's stage
+#: is never re-derived differently by two readers.
+CLASS_STAGE: dict[str, str] = {
+    "NO_EDGE": "statistics", "SELECTION_BIAS": "statistics", "LOW_SAMPLE": "statistics",
+    "STATE_FRAGILE": "forward", "TAIL_FAILURE": "forward",
+    "COST_DEATH": "cost", "EXECUTION_FAILURE": "execution",
+    "CORRELATION_DUPLICATE": "capacity", "LEAKAGE": "pit", "UNKNOWN": "idea",
+}
+#: Stage names a gate or a refusal reason states OUTRIGHT, checked before the class mapping: a
+#: cell refused for a missing panel never reached statistics, whatever gate name it carries.
+STAGE_NEEDLE: tuple[tuple[str, str], ...] = (
+    ("no bars", "data"), ("no data", "data"), ("unreadable", "data"), ("missing panel", "data"),
+    ("point-in-time", "pit"), ("available_at", "pit"), ("vintage", "pit"),
+    ("min_lot", "capacity"), ("capacity", "capacity"), ("lot floor", "capacity"),
+    ("decay", "decay"), ("half-life", "decay"),
+    ("forward", "forward"), ("shadow", "forward"),
+    ("unrunnable", "idea"), ("uncompilable", "idea"), ("not executable", "idea"),
+)
+#: The features P(survival | hypothesis) is conditioned on. The first five are the original
+#: five; the last four are the AXIS_REGISTRY vocabulary (C24), which is where the desk keeps the
+#: dimensions a hypothesis is actually ABOUT rather than the dimensions of the file it arrived in.
+FEATURES: tuple[str, ...] = ("family", "symbol", "source", "asset_class", "n_params",
+                             "mechanism", "information_source", "session", "chart")
 ALPHA = 1.0
 
 
@@ -71,6 +102,21 @@ def failure_class(gates: dict[str, Any] | None, why: str = "") -> str:
         if needle in low:
             return cls
     return "UNKNOWN"
+
+
+def failure_stage(gates: dict[str, Any] | None, why: str = "", klass: str = "") -> str:
+    """How far the cell got before it was refused: one of `STAGES`. C24.
+
+    The reason text wins over the class mapping, because a cell refused for a missing panel
+    carries whatever gate name happened to be running when the panel was found missing, and
+    calling that a statistical death would teach the model the exact opposite of the truth.
+    """
+    text = (" ".join(k for k, v in (gates or {}).items()
+                     if isinstance(v, dict) and v.get("passed") is False) + " " + why).lower()
+    for needle, stage in STAGE_NEEDLE:
+        if needle in text:
+            return stage
+    return CLASS_STAGE.get(klass or failure_class(gates, why), "idea")
 
 
 def _asset_class(symbol: str) -> str:

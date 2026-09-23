@@ -774,8 +774,20 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             # and only
             # makes it visible to the freeze. The later block remains as the fallback for rows that
             # never reach the registry branch (import failure), where it is still the only stamper.
-            if not st.get("forward_start"):
-                st["forward_start"] = datetime.now(UTC).isoformat()
+            # THE START IS THE LEDGER'S, NOT THIS LINE'S (Tier-1 B20). `clock_ledger.stamp`
+            # returns min(recorded, proposed) for an unchanged identity and opens a NEW clock
+            # beside the old one when the identity changes, so a later start is IMPOSSIBLE at the
+            # writer rather than detected afterwards by the ratchet fence. An earlier start is
+            # always accepted -- the window is then older than this line thought, which can only
+            # move a sleeve toward its bar. Nothing is capped or refused: every row that would
+            # have been enrolled is still enrolled.
+            _proposed = st.get("forward_start") or datetime.now(UTC).isoformat()
+            try:
+                from research.clock_ledger import stamp as _stamp
+                st["forward_start"] = _stamp(key, str(st.get("identity") or ""),
+                                             _proposed)["start"]
+            except Exception:                              # the ledger is never a reason not to
+                st["forward_start"] = _proposed            # enrol; the fence still reports churn
             # CANONICAL IDENTITY, frozen at the clock and verified every cycle. Params alone do not
             # identify a sleeve: the signal function's SOURCE and the COST MODEL change what it does
             # while leaving every name and number intact, and a forward series that splices two of
@@ -964,8 +976,17 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             # gauntlet screens, only pre-registered forward evidence promotes). `forward_start` is
             # stamped once, the first time a row is seen, and never moved.
             now = datetime.now(UTC)
-            if not st.get("forward_start"):
-                st["forward_start"] = now.isoformat()
+            # THE FALLBACK STAMPER, THROUGH THE SAME IMMUTABLE DOOR (Tier-1 B20). This branch is
+            # the only stamper for rows that never reach the registry (import failure), and it
+            # was the second place a start could move. It cannot now: the ledger hands back
+            # min(recorded, proposed) and keeps the old clock when an identity changes.
+            _proposed = st.get("forward_start") or now.isoformat()
+            try:
+                from research.clock_ledger import stamp as _stamp
+                st["forward_start"] = _stamp(key, str(st.get("identity") or ""),
+                                             _proposed)["start"]
+            except Exception:
+                st["forward_start"] = _proposed
             days_active = (now - pd.Timestamp(st["forward_start"]).to_pydatetime()
                            .replace(tzinfo=UTC)).days
             st["days_active"] = days_active

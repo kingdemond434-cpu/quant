@@ -517,7 +517,23 @@ class _Evaluator:
             score_fn=(self._rescore(expr, side_mode) if with_fragility else None),
             position=position,
             peer_daily=tuple(v for kk, v in self.pnls.items() if kk != key),
-            family="formula")
+            family="formula",
+            # THE DECLARED GENOME SLOTS the two breadth credits are measured on (Tier-1 D5).
+            # `asset_class` comes from MetaTrader's own registry through `universe_policy`, never
+            # a symbol list, so a name the registry has not classified reads UNCLASSIFIED and the
+            # scarcity term measures the cell it actually lands in rather than a guessed one.
+            slots=self._slots(side_mode))
+
+    def _slots(self, side_mode: str) -> dict[str, str]:
+        """The candidate's genome slots for `alpha_fitness`' breadth credits (Tier-1 D5)."""
+        try:
+            from research.universe_policy import asset_class_of
+            klass = str(asset_class_of(self.sym))
+        except Exception:
+            klass = ""
+        return {k: v for k, v in (("instrument", self.sym), ("mechanism", "formula"),
+                                  ("asset_class", klass), ("horizon", "H1"),
+                                  ("regime", str(side_mode))) if v}
 
     def _rescore(self, expr: ag.Expr, side_mode: str):
         """A stage-0 re-screen under perturbed recipe parameters, for the fragility sweep.
@@ -846,6 +862,48 @@ def random_or_canon(rng: np.random.Generator, allow_drivers: bool) -> ag.Expr:
     return ag.random_expr(rng, DEPTH, allow_drivers)
 
 
+def reward_term_shares(rows: list[dict]) -> dict[str, object]:
+    """Per FITNESS TERM: its share of the sweep's total positive credit, and per POPULATION the
+    mean of the two breadth terms (Tier-1 D5).
+
+    THE REWARD IS THE FITNESS. `generators.GFlowNet` maps the scored history's fitness to
+    R(x) = exp(beta x (f - f_max)) and samples trajectories in proportion to it, so a term added
+    to `alpha_fitness.WEIGHTS` is a term the sampler is trained on. This is the measurement that
+    the two breadth credits actually moved reward mass: an empty `by_term` means nothing was
+    scored this sweep (UNMEASURED), never that the terms are inert.
+    """
+    scored = [r for r in rows if isinstance(r.get("terms"), dict)]
+    if not scored:
+        return {"status": "UNMEASURED", "why": "no scored row carries a term vector this sweep"}
+    credit: dict[str, float] = {}
+    mean: dict[str, float] = {}
+    for name, w in af.WEIGHTS.items():
+        vals = [float(r["terms"].get(name) or 0.0) for r in scored]
+        mean[name] = sum(vals) / len(vals)
+        if name not in af.PENALTIES:
+            credit[name] = max(0.0, w * sum(vals))
+    total = sum(credit.values())
+    by_pop: dict[str, dict[str, float]] = {}
+    for r in scored:
+        pop = str(r.get("population") or "unspecified")
+        slot = by_pop.setdefault(pop, {"n": 0.0, "mechanism_distance": 0.0, "axis_scarcity": 0.0})
+        slot["n"] += 1.0
+        for name in ("mechanism_distance", "axis_scarcity"):
+            slot[name] += float(r["terms"].get(name) or 0.0)
+    for slot in by_pop.values():
+        n = max(1.0, slot["n"])
+        for name in ("mechanism_distance", "axis_scarcity"):
+            slot[name] = round(slot[name] / n, 4)
+    return {"status": "MEASURED", "n_scored": len(scored),
+            "by_term": {k: round((v / total) if total > 0 else 0.0, 4)
+                        for k, v in sorted(credit.items())},
+            "mean_term": {k: round(v, 5) for k, v in sorted(mean.items())},
+            "breadth_by_population": by_pop,
+            "rule": ("share of the sweep's total positive weighted credit per term; the GFlowNet "
+                     "is trained on exactly this fitness, so these ARE the sampler's reward "
+                     "proportions (Tier-1 D5)")}
+
+
 def generator_yield(rows: list[dict]) -> dict[str, dict]:
     """Per POPULATION: how many individuals it made, how many went full-sample, how many were
     proposed, and its best fitness. The raw material for the yield ledger that sets the weights;
@@ -982,6 +1040,14 @@ def run(symbols: list[str] | None = None, budget_s: float = 1500.0, seed: int = 
               # not: a fitness computed on an empty desk must never read like one computed
               # against a full book.
               "fitness_weights": dict(af.WEIGHTS),
+              # WHICH TERM BOUGHT THE SAMPLING (Tier-1 D5). The GFlowNet's reward IS this
+              # fitness -- R(x) = exp(beta x (f - f_max)) over the scored history -- so adding
+              # `mechanism_distance` and `axis_scarcity` to the fitness IS training the sampler
+              # on the augmented reward. This says by how much: each term's share of the total
+              # positive credit, and each POPULATION's mean on the two breadth terms, so a
+              # generation that converged on one mode is visible as a number rather than a
+              # suspicion.
+              "reward_terms": reward_term_shares(rows),
               # THE ARCHIVE'S OCCUPANCY: how much of the descriptor space the search has lit.
               "map_elites": map_elites_summary(per_symbol, regime_labels_known()),
               "book": book.source,

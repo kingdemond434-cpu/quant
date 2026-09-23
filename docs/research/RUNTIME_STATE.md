@@ -2,235 +2,236 @@
 
 <!-- DERIVED. Written by desks/mt5/research/runtime_attestation.py on the clock `hourly_cycle:runtime_attestation`. Edit the organ, never this file. -->
 
-**This document attests to ONE host: `vmi3500897` (Windows 2022Server), and describes no other machine.** Role measured as `non_trading_host`: gateway_state.json is 168.8h old -- no live trading loop is attested by this document.
+**This document attests to ONE host: `vmi3500897` (Windows 2022Server), and describes no other machine.** Role measured as `non_trading_host`: gateway_state.json is 169.0h old -- no live trading loop is attested by this document.
 
-- Measured at **2026-09-23T10:36:06+00:00** (cadence 60 min; stale past 120 min)
-- Tree: `16eca3cabb2e` on `llm-auto-upgrade-verify-gcjac3`; release seal ok=`False` running=`b794c18abb61` sealed=`1eba97937191`
-- Organs attested **365** of 1281 registry components (916 declare no artifact, so there is nothing to hash: component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py)
-- Pass cost 1.09s; 0 hash(es) skipped over budget; 0 summary/-ies trimmed for size
+- Measured at **2026-09-23T10:48:29+00:00** (cadence 60 min; stale past 120 min)
+- Tree: `f4c9180747b2` on `llm-auto-upgrade-verify-gcjac3`; release seal ok=`False` running=`b794c18abb61` sealed=`1eba97937191`
+- Organs attested **366** of 1287 registry components (921 declare no artifact, so there is nothing to hash: component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py)
+- Pass cost 0.8s; 0 hash(es) skipped over budget; 0 summary/-ies trimmed for size
 
 | state | organs | meaning |
 |---|---:|---|
-| **LIVE** | 111 | artifact present and newer than the organ's derived max silence |
-| **STALE** | 95 | artifact present but older than the organ's derived max silence |
+| **LIVE** | 121 | artifact present and newer than the organ's derived max silence |
+| **STALE** | 86 | artifact present but older than the organ's derived max silence |
 | **MISSING** | 33 | artifact absent while this host recorded the organ running |
 | **NEVER** | 126 | no artifact and no run record on this host |
 | **UNMEASURED** | 0 | artifact present, cadence undeclared -- nothing here may call it late |
 
 The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hourly and this repository deliberately does not carry it; the SHA-256 below lets a reader ask for any one artifact by name and check that what arrives is what this host published at the time stamped here.
 
-## LIVE (111)
+## LIVE (121)
 
 | organ | clock | last run | artifact | age | size | sha256 | published |
 |---|---|---|---|---:|---:|---|---|
-| `battery:desks/mt5/moat/moat_lifecycle.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:desks/mt5/research/africa_interaction.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:desks/mt5/research/asia_transmission.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:desks/mt5/research/axis_ingest_all.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:desks/mt5/research/counterexample_agent.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:desks/mt5/research/counterfactual_attribution.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:desks/mt5/research/countries/kr/lattice.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:desks/mt5/research/countries/kr/miners.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:desks/mt5/research/countries/kr/nowcast.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:desks/mt5/research/empty_cluster_forcer.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:desks/mt5/research/engine_registry.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:desks/mt5/research/event_surprise.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:desks/mt5/research/frontier_ceo.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:desks/mt5/research/gold_hour_sweep.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:desks/mt5/research/hour_prior.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:desks/mt5/research/hour_surface.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:desks/mt5/research/index_discovery.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:desks/mt5/research/institutional_cards.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:desks/mt5/research/japan/dashboard.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:desks/mt5/research/japan/miners.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:desks/mt5/research/local_converter.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:desks/mt5/research/macro_state_engine.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:desks/mt5/research/middle_east_interaction.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:desks/mt5/research/research_artifacts.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:desks/mt5/research/search_paradigm_census.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:desks/mt5/research/south_america_interaction.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:desks/mt5/research/trend_core.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:desks/mt5/research/validate_fusion.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:desks/mt5/scripts/check_desk_health.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 8.9h | 11K | `0728ba9908226fdb` | UNMEASURED |
-| `battery:desks/mt5/scripts/check_llm_seat.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 8.9h | 11K | `0728ba9908226fdb` | UNMEASURED |
-| `battery:desks/mt5/scripts/disk_census.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 8.9h | 11K | `0728ba9908226fdb` | UNMEASURED |
-| `battery:desks/mt5/scripts/fxblue_digest.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:desks/mt5/scripts/fxblue_mechanism_summary.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:desks/mt5/scripts/heal_orphaned_clocks.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:desks/mt5/scripts/heal_silent_demotions.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:desks/mt5/scripts/migrate_identity_venue.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:desks/mt5/scripts/reap_orphaned_workers.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:desks/mt5/scripts/retire_uncashable_certs.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:scripts/audit_mt5_capability_reuse.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 8.9h | 11K | `0728ba9908226fdb` | UNMEASURED |
-| `battery:scripts/autofix_defects.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:scripts/backfill_live_ledger_r.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:scripts/backfill_pit.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:scripts/build_audit_shards.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:scripts/build_family_evidence.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:scripts/build_graveyard_priors.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:scripts/build_midnight_operations_report.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:scripts/build_mt5_midnight_state.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:scripts/build_scoreboard.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:scripts/check_bar_coverage.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 8.9h | 11K | `0728ba9908226fdb` | UNMEASURED |
-| `battery:scripts/check_bar_history_floor.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 8.9h | 11K | `0728ba9908226fdb` | UNMEASURED |
-| `battery:scripts/check_blueprint_coverage.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 8.9h | 11K | `0728ba9908226fdb` | UNMEASURED |
-| `battery:scripts/check_breadth_mandate.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 8.9h | 11K | `0728ba9908226fdb` | UNMEASURED |
-| `battery:scripts/check_cert_yield.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 8.9h | 11K | `0728ba9908226fdb` | UNMEASURED |
-| `battery:scripts/check_credentials.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 8.9h | 11K | `0728ba9908226fdb` | UNMEASURED |
-| `battery:scripts/check_data_recoverability.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 8.9h | 11K | `0728ba9908226fdb` | UNMEASURED |
-| `battery:scripts/check_desk_cycles.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:scripts/check_desk_manifest.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 8.9h | 11K | `0728ba9908226fdb` | UNMEASURED |
-| `battery:scripts/check_dig_roi.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 8.9h | 11K | `0728ba9908226fdb` | UNMEASURED |
-| `battery:scripts/check_disposition_landed.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 8.9h | 11K | `0728ba9908226fdb` | UNMEASURED |
-| `battery:scripts/check_forward_clock.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:scripts/check_frozen_values.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 8.9h | 11K | `0728ba9908226fdb` | UNMEASURED |
-| `battery:scripts/check_governance_pulse.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 8.9h | 11K | `0728ba9908226fdb` | UNMEASURED |
-| `battery:scripts/check_ground_conversion.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 8.9h | 11K | `0728ba9908226fdb` | UNMEASURED |
-| `battery:scripts/check_knob_sensitivity.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 8.9h | 11K | `0728ba9908226fdb` | UNMEASURED |
-| `battery:scripts/check_ledger_reversion.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 8.9h | 11K | `0728ba9908226fdb` | UNMEASURED |
-| `battery:scripts/check_oom_pressure.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 8.9h | 11K | `0728ba9908226fdb` | UNMEASURED |
-| `battery:scripts/check_pegged_duplicates.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 8.9h | 11K | `0728ba9908226fdb` | UNMEASURED |
-| `battery:scripts/check_perishability.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 8.9h | 11K | `0728ba9908226fdb` | UNMEASURED |
-| `battery:scripts/check_producer_yield.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 8.9h | 11K | `0728ba9908226fdb` | UNMEASURED |
-| `battery:scripts/check_reachability.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 8.9h | 11K | `0728ba9908226fdb` | UNMEASURED |
-| `battery:scripts/check_recommendation_flow.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 8.9h | 11K | `0728ba9908226fdb` | UNMEASURED |
-| `battery:scripts/check_research_allocation.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 8.9h | 11K | `0728ba9908226fdb` | UNMEASURED |
-| `battery:scripts/check_research_health.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 8.9h | 11K | `0728ba9908226fdb` | UNMEASURED |
-| `battery:scripts/check_row_conversion.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 8.9h | 11K | `0728ba9908226fdb` | UNMEASURED |
-| `battery:scripts/check_scheduled_tasks.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 8.9h | 11K | `0728ba9908226fdb` | UNMEASURED |
-| `battery:scripts/check_seat_health.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 8.9h | 11K | `0728ba9908226fdb` | UNMEASURED |
-| `battery:scripts/check_shell_hygiene.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 8.9h | 11K | `0728ba9908226fdb` | UNMEASURED |
-| `battery:scripts/check_swap_reliability.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 8.9h | 11K | `0728ba9908226fdb` | UNMEASURED |
-| `battery:scripts/check_tier5_audit.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 8.9h | 11K | `0728ba9908226fdb` | UNMEASURED |
-| `battery:scripts/check_unit_health.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:scripts/check_unmeasurable_claims.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 8.9h | 11K | `0728ba9908226fdb` | UNMEASURED |
-| `battery:scripts/check_worktree_reap.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:scripts/collector_author.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:scripts/compare_book_growth.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:scripts/controller_checkpoint.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:scripts/convert_question_queues.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:scripts/daily_max.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:scripts/have_memory.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 8.9h | 11K | `0728ba9908226fdb` | UNMEASURED |
-| `battery:scripts/heal_forward_lane.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:scripts/info_class_map.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 8.9h | 11K | `0728ba9908226fdb` | UNMEASURED |
-| `battery:scripts/monitor_data_decay.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 8.9h | 11K | `0728ba9908226fdb` | UNMEASURED |
-| `battery:scripts/monitor_mt5_shadow_sync.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 8.9h | 11K | `0728ba9908226fdb` | UNMEASURED |
-| `battery:scripts/overnight_frontier_handoff.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:scripts/probe_language_moat.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:scripts/reap_worktrees.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:scripts/research_allocator.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:scripts/run_allocation.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:scripts/run_factory_status.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:scripts/run_ict_strategy.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:scripts/run_restore_drill.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:scripts/score_panel.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:scripts/stageb_capacity.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:scripts/study_promotion_selection_bias.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `battery:scripts/sync_research_ledger.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.0h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
-| `leg:discovery_compiler` | `hourly_cycle:discovery_compiler` | UNMEASURED UNMEASURED | `desks/mt5/reports/DISCOVERY_COMPILER.json` | 0.5h | 33K | `136fe526d7a8db27` | UNMEASURED |
-| `leg:global_research_os` | `hourly_cycle:global_research_os` | UNMEASURED UNMEASURED | `desks/mt5/reports/KR_DATA_PLANE.json` | 1.4h | 1K | `b9ec53c4b2420d37` | UNMEASURED |
-| `leg:health` | `hourly_cycle:health` | 2026-09-16T14:07:21+00:00 ok | `data/duplicate_organs.json` | 0.1h | 38K | `2bb29d127808c4d8` | UNMEASURED |
-| `leg:judge_coverage` | `hourly_cycle:judge_coverage` | UNMEASURED UNMEASURED | `desks/mt5/reports/JUDGE_COVERAGE.json` | 0.3h | 28K | `f1598551f2ff3e5d` | verdict=COVERED |
-| `leg:kimi_hunt` | `hourly_cycle:kimi_hunt` | UNMEASURED UNMEASURED | `desks/mt5/reports/SEAT_HEALTH.json` | 0.1h | 56K | `c832a6af7b894819` | verdict=UNMEASURED |
-| `leg:producer_census` | `hourly_cycle:producer_census` | UNMEASURED UNMEASURED | `desks/mt5/reports/PRODUCER_CENSUS.json` | 1.4h | 926K | `5ba9432fdc2ff2d1` | UNMEASURED |
-| `leg:sandbox_runner` | `hourly_cycle:sandbox_runner` | UNMEASURED UNMEASURED | `desks/mt5/reports/SANDBOX_RUNNER.json` | 0.7h | 99K | `058aa00d79ce7a08` | UNMEASURED |
+| `battery:desks/mt5/moat/moat_lifecycle.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:desks/mt5/research/africa_interaction.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:desks/mt5/research/asia_transmission.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:desks/mt5/research/axis_ingest_all.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:desks/mt5/research/counterexample_agent.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:desks/mt5/research/counterfactual_attribution.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:desks/mt5/research/countries/kr/lattice.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:desks/mt5/research/countries/kr/miners.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:desks/mt5/research/countries/kr/nowcast.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:desks/mt5/research/empty_cluster_forcer.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:desks/mt5/research/engine_registry.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:desks/mt5/research/event_surprise.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:desks/mt5/research/frontier_ceo.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:desks/mt5/research/gold_hour_sweep.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:desks/mt5/research/hour_prior.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:desks/mt5/research/hour_surface.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:desks/mt5/research/index_discovery.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:desks/mt5/research/institutional_cards.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:desks/mt5/research/japan/dashboard.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:desks/mt5/research/japan/miners.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:desks/mt5/research/local_converter.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:desks/mt5/research/macro_state_engine.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:desks/mt5/research/middle_east_interaction.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:desks/mt5/research/research_artifacts.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:desks/mt5/research/search_paradigm_census.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:desks/mt5/research/south_america_interaction.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:desks/mt5/research/trend_core.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:desks/mt5/research/validate_fusion.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:desks/mt5/scripts/check_desk_health.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 9.1h | 11K | `0728ba9908226fdb` | UNMEASURED |
+| `battery:desks/mt5/scripts/check_llm_seat.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 9.1h | 11K | `0728ba9908226fdb` | UNMEASURED |
+| `battery:desks/mt5/scripts/disk_census.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 9.1h | 11K | `0728ba9908226fdb` | UNMEASURED |
+| `battery:desks/mt5/scripts/fxblue_digest.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:desks/mt5/scripts/fxblue_mechanism_summary.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:desks/mt5/scripts/heal_orphaned_clocks.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:desks/mt5/scripts/heal_silent_demotions.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:desks/mt5/scripts/migrate_identity_venue.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:desks/mt5/scripts/reap_orphaned_workers.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:desks/mt5/scripts/retire_uncashable_certs.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:scripts/audit_mt5_capability_reuse.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 9.1h | 11K | `0728ba9908226fdb` | UNMEASURED |
+| `battery:scripts/autofix_defects.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:scripts/backfill_live_ledger_r.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:scripts/backfill_pit.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:scripts/build_audit_shards.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:scripts/build_family_evidence.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:scripts/build_graveyard_priors.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:scripts/build_midnight_operations_report.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:scripts/build_mt5_midnight_state.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:scripts/build_scoreboard.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:scripts/check_bar_coverage.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 9.1h | 11K | `0728ba9908226fdb` | UNMEASURED |
+| `battery:scripts/check_bar_history_floor.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 9.1h | 11K | `0728ba9908226fdb` | UNMEASURED |
+| `battery:scripts/check_blueprint_coverage.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 9.1h | 11K | `0728ba9908226fdb` | UNMEASURED |
+| `battery:scripts/check_breadth_mandate.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 9.1h | 11K | `0728ba9908226fdb` | UNMEASURED |
+| `battery:scripts/check_cert_yield.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 9.1h | 11K | `0728ba9908226fdb` | UNMEASURED |
+| `battery:scripts/check_credentials.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 9.1h | 11K | `0728ba9908226fdb` | UNMEASURED |
+| `battery:scripts/check_data_recoverability.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 9.1h | 11K | `0728ba9908226fdb` | UNMEASURED |
+| `battery:scripts/check_desk_cycles.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:scripts/check_desk_manifest.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 9.1h | 11K | `0728ba9908226fdb` | UNMEASURED |
+| `battery:scripts/check_dig_roi.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 9.1h | 11K | `0728ba9908226fdb` | UNMEASURED |
+| `battery:scripts/check_disposition_landed.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 9.1h | 11K | `0728ba9908226fdb` | UNMEASURED |
+| `battery:scripts/check_forward_clock.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:scripts/check_frozen_values.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 9.1h | 11K | `0728ba9908226fdb` | UNMEASURED |
+| `battery:scripts/check_governance_pulse.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 9.1h | 11K | `0728ba9908226fdb` | UNMEASURED |
+| `battery:scripts/check_ground_conversion.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 9.1h | 11K | `0728ba9908226fdb` | UNMEASURED |
+| `battery:scripts/check_knob_sensitivity.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 9.1h | 11K | `0728ba9908226fdb` | UNMEASURED |
+| `battery:scripts/check_ledger_reversion.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 9.1h | 11K | `0728ba9908226fdb` | UNMEASURED |
+| `battery:scripts/check_oom_pressure.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 9.1h | 11K | `0728ba9908226fdb` | UNMEASURED |
+| `battery:scripts/check_pegged_duplicates.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 9.1h | 11K | `0728ba9908226fdb` | UNMEASURED |
+| `battery:scripts/check_perishability.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 9.1h | 11K | `0728ba9908226fdb` | UNMEASURED |
+| `battery:scripts/check_producer_yield.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 9.1h | 11K | `0728ba9908226fdb` | UNMEASURED |
+| `battery:scripts/check_reachability.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 9.1h | 11K | `0728ba9908226fdb` | UNMEASURED |
+| `battery:scripts/check_recommendation_flow.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 9.1h | 11K | `0728ba9908226fdb` | UNMEASURED |
+| `battery:scripts/check_research_allocation.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 9.1h | 11K | `0728ba9908226fdb` | UNMEASURED |
+| `battery:scripts/check_research_health.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 9.1h | 11K | `0728ba9908226fdb` | UNMEASURED |
+| `battery:scripts/check_row_conversion.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 9.1h | 11K | `0728ba9908226fdb` | UNMEASURED |
+| `battery:scripts/check_scheduled_tasks.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 9.1h | 11K | `0728ba9908226fdb` | UNMEASURED |
+| `battery:scripts/check_seat_health.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 9.1h | 11K | `0728ba9908226fdb` | UNMEASURED |
+| `battery:scripts/check_shell_hygiene.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 9.1h | 11K | `0728ba9908226fdb` | UNMEASURED |
+| `battery:scripts/check_swap_reliability.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 9.1h | 11K | `0728ba9908226fdb` | UNMEASURED |
+| `battery:scripts/check_tier5_audit.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 9.1h | 11K | `0728ba9908226fdb` | UNMEASURED |
+| `battery:scripts/check_unit_health.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:scripts/check_unmeasurable_claims.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 9.1h | 11K | `0728ba9908226fdb` | UNMEASURED |
+| `battery:scripts/check_worktree_reap.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:scripts/collector_author.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:scripts/compare_book_growth.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:scripts/controller_checkpoint.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:scripts/convert_question_queues.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:scripts/daily_max.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:scripts/have_memory.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 9.1h | 11K | `0728ba9908226fdb` | UNMEASURED |
+| `battery:scripts/heal_forward_lane.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:scripts/info_class_map.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 9.1h | 11K | `0728ba9908226fdb` | UNMEASURED |
+| `battery:scripts/monitor_data_decay.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 9.1h | 11K | `0728ba9908226fdb` | UNMEASURED |
+| `battery:scripts/monitor_mt5_shadow_sync.py` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | 9.1h | 11K | `0728ba9908226fdb` | UNMEASURED |
+| `battery:scripts/overnight_frontier_handoff.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:scripts/probe_language_moat.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:scripts/reap_worktrees.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:scripts/research_allocator.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:scripts/run_allocation.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:scripts/run_factory_status.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:scripts/run_ict_strategy.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:scripts/run_restore_drill.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:scripts/score_panel.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:scripts/stageb_capacity.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:scripts/study_promotion_selection_bias.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `battery:scripts/sync_research_ledger.py` | `hourly_cycle:organ_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_ORGANS.json` | 8.2h | 20K | `2956b7e8cfacb4d1` | UNMEASURED |
+| `leg:asia_parser` | `hourly_cycle:asia_parser` | 2026-09-16T12:40:32+00:00 ok | `desks/mt5/data/lake/series` | 0.0h | 29K | `UNMEASURED` | UNMEASURED (not a readable JSON object) |
+| `leg:cycle_pricing` | `hourly_cycle:cycle_pricing` | UNMEASURED UNMEASURED | `desks/mt5/reports/CYCLE_PRICING.json` | 0.2h | 64K | `c779273c8e688158` | UNMEASURED |
+| `leg:discovery_compiler` | `hourly_cycle:discovery_compiler` | UNMEASURED UNMEASURED | `desks/mt5/reports/DISCOVERY_COMPILER.json` | 0.7h | 33K | `136fe526d7a8db27` | UNMEASURED |
+| `leg:exit_study` | `hourly_cycle:exit_study` | 2026-09-16T13:44:07+00:00 ok | `desks/mt5/reports/MUTATION_YIELD.json` | 0.1h | 4K | `a0a4a4405e26ecd9` | UNMEASURED |
+| `leg:fred_macro` | `hourly_cycle:fred_macro` | 2026-09-16T14:38:34+00:00 FRESH | `desks/mt5/reports/PIT_CENSUS.json` | 0.0h | 2K | `402411cca7b212a8` | UNMEASURED |
+| `leg:global_research_os` | `hourly_cycle:global_research_os` | UNMEASURED UNMEASURED | `desks/mt5/reports/KR_DATA_PLANE.json` | 1.6h | 1K | `b9ec53c4b2420d37` | UNMEASURED |
+| `leg:graveyard_model` | `hourly_cycle:graveyard_model` | 2026-09-16T13:44:08+00:00 ok | `desks/mt5/reports/MUTATION_YIELD.json` | 0.1h | 4K | `a0a4a4405e26ecd9` | UNMEASURED |
+| `leg:health` | `hourly_cycle:health` | 2026-09-16T14:07:21+00:00 ok | `data/duplicate_organs.json` | 0.3h | 38K | `2bb29d127808c4d8` | UNMEASURED |
+| `leg:judge_coverage` | `hourly_cycle:judge_coverage` | UNMEASURED UNMEASURED | `desks/mt5/reports/JUDGE_COVERAGE.json` | 0.5h | 28K | `f1598551f2ff3e5d` | verdict=COVERED |
+| `leg:kimi_hunt` | `hourly_cycle:kimi_hunt` | UNMEASURED UNMEASURED | `desks/mt5/reports/SEAT_HEALTH.json` | 0.3h | 56K | `c832a6af7b894819` | verdict=UNMEASURED |
+| `leg:lake_promote` | `hourly_cycle:lake_promote` | 2026-09-16T12:39:07+00:00 ok | `desks/mt5/reports/PIT_CENSUS.json` | 0.0h | 2K | `402411cca7b212a8` | UNMEASURED |
+| `leg:mutation_yield` | `hourly_cycle:mutation_yield` | UNMEASURED UNMEASURED | `desks/mt5/reports/MUTATION_YIELD.json` | 0.1h | 4K | `a0a4a4405e26ecd9` | UNMEASURED |
+| `leg:pit_canaries` | `hourly_cycle:pit_canaries` | UNMEASURED UNMEASURED | `desks/mt5/reports/PIT_CENSUS.json` | 0.0h | 2K | `402411cca7b212a8` | UNMEASURED |
+| `leg:producer_census` | `hourly_cycle:producer_census` | UNMEASURED UNMEASURED | `desks/mt5/reports/PRODUCER_CENSUS.json` | 1.6h | 926K | `5ba9432fdc2ff2d1` | UNMEASURED |
+| `leg:runtime_attestation` | `hourly_cycle:runtime_attestation` | 2026-09-23T10:36:06+00:00 STATE_PUBLISHED | `docs/research/runtime_state.json` | 0.2h | 252K | `b07d197b923b2768` | UNMEASURED |
+| `leg:sandbox_runner` | `hourly_cycle:sandbox_runner` | UNMEASURED UNMEASURED | `desks/mt5/reports/SANDBOX_RUNNER.json` | 1.0h | 99K | `058aa00d79ce7a08` | UNMEASURED |
+| `leg:time_joins` | `hourly_cycle:time_joins` | 2026-09-16T14:38:32+00:00 ok | `desks/mt5/reports/PIT_CENSUS.json` | 0.0h | 2K | `402411cca7b212a8` | UNMEASURED |
 
-## STALE (95)
+## STALE (86)
 
 | organ | clock | last run | artifact | age | size | sha256 | published |
 |---|---|---|---|---:|---:|---|---|
-| `component:control_plane` | `MT5-ClockFixer` | UNMEASURED UNMEASURED | `desks/mt5/reports/CONTROL_PLANE.json` | 19.5h | 160K | `617a9e23f32d6712` | UNMEASURED |
+| `component:control_plane` | `MT5-ClockFixer` | UNMEASURED UNMEASURED | `desks/mt5/reports/CONTROL_PLANE.json` | 19.7h | 160K | `617a9e23f32d6712` | UNMEASURED |
 | `leg:acceptance` | `hourly_cycle:acceptance` | 2026-09-16T13:49:42+00:00 exit_code=1 | `desks/mt5/reports/acceptance_properties.json` | 10.6d | 3K | `94c94a26da3fa473` | UNMEASURED |
 | `leg:allocator_join` | `hourly_cycle:allocator_join` | 2026-09-16T14:38:33+00:00 ok | `desks/mt5/reports/pf_allocation.json` | 6.8d | 98K | `f0e322ca5e977848` | UNMEASURED |
 | `leg:alpha_evolution` | `hourly_cycle:alpha_evolution` | 2026-09-16T14:31:19+00:00 ok | `desks/mt5/reports/alpha_evolution.json` | 6.8d | 56K | `b409870a0c40e329` | UNMEASURED |
-| `leg:alpha_replenishment` | `hourly_cycle:alpha_replenishment` | UNMEASURED UNMEASURED | `desks/mt5/reports/ALPHA_REPLENISHMENT.json` | 13.3h | 860B | `444cccdecbdc2234` | status=UNMEASURED |
+| `leg:alpha_replenishment` | `hourly_cycle:alpha_replenishment` | UNMEASURED UNMEASURED | `desks/mt5/reports/ALPHA_REPLENISHMENT.json` | 13.5h | 860B | `444cccdecbdc2234` | status=UNMEASURED |
 | `leg:analyst_pipeline` | `hourly_cycle:analyst_pipeline` | UNMEASURED UNMEASURED | `desks/mt5/reports/ANALYST_PIPELINE.json` | 6.4d | 1K | `9a66bbe2cfa5064d` | UNMEASURED |
-| `leg:arena` | `hourly_cycle:arena` | 2026-09-16T13:49:46+00:00 exit_code=1 | `desks/mt5/reports/COEVOLUTION.json` | 8.2h | 140K | `0e6596d25deac327` | UNMEASURED |
+| `leg:arena` | `hourly_cycle:arena` | 2026-09-16T13:49:46+00:00 exit_code=1 | `desks/mt5/reports/COEVOLUTION.json` | 8.4h | 140K | `0e6596d25deac327` | UNMEASURED |
 | `leg:asia_collector` | `hourly_cycle:asia_collector` | 2026-09-16T12:40:12+00:00 exit_code=1 | `desks/mt5/reports/ASIA_COLLECTOR.json` | 6.9d | 5K | `b88b9ed89c6e0e1b` | UNMEASURED |
-| `leg:asia_parser` | `hourly_cycle:asia_parser` | 2026-09-16T12:40:32+00:00 ok | `desks/mt5/data/lake/series` | 7.1d | 25K | `UNMEASURED` | UNMEASURED (not a readable JSON object) |
 | `leg:axis_registry` | `hourly_cycle:axis_registry` | UNMEASURED UNMEASURED | `desks/mt5/reports/AXIS_REGISTRY.json` | 6.6d | 98K | `0becc3a032b96271` | UNMEASURED |
 | `leg:blind_reviewer` | `hourly_cycle:blind_reviewer` | UNMEASURED UNMEASURED | `desks/mt5/reports/EVALUATOR_LAB.json` | 6.5d | 8K | `5145bc714fe3f310` | status=MEASURED |
-| `leg:bottleneck_attack` | `hourly_cycle:bottleneck_attack` | UNMEASURED UNMEASURED | `desks/mt5/reports/BOTTLENECK_ATTACK.json` | 7.1h | 5K | `87a1c3c26e6dc6fe` | UNMEASURED |
-| `leg:bottleneck_law` | `hourly_cycle:bottleneck_law` | UNMEASURED UNMEASURED | `desks/mt5/reports/BOTTLENECK_LAW.json` | 13.3h | 2K | `19b8710a28390953` | UNMEASURED |
-| `leg:causal_invariance` | `hourly_cycle:causal_invariance` | UNMEASURED UNMEASURED | `desks/mt5/reports/CAUSAL_INVARIANCE.json` | 9.2h | 38K | `91b24cd64b76b971` | status=OK |
+| `leg:bottleneck_attack` | `hourly_cycle:bottleneck_attack` | UNMEASURED UNMEASURED | `desks/mt5/reports/BOTTLENECK_ATTACK.json` | 7.3h | 5K | `87a1c3c26e6dc6fe` | UNMEASURED |
+| `leg:bottleneck_law` | `hourly_cycle:bottleneck_law` | UNMEASURED UNMEASURED | `desks/mt5/reports/BOTTLENECK_LAW.json` | 13.5h | 2K | `19b8710a28390953` | UNMEASURED |
+| `leg:causal_invariance` | `hourly_cycle:causal_invariance` | UNMEASURED UNMEASURED | `desks/mt5/reports/CAUSAL_INVARIANCE.json` | 9.4h | 38K | `91b24cd64b76b971` | status=OK |
 | `leg:causal_lab` | `hourly_cycle:causal_lab` | UNMEASURED UNMEASURED | `desks/mt5/reports/CAUSAL_LAB.json` | 6.5d | 17K | `f2ad25bfe52ae4cd` | status=OK |
-| `leg:closed_loop` | `hourly_cycle:closed_loop` | 2026-09-16T14:31:21+00:00 ok | `desks/mt5/data/architecture/closed_loop_attestation.json` | 8.7h | 4K | `ddbad9cc423bdac3` | UNMEASURED |
-| `leg:coevolution` | `hourly_cycle:coevolution` | 2026-09-23T02:21:40+00:00 coevolution | `desks/mt5/reports/COEVOLUTION.json` | 8.2h | 140K | `0e6596d25deac327` | UNMEASURED |
-| `leg:compute_economics` | `hourly_cycle:compute_economics` | UNMEASURED UNMEASURED | `desks/mt5/reports/COMPUTE_ECONOMICS.json` | 13.7h | 71K | `c5c4d8ed512afc00` | UNMEASURED |
-| `leg:control_plane` | `hourly_cycle:control_plane` | UNMEASURED UNMEASURED | `desks/mt5/reports/CONTROL_PLANE.json` | 19.5h | 160K | `617a9e23f32d6712` | UNMEASURED |
-| `leg:cost_to_edge` | `hourly_cycle:cost_to_edge` | 2026-09-16T12:39:55+00:00 ok | `desks/mt5/data/cost_surface.json` | 6.2h | 1.0M | `d431a587715284ca` | UNMEASURED |
+| `leg:closed_loop` | `hourly_cycle:closed_loop` | 2026-09-16T14:31:21+00:00 ok | `desks/mt5/data/architecture/closed_loop_attestation.json` | 9.0h | 4K | `ddbad9cc423bdac3` | UNMEASURED |
+| `leg:coevolution` | `hourly_cycle:coevolution` | 2026-09-23T02:21:40+00:00 coevolution | `desks/mt5/reports/COEVOLUTION.json` | 8.4h | 140K | `0e6596d25deac327` | UNMEASURED |
+| `leg:compute_economics` | `hourly_cycle:compute_economics` | UNMEASURED UNMEASURED | `desks/mt5/reports/COMPUTE_ECONOMICS.json` | 14.0h | 71K | `c5c4d8ed512afc00` | UNMEASURED |
+| `leg:control_plane` | `hourly_cycle:control_plane` | UNMEASURED UNMEASURED | `desks/mt5/reports/CONTROL_PLANE.json` | 19.7h | 160K | `617a9e23f32d6712` | UNMEASURED |
+| `leg:cost_to_edge` | `hourly_cycle:cost_to_edge` | 2026-09-16T12:39:55+00:00 ok | `desks/mt5/data/cost_surface.json` | 6.4h | 1.0M | `d431a587715284ca` | UNMEASURED |
 | `leg:counterfactual_world` | `hourly_cycle:counterfactual_world` | 2026-09-16T13:43:18+00:00 ok | `desks/mt5/reports/COUNTERFACTUAL_WORLD.json` | 14.7d | 8K | `6b992b8bed07fffd` | status=MEASURED |
 | `leg:coverage_tensor` | `hourly_cycle:coverage_tensor` | UNMEASURED UNMEASURED | `desks/mt5/reports/COVERAGE_TENSOR.json` | 5.9d | 151K | `502c670bf0da1e03` | UNMEASURED |
-| `leg:cycle_pricing` | `hourly_cycle:cycle_pricing` | UNMEASURED UNMEASURED | `desks/mt5/reports/CYCLE_PRICING.json` | 7.6h | 62K | `2097c818a4ce0064` | UNMEASURED |
 | `leg:dead_architecture` | `hourly_cycle:dead_architecture` | 2026-09-16T13:51:17+00:00 ok | `desks/mt5/reports/dead_architecture.json` | 6.9d | 57K | `f46d5610154d8438` | UNMEASURED |
-| `leg:deep_forest` | `hourly_cycle:deep_forest` | 2026-09-16T13:19:53+00:00 ok | `desks/mt5/data/deep_forest_frontier.json` | 6.8d | 127K | `7913a94d15258286` | UNMEASURED |
-| `leg:drawdown_alpha_miner` | `hourly_cycle:drawdown_alpha_miner` | UNMEASURED UNMEASURED | `desks/mt5/reports/DRAWDOWN_ALPHA_MINER.json` | 13.3h | 108K | `d014083d591651ec` | UNMEASURED |
+| `leg:deep_forest` | `hourly_cycle:deep_forest` | 2026-09-16T13:19:53+00:00 ok | `desks/mt5/data/deep_forest_frontier.json` | 6.9d | 127K | `7913a94d15258286` | UNMEASURED |
+| `leg:drawdown_alpha_miner` | `hourly_cycle:drawdown_alpha_miner` | UNMEASURED UNMEASURED | `desks/mt5/reports/DRAWDOWN_ALPHA_MINER.json` | 13.5h | 108K | `d014083d591651ec` | UNMEASURED |
 | `leg:edge_reliability` | `hourly_cycle:edge_reliability` | 2026-09-16T13:49:45+00:00 ok | `desks/mt5/reports/edge_reliability.json` | 6.9d | 386K | `6af459956b792f30` | status=MEASURED |
 | `leg:evaluator_lab` | `hourly_cycle:evaluator_lab` | UNMEASURED UNMEASURED | `desks/mt5/reports/EVALUATOR_LAB.json` | 6.5d | 8K | `5145bc714fe3f310` | status=MEASURED |
 | `leg:evidence_router` | `hourly_cycle:evidence_router` | UNMEASURED UNMEASURED | `desks/mt5/reports/EVIDENCE_ROUTER.json` | 5.9d | 2K | `ba91e131f9321348` | UNMEASURED |
 | `leg:execution_twin` | `hourly_cycle:execution_twin` | 2026-09-16T12:32:47+00:00 ok | `desks/mt5/reports/EXECUTION_TWIN.json` | 6.9d | 52K | `b9265d0f4f8f32b1` | status=MEASURED |
-| `leg:exit_study` | `hourly_cycle:exit_study` | 2026-09-16T13:44:07+00:00 ok | `desks/mt5/reports/MUTATION_YIELD.json` | 8.9h | 4K | `7c8345b056d4a7bb` | UNMEASURED |
-| `leg:experiment_spine` | `hourly_cycle:experiment_spine` | 2026-09-23T01:36:17+00:00 ok | `desks/mt5/reports/EXPERIMENT_SPINE.json` | 9.0h | 35K | `5030bed144900243` | UNMEASURED |
+| `leg:experiment_spine` | `hourly_cycle:experiment_spine` | 2026-09-23T01:36:17+00:00 ok | `desks/mt5/reports/EXPERIMENT_SPINE.json` | 9.2h | 35K | `5030bed144900243` | UNMEASURED |
 | `leg:exposure_decomposition` | `hourly_cycle:exposure_decomposition` | UNMEASURED UNMEASURED | `desks/mt5/reports/EXPOSURE_DECOMPOSITION.json` | 6.6d | 82K | `82d7906f4c2cd339` | UNMEASURED |
-| `leg:fill_attribution` | `hourly_cycle:fill_attribution` | 2026-09-16T12:39:52+00:00 exit_code=1 | `desks/mt5/data/cost_surface.json` | 6.2h | 1.0M | `d431a587715284ca` | UNMEASURED |
+| `leg:fill_attribution` | `hourly_cycle:fill_attribution` | 2026-09-16T12:39:52+00:00 exit_code=1 | `desks/mt5/data/cost_surface.json` | 6.4h | 1.0M | `d431a587715284ca` | UNMEASURED |
 | `leg:forced_flow_calendar` | `hourly_cycle:forced_flow_calendar` | UNMEASURED UNMEASURED | `desks/mt5/data/forced_flow_calendar.json` | 6.6d | 1.3M | `2ae898e4f906c532` | UNMEASURED |
 | `leg:forward_slot_ranker` | `hourly_cycle:forward_slot_ranker` | UNMEASURED UNMEASURED | `desks/mt5/reports/FORWARD_SLOT_RANKER.json` | 6.4d | 173K | `034f86359f30a7cc` | UNMEASURED |
-| `leg:fred_macro` | `hourly_cycle:fred_macro` | 2026-09-16T14:38:34+00:00 FRESH | `desks/mt5/reports/PIT_CENSUS.json` | 6.6d | 479B | `5be445a2d2629332` | UNMEASURED |
 | `leg:frontier` | `hourly_cycle:frontier` | 2026-09-16T13:19:23+00:00 ok | `desks/mt5/reports/CEO_DOCKET.json` | 8.0d | 24K | `aec458f20adb0f1c` | UNMEASURED |
 | `leg:frontier_unknowns` | `hourly_cycle:frontier_unknowns` | 2026-09-16T13:43:27+00:00 exit_code=1 | `desks/mt5/reports/STANDING_QUESTIONS.json` | 6.6d | 34K | `3dd8d80667b4724e` | UNMEASURED |
 | `leg:futures_lead_lag` | `hourly_cycle:futures_lead_lag` | 2026-09-16T14:38:04+00:00 ok | `desks/mt5/reports/WORLD_CAUSAL_GRAPH.json` | 6.9d | 214K | `9f036cb7b86b563c` | status=OK |
 | `leg:gauntlet_backpressure` | `hourly_cycle:gauntlet_backpressure` | UNMEASURED UNMEASURED | `desks/mt5/reports/GAUNTLET_BACKPRESSURE.json` | 6.4d | 28K | `0bf4fb9826140b71` | UNMEASURED |
-| `leg:graveyard_model` | `hourly_cycle:graveyard_model` | 2026-09-16T13:44:08+00:00 ok | `desks/mt5/reports/MUTATION_YIELD.json` | 8.9h | 4K | `7c8345b056d4a7bb` | UNMEASURED |
-| `leg:implementer` | `hourly_cycle:implementer` | 2026-09-23T03:11:45+00:00 ok | `docs/research/recommendation_ledger.json` | 7.4h | 1.4M | `fec4cbb899bf645c` | UNMEASURED |
+| `leg:implementer` | `hourly_cycle:implementer` | 2026-09-23T03:11:45+00:00 ok | `docs/research/recommendation_ledger.json` | 7.6h | 1.4M | `fec4cbb899bf645c` | UNMEASURED |
 | `leg:input_identity` | `hourly_cycle:input_identity` | 2026-09-16T13:51:25+00:00 ok | `desks/mt5/data/input_identity.json` | 6.9d | 121K | `3cba2d193cf8c491` | UNMEASURED |
-| `leg:lake_promote` | `hourly_cycle:lake_promote` | 2026-09-16T12:39:07+00:00 ok | `desks/mt5/reports/PIT_CENSUS.json` | 6.6d | 479B | `5be445a2d2629332` | UNMEASURED |
 | `leg:layer_census` | `hourly_cycle:layer_census` | 2026-09-16T13:49:35+00:00 ok | `desks/mt5/reports/layer_census.json` | 6.9d | 7K | `d2938954e1675a59` | UNMEASURED |
 | `leg:markout` | `hourly_cycle:markout` | 2026-09-16T13:15:58+00:00 ok | `desks/mt5/reports/ALPHA_CAPTURE.json` | 14.7d | 19K | `23b13f574708d0fd` | status=UNMEASURED |
-| `leg:math_lab` | `hourly_cycle:math_lab` | UNMEASURED UNMEASURED | `desks/mt5/reports/MATH_LAB.json` | 8.4h | 173K | `74787bbb0e03023f` | UNMEASURED |
+| `leg:math_lab` | `hourly_cycle:math_lab` | UNMEASURED UNMEASURED | `desks/mt5/reports/MATH_LAB.json` | 8.7h | 173K | `74787bbb0e03023f` | UNMEASURED |
 | `leg:mine` | `hourly_cycle:mine` | 2026-09-16T14:52:19+00:00 ok | `data/data_universe_map.json` | 17.0d | 418K | `99267432b16ffa72` | UNMEASURED |
 | `leg:miner_conversion` | `hourly_cycle:miner_conversion` | 2026-09-16T13:25:42+00:00 ok | `data/agent_value.json` | 6.9d | 15K | `35dc60df54edb2b9` | status=UNMEASURED |
 | `leg:miner_specialisation` | `hourly_cycle:miner_specialisation` | UNMEASURED UNMEASURED | `desks/mt5/reports/MINER_SPECIALISATION.json` | 6.4d | 7K | `089ef950fbd04ec4` | UNMEASURED |
-| `leg:missed_trade_archaeologist` | `hourly_cycle:missed_trade_archaeologist` | UNMEASURED UNMEASURED | `desks/mt5/reports/MISSED_TRADES.json` | 13.5h | 255K | `a1130e04c3679eab` | UNMEASURED |
+| `leg:missed_trade_archaeologist` | `hourly_cycle:missed_trade_archaeologist` | UNMEASURED UNMEASURED | `desks/mt5/reports/MISSED_TRADES.json` | 13.7h | 255K | `a1130e04c3679eab` | UNMEASURED |
 | `leg:ml_layer` | `hourly_cycle:ml_layer` | 2026-09-16T13:43:11+00:00 ok | `desks/mt5/reports/ML_LAYER.json` | 6.9d | 16K | `5ec525390c125e2b` | UNMEASURED |
 | `leg:model_role_benchmark` | `hourly_cycle:model_role_benchmark` | UNMEASURED UNMEASURED | `desks/mt5/reports/MODEL_ROLE_BENCHMARK.json` | 6.6d | 217K | `92edc6f634a7a2ac` | UNMEASURED |
-| `leg:model_search` | `hourly_cycle:model_search` | 2026-09-23T02:35:52+00:00 model_search | `desks/mt5/reports/MODEL_SEARCH.json` | 8.0h | 34K | `78b99f7409662652` | UNMEASURED |
+| `leg:model_search` | `hourly_cycle:model_search` | 2026-09-23T02:35:52+00:00 model_search | `desks/mt5/reports/MODEL_SEARCH.json` | 8.2h | 34K | `78b99f7409662652` | UNMEASURED |
 | `leg:model_skill` | `hourly_cycle:model_skill` | 2026-09-16T13:16:30+00:00 verdict_exit=2 | `desks/mt5/reports/MODEL_SELF_IMPROVEMENT.json` | 6.9d | 6K | `fd29333f95a9f70e` | status=BREACH |
-| `leg:mutation_yield` | `hourly_cycle:mutation_yield` | UNMEASURED UNMEASURED | `desks/mt5/reports/MUTATION_YIELD.json` | 8.9h | 4K | `7c8345b056d4a7bb` | UNMEASURED |
-| `leg:net_edge` | `hourly_cycle:net_edge` | 2026-09-23T05:33:52+00:00 OK | `desks/mt5/reports/NET_EDGE.json` | 5.8h | 322K | `74fb847142750b73` | UNMEASURED |
+| `leg:net_edge` | `hourly_cycle:net_edge` | 2026-09-23T05:33:52+00:00 OK | `desks/mt5/reports/NET_EDGE.json` | 6.0h | 322K | `74fb847142750b73` | UNMEASURED |
 | `leg:netting_report` | `hourly_cycle:netting_report` | UNMEASURED UNMEASURED | `desks/mt5/reports/NETTING.json` | 6.4d | 18K | `65c94e81c1dc136d` | UNMEASURED |
 | `leg:novelty_gate` | `hourly_cycle:novelty_gate` | UNMEASURED UNMEASURED | `desks/mt5/reports/NOVELTY_GATE.json` | 6.6d | 15K | `6cad1ca7fcf30db4` | UNMEASURED |
 | `leg:opportunity_cost` | `hourly_cycle:opportunity_cost` | 2026-09-16T13:49:39+00:00 exit_code=1 | `desks/mt5/reports/opportunity_cost.json` | 12.4d | 5K | `04a5b153890b9a0a` | UNMEASURED |
 | `leg:opportunity_forecast` | `hourly_cycle:opportunity_forecast` | 2026-09-16T13:49:44+00:00 ok | `desks/mt5/reports/opportunity_forecast.json` | 6.9d | 25K | `0f5dd0b07c4e0d3f` | status=MEASURED; rows=35199 |
-| `leg:orthogonality` | `hourly_cycle:orthogonality` | 2026-09-16T12:39:22+00:00 ok | `desks/mt5/reports/factor_residual.json` | 6.8d | 12.1M | `091dd17f7696b184` | UNMEASURED (artifact 12.1 MB, not parsed within budget) |
+| `leg:orthogonality` | `hourly_cycle:orthogonality` | 2026-09-16T12:39:22+00:00 ok | `desks/mt5/reports/factor_residual.json` | 6.9d | 12.1M | `091dd17f7696b184` | UNMEASURED (artifact 12.1 MB, not parsed within budget) |
 | `leg:pf_allocator` | `hourly_cycle:pf_allocator` | 2026-09-16T12:32:34+00:00 ok | `desks/mt5/reports/pf_allocation.json` | 6.8d | 98K | `f0e322ca5e977848` | UNMEASURED |
-| `leg:pit_canaries` | `hourly_cycle:pit_canaries` | UNMEASURED UNMEASURED | `desks/mt5/reports/PIT_CENSUS.json` | 6.6d | 479B | `5be445a2d2629332` | UNMEASURED |
-| `leg:plumbing_watchdog` | `hourly_cycle:plumbing_watchdog` | UNMEASURED UNMEASURED | `desks/mt5/reports/PLUMBING_WATCHDOG.json` | 7.1h | 32K | `b5c90b2720f0c5f5` | UNMEASURED |
-| `leg:portfolio_bounty` | `hourly_cycle:portfolio_bounty` | 2026-09-22T21:16:13+00:00 PORTFOLIO_BOUNTY | `desks/mt5/reports/PORTFOLIO_BOUNTY.json` | 13.3h | 28K | `1e97310217ddabdb` | UNMEASURED |
+| `leg:plumbing_watchdog` | `hourly_cycle:plumbing_watchdog` | UNMEASURED UNMEASURED | `desks/mt5/reports/PLUMBING_WATCHDOG.json` | 7.3h | 32K | `b5c90b2720f0c5f5` | UNMEASURED |
+| `leg:portfolio_bounty` | `hourly_cycle:portfolio_bounty` | 2026-09-22T21:16:13+00:00 PORTFOLIO_BOUNTY | `desks/mt5/reports/PORTFOLIO_BOUNTY.json` | 13.5h | 28K | `1e97310217ddabdb` | UNMEASURED |
 | `leg:posterior_alpha` | `hourly_cycle:posterior_alpha` | UNMEASURED UNMEASURED | `desks/mt5/reports/POSTERIOR_ALPHA.json` | 6.6d | 154K | `77b0b2353d1ccd3b` | UNMEASURED |
 | `leg:program_alpha_lane` | `hourly_cycle:program_alpha_lane` | UNMEASURED UNMEASURED | `desks/mt5/reports/PROGRAM_ALPHA_LANE.json` | 6.5d | 7K | `03ecb05df6b5b470` | UNMEASURED |
 | `leg:promoter` | `hourly_cycle:promoter` | 2026-09-16T12:32:40+00:00 ok | `data/alpha_state_ledger.jsonl` | 9.1d | 650B | `dbdf24496ca6f129` | UNMEASURED (not a readable JSON object) |
-| `leg:proposer_seat` | `hourly_cycle:proposer_seat` | UNMEASURED UNMEASURED | `desks/mt5/reports/PROPOSER_SEAT.json` | 7.3h | 7K | `2fdfac37b55a3f1d` | verdict=UNMEASURED |
+| `leg:proposer_seat` | `hourly_cycle:proposer_seat` | UNMEASURED UNMEASURED | `desks/mt5/reports/PROPOSER_SEAT.json` | 7.5h | 7K | `2fdfac37b55a3f1d` | verdict=UNMEASURED |
 | `leg:prosecutor` | `hourly_cycle:prosecutor` | 2026-09-16T13:50:14+00:00 ok | `desks/mt5/reports/prosecutor_census.json` | 6.4d | 30K | `d2bc24a65bf284c5` | UNMEASURED |
-| `leg:refresh_bars` | `hourly_cycle:refresh_bars` | 2026-09-16T14:06:42+00:00 ok | `desks/mt5/data/universe/derived_series.json` | 6.8d | 4K | `2b2b4f66aee58e67` | UNMEASURED |
+| `leg:refresh_bars` | `hourly_cycle:refresh_bars` | 2026-09-16T14:06:42+00:00 ok | `desks/mt5/data/universe/derived_series.json` | 6.9d | 4K | `2b2b4f66aee58e67` | UNMEASURED |
 | `leg:regime_monitor` | `hourly_cycle:regime_monitor` | 2026-09-16T14:09:58+00:00 ok | `desks/mt5/data/state_vector.json` | 12.8d | 38K | `3d33bc13ffa3b4b0` | UNMEASURED |
 | `leg:regime_router` | `hourly_cycle:regime_router` | UNMEASURED UNMEASURED | `desks/mt5/reports/REGIME_ROUTER.json` | 6.4d | 44K | `433b7b5f6ab88450` | UNMEASURED |
-| `leg:representation_forge` | `hourly_cycle:representation_forge` | UNMEASURED UNMEASURED | `desks/mt5/reports/REPRESENTATION_FORGE.json` | 13.8h | 8K | `21358162017edd20` | refused=24 |
-| `leg:research_auction` | `hourly_cycle:research_auction` | UNMEASURED UNMEASURED | `desks/mt5/reports/RESEARCH_AUCTION.json` | 13.3h | 14K | `54aef70839d9cc09` | UNMEASURED |
-| `leg:research_evolution` | `hourly_cycle:research_evolution` | UNMEASURED UNMEASURED | `desks/mt5/reports/RESEARCH_EVOLUTION.json` | 13.7h | 34K | `aa6ff6d252a2e08c` | status=OK |
+| `leg:representation_forge` | `hourly_cycle:representation_forge` | UNMEASURED UNMEASURED | `desks/mt5/reports/REPRESENTATION_FORGE.json` | 14.0h | 8K | `21358162017edd20` | refused=24 |
+| `leg:research_auction` | `hourly_cycle:research_auction` | UNMEASURED UNMEASURED | `desks/mt5/reports/RESEARCH_AUCTION.json` | 13.5h | 14K | `54aef70839d9cc09` | UNMEASURED |
+| `leg:research_evolution` | `hourly_cycle:research_evolution` | UNMEASURED UNMEASURED | `desks/mt5/reports/RESEARCH_EVOLUTION.json` | 14.0h | 34K | `aa6ff6d252a2e08c` | status=OK |
 | `leg:research_gap_map` | `hourly_cycle:research_gap_map` | UNMEASURED UNMEASURED | `desks/mt5/reports/RESEARCH_GAP_MAP.json` | 6.4d | 31K | `034c3c2b2cc179ca` | UNMEASURED |
-| `leg:research_latency` | `hourly_cycle:research_latency` | UNMEASURED UNMEASURED | `desks/mt5/reports/RESEARCH_LATENCY.json` | 13.3h | 2K | `a59a877026f7a61b` | UNMEASURED |
+| `leg:research_latency` | `hourly_cycle:research_latency` | UNMEASURED UNMEASURED | `desks/mt5/reports/RESEARCH_LATENCY.json` | 13.5h | 2K | `a59a877026f7a61b` | UNMEASURED |
 | `leg:research_roi` | `hourly_cycle:research_roi` | UNMEASURED UNMEASURED | `desks/mt5/reports/RESEARCH_ROI.json` | 5.9d | 133K | `b668b66cdf4d5135` | UNMEASURED |
-| `leg:residual_factors` | `hourly_cycle:residual_factors` | 2026-09-16T13:15:53+00:00 ok | `desks/mt5/data/research_queue.json` | 13.0h | 25.0M | `dd12ef0db2da7701` | UNMEASURED (artifact 25.0 MB, not parsed within budget) |
+| `leg:residual_factors` | `hourly_cycle:residual_factors` | 2026-09-16T13:15:53+00:00 ok | `desks/mt5/data/research_queue.json` | 13.2h | 25.0M | `dd12ef0db2da7701` | UNMEASURED (artifact 25.0 MB, not parsed within budget) |
 | `leg:residual_hunt` | `hourly_cycle:residual_hunt` | UNMEASURED UNMEASURED | `desks/mt5/reports/RESIDUAL_HUNT.json` | 5.9d | 15K | `33001ed8d066c84d` | UNMEASURED |
 | `leg:scaling_laws` | `hourly_cycle:scaling_laws` | 2026-09-16T13:50:17+00:00 exit_code=1 | `desks/mt5/reports/scaling_laws.json` | 12.4d | 1K | `4fee7972429a5b4d` | UNMEASURED |
 | `leg:scout_roster` | `hourly_cycle:scout_roster` | UNMEASURED UNMEASURED | `desks/mt5/reports/SCOUT_ROSTER.json` | 6.4d | 62K | `b87bc1760bea35ce` | UNMEASURED |
-| `leg:search` | `hourly_cycle:search` | 2026-09-16T15:04:22+00:00 TIMEOUT | `libs/research/alpha_grammar.py` | 19.0h | 67K | `792d9d1ff4d979e3` | UNMEASURED (not a readable JSON object) |
+| `leg:search` | `hourly_cycle:search` | 2026-09-16T15:04:22+00:00 TIMEOUT | `libs/research/alpha_grammar.py` | 19.2h | 67K | `792d9d1ff4d979e3` | UNMEASURED (not a readable JSON object) |
 | `leg:session_capital` | `hourly_cycle:session_capital` | 2026-09-16T13:51:30+00:00 ok | `desks/mt5/reports/session_capital.json` | 6.9d | 2K | `b445a689b89a3184` | UNMEASURED |
 | `leg:source_registry` | `hourly_cycle:source_registry` | UNMEASURED UNMEASURED | `desks/mt5/reports/SOURCE_REGISTRY.json` | 6.5d | 12K | `576c95909b64f7ae` | UNMEASURED |
 | `leg:standing_questions` | `hourly_cycle:standing_questions` | UNMEASURED UNMEASURED | `desks/mt5/reports/STANDING_QUESTIONS.json` | 6.6d | 34K | `3dd8d80667b4724e` | UNMEASURED |
 | `leg:sweep` | `hourly_cycle:sweep` | 2026-09-16T15:16:24+00:00 TIMEOUT | `desks/mt5/mt5desk/families_orthogonal.py` | 6.6d | 111K | `1d8f29714884aa30` | UNMEASURED (not a readable JSON object) |
 | `leg:tier1_scorecard` | `hourly_cycle:tier1_scorecard` | UNMEASURED UNMEASURED | `desks/mt5/reports/TIER1_SCORECARD.json` | 6.6d | 7K | `aade1bb05973ec47` | UNMEASURED |
-| `leg:time_joins` | `hourly_cycle:time_joins` | 2026-09-16T14:38:32+00:00 ok | `desks/mt5/reports/PIT_CENSUS.json` | 6.6d | 479B | `5be445a2d2629332` | UNMEASURED |
 | `leg:value_of_data` | `hourly_cycle:value_of_data` | UNMEASURED UNMEASURED | `desks/mt5/reports/VALUE_OF_DATA.json` | 6.5d | 22K | `3111d41ddc6ba9be` | UNMEASURED |
 | `leg:world_crawler` | `hourly_cycle:world_crawler` | 2026-09-16T13:49:18+00:00 ok | `desks/mt5/reports/SOURCE_REGISTRY.json` | 6.5d | 12K | `576c95909b64f7ae` | UNMEASURED |
 | `leg:world_lab` | `hourly_cycle:world_lab` | UNMEASURED UNMEASURED | `desks/mt5/reports/WORLD_LAB.json` | 6.5d | 106K | `3f8f1dafdd8ec521` | status=OK |

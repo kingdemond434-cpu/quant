@@ -232,6 +232,20 @@ def run(symbols: list[str] | None = None, budget_s: float = BUDGET_S, seed: int 
         models = tuple(_ordered)
     except Exception as _exc:                             # pragma: no cover - optional seat
         seat_hint = {"verdict": "UNMEASURED", "why": f"{type(_exc).__name__}: {_exc}"}
+    # THE JOINT ARMS DECIDE THE ORDER (Tier-1 D3). `libs.research.bandit.JOINT_ARMS` prices the
+    # five-tuple (data axis, factor, model, regime representation, portfolio use) from THIS
+    # report's own compatibility grid -- marginal OOS log score per prediction -- so the family
+    # whose joint arm earned most is bred first. It REORDERS and never widens: the option set is
+    # still exactly what `healthy_zoo_models` measured as callable on this box, and an unreadable
+    # bandit leaves the incumbent order untouched rather than emptying it.
+    joint_hint: dict[str, Any] = {"status": "UNMEASURED"}
+    try:
+        from libs.research import bandit as _bandit
+        _jordered, joint_hint = _bandit.joint_order(models)
+        if set(_jordered) == set(models):
+            models = tuple(_jordered)
+    except Exception as _exc:                             # pragma: no cover - optional bandit
+        joint_hint = {"status": "UNMEASURED", "why": f"{type(_exc).__name__}: {_exc}"}
     per_sym = budget_s / max(1, len(todo))
     store = fs.FeatureStore(FEATURE_ROOT)
     per_symbol: dict[str, dict[str, Any]] = {}
@@ -283,6 +297,8 @@ def run(symbols: list[str] | None = None, budget_s: float = BUDGET_S, seed: int 
            "tasks": [{k: t[k] for k in ("title", "symbols", "params")} for t in tasks],
            "budget_s": budget_s, "models": list(models),
            "models_set_aside": models_aside, "proposer_seat": seat_hint,
+           # WHICH JOINT ARM PAID FOR THIS ORDER (Tier-1 D3), and whether it moved anything.
+           "joint_arms": joint_hint,
            "vocabulary": len(VOCAB),
            "bars_per_symbol": N_BARS, "pop": pop, "gens": gens, "horizon": HORIZON,
            "positive_verdict": POSITIVE, "feature_store": census,

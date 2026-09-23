@@ -67,11 +67,47 @@ def main() -> int:
         except Exception as _exc:
             why = f"{why}; cycle_pricing unmeasured ({type(_exc).__name__})"
         p = Path(bandit.BUDGET)
-        doc = _json.loads(p.read_text(encoding="utf-8"))
+        budget_doc = _json.loads(p.read_text(encoding="utf-8"))
+        budget_doc["authoritative"] = bool(ok)
+        budget_doc["authority_evidence"] = why
+        p.write_text(_json.dumps(budget_doc, indent=1, default=str), encoding="utf-8")
+        # THE REPORT IS THE FULL RUN, NOT THE TRIMMED BUDGET (Tier-1 B11/B12, 2026-09-23).
+        #
+        # `bandit.run` writes TWO documents: the whole measurement to `reports/RESEARCH_BANDIT.json`
+        # and a three-key extract (generated_utc, controller_variant, shares) to
+        # `data/research_budget.json`, because `research_budget.budget_s` only ever needs the
+        # shares. This block then read the EXTRACT back and wrote it over the report -- so the
+        # published report carried five keys and every block the readers actually ask for was
+        # destroyed by the act of stamping authority onto it. Measured on the box 2026-09-23:
+        # `realised_credit` was `null` in the report while `bandit.realised_credit()` returned
+        # basis=live, applied=true on 151 realised deals, so `check_closed_loop.research`
+        # reported "the bandit carries no realised_credit block yet" -- delayed live truth was
+        # reaching the information budget and being deleted one line before publication.
+        #
+        # The report is stamped from `d`, the run's own return value; the budget keeps its
+        # extract. Same two paths, same act, neither one a truncation of the other.
+        doc = dict(d)
         doc["authoritative"] = bool(ok)
         doc["authority_evidence"] = why
-        p.write_text(_json.dumps(doc, indent=1, default=str), encoding="utf-8")
+        # AND PUBLISHED WHERE ITS READERS ACTUALLY LOOK (2026-09-22, Tier-1 B27/B28).
+        #
+        # `bandit.BUDGET` is `data/research_budget.json`. Every consumer on this desk reads
+        # `reports/RESEARCH_BANDIT.json` instead -- `research_budget.BANDIT`,
+        # `research_os_archive.BANDIT`, `cycle_pricing.BANDIT`, `libs/ops/allocators.py`,
+        # `libs/ops/capability_graph.py` and `scripts/check_closed_loop.py` all name that path --
+        # and NOTHING WROTE IT. Measured: the file on this box carried an older schema with no
+        # `shares` key at all, so `research_budget.budget_s` answered "bandit shares unreadable
+        # for these arms; base budget" on every call, the closed-loop attestation read
+        # `evig_controller_authoritative` false, and the bandit's prices reached nothing. The
+        # producer published to a path with no readers and the readers read a path with no
+        # producer, which is the exact shape of an organ that looks wired and is not (LAWS 7).
+        #
+        # One document, two paths, written in the same act so they cannot drift.
+        rep = _DESK / "reports" / "RESEARCH_BANDIT.json"
+        rep.parent.mkdir(parents=True, exist_ok=True)
+        rep.write_text(_json.dumps(doc, indent=1, default=str), encoding="utf-8")
         print(f"  authoritative: {ok} -- {why[:110]}")
+        print(f"  published: {rep}")
     except Exception as exc:
         print(f"  authoritative: unmeasured ({type(exc).__name__}: {exc})")
     print(f"RESEARCH BANDIT  {d['graph_rows']} graph rows, pooled certify rate "

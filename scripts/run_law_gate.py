@@ -294,6 +294,11 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("check_conversion_debt.py", ()),
     # the live half of ONE CERTIFICATE TRUTH: on the box an absent authority file is a defect
     ("check_certificate_truth.py", ("--require-state",)),
+    # the live half of THE RUNTIME ATTESTATION: on the host that publishes it, an attestation
+    # older than its own cadence means the hourly leg has stopped and the committed file has
+    # quietly become a photograph of the past -- which is worse than no file, because it still
+    # reads as current runtime state to anyone on GitHub.
+    ("check_runtime_attestation.py", ("--require-state",)),
     # the live half of REGIONAL PARITY (LAWS 5n): on the box the registry IS open and the forest
     # reports DO exist, so "no resident", "no discovery in the trailing window" and "no candidate
     # in the lattice" are measured absences and the law calls each one a defect. It still caps no

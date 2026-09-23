@@ -385,8 +385,14 @@ function Write-InPlace {
     }
 }
 
-# THE STATE PREFIXES, verbatim from `libs.ops.release.STATE_PREFIXES` minus docs/ (which the box
-# never writes, so origin's docs are adopted like code). Kept as a literal because this script
+# THE STATE PREFIXES, verbatim from `libs.ops.release.STATE_PREFIXES` minus docs/, whose two
+# box-written files are adopted like code ON PURPOSE. Since 2026-09-23 the box DOES write under
+# docs/: `runtime_attestation` publishes docs/research/runtime_state.json + RUNTIME_STATE.md every
+# hour so a reader on GitHub can see what ran here. Adopting origin's copy loses nothing -- the
+# capture commit below stages every dirty tracked path, so the box's own attestation is committed
+# and pushed before this line runs, and the hourly leg rewrites the working copy inside the
+# fence's two-hour window. Promoting docs/ to a state prefix here would instead make every
+# ordinary documentation edit on origin unadoptable. Kept as a literal because this script
 # runs BEFORE the adopted `libs` is on disk; test_adopt_release_keeps_the_box_s_state pins the
 # two lists to each other.
 $StatePrefixes = @("desks/mt5/data/", "desks/mt5/reports/", "desks/mt5/logs/", "desks/mt5/frontier_intel/data/", "desks/mt5/side_channels/data/",
