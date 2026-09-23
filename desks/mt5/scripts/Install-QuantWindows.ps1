@@ -637,8 +637,11 @@ if (Test-Path $qquantGates) {
                 -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable `
                 -RestartCount 2 -RestartInterval (New-TimeSpan -Minutes 10) `
                 -ExecutionTimeLimit (New-TimeSpan -Hours 2) -MultipleInstances IgnoreNew
-            $qgPrincipal = New-ScheduledTaskPrincipal -UserId $env:USERNAME `
-                -LogonType Interactive -RunLevel Limited
+            # Certification reads sealed files; it has no terminal IPC dependency.
+            # Keep it running after logoff so a healthy gate lane cannot silently
+            # disappear with an RDP session.
+            $qgPrincipal = New-ScheduledTaskPrincipal -UserId "SYSTEM" `
+                -LogonType ServiceAccount -RunLevel Highest
             Unregister-ScheduledTask -TaskName "MT5-QQuantGatesCertify" `
                 -Confirm:$false -ErrorAction SilentlyContinue
             Register-ScheduledTask -TaskName "MT5-QQuantGatesCertify" -Action $qgAction `
