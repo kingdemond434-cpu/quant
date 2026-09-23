@@ -410,10 +410,13 @@ $StatePrefixes = @("desks/mt5/data/", "desks/mt5/reports/", "desks/mt5/logs/", "
 #
 # KEPT IN STEP WITH libs/ops/release.STATE_FILES, which is the same list in the language the rest
 # of the desk reads it in, and a test fails when the two drift apart.
+# MIRRORS libs/ops/release.STATE_FILES -- a test pins the two lists to each other. The eighth
+# entry was measured 2026-09-23: an otherwise clean adoption refused to seal on swap_exposure.json,
+# which the box rewrites hourly beside the code.
 $StateFiles = @("desks/mt5/gateway_state.json", "desks/mt5/regime_state.json",
                 "desks/mt5/sync_marker.json", "desks/mt5/portfolio_projection.json",
                 "desks/mt5/hunt11.json", "desks/mt5/mech_battery.json",
-                "desks/mt5/mech_split.json")
+                "desks/mt5/mech_split.json", "desks/mt5/swap_exposure.json")
 
 function Test-StatePath {
     param([string] $Rel)
