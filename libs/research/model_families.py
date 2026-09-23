@@ -24,9 +24,16 @@ comparable in COEVOLUTION.json without a translation table.
 """
 from __future__ import annotations
 
+import contextlib
+import json
 import math
+import os
+import subprocess
+import sys
+import time
 from collections.abc import Sequence
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 UNMEASURED = "UNMEASURED"
@@ -106,25 +113,175 @@ def _import(mod: str) -> Any:
     return sys.modules.get(mod)
 
 
-def availability() -> dict[str, dict[str, Any]]:
-    """Per family: which declared backends are importable here, and the verdict when none is.
+# --------------------------------------------------------------- heavy-backend HEALTH
+#: IMPORTABLE IS NOT USABLE, and this desk has the measurement. On the build box
+#: (2026-09-22, Windows Server 2022, scikit-learn present and importing in 6.7 s),
+#: `HistGradientBoostingClassifier.fit` on a 700 x 4 float matrix DOES NOT RETURN -- it was
+#: still running after 200 s, so a single `boosting` cell would eat an entire 600 s leg budget
+#: and the organ would be killed at the cycle's prefix with no artifact. An `ImportError` is
+#: easy to handle; a hang inside a C extension cannot be interrupted from Python at all.
+#:
+#: So the guard is not "can I import it" but "did it RETURN". One probe subprocess fits every
+#: heavy-backed family on a tiny matrix and appends each family's name to a progress file as it
+#: survives it. If the probe hangs, the parent kills it and reads the names written BEFORE the
+#: hang -- which is why the progress file is appended-and-flushed rather than written at the
+#: end. A family the probe never reached is UNMEASURED with a reason, never silently dropped.
+_HEALTH_ENV = "QUANT_MODEL_BACKEND_HEALTH"
+PROBE_TIMEOUT_S = 40.0
+HEALTH_TTL_S = 86_400.0
+_health_cache: dict[str, Any] | None = None
 
-    A family whose heavy backend is absent still RUNS on its pure-Python fallback; what is
-    UNMEASURED is the heavy backend's own contribution, and that is what this records. An
-    absent library is never a crash and never a zero.
+
+def _health_path() -> Path:
+    override = os.environ.get(_HEALTH_ENV)
+    if override:
+        return Path(override)
+    return Path(__file__).resolve().parents[2] / "data" / "model_backend_health.json"
+
+
+def _probe_source(progress: Path, skip: Sequence[str] = ()) -> str:
+    root = Path(__file__).resolve().parents[2]
+    return (
+        "import sys, json\n"
+        f"sys.path.insert(0, {str(root)!r})\n"
+        "from libs.research import model_families as MF\n"
+        "import random\n"
+        f"skip = set({sorted(skip)!r})\n"
+        "rng = random.Random(0)\n"
+        "n, p = 200, 3\n"
+        "x = [[rng.gauss(0, 1) for _ in range(p)] for _ in range(n)]\n"
+        "y = [1.0 if r[0] + rng.gauss(0, 0.5) > 0 else 0.0 for r in x]\n"
+        f"fh = open({str(progress)!r}, 'w', encoding='utf-8')\n"
+        "for name, fam in MF.FAMILIES.items():\n"
+        "    if not fam.backends or name in skip:\n"
+        "        continue\n"
+        "    fh.write(json.dumps({'family': name, 'state': 'started'}) + '\\n'); fh.flush()\n"
+        "    try:\n"
+        "        got = MF._heavy(name, x[:150], y[:150], x[150:], {})\n"
+        "        state = 'ok' if got is not None else 'no_heavy_path'\n"
+        "    except Exception as exc:\n"
+        "        state = 'error:' + type(exc).__name__\n"
+        "    fh.write(json.dumps({'family': name, 'state': state}) + '\\n'); fh.flush()\n"
+        "fh.write(json.dumps({'family': '*', 'state': 'complete'}) + '\\n'); fh.close()\n")
+
+
+def _probe_pass(progress: Path, skip: Sequence[str]) -> tuple[dict[str, str], bool]:
+    try:
+        progress.parent.mkdir(parents=True, exist_ok=True)
+        progress.unlink(missing_ok=True)
+        subprocess.run([sys.executable, "-c", _probe_source(progress, skip)],
+                       timeout=PROBE_TIMEOUT_S, capture_output=True, check=False)
+    except (subprocess.TimeoutExpired, OSError):
+        pass
+    rows: list[dict[str, Any]] = []
+    try:
+        for line in progress.read_text("utf-8").splitlines():
+            try:
+                rows.append(json.loads(line))
+            except ValueError:
+                continue
+    except OSError:
+        rows = []
+    state: dict[str, str] = {}
+    for r in rows:
+        fam = str(r.get("family"))
+        if fam != "*":
+            # A family whose LAST row is still `started` is the one the probe hung inside.
+            state[fam] = str(r.get("state"))
+    return state, any(r.get("family") == "*" for r in rows)
+
+
+def _run_probe(path: Path) -> dict[str, Any]:
+    """Probe in PASSES, skipping what is already resolved.
+
+    ONE PASS IS NOT ENOUGH, and the reason is the measurement that prompted this guard: the
+    pass that hangs inside `boosting` never reaches `neural` or `bayesian`, whose heavy
+    backends work perfectly here. Marking those UNMEASURED forever because an unrelated family
+    hung would throw away two working accelerators. Each pass restarts with the already-resolved
+    families skipped, until the probe completes or a pass resolves nothing new.
     """
+    progress = path.with_suffix(".progress.jsonl")
+    heavy_backed = [n for n, f in FAMILIES.items() if f.backends]
+    state: dict[str, str] = {}
+    complete, passes = False, 0
+    while passes < len(heavy_backed) and not complete:
+        passes += 1
+        got, complete = _probe_pass(progress, sorted(state))
+        before = len(state)
+        state.update(got)
+        if len(state) == before:
+            break                     # a pass that resolved nothing new will not resolve more
+    with contextlib.suppress(OSError):
+        progress.unlink(missing_ok=True)
+    doc = {"measured_utc": time.time(), "state": state, "probe_complete": complete,
+           "probe_timeout_s": PROBE_TIMEOUT_S, "passes": passes,
+           "why": ("" if complete else
+                   "the probe did not finish; a family still marked `started` is one whose "
+                   "heavy backend did not RETURN, and it is served by the fallback")}
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(doc, indent=1), "utf-8")
+    except OSError:
+        pass
+    return doc
+
+
+def heavy_health(*, refresh: bool = False) -> dict[str, Any]:
+    """Which heavy backends actually RETURN on this box. Cached for a day; probed when stale."""
+    global _health_cache
+    if _health_cache is not None and not refresh:
+        return _health_cache
+    path = _health_path()
+    doc: dict[str, Any] | None = None
+    if not refresh:
+        try:
+            cached = json.loads(path.read_text("utf-8"))
+            if (time.time() - float(cached.get("measured_utc") or 0)) < HEALTH_TTL_S:
+                doc = cached
+        except (OSError, ValueError, TypeError):
+            doc = None
+    if doc is None:
+        doc = _run_probe(path)
+    _health_cache = doc
+    return doc
+
+
+def availability(*, health: dict[str, Any] | None = None) -> dict[str, dict[str, Any]]:
+    """Per family: whether its heavy backend is importable AND returns, and the verdict if not.
+
+    A family whose heavy backend is absent -- or present and hanging -- still RUNS on its
+    pure-Python fallback; what is UNMEASURED is the heavy backend's own contribution, and that
+    is what this records. An absent library is never a crash and never a zero.
+    """
+    state = dict((health or heavy_health()).get("state") or {})
     out: dict[str, dict[str, Any]] = {}
     for name, fam in FAMILIES.items():
         present = [m for m in fam.backends if _import(m) is not None]
+        verdict = state.get(name, "")
+        usable = bool(present) and verdict == "ok"
+        if not fam.backends:
+            why = "no heavy backend declared; this family is pure Python by design"
+        elif not present:
+            why = (f"none of {list(fam.backends)} importable here; the pure-Python fallback "
+                   "carries this family and the heavy backend's contribution is UNMEASURED")
+        elif verdict == "ok":
+            why = ""
+        elif verdict == "started":
+            why = (f"{present} imports but its fit DID NOT RETURN inside the "
+                   f"{PROBE_TIMEOUT_S:.0f}s probe; running it would consume the leg's whole "
+                   "budget, so the fallback carries this family and the backend is UNMEASURED")
+        elif verdict:
+            why = f"{present} imports but the probe recorded `{verdict}`; fallback carries it"
+        else:
+            why = (f"{present} imports but the probe never reached this family; UNMEASURED "
+                   "rather than assumed good")
         out[name] = {
             "backends_declared": list(fam.backends),
             "backends_present": present,
-            "backend": "heavy" if present else "fallback",
-            "heavy_verdict": "MEASURED" if present else UNMEASURED,
-            "why": "" if present else (
-                f"none of {list(fam.backends) or ['(no heavy backend declared)']} importable "
-                "here; the pure-Python fallback carries this family and the heavy backend's "
-                "contribution is UNMEASURED, not zero"),
+            "probe_state": verdict or UNMEASURED,
+            "backend": "heavy" if usable else "fallback",
+            "heavy_verdict": "MEASURED" if usable else UNMEASURED,
+            "why": why,
             "tax": fam.tax, "parent": fam.parent, "assumption": fam.assumption,
         }
     return out
@@ -486,13 +643,20 @@ def _heavy(name: str, xtr: list[list[float]], ytr: list[float], xte: list[list[f
 
 
 def fit_predict(name: str, xtr: list[list[float]], ytr: list[float], xte: list[list[float]],
-                *, params: dict[str, Any] | None = None, allow_heavy: bool = True
-                ) -> tuple[list[float] | None, str]:
-    """(probabilities, backend). The fallback ALWAYS runs when the heavy path is absent."""
+                *, params: dict[str, Any] | None = None, allow_heavy: bool = True,
+                healthy: bool | None = None) -> tuple[list[float] | None, str]:
+    """(probabilities, backend). The fallback ALWAYS runs when the heavy path is absent.
+
+    `healthy` short-circuits the health lookup for a caller that has already made it (walk-
+    forward does, once per family rather than once per fold). Passing False refuses the heavy
+    path outright, which is what a measured hang on this box means.
+    """
     if name not in FAMILIES:
         raise KeyError(name)
     p = dict(params or {})
-    if allow_heavy:
+    if healthy is None:
+        healthy = availability()[name]["backend"] == "heavy"
+    if allow_heavy and healthy:
         out = _heavy(name, xtr, ytr, xte, p)
         if out is not None:
             return [min(1 - EPS, max(EPS, float(v))) for v in out], "heavy"
@@ -539,7 +703,9 @@ def walk_forward(name: str, x: list[list[float]], y: list[float], *, n_folds: in
         ytr, yte = y[:a], y[a:b]
         if len(set(ytr)) < 2:
             continue
-        probs, backend = fit_predict(name, xtr, ytr, xte, params=params, allow_heavy=allow_heavy)
+        probs, backend = fit_predict(name, xtr, ytr, xte, params=params,
+                                     allow_heavy=allow_heavy,
+                                     healthy=avail["backend"] == "heavy")
         if probs is None:
             continue
         backends.add(backend)

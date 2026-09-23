@@ -84,6 +84,10 @@ HOST_GAP_S = 2.0
 #: The frontier may not grow without bound on a box with no swap. New links past this are
 #: DROPPED AND COUNTED, never silently discarded.
 MAX_FRONTIER = 40_000
+#: Links per page kept for SOURCE EXPANSION. The whole link set is already walked for the
+#: frontier; this is only the slice handed to `source_shares.expand()` to classify, and it is
+#: bounded so one link-farm page cannot fill a pass's expansion quota on its own.
+EXPANSION_LINKS_PER_PAGE = 40
 
 
 #: Fetches a source must have HAD before it is evictable. Under this it is unmeasured, and
@@ -927,10 +931,28 @@ def crawl(budget: int = DEFAULT_FETCHES, run_budget_s: int = RUN_BUDGET_S,
         log(f"seeded {n_seeded} hub(s); frontier now {len(sources)}")
 
     picked = wf.due(sources, budget)
+    # THE CRAWL BUDGET IS THE SOURCE REGISTRY'S SHARES (Tier-1 W17). This run stops on its clock,
+    # so the HEAD of this list is what actually gets fetched -- re-ranking it by the registry's
+    # published share IS spending the budget by measured intel ROI. Guarded: an absent, empty or
+    # stale SOURCE_REGISTRY.json returns the list untouched and says which, so a report that did
+    # not regenerate leaves today's order exactly as it was. A source the registry refuses
+    # (machine_use_allowed=false, unreachable, snippets-only) is dropped from this pass and
+    # counted -- never routed around.
+    share_meta: dict[str, Any] = {"status": "unavailable", "why": "source_shares not importable"}
+    share_state: dict[str, Any] | None = None
+    try:
+        sys.path.insert(0, str(BASE))
+        from research import source_shares
+        share_state = source_shares.load()
+        picked, share_meta = source_shares.order_picked(picked, share_state)
+    except Exception as exc:
+        share_meta = {"status": "unavailable", "why": f"{type(exc).__name__}: {exc}"}
     log(f"frontier {len(sources)} source(s) across "
-        f"{len({s.host for s in sources.values()})} host(s); crawling {len(picked)} this pass")
+        f"{len({s.host for s in sources.values()})} host(s); crawling {len(picked)} this pass "
+        f"| shares {share_meta.get('status')}: {share_meta.get('why')}")
 
     rows: list[dict[str, Any]] = []
+    observed: dict[str, list[tuple[str, str]]] = {}
     discovered = dropped = unchanged = 0
     failures: Counter[str] = Counter()
     langs: Counter[str] = Counter()
@@ -976,6 +998,12 @@ def crawl(budget: int = DEFAULT_FETCHES, run_budget_s: int = RUN_BUDGET_S,
             rows.append(row)
             src.leads += 1
 
+        # SOURCE EXPANSION: this page's links are also evidence about its source's
+        # NEIGHBOURHOOD, kept per source so `source_shares.expand()` can promote the ones served
+        # by a source whose ROI share ROSE into candidate grounds in the registered grounds file.
+        observed.setdefault(src.url, []).extend(
+            (str(h), str(a)) for h, a in page["links"][:EXPANSION_LINKS_PER_PAGE])
+
         # RECURSION: every page read is also read for where to go next. This is the whole
         # difference between a crawler and a list of miners.
         for href, anchor in page["links"]:
@@ -986,6 +1014,13 @@ def crawl(budget: int = DEFAULT_FETCHES, run_budget_s: int = RUN_BUDGET_S,
                 discovered += 1
 
     wf.save(sources, note=f"crawl {datetime.now(tz=UTC):%Y-%m-%dT%H:%MZ}")
+
+    expansion: dict[str, Any] = {"status": "unavailable", "why": "source_shares not importable"}
+    try:
+        from research import source_shares as _ss
+        expansion = _ss.expand(observed, share_state)
+    except Exception as exc:
+        expansion = {"status": "unavailable", "why": f"{type(exc).__name__}: {exc}"}
 
     elapsed = round(time.time() - started, 1)
     report = {
@@ -1001,6 +1036,11 @@ def crawl(budget: int = DEFAULT_FETCHES, run_budget_s: int = RUN_BUDGET_S,
         "dropped_at_frontier_cap": dropped,
         "languages": dict(langs.most_common()),
         "failures": dict(failures.most_common()),
+        # WHOSE BUDGET THIS WAS. `source_shares` says whether the registry's published shares
+        # ranked this pass or whether the old order stood, and why -- an absence is a verdict,
+        # never a silent fallback (L1.28a).
+        "source_shares": share_meta,
+        "source_expansion": expansion,
         # THE CAP IS REPORTED, NOT SILENT. A crawler that quietly stops discovering because it
         # hit a bound looks exactly like a web that ran out of pages (L1.28a).
         "frontier_cap": MAX_FRONTIER,

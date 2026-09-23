@@ -40,6 +40,7 @@ THE FIVE THAT ARE LOAD-BEARING, and why each earns its place:
 from __future__ import annotations
 
 import sys
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -267,3 +268,40 @@ def test_every_domain_has_objects_and_negative_controls(code: str,
         assert d.controls, (
             f"{code}: domain {d.id} has no negative controls; an effect with no control cannot "
             f"be told from its own selection")
+
+
+# --------------------------------------------------------------------------- the calendar
+@pytest.mark.parametrize("code", CODES)
+def test_the_holiday_rule_carries_both_a_derivation_and_a_resolved_table(
+        code: str) -> None:
+    """A table with no rule cannot be extended past the years somebody typed; a rule with no
+    table cannot be checked against a date a human knows. The four packs carry both, and pk and
+    bd DERIVE theirs from their own `market_holidays` on import rather than retyping it, so the
+    two views cannot drift."""
+    from research.countries import holiday_table
+
+    mod = _pack_module(code)
+    rule = mod.HOLIDAYS_RULE
+    assert str(rule.get("rule") or "").strip(), f"{code}: holidays_rule carries no derivation"
+    for year in (2024, 2025, 2026):
+        table = holiday_table(rule, year)
+        assert table, f"{code}: no resolved holiday table for {year}"
+        for iso in table:
+            assert date.fromisoformat(iso).year == year, f"{code}: {iso} is not in {year}"
+
+
+def test_the_two_south_asian_calendars_reproduce_a_date_a_human_can_check() -> None:
+    """Pakistan Day and Bangladesh's Independence Day: fixed, statutory, and checkable without
+    a table. A holiday rule that cannot reproduce a date a human knows is a rule nobody read."""
+    from research.countries import holiday_table
+
+    pk = holiday_table(_pack_module("pk").HOLIDAYS_RULE, 2026)
+    assert "2026-03-23" in pk, f"Pakistan Day 2026 is absent: {sorted(pk)[:6]}"
+    bd = holiday_table(_pack_module("bd").HOLIDAYS_RULE, 2026)
+    assert "2026-03-26" in bd, f"Bangladesh Independence Day 2026 is absent: {sorted(bd)[:6]}"
+
+
+def _pack_module(code: str) -> Any:
+    import importlib
+
+    return importlib.import_module(f"research.countries.{code}.pack")

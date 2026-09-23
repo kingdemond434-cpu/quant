@@ -192,6 +192,30 @@ def control_plane_wiring() -> dict[str, Any]:
             "states": doc.get("states")}
 
 
+def battery_state() -> dict[str, Any]:
+    """What the standing batteries (`research/batteries.py`) have actually run, per roster.
+
+    UNMEASURED when a battery has never published: an absent artifact is a real answer and never
+    a zero (L1.28a). `failing` and `never_run` are the worklist -- the rostered organs whose
+    clock exists and whose last pass did not produce a clean verdict.
+    """
+    out: dict[str, Any] = {}
+    for name in ("fences", "organs"):
+        doc = _read(DESK / "reports" / f"BATTERY_{name.upper()}.json")
+        if not doc:
+            out[name] = {"status": "UNMEASURED",
+                         "why": f"BATTERY_{name.upper()}.json absent: the battery has not run "
+                                "on this machine, which is not evidence that its roster is idle"}
+            continue
+        out[name] = {"status": "MEASURED", "at": doc.get("at"),
+                     "rostered": doc.get("rostered"), "n_ran": doc.get("n_ran"),
+                     "n_failing": doc.get("n_failing"), "failing": (doc.get("failing") or [])[:12],
+                     "n_never_run": doc.get("n_never_run"),
+                     "oldest_age_s": doc.get("oldest_age_s"),
+                     "rotation_hours": doc.get("rotation_hours")}
+    return out
+
+
 def _census_files() -> list[tuple[str, Path, str]]:
     """(rel, path, text) for every candidate .py under ORGAN_AREAS, read ONCE.
 
@@ -864,6 +888,11 @@ def build(apply: bool = False) -> dict[str, Any]:
         # from the control plane's report, which proves them from watermarks, envelopes and
         # acknowledgements rather than from this file's import closure.
         "wired_law": control_plane_wiring(),
+        # THE STANDING BATTERIES are a clock like any other, and this is their consumer: a
+        # rostered organ whose last verdict is stale or non-zero is a wiring defect exactly as
+        # an unscheduled organ is, and it belongs on the same docket rather than inside an
+        # artifact nobody opens (principal 2026-09-22: nothing built is ever forgotten).
+        "batteries": battery_state(),
         "rule": ("WIRED = scheduled AND executed AND progressed AND produced owned output AND "
                  "consumer acknowledged it. This census establishes SCHEDULED (a clock names the "
                  "organ or a scheduled organ imports it); the remaining conjuncts are proven by "

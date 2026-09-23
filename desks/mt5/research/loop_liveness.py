@@ -40,6 +40,7 @@ import sqlite3
 import sys
 import time
 from collections.abc import Callable, Mapping
+from contextlib import closing
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -320,7 +321,7 @@ def m_sources(root: Path, now: float) -> Measure:
     conn = _registry_conn(root)
     if conn is None:
         return Measure(source="data/alpha_registry.sqlite (absent)")
-    with conn:
+    with closing(conn), conn:
         if "sources" not in _tables(conn):
             return Measure(source="registry.sources (absent)")
         n1, n24, newest = _stamp_counts(conn, "sources", "first_seen", now)
@@ -337,7 +338,7 @@ def m_discoveries(root: Path, now: float) -> Measure:
     conn = _registry_conn(root)
     if conn is None:
         return Measure(source="data/alpha_registry.sqlite (absent)")
-    with conn:
+    with closing(conn), conn:
         if "discoveries" not in _tables(conn):
             return Measure(source="registry.discoveries (absent)")
         n1, n24, newest = _stamp_counts(conn, "discoveries", "created_at", now)
@@ -352,7 +353,7 @@ def m_conversion(root: Path, now: float) -> Measure:
     conn = _registry_conn(root)
     if conn is None:
         return Measure(source="data/alpha_registry.sqlite (absent)")
-    with conn:
+    with closing(conn), conn:
         tabs = _tables(conn)
         if not {"discoveries", "research_candidates"} <= tabs:
             return Measure(source="registry.{discoveries,research_candidates} (absent)")
@@ -375,7 +376,7 @@ def m_compiled(root: Path, now: float) -> Measure:
     conn = _registry_conn(root)
     if conn is None:
         return Measure(source="data/alpha_registry.sqlite (absent)")
-    with conn:
+    with closing(conn), conn:
         if "research_candidates" not in _tables(conn):
             return Measure(source="registry.research_candidates (absent)")
         n1, n24, newest = _stamp_counts(conn, "research_candidates", "created_at", now)
@@ -412,7 +413,7 @@ def m_gauntlet(root: Path, now: float) -> Measure:
     pending = oldest = None
     conn = _registry_conn(root)
     if conn is not None:
-        with conn:
+        with closing(conn), conn:
             if "research_candidates" in _tables(conn):
                 pending = _count(conn, "SELECT COUNT(*) FROM research_candidates WHERE "
                                        "status='queued' AND (judged_at IS NULL OR judged_at='')")

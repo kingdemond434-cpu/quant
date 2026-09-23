@@ -137,3 +137,20 @@ def test_the_2026_tape_scenario_is_measured_from_closes():
                          provenance="desk bars")
     assert sc.status == F.MEASURED and sc.move_for(US500).value == pytest.approx(worst.value)
     assert F.worst_adverse_move(closes[:1], "LONG", 1).status == F.UNMEASURED
+
+
+# --------------------------------------------------------------- the counterparty leg (2026-09-23)
+def test_the_counterparty_leg_names_the_exposure_and_refuses_to_charge_it() -> None:
+    """The mandate's fourth friction. A CFD account holds cash AND positions at ONE broker, so
+    the exposure is the whole account and the share is 1.0 by the structure of the instrument.
+    It is REPORTED: charging a haircut would shrink the book by an unmeasured constant, which
+    Rule 1 forbids, and the two-sided answer to concentration is a second venue."""
+    from libs.portfolio import financing as F
+
+    out = F.counterparty(None, [], venue="FusionMarkets-Live", account_kind="live")
+    assert out["venue"] == "FusionMarkets-Live" and out["n_venues"] == 1
+    assert out["capital_share_at_venue"] == 1.0
+    assert out["capital_share_status"] == F.DECLARED_STATUS
+    assert out["priced_into_elog"] is False and "Rule 1" in out["why_not_priced"]
+    assert out["segregation_status"] == F.UNMEASURED_STATUS
+    assert out["equity_at_risk"] is None and out["unmeasured"]

@@ -694,25 +694,36 @@ def _cron_cadence(minute: str, hour: str) -> int | None:
     return None
 
 
+@lru_cache(maxsize=1 << 16)
+def _named_path(rel: str, base_s: str) -> str | None:
+    """One candidate path, resolved against the root and the desk -- or None if no such file.
+
+    MEMOISED, and the reason is measured: the reach closure grew from a handful of clock texts
+    to every organ a clock reaches, the same paths recur in hundreds of files, and `Path.resolve`
+    is a syscall-heavy call on Windows. Without this the registry build took 216 s on the box
+    and timed out inside a test; with it, seconds.
+    """
+    base = Path(base_s)
+    for prefix in (base, base / "desks" / "mt5"):
+        cand = prefix / rel
+        if cand.is_file():
+            return cand.resolve().relative_to(base.resolve()).as_posix()
+    return None
+
+
 def scripts_named_in(text: str, root: Path | None = None) -> list[str]:
     """Repo-relative files a clock text or wrapper names: path literals (either slash) and
     `-m dotted.module`, resolved against the repo root and the desk, existing files only."""
-    base = root or ROOT
+    base_s = str(root or ROOT)
     out: list[str] = []
     for raw in _PATH_REF.findall(text):
-        rel = raw.replace("\\", "/")
-        for prefix in (base, base / "desks" / "mt5"):
-            cand = prefix / rel
-            if cand.is_file():
-                out.append(cand.resolve().relative_to(base.resolve()).as_posix())
-                break
+        hit = _named_path(raw.replace("\\", "/"), base_s)
+        if hit:
+            out.append(hit)
     for dotted in _MODULE_REF.findall(text):
-        rel = dotted.replace(".", "/") + ".py"
-        for prefix in (base, base / "desks" / "mt5"):
-            cand = prefix / rel
-            if cand.is_file():
-                out.append(cand.resolve().relative_to(base.resolve()).as_posix())
-                break
+        hit = _named_path(dotted.replace(".", "/") + ".py", base_s)
+        if hit:
+            out.append(hit)
     return list(dict.fromkeys(out))
 
 
@@ -746,6 +757,58 @@ def cron_specs(root: Path | None = None) -> list[ComponentSpec]:
             criticality="optional", resource_budget={},
             schedule=f"crontab:{no}", artifact_class=_class_for_cadence(cadence),
             notes=f"ops/crontab.manifest line {no}: {minute} {hour} ..."))
+    return out
+
+
+_SYSTEMD_LINE = re.compile(r'^SYSTEMD\s+unit="([^"]+)"\s+on="([^"]*)"\s+exec="([^"]+)"')
+
+
+def _systemd_cadence(on: str) -> int | None:
+    """Seconds between firings for a systemd OnCalendar/OnUnitActiveSec expression, or None."""
+    m = re.search(r"OnUnitActiveSec=(\d+)", on)
+    if m:
+        return int(m.group(1))
+    m = re.search(r"\*:(?:\*/(\d+)|\d+)", on)          # *-*-* *:05:00 or *:*/15:00
+    if m:
+        return int(m.group(1)) * 60 if m.group(1) else 3_600
+    hours = re.search(r"\s((?:\d{2})(?:,\d{2})*):\d{2}:\d{2}", on)
+    if hours:
+        return 86_400 // max(1, hours.group(1).count(",") + 1)
+    if on.strip():
+        return 86_400 * 30 if on.strip().startswith("*-*-01") else 86_400
+    return None
+
+
+def systemd_manifest_specs(root: Path | None = None) -> list[ComponentSpec]:
+    """One spec per SYSTEMD unit the VPS manifest declares (`ops/crontab.manifest`).
+
+    `cron_specs` reads the five-field cron lines and skips these, so eighty-eight declared units
+    -- `quant-x-deepmine.timer` among them -- owned a script the census then called unclocked.
+    The manifest IS the VPS's clock (check_scheduler_manifest keeps it honest against the live
+    crontab), and a unit line names its ExecStart the same way a cron line does.
+    """
+    base = root or ROOT
+    out: list[ComponentSpec] = []
+    for no, line in enumerate(_read_text(base / "ops" / "crontab.manifest").splitlines(), 1):
+        m = _SYSTEMD_LINE.match(line.strip())
+        if not m:
+            continue
+        unit, on, exec_s = m.group(1), m.group(2), m.group(3)
+        scripts = scripts_named_in(exec_s, base)
+        for wrapper in [p for p in scripts if p.endswith((".sh", ".cmd", ".ps1"))]:
+            scripts += [p for p in scripts_named_in(_read_text(base / wrapper), base)
+                        if p not in scripts]
+        if not scripts:
+            continue
+        cadence = _systemd_cadence(on)
+        out.append(ComponentSpec(
+            component_id=f"systemd:{unit}",
+            kind="timer", host="vps", code_paths=tuple(dict.fromkeys(scripts)),
+            cadence_s=cadence, timeout_s=None, progress_metric="timer_runs",
+            owner="vps", restart_action=f"systemctl --user restart {unit}",
+            criticality="optional", resource_budget={},
+            schedule=unit, artifact_class=_class_for_cadence(cadence),
+            notes=f"ops/crontab.manifest line {no}: SYSTEMD {unit} on={on or 'UNMEASURED'}"))
     return out
 
 
@@ -831,7 +894,105 @@ def _import_stems(text: str) -> set[str]:
     return out
 
 
-def reach_specs(reg: Registry, root: Path | None = None) -> list[ComponentSpec]:
+BATTERIES = "desks/mt5/research/batteries.py"
+#: One rostered organ per `_e("<path>", ...)` line, inside the roster tuple that names it.
+_BATTERY_BLOCK = re.compile(r"^(FENCES|ORGANS):\s*tuple\[Entry.*?^\)\s*$", re.S | re.M)
+_BATTERY_ENTRY = re.compile(r'_e\(\s*"([^"]+)"')
+#: leg name and pass budget per roster, as `hourly_cycle.py` runs them. Kept here because the
+#: registry must name the CLOCK, and the clock is the leg, not the battery module.
+BATTERY_LEGS: dict[str, tuple[str, int]] = {"fences": ("fence_battery", 600),
+                                            "organs": ("organ_battery", 600)}
+
+
+def battery_specs(root: Path | None = None) -> list[ComponentSpec]:
+    """One spec per organ on a standing battery roster (`research/batteries.py`).
+
+    A battery runs its roster IN ROTATION under one hourly leg, so a rostered organ's clock is
+    real but slower than hourly: `cadence_s` is the rotation bound (roster size over the organs
+    one pass affords) and `max_silence_s` is twice it, which is the FRESHNESS EXPECTATION a
+    reader -- or the loop-liveness prover -- can hold the organ to. Parsed from the source, never
+    imported: the registry must mean the same thing in CI, a fresh clone and on the box.
+    """
+    base = root or ROOT
+    text = _read_text(base / BATTERIES)
+    out: list[ComponentSpec] = []
+    for m in _BATTERY_BLOCK.finditer(text):
+        roster = m.group(1).lower()
+        leg, budget_s = BATTERY_LEGS.get(roster, (f"{roster}_battery", 600))
+        paths = [p for p in _BATTERY_ENTRY.findall(m.group(0)) if (base / p).is_file()]
+        if not paths:
+            continue
+        # One pass affords budget/slice organs; the slice is batteries.slice_s of that budget.
+        per_pass = max(1, int(budget_s // max(20, min(150, budget_s * 0.34))))
+        rotation_s = int(3600 * -(-len(paths) // per_pass))
+        for rel in paths:
+            out.append(ComponentSpec(
+                component_id=f"battery:{rel}",
+                kind="executable", host="box", code_paths=(rel,),
+                outputs=(f"desks/mt5/reports/BATTERY_{roster.upper()}.json",),
+                consumers=("desks/mt5/research/wiring_ceo.py",),
+                cadence_s=rotation_s, max_silence_s=2 * rotation_s,
+                timeout_s=int(min(150, budget_s * 0.34)),
+                progress_metric="battery_rotation_runs",
+                owner=f"batteries:{roster}", restart_action="restart:task:MT5-Hourly",
+                criticality="optional", resource_budget={"budget_s": budget_s},
+                schedule=f"hourly_cycle:{leg}", artifact_class="hourly",
+                notes=(f"ROSTERED on the {roster} battery: run in rotation by "
+                       f"{BATTERIES}; its verdict and the AGE of that verdict are published in "
+                       f"BATTERY_{roster.upper()}.json, and a stale or failing row is named "
+                       "there rather than being silence")))
+    return out
+
+
+FOREST_RUNNER = "desks/mt5/research/forest_runner.py"
+#: `research.countries.<cc>.<leaf>` as forest_runner builds it at runtime (pack_module,
+#: data_plane_module). The LEAVES are read out of that file rather than listed here, so a new
+#: dynamic import is picked up by re-reading the source instead of by editing this module.
+_DYN_COUNTRY = re.compile(r"research\.countries\.\{code\}\.(\w+)")
+
+
+def dynamic_reach_roots(root: Path | None = None) -> dict[str, str]:
+    """rel -> the clocked file that imports it BY PATTERN, for edges a static walk cannot see.
+
+    `forest_runner` is on eleven hourly legs and imports every country pack and data plane as
+    `importlib.import_module(f"research.countries.{code}.pack")` (and `.data_plane`), and a
+    region package's `<pkg>.mandate`. An f-string is invisible to `_import_stems`, so the ten
+    official data planes read as executables no clock reaches -- which is how `countries/za/
+    data_plane.py` sat in the unclocked census while the Africa forest ran it every hour.
+
+    THE EDGE IS DERIVED FROM THE SAME TWO SOURCES THE RUNNER USES, never declared: the leaf
+    names come from forest_runner's own source, and the country codes and region packages come
+    from the forest roster (`libs.research.forests`). If the runner stops importing them, the
+    pattern disappears from its source and so do these roots.
+    """
+    base = root or ROOT
+    text = _read_text(base / FOREST_RUNNER)
+    if not text:
+        return {}
+    leaves = sorted(set(_DYN_COUNTRY.findall(text)))
+    try:
+        from libs.research import forests as F
+    except Exception:
+        return {}
+    out: dict[str, str] = {}
+    roster = F.FORESTS
+    for f in (roster.values() if isinstance(roster, dict) else roster):
+        for cc in getattr(f, "countries", ()):
+            for leaf in leaves:
+                rel = f"desks/mt5/research/countries/{str(cc).lower()}/{leaf}.py"
+                if (base / rel).is_file():
+                    out[rel] = f"{FOREST_RUNNER} (dynamic research.countries.{cc.lower()}.{leaf})"
+        pkg = str(getattr(f, "package", "") or "")
+        if pkg:
+            for leaf in ("mandate", "__init__"):
+                rel = f"{pkg}/{leaf}.py"
+                if (base / rel).is_file():
+                    out[rel] = f"{FOREST_RUNNER} (dynamic region package {pkg})"
+    return out
+
+
+def reach_specs(reg: Registry, root: Path | None = None,
+                extra_roots: dict[str, str] | None = None) -> list[ComponentSpec]:
     """A spec for every executable a CLOCKED organ reaches -- by import (kind `library`,
     schedule `import:<importer>`) or by naming it as a script to run (kind `executable`,
     schedule `invoked:<invoker>`). The closure walks from every scheduled spec's code paths
@@ -847,6 +1008,12 @@ def reach_specs(reg: Registry, root: Path | None = None) -> list[ComponentSpec]:
     claimed = reg.claimed_paths()
     reached: dict[str, tuple[str, str]] = {}
     frontier = [p for s in reg.all() if s.scheduled for p in s.code_paths]
+    # The dynamic edges first, as closure ROOTS: what a region pack imports statically is then
+    # reached by the ordinary walk below, from the pack the runner imports by pattern.
+    for rel, via in (extra_roots or {}).items():
+        if rel not in claimed and rel not in reached:
+            reached[rel] = ("library", via)
+            frontier.append(rel)
     while frontier:
         rel = frontier.pop()
         text = _read_text(base / rel)
@@ -884,10 +1051,11 @@ def build_registry(root: Path | None = None) -> Registry:
     reg = Registry()
     for group in (explicit_specs(), resident_specs(), hourly_leg_specs(), daily_step_specs(),
                   manifest_task_specs(), timer_specs(root), federation_worker_specs(),
-                  cron_specs(root), law_gate_specs(root), hook_specs(root)):
+                  cron_specs(root), systemd_manifest_specs(root), law_gate_specs(root),
+                  hook_specs(root), battery_specs(root)):
         for s in group:
             reg.add(s, replace=True)
-    reg.add_all(reach_specs(reg, root), replace=True)
+    reg.add_all(reach_specs(reg, root, dynamic_reach_roots(root)), replace=True)
     reg.add_all(discovered_specs(reg.claimed_paths(), root), replace=True)
     return reg
 

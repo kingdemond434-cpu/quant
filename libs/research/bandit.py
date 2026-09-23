@@ -41,6 +41,33 @@ spread budget returns, measured against the posterior means known at allocation 
 The output is a budget file every consumer reads: the deepening worker weights its VOI order by
 it, the daily cycle scales each proposer's time budget by it. The budget names its
 `controller_variant` so a second allocation policy can be run beside this one and compared.
+
+A TREE OF BANDITS, NOT ONE FLAT ROW (2026-09-23). The eleven arms were allocated as one flat row
+with floors asserted on three groups AFTER the fact, and the arm score was a product of measured
+terms with no explicit uncertainty bonus at all -- an arm nothing had ever judged was funded by
+whatever its priors happened to multiply out to. The allocation is now a two-level tree,
+
+    GLOBAL -> {exploit, adjacent, cold} -> the arms of that group
+
+and the arm score is written out term by term,
+
+    Score_j = E[dg_j] + BETA_UCB x sqrt(ln N / n_j) + LAMBDA_NOVELTY x Novelty_j
+
+with E[dg] the evidence mixture (worth x survival posterior x breadth credit / measured cost),
+n_j the arm's judged hypotheses, N their total, and Novelty read from the novelty gate's own
+artifact -- neutral at 0.0 for every arm while the gate publishes no attribution, because one
+pooled number added to eleven scores is compression, not information. EVERY NODE CARRIES ITS OWN
+PROTECTED FLOOR: the group floors are the policy file's, and the arm floor is the same
+`EXPLORE / 11` the flat allocator used to add as a uniform share, now enforced inside its
+group's budget so the two levels hold at once. No node carries a ceiling. The split always
+totals one: whatever rounding leaves over goes to the highest-scoring node.
+
+AND THE LADDER IS COUNTED. The six discovery temperatures T0..T5 -- exploit, connect, explore
+adjacent, explore far, standing questions, unseen/alien -- are declared to run concurrently, and
+nothing measured it. `temperature_ladder` maps every PROPOSAL SOURCE to its temperature and
+publishes each one's proposals and measured compute seconds for the window, so "all six are
+running" is a count with an IDLE verdict available, and a source no table claims is named rather
+than bucketed.
 """
 from __future__ import annotations
 
@@ -223,6 +250,10 @@ BETA_UCB = 0.25
 LAMBDA_NOVELTY = 0.25
 #: The novelty gate's artifact (desks/mt5/research/novelty_gate.py OUT). Read, never written.
 NOVELTY_REPORT = DESK / "reports" / "NOVELTY_GATE.json"
+#: The window the temperature ladder counts proposals over. The compute ledger already keeps its
+#: own window (`compute_ledger.WINDOW_DAYS`); this bounds the graph side so a five-year-old
+#: proposal cannot make an idle temperature read as running.
+TEMPERATURE_WINDOW_H = 24.0 * 7
 
 #: THE DISCOVERY TEMPERATURE LADDER. Six temperatures run CONCURRENTLY -- that is the mandate's
 #: claim, and until this table existed nothing measured it. A temperature is not a group and not
@@ -514,7 +545,8 @@ def node_floors(policy: dict[str, Any]) -> dict[str, Any]:
     would need the missed-growth proof the growth governance demands, not a convenient bracket.
     """
     gf = group_floors(policy)
-    declared = policy.get("arm_floors") if isinstance(policy.get("arm_floors"), dict) else {}
+    _declared = policy.get("arm_floors")
+    declared: dict[str, Any] = dict(_declared) if isinstance(_declared, dict) else {}
     arms: dict[str, float] = {}
     raised: list[str] = []
     for a in ARMS:
@@ -641,8 +673,8 @@ def novelty_by_arm(doc: dict[str, Any] | None = None,
         measured = {a: round(float(np.mean(x)), 4) for a, x in acc.items()}
         basis = "NOVELTY_GATE.by_source routed through arm_of"
     if not measured:
-        rows = next((doc[k] for k in ("rows", "verdicts", "sample")
-                     if isinstance(doc.get(k), list)), [])
+        rows: list[Any] = next((doc[k] for k in ("rows", "verdicts", "sample")
+                                if isinstance(doc.get(k), list)), [])
         hit: dict[str, list[float]] = {}
         for r in rows:
             if not isinstance(r, dict):
@@ -785,6 +817,9 @@ def allocate(ev: dict[str, dict[str, Any]], rng: np.random.Generator, *, draws: 
              explore: float = EXPLORE,
              credit: dict[str, float] | None = None,
              policy: dict[str, Any] | None = None,
+             novelty: Mapping[str, float] | None = None,
+             beta: float = BETA_UCB,
+             lam: float = LAMBDA_NOVELTY,
              audit: dict[str, Any] | None = None) -> dict[str, float]:
     """Thompson shares: P(arm is best) under sampled survival rates, plus the exploration floor.
 
@@ -797,10 +832,12 @@ def allocate(ev: dict[str, dict[str, Any]], rng: np.random.Generator, *, draws: 
     judged hypotheses -- which is every arm that could raise this book's effective breadth.
 
     `policy` is the declared allocation policy (read from POLICY when None; pass {} for none).
-    Its group floors are enforced on the evidence mixture BEFORE the uniform exploration share
-    is added, so the per-arm EXPLORE floor is never eroded by a lift and, because the uniform
-    share's own group split (6/11, 3/11, 2/11) clears every declared floor, the final shares
-    clear them too. `audit`, when a dict, receives the group check for publication.
+    Its group floors are the tree's LEVEL-1 floors and the arm floors are its level-2 floors, so
+    a group lift can no longer erode the per-arm protection and an arm lift can no longer pull
+    its group back under the floor the policy just gave it. `novelty` is the per-arm novelty
+    (read from the novelty gate when None; pass {} for none); `beta` and `lam` are the UCB and
+    novelty coefficients. `audit`, when a dict, receives the group check under `policy` (same
+    shape as before), the whole tree under `tree` and the novelty verdict under `novelty`.
     """
     arms = [a for a in ARMS if a in ev]
     ratio = {a: ev[a]["worth"] / ev[a]["cost"] for a in arms}
@@ -829,12 +866,29 @@ def allocate(ev: dict[str, dict[str, Any]], rng: np.random.Generator, *, draws: 
     mean = np.array([ev[a]["alpha"] / (ev[a]["alpha"] + ev[a]["beta"]) * ratio[a] for a in arms])
     p_mean = mean / mean.sum() if mean.sum() > 0 else np.full(len(arms), 1.0 / len(arms))
     mixture = dict(zip(arms, (0.5 * p_best + 0.5 * p_mean).tolist(), strict=True))
-    mixture, check = enforce_floors(mixture, allocation_policy() if policy is None else policy)
-    share = {a: (1.0 - explore) * mixture[a] + explore / len(arms) for a in arms}
+    # THE MIXTURE IS E[dg]; THE TREE IS WHAT SPENDS IT. `tree_scores` adds the two exploration
+    # terms the flat allocator never had -- the UCB bonus that pays for an arm nothing has judged
+    # and the novelty term the gate measures -- and `allocate_tree` splits the budget GLOBAL ->
+    # group -> arm with every node's floor enforced. The uniform `explore / len(arms)` share the
+    # old line added is now the ARM node's floor and is the same number, so nothing that was
+    # protected lost its protection.
+    pol = allocation_policy() if policy is None else policy
+    nov: dict[str, Any] = (novelty_by_arm() if novelty is None else
+                           {"status": "SUPPLIED", "basis": "caller",
+                            "by_arm": dict(novelty),
+                            "why": "the caller supplied a per-arm novelty"})
+    by_arm = nov.get("by_arm")
+    sc = tree_scores(mixture, {a: ev[a] for a in arms},
+                     novelty=by_arm if isinstance(by_arm, dict) else None,
+                     beta=beta, lam=lam)
+    share, tree = allocate_tree(sc, pol, explore=explore)
     if audit is not None:
+        check = dict(tree["policy"])
         check["groups"] = group_shares(share)
         check["groups_mixture"] = group_shares(mixture)
         audit["policy"] = check
+        audit["tree"] = tree
+        audit["novelty"] = nov
     return {a: round(float(x), 4) for a, x in share.items()}
 
 
@@ -1024,6 +1078,180 @@ def regret(ev: dict[str, dict[str, Any]], shares: dict[str, float],
     return out
 
 
+def temperature_of(source: str | None, kind: str | None = None) -> str | None:
+    """The discovery temperature a proposal source starts at, or None when nothing declares it.
+
+    Exact source string first (`qd_frontier:explorer` is not `qd_frontier:exploiter`), then the
+    prefix before the first colon, then the forest family. A stranger returns None and is
+    counted as UNCLASSIFIED: a ladder that quietly bucketed unknown sources would report six
+    running temperatures no matter what the desk actually ran, which is the assertion this table
+    exists to replace.
+    """
+    src = str(source or "").strip()
+    if not src:
+        return None
+    if src in SOURCE_TEMPERATURE:
+        return SOURCE_TEMPERATURE[src]
+    head = src.split(":")[0]
+    if head in SOURCE_TEMPERATURE:
+        return SOURCE_TEMPERATURE[head]
+    if head.startswith("deep_forest") or head.startswith("forest_"):
+        return "T5"
+    if kind and str(kind) in KIND_ARM:
+        # A task kind with no source name still names what it IS; route it by its arm's group.
+        return {"cold": "T3", "adjacent": "T2", "exploit": "T0"}[group_of(KIND_ARM[str(kind)])]
+    return None
+
+
+def _cost_table() -> tuple[dict[str, dict[str, Any]] | None, str]:
+    """(compute-ledger table, why-not). One guarded read, shared by the arms and the ladder."""
+    try:
+        from libs.ops.compute_ledger import cost_by_run
+        return dict(cost_by_run()), ""
+    except Exception as exc:
+        return None, f"compute ledger unreadable: {type(exc).__name__}: {exc}"
+
+
+def temperature_ladder(graph_rows: Iterable[dict[str, Any]],
+                       costs: dict[str, dict[str, Any]] | None = None,
+                       window_h: float | None = None) -> dict[str, Any]:
+    """WHAT EACH OF THE SIX TEMPERATURES ACTUALLY GOT THIS WINDOW -- proposals and compute.
+
+    The mandate says the six discovery temperatures run CONCURRENTLY. Nothing measured it: the
+    bandit published eleven arm shares and no reader could tell whether T4 had produced a single
+    proposal this month. This counts both halves of the claim.
+
+    PROPOSALS come from the hypothesis graph, deduplicated by id (the graph is append-only, so
+    the last row for an id is its current fate) and filtered to `window_h` by the row's own
+    stamp when it carries one. COMPUTE comes from the compute ledger through `TEMP_RUNS`;
+    `qd_frontier` runs its exploiter, connector and explorer inside one leg, so its seconds are
+    split across T0/T1/T2 by their measured proposal counts, equally when none of the three
+    proposed anything, and the basis says which.
+
+    A temperature with no proposals and no seconds reads IDLE, not absent: that is the finding.
+    Sources no table claims are counted and NAMED under `unclassified`.
+    """
+    cutoff = None
+    if window_h is not None:
+        try:
+            from datetime import timedelta
+            cutoff = datetime.now(tz=UTC) - timedelta(hours=float(window_h))
+        except (TypeError, ValueError):
+            cutoff = None
+    latest: dict[str, dict[str, Any]] = {}
+    for r in graph_rows:
+        if isinstance(r, dict) and r.get("id"):
+            latest[str(r["id"])] = r
+    counts = dict.fromkeys(TEMPERATURES, 0)
+    certified = dict.fromkeys(TEMPERATURES, 0)
+    sources: dict[str, dict[str, int]] = {t: {} for t in TEMPERATURES}
+    unclassified: dict[str, int] = {}
+    n_out_of_window = 0
+    n_untimed = 0
+    for r in latest.values():
+        if cutoff is not None:
+            stamp = r.get("at") or r.get("ts") or r.get("_t")
+            when = None
+            if isinstance(stamp, str):
+                try:
+                    when = datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+                except ValueError:
+                    when = None
+            if when is None:
+                n_untimed += 1
+            else:
+                if when.tzinfo is None:
+                    when = when.replace(tzinfo=UTC)
+                if when < cutoff:
+                    n_out_of_window += 1
+                    continue
+        src = str(r.get("source") or "")
+        t = temperature_of(src, r.get("kind"))
+        if t is None:
+            unclassified[src or "(none)"] = unclassified.get(src or "(none)", 0) + 1
+            continue
+        counts[t] += 1
+        sources[t][src] = sources[t].get(src, 0) + 1
+        if str(r.get("fate")) == "CERTIFIED":
+            certified[t] += 1
+    seconds = dict.fromkeys(TEMPERATURES, 0.0)
+    legs_costed: dict[str, list[str]] = {t: [] for t in TEMPERATURES}
+    legs_uncosted: dict[str, list[str]] = {t: [] for t in TEMPERATURES}
+    table = costs if isinstance(costs, dict) else {}
+    for t, legs in TEMP_RUNS.items():
+        for leg in legs:
+            row = table.get(leg)
+            if isinstance(row, dict) and int(row.get("runs") or 0) > 0:
+                seconds[t] += float(row.get("wall_s") or 0.0)
+                legs_costed[t].append(leg)
+            else:
+                legs_uncosted[t].append(leg)
+    shared_basis: list[str] = []
+    for leg, temps in TEMP_SHARED_RUNS.items():
+        row = table.get(leg)
+        if not isinstance(row, dict) or int(row.get("runs") or 0) <= 0:
+            for t in temps:
+                legs_uncosted[t].append(leg)
+            continue
+        wall = float(row.get("wall_s") or 0.0)
+        denom = sum(counts[t] for t in temps)
+        for t in temps:
+            frac = (counts[t] / denom) if denom > 0 else 1.0 / len(temps)
+            seconds[t] += wall * frac
+            legs_costed[t].append(leg)
+        shared_basis.append(
+            f"{leg}: {wall:.0f}s split across {list(temps)} by "
+            + ("their measured proposal counts" if denom > 0 else "an equal share (none of the "
+               "three has a proposal in the window, so no split can be measured)"))
+    total_props = sum(counts.values())
+    total_s = sum(seconds.values())
+    ladder = {}
+    for t in TEMPERATURES:
+        top = sorted(sources[t].items(), key=lambda kv: -kv[1])[:6]
+        ladder[t] = {
+            "role": TEMPERATURE_ROLE[t],
+            "proposals": counts[t],
+            "certified": certified[t],
+            "proposal_share": round(counts[t] / total_props, 4) if total_props else None,
+            "compute_s": round(seconds[t], 1),
+            "compute_share": round(seconds[t] / total_s, 4) if total_s > 0 else None,
+            "legs_costed": sorted(set(legs_costed[t])),
+            "legs_uncosted": sorted(set(legs_uncosted[t])),
+            "top_sources": [{"source": s, "n": n} for s, n in top],
+            "status": ("RUNNING" if counts[t] > 0 or seconds[t] > 0 else "IDLE"),
+            "why": ("" if counts[t] > 0 or seconds[t] > 0 else
+                    f"no proposal carried a {t} source and none of "
+                    f"{sorted(set(TEMP_RUNS.get(t, ())) | set(TEMP_SHARED_RUNS))} "
+                    f"carries a compute row in the window -- idle, which is a measurement"),
+        }
+    running = [t for t in TEMPERATURES if ladder[t]["status"] == "RUNNING"]
+    return {
+        "status": "MEASURED" if (total_props or total_s) else "UNMEASURED",
+        "window_h": window_h,
+        "rows_considered": len(latest),
+        "rows_out_of_window": n_out_of_window,
+        "rows_without_a_stamp": n_untimed,
+        "n_proposals": total_props,
+        "compute_s": round(total_s, 1),
+        "ladder": ladder,
+        "running": running,
+        "n_running": len(running),
+        "all_six_running": len(running) == len(TEMPERATURES),
+        "idle": [t for t in TEMPERATURES if t not in running],
+        "shared_leg_basis": shared_basis,
+        "unclassified": {"n": sum(unclassified.values()),
+                         "sources": [{"source": s, "n": n} for s, n in
+                                     sorted(unclassified.items(), key=lambda kv: -kv[1])[:12]],
+                         "why": "no entry in SOURCE_TEMPERATURE claims these sources; they are "
+                                "counted and named rather than bucketed, so the concurrency "
+                                "count cannot be inflated by a stranger"},
+        "rule": ("the six discovery temperatures are declared to run concurrently; this counts "
+                 "the proposals each produced and the measured seconds each spent, so the claim "
+                 "is a count and not an assertion. Compute is the compute ledger's wall seconds "
+                 "for TEMP_RUNS, with shared legs split by measured proposals"),
+    }
+
+
 def run(seed: int = 0, write: bool = True,
         variant: str = CONTROLLER_VARIANT) -> dict[str, Any]:
     try:
@@ -1032,7 +1260,9 @@ def run(seed: int = 0, write: bool = True,
     except Exception:
         rows = []
     marginal = _marginal_by_arm()
-    mc = measured_cost()
+    ct, ct_why = _cost_table()
+    mc = (measured_cost(ct) if ct is not None else
+          {"_why": {"status": "UNMEASURED", "why": ct_why}})
     rcred = realised_credit()
     ev = evidence(rows, marginal, measured=mc, credit=rcred.get("by_arm") or None)
     bc = breadth_credit()
@@ -1056,6 +1286,12 @@ def run(seed: int = 0, write: bool = True,
            },
            "groups": audit.get("policy", {}).get("groups"),
            "policy": audit.get("policy"),
+           # THE TREE, ITS FLOORS AND THE LADDER. Additive keys: `shares` above is unchanged in
+           # shape and meaning, so research_budget.budget_s and every other consumer that reads
+           # it keeps reading exactly what it read before.
+           "tree": audit.get("tree"),
+           "novelty": audit.get("novelty"),
+           "temperatures": temperature_ladder(rows, ct, window_h=TEMPERATURE_WINDOW_H),
            "frontier_regret": regret(ev, shares, worth_unmeasured=[a for a in ARMS
                                                                    if a not in marginal]),
            "breadth_credit": bc,

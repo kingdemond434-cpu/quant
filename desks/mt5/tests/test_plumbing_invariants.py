@@ -71,7 +71,7 @@ def _cases(n: int = CASES) -> random.Random:
 # ----------------------------------------------------------- no order without authority (L1.38)
 
 def _identity(ok: bool, measured: bool, stale: bool, stale_refuses: bool) -> Any:
-    from mt5desk import release_identity as ri
+    import mt5desk.release_identity as ri
     return ri.Identity(ok=ok, running_sha="a" * 40, release_sha="a" * 40, reason="generated",
                        age_h=1.0, stale=stale, measured=measured, stale_refuses=stale_refuses)
 
@@ -111,7 +111,7 @@ def test_release_gate_refuses_rather_than_raises(monkeypatch: Any, tmp_path: Pat
     breakage: an identity module that raises, one that returns a refusal, one that cannot be
     measured. Generated over the failure modes rather than the one the author remembered."""
     import mt5desk
-    from mt5desk import decision_core as dc
+    import mt5desk.decision_core as dc
 
     # Built BEFORE the module is swapped out: `_identity` reads the real dataclass.
     states = [(a, b, c, d) for a in (0, 1) for b in (0, 1) for c in (0, 1) for d in (0, 1)]
@@ -233,7 +233,7 @@ if HAVE_HYPOTHESIS:
            st.floats(min_value=-2.0, max_value=2.0, allow_nan=False, allow_infinity=False))
     def test_no_duplicate_risk(rows: list[Any], symbol: str, side: int,
                                pending: float) -> None:
-        from mt5desk import leg_balance
+        import mt5desk.leg_balance as leg_balance
         positions = [_pos(s, k, v, t) for s, k, v, t in rows]
         want = 0 if side > 0 else 1
         expect = sum(v for s, k, v, _t in rows if s == symbol and k == want)
@@ -245,7 +245,7 @@ if HAVE_HYPOTHESIS:
             assert held > 0
 else:                                                          # pragma: no cover - fallback path
     def test_no_duplicate_risk() -> None:
-        from mt5desk import leg_balance
+        import mt5desk.leg_balance as leg_balance
         rng = _cases(3)
         for _ in range(CASES):
             rows = _rows_gen(rng)
