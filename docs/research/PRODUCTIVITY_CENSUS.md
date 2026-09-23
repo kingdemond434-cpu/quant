@@ -1,12 +1,12 @@
 # RESEARCH PRODUCTIVITY CENSUS
 
-_Derived by `desks/mt5/research/productivity_census.py` at 2026-09-23T18:14:52+00:00; DO NOT EDIT -- regenerate._
+_Derived by `desks/mt5/research/productivity_census.py` at 2026-09-23T18:58:17+00:00; DO NOT EDIT -- regenerate._
 
-**1589 producers** | productive **87** | compute-with-zero-cells **23** | certificates **58** (unattributed 33) | forward 2 | live 40
+**1596 producers** | productive **91** | compute-with-zero-cells **23** | certificates **58** (unattributed 33) | forward 2 | live 40
 
-**Dedup (three identities, all measured):** 18201 raw cells -> 18201 distinct `content_hash` (1.0x -- the door, 1.00 means it works) -> **2844 distinct `grid_cell` (6.3998x)** -> 583 distinct `mechanism` (31.2196x). The last two are the duplication a reader was asking about; the first cannot show it.
+**Dedup (three identities, all measured):** 25926 raw cells -> 25926 distinct `content_hash` (1.0x -- the door, 1.00 means it works) -> **3862 distinct `grid_cell` (6.7131x)** -> 703 distinct `mechanism` (36.8791x). The last two are the duplication a reader was asking about; the first cannot show it.
 **UNMEASURED `canonical_mechanisms`:** registry table `mechanisms` holds 0 rows on this host: no organ has written a canonicalised mechanism, so this stage is UNMEASURED and not zero -- the fallback below counts DISTINCT mechanism_id stamped on discoveries instead
-**UNMEASURED `cheap_survivors`:** no research_candidates row carries a judge stamp (`judged_at` null on all 18201 rows, `terminal_gate` likewise), so `survived = 0` everywhere is the column's DEFAULT and not a verdict: the cheap stage is UNMEASURED, not zero. Proxy published as `yield_survivors` from generator_yield/source_yield, which the producers write themselves
+**UNMEASURED `cheap_survivors`:** no research_candidates row carries a judge stamp (`judged_at` null on all 25926 rows, `terminal_gate` likewise), so `survived = 0` everywhere is the column's DEFAULT and not a verdict: the cheap stage is UNMEASURED, not zero. Proxy published as `yield_survivors` from generator_yield/source_yield, which the producers write themselves
 **Compute caveat:** UNMEASURED: the compute ledger holds 3 priced run(s) in the last 7 days and NONE of them names a roster producer (cost_by_run keys on the leg name), so every ledger hour here is 0.0 and all compute in this census comes from generator_yield/source_yield compute_s, which the producers charge themselves. Certificates-per-compute-hour is a registry ratio on this host, not a wall-clock one.
 **33 of 58 certificates are UNATTRIBUTED** -- no name and no family lineage reaches a producer. That is a lineage-stamping gap, not a zero for any organ.
 
@@ -27,22 +27,22 @@ _Derived by `desks/mt5/research/productivity_census.py` at 2026-09-23T18:14:52+0
 | MENA | 10 | 0 | 0 | 14 | 14 | 2 | 0 | 0 | 0.00 | UNMEASURED | UNMEASURED | UNMEASURED |
 | Africa | 8 | 0 | 0 | 38 | 38 | 12 | 0 | 0 | 0.00 | UNMEASURED | UNMEASURED | UNMEASURED |
 | Global/institutional | 2 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0.00 | UNMEASURED | UNMEASURED | UNMEASURED |
-| unattributed | 1514 | 17 | 0 | 18104 | 3558 | 10381 | 0 | 25 | 0.44 | 209.2941 | 0.0 | 56.3317 |
+| unattributed | 1521 | 17 | 0 | 25829 | 4725 | 12393 | 0 | 25 | 0.64 | 277.9412 | 0.0 | 38.9469 |
 
 ## Top producers by certificates
 
 | producer | certs | unique cells | cpu h | region |
 |---|--:|--:|--:|---|
 | `net_edge` | 24 | 22 | 0.0 | unattributed |
-| `mechanism_genome` | 1 | 24 | 0.0 | unattributed |
-| `discovery_compiler:interaction` | 0 | 930 | 0.0 | unattributed |
-| `discovery_compiler:regime` | 0 | 470 | 0.0 | unattributed |
-| `discovery_compiler:cross_asset` | 0 | 441 | 0.0 | unattributed |
-| `discovery_compiler:session` | 0 | 298 | 0.0 | unattributed |
-| `discovery_compiler:execution` | 0 | 175 | 0.0 | unattributed |
-| `discovery_compiler:asset_transfer` | 0 | 167 | 0.0 | unattributed |
-| `discovery_compiler:residual` | 0 | 159 | 0.0 | unattributed |
-| `discovery_compiler:horizon` | 0 | 115 | 0.0 | unattributed |
+| `discovery_compiler:session` | 1 | 428 | 0.0 | unattributed |
+| `discovery_compiler:interaction` | 0 | 1087 | 0.0 | unattributed |
+| `discovery_compiler:regime` | 0 | 625 | 0.0 | unattributed |
+| `discovery_compiler:cross_asset` | 0 | 469 | 0.0 | unattributed |
+| `pack_cells.world` | 0 | 276 | 0.0 | unattributed |
+| `timeframe_fanout` | 0 | 235 | 0.0 | unattributed |
+| `discovery_compiler:execution` | 0 | 214 | 0.0 | unattributed |
+| `discovery_compiler:asset_transfer` | 0 | 199 | 0.0 | unattributed |
+| `discovery_compiler:residual` | 0 | 181 | 0.0 | unattributed |
 
 ## Compute spent, no unique cell -- THE LIST TO ACT ON
 
