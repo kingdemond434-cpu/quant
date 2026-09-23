@@ -48,9 +48,16 @@ MIN_OBS = 30
 #: Latent factors extracted from the book. Three is what `latent_factors.effective` uses for the
 #: factor heat the allocator already sizes on; a different k here would measure a different book.
 K_FACTORS = 3
-#: Ridge added to the normal equations. Survivor series are correlated by construction, so the
-#: design matrix is near-singular often enough that a plain solve would raise on a live book.
+#: Ridge on the loadings' Gram only, where the matrix is k x k and well conditioned by
+#: construction. The REGRESSION deliberately carries no ridge: see `independent_columns`.
 RIDGE = 1e-8
+#: A design column that retains less than this share of its own norm after the columns already
+#: kept is a re-spelling of them, not a control. 1e-6 is loose enough to keep a genuinely weak
+#: but distinct sleeve and tight enough to drop an exact duplicate.
+COLLINEAR_TOL = 1e-6
+#: Residual variance share below which the book reproduces the candidate exactly and an
+#: intercept t is 0/0. Named rather than inlined so the degenerate case is one constant.
+EXACT_FIT = 1e-10
 
 UNMEASURED = "UNMEASURED"
 MEASURED = "MEASURED"
@@ -110,7 +117,12 @@ def factor_scores(book: np.ndarray, *, k: int = K_FACTORS) -> tuple[np.ndarray, 
     clean = np.nan_to_num(m, nan=0.0, posinf=0.0, neginf=0.0)
     sd = clean.std(axis=0, ddof=1)
     sd = np.where(np.isfinite(sd) & (sd > 0.0), sd, 1.0)
-    z = (clean - clean.mean(axis=0)) / sd
+    # SCALED, NOT CENTERED, AND THAT IS THE WHOLE POINT OF THE INTERCEPT. Demeaning the book's
+    # columns here strips the book's own mean return out of the factor series, and the intercept
+    # then absorbs it: a candidate that is 0.9 x sleeve_a came back with t = -25.7 on a design
+    # that reproduced it to float noise. Alpha is only alpha when every regressor is in the same
+    # raw return units as the thing being explained.
+    z = clean / sd
     try:
         from libs.portfolio.latent_factors import factor_model
     except Exception as exc:                                # pragma: no cover - import env
@@ -208,8 +220,26 @@ def residual_alpha(candidate: Sequence[float] | np.ndarray,
     raw_t = _t_of_mean(y)
     scores, basis = factor_scores(m, k=k)
     regressors = [a for a in (scores, m) if a.size]
-    x = np.column_stack(regressors) if regressors else np.empty((n, 0))
+    x_full = np.column_stack(regressors) if regressors else np.empty((n, 0))
+    labels = ([f"factor_{i + 1}" for i in range(scores.shape[1])] if scores.size else []) + (
+        list(names) if m.size else [])
+    keep = independent_columns(x_full)
+    x = x_full[:, keep] if keep else np.empty((n, 0))
+    kept_labels = [labels[j] for j in keep]
+    dropped = [labels[j] for j in range(len(labels)) if j not in set(keep)]
     resid, coef, se = _ols(y, x)
+    var_all = float(y.var(ddof=1))
+    if math.isfinite(var_all) and var_all > 0.0 and float(resid.var(ddof=1)) / var_all < EXACT_FIT:
+        # THE DEGENERATE CASE, NAMED. A series that IS a linear combination of the book leaves a
+        # residual variance at float noise, and an intercept t formed from it is a ratio of two
+        # numbers that are both zero -- it can come out at 40 as easily as at 0. This is the one
+        # candidate the desk can say something certain about, and the certain thing is that it
+        # carries no incremental alpha, not that it carries an enormous amount.
+        return ResidualVerdict(name=name, status=UNMEASURED, n_overlap=n, raw_t=raw_t,
+                               explained_share=1.0, basis=basis,
+                               why=("the book reproduces this series exactly (residual variance "
+                                    "at float noise): there is no incremental alpha to test, "
+                                    "and an intercept t here would be 0/0"))
     res_t = None
     if se.size and math.isfinite(float(se[0])) and float(se[0]) > 0.0:
         res_t = float(coef[0] / se[0])
@@ -222,12 +252,8 @@ def residual_alpha(candidate: Sequence[float] | np.ndarray,
     explained = None
     if math.isfinite(var_y) and var_y > 0.0:
         explained = float(np.clip(1.0 - resid.var(ddof=1) / var_y, 0.0, 1.0))
-    betas = {}
-    n_scores = scores.shape[1] if scores.size else 0
-    for i, sleeve in enumerate(names):
-        j = 1 + n_scores + i
-        if j < coef.size:
-            betas[sleeve] = round(float(coef[j]), 6)
+    betas = {lab: round(float(coef[1 + i]), 6) for i, lab in enumerate(kept_labels)
+             if 1 + i < coef.size}
     retained = None
     if raw_t is not None and abs(raw_t) > 1e-12:
         retained = round(float(res_t / raw_t), 4)
@@ -236,7 +262,9 @@ def residual_alpha(candidate: Sequence[float] | np.ndarray,
         residual_t=round(float(res_t), 4), alpha_per_obs=round(float(coef[0]), 8),
         explained_share=round(explained, 4) if explained is not None else None,
         t_retained=retained, betas=betas,
-        basis=(basis + f"; {len(names)} survivor series also controlled for"),
+        basis=(basis + f"; {len(names)} survivor series offered, "
+               f"controls kept {kept_labels}"
+               + (f", dropped as collinear {dropped}" if dropped else "")),
         why=("t of the INTERCEPT after regressing this series on the book's latent factors and "
              "on every funded sleeve -- the alpha the book cannot explain; published, never "
              "subtracted from anything"))

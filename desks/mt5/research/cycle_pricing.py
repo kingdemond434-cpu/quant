@@ -52,6 +52,7 @@ queue when the hour runs short.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import statistics
 import sys
@@ -372,15 +373,72 @@ def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:
     }
 
 
-def order(names: list[str], legs: dict[str, dict[str, Any]] | None = None) -> list[str]:
-    """`names` in the order this hour should run them: scouts first, then price-descending."""
-    table = legs if legs is not None else plan().get("legs", {})
+def declare_spec(leg: str, rec: dict[str, Any]) -> None:
+    """Write this leg's JOB SPEC where `job_lock` reads it. I3's producer half. Never raises.
 
-    def key(n: str) -> tuple[int, float, str]:
+    I3'S GAP, IN THE LEDGER'S OWN WORDS: *"a job's spec carries a memory floor but no CPU count,
+    no deadline and no EVSI, so no scheduler can rank two competing jobs."* `job_lock.record_spec`
+    has accepted all four fields since the row's first half and NOTHING EVER CALLED IT -- the
+    declaration existed and no job ever declared. Every leg of the hourly cycle passes through
+    `applied_budget`, so this is the one place where all four are known at once:
+
+        mb          the leg's own measured high-water RSS, corrected upward by what it has
+                    actually used (`job_lock.measured_need_mb`) -- never a constant, and never
+                    sized off a machine (CLAUDE.md: measure the box the code runs on)
+        cpu         1, declared rather than assumed: every cycle leg is a single subprocess
+        deadline_s  the seconds this leg was actually granted this hour, which is exactly how
+                    long it may hold the box before pre-empting it is worth considering
+        evsi        the board's dE[log W] price for this leg -- what the desk expects to LEARN
+                    from the hour, which is the field a scheduler must rank on
+
+    It declares; it admits nothing and refuses nothing.
+    """
+    try:
+        from research.job_lock import measured_need_mb, record_spec
+    except Exception:                                          # pragma: no cover - import env
+        try:
+            from job_lock import (  # type: ignore[import-not-found,no-redef]
+                measured_need_mb,
+                record_spec,
+            )
+        except Exception:
+            return
+    try:
+        base_mb = int(rec.get("base_mb") or 0) or 256
+        need, _why = measured_need_mb(str(leg), base_mb)
+        score = rec.get("score")
+        record_spec(str(leg), mb=int(need), cpu=1,
+                    deadline_s=float(rec.get("applied_s") or rec.get("base_s") or 0.0) or None,
+                    evsi=float(score) if isinstance(score, (int, float)) else None)
+    except Exception:                                          # a declaration never costs a leg
+        return
+
+
+def order(names: list[str], legs: dict[str, dict[str, Any]] | None = None) -> list[str]:
+    """`names` in the order this hour should run them: scouts first, then price-descending.
+
+    I3's CONSUMER. Two legs the board prices identically -- which is common, because most legs
+    are priced by the same tier factor -- were separated by their own SPELLING. They are now
+    separated by what they DECLARED: `job_lock.admission_order` ranks by EVSI, then by the
+    shorter deadline, then by the smaller memory need. That is the "no scheduler can rank two
+    competing jobs" half of I3, cashed. It re-orders and refuses nothing: every named leg is
+    still returned, and the scout tier (a leg unrun for six hours) still outranks every price.
+    """
+    table = legs if legs is not None else plan().get("legs", {})
+    declared: dict[str, int] = {}
+    try:
+        from research.job_lock import admission_order
+    except Exception:                                          # pragma: no cover - import env
+        admission_order = None                                 # type: ignore[assignment]
+    if admission_order is not None:
+        with contextlib.suppress(Exception):
+            declared = {n: i for i, (n, _spec) in enumerate(admission_order(names))}
+
+    def key(n: str) -> tuple[int, float, int, str]:
         row = table.get(n) or {}
         st = row.get("stale_h")
         scout = 0 if (st is None or float(st) >= SCOUT_STALE_H) else 1
-        return (scout, -float(row.get("score") or 0.0), n)
+        return (scout, -float(row.get("score") or 0.0), declared.get(n, len(names)), n)
 
     return sorted(names, key=key)
 
@@ -435,6 +493,7 @@ def applied_budget(leg: str, base: float) -> tuple[int, dict[str, Any]]:
         rec["at"] = datetime.now(tz=UTC).isoformat(timespec="seconds")
         record(rec)
         out_s = rec["applied_s"]
+        declare_spec(leg, rec)
         return (int(out_s) if isinstance(out_s, (int, float)) else base_i), rec
     except Exception as exc:                                   # never stall a leg on a price
         return base_i, {"leg": leg, "base_s": base_i, "applied_s": base_i, "factor": 1.0,

@@ -767,13 +767,19 @@ CORE_LEGS: frozenset[str] = frozenset({
     "forward_reconcile", "clock_liveness",
     "closed_loop", "acceptance", "candidate_conservation", "pit_canaries",
     "mutation_yield", "credit_assignment", "publish_survivors", "publish_dashboard",
+    # The cheap half of the Tier-1 B rows: each reads artifacts and writes one, in well under a
+    # minute, and the closed-loop attestation that runs in this same plan reads three of them.
+    # `regime_hierarchy` and `representation_discovery` fit models and stay on the heavy plan.
+    "release_authority", "residual_map", "failure_prior", "scientist_standings",
+    "frontier_ceo", "evig_acquisition",
     "stamp_freshness", "time_joins", "layer_census", "opportunity_cost", "dead_architecture",
     "producer_census",
     "cycle_pricing", "causal_invariance",
     # THE CLOSED-LOOP ORGANS (Tier-1 B14-B25): all cheap readers of artifacts that already exist,
     # so they belong on the core clock rather than the heavy one. `actor_pressure` and
     # `counterfactual_timeframes` read bars and stop themselves at their own budget.
-    "source_evig", "actor_pressure", "destroyer_pool", "quantbench", "evidence_chain",
+    "source_evig", "source_drain", "actor_pressure", "destroyer_pool", "quantbench",
+    "evidence_chain",
     "clock_ledger", "shortfall_model", "counterfactual_timeframes", "meta_rnd",
     "prosecutor", "scaling_laws", "arena", "session_capital", "session_allocation",
     "allocator_join", "rebalance_trigger", "edge_reliability", "edge_confidence", "capacity",
@@ -783,7 +789,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     "experiment_cache", "opportunity_gap", "opportunity_forecast", "forecast_contract",
     "alpha_breadth", "alpha_periodic_table", "regime_coverage", "timeframe_coverage",
     "frontier_unknowns", "frontier_report", "frontier_ontology", "counterfactual_world",
-    "strategy_paths", "reclaim_disk", "archive_tape", "queue_cycle", "release_authority",
+    "strategy_paths", "reclaim_disk", "archive_tape", "queue_cycle",
     # THE 2026-09-16 BLUEPRINT ORGANS (phases C/D of the Tier-1 ledger), all cheap readers.
     "axis_registry", "tier1_scorecard", "novelty_gate", "forced_flow_calendar", "breadth_ladder",
     "wiring_ceo", "live_system_state", "hazard_engine", "posterior_alpha", "semantic_memory",
@@ -850,6 +856,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "understanding_seat", "archaeology", "sares", "shadow_institutional",
                      "source_civilizations", "evidence_watchtower", "prediction_markets",
                      "latent_actors", "residual_hunt", "evidence_router",
+                     # Tier-1 B6/B8/B9: the tree, the residual map that aims the exogenous
+                     # search, and the docket the sealed gauntlet orders its sweep by.
+                     "research_tree", "residual_map", "frontier_ceo",
                      "federation_ops", "sandbox_runner", "sandbox_provision",
                      "sandbox_roster", "proposer_seat", "kimi_hunt"),
                     "intel"),
@@ -869,7 +878,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "evaluator_lab", "lead_replication", "science_controller",
                      "replication_civilization", "certificate_truth", "model_search",
                      "loop_liveness", "counterexample_agent", "judging_throughput",
-                     "forward_enrolment"),
+                     "forward_enrolment", "residual_gate"),
                     "validate"),
     # macro: the cross-asset / macro brain
     **dict.fromkeys(("fred_macro", "futures_lead_lag", "causal_graph", "residual_factors",
@@ -880,6 +889,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "world_lab", "macro_department", "news_event_stream",
                      "event_sleeves", "macro_intelligence", "world_model",
                      "market_constitution", "dislocation_lab", "macro_state_engine",
+                     # Tier-1 B3/B4: the per-asset world model and the learned representation
+                     # lane are both about what the market IS, before anything predicts it.
+                     "regime_hierarchy", "representation_discovery",
                      "event_surprise"), "macro"),
     # execution: the execution research command
     **dict.fromkeys(("execution_twin", "entry_timing", "cost_to_edge", "exit_study",
@@ -907,6 +919,11 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "compute_economics", "control_plane", "attribution_reconcile",
                      "fence_battery", "organ_battery", "research_artifacts", "engine_registry",
                      "search_paradigm_census", "producer_census",
+                     # Tier-1 B1/B7/B10/B11: the release bit, the scientists' league table, the
+                     # failure prior and the unified EVIG acquisition are all the machine
+                     # measuring and scheduling itself.
+                     "release_authority", "scientist_standings", "failure_prior",
+                     "evig_acquisition",
                      "runtime_attestation"), "meta"),
     # japan: the Japan research division (the principal's 47-section mandate, hourly)
     **dict.fromkeys(("japan_department",), "japan"),
@@ -2791,6 +2808,33 @@ def main() -> None:
     cra = _costed("credit_assignment", lambda: _producer("credit_assignment",
                                                           "research/credit_assignment.py",
                                                           "--apply"))
+    # ---------------------------------------------------------------- THE CLOSED-LOOP B-ROWS
+    # Tier-1 phase B, rows B1-B11 (2026-09-23). Each was PARTIAL with a named gap; each organ
+    # below closes its own gap, leaves an artifact and has a named consumer. Order matters where
+    # one reads another: the release bit first (it is about the code everything else runs), then
+    # the per-asset world model (the failure prior's state half reads it), the residual map
+    # (which aims `exogenous_search` later in this cycle), the failure prior (which the compiler
+    # stamps), the scientists' league table (which the docket ranks by), the docket itself, and
+    # finally the unified EVIG acquisition, which prices what the four above produced.
+    rla = _costed("release_authority", lambda: _producer(
+        "release_authority", "research/release_authority.py", "--once"))
+    rgh = _costed("regime_hierarchy", lambda: _producer(
+        "regime_hierarchy", "research/regime_hierarchy.py", "--once", "--budget-s", "900"))
+    rsm = _costed("residual_map", lambda: _producer(
+        "residual_map", "research/residual_map.py", "--once"))
+    fpr = _costed("failure_prior", lambda: _producer(
+        "failure_prior", "research/failure_prior.py", "--once", "--budget-s", "300"))
+    sst = _costed("scientist_standings", lambda: _producer(
+        "scientist_standings", "research/scientist_standings.py", "--once"))
+    fce = _costed("frontier_ceo", lambda: _producer(
+        "frontier_ceo", "research/frontier_ceo.py", "--apply"))
+    rtr = _costed("research_tree", lambda: _producer(
+        "research_tree", "research/research_tree.py", "--apply"))
+    rpd = _costed("representation_discovery", lambda: _producer(
+        "representation_discovery", "research/representation_discovery.py",
+        "--once", "--budget-s", "900"))
+    eva = _costed("evig_acquisition", lambda: _producer(
+        "evig_acquisition", "research/evig_acquisition.py", "--once"))
     # THE BLUEPRINT ORGANS (principal, 2026-09-16; Tier-1 phases C/D). Each runs on the core
     # plan every hour and leaves its artifact; order matters where one reads another (the axis
     # registry before the ladder, the hazard engine before the posterior, the wiring CEO before
@@ -3058,6 +3102,14 @@ def main() -> None:
     # interaction that could explain it. Intel department: it opens ground for the scouts.
     rhu = _costed("residual_hunt", lambda: _producer("residual_hunt", "research/residual_hunt.py",
                                                       "--once", "--budget-s", "600"))
+    # INCREMENTAL ALPHA AFTER NEUTRALISATION (C9): every candidate the desk records a daily series
+    # for, regressed on the CURRENT book's latent factors and on its survivor series, published
+    # as the t of the intercept. The row's own next_step asked for a stage inside the sealed
+    # `external_gauntlet`; this is the `hostile` -> `blind_reviewer` shape instead -- a library
+    # with no side effects and a mount that publishes. It refuses nothing: the family-level t is
+    # a TIE-BREAK inside merge_hypotheses.breadth_order and removes no row from the docket.
+    rsg = _costed("residual_gate", lambda: _producer(
+        "residual_gate", "research/residual_gate_mount.py", "--once", "--budget-s", "180"))
     # THE MOAT ALPHA FACTORY ENGINES (M5, principal 2026-09-17): the desk exploits everything it
     # has already learned. Each engine records discoveries in the canonical registry; the ones
     # that can host a family donate structured hypotheses through the same intake as every miner.
@@ -4068,6 +4120,12 @@ def main() -> None:
     #   meta_rnd                 -> falsifier_run's ordering policy (the process as a subject)
     sev = _costed("source_evig", lambda: _producer(
         "source_evig", "research/source_evig.py", "--once", "--budget-s", "120"))
+    # THE DRAIN GUARANTEE (principal 2026-09-23): pricing the queue orders it and does not
+    # drain it. This hands the top of the ranking to the collector every pass until the
+    # backlog is empty, publishes the chain each source stands in, and ratchets two counts
+    # that may only fall. It must run AFTER source_evig, whose ranking it consumes.
+    sdr = _costed("source_drain", lambda: _producer(
+        "source_drain", "research/source_drain.py", "--once", "--budget-s", "300"))
     apr = _costed("actor_pressure", lambda: _producer(
         "actor_pressure", "research/actor_pressure.py", "--once", "--budget-s", "300"))
     dpo = _costed("destroyer_pool", lambda: _producer(
@@ -4137,6 +4195,10 @@ def main() -> None:
                     "deepening": dp, "heal_clocks": hc, "mine": m,
                     "search": se, "breadth_sweep": bs, "candidate_conservation": ccv,
                     "pit_canaries": pcn, "mutation_yield": myd, "credit_assignment": cra,
+                    "release_authority": rla, "regime_hierarchy": rgh, "residual_map": rsm,
+                    "failure_prior": fpr, "scientist_standings": sst, "frontier_ceo": fce,
+                    "research_tree": rtr, "representation_discovery": rpd,
+                    "evig_acquisition": eva,
                     "axis_registry": axr, "breadth_ladder": bld, "forced_flow_calendar": ffc,
                     "novelty_gate": ngt, "hazard_engine": hze, "posterior_alpha": pal,
                     "semantic_memory": smm, "model_role_benchmark": mrb,
@@ -4158,7 +4220,7 @@ def main() -> None:
                     "source_registry": srg, "event_response_atlas": era, "world_lab": wlb,
                     "news_event_stream": nes, "event_sleeves": evs,
                     "causal_lab": clb, "event_graph_lab": egl,
-                    "world_model": wmd, "residual_hunt": rhu,
+                    "world_model": wmd, "residual_hunt": rhu, "residual_gate": rsg,
                     "representation_forge": rfg,
                     "registry_sync": rsy, "axis_proposer": axp,
                     "program_alpha_lane": pal, "trajectory_evolution": tev,
@@ -4249,7 +4311,8 @@ def main() -> None:
                     "bottleneck_attack": bka,
                     "opportunity_cost": oc, "acceptance": ac, "opportunity_forecast": ofc,
                     "cycle_pricing": cyp, "causal_invariance": civ,
-                    "source_evig": sev, "actor_pressure": apr, "destroyer_pool": dpo,
+                    "source_evig": sev, "source_drain": sdr,
+                    "actor_pressure": apr, "destroyer_pool": dpo,
                     "quantbench": qbn, "evidence_chain": evc, "clock_ledger": ckl,
                     "shortfall_model": shm, "counterfactual_timeframes": ctf, "meta_rnd": mrd,
                     "edge_reliability": erl, "arena": ar, "session_capital": scap,

@@ -189,3 +189,40 @@ def test_the_compute_ledger_row_carries_the_applied_budget(
     assert row["applied_budget_s"] == 1200
     assert row["price_factor"] == 2.0
     assert row["priced_by"] == "meta_controller"
+
+
+# ------------------------------------------------------------------ I3: jobs that declare
+def test_a_leg_declares_cpu_deadline_and_evsi_and_the_order_reads_them(
+        tmp_path: Path, monkeypatch: Any) -> None:
+    """I3's two halves, joined. `job_lock.record_spec` accepted mb/cpu/deadline_s/evsi since the
+    row's first half and NOTHING EVER CALLED IT; `admission_order` sorted on those four fields
+    and nothing ever called that either. `applied_budget` now declares and `order` now ranks."""
+    # THE SAME MODULE OBJECT `cycle_pricing` REACHES. `declare_spec` imports
+    # `research.job_lock` first; `import job_lock` is a second, independent instance of the same
+    # file, and monkeypatching that one leaves the real LOCK_ROOT in place -- the test would then
+    # write into the desk's own lock directory and read back nothing.
+    from research import job_lock as jl  # type: ignore[import-not-found]
+
+    monkeypatch.setattr(jl, "LOCK_ROOT", tmp_path / "locks", raising=True)
+    rec = {"leg": "legA", "base_s": 300, "applied_s": 420, "score": 3.5}
+    cp.declare_spec("legA", rec)
+    cp.declare_spec("legB", {"leg": "legB", "base_s": 300, "applied_s": 120, "score": 0.1})
+    got = jl.declared_spec("legA")
+    assert got["cpu"] == 1
+    assert got["deadline_s"] == 420.0
+    assert got["evsi"] == 3.5
+    assert isinstance(got["mb"], int) and got["mb"] > 0
+    # The scheduler can now rank two competing jobs, which is the whole of I3's gap sentence.
+    assert [n for n, _s in jl.admission_order(["legB", "legA"])] == ["legA", "legB"]
+    # And the cycle's own order uses it as the tie-break when the board prices both alike.
+    table = {"legA": {"score": 1.0, "stale_h": 0.0}, "legB": {"score": 1.0, "stale_h": 0.0}}
+    assert cp.order(["legB", "legA"], legs=table) == ["legA", "legB"]
+
+
+def test_declaring_never_costs_the_leg_that_declared(tmp_path: Path, monkeypatch: Any) -> None:
+    """A declaration that raised would take down the leg it was added to schedule."""
+    from research import job_lock as jl  # type: ignore[import-not-found]
+
+    monkeypatch.setattr(jl, "record_spec", lambda *_a, **_k: (_ for _ in ()).throw(OSError("x")),
+                        raising=True)
+    cp.declare_spec("legC", {"leg": "legC", "applied_s": 60, "score": 1.0})   # must not raise
