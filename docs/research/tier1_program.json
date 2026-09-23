@@ -8952,6 +8952,47 @@
     "NOTHING WAS RETIRED: every one of the 17 produces something a named consumer reads, so the retirement path in docs/research/retirements.jsonl was not used, which is the honest disposition rather than a tidier one."
    ],
    "consumer": "scripts/check_producer_yield.py (the owing ratchet, law-gate leg), scripts/check_productivity_census.py (the same declarations)"
+  },
+  {
+   "id": "TRIAL1",
+   "item": "CHARGE THE MULTIPLICITY BUDGET IN EFFECTIVE INDEPENDENT TESTS, NOT IN DOCKET ROWS (2026-09-23): thirty-one parameter variants of one rule on one instrument at one horizon are nearer one independent test than thirty-one, and charging them as thirty-one raises the deflated-Sharpe bar for every OTHER cell -- including the ones testing genuinely new mechanisms.",
+   "domain": "U",
+   "phase": 2,
+   "status": "LANDED",
+   "gate": "none",
+   "scheduled_by": "hourly_cycle:effective_trials",
+   "artifact": "desks/mt5/reports/EFFECTIVE_TRIALS.json",
+   "evidence": [
+    "THE ESTIMATOR: libs/research/trial_ledger.py:447 prices one grid cell (family, symbol, horizon) by the module's own similarity participation ratio, so a neighbourhood of tunings collapses toward one while genuinely different rules stay apart; libs/research/trial_ledger.py:491 sums it over mechanisms (independent by construction, the conservative direction) and floors the total at the number of distinct mechanisms.",
+    "EXACT IDENTITY WAS THE WRONG KNIFE AND MEASURING IT SAID SO: on the live docket all 22,925 rows carried a distinct content key (a sweep's rows differ in the parameter it swept), giving ratio 1.00x -- no relief at all. With within-cell similarity: nominal 22,925 -> effective 4,180.70, ratio 5.4835x over 60 mechanisms. Per family: formula 944 -> 4.23 (x223, 2 grid cells), triangle 1,692 -> 89.81 (x18.8), style_premia 1,595 -> 92.13 (x17.3), cross_asset_residual 2,832 -> 457.69 (x6.19), session_range_breakout 575 -> 72.85 (x7.89).",
+    "THE SEALED JUDGE'S EXISTING INPUT, NOT AN EDIT TO IT: desks/mt5/scripts/external_gauntlet.py:2311 computes n_trials by calling research.gate_policy.charged_trial_count, which returns _SPEC_FIXED_TRIALS -- desks/mt5/policy/gate_spec.yaml gates[deflated_sharpe].params.fixed_trial_count and nothing else. desks/mt5/research/effective_trials.py:194 writes that one value by anchored regex (never a YAML round-trip, which would delete every measurement comment in the spec). The sealed script is untouched.",
+    "PROVED BY MEASUREMENT, NOT ASSERTED: desks/mt5/research/effective_trials.py:242 re-imports the judge's own input function from a clean module state and reads what it will charge. After the pass: desks/mt5/policy/gate_spec.yaml:60 carries fixed_trial_count 109, charged_trial_count(1000, None, None) returns (109, 'fixed_campaign_trials(109)'), fail_closed_trial_count returns 109, and the deflated-Sharpe hurdle sr0 falls 0.378596 -> 0.312194 at the spec's fixed variance 0.014863.",
+    "NO GATE IS WEAKENED AND EVERY FAILURE PATH POINTS UP: libs/research/trial_ledger.py:515 returns the UNCHANGED nominal 597 whenever the census is UNMEASURED or the ratio is implausible, floors the charge at the number of distinct mechanisms, and can never return more than nominal; desks/mt5/research/effective_trials.py:194 refuses any charge that is not lower than the standing one and refuses a move smaller than MIN_CHANGE_FRAC, so the bar stays a property of policy rather than of the hour. The ten gates run exactly as defined, no cell is removed and no producer is capped.",
+    "THE ATTESTATION STAYS HONEST: desks/mt5/research/gate_policy.py:88 now READS trial_count_basis from the spec instead of retyping 597, so a certificate can never attest to a basis it was not judged under; desks/mt5/research/gate_policy.py:137 carries the old fixed-597 basis in _SUPERSEDED_TRIAL_BASES only while the spec charges 597 or fewer -- the documented admissibility rule (a superseded basis must have charged AT LEAST as many trials). Measured: a certificate on the old basis still returns is_exact_policy True, and a tampered dsr_threshold is still refused.",
+    "CLOCK AND LAYER: desks/mt5/research/hourly_cycle.py:3280 registers the leg (data department, --budget-s 300); libs/research/layers.py:296 gives it the information layer.",
+    "TESTS: desks/mt5/tests/test_effective_trials.py, 19 passing -- clones collapse, distinct grid cells never collapse, distinct mechanisms stay independent, effective is never above nominal nor below one, an empty docket is UNMEASURED rather than zero trials, the charge never rises, a sub-threshold move never rewrites policy, and the spec's comments survive the write."
+   ],
+   "consumer": "desks/mt5/scripts/external_gauntlet.py (SEALED) reads the corrected charge through research.gate_policy.charged_trial_count on its next sweep; desks/mt5/reports/EFFECTIVE_TRIALS.json publishes nominal vs effective per family with the ratio and sr0 before/after."
+  },
+  {
+   "id": "TRIAL2",
+   "item": "AIM THE JUDGE WITH THE LEARNED PASS RATE, AND PUBLISH THE REALISED RATE BESIDE THE PRIOR (2026-09-23): the ranking spent p_optimistic while every family in it carried prior_n 0 and p_optimistic 1.0 -- a flat pass probability, with 3,368 verdicts across 27 families sitting unread in the gate ledger.",
+   "domain": "U",
+   "phase": 2,
+   "status": "LANDED",
+   "gate": "none",
+   "scheduled_by": "hourly_cycle:judge_coverage",
+   "artifact": "desks/mt5/reports/JUDGE_COVERAGE.json",
+   "evidence": [
+    "THE DEFECT, MEASURED: desks/mt5/data/research_priors/beta.json held 2 families and 9 updates against a ledger of 3,368 verdicts over 27 families, and JUDGE_COVERAGE.json's value_ranking carried prior_status PRIOR with p_optimistic 1.0 on all 57 rows -- so the aim was set by net value and breadth alone.",
+    "THE CURSOR LOSES ROWS PERMANENTLY AND THAT IS WHY THE LEDGER IS RE-COUNTED: learn_priors advances its high-water stamp only on a row that recorded, so one later success carries the cursor past every row behind it. desks/mt5/research/judge_coverage.py:288 counts the ledger itself every pass -- nothing can make it stale -- and desks/mt5/research/judge_coverage.py:467 backfills any family the stored posterior has no row for at all, whatever the cursor says (it gains a row on the first such pass, so it cannot double-count).",
+    "IT NOW DRIVES THE RANKING: desks/mt5/research/judge_coverage.py:388 spends the realised-evidence posterior whenever the ledger holds more verdicts than the stored one was taught, publishing the stored number beside it. Measured after the pass: the stored posterior went 2 families / 9 updates -> 28 families / 3,374 updates, and the ranking went 0 POSTERIOR rows -> 23 of 57.",
+    "THE AIM MOVED, MEASURED: carry (1 pass / 108 judged) fell from rank #1 to #41; session_range_breakout (0/399) ranks #55, correlation_regime (0/247) #56, relative_value (0/172) #57; macro_conditional, unjudged in this window, still ranks on the optimistic bound at #38.",
+    "THE EXPLORATION FLOOR IS UNTOUCHED AND NOTHING IS STARVED: the same pass queued all 57 families holding backlog, 0 with quota 0, minimum quota 2 (FLOOR_SHARE unchanged). A family with no verdicts still returns p_optimistic 1.0, so it is explored rather than buried.",
+    "PUBLISHED SO THE AIM IS INSPECTABLE: desks/mt5/research/judge_coverage.py:763 writes realised_judged / realised_passed / realised_pass_rate and prior_source onto every ranking row, and the report carries a realised_pass_rate table of all 25 families the judge has ruled on -- carry 1/108 (0.93%), overnight_gap_decay 1/208 (0.48%), discovered 0/665, session_range_breakout 0/399, correlation_regime 0/247. terminal_gate UNKNOWN is the sealed judge's UNMEASURED path and counts toward neither judged nor passed.",
+    "TESTS: desks/mt5/tests/test_judge_coverage.py, 36 passing -- the realised rate is counted from the ledger, an UNKNOWN verdict counts toward neither, an unjudged family is still explored at 1.0, a measured passer outranks a measured non-passer, and an untaught family is backfilled past the cursor."
+   ],
+   "consumer": "desks/mt5/research/merge_hypotheses.py calls the same allocator when it writes the docket, so the order this ranking sets is the order the sealed gauntlet judges in; scripts/check_judge_coverage.py ratchets the carried backlog down."
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."

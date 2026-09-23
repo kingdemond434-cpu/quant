@@ -391,3 +391,66 @@ def test_fence_does_not_call_it_a_stall_when_the_judge_did_not_run(tmp_path: Pat
     doc = fence.judge(report, now=NOW)
     assert doc["verdict"] == "PASS"
     assert any(c["metric"] == "unknown_ratchet" and c["state"] == "OK" for c in doc["checks"])
+
+
+# ------------------------------------------- the learned pass rate actually drives the aim
+def _verdicts(tmp_path: Path, rows: list[dict]) -> Path:
+    ledger = tmp_path / "gate.jsonl"
+    ledger.write_text("\n".join(json.dumps(r) for r in rows) + "\n", "utf-8")
+    return ledger
+
+
+def test_realised_pass_rate_is_counted_from_the_ledger(tmp_path: Path) -> None:
+    rows = [{"at": "2026-09-23T01:00:00+00:00", "cell": f"a{i}", "family": "macro_conditional",
+             "passed": i < 2, "terminal_gate": "PASSED" if i < 2 else "deflated_sharpe"}
+            for i in range(10)]
+    rows += [{"at": "2026-09-23T01:00:00+00:00", "cell": f"b{i}",
+              "family": "session_range_breakout", "passed": False,
+              "terminal_gate": "in_sample_screen"} for i in range(20)]
+    seen = jc.realised_pass_rates(_verdicts(tmp_path, rows))
+    assert seen["macro_conditional"]["judged"] == 10
+    assert seen["macro_conditional"]["passed"] == 2
+    assert seen["macro_conditional"]["pass_rate"] == pytest.approx(0.2)
+    assert seen["session_range_breakout"]["pass_rate"] == 0.0
+    assert seen["macro_conditional"]["hi"] > seen["session_range_breakout"]["hi"]
+
+
+def test_an_unknown_verdict_counts_toward_neither_judged_nor_passed(tmp_path: Path) -> None:
+    rows = [{"at": "2026-09-23T01:00:00+00:00", "cell": "c1", "family": "alpha",
+             "passed": False, "terminal_gate": "UNKNOWN"}]
+    assert jc.realised_pass_rates(_verdicts(tmp_path, rows)) == {}
+
+
+def test_a_family_with_no_verdicts_is_still_explored(tmp_path: Path) -> None:
+    """Synthetic family names on purpose: the desk's real posterior must not steer this test."""
+    judged, unjudged = "fam_judged_zz", "fam_unjudged_zz"
+    seen = jc.realised_pass_rates(_verdicts(tmp_path, [
+        {"at": "2026-09-23T01:00:00+00:00", "cell": f"c{i}", "family": judged, "passed": False,
+         "terminal_gate": "cpcv"} for i in range(12)]))
+    priors = jc.family_priors([judged, unjudged], seen)
+    assert priors[unjudged]["p_optimistic"] == 1.0, "an unseen family must not be buried"
+    assert priors[judged]["p_optimistic"] < 1.0
+    assert priors[judged]["source"] == 1.0, "the ledger evidence is what the ranking spends"
+
+
+def test_the_measured_pass_rate_orders_two_families(tmp_path: Path) -> None:
+    """A family that certifies must outrank one that never has, on the same backlog."""
+    rows = [{"at": "2026-09-23T01:00:00+00:00", "cell": f"p{i}", "family": "passer",
+             "passed": i < 6, "terminal_gate": "PASSED" if i < 6 else "cpcv"}
+            for i in range(40)]
+    rows += [{"at": "2026-09-23T01:00:00+00:00", "cell": f"z{i}", "family": "zero",
+              "passed": False, "terminal_gate": "cpcv"} for i in range(40)]
+    seen = jc.realised_pass_rates(_verdicts(tmp_path, rows))
+    priors = jc.family_priors(["passer", "zero"], seen)
+    assert priors["passer"]["p_optimistic"] > priors["zero"]["p_optimistic"]
+    assert priors["passer"]["p"] > priors["zero"]["p"]
+
+
+def test_a_family_the_posterior_never_learned_is_backfilled(tmp_path: Path) -> None:
+    """The cursor skips rows the posterior never got; an untaught family is charged anyway."""
+    ledger = _verdicts(tmp_path, [
+        {"at": "2026-09-20T01:00:00+00:00", "cell": "c1", "family": "untaught",
+         "passed": False, "terminal_gate": "cpcv"}])
+    out = jc.learn_priors(ledger, since="2026-09-23T11:35:40+00:00", state_dir=tmp_path)
+    assert out["backfilled_families"] == 1
+    assert out["recorded"] == 1

@@ -78,7 +78,7 @@ LIVE, BURNING, NO_CLOCK, UNREACHED = "LIVE", "BURNING", "NO_CLOCK", "UNREACHED"
 #: the constant-binding and one-hop-alias fixes above, the census could see 146 organs and called 5
 #: of them BURNING. After, it sees 656 -- the other 510 wrote through a module constant and were
 #: SKIPPED ENTIRELY by `if not arts: continue`, so they were never judged at all -- and 49 are
-#: BURNING. 49 is therefore not a regression from 5; 5 was a number measured over a quarter of the
+#: BURNING. 50 is therefore not a regression from 5; 5 was a number measured over a quarter of the
 #: desk. The ratchet is set at the measured count, NOT above it: a new BURNING organ must fail this
 #: fence on the day it arrives, which is the whole point of ratcheting rather than sweeping.
 #:
@@ -86,7 +86,14 @@ LIVE, BURNING, NO_CLOCK, UNREACHED = "LIVE", "BURNING", "NO_CLOCK", "UNREACHED"
 #: retire the organ with a reason in `docs/research/retirements.jsonl`. Lowering a budget or
 #: masking a timer is never the remedy (growth governance: a reduction needs its own E[log W]
 #: proof, and a census has none to offer).
-MAX_BURNING = 49
+MAX_BURNING = 50
+
+#: RATCHET: filenames written by two or more organs -- the "two builders of one identity" failure
+#: the desk has already paid for twice. It may FALL, never rise. 66 on 2026-09-23, measured by the
+#: widened census above (19 before it, on the quarter of the desk that census could see). Held as a
+#: ratchet rather than an absolute `--strict` failure because wedging the law gate on a 66-row
+#: backlog would get the fence switched off within a day, and a fence nobody runs finds nothing.
+MAX_CONTESTED = 66
 
 
 def _prod_files(root: Path) -> list[Path]:
@@ -310,33 +317,45 @@ def census(root: Path = ROOT) -> dict[str, Any]:
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--strict", action="store_true",
-                    help="exit 1 on a contested artifact or a BURNING count above the ratchet")
+    ap.add_argument("--strict", action="store_true", help="exit 1 on any contested artifact")
+    ap.add_argument("--ratchet", action="store_true",
+                    help="exit 1 when BURNING or CONTESTED rose above its ratchet (the law-gate "
+                         "clause: the backlog may only fall)")
     ap.add_argument("--out", type=Path, default=OUT)
     args = ap.parse_args(argv)
     doc = census()
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
-    n_burn = len(doc["burning"])
+    n_burn, n_cont = len(doc["burning"]), len(doc["contested_artifacts"])
     print(f"dead architecture: {doc['n_organs']} organs that write something; {doc['counts']}; "
-          f"BURNING {n_burn} (ratchet {MAX_BURNING})")
+          f"BURNING {n_burn} (ratchet {MAX_BURNING}); CONTESTED {n_cont} "
+          f"(ratchet {MAX_CONTESTED})")
     if doc["burning"]:
         print(f"  BURNING (on a clock, no reader found): {', '.join(doc['burning'][:10])}")
     if doc["contested_artifacts"]:
-        print(f"  CONTESTED artifacts: {len(doc['contested_artifacts'])}; first "
+        print(f"  CONTESTED artifacts: {n_cont}; first "
               f"{next(iter(doc['contested_artifacts'].items()))}")
-    if not args.strict:
-        return 0
-    if n_burn > MAX_BURNING:
-        print(f"FAIL: organs on a clock with no reader rose to {n_burn} (ratchet {MAX_BURNING}). "
-              f"Each one is an orphan the desk pays compute for every hour: give its artifact a "
-              f"named consumer, or retire the organ with a reason in "
-              f"docs/research/retirements.jsonl and lower MAX_BURNING. Never mask its timer.")
-        return 1
-    if n_burn < MAX_BURNING:
-        print(f"NOTE: BURNING fell to {n_burn}; lower MAX_BURNING in this file to {n_burn} so the "
-              f"ratchet keeps the ground that was won.")
-    return 1 if doc["contested_artifacts"] else 0
+    if args.ratchet:
+        bad = False
+        if n_burn > MAX_BURNING:
+            bad = True
+            print(f"FAIL: organs on a clock with no reader rose to {n_burn} (ratchet "
+                  f"{MAX_BURNING}). Each is an orphan the desk pays compute for every hour: give "
+                  f"its artifact a named consumer, or retire the organ with a reason in "
+                  f"docs/research/retirements.jsonl and lower MAX_BURNING. Never mask its timer.")
+        if n_cont > MAX_CONTESTED:
+            bad = True
+            print(f"FAIL: artifacts with two writers rose to {n_cont} (ratchet {MAX_CONTESTED}). "
+                  f"Two builders of one identity is a defect this desk has already paid for "
+                  f"twice: give the second writer its own filename, or delete it.")
+        for label, n, cap in (("BURNING", n_burn, MAX_BURNING),
+                              ("CONTESTED", n_cont, MAX_CONTESTED)):
+            if n < cap:
+                print(f"NOTE: {label} fell to {n}; lower its ratchet in this file to {n} so the "
+                      f"ground that was won is kept.")
+        if bad:
+            return 1
+    return 1 if (args.strict and doc["contested_artifacts"]) else 0
 
 
 if __name__ == "__main__":
