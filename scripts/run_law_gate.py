@@ -337,6 +337,14 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # `outside_window` by NAME rather than letting either be inferred from silence. It can only
     # ever demand that more legs run: there is no threshold here that attempting less can satisfy.
     ("check_leg_rotation.py", ()),
+    # THROUGHPUT IS A RATCHET (2026-09-23). The desk's canonical write door was measured at FOUR
+    # rows a second -- 345,600 a day at a 100% duty cycle against a target of millions -- and it
+    # broke nothing: every row landed, every gate passed, a 231.9 ms table scan per write simply
+    # set the desk's whole mint rate. A ceiling is invisible because it is not a failure, so this
+    # fails on its behalf when any stage of mint -> judge falls below its own high-water mark.
+    # It can only ever demand MORE rows per second; there is no threshold here that minting or
+    # judging less can satisfy. State, because it reads the hourly THROUGHPUT.json.
+    ("check_throughput_ratchet.py", ()),
     ("check_promotion_gate.py", ()),           # L1.6 -- expansion is bought with evidence
     ("check_excitation.py", ()),               # L1.45 -- no absorbing set, no dead experiment
     ("check_clock_provenance.py", ()),         # L1.46 -- the tape declares which clock stamped it

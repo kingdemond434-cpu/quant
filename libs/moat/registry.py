@@ -427,6 +427,12 @@ def batch(conn: sqlite3.Connection, every: int = 500) -> Iterator[None]:
     try:
         yield
         conn.commit()
+        # THE WRITER PAYS ITS OWN CHECKPOINT. Raising wal_autocheckpoint defers the fsync work,
+        # it does not delete it, and a deferred cost that lands on whoever happens to commit
+        # next is how the live registry ended up carrying a 456 MB WAL. PASSIVE never blocks and
+        # never waits on a reader, so this cannot stall the producer either.
+        with contextlib.suppress(sqlite3.Error):
+            conn.execute("PRAGMA wal_checkpoint(PASSIVE)")
     except BaseException:
         conn.rollback()
         raise
@@ -549,6 +555,39 @@ def _restore_if_absent() -> bool:
     return False
 
 
+#: Pages the WAL may hold before a committing writer stops to checkpoint. THE LAST COST IN THE
+#: WRITE PATH (measured on the box 2026-09-23). Once the missing index and the per-row commits
+#: were gone, a 800-row write still spent 3.70 s of 4.54 s inside FIVE commits -- 0.74 s each --
+#: because SQLite's default `wal_autocheckpoint=1000` made roughly every other commit stop and
+#: fsync a 707 MB database whose index pages this write had scattered dirt across. The checkpoint
+#: is real work and raising this does not delete it; it BATCHES it, so the fsyncs are paid once
+#: over many rows instead of once per chunk. Measured over 2,000 rows, counting the final
+#: checkpoint honestly in the total: 191.8 rows/s as shipped -> 223.8 at 8,000 pages -> 345.5 at
+#: 32,000. Nothing here touches `synchronous=NORMAL`: no durability is traded for it. (For the
+#: record, `synchronous=OFF` measured 651 rows/s and is NOT taken -- a 3.4x that risks the
+#: canonical registry on an OS crash is not a trade this desk makes.)
+WAL_AUTOCHECKPOINT_PAGES = 32000
+
+
+def _tuning() -> tuple[int, int]:
+    """(cache KiB, mmap bytes) DERIVED from the memory this box has right now, never a constant.
+
+    The desk has paid for a memory figure copied from the wrong machine before (CLAUDE.md keeps
+    that case visible on purpose), so this measures. The floor is what an unreadable counter
+    gets, and it is still far above SQLite's 2 MB default, so a box that cannot answer is slower
+    than it could be and never broken."""
+    free_mb = 0.0
+    try:
+        import psutil  # type: ignore[import-untyped,unused-ignore]
+        free_mb = float(psutil.virtual_memory().available) / 1048576.0
+    except Exception:
+        free_mb = 0.0
+    # 1% of free memory per connection: many desk processes hold one at the same time.
+    cache_mb = max(64.0, min(512.0, free_mb * 0.01))
+    mmap_mb = max(256.0, min(8192.0, free_mb * 0.10))
+    return int(cache_mb * 1024), int(mmap_mb * 1048576)
+
+
 def connect() -> sqlite3.Connection:
     """The one door: restore from the moat backup when absent, evolve, install the constitution."""
     restored = _restore_if_absent()
@@ -556,6 +595,10 @@ def connect() -> sqlite3.Connection:
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA synchronous=NORMAL")
+    cache_kib, mmap_bytes = _tuning()
+    conn.execute(f"PRAGMA cache_size=-{cache_kib}")
+    conn.execute(f"PRAGMA mmap_size={mmap_bytes}")
+    conn.execute(f"PRAGMA wal_autocheckpoint={WAL_AUTOCHECKPOINT_PAGES}")
     _evolve(conn)
     conn.commit()
     if restored:
