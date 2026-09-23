@@ -833,7 +833,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "spread_provenance", "microstructure_census", "fusion_cost",
                      "cost_construction", "swap_rejudge", "sge_premium", "moat_series",
                      "unused_information", "ingestion_ledger", "representation_forge",
-                     "feature_compiler", "data_acquisition_scientist", "coverage_drain"), "data"),
+                     "feature_compiler", "data_acquisition_scientist", "coverage_drain",
+                     "judge_coverage"), "data"),
     # intel: the global intelligence agency -- crawlers, forests, frontier scouts
     **dict.fromkeys(("world_crawler", "deep_forest", "moat_miner", "market_intel", "mine",
                      "exogenous_search", "standing_questions", "frontier", "frontier_report",
@@ -1321,6 +1322,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # cap below an organ's budget truncates it at the same prefix every hour, and for a drain
     # that would mean the same rows at the head of the queue never being reached.
     "coverage_drain": 1_000,
+    # Judge coverage stops itself at --budget-s 120; it reads two files and sorts. The cap sits
+    # above its own budget for the reason every other leg's does.
+    "judge_coverage": 300,
     # The net-edge spine stops itself at --budget-s 600 and writes NET_EDGE.json plus the
     # intake join file; the cap sits above it so the hour is never cut at the same prefix.
     "net_edge": 700,
@@ -3151,6 +3155,19 @@ def main() -> None:
     cdr = _costed("coverage_drain", lambda: _producer("coverage_drain",
                                                        "research/coverage_drain.py",
                                                        "--once", "--budget-s", "900"))
+    # THE JUDGE TESTS 100% OF WHAT THE DESK MINES (principal 2026-09-23). Measured from 120,000
+    # gate verdicts: 18% of the judge went to `discovered` -- banned from live capital, 0 passes
+    # -- while `cross_asset_residual` (55,190 mined), `overnight_drift` (26,721) and
+    # `clock_transition` (20,081) barely appeared. The gauntlet is sealed and takes its docket in
+    # order under a bar budget, so ORDER IS SELECTION and the fix belongs at intake: this leg
+    # allocates the hour by UNJUDGED BACKLOG per family -- an equal floor to every family holding
+    # one, the remainder in proportion -- and publishes mined/queued/judged/unjudged/oldest per
+    # family. `merge_hypotheses` calls the same allocator when it writes the docket, so this leg
+    # is the standing MEASUREMENT of what shipped; `scripts/check_judge_coverage.py` ratchets the
+    # carried backlog DOWN. Data department, information layer.
+    jcv = _costed("judge_coverage", lambda: _producer("judge_coverage",
+                                                      "research/judge_coverage.py",
+                                                      "--once", "--budget-s", "120"))
     # GAUNTLET BACKPRESSURE (M23) and MINER SPECIALISATION (M24): the gauntlet talks back and
     # the organisation routes work by measured value per miner per domain. Meta.
     gbp = _costed("gauntlet_backpressure", lambda: _producer("gauntlet_backpressure",
@@ -4095,7 +4112,7 @@ def main() -> None:
                     "macro_intelligence": mci, "market_constitution": mcc,
                     "mining_objective": mob, "research_gap_map": rgm,
                     "evidence_router": evr, "research_roi": rroi,
-                    "coverage_tensor": cov, "coverage_drain": cdr,
+                    "coverage_tensor": cov, "coverage_drain": cdr, "judge_coverage": jcv,
                     "gauntlet_backpressure": gbp, "miner_specialisation": msp,
                     "portfolio_bounty": pbt, "research_auction": rau,
                     "bottleneck_law": btl, "drawdown_alpha_miner": dam,

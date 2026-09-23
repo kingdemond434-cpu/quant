@@ -429,11 +429,26 @@ def main() -> int:
               f"{sorted(banned_families)} routed OUT of the judging docket (kept, never "
               f"deleted) -> {STUDY_BANK.name}")
 
-    # ORDER IS SELECTION: least-judged families first, so what the desk mines is what the judge
-    # actually tests. See `breadth_order`.
+    # ORDER IS SELECTION: the gauntlet takes this file in order under a bar budget, so a family
+    # at the tail is not "lower priority", it is never judged at all.
+    #
+    # COVERAGE, NOT ROTATION (principal 2026-09-23: "the judge should test 100 percent of what
+    # this desk ever mines, every hour"). `research/judge_coverage.py` allocates the hour by
+    # UNJUDGED BACKLOG -- an equal floor to every family holding one, then the remainder in
+    # proportion -- and interleaves the families so EVERY PREFIX of this docket is
+    # family-balanced. Whatever slice the judge's budget reaches, that slice holds every family
+    # with backlog. Nothing is dropped; `breadth_order` remains the fallback, and a failure in
+    # the allocator can only cost the ORDER, never a row.
     judged = judged_by_family()
-    if judged:
-        rows_out = breadth_order(rows_out, judged)
+    coverage: dict[str, Any] = {}
+    try:
+        from research.judge_coverage import order_docket
+        rows_out, coverage = order_docket(rows_out)
+    except Exception as exc:
+        print(f"   judge coverage unavailable ({type(exc).__name__}: {exc}) -- falling back to "
+              f"least-judged-family order")
+        if judged:
+            rows_out = breadth_order(rows_out, judged)
     TARGET.parent.mkdir(parents=True, exist_ok=True)
     # NEVER SHRINK THE DOCKET TO NOTHING. The freshness contract makes every source STALE_SKIPPED
     # on any run where producers have not written yet, and this merge then emitted an EMPTY file
@@ -459,9 +474,17 @@ def main() -> int:
                        "path": str(STUDY_BANK),
                        "why": "banned from live capital, so a gate-second spent here buys an "
                               "outcome the desk has already forbidden; kept for study"},
-        "judge_order": {"basis": "judgements already spent per docket row, least first",
+        "judge_order": {"basis": ("unjudged backlog per family: an equal floor to every family "
+                                  "holding one, the remainder in proportion, interleaved so "
+                                  "every prefix of the docket is family-balanced"),
                         "families_ordered": len({str(r.get("family")) for r in rows_out}),
-                        "applied": bool(judged)},
+                        "applied": bool(coverage.get("families")),
+                        "fallback_basis": "judgements already spent per docket row, least first",
+                        "coverage": {k: (coverage.get("totals") or {}).get(k) for k in
+                                     ("families_with_backlog", "families_queued",
+                                      "families_starved", "unjudged_total",
+                                      "capacity_measured")} if coverage else {},
+                        "report": "desks/mt5/reports/JUDGE_COVERAGE.json"},
         "note": ("no threshold applied here (L1.60) -- every candidate of a family that CAN "
                  "reach live capital reaches the ten-gate gauntlet, which is the only arbiter; "
                  "a live-banned family is routed to the study bank, never judged and never "

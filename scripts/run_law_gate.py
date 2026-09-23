@@ -192,6 +192,16 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # session to stop. Portable: without the report it reads UNMEASURED and passes, and the
     # box half rides in _STATE_FENCES with --require-state.
     ("check_coverage_drain.py", ()),
+    # THE JUDGE TESTS 100% OF WHAT THE DESK MINES (principal 2026-09-23). `research/
+    # judge_coverage.py` allocates the hour by UNJUDGED BACKLOG per family and interleaves the
+    # docket so every prefix the sealed gauntlet reaches carries every family holding one. This
+    # ratchets it: a family with unjudged cells and no place in the queue FAILS, a family that
+    # drained nothing it already held FAILS, and a family whose oldest unjudged cell sits past
+    # twice its own drain window FAILS. The ratchet is on the CARRIED cohort, never on raw
+    # backlog -- raw backlog rises when the miners outrun the judge, which is mining working,
+    # and a fence that punished it would be switched off inside a week. Portable: without the
+    # report it reads UNMEASURED and passes; the box half rides in _STATE_FENCES.
+    ("check_judge_coverage.py", ()),
 )
 
 #: STATE FENCES -- box-only. They measure LIVE STATE (artifacts, ledgers, organ freshness) that
@@ -301,6 +311,12 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # `sources_ingested` stage was already in when this organ was written (148 uncrawled, oldest
     # waiting 134 hours, and nothing owning the number).
     ("check_coverage_drain.py", ("--require-state",)),
+    # the live half of judge coverage: on the box the `judge_coverage` leg runs hourly at intake,
+    # so an absent or stale JUDGE_COVERAGE.json means the allocation stopped and the judge is
+    # back to re-testing whichever families the docket happens to put first -- the exact state
+    # the 120,000-verdict measurement found (18% of the judge on a family banned from capital,
+    # the three largest mined populations barely judged at all).
+    ("check_judge_coverage.py", ("--require-state",)),
     # THE PLUMBING MAY NOT STOP SILENTLY (principal 2026-09-23). The `plumbing_watchdog` leg
     # proves by OBSERVATION every fifteen minutes that the adoption clock exists and is enabled
     # with a next run inside the hour, that HEAD descends from the branch tip it should have

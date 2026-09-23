@@ -412,6 +412,8 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
             cid = row.get("_cell")
             if cid and cid in judged_cells:
                 continue
+            if str(row.get("family") or "") in banned:
+                continue
             seen = _ts(row.get("first_seen"))
             if seen is not None and seen.timestamp() <= prior_at.timestamp():
                 fam = str(row.get("family") or "")
@@ -444,6 +446,14 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
             "prior_unjudged": was if prior_at is not None else None,
             "drained": (was - carried.get(fam, 0)) if (prior_at is not None and was) else None,
         }
+        if fam in banned:
+            table[fam]["judging_status"] = "STUDY_ONLY"
+            table[fam]["study_only"] = study_only.get(fam, 0)
+            table[fam]["judging_reason"] = (
+                f"family {fam!r} is banned from live capital (mt5desk/live_policy.py "
+                "DEFAULT_BANNED_FAMILIES) and refused at both live doors, so it cannot reach "
+                "the book even if it passes and is given no share of the scarce judge. Mining "
+                "is unrestricted; the rows are kept in data/hypotheses/study_bank.json")
 
     covered = sum(1 for f, r in table.items() if r["unjudged"] > 0 and r["queued"] > 0)
     starved = sorted((f for f, r in table.items() if r["unjudged"] > 0 and r["queued"] == 0),
@@ -456,6 +466,8 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
         "families_queued": covered,
         "families_starved": len(starved),
         "unjudged_total": sum(backlog.values()),
+        "study_only_total": sum(study_only.values()),
+        "study_only_families": sorted(study_only),
         "carried_total": sum(carried.values()) if prior_at is not None else None,
         "prior_unjudged_total": (sum(int(v.get("unjudged", 0)) for v in prior_fams.values()
                                      if isinstance(v, dict)) if prior_at is not None else None),
@@ -492,6 +504,41 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
                     "rows are kept, never deleted"),
         },
     }
+
+
+def order_docket(rows: list[dict[str, Any]], *, publish: bool = True,
+                 now: datetime | None = None) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """THE INTAKE CALL. Return the docket re-ordered for coverage, and the table it implies.
+
+    `merge_hypotheses` calls this as the last thing it does before writing the file the sealed
+    gauntlet reads, so the order the judge receives IS the allocation measured here -- the report
+    describes the docket that actually shipped, not a plan for one. The rows are returned WHOLE:
+    the same candidates, all of them, in an order where every prefix carries every family holding
+    backlog. A failure here returns the rows untouched, because an ordering organ must never be
+    able to cost the desk a docket (L1.28a).
+    """
+    try:
+        doc = build(rows, now=now)
+        if not doc.get("families"):
+            return rows, doc
+        quota = {str(k): int(v) for k, v in (doc.get("quota") or {}).items()}
+        banned = banned_from_capital()
+        judged_cells, _, _ = judged_index(now=now)
+        ids: set[str] = set()
+        for row in rows:
+            cid = row.get("_cell") or _cell_id(row)
+            if cid and cid not in judged_cells:
+                ids.add(str(cid))
+        judgeable = [r for r in rows if str(r.get("family") or "") not in banned]
+        study = [r for r in rows if str(r.get("family") or "") in banned]
+        ordered = coverage_order(judgeable, quota, ids) + study
+        for row in ordered:
+            row.pop("_cell", None)
+        if publish:
+            write(doc)
+        return ordered, doc
+    except Exception as exc:                                             # pragma: no cover
+        return rows, {"verdict": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
 
 
 def write(doc: dict[str, Any], *, report: Path | None = None,
@@ -548,8 +595,8 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-__all__ = ["allocate", "build", "coverage_order", "judged_index", "live_families",
-           "measured_capacity", "main", "render", "write"]
+__all__ = ["allocate", "banned_from_capital", "build", "coverage_order", "judged_index",
+           "live_families", "measured_capacity", "main", "order_docket", "render", "write"]
 
 
 if __name__ == "__main__":                                              # pragma: no cover
