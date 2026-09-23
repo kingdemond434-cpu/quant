@@ -54,6 +54,23 @@ RETIREMENTS = ROOT / "docs" / "research" / "retirements.jsonl"
 
 INTEL_ROOTS = (ROOT / "data" / "intelligence", DESK / "data" / "intelligence")
 
+#: HOW TO INVOKE THIS ORGAN SO IT PRODUCES (the repo's declared mechanism, read by AST in
+#: `research/wiring_ceo.py:production_args` and by `research/probation_runner.py`).
+#:
+#: THIS FILE IS TWO ORGANS BEHIND ONE ENTRY POINT, and that is what went wrong. Argless it is the
+#: SEAT-HEALTH fence -- which is exactly how `run_law_gate` invokes it, `("check_seat_health.py",
+#: ())` -- and in that mode it writes SEAT_HEALTH.json and nothing else. `PRODUCER_CENSUS.json`
+#: has a different writer: this same file under `--census`. So the only clock that fired it could
+#: not produce the census, the only clock that could (`producer_census`, in the hourly cycle) sat
+#: in the unreachable tail of a 40-minute pass, and the artifact went 680 minutes stale while a
+#: fence for it ran green every hour. Declaring the production arguments here means any clock that
+#: asks the organ how to run it gets the answer from the organ, not from one call site that can be
+#: the only one and be wrong.
+#:
+#: `--relight` is part of producing, not an extra: the census's own contract is that it repairs
+#: every dark row in the SAME pass a row goes dark, judged by the producer's output moving.
+PRODUCTION_ARGS = ["--census", "--relight", "--budget-s", "240", "--max-repairs", "6"]
+
 UNMEASURED = "UNMEASURED"
 
 #: How many of its own cadences a seat may miss before it is OVERDUE.
