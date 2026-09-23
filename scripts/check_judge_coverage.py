@@ -282,8 +282,13 @@ def judge(report: Path | None = None, *, require_state: bool = False,
     else:
         parked = int(tot.get("unrunnable_bank") or 0)
         rose = float(share_now) > float(was_unknown) + 1e-9
+        # A STALL IS ONLY A STALL IF THE JUDGE RAN. The share is read from the sealed judge's own
+        # verdict file, which does not move between its sweeps -- so without this guard the fence
+        # would go red for the crime of being asked twice in one hour, which is precisely how the
+        # coverage-drain fence learned that an unsatisfiable gate gets switched off. A RISE still
+        # fails unguarded: a share cannot rise without new verdicts arriving.
         has_stalled = (abs(float(share_now) - float(was_unknown)) <= 1e-9
-                       and float(share_now) > 0 and parked > 0)
+                       and float(share_now) > 0 and parked > 0 and judged_any > 0)
         if rose or has_stalled:
             failures.append("unknown_share")
             out["checks"].append({
@@ -295,7 +300,10 @@ def judge(report: Path | None = None, *, require_state: bool = False,
             out["checks"].append({
                 "metric": "unknown_ratchet", "state": "OK",
                 "why": (f"UNKNOWN share {float(was_unknown):.1%} -> {float(share_now):.1%}, "
-                        f"{now_unknown} cells, every one named")})
+                        f"{now_unknown} cells, every one named"
+                        + ("" if judged_any else
+                           " (unchanged because the judge recorded no verdict this window --"
+                           " a stall is only a stall if the judge ran)"))})
 
     totals = doc.get("totals") or {}
     out["totals"] = {k: totals.get(k) for k in (
