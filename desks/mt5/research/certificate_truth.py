@@ -109,8 +109,20 @@ LIVE_SLEEVE = frozenset({"LIVE", "STANDBY"})
 LIVE_REGISTRY = frozenset({"LIVE"})
 #: Shadow-clock statuses that are NOT a live claim (forward_reconcile.TERMINAL plus the policy
 #: verdict, which is a decision elsewhere and is never counted here).
+#:
+#: KEPT AS THE NAMED SET, READ THROUGH A PREFIX RULE. As an exact-match membership test this set
+#: was the whole of the 2026-09-23 divergence report: `clock_certificate.retire_unbacked` writes
+#: `RETIRED_NO_CERTIFICATE`, which is in no line below, so every clock THIS DESK HAD ALREADY
+#: RETIRED was re-judged here as a running clock -- 23 BANNED_CLOCK and 12 UNBACKED_CLOCK, 35
+#: fatal rows that no evidence could ever close because they were not about evidence. Worse, the
+#: count flapped: `forward_reconcile` re-stamps some of the same rows `RETIRED_ORPHAN`, which IS
+#: below, and the box measured 35 fatal at 19:59:17 and 0 at 20:09:59 on the same rows. The
+#: membership test is now `retired_clocks.is_terminal`, the PREFIX rule `shadow_forward` and
+#: `clock_liveness` always used, so a retirement word an organ invents tomorrow is understood by
+#: every reader the day it ships.
 TERMINAL = frozenset({"KILL", "KILLED", "PROMOTED", "DEAD", "REJECTED", "RETIRED",
                       "RETIRED_ORPHAN", "RETIRED_GATE_FAIL", "RETIRED_UNRECONSTRUCTIBLE",
+                      "RETIRED_NO_CERTIFICATE",
                       "QUARANTINED_UNCERTIFIED", "REFUSED_BY_UNIVERSE_POLICY"})
 SESSION_WINDOWS = ("asia", "london_am", "ny_open", "afternoon")
 SRB = "session_range_breakout"
@@ -620,6 +632,27 @@ def _rows_of_state(doc: dict[str, Any]) -> list[tuple[str, dict[str, Any]]]:
     return rows
 
 
+def _terminal(status: object) -> bool:
+    """True when the row makes no live claim -- ONE implementation, the prefix rule.
+
+    Imported from `research/retired_clocks.py` rather than re-spelled here: a second copy of a
+    vocabulary is exactly how `RETIRED_NO_CERTIFICATE` ended up meaning "running" to this module
+    and "stopped" to the two organs that wrote it. The named set above is the fallback when the
+    module cannot be reached, which is strictly the old behaviour and never worse."""
+    try:
+        from retired_clocks import (  # type: ignore[import-not-found,unused-ignore]
+            is_terminal,
+        )
+    except ImportError:                                       # pragma: no cover - packaged import
+        try:
+            from research.retired_clocks import (  # type: ignore[no-redef,unused-ignore]
+                is_terminal,
+            )
+        except ImportError:
+            return str(status or "").strip().upper() in TERMINAL
+    return bool(is_terminal(status))
+
+
 def _protected_symbols(sleeves_doc: dict[str, Any] | None) -> set[str]:
     """Symbols the live book trades under a principal override (LAWS 5j): never retired here."""
     out: set[str] = set()
@@ -752,7 +785,7 @@ def audit(paths: Paths, now: str | None = None) -> dict[str, Any]:
     shadow = _read(paths.shadow)
     judge_clocks("shadow_state", paths.shadow,
                  [(k, v) for k, v in _rows_of_state(shadow or {})
-                  if str(v.get("status") or "").upper() not in TERMINAL],
+                  if not _terminal(v.get("status"))],
                  shadow is not None, "UNBACKED_CLOCK")
     for p in paths.lanes:
         doc = _read(p)
@@ -760,7 +793,7 @@ def audit(paths: Paths, now: str | None = None) -> dict[str, Any]:
             stores[p.stem] = {"path": _rel(paths, p), "readable": False, "rows": 0}
             continue
         judge_clocks(p.stem, p, [(k, v) for k, v in _rows_of_state(doc)
-                                 if str(v.get("status") or "").upper() not in TERMINAL],
+                                 if not _terminal(v.get("status"))],
                      True, "LANE_UNBACKED_CLOCK")
 
     # the live book: banned rows are the residue the live policy already refuses at both doors
@@ -1305,6 +1338,12 @@ def repair(paths: Paths, now: str | None = None) -> dict[str, Any]:
       3. SEAL FROM AUTHORITY -- `check_authority_ratchet.heal_canon`'s rule: the seal may never be
          worse than the authority file, since it exists purely as the known-good copy of it.
 
+      4. THE RETIRED LEAVE THE LIVE STORE -- `retired_clocks.evacuate`'s rule: a clock ANOTHER
+         organ already retired is moved, whole, to the append-only `data/retired_clocks.jsonl`
+         with the forward evidence its retirement discarded, and out of the shadow clock stores.
+         It retires nothing; it relocates what is already retired, so the audit stops re-judging
+         a closed decision as a live divergence every hour.
+
     WHAT IT WILL NOT DO, ever, on any clock. It never retires a certificate, a clock or a sleeve;
     it never lowers a count; it never writes a row the lane does not back; and it never touches
     `sleeves.json`, the registry or the gateway. Retirement stays in `apply()` behind --apply, and
@@ -1426,6 +1465,23 @@ def repair(paths: Paths, now: str | None = None) -> dict[str, Any]:
     # store may propose for ever, but only the sealed gauntlet's ten gates admit anything.
     acts["identity"] = stamp_identity(paths, stamp)
     acts["judge"] = submit_to_judge(paths, canon(paths), stamp)
+
+    # ---- 5. a clock some other organ ALREADY retired leaves the live store ------------------
+    # A retired clock accrues no forward evidence, so it is not a live divergence -- and while it
+    # sat among the live rows this audit could not tell "a clock that is wrongly unbacked" from
+    # "one the desk already correctly retired". It moves, whole, to the append-only ledger
+    # `data/retired_clocks.jsonl` with the accrued evidence the retirement discarded, and leaves a
+    # tombstone behind. Nothing is retired by this call and nothing is destroyed, which is why it
+    # belongs on the clock beside the other three repairs rather than behind --apply.
+    try:
+        from retired_clocks import (  # type: ignore[import-not-found,unused-ignore]
+            evacuate,
+        )
+    except ImportError:                                       # pragma: no cover - packaged import
+        from research.retired_clocks import (  # type: ignore[no-redef,unused-ignore]
+            evacuate,
+        )
+    acts["retired_evacuation"] = evacuate(paths.base, stamp)
     acts["canon_n"] = len(a_rows)
     acts["restored_keys"] = acts["restored_keys"][:200]
     return acts

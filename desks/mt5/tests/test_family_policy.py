@@ -23,13 +23,26 @@ def _ban_file(tmp_path: Path, *families: str) -> Path:
     return f
 
 
-def test_the_policy_reads_the_file_and_an_absent_file_bans_nothing(tmp_path: Path) -> None:
-    f = _ban_file(tmp_path, "discovered")
+def test_the_policy_reads_the_file_and_an_absent_file_bans_nothing_but_the_permanent_ban(
+        tmp_path: Path) -> None:
+    f = _ban_file(tmp_path, "discovered", "carry_test_only")
     assert fp.family_banned("discovered", f) and fp.family_banned("DISCOVERED", f)
+    assert fp.family_banned("carry_test_only", f)
     assert not fp.family_banned("carry", f) and not fp.family_banned("", f)
-    assert "banned since 2026-09-16 by principal: no live edge" in fp.ban_reason("discovered", f)
-    assert fp.banned_families(tmp_path / "missing.json") == {}
-    assert not fp.family_banned("discovered", tmp_path / "missing.json")
+    assert "banned since 2026-09-16 by principal: no live edge" \
+        in fp.ban_reason("carry_test_only", f)
+    # A file that is missing, corrupt or silently rewritten bans NOTHING it recorded itself...
+    assert fp.banned_families(tmp_path / "missing.json").keys() == fp.PERMANENT.keys()
+    assert not fp.family_banned("carry_test_only", tmp_path / "missing.json")
+    # ...and still bans `discovered`, which the principal banned PERMANENTLY on 2026-09-22.
+    assert fp.family_banned("discovered", tmp_path / "missing.json")
+    assert fp.family_permanently_banned("discovered")
+    assert not fp.family_permanently_banned("carry_test_only")
+    assert "PERMANENTLY banned" in fp.ban_reason("discovered", tmp_path / "missing.json")
+    # The file cannot soften it either: a renamed reason for `discovered` loses to PERMANENT.
+    soft = tmp_path / "soft.json"
+    soft.write_text(json.dumps({"banned": {"discovered": {"why": "lifted"}}}), "utf-8")
+    assert "permanently banned by the principal" in fp.ban_reason("discovered", soft)
 
 
 def test_the_desk_file_bans_the_discovered_family_and_nothing_gold() -> None:

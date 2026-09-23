@@ -35,7 +35,6 @@ sys.path.insert(0, str(BASE / "research"))
 UNI = BASE / "data" / "universe"
 SHADOW_DIR = BASE / "reports" / "shadow"
 SHADOW_DIR.mkdir(parents=True, exist_ok=True)
-(BASE / "logs").mkdir(parents=True, exist_ok=True)
 LOG = open(BASE / "logs" / "shadow.log", "a", encoding="utf-8")  # noqa: SIM115
 
 SHADOW_START = datetime(2026, 8, 16, tzinfo=UTC)
@@ -468,6 +467,25 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
         if key in seen:
             continue
         seen.add(key)
+        # THE BANNED FAMILY DOOR, on the shadow clock store (principal 2026-09-22: "Discovered is
+        # banned now btw remember permanently banned ... N clocks of discovery"). The state row is
+        # created three lines below by `state.get(key, {...})`, so THIS is the line at which a
+        # banned family stops being able to own a shadow clock -- before the row exists, not by a
+        # sweep that retires it an hour later once every downstream organ has read it. It is also
+        # a REFUSAL OF NOTHING VALUABLE: `certified_sleeves()` returns the canon, the sealed
+        # gauntlet already sets banned specs aside before judging, so the only rows this can catch
+        # are grandfathered ones and residue. Never a cap and never a quota -- the one thing it
+        # withholds is a clock the principal banned outright.
+        try:
+            from family_policy import family_banned
+            _is_banned = family_banned(fam)
+        except Exception:
+            _is_banned = False              # no policy module: enrol exactly as before
+        if _is_banned:
+            if key in state:
+                continue                    # residue: apply()/promoter retire it with a reason
+            slog(f"REFUSED_BANNED_FAMILY {key}: family {fam!r} is banned; no clock is created")
+            continue
         # ENROLMENT IS STAMPED, AND THE STAMP IS THE MEASUREMENT (principal 2026-09-23: "make all
         # certis always receive immediate clocks at the same time when certified ... no quota or
         # scarcity ever on forward evidence slots"). There is no cap, no waiting queue and no
