@@ -169,6 +169,17 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # forests.FOREST_TASKS) may disagree with the specs. Portable: it reads the tree and the
     # manifest, so it means the same in CI, a fresh clone and on the box.
     ("check_component_registry.py", ()),
+    # THE OTHER END OF THE WIRE (LAWS 7, principal 2026-09-23). The registry above proves every
+    # executable has a CLOCK; this proves the clock is not turning for nobody. An organ that runs
+    # on a schedule and whose artifact no production file reads is BURNING -- an orphan the desk
+    # pays compute for every hour -- and the BURNING count ratchets DOWN only. The clock half is
+    # exact (the four scheduler planes), so BURNING is the one population this census may fence
+    # on; UNREACHED and NO_CLOCK rest on a consumer heuristic that under-reports and stay report-
+    # only, because fencing on them would licence deleting organs nobody has proved are dead.
+    # The two repairs are to name a consumer or retire the organ with a reason -- never to mask a
+    # timer or trim a budget, which would be a reduction in aggressiveness with no E[log W] proof.
+    # Portable: it reads the tree and the manifest, so it means the same in CI and on the box.
+    ("check_dead_architecture.py", ("--ratchet",)),
     # PRODUCTIVITY IS PROVEN OR IT IS NOT CLAIMED (external reviewer, 2026-09-23). The component
     # registry above proves every executable has a CLOCK; this proves the desk still knows which
     # producers turn that clock into CELLS. It fails on two things only -- a stale or missing

@@ -444,17 +444,6 @@ class ChargeCensus:
                 "families": {k: v.to_dict() for k, v in sorted(self.families.items())}}
 
 
-def _identity_participation(sizes: Sequence[int]) -> float:
-    """(sum n)^2 / sum n^2 of identity-group sizes, clipped to [1, sum n]."""
-    total = float(sum(sizes))
-    if total <= 0.0:
-        return 0.0
-    denom = float(sum(float(n) * float(n) for n in sizes))
-    if denom <= 0.0:
-        return total
-    return float(max(1.0, min(total * total / denom, total)))
-
-
 def _grid_cell_effective(members: Sequence[Trial]) -> float:
     """Effective independent tests INSIDE one grid cell -- one mechanism, one symbol, one horizon.
 
