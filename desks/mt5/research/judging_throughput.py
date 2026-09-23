@@ -324,12 +324,15 @@ def _value_at_risk() -> dict[str, Any]:
 
 
 def _breach_backlog() -> dict[str, Any]:
-    """CLOCK IMPLIES CERTIFICATE (principal 2026-09-23): cells whose forward clocks run with no
-    certificate, from `research/clock_certificate.py`'s docket. Read here, never written here.
+    """CLOCK IF AND ONLY IF CERTIFICATE (principal 2026-09-23): cells that LOST their forward
+    clocks for want of a canonical certificate, from `research/clock_certificate.py`'s docket.
+    Read here, never written here.
 
-    The judge's SIZING has to honour the priority or the priority is decorative: a breach backlog
-    is demand on the judge exactly as queue depth is. Read ABOVE the backpressure early-return on
-    purpose -- a host with no backpressure artifact must not also lose the breach count.
+    They keep the FRONT of the judge's queue -- losing a clock is not losing priority, and
+    judging one of these cells is the only thing that can give it a clock back. The judge's
+    SIZING has to honour that or the priority is decorative: this backlog is demand on the judge
+    exactly as queue depth is. Read ABOVE the backpressure early-return on purpose -- a host with
+    no backpressure artifact must not also lose this count.
     """
     doc = _read_json(BREACH_DOCKET, None)
     if not isinstance(doc, dict):

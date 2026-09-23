@@ -20,7 +20,7 @@ SPEC_PATH = BASE / "policy" / "gate_spec.yaml"
 
 def _load_spec() -> dict:
     """Load gate specification from YAML."""
-    with open(SPEC_PATH, "r", encoding="utf-8") as f:
+    with open(SPEC_PATH, encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 
@@ -69,11 +69,28 @@ REGIME_CONTROL = (
 # Re-stamping costs a window: certificates carry the OLD attestation until a sweep rewrites them,
 # and is_exact_policy is an exact dict match, so admission sees nothing until then. The gauntlet
 # republishes with the current attestation every sweep, and sweeps now finish in ~20 minutes.
-TRIAL_COUNT_BASIS = (
+#
+# AND IT IS READ FROM THE SPEC, NOT RETYPED HERE (2026-09-23). `research/effective_trials.py`
+# corrects the campaign charge for MEASURED redundancy -- thirty-one tunings of one rule on one
+# instrument at one horizon are one independent test, not thirty-one -- and it does so by writing
+# `fixed_trial_count` and `trial_count_basis` into `policy/gate_spec.yaml`, the one input the
+# SEALED gauntlet reads for this number. If the description stayed a literal here it would go on
+# saying 597 while the judge charged something else, and every certificate would attest to a basis
+# it was not judged under: exactly the failure the comment above says this field exists to
+# prevent. So the string follows the spec, and the literal it used to be is carried in the
+# superseded list below -- admissible there only because the correction lowers the charge, which
+# makes the old bar the HARDER one.
+_LEGACY_TRIAL_COUNT_BASIS = (
     "fixed_campaign_trials(597) + fixed_variance_of_sharpes(0.014863): BOTH inputs to the "
     "deflated-Sharpe hurdle are constants, so the bar is identical for every cell regardless of "
     "how many others share its sweep or how dispersed their Sharpes are"
 )
+_SPEC_TRIAL_COUNT_BASIS = next(
+    (g.get("params", {}).get("trial_count_basis")
+     for g in _SPEC.get("gates", []) if g.get("name") == "deflated_sharpe"), None)
+TRIAL_COUNT_BASIS = (_SPEC_TRIAL_COUNT_BASIS
+                     if isinstance(_SPEC_TRIAL_COUNT_BASIS, str) and _SPEC_TRIAL_COUNT_BASIS
+                     else _LEGACY_TRIAL_COUNT_BASIS)
 
 ATTESTATION = {
     "version": VERSION,
@@ -106,10 +123,19 @@ ATTESTATION = {
 #: shown to have charged at least as many trials as the current one, for every cell it certified.
 #: If a future policy change TIGHTENS the bar, the old certificates are genuinely under-qualified
 #: and must be re-run -- that is a re-certification, not a list entry.
-_SUPERSEDED_TRIAL_BASES = (
+_SUPERSEDED_TRIAL_BASES: tuple[str, ...] = (
     "ceil(null_calibrated_participation_ratio_effective_cells * 7); fail closed to "
     "ceil(raw_cells * 7) when dependence is unmeasurable",
 )
+# THE FIXED-597 BASIS JOINS THAT LIST ONLY WHILE THE SPEC CHARGES 597 OR FEWER. The admissibility
+# rule above is not a formality: an entry may exist only when the superseded basis charged AT
+# LEAST as many trials as the current one, so a certificate minted under it cleared a hurdle at
+# least as high. `sr0` grows with sqrt(2 ln N), so 597 >= the current charge is exactly that
+# condition, and it is evaluated against the spec rather than assumed. If a future policy ever
+# raises the charge ABOVE 597, this entry disappears by itself and those certificates are
+# correctly treated as under-qualified -- a re-certification, not a list entry.
+if isinstance(_SPEC_FIXED_TRIALS, int) and 2 <= _SPEC_FIXED_TRIALS <= 597:
+    _SUPERSEDED_TRIAL_BASES = (*_SUPERSEDED_TRIAL_BASES, _LEGACY_TRIAL_COUNT_BASIS)
 
 
 def is_exact_policy(value: Any) -> bool:
@@ -176,6 +202,31 @@ def charged_trial_count(raw_cells: int, effective_cells: Any,
     # No fixed count in the spec: fail closed to the old raw burden rather than guess.
     return (max(2, math.ceil(max(0, raw_cells) * TRIALS_MULTIPLIER)),
             "raw_cells_x_campaign_multiplier_fail_closed")
+
+
+def fail_closed_trial_count(raw_cells: int) -> int:
+    """The charge to use when the CENSUS could not be computed. Policy's number, not the batch's.
+
+    `charged_trial_count` is wrapped in a try/except at three call sites, because the effective-
+    cell census it takes as input can throw. Every one of those except-branches fell back to
+    `ceil(raw_cells * TRIALS_MULTIPLIER)` -- the batch-width tax the fixed wall exists to remove,
+    reintroduced on the failure path. So a census error did not merely lose the dependence
+    relief, it silently made a candidate's bar a property of how many cells were scheduled
+    alongside it, which is the defect in full.
+
+    `gate_spec.yaml` already says what should happen here in as many words:
+
+        fail_closed_to: "fixed_campaign_trials(597)"
+
+    and the code did something else. Failing closed means falling back to a HARSHER-OR-EQUAL bar
+    that is still POLICY -- not to a different policy that happens to be harsher on average. When
+    the spec carries no fixed count at all there is nothing to fall back to and the raw burden is
+    the honest answer, which is the one case `charged_trial_count` still handles that way.
+    """
+    fixed = _SPEC_FIXED_TRIALS
+    if isinstance(fixed, int) and fixed >= 2:
+        return fixed
+    return max(2, math.ceil(max(0, raw_cells) * TRIALS_MULTIPLIER))
 
 
 def get_gate_classification() -> dict[str, str]:

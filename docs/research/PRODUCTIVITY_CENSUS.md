@@ -1,20 +1,19 @@
 # RESEARCH PRODUCTIVITY CENSUS
 
-_Derived by `desks/mt5/research/productivity_census.py` at 2026-09-23T18:58:17+00:00; DO NOT EDIT -- regenerate._
+_Derived by `desks/mt5/research/productivity_census.py` at 2026-09-23T19:49:36+00:00; DO NOT EDIT -- regenerate._
 
-**1596 producers** | productive **91** | compute-with-zero-cells **23** | certificates **58** (unattributed 33) | forward 2 | live 40
+**1628 producers** | productive **109** | compute-with-zero-cells **23** | certificates **58** (unattributed 1) | forward 2 | live 40
 
-**Dedup (three identities, all measured):** 25926 raw cells -> 25926 distinct `content_hash` (1.0x -- the door, 1.00 means it works) -> **3862 distinct `grid_cell` (6.7131x)** -> 703 distinct `mechanism` (36.8791x). The last two are the duplication a reader was asking about; the first cannot show it.
+**Dedup (three identities, all measured):** 30245 raw cells -> 30245 distinct `content_hash` (1.0x -- the door, 1.00 means it works) -> **7280 distinct `grid_cell` (4.1545x)** -> 4093 distinct `mechanism` (7.3894x). The last two are the duplication a reader was asking about; the first cannot show it.
 **UNMEASURED `canonical_mechanisms`:** registry table `mechanisms` holds 0 rows on this host: no organ has written a canonicalised mechanism, so this stage is UNMEASURED and not zero -- the fallback below counts DISTINCT mechanism_id stamped on discoveries instead
-**UNMEASURED `cheap_survivors`:** no research_candidates row carries a judge stamp (`judged_at` null on all 25926 rows, `terminal_gate` likewise), so `survived = 0` everywhere is the column's DEFAULT and not a verdict: the cheap stage is UNMEASURED, not zero. Proxy published as `yield_survivors` from generator_yield/source_yield, which the producers write themselves
 **Compute caveat:** UNMEASURED: the compute ledger holds 3 priced run(s) in the last 7 days and NONE of them names a roster producer (cost_by_run keys on the leg name), so every ledger hour here is 0.0 and all compute in this census comes from generator_yield/source_yield compute_s, which the producers charge themselves. Certificates-per-compute-hour is a registry ratio on this host, not a wall-clock one.
-**33 of 58 certificates are UNATTRIBUTED** -- no name and no family lineage reaches a producer. That is a lineage-stamping gap, not a zero for any organ.
+**1 of 58 certificates are UNATTRIBUTED** -- no name and no family lineage reaches a producer. That is a lineage-stamping gap, not a zero for any organ.
 
 ## By region
 
 | region | prod | sources | docs | raw cells | uniq | submitted | surv | certs | cpu h | cells/src | surv/src | certs/h |
 |---|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|
-| Japan | 37 | 27 | 0 | 40 | 37 | 8 | 0 | 0 | 0.03 | 1.3704 | 0.0 | 0.0 |
+| Japan | 53 | 27 | 0 | 16070 | 3683 | 6626 | 0 | 0 | 0.10 | 136.4074 | 0.0 | 0.0 |
 | Korea | 2 | 0 | 0 | 5 | 3 | 0 | 0 | 0 | 0.00 | UNMEASURED | UNMEASURED | UNMEASURED |
 | China | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0.00 | UNMEASURED | UNMEASURED | UNMEASURED |
 | SEA | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0.00 | UNMEASURED | UNMEASURED | UNMEASURED |
@@ -22,27 +21,27 @@ _Derived by `desks/mt5/research/productivity_census.py` at 2026-09-23T18:58:17+0
 | India | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0.00 | UNMEASURED | UNMEASURED | UNMEASURED |
 | Europe | 1 | 1973 | 92 | 0 | 0 | 0 | 0 | 0 | 0.00 | 0.0 | 0.0 | UNMEASURED |
 | North America | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0.00 | UNMEASURED | UNMEASURED | UNMEASURED |
-| LatAm | 14 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0.00 | UNMEASURED | UNMEASURED | UNMEASURED |
+| LatAm | 15 | 0 | 0 | 2442 | 318 | 0 | 0 | 0 | 0.00 | UNMEASURED | UNMEASURED | UNMEASURED |
 | Oceania | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0.00 | UNMEASURED | UNMEASURED | UNMEASURED |
 | MENA | 10 | 0 | 0 | 14 | 14 | 2 | 0 | 0 | 0.00 | UNMEASURED | UNMEASURED | UNMEASURED |
 | Africa | 8 | 0 | 0 | 38 | 38 | 12 | 0 | 0 | 0.00 | UNMEASURED | UNMEASURED | UNMEASURED |
 | Global/institutional | 2 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0.00 | UNMEASURED | UNMEASURED | UNMEASURED |
-| unattributed | 1521 | 17 | 0 | 25829 | 4725 | 12393 | 0 | 25 | 0.64 | 277.9412 | 0.0 | 38.9469 |
+| unattributed | 1536 | 17 | 0 | 11676 | 4179 | 8488 | 0 | 57 | 0.57 | 245.8235 | 0.0 | 100.5291 |
 
 ## Top producers by certificates
 
 | producer | certs | unique cells | cpu h | region |
 |---|--:|--:|--:|---|
-| `net_edge` | 24 | 22 | 0.0 | unattributed |
-| `discovery_compiler:session` | 1 | 428 | 0.0 | unattributed |
-| `discovery_compiler:interaction` | 0 | 1087 | 0.0 | unattributed |
-| `discovery_compiler:regime` | 0 | 625 | 0.0 | unattributed |
-| `discovery_compiler:cross_asset` | 0 | 469 | 0.0 | unattributed |
-| `pack_cells.world` | 0 | 276 | 0.0 | unattributed |
+| `external` | 57 | 2554 | 0.0 | unattributed |
+| `discovery_compiler:interaction` | 0 | 1087 | 0.0 | Japan |
+| `discovery_compiler:regime` | 0 | 625 | 0.0 | Japan |
+| `discovery_compiler:cross_asset` | 0 | 469 | 0.0 | Japan |
+| `discovery_compiler:session` | 0 | 428 | 0.0 | Japan |
+| `independence_intake` | 0 | 427 | 0.0 | unattributed |
+| `pack_cells.world` | 0 | 318 | 0.0 | LatAm |
 | `timeframe_fanout` | 0 | 235 | 0.0 | unattributed |
-| `discovery_compiler:execution` | 0 | 214 | 0.0 | unattributed |
-| `discovery_compiler:asset_transfer` | 0 | 199 | 0.0 | unattributed |
-| `discovery_compiler:residual` | 0 | 181 | 0.0 | unattributed |
+| `discovery_compiler:execution` | 0 | 214 | 0.0 | Japan |
+| `discovery_compiler:asset_transfer` | 0 | 199 | 0.0 | Japan |
 
 ## Compute spent, no unique cell -- THE LIST TO ACT ON
 

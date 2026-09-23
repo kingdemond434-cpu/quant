@@ -1055,11 +1055,19 @@ def build(budget_s: float = 300.0, *, apply: bool = True) -> dict[str, Any]:
     # its backing certificate, pushes each breached CELL to the front of the judge's queue, and
     # takes a clock away only on the judge's own rejection -- never to make the count smaller.
     cert = cc.audit(after, roster=roster, now=now_utc(), apply=apply)
+    cert["unbacked_found"] = len(cert.get("retire") or [])
     if apply and cert.get("retire"):
-        cert["retired_now"] = cc.retire_rejected(cert["retire"], LANE_BY_NAME)
+        # STRICT (principal 2026-09-23): every clock without a canonical certificate is retired on
+        # the pass it is found. The cell keeps the front of the judge's queue -- `cc.audit` has
+        # already submitted it -- but it gathers no forward evidence until it earns a certificate,
+        # and if it later does it starts a NEW clock from zero. The accrued days are the stated
+        # cost: forward evidence on a cell that never certifies can never be cashed.
+        n_retired = cc.retire_unbacked(cert["retire"], LANE_BY_NAME)
         after = census(cal, roster, now_utc(), tasks, host=host, host_why=host_why)
         counts_after = _counts(after)
         cert = cc.audit(after, roster=roster, now=now_utc(), apply=False)
+        cert["retired_now"] = n_retired
+        cert["unbacked_found"] = n_retired
     cert_ratchet = (cc.ratchet(int(cert["breached"])) if apply and host == "trading_box"
                     else cc.read_ratchet())
     if apply:
@@ -1154,11 +1162,14 @@ def render(doc: Mapping[str, Any]) -> str:
     for s in cc.BACKING_STATES:
         lines.append(f"| {s} | {cn.get(s, 0)} |")
     lines += ["",
-              f"**breached {ct.get('breached')}** (of which awaiting judgement "
-              f"{ct.get('awaiting')}), backed {ct.get('backed')}, retired {ct.get('retired')}; "
-              f"{ct.get('overdue_beyond_one_judging_cycle')} past one judging cycle. "
+              f"**backed {ct.get('backed')}**, retired {ct.get('retired')}, "
+              f"unbacked still live **{ct.get('unbacked_live')}** (zero by construction: an "
+              f"unbacked clock is retired the pass it is found); "
+              f"{ct.get('unbacked_found', 0)} retired on this pass for want of a certificate. "
               f"Breach ratchet floor {(ct.get('ratchet') or {}).get('lowest_breached')}.",
-              "", f"Judge's queue: {(ct.get('queue') or {}).get('why')}", ""]
+              "", f"Judge's queue: {(ct.get('queue') or {}).get('why')}",
+              "", f"Cost: {ct.get('cost')}",
+              "", f"Enrolment: {ct.get('enrolment_note')}", ""]
     lines += ["", "## 24/7: the tasks that advance clocks", "",
               "| task | verdict | repeat | last run | rc | what it advances |",
               "|---|---|---|---|---|---|"]

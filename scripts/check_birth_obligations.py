@@ -214,6 +214,74 @@ def _destructive(root: Path) -> tuple[set[str], set[str], str]:
     return objects, ok, f"{len(ok)}/{len(objects)} destructive paths guard against an absence"
 
 
+def _attribution(root: Path) -> tuple[set[str], set[str], str]:
+    """THE SIXTH AXIS: a cell or discovery born carrying WHO produced it and from WHICH region.
+
+    The obligation is satisfied at BIRTH by `libs/moat/registry.enqueue_candidate` and
+    `record_discovery`, both of which call the one helper `libs/research/attribution.attribute()`.
+    A row created after the obligation date with an empty `producer` column was written by a path
+    that bypassed those doors -- that is the arrival this axis catches, and the remedy is to route
+    the writer through the registry, never to sweep the column afterwards.
+
+    `UNATTRIBUTABLE` SATISFIES THE OBLIGATION. It is a DECLARED verdict with its reason recorded,
+    which is the honest answer when lineage reaches no producer; silence is the defect, not the
+    admission (L1.28a). Only rows created after the cut are judged: everything older is the
+    one-time backfill `desks/mt5/research/attribution_census.py` performs, not a standing breach.
+    """
+    db = root / "data" / "alpha_registry.sqlite"
+    if not db.exists():
+        return set(), set(), f"{UNMEASURED}: no registry at {db.as_posix()}"
+    if str(root) not in sys.path:
+        sys.path.insert(0, str(root))
+    try:
+        from libs.research.attribution import BIRTH_OBLIGATION_FROM, PRODUCER_FIELD
+    except Exception as exc:                                       # pragma: no cover - guard
+        return set(), set(), f"{UNMEASURED}: attribution helper unreadable ({exc})"
+    import sqlite3
+    try:
+        conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
+    except sqlite3.Error as exc:
+        return set(), set(), f"{UNMEASURED}: registry unopenable ({exc})"
+    objects: set[str] = set()
+    ok: set[str] = set()
+    cut = BIRTH_OBLIGATION_FROM[:19]
+    # THE UPPER CUT, AND IT IS A DENOMINATOR AND NOT A TOLERANCE. `attribution_census` is the
+    # organ that measures this axis; a row created AFTER its last pass has not been measured yet,
+    # and calling it incomplete would be reporting an absence of measurement as a breach (L1.28a).
+    # A row still unstamped after the next census pass fails, which is the whole point -- the
+    # window is one hourly leg wide and closes by itself.
+    measured_to = "9999"
+    cov = _json(root / "desks" / "mt5" / "reports" / "ATTRIBUTION_COVERAGE.json")
+    at = cov.get("at") if isinstance(cov, dict) else None
+    if isinstance(at, str) and len(at) >= 19:
+        measured_to = at[:19]
+    try:
+        for table, idcol, prefix in (("research_candidates", "id", "cell"),
+                                     ("discoveries", "discovery_id", "discovery")):
+            cols = {str(r[1]) for r in conn.execute(f"pragma table_info({table})")}
+            if PRODUCER_FIELD not in cols:
+                return set(), set(), (f"{UNMEASURED}: {table} carries no {PRODUCER_FIELD} column "
+                                      f"yet (libs/moat/registry.EXTENSIONS adds it on connect)")
+            rows = conn.execute(
+                f"select {idcol}, coalesce({PRODUCER_FIELD},'') from {table} "  # noqa: S608
+                f"where replace(substr(created_at,1,19),' ','T') >= ? "
+                f"and replace(substr(created_at,1,19),' ','T') <= ?",
+                (cut, measured_to)).fetchall()
+            for rid, who in rows:
+                name = f"{prefix}:{rid}"
+                objects.add(name)
+                if str(who or "").strip():
+                    ok.add(name)
+    except sqlite3.Error as exc:
+        return set(), set(), f"{UNMEASURED}: registry unreadable ({exc})"
+    finally:
+        conn.close()
+    if not objects:
+        return set(), set(), f"{UNMEASURED}: no cell or discovery born since {cut}"
+    return objects, ok, (f"{len(ok)}/{len(objects)} cells and discoveries born since {cut} and "
+                         f"measured by {measured_to} carry their producer stamp")
+
+
 @dataclass(frozen=True)
 class Axis:
     name: str
@@ -234,6 +302,14 @@ AXES: tuple[Axis, ...] = (
          _regions, ("check_regional_parity.py", ())),
     Axis("destructive", "a guard against acting on an absence", _destructive,
          ("check_no_retirement_on_absence.py", ())),
+    # SIXTH AXIS (2026-09-23): attribution. Measured that day, 3,663 of 3,862 unique cells and 33
+    # of 58 certificates could not be traced to a producer or a region, and the regional board
+    # therefore read `Europe: 1,973 sources, 0 cells`. The stamp is now written at birth through
+    # ONE helper; this clause is what stops the next writer from re-opening the gap silently.
+    Axis("attribution", "the producer that made it and, where the producer belongs to one, its "
+                        "region -- stamped at birth by libs/research/attribution.attribute() "
+                        "through the two registry doors, never by a later sweep",
+         _attribution, ("check_producer_yield.py", ())),
 )
 
 

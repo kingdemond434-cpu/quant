@@ -292,6 +292,8 @@ LEG_LAYER: dict[str, str] = {
     # Which families the scarce judge actually spends itself on, measured per family as unjudged
     # backlog. It buys INFORMATION about the mined population, not a signal or a position.
     "judge_coverage": "information",
+    # What the multiplicity budget is charged in: nominal rows vs effective independent tests.
+    "effective_trials": "information",
     "gauntlet_backpressure": "meta", "miner_specialisation": "meta",
     # THE TIER-5 RESIDUALS (mandate 90, 110, 131/132, 133, 134, 136, 97/98, 162). The bounty
     # board and the drawdown-alpha miner are PORTFOLIO: both ask what the BOOK lacks -- a payoff
@@ -414,6 +416,7 @@ LEG_LAYER: dict[str, str] = {
     # moves intake order, operator mix and generation targets accordingly: the machine measuring
     # and scheduling itself, which is meta.
     "independence_intake": "meta",
+    "attribution_census": "meta",
     # sizing: how much
     "capacity": "sizing", "ensemble_optimizer": "sizing",
     # portfolio: how the book is composed
@@ -453,6 +456,9 @@ LEG_LAYER: dict[str, str] = {
     # A pack's series IS information; re-minting a known mechanism on another chart is a claim
     # about returns, so it is prediction; recording what a live order actually paid is execution.
     "pack_cells": "information", "timeframe_fanout": "prediction",
+    # Walking inside a registered ground's own front door is COLLECTION: it fetches documents and
+    # files them as that ground's claims. It mints nothing and predicts nothing.
+    "ground_depth": "information",
     "fill_recorder": "execution",
     "actor_pressure": "information",
     "destroyer_pool": "prediction", "counterfactual_timeframes": "prediction",

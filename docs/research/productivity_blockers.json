@@ -4,7 +4,7 @@
   "scripts/check_producer_yield.py (EVERY PRODUCER OWES CELLS)",
   "scripts/check_productivity_census.py (the freshness and silent-zero half)"
  ],
- "note": "A blocker is a debt, not an excuse. Every row here is expected to disappear by being fixed, and the fence's owing ratchet falls only, so a row that stays becomes visible as a number that stopped falling.",
+ "note": "A blocker is a debt, not an excuse. Every row here is expected to disappear by being fixed, and the fence's owing ratchet falls only, so a row that stays becomes visible as a number that stopped falling. An EXEMPTION here is PERMANENT only while it stays true: every row carries `retire_if`, the condition that deletes it, so a declaration cannot outlive the fact it was declared on.",
  "blockers": {
   "math:symbolic_regression": {
    "why": "math_lab mints its objects as DISCOVERIES and `record_registry` calls set_discovery_state(did, 'QUEUED' if obj.passed else 'UNPROCESSED') at desks/mt5/research/math_lab.py:922. Measured 2026-09-23: all 236 math_lab discoveries created in the last 24h sit in state UNPROCESSED, so discovery_compiler never sees one and 23 traditions show generator_yield compute with zero cells. This tradition additionally recorded generated=0 against 56.4 compute-seconds, so it proposed nothing at all -- the conversion gate is the blocker for the family, and an empty mint is this row's own.",
@@ -36,16 +36,179 @@
    "owner": "japan department (desks/mt5/research/japan/, hourly legs `japan_*`)",
    "remedy": "write generator_yield under the same `japan:<miner>` short name the lineage already uses (desks/mt5/research/japan/intelligence.py:872 is the canonical stamp), so one organ has one key."
   },
-  "japan:japanacademicscout": {"why": "see japan:japandatascout -- class-name vs short-name key mismatch between generator_yield and the discovery lineage; the miner produces under japan:academic_scout.", "owner": "japan department (desks/mt5/research/japan/)"},
-  "japan:japanbojminer": {"why": "see japan:japandatascout -- class-name vs short-name key mismatch between generator_yield and the discovery lineage.", "owner": "japan department (desks/mt5/research/japan/)"},
-  "japan:japancrossassetminer": {"why": "see japan:japandatascout -- class-name vs short-name key mismatch between generator_yield and the discovery lineage.", "owner": "japan department (desks/mt5/research/japan/)"},
-  "japan:japanfiscalcalendarminer": {"why": "see japan:japandatascout -- class-name vs short-name key mismatch; the miner produces under japan:fiscal_calendar.", "owner": "japan department (desks/mt5/research/japan/)"},
-  "japan:japanfixingminer": {"why": "see japan:japandatascout -- class-name vs short-name key mismatch between generator_yield and the discovery lineage.", "owner": "japan department (desks/mt5/research/japan/)"},
-  "japan:japangotobiminer": {"why": "see japan:japandatascout -- class-name vs short-name key mismatch; the miner produces under japan:gotobi, which holds 135 discoveries.", "owner": "japan department (desks/mt5/research/japan/)"},
-  "japan:japanholidayminer": {"why": "see japan:japandatascout -- class-name vs short-name key mismatch; the miner produces under japan:holiday.", "owner": "japan department (desks/mt5/research/japan/)"},
-  "japan:japannativewebscout": {"why": "see japan:japandatascout -- class-name vs short-name key mismatch; the miner produces under japan:native_web.", "owner": "japan department (desks/mt5/research/japan/)"},
-  "japan:japanresidualminer": {"why": "see japan:japandatascout -- class-name vs short-name key mismatch between generator_yield and the discovery lineage.", "owner": "japan department (desks/mt5/research/japan/)"},
-  "japan:japansqminer": {"why": "see japan:japandatascout -- class-name vs short-name key mismatch between generator_yield and the discovery lineage.", "owner": "japan department (desks/mt5/research/japan/)"},
-  "japan:japantransferminer": {"why": "see japan:japandatascout -- class-name vs short-name key mismatch between generator_yield and the discovery lineage.", "owner": "japan department (desks/mt5/research/japan/)"}
+  "japan:japanacademicscout": {
+   "why": "see japan:japandatascout -- class-name vs short-name key mismatch between generator_yield and the discovery lineage; the miner produces under japan:academic_scout.",
+   "owner": "japan department (desks/mt5/research/japan/)"
+  },
+  "japan:japanbojminer": {
+   "why": "see japan:japandatascout -- class-name vs short-name key mismatch between generator_yield and the discovery lineage.",
+   "owner": "japan department (desks/mt5/research/japan/)"
+  },
+  "japan:japancrossassetminer": {
+   "why": "see japan:japandatascout -- class-name vs short-name key mismatch between generator_yield and the discovery lineage.",
+   "owner": "japan department (desks/mt5/research/japan/)"
+  },
+  "japan:japanfiscalcalendarminer": {
+   "why": "see japan:japandatascout -- class-name vs short-name key mismatch; the miner produces under japan:fiscal_calendar.",
+   "owner": "japan department (desks/mt5/research/japan/)"
+  },
+  "japan:japanfixingminer": {
+   "why": "see japan:japandatascout -- class-name vs short-name key mismatch between generator_yield and the discovery lineage.",
+   "owner": "japan department (desks/mt5/research/japan/)"
+  },
+  "japan:japangotobiminer": {
+   "why": "see japan:japandatascout -- class-name vs short-name key mismatch; the miner produces under japan:gotobi, which holds 135 discoveries.",
+   "owner": "japan department (desks/mt5/research/japan/)"
+  },
+  "japan:japanholidayminer": {
+   "why": "see japan:japandatascout -- class-name vs short-name key mismatch; the miner produces under japan:holiday.",
+   "owner": "japan department (desks/mt5/research/japan/)"
+  },
+  "japan:japannativewebscout": {
+   "why": "see japan:japandatascout -- class-name vs short-name key mismatch; the miner produces under japan:native_web.",
+   "owner": "japan department (desks/mt5/research/japan/)"
+  },
+  "japan:japanresidualminer": {
+   "why": "see japan:japandatascout -- class-name vs short-name key mismatch between generator_yield and the discovery lineage.",
+   "owner": "japan department (desks/mt5/research/japan/)"
+  },
+  "japan:japansqminer": {
+   "why": "see japan:japandatascout -- class-name vs short-name key mismatch between generator_yield and the discovery lineage.",
+   "owner": "japan department (desks/mt5/research/japan/)"
+  },
+  "japan:japantransferminer": {
+   "why": "see japan:japandatascout -- class-name vs short-name key mismatch between generator_yield and the discovery lineage.",
+   "owner": "japan department (desks/mt5/research/japan/)"
+  },
+  "math:causal": {
+   "exempt": true,
+   "produces": "a MEASURED negative per pass: the objects it evaluated against the residual panel, the effective trials it charged through libs/research/trial_ledger.py, and its per-tradition row in `generator_yield` -- the evidence that this mathematics does not describe this market today, which is a result and not an absence (L1.28a) Measured 2026-09-23: 44 objects evaluated, none cleared the admission burden.",
+   "consumer": "math_lab.tradition_roi() -> math_lab.department_plan(), which moves next hour's compute share off exactly this row, and research_roi's SCIENTIST ROI table; the per-pass named preconditions are published in desks/mt5/reports/MATH_LAB.json (`per_tradition.<t>.unmeasured`)",
+   "owner": "math_lab (desks/mt5/research/math_lab.py, hourly leg `math_lab`); the tradition's compute share is two-sided and floored at 2%, so a fix shows up as share moving, never as the tradition being silenced",
+   "declared_utc": "2026-09-23",
+   "retire_if": "the tradition mints an admitted object and its cells reach the judge -- then this row is deleted, not amended"
+  },
+  "math:change_point": {
+   "exempt": true,
+   "produces": "a MEASURED negative per pass: the objects it evaluated against the residual panel, the effective trials it charged through libs/research/trial_ledger.py, and its per-tradition row in `generator_yield` -- the evidence that this mathematics does not describe this market today, which is a result and not an absence (L1.28a) Measured 2026-09-23: 21 objects evaluated, none cleared the admission burden.",
+   "consumer": "math_lab.tradition_roi() -> math_lab.department_plan(), which moves next hour's compute share off exactly this row, and research_roi's SCIENTIST ROI table; the per-pass named preconditions are published in desks/mt5/reports/MATH_LAB.json (`per_tradition.<t>.unmeasured`)",
+   "owner": "math_lab (desks/mt5/research/math_lab.py, hourly leg `math_lab`); the tradition's compute share is two-sided and floored at 2%, so a fix shows up as share moving, never as the tradition being silenced",
+   "declared_utc": "2026-09-23",
+   "retire_if": "the tradition mints an admitted object and its cells reach the judge -- then this row is deleted, not amended"
+  },
+  "math:control_theory": {
+   "exempt": true,
+   "produces": "a MEASURED negative per pass: the objects it evaluated against the residual panel, the effective trials it charged through libs/research/trial_ledger.py, and its per-tradition row in `generator_yield` -- the evidence that this mathematics does not describe this market today, which is a result and not an absence (L1.28a) Measured 2026-09-23: 44 objects evaluated, none cleared the admission burden.",
+   "consumer": "math_lab.tradition_roi() -> math_lab.department_plan(), which moves next hour's compute share off exactly this row, and research_roi's SCIENTIST ROI table; the per-pass named preconditions are published in desks/mt5/reports/MATH_LAB.json (`per_tradition.<t>.unmeasured`)",
+   "owner": "math_lab (desks/mt5/research/math_lab.py, hourly leg `math_lab`); the tradition's compute share is two-sided and floored at 2%, so a fix shows up as share moving, never as the tradition being silenced",
+   "declared_utc": "2026-09-23",
+   "retire_if": "the tradition mints an admitted object and its cells reach the judge -- then this row is deleted, not amended"
+  },
+  "math:extreme_value": {
+   "exempt": true,
+   "produces": "a MEASURED negative per pass: the objects it evaluated against the residual panel, the effective trials it charged through libs/research/trial_ledger.py, and its per-tradition row in `generator_yield` -- the evidence that this mathematics does not describe this market today, which is a result and not an absence (L1.28a) Measured 2026-09-23: 15 objects evaluated, none cleared the admission burden.",
+   "consumer": "math_lab.tradition_roi() -> math_lab.department_plan(), which moves next hour's compute share off exactly this row, and research_roi's SCIENTIST ROI table; the per-pass named preconditions are published in desks/mt5/reports/MATH_LAB.json (`per_tradition.<t>.unmeasured`)",
+   "owner": "math_lab (desks/mt5/research/math_lab.py, hourly leg `math_lab`); the tradition's compute share is two-sided and floored at 2%, so a fix shows up as share moving, never as the tradition being silenced",
+   "declared_utc": "2026-09-23",
+   "retire_if": "the tradition mints an admitted object and its cells reach the judge -- then this row is deleted, not amended"
+  },
+  "math:meta_mathematics": {
+   "exempt": true,
+   "produces": "a MEASURED negative per pass: the objects it evaluated against the residual panel, the effective trials it charged through libs/research/trial_ledger.py, and its per-tradition row in `generator_yield` -- the evidence that this mathematics does not describe this market today, which is a result and not an absence (L1.28a) Measured 2026-09-23: 11 objects evaluated, none cleared the admission burden.",
+   "consumer": "math_lab.tradition_roi() -> math_lab.department_plan(), which moves next hour's compute share off exactly this row, and research_roi's SCIENTIST ROI table; the per-pass named preconditions are published in desks/mt5/reports/MATH_LAB.json (`per_tradition.<t>.unmeasured`)",
+   "owner": "math_lab (desks/mt5/research/math_lab.py, hourly leg `math_lab`); the tradition's compute share is two-sided and floored at 2%, so a fix shows up as share moving, never as the tradition being silenced",
+   "declared_utc": "2026-09-23",
+   "retire_if": "the tradition mints an admitted object and its cells reach the judge -- then this row is deleted, not amended"
+  },
+  "math:sequential_pattern_mining": {
+   "exempt": true,
+   "produces": "a MEASURED negative per pass: the objects it evaluated against the residual panel, the effective trials it charged through libs/research/trial_ledger.py, and its per-tradition row in `generator_yield` -- the evidence that this mathematics does not describe this market today, which is a result and not an absence (L1.28a) Measured 2026-09-23: 107 objects evaluated, none cleared the admission burden.",
+   "consumer": "math_lab.tradition_roi() -> math_lab.department_plan(), which moves next hour's compute share off exactly this row, and research_roi's SCIENTIST ROI table; the per-pass named preconditions are published in desks/mt5/reports/MATH_LAB.json (`per_tradition.<t>.unmeasured`)",
+   "owner": "math_lab (desks/mt5/research/math_lab.py, hourly leg `math_lab`); the tradition's compute share is two-sided and floored at 2%, so a fix shows up as share moving, never as the tradition being silenced",
+   "declared_utc": "2026-09-23",
+   "retire_if": "the tradition mints an admitted object and its cells reach the judge -- then this row is deleted, not amended"
+  },
+  "math:tensor_decomposition": {
+   "exempt": true,
+   "produces": "a MEASURED negative per pass: the objects it evaluated against the residual panel, the effective trials it charged through libs/research/trial_ledger.py, and its per-tradition row in `generator_yield` -- the evidence that this mathematics does not describe this market today, which is a result and not an absence (L1.28a) Measured 2026-09-23: 23 objects evaluated, none cleared the admission burden.",
+   "consumer": "math_lab.tradition_roi() -> math_lab.department_plan(), which moves next hour's compute share off exactly this row, and research_roi's SCIENTIST ROI table; the per-pass named preconditions are published in desks/mt5/reports/MATH_LAB.json (`per_tradition.<t>.unmeasured`)",
+   "owner": "math_lab (desks/mt5/research/math_lab.py, hourly leg `math_lab`); the tradition's compute share is two-sided and floored at 2%, so a fix shows up as share moving, never as the tradition being silenced",
+   "declared_utc": "2026-09-23",
+   "retire_if": "the tradition mints an admitted object and its cells reach the judge -- then this row is deleted, not amended"
+  },
+  "math:topology": {
+   "exempt": true,
+   "produces": "a MEASURED negative per pass: the objects it evaluated against the residual panel, the effective trials it charged through libs/research/trial_ledger.py, and its per-tradition row in `generator_yield` -- the evidence that this mathematics does not describe this market today, which is a result and not an absence (L1.28a) Measured 2026-09-23: 12 objects evaluated, none cleared the admission burden.",
+   "consumer": "math_lab.tradition_roi() -> math_lab.department_plan(), which moves next hour's compute share off exactly this row, and research_roi's SCIENTIST ROI table; the per-pass named preconditions are published in desks/mt5/reports/MATH_LAB.json (`per_tradition.<t>.unmeasured`)",
+   "owner": "math_lab (desks/mt5/research/math_lab.py, hourly leg `math_lab`); the tradition's compute share is two-sided and floored at 2%, so a fix shows up as share moving, never as the tradition being silenced",
+   "declared_utc": "2026-09-23",
+   "retire_if": "the tradition mints an admitted object and its cells reach the judge -- then this row is deleted, not amended"
+  },
+  "math:transfer_entropy": {
+   "exempt": true,
+   "produces": "a MEASURED negative per pass: the objects it evaluated against the residual panel, the effective trials it charged through libs/research/trial_ledger.py, and its per-tradition row in `generator_yield` -- the evidence that this mathematics does not describe this market today, which is a result and not an absence (L1.28a) Measured 2026-09-23: 176 objects evaluated, none cleared the admission burden.",
+   "consumer": "math_lab.tradition_roi() -> math_lab.department_plan(), which moves next hour's compute share off exactly this row, and research_roi's SCIENTIST ROI table; the per-pass named preconditions are published in desks/mt5/reports/MATH_LAB.json (`per_tradition.<t>.unmeasured`)",
+   "owner": "math_lab (desks/mt5/research/math_lab.py, hourly leg `math_lab`); the tradition's compute share is two-sided and floored at 2%, so a fix shows up as share moving, never as the tradition being silenced",
+   "declared_utc": "2026-09-23",
+   "retire_if": "the tradition mints an admitted object and its cells reach the judge -- then this row is deleted, not amended"
+  },
+  "math:wavelet_scattering": {
+   "exempt": true,
+   "produces": "a MEASURED negative per pass: the objects it evaluated against the residual panel, the effective trials it charged through libs/research/trial_ledger.py, and its per-tradition row in `generator_yield` -- the evidence that this mathematics does not describe this market today, which is a result and not an absence (L1.28a) Measured 2026-09-23: 32 objects evaluated, none cleared the admission burden.",
+   "consumer": "math_lab.tradition_roi() -> math_lab.department_plan(), which moves next hour's compute share off exactly this row, and research_roi's SCIENTIST ROI table; the per-pass named preconditions are published in desks/mt5/reports/MATH_LAB.json (`per_tradition.<t>.unmeasured`)",
+   "owner": "math_lab (desks/mt5/research/math_lab.py, hourly leg `math_lab`); the tradition's compute share is two-sided and floored at 2%, so a fix shows up as share moving, never as the tradition being silenced",
+   "declared_utc": "2026-09-23",
+   "retire_if": "the tradition mints an admitted object and its cells reach the judge -- then this row is deleted, not amended"
+  },
+  "math:criticality": {
+   "exempt": true,
+   "produces": "a MEASURED negative per pass: the objects it evaluated against the residual panel, the effective trials it charged through libs/research/trial_ledger.py, and its per-tradition row in `generator_yield` -- the evidence that this mathematics does not describe this market today, which is a result and not an absence (L1.28a) Measured 2026-09-23: 0 objects: `avalanches: 0 avalanches on the training slice, fewer than the 30 an exponent needs` -- the method declined on data that cannot support it, which is the verdict.",
+   "consumer": "math_lab.tradition_roi() -> math_lab.department_plan(), which moves next hour's compute share off exactly this row, and research_roi's SCIENTIST ROI table; the per-pass named preconditions are published in desks/mt5/reports/MATH_LAB.json (`per_tradition.<t>.unmeasured`)",
+   "owner": "math_lab (desks/mt5/research/math_lab.py, hourly leg `math_lab`); the tradition's compute share is two-sided and floored at 2%, so a fix shows up as share moving, never as the tradition being silenced",
+   "declared_utc": "2026-09-23",
+   "retire_if": "the tradition mints an admitted object and its cells reach the judge -- then this row is deleted, not amended"
+  },
+  "math:koopman_dmd": {
+   "exempt": true,
+   "produces": "a MEASURED negative per pass: the objects it evaluated against the residual panel, the effective trials it charged through libs/research/trial_ledger.py, and its per-tradition row in `generator_yield` -- the evidence that this mathematics does not describe this market today, which is a result and not an absence (L1.28a) Measured 2026-09-23: 0 objects: `dmd_rank: numerical rank 1 of the snapshot matrix` -- a rank-1 panel admits no Koopman mode, declared rather than fitted.",
+   "consumer": "math_lab.tradition_roi() -> math_lab.department_plan(), which moves next hour's compute share off exactly this row, and research_roi's SCIENTIST ROI table; the per-pass named preconditions are published in desks/mt5/reports/MATH_LAB.json (`per_tradition.<t>.unmeasured`)",
+   "owner": "math_lab (desks/mt5/research/math_lab.py, hourly leg `math_lab`); the tradition's compute share is two-sided and floored at 2%, so a fix shows up as share moving, never as the tradition being silenced",
+   "declared_utc": "2026-09-23",
+   "retire_if": "the tradition mints an admitted object and its cells reach the judge -- then this row is deleted, not amended"
+  },
+  "math:linear_response": {
+   "exempt": true,
+   "produces": "a MEASURED negative per pass: the objects it evaluated against the residual panel, the effective trials it charged through libs/research/trial_ledger.py, and its per-tradition row in `generator_yield` -- the evidence that this mathematics does not describe this market today, which is a result and not an absence (L1.28a) Measured 2026-09-23: 0 objects: `impulse_response: no driver carried three usable lags` -- the response function is undefined on this panel, declared.",
+   "consumer": "math_lab.tradition_roi() -> math_lab.department_plan(), which moves next hour's compute share off exactly this row, and research_roi's SCIENTIST ROI table; the per-pass named preconditions are published in desks/mt5/reports/MATH_LAB.json (`per_tradition.<t>.unmeasured`)",
+   "owner": "math_lab (desks/mt5/research/math_lab.py, hourly leg `math_lab`); the tradition's compute share is two-sided and floored at 2%, so a fix shows up as share moving, never as the tradition being silenced",
+   "declared_utc": "2026-09-23",
+   "retire_if": "the tradition mints an admitted object and its cells reach the judge -- then this row is deleted, not amended"
+  },
+  "math:statistical_mechanics": {
+   "exempt": true,
+   "produces": "a MEASURED negative per pass: the objects it evaluated against the residual panel, the effective trials it charged through libs/research/trial_ledger.py, and its per-tradition row in `generator_yield` -- the evidence that this mathematics does not describe this market today, which is a result and not an absence (L1.28a) Measured 2026-09-23: 0 objects: `temperature: 0 training rows carry a finite temperature` -- the ensemble is undefined here, declared.",
+   "consumer": "math_lab.tradition_roi() -> math_lab.department_plan(), which moves next hour's compute share off exactly this row, and research_roi's SCIENTIST ROI table; the per-pass named preconditions are published in desks/mt5/reports/MATH_LAB.json (`per_tradition.<t>.unmeasured`)",
+   "owner": "math_lab (desks/mt5/research/math_lab.py, hourly leg `math_lab`); the tradition's compute share is two-sided and floored at 2%, so a fix shows up as share moving, never as the tradition being silenced",
+   "declared_utc": "2026-09-23",
+   "retire_if": "the tradition mints an admitted object and its cells reach the judge -- then this row is deleted, not amended"
+  },
+  "math:survival_hazard": {
+   "exempt": true,
+   "produces": "a MEASURED negative per pass: the objects it evaluated against the residual panel, the effective trials it charged through libs/research/trial_ledger.py, and its per-tradition row in `generator_yield` -- the evidence that this mathematics does not describe this market today, which is a result and not an absence (L1.28a) Measured 2026-09-23: 0 objects: `regime_runs: 0 complete regime runs on the training slice, fewer than 5` -- no hazard is estimable, declared.",
+   "consumer": "math_lab.tradition_roi() -> math_lab.department_plan(), which moves next hour's compute share off exactly this row, and research_roi's SCIENTIST ROI table; the per-pass named preconditions are published in desks/mt5/reports/MATH_LAB.json (`per_tradition.<t>.unmeasured`)",
+   "owner": "math_lab (desks/mt5/research/math_lab.py, hourly leg `math_lab`); the tradition's compute share is two-sided and floored at 2%, so a fix shows up as share moving, never as the tradition being silenced",
+   "declared_utc": "2026-09-23",
+   "retire_if": "the tradition mints an admitted object and its cells reach the judge -- then this row is deleted, not amended"
+  },
+  "math:recurrence_quantification": {
+   "why": "the scan never finishes: `rqa_scan: budget reached at bar 17496 of 48269` and `rqa: no window produced a recurrence matrix` on every panel of the 2026-09-23 pass, so the tradition spends 9.99 compute-seconds and judges nothing. The bound is this desk's per-tradition time slice against an O(n^2) recurrence matrix, not a property of the market: the fix is a windowed/strided RQA inside the slice it already has, never a larger slice taken from a producing tradition.",
+   "owner": "math_lab (desks/mt5/research/math_lab.py, hourly leg `math_lab`); the tradition's compute share is two-sided and floored at 2%, so a fix shows up as share moving, never as the tradition being silenced",
+   "declared_utc": "2026-09-23"
+  },
+  "math:sindy": {
+   "why": "`sparse_equation: every coefficient fell below lambda=0.08; no governing equation survives thresholding` on every panel, 0.77 compute-seconds spent. lambda is a HARD-CODED sparsity threshold, so the tradition's whole output is decided by one constant nobody measured against these residual panels; the fix is to derive it from the panel's own coefficient scale (a sweep with the surviving equation count recorded per level), which is a measurement this desk can make.",
+   "owner": "math_lab (desks/mt5/research/math_lab.py, hourly leg `math_lab`); the tradition's compute share is two-sided and floored at 2%, so a fix shows up as share moving, never as the tradition being silenced",
+   "declared_utc": "2026-09-23"
+  }
  }
 }

@@ -132,6 +132,28 @@ def measure(registry_path: Path | None = None,
             conn.close()
     out["debt"] = debt
     out["breadth"] = breadth
+    # THE VERDICTS THAT NEVER CROSSED (2026-09-23). Conversion does not end at a testable cell: a
+    # cell the gauntlet has JUDGED whose verdict never reached the registry is converted work the
+    # desk cannot cash, and it reads as zero in exactly the place that matters -- cells_judged per
+    # source, per pack, per region. Measured: 3,368 verdicts on disk, no `gate_verdicts` cursor
+    # key at all since the 2026-09-17 restore, and nothing anywhere said so. So the receipt and
+    # the lag are now fenced: a stream the sync knows about with no cursor key, or a verdict older
+    # than one sync cycle still unpoured, fails this gate.
+    # Measured only when this IS the desk's own registry (the law gate's call): a synthetic
+    # registry handed in with --registry belongs to no desk, and the desk's verdict ledger says
+    # nothing about it.
+    backlog = (R.verdict_backlog() if registry_path is None else
+               {"status": "NOT_THIS_REGISTRY",
+                "why": f"--registry {db} is not the desk's registry ({R.path()}), so the desk's "
+                       f"verdict ledger is not evidence about it"})
+    out["verdict_backlog"] = backlog
+    if backlog.get("status") == "BREACH":
+        out.update({"status": "BREACH", "rc": 2, "ceiling_after": ceiling,
+                    "why": f"the gate verdict ledger is ahead of the registry: "
+                           f"{backlog.get('why')}. The organ is "
+                           f"desks/mt5/research/registry_sync.py (hourly leg `registry_sync`) -> "
+                           f"libs/moat/registry.sync_from_desk"})
+        return out
     total = debt.get("total_debt")
     if total is None:
         out.update({"status": UNMEASURED, "rc": 1,

@@ -778,7 +778,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     # THE CLOSED-LOOP ORGANS (Tier-1 B14-B25): all cheap readers of artifacts that already exist,
     # so they belong on the core clock rather than the heavy one. `actor_pressure` and
     # `counterfactual_timeframes` read bars and stop themselves at their own budget.
-    "source_evig", "source_drain", "pack_cells", "timeframe_fanout", "fill_recorder",
+    "source_evig", "source_drain", "pack_cells", "ground_depth", "timeframe_fanout",
+    "fill_recorder",
     "actor_pressure", "destroyer_pool", "quantbench",
     "evidence_chain",
     "clock_ledger", "shortfall_model", "counterfactual_timeframes", "meta_rnd",
@@ -841,12 +842,15 @@ LEG_DEPARTMENT: dict[str, str] = {
     # data: bars, tapes, lakes, sources -- the inputs every other department reads
     **dict.fromkeys(("refresh_bars", "tape_features", "lake_promote", "universe_integrity",
                      "source_routes", "source_fixer", "asia_collector", "asia_parser",
+                     # walking inside a registered ground's own door is collection, like the
+                     # collector above it: it fetches documents and files them as claims
+                     "ground_depth",
                      "asia_plane", "archive_tape", "reclaim_disk", "maintain_miners",
                      "spread_provenance", "microstructure_census", "fusion_cost",
                      "cost_construction", "swap_rejudge", "sge_premium", "moat_series",
                      "unused_information", "ingestion_ledger", "representation_forge",
                      "feature_compiler", "data_acquisition_scientist", "coverage_drain",
-                     "judge_coverage"), "data"),
+                     "judge_coverage", "effective_trials"), "data"),
     # intel: the global intelligence agency -- crawlers, forests, frontier scouts
     **dict.fromkeys(("world_crawler", "deep_forest", "moat_miner", "market_intel", "mine",
                      "moat_candidate_compiler", "algorithm_db",
@@ -929,6 +933,10 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # mix that decide whether an hour of judge buys independent ground or
                      # another constant. The machine measuring its own breadth: meta.
                      "independence_intake",
+                     # ATTRIBUTION AT BIRTH: who produced every cell and from which
+                     # region, stamped at the registry doors. The machine measuring its
+                     # own lineage: meta.
+                     "attribution_census",
                      "runtime_attestation", "self_repair"), "meta"),
     # japan: the Japan research division (the principal's 47-section mandate, hourly)
     **dict.fromkeys(("japan_department",), "japan"),
@@ -1352,6 +1360,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # The intake measurement stops itself at --budget-s 240: one registry scan and three
     # artifact reads. The cap sits above it.
     "independence_intake": 300,
+    # The attribution census stops itself at --budget-s 240: two registry scans and one
+    # bounded backfill that commits per chunk and resumes. The cap sits above it.
+    "attribution_census": 300,
     # The coverage drain stops itself at --budget-s 900 -- and it scales that DOWN further off
     # measured free memory, because its cost is network wait on the box that also holds the
     # terminal. The cap sits above its own budget for the reason `enrol_clocks` was raised: a
@@ -1361,6 +1372,10 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # Judge coverage stops itself at --budget-s 120; it reads two files and sorts. The cap sits
     # above its own budget for the reason every other leg's does.
     "judge_coverage": 300,
+    # Effective trials stops itself at --budget-s 300; its cost is one O(m^2) similarity matrix
+    # per grid cell, and grid cells are small (the live docket's largest holds ~470 rows). The cap
+    # sits above its own budget for the reason every other leg's does.
+    "effective_trials": 700,
     # The net-edge spine stops itself at --budget-s 600 and writes NET_EDGE.json plus the
     # intake join file; the cap sits above it so the hour is never cut at the same prefix.
     "net_edge": 700,
@@ -3034,7 +3049,8 @@ def main() -> None:
     # candidates, trials, runs, cards+events, memories, workers -- and publishes the counts,
     # the conversion debt and the trial-chain verification. Core: runs every pass.
     rsy = _costed("registry_sync", lambda: _producer("registry_sync",
-                                                      "research/registry_sync.py"))
+                                                      "research/registry_sync.py",
+                                                      "--once", "--budget-s", "300"))
     # THE EVOLVABLE ONTOLOGY (Q10): new axes proposed, tested OOS against unexplained residual,
     # registered only after two consecutive passes. Discovery department.
     axp = _costed("axis_proposer", lambda: _producer("axis_proposer",
@@ -3256,6 +3272,14 @@ def main() -> None:
     jcv = _costed("judge_coverage", lambda: _producer("judge_coverage",
                                                       "research/judge_coverage.py",
                                                       "--once", "--budget-s", "120"))
+    # EFFECTIVE TRIALS: the multiplicity budget is charged in independent TESTS, not in docket
+    # rows. Measures nominal vs effective per family (participation ratio of (grid cell, content)
+    # identities within each mechanism), publishes the ratio, and writes the corrected campaign
+    # charge into policy/gate_spec.yaml -- the one input the SEALED gauntlet reads for it. Data
+    # department, information layer.
+    eft = _costed("effective_trials", lambda: _producer("effective_trials",
+                                                        "research/effective_trials.py",
+                                                        "--once", "--budget-s", "300"))
     # GAUNTLET BACKPRESSURE (M23) and MINER SPECIALISATION (M24): the gauntlet talks back and
     # the organisation routes work by measured value per miner per domain. Meta.
     gbp = _costed("gauntlet_backpressure", lambda: _producer("gauntlet_backpressure",
@@ -3659,6 +3683,16 @@ def main() -> None:
     ind = _costed("independence_intake", lambda: _producer("independence_intake",
                                                            "research/independence_intake.py",
                                                            "--once", "--budget-s", "240"))
+    # ATTRIBUTION AT BIRTH (2026-09-23). Every cell and discovery carries WHO produced it and,
+    # where the producer belongs to one, from WHICH region -- stamped by the two registry doors
+    # through libs/research/attribution.py. This leg measures the coverage, recovers from lineage
+    # what rows born before the stamp still hold, and DECLARES the rest UNATTRIBUTABLE with the
+    # reason so the denominator is honest. Measured the day it landed: producer coverage 0 -> 1.0,
+    # region coverage 0 -> 0.977, certificates 25 -> 47 of 58 traced, and Europe's unique cells
+    # 0 -> 129 on a board that had read `1,973 sources, 0 cells`. Meta department, meta layer.
+    att = _costed("attribution_census", lambda: _producer("attribution_census",
+                                                          "research/attribution_census.py",
+                                                          "--once", "--budget-s", "240"))
     # THE FOREST FEDERATION (principal 2026-09-17). Korea 24/7 || Japan 24/7 || China 24/7 ||
     # Russia 24/7 || ... || Global 24/7: every region its own research civilization, running the
     # eleven agent roles in parallel on its own resident, all feeding ONE registry through ONE
@@ -4173,6 +4207,16 @@ def main() -> None:
     # run AFTER source_drain, whose chain state it reads and never edits.
     pkc = _costed("pack_cells", lambda: _producer(
         "pack_cells", "research/pack_cells.py", "--once", "--budget-s", "240"))
+    # THE FRONT DOOR IS NOT THE GROUND (2026-09-23). 15 of the 121 document-holding grounds named
+    # no instrument for ONE reason `pack_cells.resolve_ground` had already written: the documents
+    # held are the landing page. This walks inside those grounds' own doors -- ranked links and
+    # data endpoints from their held pages, captured through `moat_collectors` under the SAME
+    # source_id -- so rung 3 of that ladder resolves them on the next pack_cells pass; a ground
+    # whose deeper pages still name nothing gets a measured verdict with the shape that defeated
+    # the reader, and the links it did not reach go to `world_frontier`. Information department,
+    # information layer. It must run AFTER pack_cells, whose ladder decides its targets.
+    gdp = _costed("ground_depth", lambda: _producer(
+        "ground_depth", "research/ground_depth.py", "--once", "--budget-s", "600"))
     # THE SAME MECHANISM ON EVERY CHART (principal 2026-09-23). `counterfactual_timeframes`
     # measured M5 paying +0.869R and M15 +0.360R over the H1 replay on 222 real decisions while
     # the registry carried ZERO M5 and M1 cells. This re-mints every certified mechanism and every
@@ -4303,6 +4347,7 @@ def main() -> None:
                     "mining_objective": mob, "research_gap_map": rgm,
                     "evidence_router": evr, "research_roi": rroi,
                     "coverage_tensor": cov, "coverage_drain": cdr, "judge_coverage": jcv,
+                    "effective_trials": eft,
                     "gauntlet_backpressure": gbp, "miner_specialisation": msp,
                     "portfolio_bounty": pbt, "research_auction": rau,
                     "bottleneck_law": btl, "drawdown_alpha_miner": dam,
@@ -4330,7 +4375,7 @@ def main() -> None:
                     "sandbox_provision": sbp, "sandbox_roster": sbo,
                     "source_civilizations": svc, "evidence_watchtower": ewt,
                     "prediction_markets": pmk, "dislocation_lab": dsl,
-                    "independence_intake": ind,
+                    "independence_intake": ind, "attribution_census": att,
                     "shadow_institutional": shi, "latent_actors": lat, "latency_lab": lab,
                     "feed_clock_lab": fcl, "impact_lab": imp, "net_edge": nee,
                     "cost_truth": ctr,
@@ -4381,6 +4426,7 @@ def main() -> None:
                     "opportunity_cost": oc, "acceptance": ac, "opportunity_forecast": ofc,
                     "cycle_pricing": cyp, "causal_invariance": civ,
                     "source_evig": sev, "source_drain": sdr, "pack_cells": pkc,
+                    "ground_depth": gdp,
                     "timeframe_fanout": tff, "fill_recorder": flr,
                     "actor_pressure": apr, "destroyer_pool": dpo,
                     "quantbench": qbn, "evidence_chain": evc, "clock_ledger": ckl,

@@ -8430,22 +8430,22 @@
    "phase": "D",
    "status": "LANDED",
    "gate": "none",
-   "item": "CLOCK IMPLIES CERTIFICATE: every forward clock is traced to its backing certificate; a clock with none is a BREACH naming its cell, and the remedy is that the cell goes to the FRONT of the judge's queue -- the clock keeps accruing as AWAITING_JUDGEMENT with its age published, and only the judge's own rejection takes a clock away",
+   "item": "CLOCK IF AND ONLY IF CERTIFICATE (strict): a forward clock exists only while a canonical certificate backs it; every unbacked clock is retired the pass it is found, its cell keeps the FRONT of the judge's queue, and a cell that certifies later starts a NEW clock from zero",
    "evidence": [
-    "desks/mt5/research/clock_certificate.py:297 -- audit(): traces every clock to the canon through the engine's OWN roster (the only join that speaks both key grammars), classifies BACKED / BREACHED / AWAITING_JUDGEMENT / RETIRED / UNMEASURED, and publishes the four counts every pass",
-    "desks/mt5/research/clock_certificate.py:224 -- push_to_front(): each breached cell is submitted as a `recertify` task at priority 1000, the maximum in the queue, and `TaskQueue.claim` sorts by -priority, so the hourly leg recertify_canon claims it first. MEASURED on the trading box 2026-09-23: 71 distinct cells submitted, front of queue confirmed at priority 1000.0",
-    "desks/mt5/research/clock_certificate.py:103 -- PARAM_INDEPENDENT_REJECTS: a clock is taken away only on a reject at a gate no choice of parameters can change (economic_prior, symbol_eligibility); a deflated_sharpe reject belongs to a sibling parameterization and is NOT this clock's, because the judge's cell hash cannot be joined to a sleeve_key without the sealed module",
-    "desks/mt5/research/clock_certificate.py:119 -- canon_state(): reads reports/UNIVERSAL_SURVIVORS.json then the sealed data/UNIVERSAL_SURVIVORS.canon.json, in shadow_admission.CANON_SOURCES order, and NEVER writes either. MEASURED 2026-09-23: the sweep file read n=0 while the sealed canon read n=28 minutes apart, so an empty canon makes backing UNMEASURED and declares no breach",
-    "desks/mt5/research/judging_throughput.py:296 -- _breach_backlog(), and :391 the plan's `clock_certificate_breach` limiting resource: an overdue breach makes the judging queue DEEP, which raises workers and cadence, so the front-of-queue priority is honoured by the judge's own sizing rather than being decorative",
-    "scripts/check_clock_liveness.py:124 -- the fence fails on breach AGE (older than one judging cycle) and on the breach RATCHET rising, never on the breach COUNT: a fence that went red on the count would pressure a session into retiring clocks to get green",
-    "MEASURED on the trading box vmi3571445 2026-09-23 against a canon of 28 certificates: 489 clocks -> BACKED 55, BREACHED/AWAITING 95, RETIRED 339, UNMEASURED 0; 71 distinct breached cells queued FIRST for judgement and 0 clocks retired, because no breach carried a parameter-independent reject",
-    "desks/mt5/tests/test_clock_certificate.py:1 -- 18 tests: a breached clock is queued first AND keeps its clock, an empty canon declares no breach, a parameter-dependent reject never takes a sibling cell's clock, the breach ratchet only falls, and the fence fails on age not count"
+    "desks/mt5/research/clock_certificate.py:297 -- audit(): traces every clock to the canon through the engine's OWN roster and retires every unbacked one on the same pass; there is no AWAITING_JUDGEMENT state left, because a clock without a certificate cannot exist and so cannot wait",
+    "desks/mt5/research/clock_certificate.py:224 -- push_to_front(): losing a clock is NOT losing priority. Each cell is submitted as a `recertify` task at priority 1000, the maximum in the queue, and TaskQueue.claim sorts by -priority. MEASURED on the trading box 2026-09-23: 71 distinct cells at the front, confirmed at 1000.0",
+    "desks/mt5/research/clock_certificate.py:119 -- canon_state(): reads reports/UNIVERSAL_SURVIVORS.json then the sealed data/UNIVERSAL_SURVIVORS.canon.json in shadow_admission.CANON_SOURCES order, and NEVER writes either; an all-empty canon makes backing UNMEASURED, because a canon that cannot be read cannot convict (the sweep file read n=0 while the sealed canon read n=28, minutes apart)",
+    "MEASURED on the trading box vmi3571445 2026-09-23 against a canon of 28: 489 clocks -> BACKED 55, unbacked_live 0, RETIRED 339 -> 433. 94 rows written RETIRED_NO_CERTIFICATE and 1 RETIRED_GATE_FAIL; the fence went FAIL at 1 unbacked clock and OK at 0",
+    "scripts/check_clock_liveness.py:124 -- the fence fails on ANY unbacked clock, with no tolerance and no ageing window, and separately rejects the return of the AWAITING_JUDGEMENT lane",
+    "desks/mt5/research/judging_throughput.py:296 -- the cells that lost clocks are demand on the judge: an overdue backlog sets queue_deep with limiting_resource `clock_certificate_breach`, raising workers and cadence so the front-of-queue priority is not decorative",
+    "THE COST, stated in the module docstring and accepted: a cell that certifies later restarts its forward clock from zero -- inheriting the accrued days would credit a pre-registration that did not exist when those bars printed. Recorded as desk lesson L0387 so no later session re-derives the cure lane",
+    "desks/mt5/tests/test_clock_certificate.py:1 -- 18 tests pin the strict rule: no AWAITING state, the cell keeps the front of the queue, a lane declaring its own gate pass is not a certificate, an empty canon declares nothing, and the fence fails on any unbacked clock"
    ],
    "scheduled_by": "hourly_cycle:clock_liveness, MT5-Dept-Forward",
    "artifact": "desks/mt5/reports/CLOCK_CERTIFICATE_BREACH.json, the `certificate` block of desks/mt5/reports/CLOCK_LIVENESS.json, desks/mt5/data/clock_breach_ledger.json",
    "consumer": "desks/mt5/research/judging_throughput.py (sizes the judge off the breach backlog), desks/mt5/data/task_queue.jsonl -> hourly_cycle leg recertify_canon, scripts/check_clock_liveness.py",
    "gap": "",
-   "next_step": "The 95 breached clocks fall only as the judge reaches their cells; the join is at (symbol, family, chart) grain, and tightening it to the gauntlet's own cell hash needs a public cell_id the sealed module does not export.",
+   "next_step": "Enrolment of certified cells stays UNCAPPED, so the backed count rises only as the judge certifies; the join is at (symbol, family, chart) grain and tightening it needs a public cell_id the sealed judge does not export.",
    "landed": []
   },
   {
@@ -8795,6 +8795,35 @@
    ]
   },
   {
+   "id": "PACK3",
+   "item": "A registered ground that holds documents naming no instrument is walked INSIDE its own front door -- its landing page's ranked links and data endpoints are fetched, filed as that ground's own claims, and measured by whether they NAME AN INSTRUMENT or a series; a ground that still names nothing gets a measured verdict with the shape that defeated the reader, never a pending job.",
+   "domain": "U",
+   "phase": 3,
+   "status": "LANDED",
+   "gate": "none",
+   "scheduled_by": "hourly_cycle:ground_depth",
+   "artifact": "desks/mt5/reports/GROUND_DEPTH.json",
+   "consumer": "libs/moat/registry.py claims -- the deep pages become held documents OF THE GROUND, which is exactly what pack_cells' rung 3 (instruments_named_in_documents) reads and mints from on its own hourly clock; desks/mt5/side_channels/world_frontier.py takes the links this pass did not reach",
+   "evidence": [
+    "desks/mt5/research/ground_depth.py:1-67 -- the charter and the cause, quoted from the organ that measured it: 15 of 121 document-holding grounds carried the SAME reason written by pack_cells.resolve_ground ('CRAWL DEPTH ... the documents held are landing or navigation pages'), because moat_collectors.collect_html captures the DECLARED url and says in its own docstring that link-following belongs to the crawler",
+    "desks/mt5/research/ground_depth.py:164 -- the ONLY refusals are the five acts: a sign-in, registration, subscription or checkout door is set aside, COUNTED and NAMED in the report; no other gate exists and nothing else on the open internet is refused",
+    "desks/mt5/research/ground_depth.py:179 -- link_score ranks a ground's own links (data endpoint, settlement, statistics, contract specification ahead of cookie notices); ranking is an ORDER and never a filter, and the cursor carries the rest to the next pass",
+    "desks/mt5/research/ground_depth.py:320 -- fetch_deep captures every deeper page through moat_collectors.collect_html -> normalise -> write_document -> claims_of under the GROUND's own source_id: one claim door, one capture store, no second crawler",
+    "desks/mt5/research/ground_depth.py:366 -- symbol_excerpt_claims: the first walk moved two grounds and not six because a page names XAUUSD in a signal table while claims_of emits SENTENCES, so the symbol never reached the claims table; one claim now carries the page's own characters around the symbol, verbatim, with the same provenance",
+    "desks/mt5/research/ground_depth.py:485 -- verdict_of: NAMES_AN_INSTRUMENT, NAMES_A_SERIES, READER_MISSING (with the shape: javascript_rendered / binary_document / api_key_required / access_controlled), LADDER_WINDOW_SATURATED, DEEPER_PAGES_NAME_NOTHING with the pages tried and the links offered -- a failure is a measured verdict with evidence, never an open job",
+    "desks/mt5/research/ground_depth.py:523 -- next_job_for gives every unconverted ground an OWNED job: register the series, write the reader, widen the ladder's sample, or the measured exhaustion count with the passes and pages already spent",
+    "desks/mt5/research/ground_depth.py:457 -- seed_frontier hands the links this pass did not reach to world_frontier, so depth is bounded by a per-pass wall clock plus the crawler the desk already runs, never by an unbounded recursive crawl of its own",
+    "desks/mt5/research/hourly_cycle.py:4206 -- the clock: _costed(\"ground_depth\", ...) --budget-s 600, after pack_cells whose ladder decides its targets; CORE_LEGS at desks/mt5/research/hourly_cycle.py:781 and the data department at desks/mt5/research/hourly_cycle.py:847",
+    "libs/research/layers.py:459 -- the layer: information. Walking inside a ground's door is COLLECTION; it mints nothing and predicts nothing",
+    "MEASURED 2026-09-23 over two passes on the box: 26 ground-walks, 120 deeper pages fetched, 20 of them naming an MT5 instrument, 947 claims written, 202 links handed to world_frontier. Grounds holding documents that name an instrument 106 -> 108 of 121 (rung instruments_named_in_documents 6 -> 8); documents held by those grounds 963 -> 2,034; cells minted by pack_cells from the two converted grounds: frontier 3 cells / 4 discoveries, literature 3 cells / 4 discoveries, from zero",
+    "THE REMAINDER IS MEASURED, NOT PENDING: 3 grounds (mql5_signals 230 claims, asia:mql5_signals 135, trading_latam 128) now HOLD documents naming an instrument and the ladder still cannot see them -- pack_cells.held_documents reads a ground's OLDEST RESOLVE_SAMPLE claims, which are the landing page's chrome. Verdict LADDER_WINDOW_SATURATED, owner pack_cells (unedited here), one-line fix: sample the newest rows as well as the oldest. 6 grounds are NAMES_A_SERIES (the next job is a registry row, not more crawling), 3 are DEEPER_PAGES_NAME_NOTHING with their attempts counted, 1 (asia:copernicus_s5p) offers no link at all",
+    "NOTHING HERE IS A CAP: no cell is minted, no candidate judged, no budget sized; the per-pass budget is a wall clock and a ground not reached leads the next pass (desks/mt5/research/ground_depth.py:653)"
+   ],
+   "tests": [
+    "desks/mt5/tests/test_ground_depth.py"
+   ]
+  },
+  {
    "id": "TFF1",
    "item": "Every certified mechanism and every strong docket family is minted on M1, M5, M15, H1 and H4 so the judge decides which chart pays instead of the compiler assuming, and the extra multiplicity is charged through the effective-trial ledger.",
    "domain": "U",
@@ -8883,6 +8912,46 @@
     "desks/mt5/tests/test_desk_dashboard_state.py -- 6 tests: absent artifacts are MISSING with a reason and never zero, a stale source renders STALE and still shows its value, the identity join finds the clock and names the orphan, one observation has no Sharpe, the publish EXTENDS the existing payload, and a calendar row says whether the book is in the window"
    ],
    "consumer": "web/dashboard.html (served by MT5-DeskDashboard) and scripts/build_zentech_state.py, which carries the block into web/desk_state.json"
+  },
+  {
+   "id": "ATTR1",
+   "item": "ATTRIBUTION AT BIRTH (principal 2026-09-23): every cell, discovery and candidate carries WHO produced it and, where the producer belongs to one, from WHICH region -- stamped by the creating organ through ONE shared helper rather than inferred by a later sweep, with what lineage still holds backfilled and everything else DECLARED UNATTRIBUTABLE with its reason so the denominator is honest.",
+   "domain": "U",
+   "phase": 2,
+   "status": "LANDED",
+   "gate": "none",
+   "scheduled_by": "hourly_cycle:attribution_census",
+   "artifact": "desks/mt5/reports/ATTRIBUTION_COVERAGE.json",
+   "evidence": [
+    "THE GAP, measured on the trading box 2026-09-23: PRODUCTIVITY_CENSUS.json attributed 3,663 of 3,862 unique cells to nobody and 33 of 58 certificates to nobody, so the regional board read `Europe: 1,973 sources visited, 0 unique cells`. The lineage was never missing -- 26,199 of 27,307 candidates carry a source_id and 23,239 a discovery_id, and sources.country knows the ground -- but nothing joined them, so each reader re-derived the join differently.",
+    "libs/research/attribution.py:1-300 -- THE ONE HELPER: normalise_producer(), region_of(), is_non_regional(), attribute() and stamp(). Three region states kept apart: a region, NOT_REGIONAL (a method or desk organ, a declared verdict) and UNATTRIBUTABLE with its reason.",
+    "libs/moat/registry.py:119-171 EXTENSIONS -- producer/region/attribution_route added by ADD COLUMN to research_candidates AND discoveries; :617-665 _source_country/_parent_attribution/_stamp and the two call sites inside enqueue_candidate and record_discovery, the two doors every cell and discovery comes through. The compiler is credited with the cell and the cell keeps the GROUND its parent discovery's source sat on -- the join that was missing.",
+    "desks/mt5/research/attribution_census.py:104-330 -- measure(), unique_cells_by_region(), producer_region(), certificates() and the resumable rowid-cursor backfill(). Certificates are attributed BY JOIN to the stamped candidates and never by writing to the sealed UNIVERSAL_SURVIVORS.json, which this module reads only.",
+    "MEASURED THE DAY IT LANDED: producer coverage 0 -> 1.0000 over 27,307 candidates, region coverage 0 -> 0.9773 (16,057 NOT_REGIONAL, 621 UNATTRIBUTABLE declared), certificates traced 25 -> 47 of 58, and Europe's unique cells 0 -> 129 (India 0 -> 53, North America 0 -> 55, Oceania 0 -> 74, Africa 38 -> 274).",
+    "desks/mt5/research/productivity_census.py:148-175 _region_for delegates to the helper and _stamped_regions() reads the artifact; :624-640 the stamp is the last region route; 706-735 by_region carries unique_cells_stamped, the per-CELL count beside the per-PRODUCER one, because a compiler that works every ground is otherwise credited entirely to its modal region and every other region reads zero.",
+    "scripts/check_birth_obligations.py:217-272 _attribution + the sixth AXES entry: a cell or discovery created after libs/research/attribution.BIRTH_OBLIGATION_FROM with no producer stamp is an ARRIVAL and fails the fence. UNATTRIBUTABLE satisfies the obligation -- silence is the defect, not the admission (L1.28a).",
+    "desks/mt5/research/hourly_cycle.py -- leg attribution_census (--once --budget-s 240, department meta, cap 300) with its LEG_DEPARTMENT tuple and results-dict entry; libs/research/layers.py -- 'attribution_census': 'meta'.",
+    "tests/test_attribution_birth.py -- 13 tests, all passing (the two doors, the three region states, idempotence, an absent registry as UNMEASURED, and the fence clause)."
+   ],
+   "consumer": "desks/mt5/research/productivity_census.py (the regional scoreboard reads the stamped columns), scripts/check_birth_obligations.py (axis attribution), scripts/check_producer_yield.py (per-producer cells)"
+  },
+  {
+   "id": "YIELD1",
+   "item": "ZERO PRODUCERS OWING CELLS (principal 2026-09-23): every producer burning compute with no unique cell in its window either produces, or carries a NAMED blocker with an owner, or a DECLARED exemption naming what it makes instead and who reads it.",
+   "domain": "U",
+   "phase": 2,
+   "status": "LANDED",
+   "gate": "none",
+   "scheduled_by": "law gate: scripts/check_producer_yield.py",
+   "artifact": "desks/mt5/reports/PRODUCER_YIELD.json",
+   "evidence": [
+    "BEFORE: 17 owing, 17 declared, ratchet owing_max 17. All 17 were math_lab traditions (desks/mt5/research/math_lab.py), each of which RAN, evaluated objects against the residual panel and admitted none -- MATH_LAB.json per_tradition shows status OK with objects 0.",
+    "AFTER: 0 owing, 34 declared, ratchet owing_max 0 (docs/research/producer_yield_ratchet.json, which falls only). Nothing was capped and no raw cell count was reduced.",
+    "docs/research/productivity_blockers.json -- 15 EXEMPTIONS: the tradition produces a MEASURED NEGATIVE (objects evaluated, effective trials charged through libs/research/trial_ledger.py, and its per-tradition row in generator_yield), consumed by math_lab.tradition_roi() -> math_lab.department_plan(), which moves next hour's compute share off exactly that row, and by research_roi's SCIENTIST ROI table. Each carries the measurement it was declared on and a `retire_if` condition that deletes the row, so a declaration cannot outlive its fact.",
+    "2 BLOCKERS with an owner, because their zero is this desk's own tuning and not a property of the market: math:recurrence_quantification (`rqa_scan: budget reached at bar 17496 of 48269` on every panel -- an O(n^2) recurrence matrix against a fixed time slice; the fix is a windowed/strided RQA inside the slice it already has, never a larger slice taken from a producing tradition) and math:sindy (`every coefficient fell below lambda=0.08` -- a hard-coded sparsity threshold nobody measured against these panels).",
+    "NOTHING WAS RETIRED: every one of the 17 produces something a named consumer reads, so the retirement path in docs/research/retirements.jsonl was not used, which is the honest disposition rather than a tidier one."
+   ],
+   "consumer": "scripts/check_producer_yield.py (the owing ratchet, law-gate leg), scripts/check_productivity_census.py (the same declarations)"
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."
