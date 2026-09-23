@@ -140,13 +140,13 @@ while ((Get-ScheduledTask -TaskName "MT5-ShadowSync" -ErrorAction SilentlyContin
 # the reason was invented -- the same shape as "the terminal connection is gone", which was also
 # a guess this desk printed as fact. An operator reading the log is sent to look for a phantom
 # writer, and the number 9 is a lie about a wait that never happened.
-$script:GitWriterMutex = $null
-$mutexWhy = ""
-try {
-    $script:GitWriterMutex = New-Object System.Threading.Mutex($false, "Local\MT5-GitWriter")
-} catch {
-    $mutexWhy = $_.Exception.GetType().Name + ": " + $_.Exception.Message
-}
+# THE MUTEX IS CREATED WITH A DACL EVERY PRINCIPAL CAN OPEN (GitWriterMutex.ps1, 2026-09-23):
+# a name created under one principal and unopenable by the next is a lock that stops the
+# desk instead of ordering it, and that is exactly what happened for four days.
+. (Join-Path $PSScriptRoot "GitWriterMutex.ps1")
+$mutexHandle = Open-GitWriterMutex
+$script:GitWriterMutex = $mutexHandle.Mutex
+$mutexWhy = $mutexHandle.Why
 $gotLock = $false
 if ($null -eq $script:GitWriterMutex) {
     Log ("could not OPEN Local\MT5-GitWriter (" + $mutexWhy + ") -- this is not evidence that " +

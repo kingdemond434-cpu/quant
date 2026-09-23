@@ -264,16 +264,27 @@ def test_every_git_writer_on_the_box_takes_the_same_process_level_lock() -> None
     """A verifier refuted the task-state guards: sync_shadow_to_git.ps1 has a second invoker
     (hourly_cycle.publish_state launches it directly) and a third (a hand run), and neither
     shows as MT5-ShadowSync 'Running'. The lock must belong to the PROCESS, whoever started it."""
-    for src, name in ((SYNC, "sync"), (ADOPT_CODE, "adopt")):
-        assert 'New-Object System.Threading.Mutex($false, "Local\\MT5-GitWriter")' in src, name
-        assert "catch [System.Threading.AbandonedMutexException] { $gotLock = $true }" in src, name
+    # AND EVERY WRITER TAKES IT THROUGH THE SAME HELPER (2026-09-23): a mutex created with one
+    # principal's default descriptor could not be opened by the next, so every adoption refused
+    # for four days with "Access to the path 'Local\MT5-GitWriter' is denied". GitWriterMutex.ps1
+    # creates it with a DACL the whole machine can open, and falls back to OpenExisting.
+    helper = (_DESK / "scripts" / "GitWriterMutex.ps1").read_text("utf-8")
+    assert "MutexSecurity" in helper and "WorldSid" in helper
+    assert "OpenExisting" in helper
+    for src, name in ((SYNC, "sync"), (ADOPT_CODE, "adopt"),
+                      ((_DESK / "scripts" / "Seal-IfClean.ps1").read_text("utf-8"), "seal"),
+                      ((_DESK / "scripts" / "intel_ship_adopt.ps1").read_text("utf-8"), "intel")):
+        assert '. (Join-Path $PSScriptRoot "GitWriterMutex.ps1")' in src, name
+        assert "Open-GitWriterMutex" in src, name
+        assert 'New-Object System.Threading.Mutex($false, "Local\\MT5-GitWriter")' not in src, name
+    assert "catch [System.Threading.AbandonedMutexException] { $gotLock = $true }" in ADOPT_CODE
     # the sync takes it after its yield and before its first git operation; a miss yields (exit 0)
-    lock_at = SYNC.index('"Local\\MT5-GitWriter"')
+    lock_at = SYNC.index("Open-GitWriterMutex")
     assert SYNC.index("SKIP: MT5-AdoptRelease is adopting") < lock_at
     assert lock_at < SYNC.index("Sync-Pull -RepoRoot $RepoRoot -Branch $branch")
     assert "exit 0" in SYNC[lock_at:lock_at + 600]
     # the adoption takes it before invoking Adopt-Release and refuses loudly (exit 6) on a miss
-    alock = ADOPT_CODE.index('"Local\\MT5-GitWriter"')
+    alock = ADOPT_CODE.index("$mutexHandle = Open-GitWriterMutex")
     assert alock < ADOPT_CODE.index("$adoptScript")
     assert "exit 6" in ADOPT_CODE[alock:alock + 600]
 

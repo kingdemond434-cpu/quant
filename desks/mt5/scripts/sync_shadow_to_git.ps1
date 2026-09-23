@@ -90,7 +90,8 @@ if ($adopting) {
 # crashed writer never wedges the lock (the next waiter receives it as ABANDONED, which is a
 # grant). Two minutes covers a full sync pass; a writer that cannot get the lock in that time
 # yields exactly as the task check above yields, and the next slot is fifteen minutes away.
-$script:GitWriterMutex = New-Object System.Threading.Mutex($false, "Local\MT5-GitWriter")
+. (Join-Path $PSScriptRoot "GitWriterMutex.ps1")
+$script:GitWriterMutex = (Open-GitWriterMutex).Mutex
 $gotLock = $false
 try { $gotLock = $script:GitWriterMutex.WaitOne(120000) }
 catch [System.Threading.AbandonedMutexException] { $gotLock = $true }
